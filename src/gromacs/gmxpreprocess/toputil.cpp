@@ -61,7 +61,7 @@ void set_p_string(t_param *p, const char *s)
 {
     if (s)
     {
-        if (strlen(s) < sizeof(p->s)-1)
+        if (strlen(s) < sizeof(p->s) - 1)
         {
             strncpy(p->s, s, sizeof(p->s));
         }
@@ -69,7 +69,7 @@ void set_p_string(t_param *p, const char *s)
         {
             gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %d,"
                       " or shorten your definition of bonds like %s to at most %d",
-                      strlen(s)+1, s, MAXSLEN-1);
+                      strlen(s) + 1, s, MAXSLEN - 1);
         }
     }
     else
@@ -92,9 +92,9 @@ void pr_alloc (int extra, t_params *pr)
         return;
     }
     GMX_ASSERT(pr->nr != 0 || pr->param == NULL, "Invalid t_params object");
-    if (pr->nr+extra > pr->maxnr)
+    if (pr->nr + extra > pr->maxnr)
     {
-        pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
+        pr->maxnr = std::max(static_cast<int>(1.2 * pr->maxnr), pr->maxnr + extra);
         srenew(pr->param, pr->maxnr);
         for (i = pr->nr; (i < pr->maxnr); i++)
         {
@@ -156,11 +156,11 @@ void add_param_to_list(t_params *list, t_param *b)
     /* fill the arrays */
     for (j = 0; (j < MAXFORCEPARAM); j++)
     {
-        list->param[list->nr].c[j]   = b->c[j];
+        list->param[list->nr].c[j] = b->c[j];
     }
     for (j = 0; (j < MAXATOMLIST); j++)
     {
-        list->param[list->nr].a[j]   = b->a[j];
+        list->param[list->nr].a[j] = b->a[j];
     }
     memset(list->param[list->nr].s, 0, sizeof(list->param[list->nr].s));
 
@@ -209,10 +209,10 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
      */
-    const int    dihp[2][2] = { { 1, 2 }, { 0, 3 } };
-    t_params    *bt;
-    int          i, j, f, nral, nrfp;
-    gmx_bool     bDih = FALSE, bSwapParity;
+    const int dihp[2][2] = { { 1, 2 }, { 0, 3 } };
+    t_params *bt;
+    int       i, j, f, nral, nrfp;
+    gmx_bool  bDih = FALSE, bSwapParity;
 
     bt = &(plist[ftype]);
 
@@ -288,7 +288,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
     }
     if (fsubtype)
     {
-        f = fsubtype-1;
+        f = fsubtype - 1;
     }
 
     nral = NRAL(ftype);
@@ -302,14 +302,14 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
         fprintf (out, "%3s  %4s", "ai", "aj");
         for (j = 2; (j < nral); j++)
         {
-            fprintf (out, "  %3c%c", 'a', 'i'+j);
+            fprintf (out, "  %3c%c", 'a', 'i' + j);
         }
     }
     else
     {
         for (j = 0; (j < 2); j++)
         {
-            fprintf (out, "%3c%c", 'a', 'i'+dihp[f][j]);
+            fprintf (out, "%3c%c", 'a', 'i' + dihp[f][j]);
         }
     }
 
@@ -338,7 +338,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
                 fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
             }
         }
-        fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
+        fprintf (out, "%5d ", bSwapParity ? -f - 1 : f + 1);
 
         if (bt->param[i].s[0])
         {
@@ -370,10 +370,10 @@ void print_blocka(FILE *out, const char *szName,
     {
         for (i = 0; (i < block->nr); i++)
         {
-            fprintf (out, "%6d", i+1);
-            for (j = block->index[i]; (j < ((int)block->index[i+1])); j++)
+            fprintf (out, "%6d", i + 1);
+            for (j = block->index[i]; (j < ((int)block->index[i + 1])); j++)
             {
-                fprintf (out, "%5d", block->a[j]+1);
+                fprintf (out, "%5d", block->a[j] + 1);
             }
             fprintf (out, "\n");
         }
@@ -383,9 +383,9 @@ void print_blocka(FILE *out, const char *szName,
 
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
-    int         i;
-    gmx_bool    have_excl;
-    int         j;
+    int      i;
+    gmx_bool have_excl;
+    int      j;
 
     have_excl = FALSE;
     for (i = 0; i < natoms && !have_excl; i++)
@@ -401,10 +401,10 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
         {
             if (excls[i].nr > 0)
             {
-                fprintf (out, "%6d ", i+1);
+                fprintf (out, "%6d ", i + 1);
                 for (j = 0; j < excls[i].nr; j++)
                 {
-                    fprintf (out, " %5d", excls[i].e[j]+1);
+                    fprintf (out, " %5d", excls[i].e[j] + 1);
                 }
                 fprintf (out, "\n");
             }
@@ -436,7 +436,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
     int         i, ri;
     int         tpA, tpB;
     const char *as;
-    char       *tpnmA, *tpnmB;
+    char *      tpnmA, *tpnmB;
     double      qres, qtot;
 
     as = dir2str(d_atoms);
@@ -444,7 +444,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
     fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
             "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
 
-    qtot  = 0;
+    qtot = 0;
 
     if (debug)
     {
@@ -458,8 +458,8 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
         for (i = 0; (i < at->nr); i++)
         {
             ri = at->atom[i].resind;
-            if ((i == 0 || ri != at->atom[i-1].resind) &&
-                at->resinfo[ri].rtp != nullptr)
+            if ((i == 0 || ri != at->atom[i - 1].resind)
+                && at->resinfo[ri].rtp != nullptr)
             {
                 qres = get_residue_charge(at, i);
                 fprintf(out, "; residue %3d %-3s rtp %-4s q ",
@@ -485,12 +485,12 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
             /* This is true by construction, but static analysers don't know */
             GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp, "-rtpres did not have residue name available");
             fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
-                    i+1, tpnmA,
+                    i + 1, tpnmA,
                     at->resinfo[ri].nr,
                     at->resinfo[ri].ic,
-                    bRTPresname ?
-                    *(at->resinfo[at->atom[i].resind].rtp) :
-                    *(at->resinfo[at->atom[i].resind].name),
+                    bRTPresname
+                    ? *(at->resinfo[at->atom[i].resind].rtp)
+                    : *(at->resinfo[at->atom[i].resind].name),
                     *(at->atomname[i]), cgnr[i],
                     at->atom[i].q, at->atom[i].m);
             if (PERTURBED(at->atom[i]))
@@ -504,7 +504,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                         tpnmB, at->atom[i].qB, at->atom[i].mB);
             }
             qtot += (double)at->atom[i].q;
-            if (fabs(qtot) < 4*GMX_REAL_EPS)
+            if (fabs(qtot) < 4 * GMX_REAL_EPS)
             {
                 qtot = 0;
             }
@@ -520,8 +520,8 @@ void print_bondeds(FILE *out, int natoms, directive d,
 {
     t_symtab       stab;
     gpp_atomtype_t atype;
-    t_param       *param;
-    t_atom        *a;
+    t_param *      param;
+    t_atom *       a;
     int            i;
 
     atype = init_atomtype();
@@ -531,7 +531,7 @@ void print_bondeds(FILE *out, int natoms, directive d,
     for (i = 0; (i < natoms); i++)
     {
         char buf[12];
-        sprintf(buf, "%4d", (i+1));
+        sprintf(buf, "%4d", (i + 1));
         add_atomtype(atype, &stab, a, buf, param, 0, 0, 0, 0, 0, 0, 0);
     }
     print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);

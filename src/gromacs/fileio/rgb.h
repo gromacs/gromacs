@@ -37,7 +37,8 @@
 #ifndef GMX_FILEIO_RGB_H
 #define GMX_FILEIO_RGB_H
 
-typedef struct t_rgb {
+typedef struct t_rgb
+{
     double r, g, b;
 } t_rgb;
 

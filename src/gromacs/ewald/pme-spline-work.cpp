@@ -54,10 +54,10 @@ pme_spline_work *make_pme_spline_work(int gmx_unused order)
     pme_spline_work *work;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH*2];
-    Simd4Real        zero_S;
-    Simd4Real        real_mask_S0, real_mask_S1;
-    int              of, i;
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH * 2];
+    Simd4Real zero_S;
+    Simd4Real real_mask_S0, real_mask_S1;
+    int       of, i;
 
     work = new(internal::alignedMalloc(sizeof(pme_spline_work)))pme_spline_work;
 
@@ -67,14 +67,14 @@ pme_spline_work *make_pme_spline_work(int gmx_unused order)
      * as we only operate on order of the 8 grid entries that are
      * load into 2 SIMD registers.
      */
-    for (of = 0; of < 2*GMX_SIMD4_WIDTH-(order-1); of++)
+    for (of = 0; of < 2 * GMX_SIMD4_WIDTH - (order - 1); of++)
     {
-        for (i = 0; i < 2*GMX_SIMD4_WIDTH; i++)
+        for (i = 0; i < 2 * GMX_SIMD4_WIDTH; i++)
         {
-            tmp[i] = (i >= of && i < of+order ? -1.0 : 1.0);
+            tmp[i] = (i >= of && i < of + order ? -1.0 : 1.0);
         }
         real_mask_S0      = load4(tmp);
-        real_mask_S1      = load4(tmp+GMX_SIMD4_WIDTH);
+        real_mask_S1      = load4(tmp + GMX_SIMD4_WIDTH);
         work->mask_S0[of] = (real_mask_S0 < zero_S);
         work->mask_S1[of] = (real_mask_S1 < zero_S);
     }

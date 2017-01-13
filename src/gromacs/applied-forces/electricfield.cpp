@@ -108,12 +108,12 @@ class ElectricFieldData
         {
             if (sigma_ > 0)
             {
-                return a_ * (std::cos(omega_*(t-t0_))
-                             * std::exp(-square(t-t0_)/(2.0*square(sigma_))));
+                return a_ * (std::cos(omega_ * (t - t0_))
+                             * std::exp(-square(t - t0_) / (2.0 * square(sigma_))));
             }
             else
             {
-                return a_ * std::cos(omega_*t);
+                return a_ * std::cos(omega_ * t);
             }
         }
 
@@ -169,7 +169,7 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
         virtual void broadCast(const t_commrec *cr);
-        virtual void compare(FILE                     *fp,
+        virtual void compare(FILE *                    fp,
                              const IInputRecExtension *field2,
                              real                      reltol,
                              real                      abstol);
@@ -180,8 +180,8 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         virtual void initForcerec(t_forcerec *fr);
 
         //! \copydoc gmx::IForceProvider::calculateForces
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *atoms,
+        virtual void calculateForces(const t_commrec * cr,
+                                     const t_mdatoms * atoms,
                                      PaddedRVecVector *force,
                                      double            t);
 
@@ -244,7 +244,7 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         //! The field strength in each dimension
         ElectricFieldData efield_[DIM];
         //! File pointer for electric field
-        FILE             *fpField_;
+        FILE *fpField_;
 };
 
 void ElectricField::doTpxIO(t_fileio *fio, bool bRead)
@@ -275,10 +275,10 @@ void ElectricField::doTpxIO(t_fileio *fio, bool bRead)
         }
         else
         {
-            aa.resize(n+1);
-            phi.resize(nt+1);
-            at.resize(nt+1);
-            phit.resize(nt+1);
+            aa.resize(n + 1);
+            phi.resize(nt + 1);
+            at.resize(nt + 1);
+            phit.resize(nt + 1);
         }
         gmx_fio_ndo_real(fio, aa.data(),  n);
         gmx_fio_ndo_real(fio, phi.data(), n);
@@ -323,7 +323,7 @@ real convertStaticParameters(const std::string &value)
 
 //! Converts dynamic parameters from mdp format to (omega, t0, sigma).
 void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
-                              const std::string              &value)
+                              const std::string &             value)
 {
     const std::vector<std::string> sxt = splitString(value);
     if (sxt.empty())
@@ -395,10 +395,10 @@ void ElectricField::broadCast(const t_commrec *cr)
         }
     }
     // Broadcasting the parameters
-    gmx_bcast(DIM*sizeof(a1[0]), a1, cr);
-    gmx_bcast(DIM*sizeof(omega1[0]), omega1, cr);
-    gmx_bcast(DIM*sizeof(t01[0]), t01, cr);
-    gmx_bcast(DIM*sizeof(sigma1[0]), sigma1, cr);
+    gmx_bcast(DIM * sizeof(a1[0]), a1, cr);
+    gmx_bcast(DIM * sizeof(omega1[0]), omega1, cr);
+    gmx_bcast(DIM * sizeof(t01[0]), t01, cr);
+    gmx_bcast(DIM * sizeof(sigma1[0]), sigma1, cr);
 
     // And storing them locally
     if (!MASTER(cr))
@@ -479,12 +479,12 @@ real ElectricField::field(int dim, real t) const
 
 bool ElectricField::isActive() const
 {
-    return (efield_[XX].a() != 0 ||
-            efield_[YY].a() != 0 ||
-            efield_[ZZ].a() != 0);
+    return (efield_[XX].a() != 0
+            || efield_[YY].a() != 0
+            || efield_[ZZ].a() != 0);
 }
 
-void ElectricField::compare(FILE                     *fp,
+void ElectricField::compare(FILE *                    fp,
                             const IInputRecExtension *other,
                             real                      reltol,
                             real                      abstol)
@@ -510,8 +510,8 @@ void ElectricField::printComponents(double t) const
             field(XX, t), field(YY, t), field(ZZ, t));
 }
 
-void ElectricField::calculateForces(const t_commrec  *cr,
-                                    const t_mdatoms  *mdatoms,
+void ElectricField::calculateForces(const t_commrec * cr,
+                                    const t_mdatoms * mdatoms,
                                     PaddedRVecVector *force,
                                     double            t)
 {
@@ -521,7 +521,7 @@ void ElectricField::calculateForces(const t_commrec  *cr,
 
         for (int m = 0; (m < DIM); m++)
         {
-            real Ext = FIELDFAC*field(m, t);
+            real Ext = FIELDFAC * field(m, t);
 
             if (Ext != 0)
             {
@@ -529,7 +529,7 @@ void ElectricField::calculateForces(const t_commrec  *cr,
                 for (int i = 0; i < mdatoms->homenr; ++i)
                 {
                     // NOTE: Not correct with perturbed charges
-                    f[i][m] += mdatoms->chargeA[i]*Ext;
+                    f[i][m] += mdatoms->chargeA[i] * Ext;
                 }
             }
         }

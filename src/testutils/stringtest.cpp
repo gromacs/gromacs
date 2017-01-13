@@ -83,8 +83,8 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
 class StringTestBase::Impl
 {
     public:
-        TestReferenceData        data_;
-        TestReferenceChecker     checker_;
+        TestReferenceData    data_;
+        TestReferenceChecker checker_;
 };
 
 /********************************************************************
@@ -115,8 +115,7 @@ StringTestBase::~StringTestBase()
 {
 }
 
-TestReferenceChecker &
-StringTestBase::checker()
+TestReferenceChecker &StringTestBase::checker()
 {
     if (!impl_->checker_)
     {
@@ -125,22 +124,19 @@ StringTestBase::checker()
     return impl_->checker_;
 }
 
-void
-StringTestBase::checkText(const std::string &text, const char *id)
+void StringTestBase::checkText(const std::string &text, const char *id)
 {
     checkText(&checker(), text, id);
 }
 
-void
-StringTestBase::checkFileContents(const std::string &filename, const char *id)
+void StringTestBase::checkFileContents(const std::string &filename, const char *id)
 {
     const std::string text = TextReader::readFileToString(filename);
     checkText(text, id);
 }
 
-void
-StringTestBase::testFilesEqual(const std::string &refFilename,
-                               const std::string &testFilename)
+void StringTestBase::testFilesEqual(const std::string &refFilename,
+                                    const std::string &testFilename)
 {
     const std::string expectedContents = TextReader::readFileToString(refFilename);
     const std::string contents         = TextReader::readFileToString(testFilename);

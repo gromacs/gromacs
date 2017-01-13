@@ -53,7 +53,7 @@
 
 static int get_espresso_word(FILE *fp, char word[])
 {
-    int  ret, nc, i;
+    int ret, nc, i;
 
     ret = 0;
     nc  = 0;
@@ -91,8 +91,7 @@ static int get_espresso_word(FILE *fp, char word[])
                 word[nc++] = (char)i;
             }
         }
-    }
-    while (i != EOF && ret == 0);
+    } while (i != EOF && ret == 0);
 
     word[nc] = '\0';
 
@@ -155,7 +154,8 @@ static int check_close_parenthesis(FILE *fp, int r,
     return level_inc;
 }
 
-enum {
+enum
+{
     espID, espPOS, espTYPE, espQ, espV, espF, espMOLECULE, espNR
 };
 static const char *const esp_prop[espNR] = {
@@ -167,12 +167,12 @@ void gmx_espresso_read_conf(const char *infile,
                             t_symtab *symtab, char ***name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box)
 {
-    FILE     *fp;
-    char      word[STRLEN], buf[STRLEN];
-    int       level, r, nprop, p, i, m, molnr;
-    int       prop[32];
-    double    d;
-    gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
+    FILE *   fp;
+    char     word[STRLEN], buf[STRLEN];
+    int      level, r, nprop, p, i, m, molnr;
+    int      prop[32];
+    double   d;
+    gmx_bool bFoundParticles, bFoundProp, bFoundVariable, bMol;
 
     // No title reading implemented for espresso files
     *name = put_symtab(symtab, "");
@@ -214,7 +214,7 @@ void gmx_espresso_read_conf(const char *infile,
 
                         if (debug)
                         {
-                            fprintf(debug, "  prop[%d] = %s\n", nprop-1, esp_prop[prop[nprop-1]]);
+                            fprintf(debug, "  prop[%d] = %s\n", nprop - 1, esp_prop[prop[nprop - 1]]);
                         }
                     }
                 }
@@ -288,11 +288,11 @@ void gmx_espresso_read_conf(const char *infile,
                             case espMOLECULE:
                                 r     = get_espresso_word(fp, word);
                                 molnr = std::strtol(word, nullptr, 10);
-                                if (i == 0 ||
-                                    atoms->resinfo[atoms->atom[i-1].resind].nr != molnr)
+                                if (i == 0
+                                    || atoms->resinfo[atoms->atom[i - 1].resind].nr != molnr)
                                 {
-                                    atoms->atom[i].resind =
-                                        (i == 0 ? 0 : atoms->atom[i-1].resind+1);
+                                    atoms->atom[i].resind
+                                                                                   = (i == 0 ? 0 : atoms->atom[i - 1].resind + 1);
                                     atoms->resinfo[atoms->atom[i].resind].nr       = molnr;
                                     atoms->resinfo[atoms->atom[i].resind].ic       = ' ';
                                     atoms->resinfo[atoms->atom[i].resind].chainid  = ' ';
@@ -300,7 +300,7 @@ void gmx_espresso_read_conf(const char *infile,
                                 }
                                 else
                                 {
-                                    atoms->atom[i].resind = atoms->atom[i-1].resind;
+                                    atoms->atom[i].resind = atoms->atom[i - 1].resind;
                                 }
                                 break;
                         }
@@ -310,10 +310,10 @@ void gmx_espresso_read_conf(const char *infile,
                     atoms->atomname[i] = put_symtab(symtab, buf);
                     if (bMol)
                     {
-                        if (i == 0 || atoms->atom[i].resind != atoms->atom[i-1].resind)
+                        if (i == 0 || atoms->atom[i].resind != atoms->atom[i - 1].resind)
                         {
-                            atoms->resinfo[atoms->atom[i].resind].name =
-                                put_symtab(symtab, "MOL");
+                            atoms->resinfo[atoms->atom[i].resind].name
+                                = put_symtab(symtab, "MOL");
                         }
                     }
                     else
@@ -323,12 +323,12 @@ void gmx_espresso_read_conf(const char *infile,
                         /* Generate an residue name from the particle type */
                         if (atoms->atom[i].type < 26)
                         {
-                            sprintf(buf, "T%c", 'A'+atoms->atom[i].type);
+                            sprintf(buf, "T%c", 'A' + atoms->atom[i].type);
                         }
                         else
                         {
                             sprintf(buf, "T%c%c",
-                                    'A'+atoms->atom[i].type/26, 'A'+atoms->atom[i].type%26);
+                                    'A' + atoms->atom[i].type / 26, 'A' + atoms->atom[i].type % 26);
                         }
                         t_atoms_set_resinfo(atoms, i, symtab, buf, i, ' ', 0, ' ');
                     }
@@ -386,7 +386,7 @@ void gmx_espresso_read_conf(const char *infile,
 
 int get_espresso_coordnum(const char *infile)
 {
-    FILE    *fp;
+    FILE *   fp;
     char     word[STRLEN];
     int      natoms, level, r;
     gmx_bool bFoundParticles;

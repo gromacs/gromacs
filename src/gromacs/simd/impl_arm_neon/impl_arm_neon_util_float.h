@@ -52,13 +52,12 @@ namespace gmx
 {
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const float *        base,
-                    const std::int32_t   offset[],
-                    SimdFloat *          v0,
-                    SimdFloat *          v1,
-                    SimdFloat *          v2,
-                    SimdFloat *          v3)
+static inline void gmx_simdcall gatherLoadTranspose(const float *      base,
+                                                    const std::int32_t offset[],
+                                                    SimdFloat *        v0,
+                                                    SimdFloat *        v1,
+                                                    SimdFloat *        v2,
+                                                    SimdFloat *        v3)
 {
     assert(std::size_t(offset) % 16 == 0);
     assert(std::size_t(base) % 16 == 0);
@@ -66,10 +65,10 @@ gatherLoadTranspose(const float *        base,
 
     // Unfortunately we cannot use the beautiful Neon structured load
     // instructions since the data comes from four different memory locations.
-    float32x4x2_t  t0 = vuzpq_f32(vld1q_f32( base + align * offset[0] ), vld1q_f32( base + align * offset[2] ));
-    float32x4x2_t  t1 = vuzpq_f32(vld1q_f32( base + align * offset[1] ), vld1q_f32( base + align * offset[3] ));
-    float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
-    float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+    float32x4x2_t t0 = vuzpq_f32(vld1q_f32( base + align * offset[0] ), vld1q_f32( base + align * offset[2] ));
+    float32x4x2_t t1 = vuzpq_f32(vld1q_f32( base + align * offset[1] ), vld1q_f32( base + align * offset[3] ));
+    float32x4x2_t t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+    float32x4x2_t t3 = vtrnq_f32(t0.val[1], t1.val[1]);
     v0->simdInternal_ = t2.val[0];
     v1->simdInternal_ = t3.val[0];
     v2->simdInternal_ = t2.val[1];
@@ -77,43 +76,41 @@ gatherLoadTranspose(const float *        base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const float *        base,
-                    const std::int32_t   offset[],
-                    SimdFloat *          v0,
-                    SimdFloat *          v1)
+static inline void gmx_simdcall gatherLoadTranspose(const float *      base,
+                                                    const std::int32_t offset[],
+                                                    SimdFloat *        v0,
+                                                    SimdFloat *        v1)
 {
     assert(std::size_t(offset) % 16 == 0);
     assert(std::size_t(base) % 8 == 0);
     assert(align % 2 == 0);
 
-    v0->simdInternal_  = vcombine_f32(vld1_f32( base + align * offset[0] ),
-                                      vld1_f32( base + align * offset[2] ));
-    v1->simdInternal_  = vcombine_f32(vld1_f32( base + align * offset[1] ),
-                                      vld1_f32( base + align * offset[3] ));
+    v0->simdInternal_ = vcombine_f32(vld1_f32( base + align * offset[0] ),
+                                     vld1_f32( base + align * offset[2] ));
+    v1->simdInternal_ = vcombine_f32(vld1_f32( base + align * offset[1] ),
+                                     vld1_f32( base + align * offset[3] ));
 
-    float32x4x2_t tmp  = vtrnq_f32(v0->simdInternal_, v1->simdInternal_);
+    float32x4x2_t tmp = vtrnq_f32(v0->simdInternal_, v1->simdInternal_);
 
-    v0->simdInternal_  = tmp.val[0];
-    v1->simdInternal_  = tmp.val[1];
+    v0->simdInternal_ = tmp.val[0];
+    v1->simdInternal_ = tmp.val[1];
 }
 
 static const int c_simdBestPairAlignmentFloat = 2;
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUTranspose(const float *        base,
-                     const std::int32_t   offset[],
-                     SimdFloat *          v0,
-                     SimdFloat *          v1,
-                     SimdFloat *          v2)
+static inline void gmx_simdcall gatherLoadUTranspose(const float *      base,
+                                                     const std::int32_t offset[],
+                                                     SimdFloat *        v0,
+                                                     SimdFloat *        v1,
+                                                     SimdFloat *        v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
-    float32x4x2_t  t0 = vuzpq_f32(vld1q_f32( base + align * offset[0] ), vld1q_f32( base + align * offset[2] ));
-    float32x4x2_t  t1 = vuzpq_f32(vld1q_f32( base + align * offset[1] ), vld1q_f32( base + align * offset[3] ));
-    float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
-    float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+    float32x4x2_t t0 = vuzpq_f32(vld1q_f32( base + align * offset[0] ), vld1q_f32( base + align * offset[2] ));
+    float32x4x2_t t1 = vuzpq_f32(vld1q_f32( base + align * offset[1] ), vld1q_f32( base + align * offset[3] ));
+    float32x4x2_t t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+    float32x4x2_t t3 = vtrnq_f32(t0.val[1], t1.val[1]);
     v0->simdInternal_ = t2.val[0];
     v1->simdInternal_ = t3.val[0];
     v2->simdInternal_ = t2.val[1];
@@ -121,12 +118,11 @@ gatherLoadUTranspose(const float *        base,
 
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterStoreU(float *              base,
-                       const std::int32_t   offset[],
-                       SimdFloat            v0,
-                       SimdFloat            v1,
-                       SimdFloat            v2)
+static inline void gmx_simdcall transposeScatterStoreU(float *            base,
+                                                       const std::int32_t offset[],
+                                                       SimdFloat          v0,
+                                                       SimdFloat          v1,
+                                                       SimdFloat          v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
@@ -145,12 +141,11 @@ transposeScatterStoreU(float *              base,
 
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterIncrU(float *              base,
-                      const std::int32_t   offset[],
-                      SimdFloat            v0,
-                      SimdFloat            v1,
-                      SimdFloat            v2)
+static inline void gmx_simdcall transposeScatterIncrU(float *            base,
+                                                      const std::int32_t offset[],
+                                                      SimdFloat          v0,
+                                                      SimdFloat          v1,
+                                                      SimdFloat          v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
@@ -183,14 +178,14 @@ transposeScatterIncrU(float *              base,
     else
     {
         // Extra elements means we can use full width-4 load/store operations
-        float32x4x2_t  t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
-        float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0f));
-        float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
-        float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
-        float32x4_t    t4 = t2.val[0];
-        float32x4_t    t5 = t3.val[0];
-        float32x4_t    t6 = t2.val[1];
-        float32x4_t    t7 = t3.val[1];
+        float32x4x2_t t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
+        float32x4x2_t t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0f));
+        float32x4x2_t t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+        float32x4x2_t t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+        float32x4_t   t4 = t2.val[0];
+        float32x4_t   t5 = t3.val[0];
+        float32x4_t   t6 = t2.val[1];
+        float32x4_t   t7 = t3.val[1];
 
         vst1q_f32(base + align * offset[0], vaddq_f32(t4, vld1q_f32(base + align * offset[0])));
         vst1q_f32(base + align * offset[1], vaddq_f32(t5, vld1q_f32(base + align * offset[1])));
@@ -200,12 +195,11 @@ transposeScatterIncrU(float *              base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterDecrU(float *              base,
-                      const std::int32_t   offset[],
-                      SimdFloat            v0,
-                      SimdFloat            v1,
-                      SimdFloat            v2)
+static inline void gmx_simdcall transposeScatterDecrU(float *            base,
+                                                      const std::int32_t offset[],
+                                                      SimdFloat          v0,
+                                                      SimdFloat          v1,
+                                                      SimdFloat          v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
@@ -238,14 +232,14 @@ transposeScatterDecrU(float *              base,
     else
     {
         // Extra elements means we can use full width-4 load/store operations
-        float32x4x2_t  t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
-        float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0f));
-        float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
-        float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
-        float32x4_t    t4 = t2.val[0];
-        float32x4_t    t5 = t3.val[0];
-        float32x4_t    t6 = t2.val[1];
-        float32x4_t    t7 = t3.val[1];
+        float32x4x2_t t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
+        float32x4x2_t t1 = vuzpq_f32(v1.simdInternal_, vdupq_n_f32(0.0f));
+        float32x4x2_t t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+        float32x4x2_t t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+        float32x4_t   t4 = t2.val[0];
+        float32x4_t   t5 = t3.val[0];
+        float32x4_t   t6 = t2.val[1];
+        float32x4_t   t7 = t3.val[1];
 
         vst1q_f32(base + align * offset[0], vsubq_f32(vld1q_f32(base + align * offset[0]), t4));
         vst1q_f32(base + align * offset[1], vsubq_f32(vld1q_f32(base + align * offset[1]), t5));
@@ -254,11 +248,10 @@ transposeScatterDecrU(float *              base,
     }
 }
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdFloat    scalar,
-                        SimdFloat *  triplets0,
-                        SimdFloat *  triplets1,
-                        SimdFloat *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat   scalar,
+                                                        SimdFloat * triplets0,
+                                                        SimdFloat * triplets1,
+                                                        SimdFloat * triplets2)
 {
     float32x2_t lo, hi;
     float32x4_t t0, t1, t2, t3;
@@ -278,13 +271,12 @@ expandScalarsToTriplets(SimdFloat    scalar,
 
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const float *  base,
-                             SimdFInt32     offset,
-                             SimdFloat *    v0,
-                             SimdFloat *    v1,
-                             SimdFloat *    v2,
-                             SimdFloat *    v3)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float * base,
+                                                             SimdFInt32    offset,
+                                                             SimdFloat *   v0,
+                                                             SimdFloat *   v1,
+                                                             SimdFloat *   v2,
+                                                             SimdFloat *   v3)
 {
     GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)  ioffset[GMX_SIMD_FINT32_WIDTH];
 
@@ -296,11 +288,10 @@ gatherLoadBySimdIntTranspose(const float *  base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const float *   base,
-                             SimdFInt32      offset,
-                             SimdFloat *     v0,
-                             SimdFloat *     v1)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float * base,
+                                                             SimdFInt32    offset,
+                                                             SimdFloat *   v0,
+                                                             SimdFloat *   v1)
 {
     GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)  ioffset[GMX_SIMD_FINT32_WIDTH];
 
@@ -311,11 +302,10 @@ gatherLoadBySimdIntTranspose(const float *   base,
 
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const float *  base,
-                              SimdFInt32     offset,
-                              SimdFloat *    v0,
-                              SimdFloat *    v1)
+static inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const float * base,
+                                                              SimdFInt32    offset,
+                                                              SimdFloat *   v0,
+                                                              SimdFloat *   v1)
 {
     GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)  ioffset[GMX_SIMD_FINT32_WIDTH];
 
@@ -329,19 +319,18 @@ gatherLoadUBySimdIntTranspose(const float *  base,
     v1->simdInternal_ = tmp.val[1];
 }
 
-static inline float gmx_simdcall
-reduceIncr4ReturnSum(float *    m,
-                     SimdFloat  v0,
-                     SimdFloat  v1,
-                     SimdFloat  v2,
-                     SimdFloat  v3)
+static inline float gmx_simdcall reduceIncr4ReturnSum(float *   m,
+                                                      SimdFloat v0,
+                                                      SimdFloat v1,
+                                                      SimdFloat v2,
+                                                      SimdFloat v3)
 {
     assert(std::size_t(m) % 16 == 0);
 
-    float32x4x2_t  t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
-    float32x4x2_t  t1 = vuzpq_f32(v1.simdInternal_, v3.simdInternal_);
-    float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
-    float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+    float32x4x2_t t0 = vuzpq_f32(v0.simdInternal_, v2.simdInternal_);
+    float32x4x2_t t1 = vuzpq_f32(v1.simdInternal_, v3.simdInternal_);
+    float32x4x2_t t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+    float32x4x2_t t3 = vtrnq_f32(t0.val[1], t1.val[1]);
     v0.simdInternal_ = t2.val[0];
     v1.simdInternal_ = t3.val[0];
     v2.simdInternal_ = t2.val[1];

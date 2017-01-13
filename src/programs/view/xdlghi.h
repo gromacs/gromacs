@@ -44,7 +44,8 @@
 #include "x11.h"
 #include "xdlg.h"
 
-typedef struct {
+typedef struct
+{
     int         nitem;
     int         w, h;
     t_dlgitem **list;

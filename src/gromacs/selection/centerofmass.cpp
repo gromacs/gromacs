@@ -50,10 +50,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
 
-void
-gmx_calc_cog(const gmx_mtop_t * /* top */, rvec x[], int nrefat, const int index[], rvec xout)
+void gmx_calc_cog(const gmx_mtop_t * /* top */, rvec x[], int nrefat, const int index[], rvec xout)
 {
-    int                 m, ai;
+    int m, ai;
 
     clear_rvec(xout);
     for (m = 0; m < nrefat; ++m)
@@ -61,7 +60,7 @@ gmx_calc_cog(const gmx_mtop_t * /* top */, rvec x[], int nrefat, const int index
         ai = index[m];
         rvec_inc(xout, x[ai]);
     }
-    svmul(1.0/nrefat, xout, xout);
+    svmul(1.0 / nrefat, xout, xout);
 }
 
 /*!
@@ -74,8 +73,7 @@ gmx_calc_cog(const gmx_mtop_t * /* top */, rvec x[], int nrefat, const int index
  * Works exactly as gmx_calc_cog() with the exception that a center of
  * mass are calculated, and hence a topology with masses is required.
  */
-void
-gmx_calc_com(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rvec xout)
+void gmx_calc_com(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rvec xout)
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
@@ -92,7 +90,7 @@ gmx_calc_com(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rve
         }
         mtot += mass;
     }
-    svmul(1.0/mtot, xout, xout);
+    svmul(1.0 / mtot, xout, xout);
 }
 
 /*!
@@ -102,8 +100,7 @@ gmx_calc_com(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rve
  * \param[in]  index  Indices of atoms.
  * \param[out] fout   Force on the COG position for the indexed atoms.
  */
-void
-gmx_calc_cog_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], rvec fout)
+void gmx_calc_cog_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], rvec fout)
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
@@ -123,8 +120,7 @@ gmx_calc_cog_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], r
     svmul(mtot / nrefat, fout, fout);
 }
 
-void
-gmx_calc_com_f(const gmx_mtop_t * /* top */, rvec f[], int nrefat, const int index[], rvec fout)
+void gmx_calc_com_f(const gmx_mtop_t * /* top */, rvec f[], int nrefat, const int index[], rvec fout)
 {
     clear_rvec(fout);
     for (int m = 0; m < nrefat; ++m)
@@ -147,9 +143,8 @@ gmx_calc_com_f(const gmx_mtop_t * /* top */, rvec f[], int nrefat, const int ind
  * \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
-void
-gmx_calc_comg(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[],
-              bool bMass, rvec xout)
+void gmx_calc_comg(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[],
+                   bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -174,9 +169,8 @@ gmx_calc_comg(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[],
  * \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
-void
-gmx_calc_comg_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[],
-                bool bMass, rvec fout)
+void gmx_calc_comg_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[],
+                     bool bMass, rvec fout)
 {
     if (bMass)
     {
@@ -199,14 +193,13 @@ gmx_calc_comg_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[],
  *
  * Works exactly as gmx_calc_com_pbc(), but calculates the center of geometry.
  */
-void
-gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
-                 int nrefat, const int index[], rvec xout)
+void gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
+                      int nrefat, const int index[], rvec xout)
 {
-    const real          tol = 1e-4;
-    bool                bChanged;
-    int                 m, j, ai, iter;
-    rvec                dx, xtest;
+    const real tol = 1e-4;
+    bool       bChanged;
+    int        m, j, ai, iter;
+    rvec       dx, xtest;
 
     /* First simple calculation */
     gmx_calc_cog(top, x, nrefat, index, xout);
@@ -234,8 +227,7 @@ gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
                 }
             }
             iter++;
-        }
-        while (bChanged);
+        } while (bChanged);
     }
 }
 
@@ -254,9 +246,8 @@ gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
  *
  * Modified from src/tools/gmx_sorient.c in Gromacs distribution.
  */
-void
-gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
-                 int nrefat, const int index[], rvec xout)
+void gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
+                      int nrefat, const int index[], rvec xout)
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
@@ -274,11 +265,11 @@ gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
         }
         mtot += mass;
     }
-    svmul(1.0/mtot, xout, xout);
+    svmul(1.0 / mtot, xout, xout);
     /* Now check if any atom is more than half the box from the COM */
     if (pbc)
     {
-        const real tol  = 1e-4;
+        const real tol = 1e-4;
         bool       bChanged;
         do
         {
@@ -302,8 +293,7 @@ gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
                     }
                 }
             }
-        }
-        while (bChanged);
+        } while (bChanged);
     }
 }
 
@@ -321,9 +311,8 @@ gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
  * \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
-void
-gmx_calc_comg_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
-                  int nrefat, const int index[], bool bMass, rvec xout)
+void gmx_calc_comg_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
+                       int nrefat, const int index[], bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -336,22 +325,21 @@ gmx_calc_comg_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
 }
 
 
-void
-gmx_calc_cog_block(const gmx_mtop_t * /* top */, rvec x[], const t_block *block, const int index[],
-                   rvec xout[])
+void gmx_calc_cog_block(const gmx_mtop_t * /* top */, rvec x[], const t_block *block, const int index[],
+                        rvec xout[])
 {
-    int                 b, i, ai;
-    rvec                xb;
+    int  b, i, ai;
+    rvec xb;
 
     for (b = 0; b < block->nr; ++b)
     {
         clear_rvec(xb);
-        for (i = block->index[b]; i < block->index[b+1]; ++i)
+        for (i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             ai = index[i];
             rvec_inc(xb, x[ai]);
         }
-        svmul(1.0/(block->index[b+1] - block->index[b]), xb, xout[b]);
+        svmul(1.0 / (block->index[b + 1] - block->index[b]), xb, xout[b]);
     }
 }
 
@@ -365,9 +353,8 @@ gmx_calc_cog_block(const gmx_mtop_t * /* top */, rvec x[], const t_block *block,
  * Works exactly as gmx_calc_cog_block() with the exception that centers of
  * mass are calculated, and hence a topology with masses is required.
  */
-void
-gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const int index[],
-                   rvec xout[])
+void gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const int index[],
+                        rvec xout[])
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
@@ -377,7 +364,7 @@ gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const 
         rvec xb;
         clear_rvec(xb);
         real mtot = 0;
-        for (int i = block->index[b]; i < block->index[b+1]; ++i)
+        for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int  ai   = index[i];
             const real mass = mtopGetAtomMass(top, ai, &molb);
@@ -387,7 +374,7 @@ gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const 
             }
             mtot += mass;
         }
-        svmul(1.0/mtot, xb, xout[b]);
+        svmul(1.0 / mtot, xb, xout[b]);
     }
 }
 
@@ -398,9 +385,8 @@ gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const 
  * \param[in]  index Indices of atoms.
  * \param[out] fout  \p block->nr Forces on COG positions.
  */
-void
-gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, const int index[],
-                     rvec fout[])
+void gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, const int index[],
+                          rvec fout[])
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
@@ -410,7 +396,7 @@ gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, cons
         rvec fb;
         clear_rvec(fb);
         real mtot = 0;
-        for (int i = block->index[b]; i < block->index[b+1]; ++i)
+        for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int  ai   = index[i];
             const real mass = mtopGetAtomMass(top, ai, &molb);
@@ -420,19 +406,18 @@ gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, cons
             }
             mtot += mass;
         }
-        svmul(mtot / (block->index[b+1] - block->index[b]), fb, fout[b]);
+        svmul(mtot / (block->index[b + 1] - block->index[b]), fb, fout[b]);
     }
 }
 
-void
-gmx_calc_com_f_block(const gmx_mtop_t * /* top */, rvec f[], const t_block *block, const int index[],
-                     rvec fout[])
+void gmx_calc_com_f_block(const gmx_mtop_t * /* top */, rvec f[], const t_block *block, const int index[],
+                          rvec fout[])
 {
     for (int b = 0; b < block->nr; ++b)
     {
         rvec fb;
         clear_rvec(fb);
-        for (int i = block->index[b]; i < block->index[b+1]; ++i)
+        for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int ai = index[i];
             rvec_inc(fb, f[ai]);
@@ -454,9 +439,8 @@ gmx_calc_com_f_block(const gmx_mtop_t * /* top */, rvec f[], const t_block *bloc
  * value of \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
-void
-gmx_calc_comg_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const int index[],
-                    bool bMass, rvec xout[])
+void gmx_calc_comg_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const int index[],
+                         bool bMass, rvec xout[])
 {
     if (bMass)
     {
@@ -481,9 +465,8 @@ gmx_calc_comg_block(const gmx_mtop_t *top, rvec x[], const t_block *block, const
  * the value of \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
-void
-gmx_calc_comg_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, const int index[],
-                      bool bMass, rvec fout[])
+void gmx_calc_comg_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, const int index[],
+                           bool bMass, rvec fout[])
 {
     if (bMass)
     {
@@ -513,9 +496,8 @@ gmx_calc_comg_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block, con
  * but if the layout of these structures is changed, this may lead to strange
  * crashes.
  */
-void
-gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
-                     bool bMass, rvec xout[])
+void gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
+                          bool bMass, rvec xout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
     gmx_calc_comg_block(top, x, reinterpret_cast<const t_block *>(block), block->a, bMass, xout);
@@ -539,9 +521,8 @@ gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
  * but if the layout of these structures is changed, this may lead to strange
  * crashes.
  */
-void
-gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec f[], const t_blocka *block,
-                       bool bMass, rvec fout[])
+void gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec f[], const t_blocka *block,
+                            bool bMass, rvec fout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
     gmx_calc_comg_f_block(top, f, reinterpret_cast<const t_block *>(block), block->a, bMass, fout);

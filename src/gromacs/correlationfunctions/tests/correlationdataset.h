@@ -50,13 +50,13 @@
 
 class CorrelationDataSet
 {
-    double         ** tempValues_;
+    double ** tempValues_;
 
-    int               nrLines_;
-    int               nrColumns_;
-    double            startTime_;
-    double            endTime_;
-    double            dt_;
+    int    nrLines_;
+    int    nrColumns_;
+    double startTime_;
+    double endTime_;
+    double dt_;
 
     public:
 

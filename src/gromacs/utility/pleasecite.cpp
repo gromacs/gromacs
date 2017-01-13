@@ -44,7 +44,8 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     const char *key;
     const char *author;
     const char *title;

@@ -62,23 +62,21 @@
 #endif /* GMX_NBNXN_SIMD_4XN */
 
 #ifdef CALC_ENERGIES
-void
-nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
-                                                const nbnxn_atomdata_t    gmx_unused *nbat,
-                                                const interaction_const_t gmx_unused *ic,
-                                                rvec                      gmx_unused *shift_vec,
-                                                real                      gmx_unused *f,
-                                                real                      gmx_unused *fshift,
-                                                real                      gmx_unused *Vvdw,
-                                                real                      gmx_unused *Vc)
+void nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
+                                                     const nbnxn_atomdata_t    gmx_unused *nbat,
+                                                     const interaction_const_t gmx_unused *ic,
+                                                     rvec                      gmx_unused *shift_vec,
+                                                     real                      gmx_unused *f,
+                                                     real                      gmx_unused *fshift,
+                                                     real                      gmx_unused *Vvdw,
+                                                     real                      gmx_unused *Vc)
 #else /* CALC_ENERGIES */
-void
-nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
-                                                const nbnxn_atomdata_t    gmx_unused *nbat,
-                                                const interaction_const_t gmx_unused *ic,
-                                                rvec                      gmx_unused *shift_vec,
-                                                real                      gmx_unused *f,
-                                                real                      gmx_unused *fshift)
+void nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_4xn(const nbnxn_pairlist_t    gmx_unused *nbl,
+                                                     const nbnxn_atomdata_t    gmx_unused *nbat,
+                                                     const interaction_const_t gmx_unused *ic,
+                                                     rvec                      gmx_unused *shift_vec,
+                                                     real                      gmx_unused *f,
+                                                     real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_4XN
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_outer.h"

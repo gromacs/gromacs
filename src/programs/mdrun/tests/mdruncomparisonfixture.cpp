@@ -177,9 +177,9 @@ MdrunComparisonFixture::MdpFieldValues MdrunComparisonFixture::prepareMdpFieldVa
 }
 
 void MdrunComparisonFixture::prepareMdpFile(const MdpFieldValues &mdpFieldValues,
-                                            const char           *integrator,
-                                            const char           *tcoupl,
-                                            const char           *pcoupl)
+                                            const char *          integrator,
+                                            const char *          tcoupl,
+                                            const char *          pcoupl)
 {
     /* Set up an .mdp file that permits a highly reproducible
      * simulation. The format string needs to be configured with
@@ -237,10 +237,10 @@ void MdrunComparisonFixture::prepareMdpFile(const MdpFieldValues &mdpFieldValues
                                             mdpFieldValues.at("other").c_str()));
 }
 
-void MdrunComparisonFixture::runTest(const char            *simulationName,
-                                     const char            *integrator,
-                                     const char            *tcoupl,
-                                     const char            *pcoupl,
+void MdrunComparisonFixture::runTest(const char *           simulationName,
+                                     const char *           integrator,
+                                     const char *           tcoupl,
+                                     const char *           pcoupl,
                                      FloatingPointTolerance tolerance)
 {
     CommandLine caller;

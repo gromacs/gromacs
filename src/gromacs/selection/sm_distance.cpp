@@ -67,13 +67,13 @@ struct t_methoddata_distance
     }
 
     /** Cutoff distance. */
-    real                             cutoff;
+    real cutoff;
     /** Positions of the reference points. */
-    gmx_ana_pos_t                    p;
+    gmx_ana_pos_t p;
     /** Neighborhood search data. */
-    gmx::AnalysisNeighborhood        nb;
+    gmx::AnalysisNeighborhood nb;
     /** Neighborhood search for an invididual frame. */
-    gmx::AnalysisNeighborhoodSearch  nbsearch;
+    gmx::AnalysisNeighborhoodSearch nbsearch;
 };
 
 /*! \brief
@@ -152,7 +152,7 @@ static gmx_ana_selparam_t smparams_within[] = {
 };
 
 //! Help title for distance selection methods.
-static const char        helptitle_distance[] = "Selecting based on distance";
+static const char helptitle_distance[] = "Selecting based on distance";
 //! Help text for distance selection methods.
 static const char *const help_distance[] = {
     "::",
@@ -222,8 +222,7 @@ gmx_ana_selmethod_t sm_within = {
      helptitle_distance, asize(help_distance), help_distance},
 };
 
-static void *
-init_data_common(int /* npar */, gmx_ana_selparam_t *param)
+static void *init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_distance *data = new t_methoddata_distance();
     param[0].val.u.r = &data->cutoff;
@@ -231,8 +230,7 @@ init_data_common(int /* npar */, gmx_ana_selparam_t *param)
     return data;
 }
 
-static void
-init_common(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_common(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
@@ -249,14 +247,12 @@ init_common(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *pa
  * Frees the memory allocated for \c t_methoddata_distance::xref and
  * \c t_methoddata_distance::nb.
  */
-static void
-free_data_common(void *data)
+static void free_data_common(void *data)
 {
     delete static_cast<t_methoddata_distance *>(data);
 }
 
-static void
-init_frame_common(const gmx::SelMethodEvalContext &context, void *data)
+static void init_frame_common(const gmx::SelMethodEvalContext &context, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
@@ -272,9 +268,8 @@ init_frame_common(const gmx::SelMethodEvalContext &context, void *data)
  * Calculates the distance of each position from \c t_methoddata_distance::p
  * and puts them in \p out->u.r.
  */
-static void
-evaluate_distance(const gmx::SelMethodEvalContext & /*context*/,
-                  gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_distance(const gmx::SelMethodEvalContext & /*context*/,
+                              gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
@@ -292,9 +287,8 @@ evaluate_distance(const gmx::SelMethodEvalContext & /*context*/,
  * Finds the atoms that are closer than the defined cutoff to
  * \c t_methoddata_distance::xref and puts them in \p out.g.
  */
-static void
-evaluate_within(const gmx::SelMethodEvalContext & /*context*/,
-                gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_within(const gmx::SelMethodEvalContext & /*context*/,
+                            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 

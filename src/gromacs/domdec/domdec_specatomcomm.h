@@ -50,37 +50,40 @@
 
 struct gmx_hash_t;
 
-typedef struct {
+typedef struct
+{
     int  nsend;
     int *a;
     int  a_nalloc;
     int  nrecv;
 } gmx_specatsend_t;
 
-typedef struct {
+typedef struct
+{
     int *ind;
     int  nalloc;
     int  n;
 } ind_req_t;
 
 /*! \internal \brief Struct with setup and buffers for special atom communication */
-struct gmx_domdec_specat_comm_t {
+struct gmx_domdec_specat_comm_t
+{
     /* The number of indices to receive during the setup */
-    int              nreq[DIM][2][2];  /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
+    int nreq[DIM][2][2];               /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
     /* The atoms to send */
     gmx_specatsend_t spas[DIM][2];     /**< The communication setup per DIM, direction */
-    gmx_bool        *bSendAtom;        /**< Work buffer that tells if spec.atoms should be sent */
+    gmx_bool *       bSendAtom;        /**< Work buffer that tells if spec.atoms should be sent */
     int              bSendAtom_nalloc; /**< Allocation size of \p bSendAtom */
     /* Send buffers */
-    int             *ibuf;             /**< Integer send buffer */
-    int              ibuf_nalloc;      /**< Allocation size of \p ibuf */
-    rvec            *vbuf;             /**< rvec send buffer */
-    int              vbuf_nalloc;      /**< Allocation size of \p vbuf */
-    rvec            *vbuf2;            /**< rvec send buffer */
-    int              vbuf2_nalloc;     /**< Allocation size of \p vbuf2 */
+    int * ibuf;                        /**< Integer send buffer */
+    int   ibuf_nalloc;                 /**< Allocation size of \p ibuf */
+    rvec *vbuf;                        /**< rvec send buffer */
+    int   vbuf_nalloc;                 /**< Allocation size of \p vbuf */
+    rvec *vbuf2;                       /**< rvec send buffer */
+    int   vbuf2_nalloc;                /**< Allocation size of \p vbuf2 */
     /* The range in the local buffer(s) for received atoms */
-    int              at_start;         /**< Start index of received atoms */
-    int              at_end;           /**< End index of received atoms */
+    int at_start;                      /**< Start index of received atoms */
+    int at_end;                        /**< End index of received atoms */
 
     /* The atom indices we need from the surrounding cells.
      * We can gather the indices over nthread threads.
@@ -118,14 +121,14 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  * \param[in]     specat_type  Name of the special atom, used for error message
  * \param[in]     add_err      Text to add at the end of error message when atoms can't be found
  */
-int setup_specat_communication(gmx_domdec_t               *dd,
-                               ind_req_t                  *ireq,
-                               gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
-                               int                         at_start,
-                               int                         vbuf_fac,
-                               const char                 *specat_type,
-                               const char                 *add_err);
+int setup_specat_communication(gmx_domdec_t *            dd,
+                               ind_req_t *               ireq,
+                               gmx_domdec_specat_comm_t *spac,
+                               gmx_hash_t *              ga2la_specat,
+                               int                       at_start,
+                               int                       vbuf_fac,
+                               const char *              specat_type,
+                               const char *              add_err);
 
 /*! \brief Initialize a special communication struct */
 gmx_domdec_specat_comm_t *specat_comm_init(int nthread);

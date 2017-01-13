@@ -86,24 +86,24 @@ int gmx_nmens(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    t_trxstatus        *out;
+    t_trxstatus *       out;
     t_topology          top;
     int                 ePBC;
-    t_atoms            *atoms;
-    rvec               *xtop, *xref, *xav, *xout1, *xout2;
+    t_atoms *           atoms;
+    rvec *              xtop, *xref, *xav, *xout1, *xout2;
     gmx_bool            bDMR, bDMA, bFit;
     int                 nvec, *eignr = nullptr;
-    rvec              **eigvec = nullptr;
+    rvec **             eigvec = nullptr;
     matrix              box;
-    real               *eigval, *invsqrtm, t, disp;
+    real *              eigval, *invsqrtm, t, disp;
     int                 natoms;
-    char               *grpname;
-    const char         *indexfile;
+    char *              grpname;
+    const char *        indexfile;
     int                 i, j, d, s, v;
     int                 nout, *iout, noutvec, *outvec;
-    int                *index;
+    int *               index;
     real                rfac, rhalf, jr;
-    gmx_output_env_t   *oenv;
+    gmx_output_env_t *  oenv;
     int                 jran;
     const unsigned long im = 0xffff;
     const unsigned long ia = 1093;
@@ -160,16 +160,16 @@ int gmx_nmens(int argc, char *argv[])
 
     if (last == -1)
     {
-        last = natoms*DIM;
+        last = natoms * DIM;
     }
     if (first > -1)
     {
         /* make an index from first to last */
-        nout = last-first+1;
+        nout = last - first + 1;
         snew(iout, nout);
         for (i = 0; i < nout; i++)
         {
-            iout[i] = first-1+i;
+            iout[i] = first - 1 + i;
         }
     }
     else
@@ -180,14 +180,13 @@ int gmx_nmens(int argc, char *argv[])
         do
         {
             nout++;
-            srenew(iout, nout+1);
+            srenew(iout, nout + 1);
             if (1 != scanf("%d", &iout[nout]))
             {
                 gmx_fatal(FARGS, "Error reading user input");
             }
             iout[nout]--;
-        }
-        while (iout[nout] >= 0);
+        } while (iout[nout] >= 0);
         printf("\n");
     }
 
@@ -222,12 +221,12 @@ int gmx_nmens(int argc, char *argv[])
 
     fprintf(stderr, "Using random seed %d and a temperature of %g K.\n", seed, temp);
 
-    gmx::UniformIntDistribution<int> dist(0, im-1);
+    gmx::UniformIntDistribution<int> dist(0, im - 1);
     jran = dist(rng);
 
     snew(xout1, natoms);
     snew(xout2, atoms->nr);
-    out  = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
+    out = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
 
     for (s = 0; s < nstruct; s++)
     {
@@ -241,17 +240,17 @@ int gmx_nmens(int argc, char *argv[])
             /* (r-0.5) n times:  var_n = n * var_1 = n/12
                n=4:  var_n = 1/3, so multiply with 3 */
 
-            rfac  = std::sqrt(3.0 * BOLTZ*temp/eigval[iout[j]]);
-            rhalf = 2.0*rfac;
-            rfac  = rfac/im;
+            rfac  = std::sqrt(3.0 * BOLTZ * temp / eigval[iout[j]]);
+            rhalf = 2.0 * rfac;
+            rfac  = rfac / im;
 
-            jran = (jran*ia+ic) & im;
+            jran = (jran * ia + ic) & im;
             jr   = jran;
-            jran = (jran*ia+ic) & im;
+            jran = (jran * ia + ic) & im;
             jr  += jran;
-            jran = (jran*ia+ic) & im;
+            jran = (jran * ia + ic) & im;
             jr  += jran;
-            jran = (jran*ia+ic) & im;
+            jran = (jran * ia + ic) & im;
             jr  += jran;
             disp = rfac * jr - rhalf;
 
@@ -259,7 +258,7 @@ int gmx_nmens(int argc, char *argv[])
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    xout1[i][d] += disp*eigvec[v][i][d]*invsqrtm[i];
+                    xout1[i][d] += disp * eigvec[v][i][d] * invsqrtm[i];
                 }
             }
         }
@@ -267,9 +266,9 @@ int gmx_nmens(int argc, char *argv[])
         {
             copy_rvec(xout1[i], xout2[index[i]]);
         }
-        t = s+1;
+        t = s + 1;
         write_trx(out, natoms, index, atoms, 0, t, box, xout2, nullptr, nullptr);
-        fprintf(stderr, "\rGenerated %d structures", s+1);
+        fprintf(stderr, "\rGenerated %d structures", s + 1);
         fflush(stderr);
     }
     fprintf(stderr, "\n");

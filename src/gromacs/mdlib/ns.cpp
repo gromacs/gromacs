@@ -75,35 +75,34 @@
 #ifdef DEBUG
 static void SETEXCL_(t_excl e[], int i, int j)
 {
-    e[j] = e[j] | (1<<i);
+    e[j] = e[j] | (1 << i);
 }
 static void RMEXCL_(t_excl e[], int i, int j)
 {
-    e[j] = e[j] & ~(1<<i);
+    e[j] = e[j] & ~(1 << i);
 }
 static gmx_bool ISEXCL_(t_excl e[], int i, int j)
 {
-    return (gmx_bool)(e[j] & (1<<i));
+    return (gmx_bool)(e[j] & (1 << i));
 }
 static gmx_bool NOTEXCL_(t_excl e[], int i, int j)
 {
     return !(ISEXCL(e, i, j));
 }
 #else
-#define SETEXCL(e, i, j) (e)[((int) (j))] |= (1<<((int) (i)))
-#define RMEXCL(e, i, j)  (e)[((int) (j))] &= (~(1<<((int) (i))))
-#define ISEXCL(e, i, j)  (gmx_bool) ((e)[((int) (j))] & (1<<((int) (i))))
+#define SETEXCL(e, i, j) (e)[((int) (j))] |= (1 << ((int) (i)))
+#define RMEXCL(e, i, j)  (e)[((int) (j))] &= (~(1 << ((int) (i))))
+#define ISEXCL(e, i, j)  (gmx_bool) ((e)[((int) (j))] & (1 << ((int) (i))))
 #define NOTEXCL(e, i, j) !(ISEXCL(e, i, j))
 #endif
 
-static int
-round_up_to_simd_width(int length, int simd_width)
+static int round_up_to_simd_width(int length, int simd_width)
 {
     int offset;
 
     offset = (simd_width > 0) ? length % simd_width : 0;
 
-    return (offset == 0) ? length : length-offset+simd_width;
+    return (offset == 0) ? length : length - offset + simd_width;
 }
 /************************************************
  *
@@ -125,7 +124,7 @@ void reallocate_nblist(t_nblist *nl)
     }
     srenew(nl->gid,    nl->maxnri);
     srenew(nl->shift,  nl->maxnri);
-    srenew(nl->jindex, nl->maxnri+1);
+    srenew(nl->jindex, nl->maxnri + 1);
 }
 
 
@@ -152,16 +151,16 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,
         /* Set coul/vdw in neighborlist, and for the normal loops we determine
          * an index of which one to call.
          */
-        nl->ivdw        = ivdw;
-        nl->ivdwmod     = ivdwmod;
-        nl->ielec       = ielec;
-        nl->ielecmod    = ielecmod;
-        nl->type        = type;
-        nl->igeometry   = igeometry;
+        nl->ivdw      = ivdw;
+        nl->ivdwmod   = ivdwmod;
+        nl->ielec     = ielec;
+        nl->ielecmod  = ielecmod;
+        nl->type      = type;
+        nl->igeometry = igeometry;
 
         if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
         {
-            nl->igeometry  = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
+            nl->igeometry = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
         }
 
         /* This will also set the simd_padding_width field */
@@ -173,16 +172,16 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,
          * 4 seems to be a reasonable factor, which only causes reallocation
          * during runs with tiny and many energygroups.
          */
-        nl->maxnri      = homenr*4;
-        nl->maxnrj      = 0;
-        nl->nri         = -1;
-        nl->nrj         = 0;
-        nl->iinr        = nullptr;
-        nl->gid         = nullptr;
-        nl->shift       = nullptr;
-        nl->jindex      = nullptr;
-        nl->jjnr        = nullptr;
-        nl->excl_fep    = nullptr;
+        nl->maxnri   = homenr * 4;
+        nl->maxnrj   = 0;
+        nl->nri      = -1;
+        nl->nrj      = 0;
+        nl->iinr     = nullptr;
+        nl->gid      = nullptr;
+        nl->shift    = nullptr;
+        nl->jindex   = nullptr;
+        nl->jjnr     = nullptr;
+        nl->excl_fep = nullptr;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
 
@@ -204,7 +203,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     t_nblists *nbl;
 
     /* maxsr     = homenr-fr->nWatMol*3; */
-    maxsr     = homenr;
+    maxsr = homenr;
 
     if (maxsr < 0)
     {
@@ -215,7 +214,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
      * all the nlist arrays many times in a row.
      * The numbers seem very accurate, but they are uncritical.
      */
-    maxsr_wat = std::min(fr->nWatMol, (homenr+2)/3);
+    maxsr_wat = std::min(fr->nWatMol, (homenr + 2) / 3);
 
     /* Determine the values for ielec/ivdw. */
     ielec                    = fr->nbkernel_elec_interaction;
@@ -313,8 +312,8 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
 
 static void reset_nblist(t_nblist *nl)
 {
-    nl->nri       = -1;
-    nl->nrj       = 0;
+    nl->nri = -1;
+    nl->nrj = 0;
     if (nl->jindex)
     {
         nl->jindex[0] = 0;
@@ -345,20 +344,20 @@ static void reset_neighbor_lists(t_forcerec *fr)
 
 static gmx_inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int gid)
 {
-    int    nri = nlist->nri;
+    int nri = nlist->nri;
 
     /* Check whether we have to increase the i counter */
-    if ((nri == -1) ||
-        (nlist->iinr[nri]  != i_atom) ||
-        (nlist->shift[nri] != shift) ||
-        (nlist->gid[nri]   != gid))
+    if ((nri == -1)
+        || (nlist->iinr[nri]  != i_atom)
+        || (nlist->shift[nri] != shift)
+        || (nlist->gid[nri]   != gid))
     {
         /* This is something else. Now see if any entries have
          * been added in the list of the previous atom.
          */
-        if ((nri == -1) ||
-            ((nlist->jindex[nri+1] > nlist->jindex[nri]) &&
-             (nlist->gid[nri] != -1)))
+        if ((nri == -1)
+            || ((nlist->jindex[nri + 1] > nlist->jindex[nri])
+                && (nlist->gid[nri] != -1)))
         {
             /* If so increase the counter */
             nlist->nri++;
@@ -370,17 +369,17 @@ static gmx_inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int 
             }
         }
         /* Set the number of neighbours and the atom number */
-        nlist->jindex[nri+1] = nlist->jindex[nri];
-        nlist->iinr[nri]     = i_atom;
-        nlist->gid[nri]      = gid;
-        nlist->shift[nri]    = shift;
+        nlist->jindex[nri + 1] = nlist->jindex[nri];
+        nlist->iinr[nri]       = i_atom;
+        nlist->gid[nri]        = gid;
+        nlist->shift[nri]      = shift;
     }
     else
     {
         /* Adding to previous list. First remove possible previous padding */
         if (nlist->simd_padding_width > 1)
         {
-            while (nlist->nrj > 0 && nlist->jjnr[nlist->nrj-1] < 0)
+            while (nlist->nrj > 0 && nlist->jjnr[nlist->nrj - 1] < 0)
             {
                 nlist->nrj--;
             }
@@ -404,7 +403,7 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
             /* Use -4 here, so we can write forces for 4 atoms before real data */
             nlist->jjnr[nlist->nrj++] = -4;
         }
-        nlist->jindex[nri+1] = nlist->nrj;
+        nlist->jindex[nri + 1] = nlist->nrj;
 
         len = nlist->nrj -  nlist->jindex[nri];
         /* If there are no j-particles we have to reduce the
@@ -498,7 +497,7 @@ static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
 
         srenew(nlist->jjnr, nlist->maxnrj);
         srenew(nlist->jjnr_end, nlist->maxnrj);
-        srenew(nlist->excl, nlist->maxnrj*MAX_CGCGSIZE);
+        srenew(nlist->excl, nlist->maxnrj * MAX_CGCGSIZE);
     }
 
     nlist->jjnr[nrj]     = j_start;
@@ -506,20 +505,20 @@ static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
 
     if (j_end - j_start > MAX_CGCGSIZE)
     {
-        gmx_fatal(FARGS, "The charge-group - charge-group neighborlist do not support charge groups larger than %d, found a charge group of size %d", MAX_CGCGSIZE, j_end-j_start);
+        gmx_fatal(FARGS, "The charge-group - charge-group neighborlist do not support charge groups larger than %d, found a charge group of size %d", MAX_CGCGSIZE, j_end - j_start);
     }
 
     /* Set the exclusions */
     for (j = j_start; j < j_end; j++)
     {
-        nlist->excl[nrj*MAX_CGCGSIZE + j - j_start] = bexcl[j];
+        nlist->excl[nrj * MAX_CGCGSIZE + j - j_start] = bexcl[j];
     }
     if (i_is_j)
     {
         /* Avoid double counting of intra-cg interactions */
-        for (j = 1; j < j_end-j_start; j++)
+        for (j = 1; j < j_end - j_start; j++)
         {
-            nlist->excl[nrj*MAX_CGCGSIZE + j] |= (1<<j) - 1;
+            nlist->excl[nrj * MAX_CGCGSIZE + j] |= (1 << j) - 1;
         }
     }
 
@@ -527,61 +526,60 @@ static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
 }
 
 typedef void
-    put_in_list_t (gmx_bool              bHaveVdW[],
-                   int                   ngid,
-                   t_mdatoms     *       md,
-                   int                   icg,
-                   int                   jgid,
-                   int                   nj,
-                   int                   jjcg[],
-                   int                   index[],
-                   t_excl                bExcl[],
-                   int                   shift,
-                   t_forcerec     *      fr,
-                   gmx_bool              bDoVdW,
-                   gmx_bool              bDoCoul,
-                   int                   solvent_opt);
+    put_in_list_t (gmx_bool     bHaveVdW[],
+                   int          ngid,
+                   t_mdatoms *  md,
+                   int          icg,
+                   int          jgid,
+                   int          nj,
+                   int          jjcg[],
+                   int          index[],
+                   t_excl       bExcl[],
+                   int          shift,
+                   t_forcerec * fr,
+                   gmx_bool     bDoVdW,
+                   gmx_bool     bDoCoul,
+                   int          solvent_opt);
 
-static void
-put_in_list_at(gmx_bool              bHaveVdW[],
-               int                   ngid,
-               t_mdatoms     *       md,
-               int                   icg,
-               int                   jgid,
-               int                   nj,
-               int                   jjcg[],
-               int                   index[],
-               t_excl                bExcl[],
-               int                   shift,
-               t_forcerec     *      fr,
-               gmx_bool              bDoVdW,
-               gmx_bool              bDoCoul,
-               int                   solvent_opt)
+static void put_in_list_at(gmx_bool     bHaveVdW[],
+                           int          ngid,
+                           t_mdatoms *  md,
+                           int          icg,
+                           int          jgid,
+                           int          nj,
+                           int          jjcg[],
+                           int          index[],
+                           t_excl       bExcl[],
+                           int          shift,
+                           t_forcerec * fr,
+                           gmx_bool     bDoVdW,
+                           gmx_bool     bDoCoul,
+                           int          solvent_opt)
 {
     /* The a[] index has been removed,
      * to put it back in i_atom should be a[i0] and jj should be a[jj].
      */
-    t_nblist  *   vdwc;
-    t_nblist  *   vdw;
-    t_nblist  *   coul;
-    t_nblist  *   vdwc_free  = nullptr;
-    t_nblist  *   vdw_free   = nullptr;
-    t_nblist  *   coul_free  = nullptr;
-    t_nblist  *   vdwc_ww    = nullptr;
-    t_nblist  *   coul_ww    = nullptr;
+    t_nblist * vdwc;
+    t_nblist * vdw;
+    t_nblist * coul;
+    t_nblist * vdwc_free = nullptr;
+    t_nblist * vdw_free  = nullptr;
+    t_nblist * coul_free = nullptr;
+    t_nblist * vdwc_ww   = nullptr;
+    t_nblist * coul_ww   = nullptr;
 
-    int           i, j, jcg, igid, gid, nbl_ind;
-    int           jj, jj0, jj1, i_atom;
-    int           i0, nicg;
+    int i, j, jcg, igid, gid, nbl_ind;
+    int jj, jj0, jj1, i_atom;
+    int i0, nicg;
 
-    int          *cginfo;
-    int          *type, *typeB;
-    real         *charge, *chargeB;
-    real          qi, qiB;
-    gmx_bool      bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
-    gmx_bool      bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
-    int           iwater, jwater;
-    t_nblist     *nlist;
+    int *     cginfo;
+    int *     type, *typeB;
+    real *    charge, *chargeB;
+    real      qi, qiB;
+    gmx_bool  bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
+    gmx_bool  bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
+    int       iwater, jwater;
+    t_nblist *nlist;
 
     /* Copy some pointers */
     cginfo  = fr->cginfo;
@@ -592,11 +590,11 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     bPert   = md->bPerturbed;
 
     /* Get atom range */
-    i0     = index[icg];
-    nicg   = index[icg+1]-i0;
+    i0   = index[icg];
+    nicg = index[icg + 1] - i0;
 
     /* Get the i charge group info */
-    igid   = GET_CGINFO_GID(cginfo[icg]);
+    igid = GET_CGINFO_GID(cginfo[icg]);
 
     iwater = (solvent_opt != esolNO) ? GET_CGINFO_SOLOPT(cginfo[icg]) : esolNO;
 
@@ -609,14 +607,14 @@ put_in_list_at(gmx_bool              bHaveVdW[],
          */
         for (i = 0; i < nicg; i++)
         {
-            bFreeEnergy |= bPert[i0+i];
+            bFreeEnergy |= bPert[i0 + i];
         }
         /* Loop over the j charge groups */
         for (j = 0; (j < nj && !bFreeEnergy); j++)
         {
             jcg = jjcg[j];
             jj0 = index[jcg];
-            jj1 = index[jcg+1];
+            jj1 = index[jcg + 1];
             /* Finally loop over the atoms in the j-charge group */
             for (jj = jj0; jj < jj1; jj++)
             {
@@ -656,8 +654,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
         if (iwater != esolNO)
         {
             /* Loop over the atoms in the i charge group */
-            i_atom  = i0;
-            gid     = GID(igid, jgid, ngid);
+            i_atom = i0;
+            gid    = GID(igid, jgid, ngid);
             /* Create new i_atom for each energy group */
             if (bDoCoul && bDoVdW)
             {
@@ -736,7 +734,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                      * so we don't care if it is SPC or TIP4P...
                      */
 
-                    jj1 = index[jcg+1];
+                    jj1 = index[jcg + 1];
 
                     if (!bDoVdW)
                     {
@@ -795,9 +793,9 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             /* Loop over the atoms in the i charge group */
             for (i = 0; i < nicg; i++)
             {
-                i_atom  = i0+i;
-                gid     = GID(igid, jgid, ngid);
-                qi      = charge[i_atom];
+                i_atom = i0 + i;
+                gid    = GID(igid, jgid, ngid);
+                qi     = charge[i_atom];
 
                 /* Create new i_atom for each energy group */
                 if (bDoVdW && bDoCoul)
@@ -832,7 +830,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                             jj0 = index[jcg];
                         }
 
-                        jj1 = index[jcg+1];
+                        jj1 = index[jcg + 1];
                         /* Finally loop over the atoms in the j-charge group */
                         for (jj = jj0; jj < jj1; jj++)
                         {
@@ -891,10 +889,10 @@ put_in_list_at(gmx_bool              bHaveVdW[],
         /* Loop over the atoms in the i charge group */
         for (i = 0; i < nicg; i++)
         {
-            i_atom  = i0+i;
-            gid     = GID(igid, jgid, ngid);
-            qi      = charge[i_atom];
-            qiB     = chargeB[i_atom];
+            i_atom = i0 + i;
+            gid    = GID(igid, jgid, ngid);
+            qi     = charge[i_atom];
+            qiB    = chargeB[i_atom];
 
             /* Create new i_atom for each energy group */
             if (bDoVdW && bDoCoul)
@@ -914,8 +912,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             new_i_nblist(coul_free, i_atom, shift, gid);
             new_i_nblist(vdwc_free, i_atom, shift, gid);
 
-            bDoVdW_i  = (bDoVdW  &&
-                         (bHaveVdW[type[i_atom]] || bHaveVdW[typeB[i_atom]]));
+            bDoVdW_i = (bDoVdW
+                        && (bHaveVdW[type[i_atom]] || bHaveVdW[typeB[i_atom]]));
             bDoCoul_i = (bDoCoul && (qi != 0 || qiB != 0));
             /* For TIP4P the first atom does not have a charge,
              * but the last three do. So we should still put an atom
@@ -950,7 +948,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         jj0 = index[jcg];
                     }
 
-                    jj1 = index[jcg+1];
+                    jj1 = index[jcg + 1];
                     /* Finally loop over the atoms in the j-charge group */
                     bFree = bPert[i_atom];
                     for (jj = jj0; (jj < jj1); jj++)
@@ -1048,41 +1046,40 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     }
 }
 
-static void
-put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
-                 int                              ngid,
-                 t_mdatoms gmx_unused     *       md,
-                 int                              icg,
-                 int                              jgid,
-                 int                              nj,
-                 int                              jjcg[],
-                 int                              index[],
-                 t_excl                           bExcl[],
-                 int                              shift,
-                 t_forcerec                *      fr,
-                 gmx_bool  gmx_unused             bDoVdW,
-                 gmx_bool  gmx_unused             bDoCoul,
-                 int       gmx_unused             solvent_opt)
+static void put_in_list_qmmm(gmx_bool gmx_unused    bHaveVdW[],
+                             int                    ngid,
+                             t_mdatoms gmx_unused * md,
+                             int                    icg,
+                             int                    jgid,
+                             int                    nj,
+                             int                    jjcg[],
+                             int                    index[],
+                             t_excl                 bExcl[],
+                             int                    shift,
+                             t_forcerec *           fr,
+                             gmx_bool  gmx_unused   bDoVdW,
+                             gmx_bool  gmx_unused   bDoCoul,
+                             int       gmx_unused   solvent_opt)
 {
-    t_nblist  *   coul;
-    int           i, j, jcg, igid, gid;
-    int           jj, jj0, jj1, i_atom;
-    int           i0, nicg;
-    gmx_bool      bNotEx;
+    t_nblist * coul;
+    int        i, j, jcg, igid, gid;
+    int        jj, jj0, jj1, i_atom;
+    int        i0, nicg;
+    gmx_bool   bNotEx;
 
     /* Get atom range */
-    i0     = index[icg];
-    nicg   = index[icg+1]-i0;
+    i0   = index[icg];
+    nicg = index[icg + 1] - i0;
 
     /* Get the i charge group info */
-    igid   = GET_CGINFO_GID(fr->cginfo[icg]);
+    igid = GET_CGINFO_GID(fr->cginfo[icg]);
 
     coul = fr->QMMMlist;
 
     /* Loop over atoms in the ith charge group */
     for (i = 0; i < nicg; i++)
     {
-        i_atom = i0+i;
+        i_atom = i0 + i;
         gid    = GID(igid, jgid, ngid);
         /* Create new i_atom for each energy group */
         new_i_nblist(coul, i_atom, shift, gid);
@@ -1096,7 +1093,7 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
             if (jcg != icg)
             {
                 jj0 = index[jcg];
-                jj1 = index[jcg+1];
+                jj1 = index[jcg + 1];
                 /* Finally loop over the atoms in the j-charge group */
                 for (jj = jj0; jj < jj1; jj++)
                 {
@@ -1112,26 +1109,25 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
     }
 }
 
-static void
-put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
-               int                              ngid,
-               t_mdatoms  gmx_unused    *       md,
-               int                              icg,
-               int                              jgid,
-               int                              nj,
-               int                              jjcg[],
-               int                              index[],
-               t_excl                           bExcl[],
-               int                              shift,
-               t_forcerec                *      fr,
-               gmx_bool   gmx_unused            bDoVdW,
-               gmx_bool   gmx_unused            bDoCoul,
-               int        gmx_unused            solvent_opt)
+static void put_in_list_cg(gmx_bool  gmx_unused    bHaveVdW[],
+                           int                     ngid,
+                           t_mdatoms  gmx_unused * md,
+                           int                     icg,
+                           int                     jgid,
+                           int                     nj,
+                           int                     jjcg[],
+                           int                     index[],
+                           t_excl                  bExcl[],
+                           int                     shift,
+                           t_forcerec *            fr,
+                           gmx_bool   gmx_unused   bDoVdW,
+                           gmx_bool   gmx_unused   bDoCoul,
+                           int        gmx_unused   solvent_opt)
 {
-    int          cginfo;
-    int          igid, gid, nbl_ind;
-    t_nblist *   vdwc;
-    int          j, jcg;
+    int        cginfo;
+    int        igid, gid, nbl_ind;
+    t_nblist * vdwc;
+    int        j, jcg;
 
     cginfo = fr->cginfo[icg];
 
@@ -1155,7 +1151,7 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
      * or in the force loop.
      */
     new_i_nblist(vdwc, index[icg], shift, gid);
-    vdwc->iinr_end[vdwc->nri] = index[icg+1];
+    vdwc->iinr_end[vdwc->nri] = index[icg + 1];
 
     for (j = 0; (j < nj); j++)
     {
@@ -1166,7 +1162,7 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
             /* Here we add the j charge group jcg to the list,
              * exclusions are also added to the list.
              */
-            add_j_to_nblist_cg(vdwc, index[jcg], index[jcg+1], bExcl, icg == jcg);
+            add_j_to_nblist_cg(vdwc, index[jcg], index[jcg + 1], bExcl, icg == jcg);
         }
     }
 
@@ -1182,9 +1178,9 @@ static void setexcl(int start, int end, t_blocka *excl, gmx_bool b,
     {
         for (i = start; i < end; i++)
         {
-            for (k = excl->index[i]; k < excl->index[i+1]; k++)
+            for (k = excl->index[i]; k < excl->index[i + 1]; k++)
             {
-                SETEXCL(bexcl, i-start, excl->a[k]);
+                SETEXCL(bexcl, i - start, excl->a[k]);
             }
         }
     }
@@ -1192,9 +1188,9 @@ static void setexcl(int start, int end, t_blocka *excl, gmx_bool b,
     {
         for (i = start; i < end; i++)
         {
-            for (k = excl->index[i]; k < excl->index[i+1]; k++)
+            for (k = excl->index[i]; k < excl->index[i + 1]; k++)
             {
-                RMEXCL(bexcl, i-start, excl->a[k]);
+                RMEXCL(bexcl, i - start, excl->a[k]);
             }
         }
     }
@@ -1207,31 +1203,31 @@ int calc_naaj(int icg, int cgtot)
     if ((cgtot % 2) == 1)
     {
         /* Odd number of charge groups, easy */
-        naaj = 1 + (cgtot/2);
+        naaj = 1 + (cgtot / 2);
     }
     else if ((cgtot % 4) == 0)
     {
         /* Multiple of four is hard */
-        if (icg < cgtot/2)
+        if (icg < cgtot / 2)
         {
             if ((icg % 2) == 0)
             {
-                naaj = 1+(cgtot/2);
+                naaj = 1 + (cgtot / 2);
             }
             else
             {
-                naaj = cgtot/2;
+                naaj = cgtot / 2;
             }
         }
         else
         {
             if ((icg % 2) == 1)
             {
-                naaj = 1+(cgtot/2);
+                naaj = 1 + (cgtot / 2);
             }
             else
             {
-                naaj = cgtot/2;
+                naaj = cgtot / 2;
             }
         }
     }
@@ -1240,11 +1236,11 @@ int calc_naaj(int icg, int cgtot)
         /* cgtot/2 = odd */
         if ((icg % 2) == 0)
         {
-            naaj = 1+(cgtot/2);
+            naaj = 1 + (cgtot / 2);
         }
         else
         {
-            naaj = cgtot/2;
+            naaj = cgtot / 2;
         }
     }
 #ifdef DEBUG
@@ -1279,23 +1275,23 @@ static real calc_image_tric(rvec xi, rvec xj, matrix box,
     /* Perform NINT operation, using trunc operation, therefore
      * we first add 2.5 then subtract 2 again
      */
-    tz  = static_cast<int>(dz*b_inv[ZZ] + h25);
+    tz  = static_cast<int>(dz * b_inv[ZZ] + h25);
     tz -= 2;
-    dz -= tz*box[ZZ][ZZ];
-    dy -= tz*box[ZZ][YY];
-    dx -= tz*box[ZZ][XX];
+    dz -= tz * box[ZZ][ZZ];
+    dy -= tz * box[ZZ][YY];
+    dx -= tz * box[ZZ][XX];
 
-    ty  = static_cast<int>(dy*b_inv[YY] + h25);
+    ty  = static_cast<int>(dy * b_inv[YY] + h25);
     ty -= 2;
-    dy -= ty*box[YY][YY];
-    dx -= ty*box[YY][XX];
+    dy -= ty * box[YY][YY];
+    dx -= ty * box[YY][XX];
 
-    tx  = static_cast<int>(dx*b_inv[XX]+h25);
+    tx  = static_cast<int>(dx * b_inv[XX] + h25);
     tx -= 2;
-    dx -= tx*box[XX][XX];
+    dx -= tx * box[XX][XX];
 
     /* Distance squared */
-    r2 = (dx*dx) + (dy*dy) + (dz*dz);
+    r2 = (dx * dx) + (dy * dy) + (dz * dz);
 
     *shift = XYZ2IS(tx, ty, tz);
 
@@ -1319,20 +1315,20 @@ static real calc_image_rect(rvec xi, rvec xj, rvec box_size,
     /* Perform NINT operation, using trunc operation, therefore
      * we first add 1.5 then subtract 1 again
      */
-    tx = static_cast<int>(dx*b_inv[XX] + h15);
-    ty = static_cast<int>(dy*b_inv[YY] + h15);
-    tz = static_cast<int>(dz*b_inv[ZZ] + h15);
+    tx = static_cast<int>(dx * b_inv[XX] + h15);
+    ty = static_cast<int>(dy * b_inv[YY] + h15);
+    tz = static_cast<int>(dz * b_inv[ZZ] + h15);
     tx--;
     ty--;
     tz--;
 
     /* Correct diff vector for translation */
-    ddx = tx*box_size[XX] - dx;
-    ddy = ty*box_size[YY] - dy;
-    ddz = tz*box_size[ZZ] - dz;
+    ddx = tx * box_size[XX] - dx;
+    ddy = ty * box_size[YY] - dy;
+    ddz = tz * box_size[ZZ] - dz;
 
     /* Distance squared */
-    r2 = (ddx*ddx) + (ddy*ddy) + (ddz*ddz);
+    r2 = (ddx * ddx) + (ddy * ddy) + (ddz * ddz);
 
     *shift = XYZ2IS(tx, ty, tz);
 
@@ -1363,20 +1359,20 @@ static void ns_inner_tric(rvec x[], int icg, int *i_egp_flags,
                           t_excl bexcl[], t_forcerec *fr,
                           put_in_list_t *put_in_list)
 {
-    int       shift;
-    int       j, nrj, jgid;
-    int      *cginfo = fr->cginfo;
-    int       cg_j, *cgindex;
+    int  shift;
+    int  j, nrj, jgid;
+    int *cginfo = fr->cginfo;
+    int  cg_j, *cgindex;
 
     cgindex = cgs->index;
     shift   = CENTRAL;
     for (j = 0; (j < njcg); j++)
     {
-        cg_j   = jcg[j];
-        nrj    = cgindex[cg_j+1]-cgindex[cg_j];
+        cg_j = jcg[j];
+        nrj  = cgindex[cg_j + 1] - cgindex[cg_j];
         if (calc_image_tric(x[icg], x[cg_j], box, b_inv, &shift) < rcut2)
         {
-            jgid  = GET_CGINFO_GID(cginfo[cg_j]);
+            jgid = GET_CGINFO_GID(cginfo[cg_j]);
             if (!(i_egp_flags[jgid] & EGP_EXCL))
             {
                 add_simple(&ns_buf[jgid][shift], nrj, cg_j,
@@ -1395,10 +1391,10 @@ static void ns_inner_rect(rvec x[], int icg, int *i_egp_flags,
                           t_excl bexcl[], t_forcerec *fr,
                           put_in_list_t *put_in_list)
 {
-    int       shift;
-    int       j, nrj, jgid;
-    int      *cginfo = fr->cginfo;
-    int       cg_j, *cgindex;
+    int  shift;
+    int  j, nrj, jgid;
+    int *cginfo = fr->cginfo;
+    int  cg_j, *cgindex;
 
     cgindex = cgs->index;
     if (bBox)
@@ -1406,11 +1402,11 @@ static void ns_inner_rect(rvec x[], int icg, int *i_egp_flags,
         shift = CENTRAL;
         for (j = 0; (j < njcg); j++)
         {
-            cg_j   = jcg[j];
-            nrj    = cgindex[cg_j+1]-cgindex[cg_j];
+            cg_j = jcg[j];
+            nrj  = cgindex[cg_j + 1] - cgindex[cg_j];
             if (calc_image_rect(x[icg], x[cg_j], box_size, b_inv, &shift) < rcut2)
             {
-                jgid  = GET_CGINFO_GID(cginfo[cg_j]);
+                jgid = GET_CGINFO_GID(cginfo[cg_j]);
                 if (!(i_egp_flags[jgid] & EGP_EXCL))
                 {
                     add_simple(&ns_buf[jgid][shift], nrj, cg_j,
@@ -1424,11 +1420,11 @@ static void ns_inner_rect(rvec x[], int icg, int *i_egp_flags,
     {
         for (j = 0; (j < njcg); j++)
         {
-            cg_j   = jcg[j];
-            nrj    = cgindex[cg_j+1]-cgindex[cg_j];
+            cg_j = jcg[j];
+            nrj  = cgindex[cg_j + 1] - cgindex[cg_j];
             if ((rcut2 == 0) || (distance2(x[icg], x[cg_j]) < rcut2))
             {
-                jgid  = GET_CGINFO_GID(cginfo[cg_j]);
+                jgid = GET_CGINFO_GID(cginfo[cg_j]);
                 if (!(i_egp_flags[jgid] & EGP_EXCL))
                 {
                     add_simple(&ns_buf[jgid][CENTRAL], nrj, cg_j,
@@ -1450,18 +1446,18 @@ static int ns_simple_core(t_forcerec *fr,
                           int ngid, t_ns_buf **ns_buf,
                           put_in_list_t *put_in_list, gmx_bool bHaveVdW[])
 {
-    int          naaj, k;
-    real         rlist2;
-    int          nsearch, icg, igid, nn;
-    int         *cginfo;
-    t_ns_buf    *nsbuf;
+    int       naaj, k;
+    real      rlist2;
+    int       nsearch, icg, igid, nn;
+    int *     cginfo;
+    t_ns_buf *nsbuf;
     /* int  *i_atoms; */
-    t_block     *cgs  = &(top->cgs);
-    t_blocka    *excl = &(top->excls);
-    rvec         b_inv;
-    int          m;
-    gmx_bool     bBox, bTriclinic;
-    int         *i_egp_flags;
+    t_block * cgs  = &(top->cgs);
+    t_blocka *excl = &(top->excls);
+    rvec      b_inv;
+    int       m;
+    gmx_bool  bBox, bTriclinic;
+    int *     i_egp_flags;
 
     rlist2 = gmx::square(fr->rlist);
 
@@ -1474,7 +1470,7 @@ static int ns_simple_core(t_forcerec *fr,
             {
                 gmx_fatal(FARGS, "Dividing by zero box size!");
             }
-            b_inv[m] = 1.0/box_size[m];
+            b_inv[m] = 1.0 / box_size[m];
         }
         bTriclinic = TRICLINIC(box);
     }
@@ -1496,8 +1492,8 @@ static int ns_simple_core(t_forcerec *fr,
            setexcl(nri,i_atoms,excl,TRUE,bexcl);
          */
         igid        = GET_CGINFO_GID(cginfo[icg]);
-        i_egp_flags = fr->egp_flags + ngid*igid;
-        setexcl(cgs->index[icg], cgs->index[icg+1], excl, TRUE, bexcl);
+        i_egp_flags = fr->egp_flags + ngid * igid;
+        setexcl(cgs->index[icg], cgs->index[icg + 1], excl, TRUE, bexcl);
 
         naaj = calc_naaj(icg, cgs->nr);
         if (bTriclinic)
@@ -1528,7 +1524,7 @@ static int ns_simple_core(t_forcerec *fr,
             }
         }
         /* setexcl(nri,i_atoms,excl,FALSE,bexcl); */
-        setexcl(cgs->index[icg], cgs->index[icg+1], excl, FALSE, bexcl);
+        setexcl(cgs->index[icg], cgs->index[icg + 1], excl, FALSE, bexcl);
     }
     close_neighbor_lists(fr, FALSE);
 
@@ -1603,8 +1599,8 @@ static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
     while (*g0 > g_min)
     {
         /* Check one grid cell down */
-        dcx = ((*g0 - 1) + 1)*gridx - x;
-        tmp = dcx*dcx;
+        dcx = ((*g0 - 1) + 1) * gridx - x;
+        tmp = dcx * dcx;
         if (tmp >= rc2)
         {
             break;
@@ -1616,8 +1612,8 @@ static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
     while (*g1 < g_max)
     {
         /* Check one grid cell up */
-        dcx = (*g1 + 1)*gridx - x;
-        tmp = dcx*dcx;
+        dcx = (*g1 + 1) * gridx - x;
+        tmp = dcx * dcx;
         if (tmp >= rc2)
         {
             break;
@@ -1628,8 +1624,8 @@ static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
 }
 
 
-#define calc_dx2(XI, YI, ZI, y) (gmx::square(XI-y[XX]) + gmx::square(YI-y[YY]) + gmx::square(ZI-y[ZZ]))
-#define calc_cyl_dx2(XI, YI, y) (gmx::square(XI-y[XX]) + gmx::square(YI-y[YY]))
+#define calc_dx2(XI, YI, ZI, y) (gmx::square(XI - y[XX]) + gmx::square(YI - y[YY]) + gmx::square(ZI - y[ZZ]))
+#define calc_cyl_dx2(XI, YI, y) (gmx::square(XI - y[XX]) + gmx::square(YI - y[YY]))
 /****************************************************
  *
  *    F A S T   N E I G H B O R  S E A R C H I N G
@@ -1679,51 +1675,51 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                        gmx_bool bHaveVdW[],
                        gmx_bool bMakeQMMMnblist)
 {
-    gmx_ns_t     *ns;
-    int         **nl_sr;
-    int          *nsr;
+    gmx_ns_t *    ns;
+    int **        nl_sr;
+    int *         nsr;
     gmx_domdec_t *dd;
-    t_block      *cgs    = &(top->cgs);
-    int          *cginfo = fr->cginfo;
+    t_block *     cgs    = &(top->cgs);
+    int *         cginfo = fr->cginfo;
     /* int *i_atoms,*cgsindex=cgs->index; */
-    ivec          sh0, sh1, shp;
-    int           cell_x, cell_y, cell_z;
-    int           d, tx, ty, tz, dx, dy, dz, cj;
+    ivec sh0, sh1, shp;
+    int  cell_x, cell_y, cell_z;
+    int  d, tx, ty, tz, dx, dy, dz, cj;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-    int           zsh_ty, zsh_tx, ysh_tx;
+    int zsh_ty, zsh_tx, ysh_tx;
 #endif
-    int           dx0, dx1, dy0, dy1, dz0, dz1;
-    int           Nx, Ny, Nz, shift = -1, j, nrj, nns, nn = -1;
-    real          gridx, gridy, gridz, grid_x, grid_y;
-    real         *dcx2, *dcy2, *dcz2;
-    int           zgi, ygi, xgi;
-    int           cg0, cg1, icg = -1, cgsnr, i0, igid, naaj, max_jcg;
-    int           jcg0, jcg1, jjcg, cgj0, jgid;
-    int          *grida, *gridnra, *gridind;
-    rvec         *cgcm, grid_offset;
-    real          r2, rs2, XI, YI, ZI, tmp1, tmp2;
-    int          *i_egp_flags;
-    gmx_bool      bDomDec, bTriclinicX, bTriclinicY;
-    ivec          ncpddc;
+    int      dx0, dx1, dy0, dy1, dz0, dz1;
+    int      Nx, Ny, Nz, shift = -1, j, nrj, nns, nn = -1;
+    real     gridx, gridy, gridz, grid_x, grid_y;
+    real *   dcx2, *dcy2, *dcz2;
+    int      zgi, ygi, xgi;
+    int      cg0, cg1, icg = -1, cgsnr, i0, igid, naaj, max_jcg;
+    int      jcg0, jcg1, jjcg, cgj0, jgid;
+    int *    grida, *gridnra, *gridind;
+    rvec *   cgcm, grid_offset;
+    real     r2, rs2, XI, YI, ZI, tmp1, tmp2;
+    int *    i_egp_flags;
+    gmx_bool bDomDec, bTriclinicX, bTriclinicY;
+    ivec     ncpddc;
 
     ns = fr->ns;
 
     bDomDec = DOMAINDECOMP(cr);
     dd      = cr->dd;
 
-    bTriclinicX = ((YY < grid->npbcdim &&
-                    (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0) ||
-                   (ZZ < grid->npbcdim &&
-                    (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][XX] != 0));
-    bTriclinicY =  (ZZ < grid->npbcdim &&
-                    (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][YY] != 0);
+    bTriclinicX = ((YY < grid->npbcdim
+                    && (!bDomDec || dd->nc[YY] == 1) && box[YY][XX] != 0)
+                   || (ZZ < grid->npbcdim
+                       && (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][XX] != 0));
+    bTriclinicY =  (ZZ < grid->npbcdim
+                    && (!bDomDec || dd->nc[ZZ] == 1) && box[ZZ][YY] != 0);
 
-    cgsnr    = cgs->nr;
+    cgsnr = cgs->nr;
 
     get_cutoff2(fr, &rs2);
 
-    nl_sr     = ns->nl_sr;
-    nsr       = ns->nsr;
+    nl_sr = ns->nl_sr;
+    nsr   = ns->nsr;
 
     /* Unpack arrays */
     cgcm    = fr->cg_cm;
@@ -1735,21 +1731,21 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     gridnra = grid->nra;
     nns     = 0;
 
-    gridx      = grid->cell_size[XX];
-    gridy      = grid->cell_size[YY];
-    gridz      = grid->cell_size[ZZ];
-    grid_x     = 1/gridx;
-    grid_y     = 1/gridy;
+    gridx  = grid->cell_size[XX];
+    gridy  = grid->cell_size[YY];
+    gridz  = grid->cell_size[ZZ];
+    grid_x = 1 / gridx;
+    grid_y = 1 / gridy;
     copy_rvec(grid->cell_offset, grid_offset);
     copy_ivec(grid->ncpddc, ncpddc);
-    dcx2       = grid->dcx2;
-    dcy2       = grid->dcy2;
-    dcz2       = grid->dcz2;
+    dcx2 = grid->dcx2;
+    dcy2 = grid->dcy2;
+    dcz2 = grid->dcz2;
 
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-    zsh_ty = floor(-box[ZZ][YY]/box[YY][YY]+0.5);
-    zsh_tx = floor(-box[ZZ][XX]/box[XX][XX]+0.5);
-    ysh_tx = floor(-box[YY][XX]/box[XX][XX]+0.5);
+    zsh_ty = floor(-box[ZZ][YY] / box[YY][YY] + 0.5);
+    zsh_tx = floor(-box[ZZ][XX] / box[XX][XX] + 0.5);
+    ysh_tx = floor(-box[YY][XX] / box[XX][XX] + 0.5);
     if (zsh_tx != 0 && ysh_tx != 0)
     {
         /* This could happen due to rounding, when both ratios are 0.5 */
@@ -1782,8 +1778,8 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         }
         else
         {
-            if (d == XX &&
-                box[XX][XX] - std::abs(box[YY][XX]) - std::abs(box[ZZ][XX]) < std::sqrt(rs2))
+            if (d == XX
+                && box[XX][XX] - std::abs(box[YY][XX]) - std::abs(box[ZZ][XX]) < std::sqrt(rs2))
             {
                 shp[d] = 2;
             }
@@ -1804,7 +1800,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
             continue;
         }
 
-        i0   = cgs->index[icg];
+        i0 = cgs->index[icg];
 
         if (bMakeQMMMnblist)
         {
@@ -1852,15 +1848,15 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                 }
                 else
                 {
-                    max_jcg  = jcg1 - cgsnr;
+                    max_jcg = jcg1 - cgsnr;
                 }
             }
         }
 
-        i_egp_flags = fr->egp_flags + igid*ngid;
+        i_egp_flags = fr->egp_flags + igid * ngid;
 
         /* Set the exclusions for the atoms in charge group icg using a bitmask */
-        setexcl(i0, cgs->index[icg+1], &top->excls, TRUE, bexcl);
+        setexcl(i0, cgs->index[icg + 1], &top->excls, TRUE, bexcl);
 
         ci2xyz(grid, icg, &cell_x, &cell_y, &cell_z);
 
@@ -1874,10 +1870,10 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         /* Loop over shift vectors in three dimensions */
         for (tz = -shp[ZZ]; tz <= shp[ZZ]; tz++)
         {
-            ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
+            ZI = cgcm[icg][ZZ] + tz * box[ZZ][ZZ];
             /* Calculate range of cells in Z direction that have the shift tz */
-            zgi = cell_z + tz*Nz;
-            get_dx_dd(Nz, gridz, rs2, zgi, ZI-grid_offset[ZZ],
+            zgi = cell_z + tz * Nz;
+            get_dx_dd(Nz, gridz, rs2, zgi, ZI - grid_offset[ZZ],
                       ncpddc[ZZ], sh0[ZZ], sh1[ZZ], &dz0, &dz1, dcz2);
             if (dz0 > dz1)
             {
@@ -1885,17 +1881,17 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
             }
             for (ty = -shp[YY]; ty <= shp[YY]; ty++)
             {
-                YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
+                YI = cgcm[icg][YY] + ty * box[YY][YY] + tz * box[ZZ][YY];
                 /* Calculate range of cells in Y direction that have the shift ty */
                 if (bTriclinicY)
                 {
-                    ygi = (int)(Ny + (YI - grid_offset[YY])*grid_y) - Ny;
+                    ygi = (int)(Ny + (YI - grid_offset[YY]) * grid_y) - Ny;
                 }
                 else
                 {
-                    ygi = cell_y + ty*Ny;
+                    ygi = cell_y + ty * Ny;
                 }
-                get_dx_dd(Ny, gridy, rs2, ygi, YI-grid_offset[YY],
+                get_dx_dd(Ny, gridy, rs2, ygi, YI - grid_offset[YY],
                           ncpddc[YY], sh0[YY], sh1[YY], &dy0, &dy1, dcy2);
                 if (dy0 > dy1)
                 {
@@ -1903,17 +1899,17 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                 }
                 for (tx = -shp[XX]; tx <= shp[XX]; tx++)
                 {
-                    XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
+                    XI = cgcm[icg][XX] + tx * box[XX][XX] + ty * box[YY][XX] + tz * box[ZZ][XX];
                     /* Calculate range of cells in X direction that have the shift tx */
                     if (bTriclinicX)
                     {
-                        xgi = (int)(Nx + (XI - grid_offset[XX])*grid_x) - Nx;
+                        xgi = (int)(Nx + (XI - grid_offset[XX]) * grid_x) - Nx;
                     }
                     else
                     {
-                        xgi = cell_x + tx*Nx;
+                        xgi = cell_x + tx * Nx;
                     }
-                    get_dx_dd(Nx, gridx, rs2, xgi, XI-grid_offset[XX],
+                    get_dx_dd(Nx, gridx, rs2, xgi, XI - grid_offset[XX],
                               ncpddc[XX], sh0[XX], sh1[XX], &dx0, &dx1, dcx2);
                     if (dx0 > dx1)
                     {
@@ -1926,7 +1922,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
 #endif
                     for (nn = 0; (nn < ngid); nn++)
                     {
-                        nsr[nn]      = 0;
+                        nsr[nn] = 0;
                     }
 #ifdef NS5DB
                     fprintf(log, "shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
@@ -1948,10 +1944,10 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                                     if (tmp2 > dcz2[dz])
                                     {
                                         /* Find grid-cell cj in which possible neighbours are */
-                                        cj   = xyz2ci(Ny, Nz, dx, dy, dz);
+                                        cj = xyz2ci(Ny, Nz, dx, dy, dz);
 
                                         /* Check out how many cgs (nrj) there in this cell */
-                                        nrj  = gridnra[cj];
+                                        nrj = gridnra[cj];
 
                                         /* Find the offset in the cg list */
                                         cgj0 = gridind[cj];
@@ -1960,9 +1956,9 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                                          * can skip the whole cell.
                                          * Should save some time, especially with DD.
                                          */
-                                        if (nrj == 0 ||
-                                            (grida[cgj0] >= max_jcg &&
-                                             (grida[cgj0] >= jcg1 || grida[cgj0+nrj-1] < jcg0)))
+                                        if (nrj == 0
+                                            || (grida[cgj0] >= max_jcg
+                                                && (grida[cgj0] >= jcg1 || grida[cgj0 + nrj - 1] < jcg0)))
                                         {
                                             continue;
                                         }
@@ -1970,11 +1966,11 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                                         /* Loop over cgs */
                                         for (j = 0; (j < nrj); j++)
                                         {
-                                            jjcg = grida[cgj0+j];
+                                            jjcg = grida[cgj0 + j];
 
                                             /* check whether this guy is in range! */
-                                            if ((jjcg >= jcg0 && jjcg < jcg1) ||
-                                                (jjcg < max_jcg))
+                                            if ((jjcg >= jcg0 && jjcg < jcg1)
+                                                || (jjcg < max_jcg))
                                             {
                                                 r2 = calc_dx2(XI, YI, ZI, cgcm[jjcg]);
                                                 if (r2 < rs2)
@@ -2017,7 +2013,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                 }
             }
         }
-        setexcl(cgs->index[icg], cgs->index[icg+1], &top->excls, FALSE, bexcl);
+        setexcl(cgs->index[icg], cgs->index[icg + 1], &top->excls, FALSE, bexcl);
     }
     /* No need to perform any left-over force calculations anymore (as we used to do here)
      * since we now save the proper long-range lists for later evaluation.
@@ -2058,7 +2054,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
         cgs = &mtop->moltype[mt].cgs;
         for (icg = 0; (icg < cgs->nr); icg++)
         {
-            nr_in_cg = std::max(nr_in_cg, (int)(cgs->index[icg+1]-cgs->index[icg]));
+            nr_in_cg = std::max(nr_in_cg, (int)(cgs->index[icg + 1] - cgs->index[icg]));
         }
     }
 
@@ -2067,7 +2063,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
      * Exclusions are stored in bits. (If the type is not large
      * enough, enlarge it, unsigned char -> unsigned short -> unsigned long)
      */
-    maxcg = sizeof(t_excl)*8;
+    maxcg = sizeof(t_excl) * 8;
     if (nr_in_cg > maxcg)
     {
         gmx_fatal(FARGS, "Max #atoms in a charge group: %d > %d\n",
@@ -2081,7 +2077,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
         ns->bExcludeAlleg[i] = TRUE;
         for (j = 0; j < ngid; j++)
         {
-            if (!(fr->egp_flags[i*ngid+j] & EGP_EXCL))
+            if (!(fr->egp_flags[i * ngid + j] & EGP_EXCL))
             {
                 ns->bExcludeAlleg[i] = FALSE;
             }
@@ -2103,11 +2099,11 @@ void init_ns(FILE *fplog, const t_commrec *cr,
             snew(ns->ns_buf[i], SHIFTS);
         }
         ncg = ncg_mtop(mtop);
-        snew(ns->simple_aaj, 2*ncg);
+        snew(ns->simple_aaj, 2 * ncg);
         for (jcg = 0; (jcg < ncg); jcg++)
         {
-            ns->simple_aaj[jcg]     = jcg;
-            ns->simple_aaj[jcg+ncg] = jcg;
+            ns->simple_aaj[jcg]       = jcg;
+            ns->simple_aaj[jcg + ncg] = jcg;
         }
     }
 
@@ -2117,13 +2113,13 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     {
         for (j = 0; (j < fr->ntype); j++)
         {
-            ns->bHaveVdW[i] = (ns->bHaveVdW[i] ||
-                               (fr->bBHAM ?
-                                ((BHAMA(fr->nbfp, fr->ntype, i, j) != 0) ||
-                                 (BHAMB(fr->nbfp, fr->ntype, i, j) != 0) ||
-                                 (BHAMC(fr->nbfp, fr->ntype, i, j) != 0)) :
-                                ((C6(fr->nbfp, fr->ntype, i, j) != 0) ||
-                                 (C12(fr->nbfp, fr->ntype, i, j) != 0))));
+            ns->bHaveVdW[i] = (ns->bHaveVdW[i]
+                               || (fr->bBHAM
+                                   ? ((BHAMA(fr->nbfp, fr->ntype, i, j) != 0)
+                                      || (BHAMB(fr->nbfp, fr->ntype, i, j) != 0)
+                                      || (BHAMC(fr->nbfp, fr->ntype, i, j) != 0))
+                                   : ((C6(fr->nbfp, fr->ntype, i, j) != 0)
+                                      || (C12(fr->nbfp, fr->ntype, i, j) != 0))));
         }
     }
     if (debug)
@@ -2167,17 +2163,17 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                       t_nrnb *nrnb, t_mdatoms *md,
                       gmx_bool bFillGrid)
 {
-    t_block            *cgs = &(top->cgs);
+    t_block *           cgs = &(top->cgs);
     rvec                box_size, grid_x0, grid_x1;
     int                 m, ngid;
     real                min_size, grid_dens;
     int                 nsearch;
     gmx_bool            bGrid;
     int                 start, end;
-    gmx_ns_t           *ns;
-    t_grid             *grid;
+    gmx_ns_t *          ns;
+    t_grid *            grid;
     gmx_domdec_zones_t *dd_zones;
-    put_in_list_t      *put_in_list;
+    put_in_list_t *     put_in_list;
 
     ns = fr->ns;
 
@@ -2199,7 +2195,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         if (!bGrid)
         {
             min_size = std::min(box_size[XX], std::min(box_size[YY], box_size[ZZ]));
-            if (2*fr->rlist >= min_size)
+            if (2 * fr->rlist >= min_size)
             {
                 gmx_fatal(FARGS, "One of the box diagonal elements has become smaller than twice the cut-off length.");
             }
@@ -2241,7 +2237,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             end = cgs->nr;
             fill_grid(dd_zones, grid, end, -1, end, fr->cg_cm);
             grid->icg0 = 0;
-            grid->icg1 = dd_zones->izone[dd_zones->nizone-1].cg1;
+            grid->icg1 = dd_zones->izone[dd_zones->nizone - 1].cg1;
         }
         else
         {
@@ -2265,7 +2261,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         /* Set the grid cell index for the test particle only.
          * The cell to cg index is not corrected, but that does not matter.
          */
-        fill_grid(nullptr, ns->grid, fr->hcg, fr->hcg-1, fr->hcg, fr->cg_cm);
+        fill_grid(nullptr, ns->grid, fr->hcg, fr->hcg - 1, fr->hcg, fr->cg_cm);
     }
 
     if (!fr->ns->bCGlist)

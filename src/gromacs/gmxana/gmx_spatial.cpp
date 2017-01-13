@@ -56,7 +56,7 @@ static const double bohr = 0.529177249;  /* conversion factor to compensate for 
 
 int gmx_spatial(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates the spatial distribution function and",
         "outputs it in a form that can be read by VMD as Gaussian98 cube format.",
         "For a system of 32,000 atoms and a 50 ns trajectory, the SDF can be generated",
@@ -99,21 +99,21 @@ int gmx_spatial(int argc, char *argv[])
         "memory is allocated for cube bins based on the initial coordinates and the [TT]-nab[tt]",
         "option value."
     };
-    const char       *bugs[] = {
+    const char *bugs[] = {
         "When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected "
         "and the program is halted prior to the fault while displaying a warning message suggesting the use of the [TT]-nab[tt] (Number of Additional Bins) "
         "option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again "
         "with an increased [TT]-nab[tt] value."
     };
 
-    static gmx_bool   bPBC         = FALSE;
-    static int        iIGNOREOUTER = -1;   /*Positive values may help if the surface is spikey */
-    static gmx_bool   bCUTDOWN     = TRUE;
-    static real       rBINWIDTH    = 0.05; /* nm */
-    static gmx_bool   bCALCDIV     = TRUE;
-    static int        iNAB         = 4;
+    static gmx_bool bPBC         = FALSE;
+    static int      iIGNOREOUTER = -1;     /*Positive values may help if the surface is spikey */
+    static gmx_bool bCUTDOWN     = TRUE;
+    static real     rBINWIDTH    = 0.05;   /* nm */
+    static gmx_bool bCALCDIV     = TRUE;
+    static int      iNAB         = 4;
 
-    t_pargs           pa[] = {
+    t_pargs pa[] = {
         { "-pbc",      FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions for computing distances" },
         { "-div",      FALSE, etBOOL, {&bCALCDIV},
@@ -133,21 +133,21 @@ int gmx_spatial(int argc, char *argv[])
     t_topology        top;
     int               ePBC;
     t_trxframe        fr;
-    rvec             *xtop;
+    rvec *            xtop;
     matrix            box, box_pbc;
-    t_trxstatus      *status;
+    t_trxstatus *     status;
     int               flags = TRX_READ_X;
     t_pbc             pbc;
-    t_atoms          *atoms;
+    t_atoms *         atoms;
     int               natoms;
-    char             *grpnm, *grpnmp;
-    int              *index, *indexp;
+    char *            grpnm, *grpnmp;
+    int *             index, *indexp;
     int               i, nidx, nidxp;
     int               v;
     int               j, k;
-    int            ***bin = nullptr;
+    int ***           bin = nullptr;
     int               nbin[3];
-    FILE             *flp;
+    FILE *            flp;
     int               x, y, z, minx, miny, minz, maxx, maxy, maxz;
     int               numfr, numcu;
     int               tot, maxval, minval;
@@ -155,7 +155,7 @@ int gmx_spatial(int argc, char *argv[])
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTPS,  nullptr,  nullptr, ffREAD }, /* this is for the topology */
         { efTRX, "-f", nullptr, ffREAD },      /* and this for the trajectory */
         { efNDX, nullptr, nullptr, ffOPTRD }
@@ -216,9 +216,9 @@ int gmx_spatial(int argc, char *argv[])
     }
     for (i = ZZ; i >= XX; --i)
     {
-        MAXBIN[i]  = (std::ceil((MAXBIN[i]-MINBIN[i])/rBINWIDTH)+iNAB)*rBINWIDTH+MINBIN[i];
-        MINBIN[i] -= iNAB*rBINWIDTH;
-        nbin[i]    = static_cast<int>(std::ceil((MAXBIN[i]-MINBIN[i])/rBINWIDTH));
+        MAXBIN[i]  = (std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH) + iNAB) * rBINWIDTH + MINBIN[i];
+        MINBIN[i] -= iNAB * rBINWIDTH;
+        nbin[i]    = static_cast<int>(std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH));
     }
     snew(bin, nbin[XX]);
     for (i = 0; i < nbin[XX]; ++i)
@@ -252,18 +252,18 @@ int gmx_spatial(int argc, char *argv[])
 
         for (i = 0; i < nidx; i++)
         {
-            if (fr.x[index[i]][XX] < MINBIN[XX] || fr.x[index[i]][XX] > MAXBIN[XX] ||
-                fr.x[index[i]][YY] < MINBIN[YY] || fr.x[index[i]][YY] > MAXBIN[YY] ||
-                fr.x[index[i]][ZZ] < MINBIN[ZZ] || fr.x[index[i]][ZZ] > MAXBIN[ZZ])
+            if (fr.x[index[i]][XX] < MINBIN[XX] || fr.x[index[i]][XX] > MAXBIN[XX]
+                || fr.x[index[i]][YY] < MINBIN[YY] || fr.x[index[i]][YY] > MAXBIN[YY]
+                || fr.x[index[i]][ZZ] < MINBIN[ZZ] || fr.x[index[i]][ZZ] > MAXBIN[ZZ])
             {
                 printf("There was an item outside of the allocated memory. Increase the value given with the -nab option.\n");
                 printf("Memory was allocated for [%f,%f,%f]\tto\t[%f,%f,%f]\n", MINBIN[XX], MINBIN[YY], MINBIN[ZZ], MAXBIN[XX], MAXBIN[YY], MAXBIN[ZZ]);
                 printf("Memory was required for [%f,%f,%f]\n", fr.x[index[i]][XX], fr.x[index[i]][YY], fr.x[index[i]][ZZ]);
                 exit(1);
             }
-            x = static_cast<int>(std::ceil((fr.x[index[i]][XX]-MINBIN[XX])/rBINWIDTH));
-            y = static_cast<int>(std::ceil((fr.x[index[i]][YY]-MINBIN[YY])/rBINWIDTH));
-            z = static_cast<int>(std::ceil((fr.x[index[i]][ZZ]-MINBIN[ZZ])/rBINWIDTH));
+            x = static_cast<int>(std::ceil((fr.x[index[i]][XX] - MINBIN[XX]) / rBINWIDTH));
+            y = static_cast<int>(std::ceil((fr.x[index[i]][YY] - MINBIN[YY]) / rBINWIDTH));
+            z = static_cast<int>(std::ceil((fr.x[index[i]][ZZ] - MINBIN[ZZ]) / rBINWIDTH));
             ++bin[x][y][z];
             if (x < minx)
             {
@@ -293,8 +293,7 @@ int gmx_spatial(int argc, char *argv[])
         numfr++;
         /* printf("%f\t%f\t%f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]); */
 
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
 
     if (bPBC)
     {
@@ -313,10 +312,10 @@ int gmx_spatial(int argc, char *argv[])
     flp = gmx_ffopen("grid.cube", "w");
     fprintf(flp, "Spatial Distribution Function\n");
     fprintf(flp, "test\n");
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp, (MINBIN[XX]+(minx+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[YY]+(miny+iIGNOREOUTER)*rBINWIDTH)*10./bohr, (MINBIN[ZZ]+(minz+iIGNOREOUTER)*rBINWIDTH)*10./bohr);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxx-minx+1-(2*iIGNOREOUTER), rBINWIDTH*10./bohr, 0., 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxy-miny+1-(2*iIGNOREOUTER), 0., rBINWIDTH*10./bohr, 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxz-minz+1-(2*iIGNOREOUTER), 0., 0., rBINWIDTH*10./bohr);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp, (MINBIN[XX] + (minx + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr, (MINBIN[YY] + (miny + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr, (MINBIN[ZZ] + (minz + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxx - minx + 1 - (2 * iIGNOREOUTER), rBINWIDTH * 10. / bohr, 0., 0.);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxy - miny + 1 - (2 * iIGNOREOUTER), 0., rBINWIDTH * 10. / bohr, 0.);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxz - minz + 1 - (2 * iIGNOREOUTER), 0., 0., rBINWIDTH * 10. / bohr);
     for (i = 0; i < nidxp; i++)
     {
         v = 2;
@@ -340,7 +339,7 @@ int gmx_spatial(int argc, char *argv[])
         {
             v = 16;
         }
-        fprintf(flp, "%5d%12.6f%12.6f%12.6f%12.6f\n", v, 0., fr.x[indexp[i]][XX]*10.0/bohr, fr.x[indexp[i]][YY]*10.0/bohr, fr.x[indexp[i]][ZZ]*10.0/bohr);
+        fprintf(flp, "%5d%12.6f%12.6f%12.6f%12.6f\n", v, 0., fr.x[indexp[i]][XX] * 10.0 / bohr, fr.x[indexp[i]][YY] * 10.0 / bohr, fr.x[indexp[i]][ZZ] * 10.0 / bohr);
     }
 
     tot = 0;
@@ -376,19 +375,19 @@ int gmx_spatial(int argc, char *argv[])
     maxval = 0;
     for (k = 0; k < nbin[XX]; k++)
     {
-        if (k < minx+iIGNOREOUTER || k > maxx-iIGNOREOUTER)
+        if (k < minx + iIGNOREOUTER || k > maxx - iIGNOREOUTER)
         {
             continue;
         }
         for (j = 0; j < nbin[YY]; j++)
         {
-            if (j < miny+iIGNOREOUTER || j > maxy-iIGNOREOUTER)
+            if (j < miny + iIGNOREOUTER || j > maxy - iIGNOREOUTER)
             {
                 continue;
             }
             for (i = 0; i < nbin[ZZ]; i++)
             {
-                if (i < minz+iIGNOREOUTER || i > maxz-iIGNOREOUTER)
+                if (i < minz + iIGNOREOUTER || i > maxz - iIGNOREOUTER)
                 {
                     continue;
                 }
@@ -405,10 +404,10 @@ int gmx_spatial(int argc, char *argv[])
         }
     }
 
-    numcu = (maxx-minx+1-(2*iIGNOREOUTER))*(maxy-miny+1-(2*iIGNOREOUTER))*(maxz-minz+1-(2*iIGNOREOUTER));
+    numcu = (maxx - minx + 1 - (2 * iIGNOREOUTER)) * (maxy - miny + 1 - (2 * iIGNOREOUTER)) * (maxz - minz + 1 - (2 * iIGNOREOUTER));
     if (bCALCDIV)
     {
-        norm = static_cast<double>(numcu*numfr)/tot;
+        norm = static_cast<double>(numcu * numfr) / tot;
     }
     else
     {
@@ -417,23 +416,23 @@ int gmx_spatial(int argc, char *argv[])
 
     for (k = 0; k < nbin[XX]; k++)
     {
-        if (k < minx+iIGNOREOUTER || k > maxx-iIGNOREOUTER)
+        if (k < minx + iIGNOREOUTER || k > maxx - iIGNOREOUTER)
         {
             continue;
         }
         for (j = 0; j < nbin[YY]; j++)
         {
-            if (j < miny+iIGNOREOUTER || j > maxy-iIGNOREOUTER)
+            if (j < miny + iIGNOREOUTER || j > maxy - iIGNOREOUTER)
             {
                 continue;
             }
             for (i = 0; i < nbin[ZZ]; i++)
             {
-                if (i < minz+iIGNOREOUTER || i > maxz-iIGNOREOUTER)
+                if (i < minz + iIGNOREOUTER || i > maxz - iIGNOREOUTER)
                 {
                     continue;
                 }
-                fprintf(flp, "%12.6f ", static_cast<double>(norm*bin[k][j][i])/numfr);
+                fprintf(flp, "%12.6f ", static_cast<double>(norm * bin[k][j][i]) / numfr);
             }
             fprintf(flp, "\n");
         }
@@ -443,13 +442,13 @@ int gmx_spatial(int argc, char *argv[])
 
     if (bCALCDIV)
     {
-        printf("Counts per frame in all %d cubes divided by %le\n", numcu, 1.0/norm);
-        printf("Normalized data: average %le, min %le, max %le\n", 1.0, minval*norm/numfr, maxval*norm/numfr);
+        printf("Counts per frame in all %d cubes divided by %le\n", numcu, 1.0 / norm);
+        printf("Normalized data: average %le, min %le, max %le\n", 1.0, minval * norm / numfr, maxval * norm / numfr);
     }
     else
     {
         printf("grid.cube contains counts per frame in all %d cubes\n", numcu);
-        printf("Raw data: average %le, min %le, max %le\n", 1.0/norm, static_cast<double>(minval)/numfr, static_cast<double>(maxval)/numfr);
+        printf("Raw data: average %le, min %le, max %le\n", 1.0 / norm, static_cast<double>(minval) / numfr, static_cast<double>(maxval) / numfr);
     }
 
     return 0;

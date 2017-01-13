@@ -91,26 +91,26 @@ class OptionsAssigner::Impl
         AbstractOptionStorage *findOption(const char *name);
 
         //! Options object to assign to.
-        Options                &options_;
+        Options &options_;
         //! Recognize boolean option "name" also as "noname".
-        bool                    bAcceptBooleanNoPrefix_;
+        bool bAcceptBooleanNoPrefix_;
         /*! \brief
          * List of (sub)sections being assigned to.
          *
          * The first element always points to \a options_.
          */
-        std::vector<Section *>  sectionStack_;
+        std::vector<Section *> sectionStack_;
         //! Current option being assigned to, or NULL if none.
-        AbstractOptionStorage  *currentOption_;
+        AbstractOptionStorage *currentOption_;
         /*! \brief
          * Number of values assigned so far to the current option.
          *
          * Counts the number of attempted assignments, whether they have been
          * successful or not.
          */
-        int                     currentValueCount_;
+        int currentValueCount_;
         //! If true, a "no" prefix was given for the current boolean option.
-        bool                    reverseBoolean_;
+        bool reverseBoolean_;
 };
 
 OptionsAssigner::Impl::Impl(Options *options)
@@ -120,12 +120,11 @@ OptionsAssigner::Impl::Impl(Options *options)
     sectionStack_.push_back(&options_.impl_->rootSection_);
 }
 
-AbstractOptionStorage *
-OptionsAssigner::Impl::findOption(const char *name)
+AbstractOptionStorage *OptionsAssigner::Impl::findOption(const char *name)
 {
     GMX_RELEASE_ASSERT(currentOption_ == nullptr,
                        "Cannot search for another option while processing one");
-    const Section         &section = currentSection();
+    const Section &        section = currentSection();
     AbstractOptionStorage *option  = section.findOption(name);
     if (option == nullptr && bAcceptBooleanNoPrefix_)
     {
@@ -218,7 +217,7 @@ void OptionsAssigner::finishOption()
 {
     AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != nullptr, "startOption() not called");
-    bool                   bBoolReverseValue = false;
+    bool bBoolReverseValue = false;
     if (option->isBoolean())
     {
         if (impl_->currentValueCount_ == 0)

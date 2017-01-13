@@ -242,7 +242,7 @@ class ICommandLineOptionsModule
          * the module to \p options.  Output values from options should be
          * stored in member variables.
          */
-        virtual void initOptions(IOptionsContainer                 *options,
+        virtual void initOptions(IOptionsContainer *                options,
                                  ICommandLineOptionsModuleSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.

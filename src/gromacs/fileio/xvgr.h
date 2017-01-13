@@ -51,13 +51,15 @@ struct gmx_output_env_t;
 /***************************************************
  *            XVGR   DEFINITIONS
  ***************************************************/
-enum {
+enum
+{
     elNone, elSolid, elDotted, elDashed,
     elLongDashed, elDotDashed, elNR
 };
 /* xvgr line-styles */
 
-enum {
+enum
+{
     ecWhite, ecFrank, ecBlack = ecFrank,
     ecRed, ecGreen, ecBlue, ecYellow, ecBrown, ecGray,
     ecPurple, ecLightBlue, ecViolet, ecHolland, ecLila, ecDarkGray,
@@ -65,12 +67,14 @@ enum {
 };
 /* xvgr line-colors */
 
-enum {
+enum
+{
     eppNone, eppColor, eppPattern, eppNR
 };
 /* xvgr pattern type */
 
-enum {
+enum
+{
     evView, evWorld, evNR
 };
 /* view type */
@@ -95,7 +99,8 @@ enum {
 gmx_bool output_env_get_print_xvgr_codes(const struct gmx_output_env_t *oenv);
 /* Returns if we should print xmgrace or xmgr codes */
 
-enum {
+enum
+{
     exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
 };
 

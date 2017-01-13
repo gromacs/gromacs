@@ -52,12 +52,13 @@
 #include "gromacs/utility/real.h"
 
 /*! \brief Flag to select user tables for make_tables */
-#define GMX_MAKETABLES_FORCEUSER  (1<<0)
+#define GMX_MAKETABLES_FORCEUSER  (1 << 0)
 /*! \brief Flag to only make 1,4 pair tables for make_tables */
-#define GMX_MAKETABLES_14ONLY     (1<<1)
+#define GMX_MAKETABLES_14ONLY     (1 << 1)
 
 /*! \brief Enumerated type to describe the interaction types in a table */
-enum {
+enum
+{
     etiCOUL,  //!< Coulomb
     etiLJ6,   //!< Dispersion
     etiLJ12,  //!< Repulsion
@@ -89,9 +90,9 @@ typedef double (*real_space_grid_contribution_computer)(double, double);
  * \param beta       Ewald splitting paramter
  * \param v_lr       Pointer to function calculating real-space grid contribution
  */
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
+void table_spline3_fill_ewald_lr(real *                                table_F,
+                                 real *                                table_V,
+                                 real *                                table_FDV0,
                                  int                                   ntab,
                                  double                                dx,
                                  real                                  beta,
@@ -148,7 +149,7 @@ bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle);
  * \param fr   Force record
  * \return     Pointer to new gb table structure
  */
-t_forcetable *make_gb_table(const t_forcerec              *fr);
+t_forcetable *make_gb_table(const t_forcerec *fr);
 
 /*! \brief Construct and return tabulated dispersion and repulsion interactions
  *

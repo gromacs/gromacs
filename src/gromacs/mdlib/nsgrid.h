@@ -48,32 +48,33 @@ struct gmx_ddbox_t;
 struct t_forcerec;
 struct t_grid;
 
-typedef struct t_grid {
-    int     nr;           // Total number of charge groups
-    int     nboundeddim;  // The number of bounded dimensions
-    int     npbcdim;      // The number of dimensions with pbc
-    int     ncg_ideal;    // The ideal number of cg's per cell
-    ivec    n;            // The dimension of the grid
-    int     ncells;       // Total number of cells
-    int     cells_nalloc; // Allocation size of index and nra
-    ivec    ncpddc;       // The number of cells per DD cell
-    rvec    cell_size;    // The size of the cells
-    rvec    cell_offset;  // The offset of the cell (0,0,0)
-    int    *cell_index;   // The cell number of each cg
-    int    *index;        // The index into a for each cell
+typedef struct t_grid
+{
+    int  nr;              // Total number of charge groups
+    int  nboundeddim;     // The number of bounded dimensions
+    int  npbcdim;         // The number of dimensions with pbc
+    int  ncg_ideal;       // The ideal number of cg's per cell
+    ivec n;               // The dimension of the grid
+    int  ncells;          // Total number of cells
+    int  cells_nalloc;    // Allocation size of index and nra
+    ivec ncpddc;          // The number of cells per DD cell
+    rvec cell_size;       // The size of the cells
+    rvec cell_offset;     // The offset of the cell (0,0,0)
+    int *cell_index;      // The cell number of each cg
+    int *index;           // The index into a for each cell
                           // The location of the cell in the index
                           // array can be found by calling xyz2ci
-    int    *nra;          // The number of entries in a cell
-    int     icg0;         // The start of the i-cg range
-    int     icg1;         // The end of the i-cg range
-    rvec   *os0;
-    rvec   *os1;
-    int    *a;            // The grid of cgs
-    int     nr_alloc;     // Allocation size of cell_index and a
-    real   *dcx2;         // Squared distance from atom to j-cell
-    real   *dcy2;         // Squared distance from atom to j-cell
-    real   *dcz2;         // Squared distance from atom to j-cell
-    int     dc_nalloc;    // Allocation size of dcx2, dyc2, dcz2
+    int * nra;            // The number of entries in a cell
+    int   icg0;           // The start of the i-cg range
+    int   icg1;           // The end of the i-cg range
+    rvec *os0;
+    rvec *os1;
+    int * a;              // The grid of cgs
+    int   nr_alloc;       // Allocation size of cell_index and a
+    real *dcx2;           // Squared distance from atom to j-cell
+    real *dcy2;           // Squared distance from atom to j-cell
+    real *dcz2;           // Squared distance from atom to j-cell
+    int   dc_nalloc;      // Allocation size of dcx2, dyc2, dcz2
 } t_grid;
 
 /*! \brief Used when estimating the interaction density.
@@ -138,7 +139,7 @@ void calc_ptrs(t_grid *grid);
 void grid_last(t_grid *grid, int cg0, int cg1, int ncg);
 
 int xyz2ci_(int nry, int nrz, int x, int y, int z);
-#define xyz2ci(nry, nrz, x, y, z) ((nry)*(nrz)*(x)+(nrz)*(y)+(z))
+#define xyz2ci(nry, nrz, x, y, z) ((nry) * (nrz) * (x) + (nrz) * (y) + (z))
 /* Return the cell index */
 
 void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z);

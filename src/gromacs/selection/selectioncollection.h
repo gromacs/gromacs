@@ -312,8 +312,8 @@ class SelectionCollection
          * Mainly usable for unit testing interactive input.
          */
         SelectionList parseInteractive(int                count,
-                                       TextInputStream   *inputStream,
-                                       TextOutputStream  *outputStream,
+                                       TextInputStream *  inputStream,
+                                       TextOutputStream * outputStream,
                                        const std::string &context);
         /*! \brief
          * Parses selection(s) from a file.

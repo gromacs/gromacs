@@ -59,7 +59,7 @@ class Simd4Float
         // Internal utility constructor to simplify return statements
         Simd4Float(__m512 simd) : simdInternal_(simd) {}
 
-        __m512  simdInternal_;
+        __m512 simdInternal_;
 };
 
 class Simd4FBool
@@ -70,11 +70,10 @@ class Simd4FBool
         // Internal utility constructor to simplify return statements
         Simd4FBool(__mmask16 simd) : simdInternal_(simd) {}
 
-        __mmask16  simdInternal_;
+        __mmask16 simdInternal_;
 };
 
-static inline Simd4Float gmx_simdcall
-load4(const float *m)
+static inline Simd4Float gmx_simdcall load4(const float *m)
 {
     assert(size_t(m) % 16 == 0);
     return {
@@ -82,38 +81,33 @@ load4(const float *m)
     };
 }
 
-static inline void gmx_simdcall
-store4(float *m, Simd4Float a)
+static inline void gmx_simdcall store4(float *m, Simd4Float a)
 {
     assert(size_t(m) % 16 == 0);
     _mm512_mask_packstorelo_ps(m, _mm512_int2mask(0xF), a.simdInternal_);
 }
 
-static inline Simd4Float gmx_simdcall
-load4U(const float *m)
+static inline Simd4Float gmx_simdcall load4U(const float *m)
 {
     return {
-               _mm512_mask_loadunpackhi_ps(_mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), m), _mm512_int2mask(0xF), m+16)
+               _mm512_mask_loadunpackhi_ps(_mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), m), _mm512_int2mask(0xF), m + 16)
     };
 }
 
-static inline void gmx_simdcall
-store4U(float *m, Simd4Float a)
+static inline void gmx_simdcall store4U(float *m, Simd4Float a)
 {
     _mm512_mask_packstorelo_ps(m, _mm512_int2mask(0xF), a.simdInternal_);
-    _mm512_mask_packstorehi_ps(m+16, _mm512_int2mask(0xF), a.simdInternal_);
+    _mm512_mask_packstorehi_ps(m + 16, _mm512_int2mask(0xF), a.simdInternal_);
 }
 
-static inline Simd4Float gmx_simdcall
-simd4SetZeroF()
+static inline Simd4Float gmx_simdcall simd4SetZeroF()
 {
     return {
                _mm512_setzero_ps()
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator&(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator&(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_castsi512_ps(_mm512_mask_and_epi32(_mm512_undefined_epi32(), _mm512_int2mask(0xF),
@@ -121,8 +115,7 @@ operator&(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-andNot(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall andNot(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_castsi512_ps(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), _mm512_int2mask(0xF),
@@ -130,8 +123,7 @@ andNot(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator|(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator|(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_castsi512_ps(_mm512_mask_or_epi32(_mm512_undefined_epi32(), _mm512_int2mask(0xF),
@@ -139,8 +131,7 @@ operator|(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator^(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator^(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_castsi512_ps(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), _mm512_int2mask(0xF),
@@ -148,80 +139,70 @@ operator^(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator+(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator+(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_add_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator-(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator-(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_sub_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator-(Simd4Float x)
+static inline Simd4Float gmx_simdcall operator-(Simd4Float x)
 {
     return {
                _mm512_mask_addn_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), x.simdInternal_, _mm512_setzero_ps())
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator*(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator*(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_mul_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm512_mask_fmadd_ps(a.simdInternal_, _mm512_int2mask(0xF), b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm512_mask_fmsub_ps(a.simdInternal_, _mm512_int2mask(0xF), b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm512_mask_fnmadd_ps(a.simdInternal_, _mm512_int2mask(0xF), b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm512_mask_fnmsub_ps(a.simdInternal_, _mm512_int2mask(0xF), b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-rsqrt(Simd4Float x)
+static inline Simd4Float gmx_simdcall rsqrt(Simd4Float x)
 {
     return {
                _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), x.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-abs(Simd4Float x)
+static inline Simd4Float gmx_simdcall abs(Simd4Float x)
 {
     return {
                _mm512_castsi512_ps(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), _mm512_int2mask(0xF),
@@ -230,24 +211,21 @@ abs(Simd4Float x)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-max(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall max(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_gmax_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-min(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall min(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_gmin_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-round(Simd4Float x)
+static inline Simd4Float gmx_simdcall round(Simd4Float x)
 {
     return {
                _mm512_mask_round_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF),
@@ -255,8 +233,7 @@ round(Simd4Float x)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-trunc(Simd4Float x)
+static inline Simd4Float gmx_simdcall trunc(Simd4Float x)
 {
     return {
                _mm512_mask_round_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF),
@@ -264,8 +241,7 @@ trunc(Simd4Float x)
     };
 }
 
-static inline float gmx_simdcall
-dotProduct(Simd4Float a, Simd4Float b)
+static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
     __m512 x = _mm512_mask_mul_ps(_mm512_setzero_ps(), _mm512_int2mask(0x7), a.simdInternal_, b.simdInternal_);
     x = _mm512_add_ps(x, _mm512_swizzle_ps(x, _MM_SWIZ_REG_BADC));
@@ -275,9 +251,8 @@ dotProduct(Simd4Float a, Simd4Float b)
     return f;
 }
 
-static inline void gmx_simdcall
-transpose(Simd4Float * v0, Simd4Float * v1,
-          Simd4Float * v2, Simd4Float * v3)
+static inline void gmx_simdcall transpose(Simd4Float * v0, Simd4Float * v1,
+                                          Simd4Float * v2, Simd4Float * v3)
 {
     v0->simdInternal_ = _mm512_mask_permute4f128_ps(v0->simdInternal_, _mm512_int2mask(0x00F0), v1->simdInternal_, _MM_PERM_AAAA);
     v2->simdInternal_ = _mm512_mask_permute4f128_ps(v2->simdInternal_, _mm512_int2mask(0x00F0), v3->simdInternal_, _MM_PERM_AAAA);
@@ -296,86 +271,75 @@ transpose(Simd4Float * v0, Simd4Float * v1,
 // 2) Unordered-quiet for !=
 // 3) Ordered-signaling for < and <=
 
-static inline Simd4FBool gmx_simdcall
-operator==(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator==(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_, _CMP_EQ_OQ)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator!=(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator!=(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_, _CMP_NEQ_UQ)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator<(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator<(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_, _CMP_LT_OS)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator<=(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator<=(Simd4Float a, Simd4Float b)
 {
     return {
                _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), a.simdInternal_, b.simdInternal_, _CMP_LE_OS)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator&&(Simd4FBool a, Simd4FBool b)
+static inline Simd4FBool gmx_simdcall operator&&(Simd4FBool a, Simd4FBool b)
 {
     return {
                _mm512_kand(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator||(Simd4FBool a, Simd4FBool b)
+static inline Simd4FBool gmx_simdcall operator||(Simd4FBool a, Simd4FBool b)
 {
     return {
                _mm512_kor(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline bool gmx_simdcall
-anyTrue(Simd4FBool a)
+static inline bool gmx_simdcall anyTrue(Simd4FBool a)
 {
     return ( _mm512_mask2int(a.simdInternal_) & 0xF) != 0;
 }
 
-static inline Simd4Float gmx_simdcall
-selectByMask(Simd4Float a, Simd4FBool m)
+static inline Simd4Float gmx_simdcall selectByMask(Simd4Float a, Simd4FBool m)
 {
     return {
                _mm512_mask_mov_ps(_mm512_setzero_ps(), m.simdInternal_, a.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-selectByNotMask(Simd4Float a, Simd4FBool m)
+static inline Simd4Float gmx_simdcall selectByNotMask(Simd4Float a, Simd4FBool m)
 {
     return {
                _mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(m.simdInternal_), a.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+static inline Simd4Float gmx_simdcall blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 {
     return {
                _mm512_mask_blend_ps(sel.simdInternal_, a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline float gmx_simdcall
-reduce(Simd4Float a)
+static inline float gmx_simdcall reduce(Simd4Float a)
 {
     __m512 x = a.simdInternal_;
     x = _mm512_add_ps(x, _mm512_swizzle_ps(x, _MM_SWIZ_REG_BADC));

@@ -57,7 +57,7 @@
 
 int gmx_helixorient(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates the coordinates and direction of the average",
         "axis inside an alpha helix, and the direction/vectors of both the",
         "C[GRK]alpha[grk] and (optionally) a sidechain atom relative to the axis.[PAR]",
@@ -76,68 +76,68 @@ int gmx_helixorient(int argc, char *argv[])
         "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
 
-    t_topology       *top = nullptr;
-    real              t;
-    rvec             *x = nullptr;
-    matrix            box;
-    t_trxstatus      *status;
-    int               natoms;
-    real              theta1, theta2, theta3;
+    t_topology * top = nullptr;
+    real         t;
+    rvec *       x = nullptr;
+    matrix       box;
+    t_trxstatus *status;
+    int          natoms;
+    real         theta1, theta2, theta3;
 
-    int               i, j, teller = 0;
-    int               iCA, iSC;
-    int              *ind_CA;
-    int              *ind_SC;
-    char             *gn_CA;
-    char             *gn_SC;
-    rvec              v1, v2;
-    rvec             *x_CA, *x_SC;
-    rvec             *r12;
-    rvec             *r23;
-    rvec             *r34;
-    rvec             *diff13;
-    rvec             *diff24;
-    rvec             *helixaxis;
-    rvec             *residuehelixaxis;
-    rvec             *residueorigin;
-    rvec             *residuevector;
-    rvec             *sidechainvector;
+    int   i, j, teller = 0;
+    int   iCA, iSC;
+    int * ind_CA;
+    int * ind_SC;
+    char *gn_CA;
+    char *gn_SC;
+    rvec  v1, v2;
+    rvec *x_CA, *x_SC;
+    rvec *r12;
+    rvec *r23;
+    rvec *r34;
+    rvec *diff13;
+    rvec *diff24;
+    rvec *helixaxis;
+    rvec *residuehelixaxis;
+    rvec *residueorigin;
+    rvec *residuevector;
+    rvec *sidechainvector;
 
-    rvec             *residuehelixaxis_t0;
-    rvec             *residuevector_t0;
-    rvec             *axis3_t0;
-    rvec             *residuehelixaxis_tlast;
-    rvec             *residuevector_tlast;
-    rvec             *axis3_tlast;
-    rvec              refaxes[3], newaxes[3];
-    rvec              unitaxes[3];
-    rvec              rot_refaxes[3], rot_newaxes[3];
+    rvec *residuehelixaxis_t0;
+    rvec *residuevector_t0;
+    rvec *axis3_t0;
+    rvec *residuehelixaxis_tlast;
+    rvec *residuevector_tlast;
+    rvec *axis3_tlast;
+    rvec  refaxes[3], newaxes[3];
+    rvec  unitaxes[3];
+    rvec  rot_refaxes[3], rot_newaxes[3];
 
-    real              tilt, rotation;
-    rvec             *axis3;
-    real             *twist, *residuetwist;
-    real             *radius, *residueradius;
-    real             *rise, *residuerise;
-    real             *residuebending;
+    real  tilt, rotation;
+    rvec *axis3;
+    real *twist, *residuetwist;
+    real *radius, *residueradius;
+    real *rise, *residuerise;
+    real *residuebending;
 
-    real              tmp;
-    real              weight[3];
-    t_pbc             pbc;
-    matrix            A;
+    real   tmp;
+    real   weight[3];
+    t_pbc  pbc;
+    matrix A;
 
-    FILE             *fpaxis, *fpcenter, *fptilt, *fprotation;
-    FILE             *fpradius, *fprise, *fptwist;
-    FILE             *fptheta1, *fptheta2, *fptheta3;
-    FILE             *fpbending;
-    int               ePBC;
+    FILE *fpaxis, *fpcenter, *fptilt, *fprotation;
+    FILE *fpradius, *fprise, *fptwist;
+    FILE *fptheta1, *fptheta2, *fptheta3;
+    FILE *fpbending;
+    int   ePBC;
 
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    static  gmx_bool  bSC          = FALSE;
-    static gmx_bool   bIncremental = FALSE;
+    static  gmx_bool bSC          = FALSE;
+    static gmx_bool  bIncremental = FALSE;
 
-    static t_pargs    pa[] = {
+    static t_pargs pa[] = {
         { "-sidechain",      FALSE, etBOOL, {&bSC},
           "Calculate sidechain directions relative to helix axis too." },
         { "-incremental",        FALSE, etBOOL, {&bIncremental},
@@ -179,12 +179,12 @@ int gmx_helixorient(int argc, char *argv[])
     snew(x_CA, iCA);
     snew(x_SC, iCA); /* sic! */
 
-    snew(r12, iCA-3);
-    snew(r23, iCA-3);
-    snew(r34, iCA-3);
-    snew(diff13, iCA-3);
-    snew(diff24, iCA-3);
-    snew(helixaxis, iCA-3);
+    snew(r12, iCA - 3);
+    snew(r23, iCA - 3);
+    snew(r34, iCA - 3);
+    snew(diff13, iCA - 3);
+    snew(diff24, iCA - 3);
+    snew(helixaxis, iCA - 3);
     snew(twist, iCA);
     snew(residuetwist, iCA);
     snew(radius, iCA);
@@ -270,27 +270,27 @@ int gmx_helixorient(int argc, char *argv[])
             }
         }
 
-        for (i = 0; i < iCA-3; i++)
+        for (i = 0; i < iCA - 3; i++)
         {
-            rvec_sub(x_CA[i+1], x_CA[i], r12[i]);
-            rvec_sub(x_CA[i+2], x_CA[i+1], r23[i]);
-            rvec_sub(x_CA[i+3], x_CA[i+2], r34[i]);
+            rvec_sub(x_CA[i + 1], x_CA[i], r12[i]);
+            rvec_sub(x_CA[i + 2], x_CA[i + 1], r23[i]);
+            rvec_sub(x_CA[i + 3], x_CA[i + 2], r34[i]);
             rvec_sub(r12[i], r23[i], diff13[i]);
             rvec_sub(r23[i], r34[i], diff24[i]);
             /* calculate helix axis */
             cprod(diff13[i], diff24[i], helixaxis[i]);
-            svmul(1.0/norm(helixaxis[i]), helixaxis[i], helixaxis[i]);
+            svmul(1.0 / norm(helixaxis[i]), helixaxis[i], helixaxis[i]);
 
             tmp       = cos_angle(diff13[i], diff24[i]);
-            twist[i]  = 180.0/M_PI * std::acos( tmp );
-            radius[i] = std::sqrt( norm(diff13[i])*norm(diff24[i]) ) / (2.0* (1.0-tmp) );
+            twist[i]  = 180.0 / M_PI * std::acos( tmp );
+            radius[i] = std::sqrt( norm(diff13[i]) * norm(diff24[i]) ) / (2.0 * (1.0 - tmp) );
             rise[i]   = std::abs(iprod(r23[i], helixaxis[i]));
 
-            svmul(radius[i]/norm(diff13[i]), diff13[i], v1);
-            svmul(radius[i]/norm(diff24[i]), diff24[i], v2);
+            svmul(radius[i] / norm(diff13[i]), diff13[i], v1);
+            svmul(radius[i] / norm(diff24[i]), diff24[i], v2);
 
-            rvec_sub(x_CA[i+1], v1, residueorigin[i+1]);
-            rvec_sub(x_CA[i+2], v2, residueorigin[i+2]);
+            rvec_sub(x_CA[i + 1], v1, residueorigin[i + 1]);
+            rvec_sub(x_CA[i + 2], v2, residueorigin[i + 2]);
         }
         residueradius[0] = residuetwist[0] = residuerise[0] = 0;
 
@@ -299,21 +299,21 @@ int gmx_helixorient(int argc, char *argv[])
         residuerise[1]   = rise[0];
 
         residuebending[0] = residuebending[1] = 0;
-        for (i = 2; i < iCA-2; i++)
+        for (i = 2; i < iCA - 2; i++)
         {
-            residueradius[i]  = 0.5*(radius[i-2]+radius[i-1]);
-            residuetwist[i]   = 0.5*(twist[i-2]+twist[i-1]);
-            residuerise[i]    = 0.5*(rise[i-2]+rise[i-1]);
-            residuebending[i] = 180.0/M_PI*std::acos( cos_angle(helixaxis[i-2], helixaxis[i-1]) );
+            residueradius[i]  = 0.5 * (radius[i - 2] + radius[i - 1]);
+            residuetwist[i]   = 0.5 * (twist[i - 2] + twist[i - 1]);
+            residuerise[i]    = 0.5 * (rise[i - 2] + rise[i - 1]);
+            residuebending[i] = 180.0 / M_PI * std::acos( cos_angle(helixaxis[i - 2], helixaxis[i - 1]) );
         }
-        residueradius[iCA-2]  = radius[iCA-4];
-        residuetwist[iCA-2]   = twist[iCA-4];
-        residuerise[iCA-2]    = rise[iCA-4];
-        residueradius[iCA-1]  = residuetwist[iCA-1] = residuerise[iCA-1] = 0;
-        residuebending[iCA-2] = residuebending[iCA-1] = 0;
+        residueradius[iCA - 2]  = radius[iCA - 4];
+        residuetwist[iCA - 2]   = twist[iCA - 4];
+        residuerise[iCA - 2]    = rise[iCA - 4];
+        residueradius[iCA - 1]  = residuetwist[iCA - 1] = residuerise[iCA - 1] = 0;
+        residuebending[iCA - 2] = residuebending[iCA - 1] = 0;
 
         clear_rvec(residueorigin[0]);
-        clear_rvec(residueorigin[iCA-1]);
+        clear_rvec(residueorigin[iCA - 1]);
 
         /* average helix axes to define them on the residues.
          * Just extrapolate second first/list atom.
@@ -321,18 +321,18 @@ int gmx_helixorient(int argc, char *argv[])
         copy_rvec(helixaxis[0], residuehelixaxis[0]);
         copy_rvec(helixaxis[0], residuehelixaxis[1]);
 
-        for (i = 2; i < iCA-2; i++)
+        for (i = 2; i < iCA - 2; i++)
         {
-            rvec_add(helixaxis[i-2], helixaxis[i-1], residuehelixaxis[i]);
+            rvec_add(helixaxis[i - 2], helixaxis[i - 1], residuehelixaxis[i]);
             svmul(0.5, residuehelixaxis[i], residuehelixaxis[i]);
         }
-        copy_rvec(helixaxis[iCA-4], residuehelixaxis[iCA-2]);
-        copy_rvec(helixaxis[iCA-4], residuehelixaxis[iCA-1]);
+        copy_rvec(helixaxis[iCA - 4], residuehelixaxis[iCA - 2]);
+        copy_rvec(helixaxis[iCA - 4], residuehelixaxis[iCA - 1]);
 
         /* Normalize the axis */
         for (i = 0; i < iCA; i++)
         {
-            svmul(1.0/norm(residuehelixaxis[i]), residuehelixaxis[i], residuehelixaxis[i]);
+            svmul(1.0 / norm(residuehelixaxis[i]), residuehelixaxis[i], residuehelixaxis[i]);
         }
 
         /* calculate vector from origin to residue CA */
@@ -345,7 +345,7 @@ int gmx_helixorient(int argc, char *argv[])
 
         for (i = 0; i < iCA; i++)
         {
-            if (i == 0 || i == iCA-1)
+            if (i == 0 || i == iCA - 1)
             {
                 fprintf(fpaxis, "%15.12g %15.12g %15.12g       ", 0.0, 0.0, 0.0);
                 fprintf(fpcenter, "%15.12g %15.12g %15.12g       ", 0.0, 0.0, 0.0);
@@ -357,7 +357,7 @@ int gmx_helixorient(int argc, char *argv[])
             else
             {
                 rvec_sub( bSC ? x_SC[i] : x_CA[i], residueorigin[i], residuevector[i]);
-                svmul(1.0/norm(residuevector[i]), residuevector[i], residuevector[i]);
+                svmul(1.0 / norm(residuevector[i]), residuevector[i], residuevector[i]);
                 cprod(residuehelixaxis[i], residuevector[i], axis3[i]);
                 fprintf(fpaxis, "%15.12g %15.12g %15.12g       ", residuehelixaxis[i][0], residuehelixaxis[i][1], residuehelixaxis[i][2]);
                 fprintf(fpcenter, "%15.12g %15.12g %15.12g       ", residueorigin[i][0], residueorigin[i][1], residueorigin[i][2]);
@@ -394,7 +394,7 @@ int gmx_helixorient(int argc, char *argv[])
 
             for (i = 0; i < iCA; i++)
             {
-                if (i == 0 || i == iCA-1)
+                if (i == 0 || i == iCA - 1)
                 {
                     tilt = rotation = 0;
                 }
@@ -434,11 +434,11 @@ int gmx_helixorient(int argc, char *argv[])
                      * A contains rotation column vectors.
                      */
 
-                    theta1 = 180.0/M_PI*std::atan2(A[0][2], A[0][0]);
-                    theta2 = 180.0/M_PI*std::asin(-A[0][1]);
-                    theta3 = 180.0/M_PI*std::atan2(A[2][1], A[1][1]);
+                    theta1 = 180.0 / M_PI * std::atan2(A[0][2], A[0][0]);
+                    theta2 = 180.0 / M_PI * std::asin(-A[0][1]);
+                    theta3 = 180.0 / M_PI * std::atan2(A[2][1], A[1][1]);
 
-                    tilt     = std::sqrt(theta1*theta1+theta2*theta2);
+                    tilt     = std::sqrt(theta1 * theta1 + theta2 * theta2);
                     rotation = theta3;
                     fprintf(fptheta1, "%15.12g  ", theta1);
                     fprintf(fptheta2, "%15.12g  ", theta2);
@@ -463,8 +463,7 @@ int gmx_helixorient(int argc, char *argv[])
         }
 
         teller++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

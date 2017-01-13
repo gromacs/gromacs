@@ -50,8 +50,8 @@
 
 bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
-    t_child   *child;
-    t_mentry  *m;
+    t_child *  child;
+    t_mentry * m;
     t_windata *wd;
     XEvent     letter;
 
@@ -62,13 +62,13 @@ bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     {
         case Expose:
             XSetForeground(x11->disp, x11->gc, x11->fg);
-            TextInRect(x11, w, m->str, 16, 0, wd->width-16-2, wd->height-2,
+            TextInRect(x11, w, m->str, 16, 0, wd->width - 16 - 2, wd->height - 2,
                        eXLeft, eYCenter);
             if (m->bChecked)
             {
                 int y = x11->font->ascent;
-                XDrawLine(x11->disp, w, x11->gc, 2, (y*2)/3, 6, y);
-                XDrawLine(x11->disp, w, x11->gc, 3, (y*2)/3, 7, y);
+                XDrawLine(x11->disp, w, x11->gc, 2, (y * 2) / 3, 6, y);
+                XDrawLine(x11->disp, w, x11->gc, 3, (y * 2) / 3, 7, y);
                 XDrawLine(x11->disp, w, x11->gc, 7, y, 12, 2);
             }
             break;
@@ -104,10 +104,10 @@ bool MenuCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             /* Nothing to be done */
             if (m->bGrabbed)
             {
-                m->bGrabbed =
-                    GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True,
-                                                ButtonReleaseMask, GrabModeAsync,
-                                                GrabModeAsync, m->wd.self, None, CurrentTime));
+                m->bGrabbed
+                    = GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True,
+                                                  ButtonReleaseMask, GrabModeAsync,
+                                                  GrabModeAsync, m->wd.self, None, CurrentTime));
             }
             break;
         case ButtonRelease:
@@ -129,8 +129,8 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     int        i, mlen, mht, area, ht;
     int        j, k, l;
     int        frows, fcol;
-    t_menu    *m;
-    t_child   *kid;
+    t_menu *   m;
+    t_child *  kid;
     t_windata *w;
 
     snew(m, 1);
@@ -148,39 +148,39 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mlen += 20; /* We need extra space at the left for checkmarks */
     mht  += 4;
     /* Calculate the area of the menu */
-    area = mlen*mht;
+    area = mlen * mht;
     ht   = std::sqrt(area);
     /* No the number of rows per column, only beyond 8 rows */
     if (ncol == 0)
     {
         if (nent > 8)
         {
-            frows = (1+ht/mht);
+            frows = (1 + ht / mht);
         }
         else
         {
             frows = nent;
         }
-        fcol = nent/frows;
+        fcol = nent / frows;
     }
     else
     {
         fcol  = ncol;
-        frows = nent/ncol;
+        frows = nent / ncol;
         if (nent % ncol)
         {
             frows++;
         }
     }
-    InitWin(&(m->wd), 10, 10, fcol*mlen, frows*mht, 1, "Menu");
+    InitWin(&(m->wd), 10, 10, fcol * mlen, frows * mht, 1, "Menu");
     snew(m->item, nent);
     m->wd.self = XCreateSimpleWindow(x11->disp, Parent,
                                      m->wd.x, m->wd.y,
                                      m->wd.width, m->wd.height,
                                      m->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, m->wd.self, Parent, MenuCallBack, m);
-    x11->SetInputMask(x11, m->wd.self, ExposureMask |
-                      OwnerGrabButtonMask | ButtonReleaseMask);
+    x11->SetInputMask(x11, m->wd.self, ExposureMask
+                      | OwnerGrabButtonMask | ButtonReleaseMask);
 
     for (j = l = 0; (j < fcol); j++)
     {
@@ -190,16 +190,16 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
             kid->m      = &(ent[l]);
             kid->Parent = Parent;
             w           = &(kid->wd);
-            InitWin(w, j*mlen, k*mht, mlen-2, mht-2, 1, nullptr);
+            InitWin(w, j * mlen, k * mht, mlen - 2, mht - 2, 1, nullptr);
             w->self = XCreateSimpleWindow(x11->disp, m->wd.self,
                                           w->x, w->y, w->width, w->height,
                                           w->bwidth, bg, bg);
             x11->RegisterCallback(x11, w->self, m->wd.self,
                                   ChildCallBack, kid);
             x11->SetInputMask(x11, w->self,
-                              ButtonPressMask | ButtonReleaseMask |
-                              OwnerGrabButtonMask | ExposureMask |
-                              EnterWindowMask | LeaveWindowMask);
+                              ButtonPressMask | ButtonReleaseMask
+                              | OwnerGrabButtonMask | ExposureMask
+                              | EnterWindowMask | LeaveWindowMask);
         }
     }
 

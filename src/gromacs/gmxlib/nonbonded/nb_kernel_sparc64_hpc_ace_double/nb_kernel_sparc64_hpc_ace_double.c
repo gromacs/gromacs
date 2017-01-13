@@ -523,4 +523,4 @@ nb_kernel_info_t
 };
 
 int
-    kernellist_sparc64_hpc_ace_double_size = sizeof(kernellist_sparc64_hpc_ace_double)/sizeof(kernellist_sparc64_hpc_ace_double[0]);
+    kernellist_sparc64_hpc_ace_double_size = sizeof(kernellist_sparc64_hpc_ace_double) / sizeof(kernellist_sparc64_hpc_ace_double[0]);

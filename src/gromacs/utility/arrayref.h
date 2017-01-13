@@ -152,7 +152,7 @@ class ArrayRef
         static ArrayRef<value_type>
         fromArray(value_type *begin, size_t size)
         {
-            return ArrayRef<value_type>(begin, begin+size);
+            return ArrayRef<value_type>(begin, begin + size);
         }
         /*! \brief
          * Constructs a reference to a particular range in a std::vector.
@@ -168,7 +168,7 @@ class ArrayRef
                    typename std::vector<value_type>::iterator end)
         {
             value_type *p_begin = (begin != end) ? &*begin : nullptr;
-            value_type *p_end   = p_begin + (end-begin);
+            value_type *p_end   = p_begin + (end - begin);
             return ArrayRef<value_type>(p_begin, p_end);
         }
 
@@ -331,8 +331,8 @@ class ArrayRef
         }
 
     private:
-        pointer           begin_;
-        pointer           end_;
+        pointer begin_;
+        pointer end_;
 };
 
 
@@ -401,7 +401,7 @@ class ConstArrayRef
         static ConstArrayRef<value_type>
         fromArray(const value_type *begin, size_t size)
         {
-            return ConstArrayRef<value_type>(begin, begin+size);
+            return ConstArrayRef<value_type>(begin, begin + size);
         }
         //! \copydoc ArrayRef::fromVector()
         static ConstArrayRef<value_type>
@@ -409,7 +409,7 @@ class ConstArrayRef
                    typename std::vector<value_type>::const_iterator end)
         {
             const value_type *p_begin = (begin != end) ? &*begin : nullptr;
-            const value_type *p_end   = p_begin + (end-begin);
+            const value_type *p_end   = p_begin + (end - begin);
             return ConstArrayRef<value_type>(p_begin, p_end);
         }
 
@@ -551,8 +551,8 @@ class ConstArrayRef
         }
 
     private:
-        const_pointer           begin_;
-        const_pointer           end_;
+        const_pointer begin_;
+        const_pointer end_;
 };
 
 

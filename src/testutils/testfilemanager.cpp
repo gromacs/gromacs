@@ -103,7 +103,7 @@ class TestFileManager::Impl
         void removeFiles();
 
         //! List of unique paths returned by getTemporaryFilePath().
-        FileNameList            files_;
+        FileNameList files_;
 
         /*! \brief Temporary output directory local to the current
          * test, set by a test with setOutputTempDirectory() if the
@@ -160,9 +160,9 @@ std::string TestFileManager::getTemporaryFilePath(const char *suffix)
      * test. Currently, files whose names are returned by this method
      * get cleaned up (by default) at the end of all tests.
      */
-    std::string filename =
-        Path::join(getOutputTempDirectory(),
-                   getTestSpecificFileName(suffix));
+    std::string filename
+        = Path::join(getOutputTempDirectory(),
+                     getTestSpecificFileName(suffix));
     impl_->files_.insert(filename);
     return filename;
 }
@@ -174,9 +174,9 @@ std::string TestFileManager::getTemporaryFilePath(const std::string &suffix)
 
 std::string TestFileManager::getTestSpecificFileNameRoot()
 {
-    const ::testing::TestInfo *test_info =
-            ::testing::UnitTest::GetInstance()->current_test_info();
-    std::string                filenameRoot = std::string(test_info->test_case_name())
+    const ::testing::TestInfo *test_info
+        = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string filenameRoot = std::string(test_info->test_case_name())
         + "_" + test_info->name();
     std::replace(filenameRoot.begin(), filenameRoot.end(), '/', '_');
     return filenameRoot;

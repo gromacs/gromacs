@@ -74,8 +74,8 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
      * is one of the output file names of mdrun.
      */
     i = 0;
-    while (i < nfile &&
-           !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].fns[0]) == 0))
+    while (i < nfile
+           && !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].fns[0]) == 0))
     {
         i++;
     }
@@ -98,20 +98,19 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
  *
  * This routine cannot print tons of data, since it is called before
  * the log file is opened. */
-static void
-read_checkpoint_data(const char *filename, int *simulation_part,
-                     t_commrec *cr,
-                     gmx_bool bTryToAppendFiles,
-                     int nfile, const t_filenm fnm[],
-                     const char *part_suffix,
-                     gmx_bool *bAddPart,
-                     gmx_bool *bDoAppendFiles)
+static void read_checkpoint_data(const char *filename, int *simulation_part,
+                                 t_commrec *cr,
+                                 gmx_bool bTryToAppendFiles,
+                                 int nfile, const t_filenm fnm[],
+                                 const char *part_suffix,
+                                 gmx_bool *bAddPart,
+                                 gmx_bool *bDoAppendFiles)
 {
-    t_fileio            *fp;
+    t_fileio *           fp;
     int                  nfiles;
     gmx_file_position_t *outputfiles;
     int                  nexist, f;
-    char                *fn, suf_up[STRLEN];
+    char *               fn, suf_up[STRLEN];
 
     *bDoAppendFiles = FALSE;
 
@@ -184,7 +183,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                               "since we will append to them by default. If the files are not available, you "
                               "can add the -noappend flag to mdrun and write separate new parts. "
                               "For mere concatenation of files, you should use the gmx trjcat tool instead.",
-                              nfiles-nexist, nfiles);
+                              nfiles - nexist, nfiles);
                 }
             }
 
@@ -195,8 +194,8 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                     gmx_fatal(FARGS, "File appending requested, but no output file information is stored in the checkpoint file");
                 }
                 fn = outputfiles[0].filename;
-                if (strlen(fn) < 4 ||
-                    gmx_strcasecmp(fn+strlen(fn)-4, ftp2ext(efLOG)) == 0)
+                if (strlen(fn) < 4
+                    || gmx_strcasecmp(fn + strlen(fn) - 4, ftp2ext(efLOG)) == 0)
                 {
                     gmx_fatal(FARGS, "File appending requested, but the log file is not the first file listed in the checkpoint file");
                 }
@@ -205,8 +204,8 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                  */
                 strcpy(suf_up, part_suffix);
                 upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != nullptr ||
-                             strstr(fn, suf_up) != nullptr);
+                *bAddPart = (strstr(fn, part_suffix) != nullptr
+                             || strstr(fn, suf_up) != nullptr);
             }
 
             sfree(outputfiles);
@@ -226,18 +225,17 @@ read_checkpoint_data(const char *filename, int *simulation_part,
 }
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-void
-handleRestart(t_commrec *cr,
-              gmx_bool   bTryToAppendFiles,
-              const int  NFILE,
-              t_filenm   fnm[],
-              gmx_bool  *bDoAppendFiles,
-              gmx_bool  *bStartFromCpt)
+void handleRestart(t_commrec *cr,
+                   gmx_bool   bTryToAppendFiles,
+                   const int  NFILE,
+                   t_filenm   fnm[],
+                   gmx_bool * bDoAppendFiles,
+                   gmx_bool * bStartFromCpt)
 {
-    gmx_bool        bAddPart;
-    int             sim_part, sim_part_fn;
-    const char     *part_suffix = ".part";
-    FILE           *fpmulti;
+    gmx_bool    bAddPart;
+    int         sim_part, sim_part_fn;
+    const char *part_suffix = ".part";
+    FILE *      fpmulti;
 
 
     /* Check if there is ANY checkpoint file available */
@@ -299,7 +297,7 @@ handleRestart(t_commrec *cr,
         add_suffix_to_output_names(fnm, NFILE, suffix);
         if (MULTIMASTER(cr))
         {
-            fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part-1, suffix);
+            fprintf(stdout, "Checkpoint file is from part %d, new output files will be suffixed '%s'.\n", sim_part - 1, suffix);
         }
     }
 }

@@ -59,7 +59,8 @@
 struct t_commrec;
 
 //! Kinds of simulation conditions to signal about.
-enum {
+enum
+{
     eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
 };
 
@@ -93,7 +94,7 @@ class SimulationSignal
         //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.
         signed char set;
         //! Is the signal in one simulation independent of other simulations?
-        bool        isLocal;
+        bool isLocal;
 };
 
 //! Convenience typedef for the group of signals used.
@@ -114,7 +115,7 @@ class SimulationSignaller
     public:
         //! Constructor
         SimulationSignaller(SimulationSignals *signals,
-                            const t_commrec   *cr,
+                            const t_commrec *  cr,
                             bool               doInterSim,
                             bool               doIntraSim);
         /*! \brief Return a reference to an array of signal values to communicate.
@@ -144,13 +145,13 @@ class SimulationSignaller
         void finalizeSignals();
     private:
         //! Source and sink for mdrun signals
-        SimulationSignals       *signals_;
+        SimulationSignals *signals_;
         //! Communication object.
-        const t_commrec         *cr_;
+        const t_commrec *cr_;
         //! Do inter-sim communication at this step.
-        bool                     doInterSim_;
+        bool doInterSim_;
         //! Do intra-sim communication at this step.
-        bool                     doIntraSim_;
+        bool doIntraSim_;
         //! Buffer for MPI communication.
         std::array<real, eglsNR> mpiBuffer_;
 };

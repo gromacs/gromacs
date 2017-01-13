@@ -67,15 +67,15 @@ static void zero_history(history_t *hist)
 
 static void zero_ekinstate(ekinstate_t *eks)
 {
-    eks->ekin_n         = 0;
-    eks->ekinh          = nullptr;
-    eks->ekinf          = nullptr;
-    eks->ekinh_old      = nullptr;
+    eks->ekin_n    = 0;
+    eks->ekinh     = nullptr;
+    eks->ekinf     = nullptr;
+    eks->ekinh_old = nullptr;
     eks->ekinscalef_nhc.resize(0);
     eks->ekinscaleh_nhc.resize(0);
     eks->vscale_nhc.resize(0);
-    eks->dekindl        = 0;
-    eks->mvcos          = 0;
+    eks->dekindl = 0;
+    eks->mvcos   = 0;
 }
 
 static void init_swapstate(swapstate_t *swapstate)
@@ -101,11 +101,11 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     state->ngtc          = ngtc;
     state->nnhpres       = nnhpres;
     state->nhchainlength = nhchainlength;
-    state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
-    state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
+    state->nosehoover_xi.resize(state->nhchainlength * state->ngtc, 0);
+    state->nosehoover_vxi.resize(state->nhchainlength * state->ngtc, 0);
     state->therm_integral.resize(state->ngtc, 0);
-    state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
-    state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
+    state->nhpres_xi.resize(state->nhchainlength * nnhpres, 0);
+    state->nhpres_vxi.resize(state->nhchainlength * nnhpres, 0);
 }
 
 
@@ -115,7 +115,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     state->flags     = 0;
     state->fep_state = 0;
     state->lambda.resize(efptNR, 0);
-    state->veta   = 0;
+    state->veta = 0;
     clear_mat(state->box);
     clear_mat(state->box_rel);
     clear_mat(state->boxv);
@@ -168,17 +168,17 @@ void comp_state(const t_state *st1, const t_state *st2,
     cmp_rvecs(stdout, "box_rel", DIM, st1->box_rel, st2->box_rel, FALSE, ftol, abstol);
     fprintf(stdout, "comparing boxv\n");
     cmp_rvecs(stdout, "boxv", DIM, st1->boxv, st2->boxv, FALSE, ftol, abstol);
-    if (st1->flags & (1<<estSVIR_PREV))
+    if (st1->flags & (1 << estSVIR_PREV))
     {
         fprintf(stdout, "comparing shake vir_prev\n");
         cmp_rvecs(stdout, "svir_prev", DIM, st1->svir_prev, st2->svir_prev, FALSE, ftol, abstol);
     }
-    if (st1->flags & (1<<estFVIR_PREV))
+    if (st1->flags & (1 << estFVIR_PREV))
     {
         fprintf(stdout, "comparing force vir_prev\n");
         cmp_rvecs(stdout, "fvir_prev", DIM, st1->fvir_prev, st2->fvir_prev, FALSE, ftol, abstol);
     }
-    if (st1->flags & (1<<estPRES_PREV))
+    if (st1->flags & (1 << estPRES_PREV))
     {
         fprintf(stdout, "comparing prev_pres\n");
         cmp_rvecs(stdout, "pres_prev", DIM, st1->pres_prev, st2->pres_prev, FALSE, ftol, abstol);
@@ -189,11 +189,11 @@ void comp_state(const t_state *st1, const t_state *st2,
     {
         for (i = 0; i < st1->ngtc; i++)
         {
-            nc = i*st1->nhchainlength;
+            nc = i * st1->nhchainlength;
             for (j = 0; j < nc; j++)
             {
                 cmp_real(stdout, "nosehoover_xi",
-                         i, st1->nosehoover_xi[nc+j], st2->nosehoover_xi[nc+j], ftol, abstol);
+                         i, st1->nosehoover_xi[nc + j], st2->nosehoover_xi[nc + j], ftol, abstol);
             }
         }
     }
@@ -202,11 +202,11 @@ void comp_state(const t_state *st1, const t_state *st2,
     {
         for (i = 0; i < st1->nnhpres; i++)
         {
-            nc = i*st1->nhchainlength;
+            nc = i * st1->nhchainlength;
             for (j = 0; j < nc; j++)
             {
                 cmp_real(stdout, "nosehoover_xi",
-                         i, st1->nhpres_xi[nc+j], st2->nhpres_xi[nc+j], ftol, abstol);
+                         i, st1->nhpres_xi[nc + j], st2->nhpres_xi[nc + j], ftol, abstol);
             }
         }
     }
@@ -214,12 +214,12 @@ void comp_state(const t_state *st1, const t_state *st2,
     cmp_int(stdout, "natoms", -1, st1->natoms, st2->natoms);
     if (st1->natoms == st2->natoms)
     {
-        if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX)))
+        if ((st1->flags & (1 << estX)) && (st2->flags & (1 << estX)))
         {
             fprintf(stdout, "comparing x\n");
             cmp_rvecs(stdout, "x", st1->natoms, as_rvec_array(st1->x.data()), as_rvec_array(st2->x.data()), bRMSD, ftol, abstol);
         }
-        if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV)))
+        if ((st1->flags & (1 << estV)) && (st2->flags & (1 << estV)))
         {
             fprintf(stdout, "comparing v\n");
             cmp_rvecs(stdout, "v", st1->natoms, as_rvec_array(st1->v.data()), as_rvec_array(st2->v.data()), bRMSD, ftol, abstol);

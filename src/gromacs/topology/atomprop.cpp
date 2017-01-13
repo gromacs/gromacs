@@ -54,18 +54,20 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-typedef struct {
-    gmx_bool    bSet;
-    int         nprop, maxprop;
-    char       *db;
-    double      def;
-    char      **atomnm;
-    char      **resnm;
-    gmx_bool   *bAvail;
-    real       *value;
+typedef struct
+{
+    gmx_bool  bSet;
+    int       nprop, maxprop;
+    char *    db;
+    double    def;
+    char **   atomnm;
+    char **   resnm;
+    gmx_bool *bAvail;
+    real *    value;
 } aprop_t;
 
-typedef struct gmx_atomprop {
+typedef struct gmx_atomprop
+{
     gmx_bool           bWarned, bWarnVDW;
     aprop_t            prop[epropNR];
     gmx_residuetype_t *restype;
@@ -74,7 +76,8 @@ typedef struct gmx_atomprop {
 
 
 /* NOTFOUND should be smallest, others larger in increasing priority */
-enum {
+enum
+{
     NOTFOUND = -4, WILDCARD, WILDPROT, PROTEIN
 };
 
@@ -115,8 +118,8 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
         rlen = dbcmp_len(resnm, ap->resnm[i]);
         if (rlen == NOTFOUND)
         {
-            if ( (strcmp(ap->resnm[i], "*") == 0) ||
-                 (strcmp(ap->resnm[i], "???") == 0) )
+            if ( (strcmp(ap->resnm[i], "*") == 0)
+                 || (strcmp(ap->resnm[i], "???") == 0) )
             {
                 rlen = WILDCARD;
             }
@@ -128,8 +131,8 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
         alen = dbcmp_len(atomnm, ap->atomnm[i]);
         if ( (alen > NOTFOUND) && (rlen > NOTFOUND))
         {
-            if ( ( (alen > malen) && (rlen >= mrlen)) ||
-                 ( (rlen > mrlen) && (alen >= malen) ) )
+            if ( ( (alen > malen) && (rlen >= mrlen))
+                 || ( (rlen > mrlen) && (alen >= malen) ) )
             {
                 malen = alen;
                 mrlen = rlen;
@@ -138,10 +141,10 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
         }
     }
 
-    *bExact = ((malen == (long int)strlen(atomnm)) &&
-               ((mrlen == (long int)strlen(resnm)) ||
-                ((mrlen == WILDPROT) && bProtWild) ||
-                ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
+    *bExact = ((malen == (long int)strlen(atomnm))
+               && ((mrlen == (long int)strlen(resnm))
+                   || ((mrlen == WILDPROT) && bProtWild)
+                   || ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
 
     if (debug)
     {
@@ -214,11 +217,11 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
 static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 {
     gmx_atomprop *ap2 = (gmx_atomprop*) aps;
-    FILE         *fp;
+    FILE *        fp;
     char          line[STRLEN], resnm[32], atomnm[32];
     double        pp;
     int           line_no;
-    aprop_t      *ap;
+    aprop_t *     ap;
 
     ap = &ap2->prop[eprop];
 
@@ -247,11 +250,11 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 
 static void set_prop(gmx_atomprop_t aps, int eprop)
 {
-    gmx_atomprop *ap2           = (gmx_atomprop*) aps;
-    const char   *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
-    double        fac[epropNR]  = { 1.0,    1.0,  418.4, 1.0, 1.0 };
-    double        def[epropNR]  = { 12.011, 0.14, 0.0, 2.2, -1 };
-    aprop_t      *ap;
+    gmx_atomprop *ap2          = (gmx_atomprop*) aps;
+    const char *  fns[epropNR] = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
+    double        fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
+    double        def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
+    aprop_t *     ap;
 
     ap = &ap2->prop[eprop];
     if (!ap->bSet)
@@ -352,34 +355,34 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
     gmx_atomprop *ap = (gmx_atomprop*) aps;
     int           j;
 #define MAXQ 32
-    char          atomname[MAXQ], resname[MAXQ];
-    gmx_bool      bExact;
+    char     atomname[MAXQ], resname[MAXQ];
+    gmx_bool bExact;
 
     set_prop(aps, eprop);
-    if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1))
+    if ((strlen(atomnm) > MAXQ - 1) || (strlen(resnm) > MAXQ - 1))
     {
         if (debug)
         {
             fprintf(debug, "WARNING: will only compare first %d characters\n",
-                    MAXQ-1);
+                    MAXQ - 1);
         }
     }
     if (isdigit(atomnm[0]))
     {
         int i;
         /* put digit after atomname */
-        for (i = 1; i < MAXQ-1 && atomnm[i] != '\0'; i++)
+        for (i = 1; i < MAXQ - 1 && atomnm[i] != '\0'; i++)
         {
-            atomname[i-1] = atomnm[i];
+            atomname[i - 1] = atomnm[i];
         }
-        atomname[i-1] = atomnm[0];
-        atomname[i]   = '\0';
+        atomname[i - 1] = atomnm[0];
+        atomname[i]     = '\0';
     }
     else
     {
-        strncpy(atomname, atomnm, MAXQ-1);
+        strncpy(atomname, atomnm, MAXQ - 1);
     }
-    strncpy(resname, resnm, MAXQ-1);
+    strncpy(resname, resnm, MAXQ - 1);
 
     j = get_prop_index(&(ap->prop[eprop]), ap->restype, resname,
                        atomname, &bExact);

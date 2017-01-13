@@ -53,21 +53,24 @@
 #include "gromacs/utility/smalloc.h"
 
 /*! \libinternal \brief Structure for the local atom info for a plain list */
-typedef struct {
-    int  la;   /**< The local atom index */
-    int  cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
+typedef struct
+{
+    int la;    /**< The local atom index */
+    int cell;  /**< The DD zone index for neighboring domains, zone+zone otherwise */
 } gmx_laa_t;
 
 /*! \libinternal \brief Structure for the local atom info for a hash table */
-typedef struct {
-    int  ga;   /**< The global atom index */
-    int  la;   /**< The local atom index */
-    int  cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
-    int  next; /**< Index in the list of the next element with the same hash, -1 if none */
+typedef struct
+{
+    int ga;    /**< The global atom index */
+    int la;    /**< The local atom index */
+    int cell;  /**< The DD zone index for neighboring domains, zone+zone otherwise */
+    int next;  /**< Index in the list of the next element with the same hash, -1 if none */
 } gmx_lal_t;
 
 /*! \libinternal \brief Structure for all global to local mapping information */
-struct gmx_ga2la_t {
+struct gmx_ga2la_t
+{
     gmx_bool   bDirectList;        /**< Use a direct list */
     int        mod;                /**< The hash size */
     int        nalloc;             /**< The alloction size of laa or la1 */
@@ -126,8 +129,8 @@ static gmx_ga2la_t *ga2la_init(int natoms_total, int natoms_local)
      * Method 1 is faster for low parallelization, 2 for high parallelization.
      * We switch to method 2 when it uses less than half the memory method 1.
      */
-    ga2la->bDirectList = (natoms_total <= 1024 ||
-                          natoms_total <= natoms_local*9);
+    ga2la->bDirectList = (natoms_total <= 1024
+                          || natoms_total <= natoms_local * 9);
 
     if (ga2la->bDirectList)
     {
@@ -143,7 +146,7 @@ static gmx_ga2la_t *ga2la_init(int natoms_total, int natoms_local)
          * where f is: the direct list length / #local atoms
          * The fraction of atoms not in the direct list is: 1-f(1-e^-1/f).
          */
-        ga2la->mod    = 2*natoms_local;
+        ga2la->mod    = 2 * natoms_local;
         ga2la->nalloc = over_alloc_dd(ga2la->mod);
         snew(ga2la->lal, ga2la->nalloc);
     }
@@ -191,7 +194,7 @@ static void ga2la_set(gmx_ga2la_t *ga2la, int a_gl, int a_loc, int cell)
         /* If we are at the end of the list we need to increase the size */
         if (ind == ga2la->nalloc)
         {
-            ga2la->nalloc = over_alloc_dd(ind+1);
+            ga2la->nalloc = over_alloc_dd(ind + 1);
             srenew(ga2la->lal, ga2la->nalloc);
             for (i = ind; i < ga2la->nalloc; i++)
             {
@@ -250,8 +253,7 @@ static void ga2la_del(gmx_ga2la_t *ga2la, int a_gl)
         }
         ind_prev = ind;
         ind      = ga2la->lal[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return;
 }
@@ -283,8 +285,7 @@ static void ga2la_change_la(gmx_ga2la_t *ga2la, int a_gl, int a_loc)
             return;
         }
         ind = ga2la->lal[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return;
 }
@@ -320,8 +321,7 @@ static gmx_bool ga2la_get(const gmx_ga2la_t *ga2la, int a_gl, int *a_loc, int *c
             return TRUE;
         }
         ind = ga2la->lal[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return FALSE;
 }
@@ -361,8 +361,7 @@ static gmx_bool ga2la_get_home(const gmx_ga2la_t *ga2la, int a_gl, int *a_loc)
             }
         }
         ind = ga2la->lal[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return FALSE;
 }
@@ -390,8 +389,7 @@ static gmx_bool ga2la_is_home(const gmx_ga2la_t *ga2la, int a_gl)
             return (ga2la->lal[ind].cell == 0);
         }
         ind = ga2la->lal[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return FALSE;
 }

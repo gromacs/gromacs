@@ -139,7 +139,7 @@ static int xtc_header(XDR *xd, int *magic, int *natoms, gmx_int64_t *step, real 
 
 static int xtc_coord(XDR *xd, int *natoms, rvec *box, rvec *x, real *prec, gmx_bool bRead)
 {
-    int    i, j, result;
+    int i, j, result;
 #if GMX_DOUBLE
     float *ftmp;
     float  fprec;
@@ -162,16 +162,16 @@ static int xtc_coord(XDR *xd, int *natoms, rvec *box, rvec *x, real *prec, gmx_b
 
 #if GMX_DOUBLE
     /* allocate temp. single-precision array */
-    snew(ftmp, (*natoms)*DIM);
+    snew(ftmp, (*natoms) * DIM);
 
     /* Copy data to temp. array if writing */
     if (!bRead)
     {
         for (i = 0; (i < *natoms); i++)
         {
-            ftmp[DIM*i+XX] = x[i][XX];
-            ftmp[DIM*i+YY] = x[i][YY];
-            ftmp[DIM*i+ZZ] = x[i][ZZ];
+            ftmp[DIM * i + XX] = x[i][XX];
+            ftmp[DIM * i + YY] = x[i][YY];
+            ftmp[DIM * i + ZZ] = x[i][ZZ];
         }
         fprec = *prec;
     }
@@ -182,9 +182,9 @@ static int xtc_coord(XDR *xd, int *natoms, rvec *box, rvec *x, real *prec, gmx_b
     {
         for (i = 0; (i < *natoms); i++)
         {
-            x[i][XX] = ftmp[DIM*i+XX];
-            x[i][YY] = ftmp[DIM*i+YY];
-            x[i][ZZ] = ftmp[DIM*i+ZZ];
+            x[i][XX] = ftmp[DIM * i + XX];
+            x[i][YY] = ftmp[DIM * i + YY];
+            x[i][ZZ] = ftmp[DIM * i + ZZ];
         }
         *prec = fprec;
     }
@@ -203,7 +203,7 @@ int write_xtc(t_fileio *fio,
               const rvec *box, const rvec *x, real prec)
 {
     int      magic_number = XTC_MAGIC;
-    XDR     *xd;
+    XDR *    xd;
     gmx_bool bDum;
     int      bOK;
 

@@ -119,8 +119,8 @@ class AnalysisDataModuleManager
          *
          * \see AbstractAnalysisData::addModule()
          */
-        void addModule(AbstractAnalysisData      *data,
-                       AnalysisDataModulePointer  module);
+        void addModule(AbstractAnalysisData *    data,
+                       AnalysisDataModulePointer module);
         /*! \brief
          * Applies a module to process data that is ready.
          *
@@ -133,7 +133,7 @@ class AnalysisDataModuleManager
          * \see AbstractAnalysisData::applyModule()
          */
         void applyModule(AbstractAnalysisData *data,
-                         IAnalysisDataModule  *module);
+                         IAnalysisDataModule * module);
 
         /*! \brief
          * Notifies attached modules of the start of serial data.
@@ -175,7 +175,7 @@ class AnalysisDataModuleManager
          * See notifyDataStart() for general constraints.
          */
         void notifyParallelDataStart(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options);
         /*! \brief
          * Notifies attached serial modules of the start of a frame.

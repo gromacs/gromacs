@@ -168,11 +168,11 @@ class AnalysisDataFrameAverager
             AverageItem() : average(0.0), squaredSum(0.0), samples(0) {}
 
             //! Average of the values so far.
-            double               average;
+            double average;
             //! Sum of squared deviations from the average for values so far.
-            double               squaredSum;
+            double squaredSum;
             //! Number of values so far.
-            int                  samples;
+            int samples;
         };
 
         std::vector<AverageItem> values_;

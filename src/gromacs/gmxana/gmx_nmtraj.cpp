@@ -84,7 +84,7 @@ int gmx_nmtraj(int argc, char *argv[])
     static const char *eignrvec     = "7";
     static const char *phasevec     = "0.0";
 
-    t_pargs            pa[] =
+    t_pargs pa[] =
     {
         { "-eignr",     FALSE, etSTR,  {&eignrvec}, "String of eigenvectors to use (first is 1)" },
         { "-phases",    FALSE, etSTR,  {&phasevec}, "String of phases (default is 0.0)" },
@@ -95,34 +95,34 @@ int gmx_nmtraj(int argc, char *argv[])
 
 #define NPA asize(pa)
 
-    t_trxstatus      *out;
-    t_topology        top;
-    int               ePBC;
-    t_atoms          *atoms;
-    rvec             *xtop, *xref, *xav, *xout;
-    int               nvec, *eignr = nullptr;
-    rvec            **eigvec = nullptr;
-    matrix            box;
-    int               natoms;
-    int               i, j, k, kmode, d;
-    gmx_bool          bDMR, bDMA, bFit;
+    t_trxstatus *out;
+    t_topology   top;
+    int          ePBC;
+    t_atoms *    atoms;
+    rvec *       xtop, *xref, *xav, *xout;
+    int          nvec, *eignr = nullptr;
+    rvec **      eigvec = nullptr;
+    matrix       box;
+    int          natoms;
+    int          i, j, k, kmode, d;
+    gmx_bool     bDMR, bDMA, bFit;
 
-    real        *     eigval;
-    int        *      dummy;
-    real        *     invsqrtm;
+    real *            eigval;
+    int *             dummy;
+    real *            invsqrtm;
     real              fraction;
-    int              *out_eigidx;
-    rvec        *     this_eigvec;
+    int *             out_eigidx;
+    rvec *            this_eigvec;
     real              omega, Ekin, m, vel;
     int               nmodes, nphases;
-    int              *imodes;
-    real             *amplitude;
-    real             *phases;
-    const char       *p;
-    char             *pe;
+    int *             imodes;
+    real *            amplitude;
+    real *            phases;
+    const char *      p;
+    char *            pe;
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] =
+    t_filenm fnm[] =
     {
         { efTPS, nullptr,    nullptr,          ffREAD },
         { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -152,7 +152,7 @@ int gmx_nmtraj(int argc, char *argv[])
     for (i = 0; i < nmodes; i++)
     {
         /* C indices start on 0 */
-        imodes[i] = std::strtol(p, &pe, 10)-1;
+        imodes[i] = std::strtol(p, &pe, 10) - 1;
         p         = pe;
     }
 
@@ -175,7 +175,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
     if (nmodes > nphases)
     {
-        printf("Warning: Setting phase of last %d modes to zero...\n", nmodes-nphases);
+        printf("Warning: Setting phase of last %d modes to zero...\n", nmodes - nphases);
     }
 
     for (i = nphases; i < nmodes; i++)
@@ -254,7 +254,7 @@ int gmx_nmtraj(int argc, char *argv[])
             /* Derive amplitude from temperature and eigenvalue if we can */
 
             /* Convert eigenvalue to angular frequency, in units s^(-1) */
-            omega = std::sqrt(eigval[kmode]*1.0E21/(AVOGADRO*AMU));
+            omega = std::sqrt(eigval[kmode] * 1.0E21 / (AVOGADRO * AMU));
             /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
              * The velocity is thus:
              *
@@ -276,18 +276,18 @@ int gmx_nmtraj(int argc, char *argv[])
                 m = atoms->atom[k].m;
                 for (d = 0; d < DIM; d++)
                 {
-                    vel   = omega*this_eigvec[k][d];
-                    Ekin += 0.5*0.5*m*vel*vel;
+                    vel   = omega * this_eigvec[k][d];
+                    Ekin += 0.5 * 0.5 * m * vel * vel;
                 }
             }
 
             /* Convert Ekin from amu*(nm/s)^2 to J, i.e., kg*(m/s)^2
              * This will also be proportional to A^2
              */
-            Ekin *= AMU*1E-18;
+            Ekin *= AMU * 1E-18;
 
             /* Set the amplitude so the energy is kT/2 */
-            amplitude[i] = std::sqrt(0.5*BOLTZMANN*temp/Ekin);
+            amplitude[i] = std::sqrt(0.5 * BOLTZMANN * temp / Ekin);
         }
         else
         {
@@ -303,7 +303,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
     for (i = 0; i < nframes; i++)
     {
-        fraction = static_cast<real>(i)/nframes;
+        fraction = static_cast<real>(i) / nframes;
         for (j = 0; j < natoms; j++)
         {
             copy_rvec(xav[j], xout[j]);
@@ -318,11 +318,11 @@ int gmx_nmtraj(int argc, char *argv[])
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    xout[j][d] += amplitude[k]*std::sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
+                    xout[j][d] += amplitude[k] * std::sin(2 * M_PI * (fraction + phases[k] / 360.0)) * this_eigvec[j][d];
                 }
             }
         }
-        write_trx(out, natoms, dummy, atoms, i, static_cast<real>(i)/nframes, box, xout, nullptr, nullptr);
+        write_trx(out, natoms, dummy, atoms, i, static_cast<real>(i) / nframes, box, xout, nullptr, nullptr);
     }
 
     fprintf(stderr, "\n");

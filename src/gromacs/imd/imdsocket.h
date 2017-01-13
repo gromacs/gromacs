@@ -76,7 +76,7 @@ typedef struct
 #ifdef GMX_IMD
     struct sockaddr_in address;      /**< address of socket                   */
 #endif
-    int                sockfd;       /**< socket file descriptor              */
+    int sockfd;                      /**< socket file descriptor              */
 } IMDSocket;
 
 

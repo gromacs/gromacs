@@ -168,8 +168,8 @@ void printCopyright(FILE *fp)
             const int offset = centeringOffset(width, strlen(Contributors[i]));
             GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
                                "Formatting buffer is not long enough");
-            std::fill(buf, buf+width, ' ');
-            std::strcpy(buf+offset, Contributors[i]);
+            std::fill(buf, buf + width, ' ');
+            std::strcpy(buf + offset, Contributors[i]);
             fprintf(fp, " %-*s", width, buf);
         }
         fprintf(fp, "\n");
@@ -233,7 +233,7 @@ void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "Precision:          single\n");
 #endif
-    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
+    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8 * sizeof(void *)));
 
 #if GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
@@ -262,8 +262,8 @@ void gmx_print_version_info(FILE *fp)
 #endif
 #if GMX_HWLOC
     fprintf(fp, "Hwloc support:      hwloc-%d.%d.%d\n",
-            HWLOC_API_VERSION>>16,
-            (HWLOC_API_VERSION>>8) & 0xFF,
+            HWLOC_API_VERSION >> 16,
+            (HWLOC_API_VERSION >> 8) & 0xFF,
             HWLOC_API_VERSION & 0xFF);
 #else
     fprintf(fp, "Hwloc support:      disabled\n");
@@ -320,14 +320,14 @@ BinaryInformationSettings::BinaryInformationSettings()
 {
 }
 
-void printBinaryInformation(FILE                  *fp,
+void printBinaryInformation(FILE *                 fp,
                             const IProgramContext &programContext)
 {
     printBinaryInformation(fp, programContext, BinaryInformationSettings());
 }
 
-void printBinaryInformation(FILE                            *fp,
-                            const IProgramContext           &programContext,
+void printBinaryInformation(FILE *                           fp,
+                            const IProgramContext &          programContext,
                             const BinaryInformationSettings &settings)
 {
     const char *prefix          = settings.prefix_;
@@ -346,7 +346,7 @@ void printBinaryInformation(FILE                            *fp,
     // could then print "%s is part of GROMACS" or some alternative text.
     std::string title
         = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
-    const int   indent
+    const int indent
         = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
     fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
     fprintf(fp, "%s%s\n", prefix, suffix);

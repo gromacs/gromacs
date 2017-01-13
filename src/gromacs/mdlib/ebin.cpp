@@ -78,7 +78,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
         eb->e_sim[i].e    = 0;
         eb->e_sim[i].eav  = 0;
         eb->e_sim[i].esum = 0;
-        eb->enm[i].name   = gmx_strdup(enm[i-index]);
+        eb->enm[i].name   = gmx_strdup(enm[i - index]);
         if (unit != nullptr)
         {
             eb->enm[i].unit = gmx_strdup(unit);
@@ -121,7 +121,7 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
     double    e, invmm, diff;
     t_energy *eg, *egs;
 
-    if ((index+nener > eb->nener) || (index < 0))
+    if ((index + nener > eb->nener) || (index < 0))
     {
         gmx_fatal(FARGS, "%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
                   __FILE__, __LINE__, index, nener, eb->nener);
@@ -131,7 +131,7 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
 
     for (i = 0; (i < nener); i++)
     {
-        eg[i].e      = ener[i];
+        eg[i].e = ener[i];
     }
 
     if (bSum)
@@ -151,7 +151,7 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
         }
         else
         {
-            invmm = (1.0/(double)m)/((double)m+1.0);
+            invmm = (1.0 / (double)m) / ((double)m + 1.0);
 
             for (i = 0; (i < nener); i++)
             {
@@ -159,8 +159,8 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
                 e = ener[i];
 
                 /* first update sigma, then sum */
-                diff         = eg[i].esum - m*e;
-                eg[i].eav   += diff*diff*invmm;
+                diff         = eg[i].esum - m * e;
+                eg[i].eav   += diff * diff * invmm;
                 eg[i].esum  += e;
                 egs[i].esum += e;
             }
@@ -240,7 +240,7 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
             switch (prmode)
             {
                 case eprNORMAL: ee = eb->e[i].e; break;
-                case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
+                case eprAVER:   ee = eb->e_sim[i].esum / eb->nsum_sim; break;
                 default: gmx_fatal(FARGS, "Invalid print mode %d in pr_ebin",
                                    prmode);
             }
@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
     t_ebin *eb;
     int     i;
     char    buf[25];
-    char   *ce[NE], *ct[NT], *cs[NS];
+    char *  ce[NE], *ct[NT], *cs[NS];
     real    e[NE], t[NT], s[NS];
     int     ie, it, is;
 

@@ -91,79 +91,79 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-(const nbnxn_pairlist_t     *nbl,
- const nbnxn_atomdata_t     *nbat,
- const interaction_const_t  *ic,
- rvec                       *shift_vec,
- real                       *f
+(const nbnxn_pairlist_t     * nbl,
+ const nbnxn_atomdata_t     * nbat,
+ const interaction_const_t  * ic,
+ rvec                       * shift_vec,
+ real                       * f
 #ifdef CALC_SHIFTFORCES
  ,
- real                       *fshift
+ real                       * fshift
 #endif
 #ifdef CALC_ENERGIES
  ,
- real                       *Vvdw,
- real                       *Vc
+ real                       * Vvdw,
+ real                       * Vc
 #endif
 )
 {
-    const nbnxn_ci_t   *nbln;
-    const nbnxn_cj_t   *l_cj;
-    const int          *type;
-    const real         *q;
-    const real         *shiftvec;
-    const real         *x;
-    const real         *nbfp;
-    real                rcut2;
+    const nbnxn_ci_t *nbln;
+    const nbnxn_cj_t *l_cj;
+    const int *       type;
+    const real *      q;
+    const real *      shiftvec;
+    const real *      x;
+    const real *      nbfp;
+    real              rcut2;
 #ifdef VDW_CUTOFF_CHECK
-    real                rvdw2;
+    real rvdw2;
 #endif
-    int                 ntype2;
-    real                facel;
-    int                 n, ci, ci_sh;
-    int                 ish, ishf;
-    gmx_bool            do_LJ, half_LJ, do_coul;
-    int                 cjind0, cjind1, cjind;
+    int      ntype2;
+    real     facel;
+    int      n, ci, ci_sh;
+    int      ish, ishf;
+    gmx_bool do_LJ, half_LJ, do_coul;
+    int      cjind0, cjind1, cjind;
 
-    real                xi[UNROLLI*XI_STRIDE];
-    real                fi[UNROLLI*FI_STRIDE];
-    real                qi[UNROLLI];
+    real xi[UNROLLI * XI_STRIDE];
+    real fi[UNROLLI * FI_STRIDE];
+    real qi[UNROLLI];
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
 
-    real       Vvdw_ci, Vc_ci;
+    real Vvdw_ci, Vc_ci;
 #else
-    int        egp_mask;
-    int        egp_sh_i[UNROLLI];
+    int egp_mask;
+    int egp_sh_i[UNROLLI];
 #endif
 #endif
 #ifdef LJ_POT_SWITCH
-    real       swV3, swV4, swV5;
-    real       swF2, swF3, swF4;
+    real swV3, swV4, swV5;
+    real swF2, swF3, swF4;
 #endif
 #ifdef LJ_EWALD
-    real        lje_coeff2, lje_coeff6_6;
+    real lje_coeff2, lje_coeff6_6;
 #ifdef CALC_ENERGIES
-    real        lje_vc;
+    real lje_vc;
 #endif
     const real *ljc;
 #endif
 
 #ifdef CALC_COUL_RF
-    real       k_rf2;
+    real k_rf2;
 #ifdef CALC_ENERGIES
-    real       k_rf, c_rf;
+    real k_rf, c_rf;
 #endif
 #endif
 #ifdef CALC_COUL_TAB
 #ifdef CALC_ENERGIES
-    real       halfsp;
+    real halfsp;
 #endif
 #if !GMX_DOUBLE
-    const real            *tab_coul_FDV0;
+    const real *tab_coul_FDV0;
 #else
-    const real            *tab_coul_F;
+    const real *           tab_coul_F;
     const real gmx_unused *tab_coul_V;
 #endif
 #endif
@@ -176,23 +176,23 @@ NBK_FUNC_NAME(_VgrpF)
     swV3 = ic->vdw_switch.c3;
     swV4 = ic->vdw_switch.c4;
     swV5 = ic->vdw_switch.c5;
-    swF2 = 3*ic->vdw_switch.c3;
-    swF3 = 4*ic->vdw_switch.c4;
-    swF4 = 5*ic->vdw_switch.c5;
+    swF2 = 3 * ic->vdw_switch.c3;
+    swF3 = 4 * ic->vdw_switch.c4;
+    swF4 = 5 * ic->vdw_switch.c5;
 #endif
 
 #ifdef LJ_EWALD
-    lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
-    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
+    lje_coeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+    lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
 #ifdef CALC_ENERGIES
-    lje_vc       = ic->sh_lj_ewald;
+    lje_vc = ic->sh_lj_ewald;
 #endif
 
-    ljc          = nbat->nbfp_comb;
+    ljc = nbat->nbfp_comb;
 #endif
 
 #ifdef CALC_COUL_RF
-    k_rf2 = 2*ic->k_rf;
+    k_rf2 = 2 * ic->k_rf;
 #ifdef CALC_ENERGIES
     k_rf = ic->k_rf;
     c_rf = ic->c_rf;
@@ -200,34 +200,34 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
 #ifdef CALC_COUL_TAB
 #ifdef CALC_ENERGIES
-    halfsp = 0.5/ic->tabq_scale;
+    halfsp = 0.5 / ic->tabq_scale;
 #endif
 
 #if !GMX_DOUBLE
     tab_coul_FDV0 = ic->tabq_coul_FDV0;
 #else
-    tab_coul_F    = ic->tabq_coul_F;
-    tab_coul_V    = ic->tabq_coul_V;
+    tab_coul_F = ic->tabq_coul_F;
+    tab_coul_V = ic->tabq_coul_V;
 #endif
 #endif
 
 #ifdef ENERGY_GROUPS
-    egp_mask = (1<<nbat->neg_2log) - 1;
+    egp_mask = (1 << nbat->neg_2log) - 1;
 #endif
 
 
-    rcut2               = ic->rcoulomb*ic->rcoulomb;
+    rcut2 = ic->rcoulomb * ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    rvdw2               = ic->rvdw*ic->rvdw;
+    rvdw2 = ic->rvdw * ic->rvdw;
 #endif
 
-    ntype2              = nbat->ntype*2;
-    nbfp                = nbat->nbfp;
-    q                   = nbat->q;
-    type                = nbat->type;
-    facel               = ic->epsfac;
-    shiftvec            = shift_vec[0];
-    x                   = nbat->x;
+    ntype2   = nbat->ntype * 2;
+    nbfp     = nbat->nbfp;
+    q        = nbat->q;
+    type     = nbat->type;
+    facel    = ic->epsfac;
+    shiftvec = shift_vec[0];
+    x        = nbat->x;
 
     l_cj = nbl->cj;
 
@@ -237,14 +237,14 @@ NBK_FUNC_NAME(_VgrpF)
 
         nbln = &nbl->ci[n];
 
-        ish              = (nbln->shift & NBNXN_CI_SHIFT);
+        ish = (nbln->shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
-        ishf             = ish*DIM;
-        cjind0           = nbln->cj_ind_start;
-        cjind1           = nbln->cj_ind_end;
+        ishf   = ish * DIM;
+        cjind0 = nbln->cj_ind_start;
+        cjind1 = nbln->cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
-        ci               = nbln->ci;
-        ci_sh            = (ish == CENTRAL ? ci : -1);
+        ci    = nbln->ci;
+        ci_sh = (ish == CENTRAL ? ci : -1);
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
          * as the other combinations are unlikely and/or not much faster:
@@ -269,7 +269,7 @@ NBK_FUNC_NAME(_VgrpF)
 #else
         for (i = 0; i < UNROLLI; i++)
         {
-            egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
+            egp_sh_i[i] = ((nbat->energrp[ci] >> (i * nbat->neg_2log)) & egp_mask) * nbat->nenergrp;
         }
 #endif
 #endif
@@ -278,11 +278,11 @@ NBK_FUNC_NAME(_VgrpF)
         {
             for (d = 0; d < DIM; d++)
             {
-                xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
-                fi[i*FI_STRIDE+d] = 0;
+                xi[i * XI_STRIDE + d] = x[(ci * UNROLLI + i) * X_STRIDE + d] + shiftvec[ishf + d];
+                fi[i * FI_STRIDE + d] = 0;
             }
 
-            qi[i] = facel*q[ci*UNROLLI+i];
+            qi[i] = facel * q[ci * UNROLLI + i];
         }
 
 #ifdef CALC_ENERGIES
@@ -291,13 +291,13 @@ NBK_FUNC_NAME(_VgrpF)
             real Vc_sub_self;
 
 #ifdef CALC_COUL_RF
-            Vc_sub_self = 0.5*c_rf;
+            Vc_sub_self = 0.5 * c_rf;
 #endif
 #ifdef CALC_COUL_TAB
 #if GMX_DOUBLE
-            Vc_sub_self = 0.5*tab_coul_V[0];
+            Vc_sub_self = 0.5 * tab_coul_V[0];
 #else
-            Vc_sub_self = 0.5*tab_coul_FDV0[2];
+            Vc_sub_self = 0.5 * tab_coul_FDV0[2];
 #endif
 #endif
 
@@ -307,16 +307,16 @@ NBK_FUNC_NAME(_VgrpF)
                 {
                     int egp_ind;
 #ifdef ENERGY_GROUPS
-                    egp_ind = egp_sh_i[i] + ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask);
+                    egp_ind = egp_sh_i[i] + ((nbat->energrp[ci] >> (i * nbat->neg_2log)) & egp_mask);
 #else
                     egp_ind = 0;
 #endif
                     /* Coulomb self interaction */
-                    Vc[egp_ind]   -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
+                    Vc[egp_ind] -= qi[i] * q[ci * UNROLLI + i] * Vc_sub_self;
 
 #ifdef LJ_EWALD
                     /* LJ Ewald self interaction */
-                    Vvdw[egp_ind] += 0.5*nbat->nbfp[nbat->type[ci*UNROLLI+i]*(nbat->ntype + 1)*2]/6*lje_coeff6_6;
+                    Vvdw[egp_ind] += 0.5 * nbat->nbfp[nbat->type[ci * UNROLLI + i] * (nbat->ntype + 1) * 2] / 6 * lje_coeff6_6;
 #endif
                 }
             }
@@ -376,7 +376,7 @@ NBK_FUNC_NAME(_VgrpF)
         {
             for (d = 0; d < DIM; d++)
             {
-                f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
+                f[(ci * UNROLLI + i) * F_STRIDE + d] += fi[i * FI_STRIDE + d];
             }
         }
 #ifdef CALC_SHIFTFORCES
@@ -387,7 +387,7 @@ NBK_FUNC_NAME(_VgrpF)
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    fshift[ishf+d] += fi[i*FI_STRIDE+d];
+                    fshift[ishf + d] += fi[i * FI_STRIDE + d];
                 }
             }
         }

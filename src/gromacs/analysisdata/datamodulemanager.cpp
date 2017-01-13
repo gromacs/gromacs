@@ -77,9 +77,9 @@ class AnalysisDataModuleManager::Impl
             }
 
             //! Pointer to the actual module.
-            AnalysisDataModulePointer   module;
+            AnalysisDataModulePointer module;
             //! Whether the module supports parallel processing.
-            bool                        bParallel;
+            bool bParallel;
         };
 
         //! Shorthand for list of modules added to the data.
@@ -132,19 +132,19 @@ class AnalysisDataModuleManager::Impl
          * calls the notification functions in \p module as if the module had
          * been registered to the data object when the data was added.
          */
-        void presentData(AbstractAnalysisData        *data,
-                         IAnalysisDataModule         *module);
+        void presentData(AbstractAnalysisData *data,
+                         IAnalysisDataModule * module);
 
         //! List of modules added to the data.
-        ModuleList              modules_;
+        ModuleList modules_;
         //! Properties of the owning data for module checking.
-        bool                    bDataProperty_[eDataPropertyNR];
+        bool bDataProperty_[eDataPropertyNR];
         //! true if all modules support missing data.
-        bool                    bAllowMissing_;
+        bool bAllowMissing_;
         //! true if there are modules that do not support parallel processing.
-        bool                    bSerialModules_;
+        bool bSerialModules_;
         //! true if there are modules that support parallel processing.
-        bool                    bParallelModules_;
+        bool bParallelModules_;
 
         /*! \brief
          * Current state of the notification methods.
@@ -156,9 +156,9 @@ class AnalysisDataModuleManager::Impl
          * methods.
          */
         //! Whether notifyDataStart() has been called.
-        mutable State           state_;
+        mutable State state_;
         //! Index of currently active frame or the next frame if not in frame.
-        mutable int             currIndex_;
+        mutable int currIndex_;
 };
 
 AnalysisDataModuleManager::Impl::Impl()
@@ -173,8 +173,7 @@ AnalysisDataModuleManager::Impl::Impl()
     }
 }
 
-void
-AnalysisDataModuleManager::Impl::checkModuleProperty(
+void AnalysisDataModuleManager::Impl::checkModuleProperty(
         const IAnalysisDataModule &module,
         DataProperty property, bool bSet) const
 {
@@ -210,8 +209,7 @@ AnalysisDataModuleManager::Impl::checkModuleProperty(
     }
 }
 
-void
-AnalysisDataModuleManager::Impl::checkModuleProperties(
+void AnalysisDataModuleManager::Impl::checkModuleProperties(
         const IAnalysisDataModule &module) const
 {
     for (int i = 0; i < eDataPropertyNR; ++i)
@@ -220,9 +218,8 @@ AnalysisDataModuleManager::Impl::checkModuleProperties(
     }
 }
 
-void
-AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData *data,
-                                             IAnalysisDataModule  *module)
+void AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData *data,
+                                                  IAnalysisDataModule * module)
 {
     if (state_ == eNotStarted)
     {
@@ -270,8 +267,7 @@ AnalysisDataModuleManager::~AnalysisDataModuleManager()
 {
 }
 
-void
-AnalysisDataModuleManager::dataPropertyAboutToChange(DataProperty property, bool bSet)
+void AnalysisDataModuleManager::dataPropertyAboutToChange(DataProperty property, bool bSet)
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
                        "Cannot change data properties after data has been started");
@@ -286,9 +282,8 @@ AnalysisDataModuleManager::dataPropertyAboutToChange(DataProperty property, bool
     }
 }
 
-void
-AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
-                                     AnalysisDataModulePointer  module)
+void AnalysisDataModuleManager::addModule(AbstractAnalysisData *    data,
+                                          AnalysisDataModulePointer module)
 {
     impl_->checkModuleProperties(*module);
     // TODO: Ensure that the system does not end up in an inconsistent state by
@@ -305,9 +300,8 @@ AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
     impl_->modules_.emplace_back(module);
 }
 
-void
-AnalysisDataModuleManager::applyModule(AbstractAnalysisData *data,
-                                       IAnalysisDataModule  *module)
+void AnalysisDataModuleManager::applyModule(AbstractAnalysisData *data,
+                                            IAnalysisDataModule * module)
 {
     impl_->checkModuleProperties(*module);
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eFinished,
@@ -316,8 +310,7 @@ AnalysisDataModuleManager::applyModule(AbstractAnalysisData *data,
 }
 
 
-bool
-AnalysisDataModuleManager::hasSerialModules() const
+bool AnalysisDataModuleManager::hasSerialModules() const
 {
     GMX_ASSERT(impl_->state_ != Impl::eNotStarted,
                "Module state not accessible before data is started");
@@ -325,8 +318,7 @@ AnalysisDataModuleManager::hasSerialModules() const
 }
 
 
-void
-AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data)
+void AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data)
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
                        "notifyDataStart() called more than once");
@@ -351,9 +343,8 @@ AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data)
 }
 
 
-void
-AnalysisDataModuleManager::notifyParallelDataStart(
-        AbstractAnalysisData              *data,
+void AnalysisDataModuleManager::notifyParallelDataStart(
+        AbstractAnalysisData *             data,
         const AnalysisDataParallelOptions &options)
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
@@ -387,12 +378,11 @@ AnalysisDataModuleManager::notifyParallelDataStart(
 }
 
 
-void
-AnalysisDataModuleManager::notifyFrameStart(const AnalysisDataFrameHeader &header) const
+void AnalysisDataModuleManager::notifyFrameStart(const AnalysisDataFrameHeader &header) const
 {
     GMX_ASSERT(impl_->state_ == Impl::eInData, "Invalid call sequence");
     GMX_ASSERT(header.index() == impl_->currIndex_, "Out of order frames");
-    impl_->state_     = Impl::eInFrame;
+    impl_->state_ = Impl::eInFrame;
 
     if (impl_->bSerialModules_)
     {
@@ -407,8 +397,7 @@ AnalysisDataModuleManager::notifyFrameStart(const AnalysisDataFrameHeader &heade
     }
 }
 
-void
-AnalysisDataModuleManager::notifyParallelFrameStart(
+void AnalysisDataModuleManager::notifyParallelFrameStart(
         const AnalysisDataFrameHeader &header) const
 {
     if (impl_->bParallelModules_)
@@ -425,8 +414,7 @@ AnalysisDataModuleManager::notifyParallelFrameStart(
 }
 
 
-void
-AnalysisDataModuleManager::notifyPointsAdd(const AnalysisDataPointSetRef &points) const
+void AnalysisDataModuleManager::notifyPointsAdd(const AnalysisDataPointSetRef &points) const
 {
     GMX_ASSERT(impl_->state_ == Impl::eInFrame, "notifyFrameStart() not called");
     // TODO: Add checks for column spans (requires passing the information
@@ -454,8 +442,7 @@ AnalysisDataModuleManager::notifyPointsAdd(const AnalysisDataPointSetRef &points
 }
 
 
-void
-AnalysisDataModuleManager::notifyParallelPointsAdd(
+void AnalysisDataModuleManager::notifyParallelPointsAdd(
         const AnalysisDataPointSetRef &points) const
 {
     // TODO: Add checks for column spans (requires passing the information
@@ -481,8 +468,7 @@ AnalysisDataModuleManager::notifyParallelPointsAdd(
 }
 
 
-void
-AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader &header) const
+void AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader &header) const
 {
     GMX_ASSERT(impl_->state_ == Impl::eInFrame, "notifyFrameStart() not called");
     GMX_ASSERT(header.index() == impl_->currIndex_,
@@ -511,8 +497,7 @@ AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader &head
 }
 
 
-void
-AnalysisDataModuleManager::notifyParallelFrameFinish(
+void AnalysisDataModuleManager::notifyParallelFrameFinish(
         const AnalysisDataFrameHeader &header) const
 {
     if (impl_->bParallelModules_)
@@ -529,8 +514,7 @@ AnalysisDataModuleManager::notifyParallelFrameFinish(
 }
 
 
-void
-AnalysisDataModuleManager::notifyDataFinish() const
+void AnalysisDataModuleManager::notifyDataFinish() const
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eInData, "Invalid call sequence");
     impl_->state_ = Impl::eFinished;

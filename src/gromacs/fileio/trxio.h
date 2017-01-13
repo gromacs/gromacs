@@ -101,15 +101,15 @@ int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atom
  * atoms can be NULL for file types which don't need atom names.
  */
 
-void trjtools_gmx_prepare_tng_writing(const char               *filename,
-                                      char                      filemode,
-                                      t_trxstatus              *in,
-                                      t_trxstatus             **out,
-                                      const char               *infile,
-                                      const int                 natoms,
-                                      const struct gmx_mtop_t  *mtop,
-                                      const int                *index,
-                                      const char               *index_group_name);
+void trjtools_gmx_prepare_tng_writing(const char *             filename,
+                                      char                     filemode,
+                                      t_trxstatus *            in,
+                                      t_trxstatus **           out,
+                                      const char *             infile,
+                                      const int                natoms,
+                                      const struct gmx_mtop_t *mtop,
+                                      const int *              index,
+                                      const char *             index_group_name);
 /* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
  * some data, e.g. molecule system, will be copied over from *in to *out.
  * If *in == NULL a file name (infile) of a TNG file can be provided instead
@@ -128,8 +128,8 @@ void trjtools_gmx_prepare_tng_writing(const char               *filename,
  * tng_trajectory_t are encapsulated, so client trajectory-writing
  * code with a t_trxstatus can't just call the TNG writing
  * function. */
-void write_tng_frame(t_trxstatus        *status,
-                     struct t_trxframe  *fr);
+void write_tng_frame(t_trxstatus *      status,
+                     struct t_trxframe *fr);
 
 void close_trx(t_trxstatus *status);
 /* Close trajectory file as opened with read_first_x, read_frist_frame
@@ -183,18 +183,18 @@ int check_times(real t);
  * but a frame might be returned which does not contain the field.
  * When a NEED flag is set, frames not containing the field will be skipped.
  */
-#define TRX_READ_X    (1<<0)
-#define TRX_NEED_X    (1<<1)
-#define TRX_READ_V    (1<<2)
-#define TRX_NEED_V    (1<<3)
-#define TRX_READ_F    (1<<4)
-#define TRX_NEED_F    (1<<5)
+#define TRX_READ_X    (1 << 0)
+#define TRX_NEED_X    (1 << 1)
+#define TRX_READ_V    (1 << 2)
+#define TRX_NEED_V    (1 << 3)
+#define TRX_READ_F    (1 << 4)
+#define TRX_NEED_F    (1 << 5)
 /* Useful for reading natoms from a trajectory without skipping */
-#define TRX_DONT_SKIP (1<<6)
+#define TRX_DONT_SKIP (1 << 6)
 
 /* For trxframe.not_ok */
-#define HEADER_NOT_OK (1<<0)
-#define DATA_NOT_OK   (1<<1)
+#define HEADER_NOT_OK (1 << 0)
+#define DATA_NOT_OK   (1 << 1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,

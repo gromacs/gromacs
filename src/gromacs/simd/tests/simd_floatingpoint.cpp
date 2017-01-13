@@ -70,8 +70,8 @@ TEST_F(SimdFloatingpointTest, setZero)
 
 TEST_F(SimdFloatingpointTest, set)
 {
-    real  r  = 2.0;
-    real *p  = &r;
+    real  r = 2.0;
+    real *p = &r;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.0), SimdReal(1.0));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(r), SimdReal(*p));
 }
@@ -278,9 +278,9 @@ TEST_F(SimdFloatingpointTest, ldexp)
 
 TEST_F(SimdFloatingpointTest, rsqrt)
 {
-    SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    SimdReal        ref                = setSimdRealFrom3R(0.5, 1.0/std::sqrt(M_PI), 1.0/std::sqrt(1234567890.0));
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+    SimdReal x         = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    SimdReal ref       = setSimdRealFrom3R(0.5, 1.0 / std::sqrt(M_PI), 1.0 / std::sqrt(1234567890.0));
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
     {
@@ -296,11 +296,11 @@ TEST_F(SimdFloatingpointTest, rsqrt)
 
 TEST_F(SimdFloatingpointTest, maskzRsqrt)
 {
-    SimdReal        x                  = setSimdRealFrom3R(M_PI, -4.0, 0.0);
+    SimdReal x = setSimdRealFrom3R(M_PI, -4.0, 0.0);
     // simdCmpLe is tested separately further down
-    SimdBool        m                  = setZero() < x;
-    SimdReal        ref                = setSimdRealFrom3R(1.0/std::sqrt(M_PI), 0.0, 0.0);
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+    SimdBool m         = setZero() < x;
+    SimdReal ref       = setSimdRealFrom3R(1.0 / std::sqrt(M_PI), 0.0, 0.0);
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
     {
@@ -316,9 +316,9 @@ TEST_F(SimdFloatingpointTest, maskzRsqrt)
 
 TEST_F(SimdFloatingpointTest, rcp)
 {
-    SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    SimdReal        ref                = setSimdRealFrom3R(0.25, 1.0/M_PI, 1.0/1234567890.0);
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+    SimdReal x         = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    SimdReal ref       = setSimdRealFrom3R(0.25, 1.0 / M_PI, 1.0 / 1234567890.0);
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RCP_BITS;
 
     if (shiftbits < 0)
     {
@@ -334,10 +334,10 @@ TEST_F(SimdFloatingpointTest, rcp)
 
 TEST_F(SimdFloatingpointTest, maskzRcp)
 {
-    SimdReal        x                  = setSimdRealFrom3R(M_PI, 0.0, -1234567890.0);
-    SimdBool        m                  = (x != setZero());
-    SimdReal        ref                = setSimdRealFrom3R(1.0/M_PI, 0.0, -1.0/1234567890.0);
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+    SimdReal x         = setSimdRealFrom3R(M_PI, 0.0, -1234567890.0);
+    SimdBool m         = (x != setZero());
+    SimdReal ref       = setSimdRealFrom3R(1.0 / M_PI, 0.0, -1.0 / 1234567890.0);
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RCP_BITS;
 
     if (shiftbits < 0)
     {
@@ -353,57 +353,57 @@ TEST_F(SimdFloatingpointTest, maskzRcp)
 
 TEST_F(SimdFloatingpointTest, cmpEqAndSelectByMask)
 {
-    SimdBool eq   = rSimd_5_7_9 == rSimd_7_8_9;
+    SimdBool eq = rSimd_5_7_9 == rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), selectByMask(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, selectByNotMask)
 {
-    SimdBool eq   = rSimd_5_7_9 == rSimd_7_8_9;
+    SimdBool eq = rSimd_5_7_9 == rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), selectByNotMask(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, cmpNe)
 {
-    SimdBool eq   = rSimd_5_7_9 != rSimd_7_8_9;
+    SimdBool eq = rSimd_5_7_9 != rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), selectByMask(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, cmpLe)
 {
-    SimdBool le   = rSimd_5_7_9 <= rSimd_7_8_9;
+    SimdBool le = rSimd_5_7_9 <= rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, selectByMask(rSimd_1_2_3, le));
 }
 
 TEST_F(SimdFloatingpointTest, cmpLt)
 {
-    SimdBool lt   = rSimd_5_7_9 < rSimd_7_8_9;
+    SimdBool lt = rSimd_5_7_9 < rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), selectByMask(rSimd_1_2_3, lt));
 }
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL || GMX_SIMD_HAVE_LOGICAL
 TEST_F(SimdFloatingpointTest, testBits)
 {
-    SimdBool eq   = testBits(setSimdRealFrom3R(1, 0, 2));
+    SimdBool eq = testBits(setSimdRealFrom3R(1, 0, 2));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 0, 3), selectByMask(rSimd_1_2_3, eq));
 
     // Test if we detect only the sign bit being set
-    eq            = testBits(setSimdRealFrom1R(GMX_REAL_NEGZERO));
+    eq = testBits(setSimdRealFrom1R(GMX_REAL_NEGZERO));
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, selectByMask(rSimd_1_2_3, eq));
 }
 #endif
 
 TEST_F(SimdFloatingpointTest, andB)
 {
-    SimdBool eq   = rSimd_5_7_9 == rSimd_7_8_9;
-    SimdBool le   = rSimd_5_7_9 <= rSimd_7_8_9;
+    SimdBool eq = rSimd_5_7_9 == rSimd_7_8_9;
+    SimdBool le = rSimd_5_7_9 <= rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), selectByMask(rSimd_1_2_3, (eq && le)));
 }
 
 TEST_F(SimdFloatingpointTest, orB)
 {
-    SimdBool eq   = rSimd_5_7_9 == rSimd_7_8_9;
-    SimdBool lt   = rSimd_5_7_9 < rSimd_7_8_9;
+    SimdBool eq = rSimd_5_7_9 == rSimd_7_8_9;
+    SimdBool lt = rSimd_5_7_9 < rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 3), selectByMask(rSimd_1_2_3, (eq || lt)));
 }
 
@@ -424,7 +424,7 @@ TEST_F(SimdFloatingpointTest, anyTrueB)
 
 TEST_F(SimdFloatingpointTest, blend)
 {
-    SimdBool lt   = rSimd_5_7_9 < rSimd_7_8_9;
+    SimdBool lt = rSimd_5_7_9 < rSimd_7_8_9;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, 5, 3), blend(rSimd_1_2_3, rSimd_4_5_6, lt));
 }
 
@@ -451,10 +451,10 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
     GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
     GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
 
-    int                               i;
-    SimdFloat                         vf;
-    SimdDouble                        vd0;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    int                    i;
+    SimdFloat              vf;
+    SimdDouble             vd0;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
@@ -462,7 +462,7 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
     }
 
     vf = load(f);
-#if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
+#if (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH)
     SimdDouble vd1;
     cvtF2DD(vf, &vd0, &vd1);
     store(d + GMX_SIMD_DOUBLE_WIDTH, vd1); // Store upper part halfway through array
@@ -483,10 +483,10 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
 {
     GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
     GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
-    int                               i;
-    SimdFloat                         vf;
-    SimdDouble                        vd0;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    int                    i;
+    SimdFloat              vf;
+    SimdDouble             vd0;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // This fills elements for pd1 too when double width is 2*single width
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -495,7 +495,7 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
     }
 
     vd0 = load(d);
-#if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
+#if (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH)
     SimdDouble vd1 = load(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
     vf = cvtDD2F(vd0, vd1);
 #elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)

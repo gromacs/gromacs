@@ -82,9 +82,8 @@ namespace
  * real and int are pretty much similar, so we use a template function with
  * additional function pointers for the actual load/store calls.
  */
-template <typename T, typename TSimd, int simdWidth> void
-loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall storeFn(T* mem, TSimd),
-                const int loadOffset, const int storeOffset)
+template <typename T, typename TSimd, int simdWidth> void loadStoreTester(TSimd gmx_simdcall loadFn(const T * mem), void gmx_simdcall storeFn(T * mem, TSimd),
+                                                                          const int loadOffset, const int storeOffset)
 {
     /* We need simdWidth storage in the first place, another simdWidth elements
      * so we can create (deliberately) offset un-aligned pointers, and finally
@@ -92,22 +91,22 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
      * to test we are not polluting memory there either. Sum=4*simdWidth.
      */
 #if GMX_SIMD4_WIDTH > GMX_SIMD_REAL_WIDTH
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      src[simdWidth*4];
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      dst[simdWidth*4];
+    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      src[simdWidth * 4];
+    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      dst[simdWidth * 4];
 #else
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  src[simdWidth*4];
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  dst[simdWidth*4];
+    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  src[simdWidth * 4];
+    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  dst[simdWidth * 4];
 #endif
 
     // Make sure we have memory to check both before and after the test pointers
-    T *              pCopySrc = src + simdWidth + loadOffset;
-    T *              pCopyDst = dst + simdWidth + storeOffset;
-    int              i;
+    T * pCopySrc = src + simdWidth + loadOffset;
+    T * pCopyDst = dst + simdWidth + storeOffset;
+    int i;
 
-    for (i = 0; i < simdWidth*4; i++)
+    for (i = 0; i < simdWidth * 4; i++)
     {
-        src[i] =  1+i;
-        dst[i] = -1-i;
+        src[i] =  1 + i;
+        dst[i] = -1 - i;
     }
 
     storeFn(pCopyDst, loadFn(pCopySrc));
@@ -117,12 +116,12 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
         EXPECT_EQ(pCopySrc[i], pCopyDst[i]) << "SIMD load or store not moving data correctly for element " << i;
     }
 
-    for (i = 0; i < simdWidth*4; i++)
+    for (i = 0; i < simdWidth * 4; i++)
     {
-        EXPECT_EQ(src[i], (T)(1+i)) << "Side effect on source memory, i = " << i;
-        if (dst+i < pCopyDst || dst+i >= pCopyDst+simdWidth)
+        EXPECT_EQ(src[i], (T)(1 + i)) << "Side effect on source memory, i = " << i;
+        if (dst + i < pCopyDst || dst + i >= pCopyDst + simdWidth)
         {
-            EXPECT_EQ(dst[i], (T)(-1-i)) << "Side effect on destination memory, i = " << i;
+            EXPECT_EQ(dst[i], (T)(-1 - i)) << "Side effect on destination memory, i = " << i;
         }
     }
 }
@@ -133,8 +132,7 @@ loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem), void gmx_simdcall store
  * \tparam TSimd  Corresponding SIMD type
  * \param  m      Memory address to load from
  */
-template <typename T, typename TSimd> TSimd gmx_simdcall
-loadWrapper(const T * m) { return load(m); }
+template <typename T, typename TSimd> TSimd gmx_simdcall loadWrapper(const T * m) { return load(m); }
 
 /*! \brief Wrapper to handle proxy objects returned by some loadU functions.
  *
@@ -142,8 +140,7 @@ loadWrapper(const T * m) { return load(m); }
  * \tparam TSimd  Corresponding SIMD type
  * \param  m      Memory address to load from
  */
-template <typename T, typename TSimd> TSimd gmx_simdcall
-loadUWrapper(const T * m) { return loadU(m); }
+template <typename T, typename TSimd> TSimd gmx_simdcall loadUWrapper(const T * m) { return loadU(m); }
 
 
 #if GMX_SIMD_HAVE_REAL

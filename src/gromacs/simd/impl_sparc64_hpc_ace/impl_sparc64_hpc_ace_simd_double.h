@@ -137,13 +137,12 @@
 /****************************************************
  * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static inline SimdDInt32
-simdLoadDI_sparc64_hpc_ace(const int *m)
+static inline SimdDInt32 simdLoadDI_sparc64_hpc_ace(const int *m)
 {
     union
     {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
+        _fjsp_v2r8    simd;
+        long long int i[2];
     }
     conv;
 
@@ -153,13 +152,12 @@ simdLoadDI_sparc64_hpc_ace(const int *m)
     return _fjsp_load_v2r8( (double *) &(conv.simd) );
 }
 
-static inline void
-simdStoreDI_sparc64_hpc_ace(int *m, SimdDInt32 x)
+static inline void simdStoreDI_sparc64_hpc_ace(int *m, SimdDInt32 x)
 {
     union
     {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
+        _fjsp_v2r8    simd;
+        long long int i[2];
     }
     conv;
 
@@ -169,13 +167,12 @@ simdStoreDI_sparc64_hpc_ace(int *m, SimdDInt32 x)
     m[1] = conv.i[1];
 }
 
-static inline SimdDInt32
-simdSet1DI_sparc64_hpc_ace(int i)
+static inline SimdDInt32 simdSet1DI_sparc64_hpc_ace(int i)
 {
     union
     {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
+        _fjsp_v2r8    simd;
+        long long int i[2];
     }
     conv;
 
@@ -185,8 +182,7 @@ simdSet1DI_sparc64_hpc_ace(int i)
     return _fjsp_load_v2r8( (double *) &(conv.simd) );
 }
 
-static inline int
-simdExtractDI_sparc64_hpc_ace(SimdDInt32 x, int i)
+static inline int simdExtractDI_sparc64_hpc_ace(SimdDInt32 x, int i)
 {
     long long int res;
     /* This conditional should be optimized away at compile time */
@@ -201,8 +197,7 @@ simdExtractDI_sparc64_hpc_ace(SimdDInt32 x, int i)
     return (int)res;
 }
 
-static inline SimdDInt32
-simdSlliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
+static inline SimdDInt32 simdSlliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
 {
     _fjsp_v2i8 ix = *((_fjsp_v2i8 *)&x);
     ix = _fjsp_slli_v2i8(ix, i);
@@ -210,8 +205,7 @@ simdSlliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
     return x;
 }
 
-static inline SimdDInt32
-simdSrliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
+static inline SimdDInt32 simdSrliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
 {
     _fjsp_v2i8 ix = *((_fjsp_v2i8 *)&x);
     ix = _fjsp_srli_v2i8(ix, i);
@@ -219,8 +213,7 @@ simdSrliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
     return x;
 }
 
-static inline SimdDInt32
-simdCvtD2I_sparc64_hpc_ace(SimdDouble x)
+static inline SimdDInt32 simdCvtD2I_sparc64_hpc_ace(SimdDouble x)
 {
     _fjsp_v2r8 signbit = _fjsp_set_v2r8(-0.0, -0.0);
     _fjsp_v2r8 half    = _fjsp_set_v2r8(0.5, 0.5);
@@ -229,8 +222,7 @@ simdCvtD2I_sparc64_hpc_ace(SimdDouble x)
     return _fjsp_dtox_v2r8(x);
 }
 
-static inline int
-gmx_simd_anytrue_d_sparc64_hpc_ace(SimdDBool x)
+static inline int gmx_simd_anytrue_d_sparc64_hpc_ace(SimdDBool x)
 {
     long long int i;
     x = _fjsp_or_v2r8(x, _fjsp_unpackhi_v2r8(x, x));
@@ -238,8 +230,7 @@ gmx_simd_anytrue_d_sparc64_hpc_ace(SimdDBool x)
     return (i != 0LL);
 }
 
-static inline double
-simdReduceD_sparc64_hpc_ace(SimdDouble x)
+static inline double simdReduceD_sparc64_hpc_ace(SimdDouble x)
 {
     double d;
     x = _fjsp_add_v2r8(x, _fjsp_unpackhi_v2r8(x, x));
@@ -248,21 +239,20 @@ simdReduceD_sparc64_hpc_ace(SimdDouble x)
 }
 
 
-static inline SimdDouble
-simdGetExponentD_sparc64_hpc_ace(SimdDouble x)
+static inline SimdDouble simdGetExponentD_sparc64_hpc_ace(SimdDouble x)
 {
     /* HPC-ACE cannot cast _fjsp_v2r8 to _fjsp_v4i4, so to perform shifts we
      * would need to store and reload. Since we are only operating on two
      * numbers it is likely more efficient to do the operations directly on
      * normal registers.
      */
-    const std::int64_t    expmask   = 0x7ff0000000000000LL;
-    const std::int64_t    expbias   = 1023LL;
+    const std::int64_t expmask = 0x7ff0000000000000LL;
+    const std::int64_t expbias = 1023LL;
 
     union
     {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
+        _fjsp_v2r8    simd;
+        long long int i[2];
     }
     conv;
 
@@ -273,24 +263,22 @@ simdGetExponentD_sparc64_hpc_ace(SimdDouble x)
     return _fjsp_xtod_v2r8(x);
 }
 
-static inline SimdDouble
-simdGetMantissaD_sparc64_hpc_ace(SimdDouble x)
+static inline SimdDouble simdGetMantissaD_sparc64_hpc_ace(SimdDouble x)
 {
-    std::int64_t       mantmask[2] = {0x000fffffffffffffLL, 0x000fffffffffffffLL};
-    SimdDouble         one         = _fjsp_set_v2r8(1.0, 1.0);
+    std::int64_t mantmask[2] = {0x000fffffffffffffLL, 0x000fffffffffffffLL};
+    SimdDouble   one         = _fjsp_set_v2r8(1.0, 1.0);
 
     x = _fjsp_and_v2r8(x, _fjsp_load_v2r8((double *)mantmask));
     return _fjsp_or_v2r8(x, one);
 }
 
-static inline SimdDouble
-simdSetExponentD_sparc64_hpc_ace(SimdDouble x)
+static inline SimdDouble simdSetExponentD_sparc64_hpc_ace(SimdDouble x)
 {
-    const std::int64_t    expbias   = 1023;
+    const std::int64_t expbias = 1023;
     union
     {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
+        _fjsp_v2r8    simd;
+        long long int i[2];
     }
     conv;
 

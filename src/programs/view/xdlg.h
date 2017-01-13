@@ -40,15 +40,16 @@
 
 #include "xdlgitem.h"
 
-#define DLG_SHOW         (1<<0)
-#define DLG_HIDE         (1<<1)
+#define DLG_SHOW         (1 << 0)
+#define DLG_HIDE         (1 << 1)
 #define DLG_SHOWANDHIDE  (DLG_SHOW | DLG_HIDE)
-#define DLG_SYSTEMMODAL  (1<<2)
-#define DLG_APPLMODAL    (1<<3)
-#define DLG_HIDEONBUTTON (1<<4)
-#define DLG_FREEONBUTTON (1<<5)
+#define DLG_SYSTEMMODAL  (1 << 2)
+#define DLG_APPLMODAL    (1 << 3)
+#define DLG_HIDEONBUTTON (1 << 4)
+#define DLG_FREEONBUTTON (1 << 5)
 
-enum {
+enum
+{
     DLG_SET, DLG_EXIT
 };
 
@@ -59,20 +60,21 @@ typedef void DlgCallback (t_x11 *x11, int dlg_mess, int item_id,
  * the user can let himself be informed about mouse activity also.
  */
 
-typedef struct {
-    t_x11                *x11;        /* All about X                */
-    t_windata             win;        /* The position and size of the window    */
-    char                 *title;      /* Window name                */
-    Window                wDad;       /* The parent window          */
-    unsigned int          xmax, ymax; /* Dimensions of parent window        */
-    unsigned long         flags;      /* Flags for display          */
-    unsigned long         fg, bg;     /* The colours                */
-    bool                  bPop;       /* Should we pop the mouse back   */
-    bool                  bGrab;      /* Have we grabbed the mouse ?        */
-    int                   nitem;      /* The number of items            */
-    t_dlgitem           **dlgitem;    /* The array of item pointers         */
-    DlgCallback          *cb;         /* User call back function		*/
-    void                 *data;       /* User data				*/
+typedef struct
+{
+    t_x11 *       x11;                /* All about X                */
+    t_windata     win;                /* The position and size of the window    */
+    char *        title;              /* Window name                */
+    Window        wDad;               /* The parent window          */
+    unsigned int  xmax, ymax;         /* Dimensions of parent window        */
+    unsigned long flags;              /* Flags for display          */
+    unsigned long fg, bg;             /* The colours                */
+    bool          bPop;               /* Should we pop the mouse back   */
+    bool          bGrab;              /* Have we grabbed the mouse ?        */
+    int           nitem;              /* The number of items            */
+    t_dlgitem **  dlgitem;            /* The array of item pointers         */
+    DlgCallback * cb;                 /* User call back function		*/
+    void *        data;               /* User data				*/
 } t_dlg;
 
 /*****************************

@@ -48,37 +48,42 @@ struct gmx_output_env_t;
 struct gmx_residuetype_t;
 
 /* must correspond with 'leg' g_chi.c:727 */
-enum {
+enum
+{
     edPhi = 0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax
 };
 
-enum {
+enum
+{
     edPrintST = 0, edPrintRO
 };
 
 #define NHISTO 360
 #define NONCHI 3
-#define MAXCHI edMax-NONCHI
+#define MAXCHI edMax - NONCHI
 #define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
 
-typedef struct {
-    int minCalpha, minC, H, N, C, O, Cn[MAXCHI+3];
+typedef struct
+{
+    int minCalpha, minC, H, N, C, O, Cn[MAXCHI + 3];
 } t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
 
-typedef struct {
-    char       name[12];
-    int        resnr;
-    int        index;     /* Index for amino acids (histograms) */
-    int        j0[edMax]; /* Index in dih array (phi angle is first...) */
-    t_dihatms  atm;
-    int        b[edMax];
-    int        ntr[edMax];
-    real       S2[edMax];
-    real       rot_occ[edMax][NROT];
+typedef struct
+{
+    char      name[12];
+    int       resnr;
+    int       index;      /* Index for amino acids (histograms) */
+    int       j0[edMax];  /* Index in dih array (phi angle is first...) */
+    t_dihatms atm;
+    int       b[edMax];
+    int       ntr[edMax];
+    real      S2[edMax];
+    real      rot_occ[edMax][NROT];
 
 } t_dlist;
 
-typedef struct {
+typedef struct
+{
     const char *name;    /* Description of the J coupling constant */
     real        A, B, C; /* Karplus coefficients */
     real        offset;  /* Offset for dihedral angle in histogram (e.g. -M_PI/3) */

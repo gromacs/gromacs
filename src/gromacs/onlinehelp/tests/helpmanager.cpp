@@ -68,11 +68,11 @@ class HelpTestBase : public gmx::test::StringTestBase
     public:
         HelpTestBase();
 
-        MockHelpTopic              rootTopic_;
-        gmx::StringOutputStream    helpFile_;
-        gmx::TextWriter            writer_;
-        gmx::HelpWriterContext     context_;
-        gmx::HelpManager           manager_;
+        MockHelpTopic           rootTopic_;
+        gmx::StringOutputStream helpFile_;
+        gmx::TextWriter         writer_;
+        gmx::HelpWriterContext  context_;
+        gmx::HelpManager        manager_;
 };
 
 HelpTestBase::HelpTestBase()
@@ -99,10 +99,10 @@ TEST_F(HelpManagerTest, HandlesRootTopic)
 
 TEST_F(HelpManagerTest, HandlesSubTopics)
 {
-    MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", nullptr);
-    MockHelpTopic &firstSub =
-        first.addSubTopic("firstsub", "First subtopic", nullptr);
+    MockHelpTopic &first
+        = rootTopic_.addSubTopic("first", "First topic", nullptr);
+    MockHelpTopic &firstSub
+        = first.addSubTopic("firstsub", "First subtopic", nullptr);
     rootTopic_.addSubTopic("second", "Second topic", nullptr);
 
     using ::testing::_;
@@ -114,8 +114,8 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
 
 TEST_F(HelpManagerTest, HandlesInvalidTopics)
 {
-    MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", nullptr);
+    MockHelpTopic &first
+        = rootTopic_.addSubTopic("first", "First topic", nullptr);
     first.addSubTopic("firstsub", "First subtopic", nullptr);
     rootTopic_.addSubTopic("second", "Second topic", nullptr);
 

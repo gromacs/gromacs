@@ -116,28 +116,28 @@ class RstParagraphIterator
         const std::string &text_;
 
         //! Start of the current paragraph.
-        size_t             begin_;
+        size_t begin_;
         //! End of the current paragraph (C++-style iterator).
-        size_t             end_;
+        size_t end_;
         //! Type of the current paragraph.
-        ParagraphType      type_;
+        ParagraphType type_;
         //! Number of newlines to print before the current paragraph.
-        int                breakSize_;
+        int breakSize_;
         //! Indentation of the first line of this paragraph.
-        int                firstLineIndent_;
+        int firstLineIndent_;
         //! (Minimum) indentation of other lines in this paragraph.
-        int                indent_;
+        int indent_;
 
         //! Start of the next paragrah.
-        size_t             nextBegin_;
+        size_t nextBegin_;
         //! Number of newlines to print after the current paragraph.
-        int                nextBreakSize_;
+        int nextBreakSize_;
         /*! \brief
          * Indentation of the preceding paragraph that contained `::`.
          *
          * If the next paragraph is not a literal block, the value is `-1`.
          */
-        int                literalIndent_;
+        int literalIndent_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RstParagraphIterator);
 };

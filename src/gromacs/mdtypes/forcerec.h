@@ -73,13 +73,12 @@ struct IForceProvider
          * \param[inout] force   The forces
          * \param[in]    t       The actual time in the simulation (ps)
          */
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *mdatoms,
+        virtual void calculateForces(const t_commrec * cr,
+                                     const t_mdatoms * mdatoms,
                                      PaddedRVecVector *force,
                                      double            t) = 0;
 
-    protected:
-        ~IForceProvider() {}
+    protected: ~IForceProvider() {}
 };
 #endif
 
@@ -109,27 +108,27 @@ struct gmx_gpu_opt_t;
  */
 #define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~255) | (gid))
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
-#define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1<<15))
-#define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1<<15))
-#define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
-#define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
-#define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
-#define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
-#define SET_CGINFO_SOLOPT(cgi, opt)  (cgi) = (((cgi)  & ~(3<<18)) | ((opt)<<18))
-#define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   3)
-#define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
-#define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1<<20))
-#define SET_CGINFO_SETTLE(cgi)       (cgi) =  ((cgi)  |  (1<<21))
-#define GET_CGINFO_SETTLE(cgi)     ( (cgi)            &  (1<<21))
+#define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1 << 15))
+#define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1 << 15))
+#define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1 << 16))
+#define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1 << 16))
+#define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1 << 17))
+#define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1 << 17))
+#define SET_CGINFO_SOLOPT(cgi, opt)  (cgi) = (((cgi)  & ~(3 << 18)) | ((opt) << 18))
+#define GET_CGINFO_SOLOPT(cgi)     (((cgi) >> 18)       &   3)
+#define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1 << 20))
+#define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1 << 20))
+#define SET_CGINFO_SETTLE(cgi)       (cgi) =  ((cgi)  |  (1 << 21))
+#define GET_CGINFO_SETTLE(cgi)     ( (cgi)            &  (1 << 21))
 /* This bit is only used with bBondComm in the domain decomposition */
-#define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<22))
-#define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
-#define SET_CGINFO_HAS_VDW(cgi)      (cgi) =  ((cgi)  |  (1<<23))
-#define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
-#define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
-#define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
-#define SET_CGINFO_NATOMS(cgi, opt)  (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
-#define GET_CGINFO_NATOMS(cgi)     (((cgi)>>25)       &   63)
+#define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1 << 22))
+#define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1 << 22))
+#define SET_CGINFO_HAS_VDW(cgi)      (cgi) =  ((cgi)  |  (1 << 23))
+#define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1 << 23))
+#define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1 << 24))
+#define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1 << 24))
+#define SET_CGINFO_NATOMS(cgi, opt)  (cgi) = (((cgi)  & ~(63 << 25)) | ((opt) << 25))
+#define GET_CGINFO_NATOMS(cgi)     (((cgi) >> 25)       &   63)
 
 
 /* Value to be used in mdrun for an infinite cut-off.
@@ -139,33 +138,38 @@ struct gmx_gpu_opt_t;
 #define GMX_CUTOFF_INF 1E+18
 
 /* enums for the neighborlist type */
-enum {
+enum
+{
     enbvdwNONE, enbvdwLJ, enbvdwBHAM, enbvdwTAB, enbvdwNR
 };
 /* OOR is "one over r" -- standard coul */
-enum {
+enum
+{
     enbcoulNONE, enbcoulOOR, enbcoulRF, enbcoulTAB, enbcoulGB, enbcoulFEWALD, enbcoulNR
 };
 
-enum {
+enum
+{
     egCOULSR, egLJSR, egBHAMSR,
     egCOUL14, egLJ14, egGB, egNR
 };
-extern const char *egrp_nm[egNR+1];
+extern const char *egrp_nm[egNR + 1];
 
-typedef struct gmx_grppairener_t {
+typedef struct gmx_grppairener_t
+{
     int   nener;      /* The number of energy group pairs     */
     real *ener[egNR]; /* Energy terms for each pair of groups */
 } gmx_grppairener_t;
 
-typedef struct gmx_enerdata_t {
+typedef struct gmx_enerdata_t
+{
     real              term[F_NRE];         /* The energies for all different interaction types */
     gmx_grppairener_t grpp;
     double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
     double            dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
     int               n_lambda;
     int               fep_state;           /*current fep state -- just for printing */
-    double           *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
+    double *          enerpart_lambda;     /* Partial energy for lambda and flambda[] */
     real              foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
     gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
 } gmx_enerdata_t;
@@ -175,7 +179,8 @@ typedef struct gmx_enerdata_t {
  * when n_lambda > 0.
  */
 
-typedef struct {
+typedef struct
+{
     int  cg_start;
     int  cg_end;
     int  cg_mod;
@@ -188,18 +193,19 @@ struct gmx_ewald_tab_t;
 
 typedef struct ewald_corr_thread_t ewald_corr_thread_t;
 
-typedef struct t_forcerec {
+typedef struct t_forcerec
+{
     interaction_const_t *ic;
 
     /* Domain Decomposition */
     gmx_bool bDomDec;
 
     /* PBC stuff */
-    int                         ePBC;
-    gmx_bool                    bMolPBC;
-    int                         rc_scaling;
-    rvec                        posres_com;
-    rvec                        posres_comB;
+    int      ePBC;
+    gmx_bool bMolPBC;
+    int      rc_scaling;
+    rvec     posres_com;
+    rvec     posres_comB;
 
     const struct gmx_hw_info_t *hwinfo;
     const struct gmx_gpu_opt_t *gpu_opt;
@@ -222,8 +228,8 @@ typedef struct t_forcerec {
     /* Use special N*N kernels? */
     gmx_bool bAllvsAll;
     /* Private work data */
-    void    *AllvsAll_work;
-    void    *AllvsAll_workgb;
+    void *AllvsAll_work;
+    void *AllvsAll_workgb;
 
     /* Cut-Off stuff.
      * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
@@ -268,8 +274,8 @@ typedef struct t_forcerec {
     real fudgeQQ;
 
     /* Table stuff */
-    gmx_bool             bcoultab;
-    gmx_bool             bvdwtab;
+    gmx_bool bcoultab;
+    gmx_bool bvdwtab;
     /* The normal tables are in the nblists struct(s) below */
 
     struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
@@ -286,18 +292,18 @@ typedef struct t_forcerec {
     real   bham_b_max;
 
     /* Free energy */
-    int      efep;
-    real     sc_alphavdw;
-    real     sc_alphacoul;
-    int      sc_power;
-    real     sc_r_power;
-    real     sc_sigma6_def;
-    real     sc_sigma6_min;
+    int  efep;
+    real sc_alphavdw;
+    real sc_alphacoul;
+    int  sc_power;
+    real sc_r_power;
+    real sc_sigma6_def;
+    real sc_sigma6_min;
 
     /* NS Stuff */
-    int  eeltype;
-    int  vdwtype;
-    int  cg0, hcg;
+    int eeltype;
+    int vdwtype;
+    int cg0, hcg;
     /* solvent_opt contains the enum for the most common solvent
      * in the system, which will be optimized.
      * It can be set to esolNO to disable all water optimization */
@@ -306,15 +312,15 @@ typedef struct t_forcerec {
     gmx_bool     bGrid;
     gmx_bool     bExcl_IntraCGAll_InterCGNone;
     cginfo_mb_t *cginfo_mb;
-    int         *cginfo;
-    rvec        *cg_cm;
+    int *        cginfo;
+    rvec *       cg_cm;
     int          cg_nalloc;
-    rvec        *shift_vec;
+    rvec *       shift_vec;
 
     /* The neighborlists including tables */
-    int                        nnblists;
-    int                       *gid2nblists;
-    struct t_nblists          *nblists;
+    int               nnblists;
+    int *             gid2nblists;
+    struct t_nblists *nblists;
 
     int                        cutoff_scheme; /* group- or Verlet-style cutoff */
     gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
@@ -337,12 +343,12 @@ typedef struct t_forcerec {
      * PPPM/PME/Ewald/posres
      * If such forces are present in the system, bF_NoVirSum=TRUE.
      */
-    gmx_bool          bF_NoVirSum;
+    gmx_bool bF_NoVirSum;
 #ifdef __cplusplus
     /* TODO: Replace the pointer by an object once we got rid of C */
     PaddedRVecVector *forceBufferNoVirialSummation;
 #else
-    void             *forceBufferNoVirialSummation_dummy;
+    void *forceBufferNoVirialSummation_dummy;
 #endif
     /* Pointer that points to forceNoVirialSummation when virial is calcaluted,
      * points to the normal force vector when the virial is not requested
@@ -351,7 +357,7 @@ typedef struct t_forcerec {
 #ifdef __cplusplus
     PaddedRVecVector *f_novirsum;
 #else
-    void             *f_novirsum_xdummy;
+    void *f_novirsum_xdummy;
 #endif
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
@@ -374,8 +380,8 @@ typedef struct t_forcerec {
     /* Non bonded Parameter lists */
     int      ntype; /* Number of atom types */
     gmx_bool bBHAM;
-    real    *nbfp;
-    real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
+    real *   nbfp;
+    real *   ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
     int *egp_flags;
@@ -384,21 +390,21 @@ typedef struct t_forcerec {
     real fc_stepsize;
 
     /* Generalized born implicit solvent */
-    gmx_bool              bGB;
+    gmx_bool bGB;
     /* Generalized born stuff */
-    real                  gb_epsilon_solvent;
+    real gb_epsilon_solvent;
     /* Table data for GB */
-    struct t_forcetable  *gbtab;
+    struct t_forcetable *gbtab;
     /* VdW radius for each atomtype (dim is thus ntype) */
-    real                 *atype_radius;
+    real *atype_radius;
     /* Effective radius (derived from effective volume) for each type */
-    real                 *atype_vol;
+    real *atype_vol;
     /* Implicit solvent - surface tension for each atomtype */
-    real                 *atype_surftens;
+    real *atype_surftens;
     /* Implicit solvent - radius for GB calculation */
-    real                 *atype_gb_radius;
+    real *atype_gb_radius;
     /* Implicit solvent - overlap for HCT model */
-    real                 *atype_S_hct;
+    real *atype_S_hct;
     /* Generalized born interaction data */
     struct gmx_genborn_t *born;
 
@@ -438,7 +444,7 @@ typedef struct t_forcerec {
     struct t_QMMMrec *qr;
 
     /* QM-MM neighborlists */
-    struct t_nblist        *QMMMlist;
+    struct t_nblist *QMMMlist;
 
     /* Limit for printing large forces, negative is don't print */
     real print_force;
@@ -462,8 +468,8 @@ typedef struct t_forcerec {
     struct bonded_threading_t *bonded_threading;
 
     /* Ewald correction thread local virial and energy data */
-    int                    nthread_ewc;
-    ewald_corr_thread_t   *ewc_t;
+    int                  nthread_ewc;
+    ewald_corr_thread_t *ewc_t;
 
     struct IForceProvider *efield;
 } t_forcerec;
@@ -472,11 +478,11 @@ typedef struct t_forcerec {
  * been scaled by 6.0 or 12.0 to save flops in the kernels. We have corrected this everywhere
  * in the code, but beware if you are using these macros externally.
  */
-#define C6(nbfp, ntp, ai, aj)     (nbfp)[2*((ntp)*(ai)+(aj))]
-#define C12(nbfp, ntp, ai, aj)    (nbfp)[2*((ntp)*(ai)+(aj))+1]
-#define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
-#define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
-#define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
+#define C6(nbfp, ntp, ai, aj)     (nbfp)[2 * ((ntp) * (ai) + (aj))]
+#define C12(nbfp, ntp, ai, aj)    (nbfp)[2 * ((ntp) * (ai) + (aj)) + 1]
+#define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3 * ((ntp) * (ai) + (aj))]
+#define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3 * ((ntp) * (ai) + (aj)) + 1]
+#define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3 * ((ntp) * (ai) + (aj)) + 2]
 
 #ifdef __cplusplus
 }

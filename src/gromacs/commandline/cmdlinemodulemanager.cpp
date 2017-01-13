@@ -138,10 +138,10 @@ class CMainCommandLineModule : public ICommandLineModule
         }
 
     private:
-        const char             *name_;
-        const char             *shortDescription_;
-        CMainFunction           mainFunction_;
-        InitSettingsFunction    settingsFunction_;
+        const char *         name_;
+        const char *         shortDescription_;
+        CMainFunction        mainFunction_;
+        InitSettingsFunction settingsFunction_;
 };
 
 //! \}
@@ -285,7 +285,7 @@ class CommandLineModuleManager::Impl
          *
          * Owns the contained modules.
          */
-        CommandLineModuleMap         modules_;
+        CommandLineModuleMap modules_;
         /*! \brief
          * List of groupings for modules for help output.
          *
@@ -293,27 +293,27 @@ class CommandLineModuleManager::Impl
          * CommandLineModuleGroup objects point to the data objects contained
          * here.
          */
-        CommandLineModuleGroupList   moduleGroups_;
+        CommandLineModuleGroupList moduleGroups_;
         //! Information about the currently running program.
-        CommandLineProgramContext   &programContext_;
+        CommandLineProgramContext &programContext_;
         //! Name of the binary.
-        std::string                  binaryName_;
+        std::string binaryName_;
         /*! \brief
          * Module that implements help for the binary.
          *
          * The pointed module is owned by the \a modules_ container.
          */
-        CommandLineHelpModule       *helpModule_;
+        CommandLineHelpModule *helpModule_;
         //! If non-NULL, run this module in single-module mode.
-        ICommandLineModule          *singleModule_;
+        ICommandLineModule *singleModule_;
         //! Stores the value set with setQuiet().
-        bool                         bQuiet_;
+        bool bQuiet_;
 
     private:
         GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(const char                *binaryName,
+CommandLineModuleManager::Impl::Impl(const char *               binaryName,
                                      CommandLineProgramContext *programContext)
     : programContext_(*programContext),
       binaryName_(binaryName != nullptr ? binaryName : ""),
@@ -345,15 +345,13 @@ void CommandLineModuleManager::Impl::ensureHelpModuleExists()
     }
 }
 
-CommandLineModuleMap::const_iterator
-CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
+CommandLineModuleMap::const_iterator CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 {
     // TODO: Accept unambiguous prefixes?
     return modules_.find(name);
 }
 
-ICommandLineModule *
-CommandLineModuleManager::Impl::processCommonOptions(
+ICommandLineModule *CommandLineModuleManager::Impl::processCommonOptions(
         CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
@@ -379,13 +377,13 @@ CommandLineModuleManager::Impl::processCommonOptions(
         // If no action requested and there is a module specified, process it.
         if (argcForWrapper < *argc && !optionsHolder->shouldIgnoreActualModule())
         {
-            const char *moduleName = (*argv)[argcForWrapper];
+            const char *                         moduleName = (*argv)[argcForWrapper];
             CommandLineModuleMap::const_iterator moduleIter
                 = findModuleByName(moduleName);
             if (moduleIter == modules_.end())
             {
-                std::string message =
-                    formatString("'%s' is not a GROMACS command.", moduleName);
+                std::string message
+                    = formatString("'%s' is not a GROMACS command.", moduleName);
                 GMX_THROW(InvalidInputError(message));
             }
             module = moduleIter->second.get();
@@ -509,7 +507,7 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
-    ICommandLineModule            *module;
+    ICommandLineModule *           module;
     const bool                     bMaster = (gmx_node_rank() == 0);
     bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
     CommandLineCommonOptionsHolder optionsHolder;
@@ -642,7 +640,7 @@ void CommandLineModuleGroupData::addModule(const char *name,
         GMX_RELEASE_ASSERT(description != nullptr,
                            "Module without a description added to a group");
     }
-    std::string       tag(formatString("%s-%s", binaryName_, name));
+    std::string tag(formatString("%s-%s", binaryName_, name));
     modules_.push_back(std::make_pair(tag, description));
 }
 

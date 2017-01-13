@@ -60,15 +60,15 @@ typedef struct
     /** Position calculation collection to use. */
     gmx::PositionCalculationCollection *pcc;
     /** Index group for which the center should be evaluated. */
-    gmx_ana_index_t                     g;
+    gmx_ana_index_t g;
     /** Position evaluation data structure. */
-    gmx_ana_poscalc_t                  *pc;
+    gmx_ana_poscalc_t *pc;
     /** true if periodic boundary conditions should be used. */
-    bool                                bPBC;
+    bool bPBC;
     /** Type of positions to calculate. */
-    char                               *type;
+    char *type;
     /** Flags for the position calculation. */
-    int                                 flags;
+    int flags;
 } t_methoddata_pos;
 
 /** Allocates data for position evaluation selection methods. */
@@ -198,8 +198,7 @@ gmx_ana_selmethod_t sm_com = {
  * If a second parameter is present, it is used for setting the
  * \c t_methoddata_pos::bPBC flag.
  */
-static void *
-init_data_pos(int npar, gmx_ana_selparam_t *param)
+static void *init_data_pos(int npar, gmx_ana_selparam_t *param)
 {
     t_methoddata_pos *data;
 
@@ -209,10 +208,10 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
     {
         param[1].val.u.b = &data->bPBC;
     }
-    data->pc       = nullptr;
-    data->bPBC     = false;
-    data->type     = nullptr;
-    data->flags    = -1;
+    data->pc    = nullptr;
+    data->bPBC  = false;
+    data->type  = nullptr;
+    data->flags = -1;
     return data;
 }
 
@@ -220,14 +219,12 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
  * \param[in]     pcc   Position calculation collection to use.
  * \param[in,out] data  Should point to \c t_methoddata_pos.
  */
-static void
-set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
+static void set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
 {
     ((t_methoddata_pos *)data)->pcc = pcc;
 }
 
-bool
-_gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
+bool _gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
 {
     if (sel.type != SEL_EXPRESSION || !sel.u.expr.method
         || sel.u.expr.method->name != sm_keyword_pos.name)
@@ -246,7 +243,7 @@ _gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
  * requires them.
  */
 static void set_pos_method_flags(gmx_ana_selmethod_t *method,
-                                 t_methoddata_pos    *d)
+                                 t_methoddata_pos *   d)
 {
     const bool forces = (d->flags != -1 && (d->flags & POS_FORCES));
     switch (gmx::PositionCalculationCollection::requiredTopologyInfoForType(d->type, forces))
@@ -271,8 +268,7 @@ static void set_pos_method_flags(gmx_ana_selmethod_t *method,
  * If called multiple times, the first setting takes effect, and later calls
  * are neglected.
  */
-void
-_gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
+void _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
@@ -297,8 +293,7 @@ _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type)
  * If called multiple times, the first setting takes effect, and later calls
  * are neglected.
  */
-void
-_gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
+void _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
@@ -316,8 +311,7 @@ _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
     }
 }
 
-static void
-init_kwpos(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_kwpos(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -333,8 +327,7 @@ init_kwpos(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *par
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
-static void
-init_cog(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_cog(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -343,8 +336,7 @@ init_cog(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
-static void
-init_com(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_com(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -354,8 +346,7 @@ init_com(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
-static void
-init_output_pos(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
+static void init_output_pos(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -368,8 +359,7 @@ init_output_pos(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *dat
  * Frees the memory allocated for \c t_methoddata_pos::g and
  * \c t_methoddata_pos::pc.
  */
-static void
-free_data_pos(void *data)
+static void free_data_pos(void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -385,9 +375,8 @@ free_data_pos(void *data)
  * Calculates the positions using \c t_methoddata_pos::pc for the index group
  * in \c t_methoddata_pos::g and stores the results in \p out->u.p.
  */
-static void
-evaluate_pos(const gmx::SelMethodEvalContext &context,
-             gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_pos(const gmx::SelMethodEvalContext &context,
+                         gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 

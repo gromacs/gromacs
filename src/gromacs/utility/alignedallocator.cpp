@@ -87,8 +87,7 @@ namespace internal
  *        gmx::alignedMalloc(). Just like system-provided routines, it provides
  *        memory that is aligned - but not padded.
  */
-static void *
-alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
+static void *alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
 {
     // The amount of extra memory (beyound what the user asked for) we need is:
     // - sizeof(void *), to store the original pointer
@@ -103,8 +102,8 @@ alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
     // Convert pMalloc to size_t (so we work with raw bytes), add the space we
     // need to save the original pointer, and (alignment-1) bytes, and then mask
     // out the lowest bits.
-    std::size_t mask     = ~static_cast<std::size_t>(alignment-1);
-    void      * pAligned = reinterpret_cast<void *>((reinterpret_cast<std::size_t>(pMalloc) + sizeof(void *) + alignment - 1) & mask);
+    std::size_t mask     = ~static_cast<std::size_t>(alignment - 1);
+    void *      pAligned = reinterpret_cast<void *>((reinterpret_cast<std::size_t>(pMalloc) + sizeof(void *) + alignment - 1) & mask);
 
     // Store original pointer. Since we allocated at least sizeof(void *) extra
     // space this is always a valid memory location.
@@ -127,8 +126,7 @@ alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
  * \note  This is an internal routine that should only be called from
  *        gmx::alignedFree().
  */
-static void
-alignedFreeGeneric(void *p)
+static void alignedFreeGeneric(void *p)
 {
     if (p)
     {
@@ -139,8 +137,7 @@ alignedFreeGeneric(void *p)
 
 
 
-void *
-alignedMalloc(std::size_t bytes)
+void *alignedMalloc(std::size_t bytes)
 {
     // For now we always use 128-byte alignment:
     // 1) IBM Power already has cache lines of 128-bytes, and needs it.
@@ -157,7 +154,7 @@ alignedMalloc(std::size_t bytes)
     // TODO LINCS code is copying this assumption independently (for now)
     std::size_t alignment = 128;
 
-    void   *    p;
+    void * p;
 
     // Pad memory at the end with another alignment bytes to avoid false sharing
     bytes += alignment;
@@ -180,8 +177,7 @@ alignedMalloc(std::size_t bytes)
     return p;
 }
 
-void
-alignedFree(void *p)
+void alignedFree(void *p)
 {
     if (p)
     {

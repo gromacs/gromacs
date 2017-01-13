@@ -320,8 +320,8 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         {
             gmx_incons("gmx_fio_open may not be used to open TNG files");
         }
-        fio->iFTP   = fn2ftp(fn);
-        fio->fn     = gmx_strdup(fn);
+        fio->iFTP = fn2ftp(fn);
+        fio->fn   = gmx_strdup(fn);
 
         fio->fp = gmx_ffopen(fn, newmode);
         /* If this file type is in the list of XDR files, open it like that */
@@ -352,9 +352,9 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         gmx_fatal(FARGS, "Cannot open file with NULL filename string");
     }
 
-    fio->bRead             = bRead;
-    fio->bReadWrite        = bReadWrite;
-    fio->bDouble           = (sizeof(real) == sizeof(double));
+    fio->bRead      = bRead;
+    fio->bReadWrite = bReadWrite;
+    fio->bDouble    = (sizeof(real) == sizeof(double));
 
     /* and now insert this file into the list of open files. */
     gmx_fio_insert(fio);
@@ -419,7 +419,7 @@ int gmx_fio_fp_close(t_fileio *fio)
 
 FILE * gmx_fio_fopen(const char *fn, const char *mode)
 {
-    FILE     *ret;
+    FILE *    ret;
     t_fileio *fio;
 
     fio = gmx_fio_open(fn, mode);
@@ -433,7 +433,7 @@ FILE * gmx_fio_fopen(const char *fn, const char *mode)
 int gmx_fio_fclose(FILE *fp)
 {
     t_fileio *cur;
-    int       rc    = -1;
+    int       rc = -1;
 
     cur = gmx_fio_get_first();
     while (cur)
@@ -585,11 +585,11 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 }
 
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
-                                      int                  *p_nfiles)
+                                      int *                 p_nfiles)
 {
     int                   nfiles, nalloc;
     gmx_file_position_t * outputfiles;
-    t_fileio             *cur;
+    t_fileio *            cur;
 
     nfiles = 0;
 
@@ -687,7 +687,7 @@ int gmx_fio_flush(t_fileio* fio)
 
 static int gmx_fio_int_fsync(t_fileio *fio)
 {
-    int rc    = 0;
+    int rc = 0;
 
     if (fio->fp)
     {

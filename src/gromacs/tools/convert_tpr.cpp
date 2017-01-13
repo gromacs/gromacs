@@ -80,8 +80,8 @@ static gmx_bool *bKeepIt(int gnx, int natoms, int index[])
 
 static int *invind(int gnx, int natoms, int index[])
 {
-    int     *inv;
-    int      i;
+    int *inv;
+    int  i;
 
     snew(inv, natoms);
     for (i = 0; (i < gnx); i++)
@@ -96,15 +96,15 @@ static int *invind(int gnx, int natoms, int index[])
 static void reduce_block(gmx_bool bKeep[], t_block *block,
                          const char *name)
 {
-    int     *index;
-    int      i, j, newi, newj;
+    int *index;
+    int  i, j, newi, newj;
 
     snew(index, block->nr);
 
     newi = newj = 0;
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (bKeep[j])
             {
@@ -127,8 +127,8 @@ static void reduce_block(gmx_bool bKeep[], t_block *block,
 static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
                           const char *name)
 {
-    int     *index, *a;
-    int      i, j, k, newi, newj;
+    int *index, *a;
+    int  i, j, k, newi, newj;
 
     snew(index, block->nr);
     snew(a, block->nra);
@@ -136,7 +136,7 @@ static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
     newi = newj = 0;
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             k = block->a[j];
             if (bKeep[k])
@@ -180,14 +180,14 @@ static void reduce_rvec(int gnx, int index[], rvec vv[])
 static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
                         int *nres, t_resinfo *resinfo)
 {
-    t_atom    *ptr;
-    char    ***aname;
+    t_atom *   ptr;
+    char ***   aname;
     t_resinfo *rinfo;
     int        i, nr;
 
     snew(ptr, gnx);
     snew(aname, gnx);
-    snew(rinfo, atom[index[gnx-1]].resind+1);
+    snew(rinfo, atom[index[gnx - 1]].resind + 1);
     for (i = 0; (i < gnx); i++)
     {
         ptr[i]   = atom[index[i]];
@@ -198,7 +198,7 @@ static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
     {
         atom[i]     = ptr[i];
         atomname[i] = aname[i];
-        if ((i == 0) || (atom[i].resind != atom[i-1].resind))
+        if ((i == 0) || (atom[i].resind != atom[i - 1].resind))
         {
             nr++;
             rinfo[nr] = resinfo[atom[i].resind];
@@ -228,25 +228,25 @@ static void reduce_ilist(int invindex[], gmx_bool bKeep[],
     {
         snew(ia, il->nr);
         newnr = 0;
-        for (i = 0; (i < il->nr); i += nratoms+1)
+        for (i = 0; (i < il->nr); i += nratoms + 1)
         {
             bB = TRUE;
             for (j = 1; (j <= nratoms); j++)
             {
-                bB = bB && bKeep[il->iatoms[i+j]];
+                bB = bB && bKeep[il->iatoms[i + j]];
             }
             if (bB)
             {
                 ia[newnr++] = il->iatoms[i];
                 for (j = 1; (j <= nratoms); j++)
                 {
-                    ia[newnr++] = invindex[il->iatoms[i+j]];
+                    ia[newnr++] = invindex[il->iatoms[i + j]];
                 }
             }
         }
         fprintf(stderr, "Reduced ilist %8s from %6d to %6d entries\n",
-                name, il->nr/(nratoms+1),
-                newnr/(nratoms+1));
+                name, il->nr / (nratoms + 1),
+                newnr / (nratoms + 1));
 
         il->nr = newnr;
         for (i = 0; (i < newnr); i++)
@@ -261,10 +261,10 @@ static void reduce_ilist(int invindex[], gmx_bool bKeep[],
 static void reduce_topology_x(int gnx, int index[],
                               gmx_mtop_t *mtop, rvec x[], rvec v[])
 {
-    t_topology   top;
-    gmx_bool    *bKeep;
-    int         *invindex;
-    int          i;
+    t_topology top;
+    gmx_bool * bKeep;
+    int *      invindex;
+    int        i;
 
     top      = gmx_mtop_t_to_t_topology(mtop, false);
     bKeep    = bKeepIt(gnx, top.atoms.nr, index);
@@ -307,7 +307,7 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->molblock[0].nposres_xA = 0;
     mtop->molblock[0].nposres_xB = 0;
 
-    mtop->natoms                 = top.atoms.nr;
+    mtop->natoms = top.atoms.nr;
 }
 
 static void zeroq(int index[], gmx_mtop_t *mtop)
@@ -326,7 +326,7 @@ static void zeroq(int index[], gmx_mtop_t *mtop)
 
 int gmx_convert_tpr(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] can edit run input files in three ways.[PAR]",
         "[BB]1.[bb] by modifying the number of steps in a run input file",
         "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
@@ -342,7 +342,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         "using the LIE (Linear Interaction Energy) method."
     };
 
-    const char       *top_fn;
+    const char *      top_fn;
     int               i;
     gmx_int64_t       nsteps_req, run_step;
     double            run_t, state_t;
@@ -350,11 +350,11 @@ int gmx_convert_tpr(int argc, char *argv[])
     gmx_bool          bNsteps, bExtend, bUntil;
     gmx_mtop_t        mtop;
     t_atoms           atoms;
-    t_inputrec       *ir;
+    t_inputrec *      ir;
     t_state           state;
     int               gnx;
-    char             *grpname;
-    int              *index = nullptr;
+    char *            grpname;
+    int *             index = nullptr;
     char              buf[200], buf2[200];
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
@@ -399,7 +399,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     ir = mdModules.inputrec();
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
-    run_t    = ir->init_step*ir->delta_t + ir->init_t;
+    run_t    = ir->init_step * ir->delta_t + ir->init_t;
 
     if (bNsteps)
     {
@@ -411,7 +411,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         /* Determine total number of steps remaining */
         if (bExtend)
         {
-            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_int64_t)(extend_t/ir->delta_t + 0.5);
+            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_int64_t)(extend_t / ir->delta_t + 0.5);
             printf("Extending remaining runtime of by %g ps (now %s steps)\n",
                    extend_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -421,7 +421,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                    gmx_step_str(ir->nsteps, buf),
                    gmx_step_str(run_step, buf2),
                    run_t, until_t);
-            ir->nsteps = (gmx_int64_t)((until_t - run_t)/ir->delta_t + 0.5);
+            ir->nsteps = (gmx_int64_t)((until_t - run_t) / ir->delta_t + 0.5);
             printf("Extending remaining runtime until %g ps (now %s steps)\n",
                    until_t, gmx_step_str(ir->nsteps, buf));
         }
@@ -430,7 +430,7 @@ int gmx_convert_tpr(int argc, char *argv[])
             ir->nsteps -= run_step - ir->init_step;
             /* Print message */
             printf("%s steps (%g ps) remaining from first run.\n",
-                   gmx_step_str(ir->nsteps, buf), ir->nsteps*ir->delta_t);
+                   gmx_step_str(ir->nsteps, buf), ir->nsteps * ir->delta_t);
         }
     }
 
@@ -438,8 +438,8 @@ int gmx_convert_tpr(int argc, char *argv[])
     {
         ir->init_step = run_step;
 
-        if (ftp2bSet(efNDX, NFILE, fnm) ||
-            !(bNsteps || bExtend || bUntil))
+        if (ftp2bSet(efNDX, NFILE, fnm)
+            || !(bNsteps || bExtend || bUntil))
         {
             atoms = gmx_mtop_global_atoms(&mtop);
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1,
@@ -474,11 +474,11 @@ int gmx_convert_tpr(int argc, char *argv[])
             }
         }
 
-        state_t = ir->init_t + ir->init_step*ir->delta_t;
+        state_t = ir->init_t + ir->init_step * ir->delta_t;
         sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", GMX_PRId64, "%10", GMX_PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
         fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
-                state_t, ir->nsteps*ir->delta_t);
+                state_t, ir->nsteps * ir->delta_t);
         write_tpx_state(opt2fn("-o", NFILE, fnm), ir, &state, &mtop);
     }
     else

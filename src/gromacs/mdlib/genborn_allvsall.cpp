@@ -56,44 +56,43 @@
 
 typedef struct
 {
-    int *      jindex_gb;
-    int **     exclusion_mask_gb;
+    int *  jindex_gb;
+    int ** exclusion_mask_gb;
 }
 gmx_allvsallgb2_data_t;
 
-static int
-calc_maxoffset(int i, int natoms)
+static int calc_maxoffset(int i, int natoms)
 {
     int maxoffset;
 
     if ((natoms % 2) == 1)
     {
         /* Odd number of atoms, easy */
-        maxoffset = natoms/2;
+        maxoffset = natoms / 2;
     }
     else if ((natoms % 4) == 0)
     {
         /* Multiple of four is hard */
-        if (i < natoms/2)
+        if (i < natoms / 2)
         {
             if ((i % 2) == 0)
             {
-                maxoffset = natoms/2;
+                maxoffset = natoms / 2;
             }
             else
             {
-                maxoffset = natoms/2-1;
+                maxoffset = natoms / 2 - 1;
             }
         }
         else
         {
             if ((i % 2) == 1)
             {
-                maxoffset = natoms/2;
+                maxoffset = natoms / 2;
             }
             else
             {
-                maxoffset = natoms/2-1;
+                maxoffset = natoms / 2 - 1;
             }
         }
     }
@@ -102,24 +101,23 @@ calc_maxoffset(int i, int natoms)
         /* natoms/2 = odd */
         if ((i % 2) == 0)
         {
-            maxoffset = natoms/2;
+            maxoffset = natoms / 2;
         }
         else
         {
-            maxoffset = natoms/2-1;
+            maxoffset = natoms / 2 - 1;
         }
     }
 
     return maxoffset;
 }
 
-static void
-setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
-                                t_ilist     *                  ilist,
-                                int                            natoms,
-                                gmx_bool                       bInclude12,
-                                gmx_bool                       bInclude13,
-                                gmx_bool                       bInclude14)
+static void setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t * aadata,
+                                            t_ilist *                ilist,
+                                            int                      natoms,
+                                            gmx_bool                 bInclude12,
+                                            gmx_bool                 bInclude13,
+                                            gmx_bool                 bInclude14)
 {
     int i, j, k;
     int a1, a2;
@@ -138,7 +136,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
      */
 
     /* Allocate memory for jindex arrays */
-    snew(aadata->jindex_gb, 3*natoms);
+    snew(aadata->jindex_gb, 3 * natoms);
 
     /* Pointer to lists with exclusion masks */
     snew(aadata->exclusion_mask_gb, natoms);
@@ -146,8 +144,8 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
     for (i = 0; i < natoms; i++)
     {
         /* Start */
-        aadata->jindex_gb[3*i]       = i+1;
-        max_offset                   = calc_maxoffset(i, natoms);
+        aadata->jindex_gb[3 * i] = i + 1;
+        max_offset               = calc_maxoffset(i, natoms);
 
         /* first check the max range of atoms to EXCLUDE */
         max_excl_offset = 0;
@@ -155,16 +153,16 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         {
             for (j = 0; j < ilist[F_GB12].nr; j += 3)
             {
-                a1 = ilist[F_GB12].iatoms[j+1];
-                a2 = ilist[F_GB12].iatoms[j+2];
+                a1 = ilist[F_GB12].iatoms[j + 1];
+                a2 = ilist[F_GB12].iatoms[j + 2];
 
                 if (a1 == i)
                 {
-                    k = a2-a1;
+                    k = a2 - a1;
                 }
                 else if (a2 == i)
                 {
-                    k = a1+natoms-a2;
+                    k = a1 + natoms - a2;
                 }
                 else
                 {
@@ -180,17 +178,17 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         {
             for (j = 0; j < ilist[F_GB13].nr; j += 3)
             {
-                a1 = ilist[F_GB13].iatoms[j+1];
-                a2 = ilist[F_GB13].iatoms[j+2];
+                a1 = ilist[F_GB13].iatoms[j + 1];
+                a2 = ilist[F_GB13].iatoms[j + 2];
 
 
                 if (a1 == i)
                 {
-                    k = a2-a1;
+                    k = a2 - a1;
                 }
                 else if (a2 == i)
                 {
-                    k = a1+natoms-a2;
+                    k = a1 + natoms - a2;
                 }
                 else
                 {
@@ -206,17 +204,17 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         {
             for (j = 0; j < ilist[F_GB14].nr; j += 3)
             {
-                a1 = ilist[F_GB14].iatoms[j+1];
-                a2 = ilist[F_GB14].iatoms[j+2];
+                a1 = ilist[F_GB14].iatoms[j + 1];
+                a2 = ilist[F_GB14].iatoms[j + 2];
 
 
                 if (a1 == i)
                 {
-                    k = a2-a1;
+                    k = a2 - a1;
                 }
                 else if (a2 == i)
                 {
-                    k = a1+natoms-a2;
+                    k = a1 + natoms - a2;
                 }
                 else
                 {
@@ -230,7 +228,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         }
         max_excl_offset = std::min(max_offset, max_excl_offset);
 
-        aadata->jindex_gb[3*i+1] = i+1+max_excl_offset;
+        aadata->jindex_gb[3 * i + 1] = i + 1 + max_excl_offset;
 
         snew(aadata->exclusion_mask_gb[i], max_excl_offset);
 
@@ -245,16 +243,16 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         {
             for (j = 0; j < ilist[F_GB12].nr; j += 3)
             {
-                a1 = ilist[F_GB12].iatoms[j+1];
-                a2 = ilist[F_GB12].iatoms[j+2];
+                a1 = ilist[F_GB12].iatoms[j + 1];
+                a2 = ilist[F_GB12].iatoms[j + 2];
 
                 if (a1 == i)
                 {
-                    k = a2-a1;
+                    k = a2 - a1;
                 }
                 else if (a2 == i)
                 {
-                    k = a1+natoms-a2;
+                    k = a1 + natoms - a2;
                 }
                 else
                 {
@@ -262,7 +260,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                 }
                 if (k > 0 && k <= max_offset)
                 {
-                    aadata->exclusion_mask_gb[i][k-1] = 0;
+                    aadata->exclusion_mask_gb[i][k - 1] = 0;
                 }
             }
         }
@@ -270,16 +268,16 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         {
             for (j = 0; j < ilist[F_GB13].nr; j += 3)
             {
-                a1 = ilist[F_GB13].iatoms[j+1];
-                a2 = ilist[F_GB13].iatoms[j+2];
+                a1 = ilist[F_GB13].iatoms[j + 1];
+                a2 = ilist[F_GB13].iatoms[j + 2];
 
                 if (a1 == i)
                 {
-                    k = a2-a1;
+                    k = a2 - a1;
                 }
                 else if (a2 == i)
                 {
-                    k = a1+natoms-a2;
+                    k = a1 + natoms - a2;
                 }
                 else
                 {
@@ -287,7 +285,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                 }
                 if (k > 0 && k <= max_offset)
                 {
-                    aadata->exclusion_mask_gb[i][k-1] = 0;
+                    aadata->exclusion_mask_gb[i][k - 1] = 0;
                 }
             }
         }
@@ -295,16 +293,16 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         {
             for (j = 0; j < ilist[F_GB14].nr; j += 3)
             {
-                a1 = ilist[F_GB14].iatoms[j+1];
-                a2 = ilist[F_GB14].iatoms[j+2];
+                a1 = ilist[F_GB14].iatoms[j + 1];
+                a2 = ilist[F_GB14].iatoms[j + 2];
 
                 if (a1 == i)
                 {
-                    k = a2-a1;
+                    k = a2 - a1;
                 }
                 else if (a2 == i)
                 {
-                    k = a1+natoms-a2;
+                    k = a1 + natoms - a2;
                 }
                 else
                 {
@@ -312,7 +310,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                 }
                 if (k > 0 && k <= max_offset)
                 {
-                    aadata->exclusion_mask_gb[i][k-1] = 0;
+                    aadata->exclusion_mask_gb[i][k - 1] = 0;
                 }
             }
         }
@@ -320,18 +318,17 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
         /* End */
 
         /* End */
-        aadata->jindex_gb[3*i+2] = i+1+max_offset;
+        aadata->jindex_gb[3 * i + 2] = i + 1 + max_offset;
     }
 }
 
 
-static void
-genborn_allvsall_setup(gmx_allvsallgb2_data_t     **  p_aadata,
-                       t_ilist     *                  ilist,
-                       int                            natoms,
-                       gmx_bool                       bInclude12,
-                       gmx_bool                       bInclude13,
-                       gmx_bool                       bInclude14)
+static void genborn_allvsall_setup(gmx_allvsallgb2_data_t ** p_aadata,
+                                   t_ilist *                 ilist,
+                                   int                       natoms,
+                                   gmx_bool                  bInclude12,
+                                   gmx_bool                  bInclude13,
+                                   gmx_bool                  bInclude14)
 {
     gmx_allvsallgb2_data_t *aadata;
 
@@ -343,37 +340,36 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t     **  p_aadata,
 
 
 
-int
-genborn_allvsall_calc_still_radii(t_forcerec *           fr,
-                                  t_mdatoms *            mdatoms,
-                                  gmx_genborn_t *        born,
-                                  gmx_localtop_t *       top,
-                                  real *                 x,
-                                  void *                 work)
+int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
+                                      t_mdatoms *      mdatoms,
+                                      gmx_genborn_t *  born,
+                                      gmx_localtop_t * top,
+                                      real *           x,
+                                      void *           work)
 {
     gmx_allvsallgb2_data_t *aadata;
     int                     natoms;
     int                     ni0, ni1;
     int                     nj0, nj1, nj2;
     int                     i, j, k, n;
-    int              *      mask;
+    int *                   mask;
 
-    real                    ix, iy, iz;
-    real                    jx, jy, jz;
-    real                    dx, dy, dz;
-    real                    rsq, rinv;
-    real                    gpi, rai, vai;
-    real                    prod_ai;
-    real                    irsq, idr4, idr6;
-    real                    raj, rvdw, ratio;
-    real                    vaj, ccf, dccf, theta, cosq;
-    real                    term, prod, icf4, icf6, gpi2, factor, sinq;
+    real ix, iy, iz;
+    real jx, jy, jz;
+    real dx, dy, dz;
+    real rsq, rinv;
+    real gpi, rai, vai;
+    real prod_ai;
+    real irsq, idr4, idr6;
+    real raj, rvdw, ratio;
+    real vaj, ccf, dccf, theta, cosq;
+    real term, prod, icf4, icf6, gpi2, factor, sinq;
 
-    natoms              = mdatoms->nr;
-    ni0                 = 0;
-    ni1                 = mdatoms->homenr;
-    factor              = 0.5*ONE_4PI_EPS0;
-    n                   = 0;
+    natoms = mdatoms->nr;
+    ni0    = 0;
+    ni1    = mdatoms->homenr;
+    factor = 0.5 * ONE_4PI_EPS0;
+    n      = 0;
 
     aadata = *((gmx_allvsallgb2_data_t **)work);
 
@@ -396,50 +392,50 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
         /* We assume shifts are NOT used for all-vs-all interactions */
 
         /* Load i atom data */
-        ix                = x[3*i];
-        iy                = x[3*i+1];
-        iz                = x[3*i+2];
+        ix = x[3 * i];
+        iy = x[3 * i + 1];
+        iz = x[3 * i + 2];
 
-        gpi               = 0.0;
+        gpi = 0.0;
 
         rai     = top->atomtypes.gb_radius[mdatoms->typeA[i]];
         vai     = born->vsolv[i];
-        prod_ai = STILL_P4*vai;
+        prod_ai = STILL_P4 * vai;
 
         /* Load limits for loop over neighbors */
-        nj0              = aadata->jindex_gb[3*i];
-        nj1              = aadata->jindex_gb[3*i+1];
-        nj2              = aadata->jindex_gb[3*i+2];
+        nj0 = aadata->jindex_gb[3 * i];
+        nj1 = aadata->jindex_gb[3 * i + 1];
+        nj2 = aadata->jindex_gb[3 * i + 2];
 
-        mask             = aadata->exclusion_mask_gb[i];
+        mask = aadata->exclusion_mask_gb[i];
 
         /* Prologue part, including exclusion mask */
         for (j = nj0; j < nj1; j++, mask++)
         {
             if (*mask != 0)
             {
-                k = j%natoms;
+                k = j % natoms;
 
                 /* load j atom coordinates */
-                jx                = x[3*k];
-                jy                = x[3*k+1];
-                jz                = x[3*k+2];
+                jx = x[3 * k];
+                jy = x[3 * k + 1];
+                jz = x[3 * k + 2];
 
                 /* Calculate distance */
-                dx                = ix - jx;
-                dy                = iy - jy;
-                dz                = iz - jz;
-                rsq               = dx*dx+dy*dy+dz*dz;
+                dx  = ix - jx;
+                dy  = iy - jy;
+                dz  = iz - jz;
+                rsq = dx * dx + dy * dy + dz * dz;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv              = gmx::invsqrt(rsq);
-                irsq              = rinv*rinv;
-                idr4              = irsq*irsq;
-                idr6              = idr4*irsq;
+                rinv = gmx::invsqrt(rsq);
+                irsq = rinv * rinv;
+                idr4 = irsq * irsq;
+                idr6 = idr4 * irsq;
 
                 raj = top->atomtypes.gb_radius[mdatoms->typeA[k]];
 
-                rvdw  = rai + raj;
+                rvdw = rai + raj;
 
                 ratio = rsq / (rvdw * rvdw);
                 vaj   = born->vsolv[k];
@@ -452,24 +448,24 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
                 }
                 else
                 {
-                    theta = ratio*STILL_PIP5;
+                    theta = ratio * STILL_PIP5;
                     cosq  = cos(theta);
-                    term  = 0.5*(1.0-cosq);
-                    ccf   = term*term;
-                    sinq  = 1.0 - cosq*cosq;
-                    dccf  = 2.0*term*sinq*gmx::invsqrt(sinq)*theta;
+                    term  = 0.5 * (1.0 - cosq);
+                    ccf   = term * term;
+                    sinq  = 1.0 - cosq * cosq;
+                    dccf  = 2.0*term*sinq*gmx::invsqrt(sinq) * theta;
                 }
 
-                prod          = STILL_P4*vaj;
-                icf4          = ccf*idr4;
-                icf6          = (4*ccf-dccf)*idr6;
+                prod = STILL_P4 * vaj;
+                icf4 = ccf * idr4;
+                icf6 = (4 * ccf - dccf) * idr6;
 
-                born->gpol_still_work[k] += prod_ai*icf4;
-                gpi                       = gpi+prod*icf4;
+                born->gpol_still_work[k] += prod_ai * icf4;
+                gpi                       = gpi + prod * icf4;
 
                 /* Save ai->aj and aj->ai chain rule terms */
-                fr->dadx[n++]   = prod*icf6;
-                fr->dadx[n++]   = prod_ai*icf6;
+                fr->dadx[n++] = prod * icf6;
+                fr->dadx[n++] = prod_ai * icf6;
 
                 /* 27 flops, plus one cos(x) - estimate at 20 flops  => 47 */
 
@@ -479,28 +475,28 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
         /* Main part, no exclusions */
         for (j = nj1; j < nj2; j++)
         {
-            k = j%natoms;
+            k = j % natoms;
 
             /* load j atom coordinates */
-            jx                = x[3*k];
-            jy                = x[3*k+1];
-            jz                = x[3*k+2];
+            jx = x[3 * k];
+            jy = x[3 * k + 1];
+            jz = x[3 * k + 2];
 
             /* Calculate distance */
-            dx                = ix - jx;
-            dy                = iy - jy;
-            dz                = iz - jz;
-            rsq               = dx*dx+dy*dy+dz*dz;
+            dx  = ix - jx;
+            dy  = iy - jy;
+            dz  = iz - jz;
+            rsq = dx * dx + dy * dy + dz * dz;
 
             /* Calculate 1/r and 1/r2 */
-            rinv              = gmx::invsqrt(rsq);
-            irsq              = rinv*rinv;
-            idr4              = irsq*irsq;
-            idr6              = idr4*irsq;
+            rinv = gmx::invsqrt(rsq);
+            irsq = rinv * rinv;
+            idr4 = irsq * irsq;
+            idr6 = idr4 * irsq;
 
             raj = top->atomtypes.gb_radius[mdatoms->typeA[k]];
 
-            rvdw  = rai + raj;
+            rvdw = rai + raj;
 
             ratio = rsq / (rvdw * rvdw);
             vaj   = born->vsolv[k];
@@ -512,24 +508,24 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
             }
             else
             {
-                theta = ratio*STILL_PIP5;
+                theta = ratio * STILL_PIP5;
                 cosq  = cos(theta);
-                term  = 0.5*(1.0-cosq);
-                ccf   = term*term;
-                sinq  = 1.0 - cosq*cosq;
-                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq)*theta;
+                term  = 0.5 * (1.0 - cosq);
+                ccf   = term * term;
+                sinq  = 1.0 - cosq * cosq;
+                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq) * theta;
             }
 
-            prod          = STILL_P4*vaj;
-            icf4          = ccf*idr4;
-            icf6          = (4*ccf-dccf)*idr6;
+            prod = STILL_P4 * vaj;
+            icf4 = ccf * idr4;
+            icf6 = (4 * ccf - dccf) * idr6;
 
-            born->gpol_still_work[k] += prod_ai*icf4;
-            gpi                       = gpi+prod*icf4;
+            born->gpol_still_work[k] += prod_ai * icf4;
+            gpi                       = gpi + prod * icf4;
 
             /* Save ai->aj and aj->ai chain rule terms */
-            fr->dadx[n++]   = prod*icf6;
-            fr->dadx[n++]   = prod_ai*icf6;
+            fr->dadx[n++] = prod * icf6;
+            fr->dadx[n++] = prod_ai * icf6;
         }
         born->gpol_still_work[i] += gpi;
     }
@@ -541,9 +537,9 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
     {
         if (born->use[i] != 0)
         {
-            gpi             = born->gpol[i]+born->gpol_still_work[i];
+            gpi             = born->gpol[i] + born->gpol_still_work[i];
             gpi2            = gpi * gpi;
-            born->bRad[i]   = factor*gmx::invsqrt(gpi2);
+            born->bRad[i]   = factor * gmx::invsqrt(gpi2);
             fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
         }
     }
@@ -553,37 +549,36 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
 
 
 
-int
-genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
-                                    t_mdatoms *            mdatoms,
-                                    gmx_genborn_t *        born,
-                                    int                    gb_algorithm,
-                                    gmx_localtop_t *       top,
-                                    real *                 x,
-                                    void *                 work)
+int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
+                                        t_mdatoms *      mdatoms,
+                                        gmx_genborn_t *  born,
+                                        int              gb_algorithm,
+                                        gmx_localtop_t * top,
+                                        real *           x,
+                                        void *           work)
 {
     gmx_allvsallgb2_data_t *aadata;
     int                     natoms;
     int                     ni0, ni1;
     int                     nj0, nj1, nj2;
     int                     i, j, k, n;
-    int              *      mask;
+    int *                   mask;
 
-    real                    ix, iy, iz;
-    real                    jx, jy, jz;
-    real                    dx, dy, dz;
-    real                    rsq, rinv;
-    real                    prod, raj;
-    real                    rai, doffset, rai_inv, rai_inv2, sk_ai, sk2_ai, sum_ai;
-    real                    dr, sk, lij, dlij, lij2, lij3, uij2, uij3, diff2, uij, log_term;
-    real                    lij_inv, sk2, sk2_rinv, tmp, t1, t2, t3, raj_inv, sum_ai2, sum_ai3, tsum;
-    real                    tchain;
-    real                    dadxi, dadxj;
-    real                    rad, min_rad;
+    real ix, iy, iz;
+    real jx, jy, jz;
+    real dx, dy, dz;
+    real rsq, rinv;
+    real prod, raj;
+    real rai, doffset, rai_inv, rai_inv2, sk_ai, sk2_ai, sum_ai;
+    real dr, sk, lij, dlij, lij2, lij3, uij2, uij3, diff2, uij, log_term;
+    real lij_inv, sk2, sk2_rinv, tmp, t1, t2, t3, raj_inv, sum_ai2, sum_ai3, tsum;
+    real tchain;
+    real dadxi, dadxj;
+    real rad, min_rad;
 
-    natoms              = mdatoms->nr;
-    ni0                 = 0;
-    ni1                 = mdatoms->homenr;
+    natoms = mdatoms->nr;
+    ni0    = 0;
+    ni1    = mdatoms->homenr;
 
     n       = 0;
     doffset = born->gb_doffset;
@@ -607,95 +602,95 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
         /* We assume shifts are NOT used for all-vs-all interactions */
 
         /* Load i atom data */
-        ix                = x[3*i];
-        iy                = x[3*i+1];
-        iz                = x[3*i+2];
+        ix = x[3 * i];
+        iy = x[3 * i + 1];
+        iz = x[3 * i + 2];
 
-        rai      = top->atomtypes.gb_radius[mdatoms->typeA[i]]-doffset;
-        rai_inv  = 1.0/rai;
+        rai     = top->atomtypes.gb_radius[mdatoms->typeA[i]] - doffset;
+        rai_inv = 1.0 / rai;
 
-        sk_ai    = born->param[i];
-        sk2_ai   = sk_ai*sk_ai;
+        sk_ai  = born->param[i];
+        sk2_ai = sk_ai * sk_ai;
 
-        sum_ai   = 0;
+        sum_ai = 0;
 
         /* Load limits for loop over neighbors */
-        nj0              = aadata->jindex_gb[3*i];
-        nj1              = aadata->jindex_gb[3*i+1];
-        nj2              = aadata->jindex_gb[3*i+2];
+        nj0 = aadata->jindex_gb[3 * i];
+        nj1 = aadata->jindex_gb[3 * i + 1];
+        nj2 = aadata->jindex_gb[3 * i + 2];
 
-        mask             = aadata->exclusion_mask_gb[i];
+        mask = aadata->exclusion_mask_gb[i];
 
         /* Prologue part, including exclusion mask */
         for (j = nj0; j < nj1; j++, mask++)
         {
             if (*mask != 0)
             {
-                k = j%natoms;
+                k = j % natoms;
 
                 /* load j atom coordinates */
-                jx                = x[3*k];
-                jy                = x[3*k+1];
-                jz                = x[3*k+2];
+                jx = x[3 * k];
+                jy = x[3 * k + 1];
+                jz = x[3 * k + 2];
 
                 /* Calculate distance */
-                dx                = ix - jx;
-                dy                = iy - jy;
-                dz                = iz - jz;
-                rsq               = dx*dx+dy*dy+dz*dz;
+                dx  = ix - jx;
+                dy  = iy - jy;
+                dz  = iz - jz;
+                rsq = dx * dx + dy * dy + dz * dz;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv              = gmx::invsqrt(rsq);
-                dr                = rsq*rinv;
+                rinv = gmx::invsqrt(rsq);
+                dr   = rsq * rinv;
 
                 /* sk is precalculated in init_gb() */
-                sk    = born->param[k];
-                raj   = top->atomtypes.gb_radius[mdatoms->typeA[k]]-doffset;
+                sk  = born->param[k];
+                raj = top->atomtypes.gb_radius[mdatoms->typeA[k]] - doffset;
 
                 /* aj -> ai interaction */
 
 
-                if (rai < dr+sk)
+                if (rai < dr + sk)
                 {
-                    lij       = 1.0/(dr-sk);
-                    dlij      = 1.0;
+                    lij  = 1.0 / (dr - sk);
+                    dlij = 1.0;
 
-                    if (rai > dr-sk)
+                    if (rai > dr - sk)
                     {
                         lij  = rai_inv;
                         dlij = 0.0;
                     }
 
-                    uij      = 1.0/(dr+sk);
-                    lij2     = lij  * lij;
-                    lij3     = lij2 * lij;
-                    uij2     = uij  * uij;
-                    uij3     = uij2 * uij;
+                    uij  = 1.0 / (dr + sk);
+                    lij2 = lij  * lij;
+                    lij3 = lij2 * lij;
+                    uij2 = uij  * uij;
+                    uij3 = uij2 * uij;
 
-                    diff2    = uij2-lij2;
+                    diff2 = uij2 - lij2;
 
                     lij_inv  = gmx::invsqrt(lij2);
-                    sk2      = sk*sk;
-                    sk2_rinv = sk2*rinv;
-                    prod     = 0.25*sk2_rinv;
+                    sk2      = sk * sk;
+                    sk2_rinv = sk2 * rinv;
+                    prod     = 0.25 * sk2_rinv;
 
-                    log_term = std::log(uij*lij_inv);
+                    log_term = std::log(uij * lij_inv);
                     /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                    tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
+                    tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term + prod * (-diff2);
 
-                    if (rai < sk-dr)
+                    if (rai < sk - dr)
                     {
-                        tmp = tmp + 2.0 * (rai_inv-lij);
+                        tmp = tmp + 2.0 * (rai_inv - lij);
                     }
 
-                    t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                    t2      = -0.5*uij2 - prod*uij3 + 0.25*(uij*rinv+uij3*dr);
+                    t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                    t2 = -0.5 * uij2 - prod * uij3 + 0.25 * (uij * rinv + uij3 * dr);
 
-                    t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                    t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                    dadxi = (dlij*t1+t2+t3)*rinv;
+                    dadxi = (dlij * t1 + t2 + t3) * rinv;
 
-                    sum_ai += 0.5*tmp;
+                    sum_ai += 0.5 * tmp;
                 }
                 else
                 {
@@ -705,47 +700,47 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 /* ai -> aj interaction */
                 if (raj < dr + sk_ai)
                 {
-                    lij     = 1.0/(dr-sk_ai);
+                    lij     = 1.0 / (dr - sk_ai);
                     dlij    = 1.0;
-                    raj_inv = 1.0/raj;
+                    raj_inv = 1.0 / raj;
 
-                    if (raj > dr-sk_ai)
+                    if (raj > dr - sk_ai)
                     {
                         lij  = raj_inv;
                         dlij = 0.0;
                     }
 
-                    lij2     = lij  * lij;
-                    lij3     = lij2 * lij;
+                    lij2 = lij  * lij;
+                    lij3 = lij2 * lij;
 
-                    uij      = 1.0/(dr+sk_ai);
-                    uij2     = uij  * uij;
-                    uij3     = uij2 * uij;
+                    uij  = 1.0 / (dr + sk_ai);
+                    uij2 = uij  * uij;
+                    uij3 = uij2 * uij;
 
-                    diff2    = uij2-lij2;
+                    diff2 = uij2 - lij2;
 
                     lij_inv  = gmx::invsqrt(lij2);
                     sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
-                    sk2_rinv = sk2*rinv;
+                    sk2_rinv = sk2 * rinv;
                     prod     = 0.25 * sk2_rinv;
 
                     /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                    log_term = std::log(uij*lij_inv);
+                    log_term = std::log(uij * lij_inv);
 
-                    tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
+                    tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term + prod * (-diff2);
 
-                    if (raj < sk_ai-dr)
+                    if (raj < sk_ai - dr)
                     {
-                        tmp     = tmp + 2.0 * (raj_inv-lij);
+                        tmp = tmp + 2.0 * (raj_inv - lij);
                     }
 
-                    t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                    t2      = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                    t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                    t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                    t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                    t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                    dadxj = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule	*/
+                    dadxj = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule	*/
 
-                    born->gpol_hct_work[k] += 0.5*tmp;
+                    born->gpol_hct_work[k] += 0.5 * tmp;
                 }
                 else
                 {
@@ -760,69 +755,69 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
         /* Main part, no exclusions */
         for (j = nj1; j < nj2; j++)
         {
-            k = j%natoms;
+            k = j % natoms;
 
             /* load j atom coordinates */
-            jx                = x[3*k];
-            jy                = x[3*k+1];
-            jz                = x[3*k+2];
+            jx = x[3 * k];
+            jy = x[3 * k + 1];
+            jz = x[3 * k + 2];
 
             /* Calculate distance */
-            dx                = ix - jx;
-            dy                = iy - jy;
-            dz                = iz - jz;
-            rsq               = dx*dx+dy*dy+dz*dz;
+            dx  = ix - jx;
+            dy  = iy - jy;
+            dz  = iz - jz;
+            rsq = dx * dx + dy * dy + dz * dz;
 
             /* Calculate 1/r and 1/r2 */
-            rinv              = gmx::invsqrt(rsq);
-            dr                = rsq*rinv;
+            rinv = gmx::invsqrt(rsq);
+            dr   = rsq * rinv;
 
             /* sk is precalculated in init_gb() */
-            sk    = born->param[k];
-            raj   = top->atomtypes.gb_radius[mdatoms->typeA[k]]-doffset;
+            sk  = born->param[k];
+            raj = top->atomtypes.gb_radius[mdatoms->typeA[k]] - doffset;
 
             /* aj -> ai interaction */
-            if (rai < dr+sk)
+            if (rai < dr + sk)
             {
-                lij       = 1.0/(dr-sk);
-                dlij      = 1.0;
+                lij  = 1.0 / (dr - sk);
+                dlij = 1.0;
 
-                if (rai > dr-sk)
+                if (rai > dr - sk)
                 {
                     lij  = rai_inv;
                     dlij = 0.0;
                 }
 
-                uij      = 1.0/(dr+sk);
-                lij2     = lij  * lij;
-                lij3     = lij2 * lij;
-                uij2     = uij  * uij;
-                uij3     = uij2 * uij;
+                uij  = 1.0 / (dr + sk);
+                lij2 = lij  * lij;
+                lij3 = lij2 * lij;
+                uij2 = uij  * uij;
+                uij3 = uij2 * uij;
 
-                diff2    = uij2-lij2;
+                diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
-                sk2      = sk*sk;
-                sk2_rinv = sk2*rinv;
-                prod     = 0.25*sk2_rinv;
+                sk2      = sk * sk;
+                sk2_rinv = sk2 * rinv;
+                prod     = 0.25 * sk2_rinv;
 
-                log_term = std::log(uij*lij_inv);
+                log_term = std::log(uij * lij_inv);
                 /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
+                tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term + prod * (-diff2);
 
-                if (rai < sk-dr)
+                if (rai < sk - dr)
                 {
-                    tmp = tmp + 2.0 * (rai_inv-lij);
+                    tmp = tmp + 2.0 * (rai_inv - lij);
                 }
 
                 /* duij    = 1.0; */
-                t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                t2      = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadxi = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule	*/
+                dadxi = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule	*/
 
-                sum_ai += 0.5*tmp;
+                sum_ai += 0.5 * tmp;
             }
             else
             {
@@ -832,47 +827,47 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
             /* ai -> aj interaction */
             if (raj < dr + sk_ai)
             {
-                lij     = 1.0/(dr-sk_ai);
+                lij     = 1.0 / (dr - sk_ai);
                 dlij    = 1.0;
-                raj_inv = 1.0/raj;
+                raj_inv = 1.0 / raj;
 
-                if (raj > dr-sk_ai)
+                if (raj > dr - sk_ai)
                 {
                     lij  = raj_inv;
                     dlij = 0.0;
                 }
 
-                lij2     = lij  * lij;
-                lij3     = lij2 * lij;
+                lij2 = lij  * lij;
+                lij3 = lij2 * lij;
 
-                uij      = 1.0/(dr+sk_ai);
-                uij2     = uij  * uij;
-                uij3     = uij2 * uij;
+                uij  = 1.0 / (dr + sk_ai);
+                uij2 = uij  * uij;
+                uij3 = uij2 * uij;
 
-                diff2    = uij2-lij2;
+                diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
                 sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
-                sk2_rinv = sk2*rinv;
+                sk2_rinv = sk2 * rinv;
                 prod     = 0.25 * sk2_rinv;
 
                 /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                log_term = std::log(uij*lij_inv);
+                log_term = std::log(uij * lij_inv);
 
-                tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
+                tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term + prod * (-diff2);
 
-                if (raj < sk_ai-dr)
+                if (raj < sk_ai - dr)
                 {
-                    tmp     = tmp + 2.0 * (raj_inv-lij);
+                    tmp = tmp + 2.0 * (raj_inv - lij);
                 }
 
-                t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                t2      = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadxj = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule	*/
+                dadxj = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule	*/
 
-                born->gpol_hct_work[k] += 0.5*tmp;
+                born->gpol_hct_work[k] += 0.5 * tmp;
             }
             else
             {
@@ -893,10 +888,10 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
         {
             if (born->use[i] != 0)
             {
-                rai     = top->atomtypes.gb_radius[mdatoms->typeA[i]]-born->gb_doffset;
-                sum_ai  = 1.0/rai - born->gpol_hct_work[i];
+                rai     = top->atomtypes.gb_radius[mdatoms->typeA[i]] - born->gb_doffset;
+                sum_ai  = 1.0 / rai - born->gpol_hct_work[i];
                 min_rad = rai + born->gb_doffset;
-                rad     = 1.0/sum_ai;
+                rad     = 1.0 / sum_ai;
 
                 born->bRad[i]   = std::max(rad, min_rad);
                 fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
@@ -912,22 +907,22 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
         {
             if (born->use[i] != 0)
             {
-                rai        = top->atomtypes.gb_radius[mdatoms->typeA[i]];
-                rai_inv2   = 1.0/rai;
-                rai        = rai-doffset;
-                rai_inv    = 1.0/rai;
-                sum_ai     = rai * born->gpol_hct_work[i];
-                sum_ai2    = sum_ai  * sum_ai;
-                sum_ai3    = sum_ai2 * sum_ai;
+                rai      = top->atomtypes.gb_radius[mdatoms->typeA[i]];
+                rai_inv2 = 1.0 / rai;
+                rai      = rai - doffset;
+                rai_inv  = 1.0 / rai;
+                sum_ai   = rai * born->gpol_hct_work[i];
+                sum_ai2  = sum_ai  * sum_ai;
+                sum_ai3  = sum_ai2 * sum_ai;
 
-                tsum          = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
-                born->bRad[i] = rai_inv - tsum*rai_inv2;
+                tsum          = tanh(born->obc_alpha * sum_ai - born->obc_beta * sum_ai2 + born->obc_gamma * sum_ai3);
+                born->bRad[i] = rai_inv - tsum * rai_inv2;
                 born->bRad[i] = 1.0 / born->bRad[i];
 
                 fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
 
-                tchain         = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
-                born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;
+                tchain         = rai * (born->obc_alpha - 2 * born->obc_beta * sum_ai + 3 * born->obc_gamma * sum_ai2);
+                born->drobc[i] = (1.0 - tsum * tsum) * tchain * rai_inv2;
             }
         }
     }
@@ -938,14 +933,13 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
 
 
-int
-genborn_allvsall_calc_chainrule(t_forcerec *           fr,
-                                t_mdatoms *            mdatoms,
-                                gmx_genborn_t *        born,
-                                real *                 x,
-                                real *                 f,
-                                int                    gb_algorithm,
-                                void *                 work)
+int genborn_allvsall_calc_chainrule(t_forcerec *    fr,
+                                    t_mdatoms *     mdatoms,
+                                    gmx_genborn_t * born,
+                                    real *          x,
+                                    real *          f,
+                                    int             gb_algorithm,
+                                    void *          work)
 {
     gmx_allvsallgb2_data_t *aadata;
     int                     natoms;
@@ -953,21 +947,21 @@ genborn_allvsall_calc_chainrule(t_forcerec *           fr,
     int                     nj0, nj1, nj2;
     int                     i, j, k, n;
     int                     idx;
-    int              *      mask;
+    int *                   mask;
 
-    real                    ix, iy, iz;
-    real                    fix, fiy, fiz;
-    real                    jx, jy, jz;
-    real                    dx, dy, dz;
-    real                    tx, ty, tz;
-    real                    rbai, rbaj, fgb, fgb_ai, rbi;
-    real              *     rb;
-    real              *     dadx;
+    real   ix, iy, iz;
+    real   fix, fiy, fiz;
+    real   jx, jy, jz;
+    real   dx, dy, dz;
+    real   tx, ty, tz;
+    real   rbai, rbaj, fgb, fgb_ai, rbi;
+    real * rb;
+    real * dadx;
 
-    natoms              = mdatoms->nr;
-    ni0                 = 0;
-    ni1                 = mdatoms->homenr;
-    dadx                = fr->dadx;
+    natoms = mdatoms->nr;
+    ni0    = 0;
+    ni1    = mdatoms->homenr;
+    dadx   = fr->dadx;
 
     aadata = (gmx_allvsallgb2_data_t *)work;
 
@@ -980,7 +974,7 @@ genborn_allvsall_calc_chainrule(t_forcerec *           fr,
         for (i = 0; i < natoms; i++)
         {
             rbi   = born->bRad[i];
-            rb[i] = (2 * rbi * rbi * fr->dvda[i])/ONE_4PI_EPS0;
+            rb[i] = (2 * rbi * rbi * fr->dvda[i]) / ONE_4PI_EPS0;
         }
     }
     else if (gb_algorithm == egbHCT)
@@ -1005,103 +999,103 @@ genborn_allvsall_calc_chainrule(t_forcerec *           fr,
         /* We assume shifts are NOT used for all-vs-all interactions */
 
         /* Load i atom data */
-        ix                = x[3*i];
-        iy                = x[3*i+1];
-        iz                = x[3*i+2];
+        ix = x[3 * i];
+        iy = x[3 * i + 1];
+        iz = x[3 * i + 2];
 
-        fix               = 0;
-        fiy               = 0;
-        fiz               = 0;
+        fix = 0;
+        fiy = 0;
+        fiz = 0;
 
-        rbai              = rb[i];
+        rbai = rb[i];
 
         /* Load limits for loop over neighbors */
-        nj0              = aadata->jindex_gb[3*i];
-        nj1              = aadata->jindex_gb[3*i+1];
-        nj2              = aadata->jindex_gb[3*i+2];
+        nj0 = aadata->jindex_gb[3 * i];
+        nj1 = aadata->jindex_gb[3 * i + 1];
+        nj2 = aadata->jindex_gb[3 * i + 2];
 
-        mask             = aadata->exclusion_mask_gb[i];
+        mask = aadata->exclusion_mask_gb[i];
 
         /* Prologue part, including exclusion mask */
         for (j = nj0; j < nj1; j++, mask++)
         {
             if (*mask != 0)
             {
-                k = j%natoms;
+                k = j % natoms;
 
                 /* load j atom coordinates */
-                jx                = x[3*k];
-                jy                = x[3*k+1];
-                jz                = x[3*k+2];
+                jx = x[3 * k];
+                jy = x[3 * k + 1];
+                jz = x[3 * k + 2];
 
                 /* Calculate distance */
-                dx                = ix - jx;
-                dy                = iy - jy;
-                dz                = iz - jz;
+                dx = ix - jx;
+                dy = iy - jy;
+                dz = iz - jz;
 
-                rbaj              = rb[k];
+                rbaj = rb[k];
 
-                fgb     = rbai*dadx[n++];
-                fgb_ai  = rbaj*dadx[n++];
+                fgb    = rbai * dadx[n++];
+                fgb_ai = rbaj * dadx[n++];
 
                 /* Total force between ai and aj is the sum of ai->aj and aj->ai */
-                fgb     = fgb + fgb_ai;
+                fgb = fgb + fgb_ai;
 
-                tx      = fgb * dx;
-                ty      = fgb * dy;
-                tz      = fgb * dz;
+                tx = fgb * dx;
+                ty = fgb * dy;
+                tz = fgb * dz;
 
-                fix     = fix + tx;
-                fiy     = fiy + ty;
-                fiz     = fiz + tz;
+                fix = fix + tx;
+                fiy = fiy + ty;
+                fiz = fiz + tz;
 
                 /* Update force on atom aj */
-                f[3*k]   = f[3*k] - tx;
-                f[3*k+1] = f[3*k+1] - ty;
-                f[3*k+2] = f[3*k+2] - tz;
+                f[3 * k]     = f[3 * k] - tx;
+                f[3 * k + 1] = f[3 * k + 1] - ty;
+                f[3 * k + 2] = f[3 * k + 2] - tz;
             }
         }
 
         /* Main part, no exclusions */
         for (j = nj1; j < nj2; j++)
         {
-            k = j%natoms;
+            k = j % natoms;
 
             /* load j atom coordinates */
-            jx                = x[3*k];
-            jy                = x[3*k+1];
-            jz                = x[3*k+2];
+            jx = x[3 * k];
+            jy = x[3 * k + 1];
+            jz = x[3 * k + 2];
 
             /* Calculate distance */
-            dx                = ix - jx;
-            dy                = iy - jy;
-            dz                = iz - jz;
+            dx = ix - jx;
+            dy = iy - jy;
+            dz = iz - jz;
 
-            rbaj              = rb[k];
+            rbaj = rb[k];
 
-            fgb     = rbai*dadx[n++];
-            fgb_ai  = rbaj*dadx[n++];
+            fgb    = rbai * dadx[n++];
+            fgb_ai = rbaj * dadx[n++];
 
             /* Total force between ai and aj is the sum of ai->aj and aj->ai */
-            fgb     = fgb + fgb_ai;
+            fgb = fgb + fgb_ai;
 
-            tx      = fgb * dx;
-            ty      = fgb * dy;
-            tz      = fgb * dz;
+            tx = fgb * dx;
+            ty = fgb * dy;
+            tz = fgb * dz;
 
-            fix     = fix + tx;
-            fiy     = fiy + ty;
-            fiz     = fiz + tz;
+            fix = fix + tx;
+            fiy = fiy + ty;
+            fiz = fiz + tz;
 
             /* Update force on atom aj */
-            f[3*k]   = f[3*k] - tx;
-            f[3*k+1] = f[3*k+1] - ty;
-            f[3*k+2] = f[3*k+2] - tz;
+            f[3 * k]     = f[3 * k] - tx;
+            f[3 * k + 1] = f[3 * k + 1] - ty;
+            f[3 * k + 2] = f[3 * k + 2] - tz;
         }
         /* Update force and shift forces on atom ai */
-        f[3*i]   = f[3*i] + fix;
-        f[3*i+1] = f[3*i+1] + fiy;
-        f[3*i+2] = f[3*i+2] + fiz;
+        f[3 * i]     = f[3 * i] + fix;
+        f[3 * i + 1] = f[3 * i + 1] + fiy;
+        f[3 * i + 2] = f[3 * i + 2] + fiz;
     }
 
     return 0;

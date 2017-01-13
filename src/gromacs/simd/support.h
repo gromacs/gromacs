@@ -99,9 +99,9 @@ simdCompiled();
  *  \param warnToStdErr   If true, warnings will also be printed to stderr.
  */
 bool
-simdCheck(SimdType         s,
-          FILE *           log,
-          bool             warnToStdErr);
+simdCheck(SimdType s,
+          FILE *   log,
+          bool     warnToStdErr);
 
 /*! \endcond */
 

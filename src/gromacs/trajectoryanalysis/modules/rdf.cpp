@@ -116,17 +116,17 @@ class Rdf : public TrajectoryAnalysisModule
     public:
         Rdf();
 
-        virtual void initOptions(IOptionsContainer          *options,
+        virtual void initOptions(IOptionsContainer *         options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+                                  const TopologyInformation &       top);
         virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
-                                         const t_trxframe                 &fr);
+                                         const t_trxframe &                fr);
 
         virtual TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections);
+            const SelectionCollection &        selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -134,10 +134,10 @@ class Rdf : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        std::string                               fnRdf_;
-        std::string                               fnCumulative_;
-        SurfaceType                               surface_;
-        AnalysisDataPlotSettings                  plotSettings_;
+        std::string              fnRdf_;
+        std::string              fnCumulative_;
+        SurfaceType              surface_;
+        AnalysisDataPlotSettings plotSettings_;
 
         /*! \brief
          * Reference selection to compute RDFs around.
@@ -147,11 +147,11 @@ class Rdf : public TrajectoryAnalysisModule
          * The RDF is computed by finding the nearest position from each
          * surface group for each position, and then binning those distances.
          */
-        Selection                                 refSel_;
+        Selection refSel_;
         /*! \brief
          * Selections to compute RDFs for.
          */
-        SelectionList                             sel_;
+        SelectionList sel_;
 
         /*! \brief
          * Raw pairwise distance data from which the RDF is computed.
@@ -160,7 +160,7 @@ class Rdf : public TrajectoryAnalysisModule
          * column.  Each point set will contain a single pairwise distance
          * that contributes to the RDF.
          */
-        AnalysisData                              pairDist_;
+        AnalysisData pairDist_;
         /*! \brief
          * Normalization factors for each frame.
          *
@@ -169,7 +169,7 @@ class Rdf : public TrajectoryAnalysisModule
          * `sel_.size()` more columns, each containing the number density of
          * positions for one selection.
          */
-        AnalysisData                              normFactors_;
+        AnalysisData normFactors_;
         /*! \brief
          * Histogram module that computes the actual RDF from `pairDist_`.
          *
@@ -177,27 +177,27 @@ class Rdf : public TrajectoryAnalysisModule
          * the averager is normalized by the average number of reference
          * positions (average of the first column of `normFactors_`).
          */
-        AnalysisDataSimpleHistogramModulePointer  pairCounts_;
+        AnalysisDataSimpleHistogramModulePointer pairCounts_;
         /*! \brief
          * Average normalization factors.
          */
-        AnalysisDataAverageModulePointer          normAve_;
+        AnalysisDataAverageModulePointer normAve_;
         //! Neighborhood search with `refSel_` as the reference positions.
-        AnalysisNeighborhood                      nb_;
+        AnalysisNeighborhood nb_;
 
         // User input options.
-        double                                    binwidth_;
-        double                                    cutoff_;
-        double                                    rmax_;
-        Normalization                             normalization_;
-        bool                                      bNormalizationSet_;
-        bool                                      bXY_;
-        bool                                      bExclusions_;
+        double        binwidth_;
+        double        cutoff_;
+        double        rmax_;
+        Normalization normalization_;
+        bool          bNormalizationSet_;
+        bool          bXY_;
+        bool          bExclusions_;
 
         // Pre-computed values for faster access during analysis.
-        real                                      cut2_;
-        real                                      rmax2_;
-        int                                       surfaceGroupCount_;
+        real cut2_;
+        real rmax2_;
+        int  surfaceGroupCount_;
 
         // Copy and assign disallowed by base.
 };
@@ -220,8 +220,7 @@ Rdf::Rdf()
     registerAnalysisDataset(&normFactors_, "norm");
 }
 
-void
-Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     const char *const desc[] = {
         "[THISMODULE] calculates radial distribution functions from one",
@@ -309,8 +308,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
                            .description("Selections to compute RDFs for from the reference"));
 }
 
-void
-Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
+void Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
 {
     if (surface_ != SurfaceType_None)
     {
@@ -336,9 +334,8 @@ Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
     }
 }
 
-void
-Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                  const TopologyInformation        &top)
+void Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                       const TopologyInformation &       top)
 {
     pairDist_.setDataSetCount(sel_.size());
     for (size_t i = 0; i < sel_.size(); ++i)
@@ -383,9 +380,8 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 }
 
-void
-Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
-                         const t_trxframe                 &fr)
+void Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                              const t_trxframe &                fr)
 {
     // If -rmax is not provided, determine one from the box for the first frame.
     if (rmax_ <= 0.0)
@@ -396,9 +392,9 @@ Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
         {
             if (bXY_)
             {
-                box[ZZ][ZZ] = 2*std::max(box[XX][XX], box[YY][YY]);
+                box[ZZ][ZZ] = 2 * std::max(box[XX][XX], box[YY][YY]);
             }
-            rmax_ = std::sqrt(0.99*0.99*max_cutoff2(bXY_ ? epbcXY : epbcXYZ, box));
+            rmax_ = std::sqrt(0.99 * 0.99 * max_cutoff2(bXY_ ? epbcXY : epbcXYZ, box));
         }
         else
         {
@@ -406,7 +402,7 @@ Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
             {
                 clear_rvec(box[ZZ]);
             }
-            rmax_ = 3*std::max(box[XX][XX], std::max(box[YY][YY], box[ZZ][ZZ]));
+            rmax_ = 3 * std::max(box[XX][XX], std::max(box[YY][YY], box[ZZ][ZZ]));
         }
     }
     cut2_  = gmx::square(cutoff_);
@@ -428,9 +424,9 @@ class RdfModuleData : public TrajectoryAnalysisModuleData
          *
          * `surfaceGroupCount` will be zero if -surf is not specified.
          */
-        RdfModuleData(TrajectoryAnalysisModule          *module,
+        RdfModuleData(TrajectoryAnalysisModule *         module,
                       const AnalysisDataParallelOptions &opt,
-                      const SelectionCollection         &selections,
+                      const SelectionCollection &        selections,
                       int                                surfaceGroupCount)
             : TrajectoryAnalysisModuleData(module, opt, selections)
         {
@@ -455,24 +451,23 @@ class RdfModuleData : public TrajectoryAnalysisModuleData
 
 TrajectoryAnalysisModuleDataPointer Rdf::startFrames(
         const AnalysisDataParallelOptions &opt,
-        const SelectionCollection         &selections)
+        const SelectionCollection &        selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new RdfModuleData(this, opt, selections, surfaceGroupCount_));
 }
 
-void
-Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                  TrajectoryAnalysisModuleData *pdata)
+void Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                       TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle   dh        = pdata->dataHandle(pairDist_);
     AnalysisDataHandle   nh        = pdata->dataHandle(normFactors_);
-    const Selection     &refSel    = pdata->parallelSelection(refSel_);
+    const Selection &    refSel    = pdata->parallelSelection(refSel_);
     const SelectionList &sel       = pdata->parallelSelections(sel_);
-    RdfModuleData       &frameData = *static_cast<RdfModuleData *>(pdata);
+    RdfModuleData &      frameData = *static_cast<RdfModuleData *>(pdata);
     const bool           bSurface  = !frameData.surfaceDist2_.empty();
 
-    matrix               boxForVolume;
+    matrix boxForVolume;
     copy_mat(fr.box, boxForVolume);
     if (bXY_)
     {
@@ -515,7 +510,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     }
 
     dh.startFrame(frnr, fr.time);
-    AnalysisNeighborhoodSearch    nbsearch = nb_.initSearch(pbc, refSel);
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refSel);
     for (size_t g = 0; g < sel.size(); ++g)
     {
         dh.selectDataSet(g);
@@ -530,9 +525,9 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             {
                 std::fill(surfaceDist2.begin(), surfaceDist2.end(),
                           std::numeric_limits<real>::max());
-                AnalysisNeighborhoodPairSearch pairSearch =
-                    nbsearch.startPairSearch(sel[g].position(i));
-                AnalysisNeighborhoodPair       pair;
+                AnalysisNeighborhoodPairSearch pairSearch
+                    = nbsearch.startPairSearch(sel[g].position(i));
+                AnalysisNeighborhoodPair pair;
                 while (pairSearch.findNextPair(&pair))
                 {
                     const real r2    = pair.distance2();
@@ -583,8 +578,7 @@ Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     nh.finishFrame();
 }
 
-void
-Rdf::finishAnalysis(int /*nframes*/)
+void Rdf::finishAnalysis(int /*nframes*/)
 {
     // Normalize the averager with the number of reference positions,
     // from where the normalization propagates to all the output.
@@ -604,18 +598,18 @@ Rdf::finishAnalysis(int /*nframes*/)
         std::vector<real> invBinVolume;
         const int         nbin = finalRdf->settings().binCount();
         invBinVolume.resize(nbin);
-        real              prevSphereVolume = 0.0;
+        real prevSphereVolume = 0.0;
         for (int i = 0; i < nbin; ++i)
         {
-            const real r = (i + 0.5)*binwidth_;
+            const real r = (i + 0.5) * binwidth_;
             real       sphereVolume;
             if (bXY_)
             {
-                sphereVolume = M_PI*r*r;
+                sphereVolume = M_PI * r * r;
             }
             else
             {
-                sphereVolume = (4.0/3.0)*M_PI*r*r*r;
+                sphereVolume = (4.0 / 3.0) * M_PI * r * r * r;
             }
             const real binVolume = sphereVolume - prevSphereVolume;
             invBinVolume[i]  = 1.0 / binVolume;
@@ -679,8 +673,7 @@ Rdf::finishAnalysis(int /*nframes*/)
     }
 }
 
-void
-Rdf::writeOutput()
+void Rdf::writeOutput()
 {
 }
 
@@ -688,9 +681,9 @@ Rdf::writeOutput()
 
 }       // namespace
 
-const char RdfInfo::name[]             = "rdf";
-const char RdfInfo::shortDescription[] =
-    "Calculate radial distribution functions";
+const char RdfInfo::name[] = "rdf";
+const char RdfInfo::shortDescription[]
+    = "Calculate radial distribution functions";
 
 TrajectoryAnalysisModulePointer RdfInfo::create()
 {

@@ -60,54 +60,58 @@
 #include "gromacs/utility/smalloc.h"
 
 /* information about scaling center */
-typedef struct {
-    rvec      xmin;      /* smallest coordinates of all embedded molecules */
-    rvec      xmax;      /* largest coordinates of all embedded molecules */
-    rvec     *geom_cent; /* scaling center of each independent molecule to embed */
-    int       pieces;    /* number of molecules to embed independently */
-    int      *nidx;      /* n atoms for every independent embedded molecule (index in subindex) */
-    int     **subindex;  /* atomids for independent molecule *
+typedef struct
+{
+    rvec  xmin;          /* smallest coordinates of all embedded molecules */
+    rvec  xmax;          /* largest coordinates of all embedded molecules */
+    rvec *geom_cent;     /* scaling center of each independent molecule to embed */
+    int   pieces;        /* number of molecules to embed independently */
+    int * nidx;          /* n atoms for every independent embedded molecule (index in subindex) */
+    int **subindex;      /* atomids for independent molecule *
                           * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
 } pos_ins_t;
 
 /* variables needed in do_md */
-struct gmx_membed_t {
+struct gmx_membed_t
+{
     int        it_xy;     /* number of iterations (steps) used to grow something in the xy-plane */
     int        it_z;      /* same, but for z */
     real       xy_step;   /* stepsize used during resize in xy-plane */
     real       z_step;    /* same, but in z */
     rvec       fac;       /* initial scaling of the molecule to grow into the membrane */
-    rvec      *r_ins;     /* final coordinates of the molecule to grow  */
+    rvec *     r_ins;     /* final coordinates of the molecule to grow  */
     pos_ins_t *pos_ins;   /* scaling center for each piece to embed */
 };
 
 /* membrane related variables */
-typedef struct {
-    char      *name;     /* name of index group to embed molecule into (usually membrane) */
-    t_block    mem_at;   /* list all atoms in membrane */
-    int        nmol;     /* number of membrane molecules overlapping with the molecule to embed */
-    int       *mol_id;   /* list of molecules in membrane that overlap with the molecule to embed */
-    real       lip_area; /* average area per lipid in membrane (only correct for homogeneous bilayers)*/
-    real       zmin;     /* minimum z coordinate of membrane */
-    real       zmax;     /* maximum z coordinate of membrane */
-    real       zmed;     /* median z coordinate of membrane */
+typedef struct
+{
+    char *  name;        /* name of index group to embed molecule into (usually membrane) */
+    t_block mem_at;      /* list all atoms in membrane */
+    int     nmol;        /* number of membrane molecules overlapping with the molecule to embed */
+    int *   mol_id;      /* list of molecules in membrane that overlap with the molecule to embed */
+    real    lip_area;    /* average area per lipid in membrane (only correct for homogeneous bilayers)*/
+    real    zmin;        /* minimum z coordinate of membrane */
+    real    zmax;        /* maximum z coordinate of membrane */
+    real    zmed;        /* median z coordinate of membrane */
 } mem_t;
 
 /* Lists all molecules in the membrane that overlap with the molecule to be embedded. *
  * These will then be removed from the system */
-typedef struct {
-    int   nr;     /* number of molecules to remove */
-    int  *mol;    /* list of molecule ids to remove */
-    int  *block;  /* id of the molblock that the molecule to remove is part of */
+typedef struct
+{
+    int  nr;      /* number of molecules to remove */
+    int *mol;     /* list of molecule ids to remove */
+    int *block;   /* id of the molblock that the molecule to remove is part of */
 } rm_t;
 
 /* Get the global molecule id, and the corresponding molecule type and id of the *
  * molblock from the global atom nr. */
 static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
 {
-    int                   mol_id = 0;
-    int                   i;
-    int                   atnr_mol;
+    int mol_id = 0;
+    int i;
+    int atnr_mol;
 
     *block = 0;
     mtopGetMolblockIndex(mtop, at, block, &mol_id, &atnr_mol);
@@ -155,7 +159,7 @@ static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
     snew(tlist->index, at->nr);
     for (i = 0; i < at->nr; i++)
     {
-        bNEW   = TRUE;
+        bNEW = TRUE;
         get_mol_id(at->index[i], mtop, &type, &block);
         for (j = 0; j < nr; j++)
         {
@@ -178,8 +182,8 @@ static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 /* Do the actual check of the molecule types between embedded and rest group */
 static void check_types(t_block *ins_at, t_block *rest_at, gmx_mtop_t *mtop)
 {
-    t_block        *ins_mtype, *rest_mtype;
-    int             i, j;
+    t_block *ins_mtype, *rest_mtype;
+    int      i, j;
 
     snew(ins_mtype, 1);
     snew(rest_mtype, 1);
@@ -298,11 +302,11 @@ static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_in
 
     if (xy_max > fac_inp_size)
     {
-        pos_ins->xmin[XX] = xmin-((xmax-xmin)*xy_max-(xmax-xmin))/2;
-        pos_ins->xmin[YY] = ymin-((ymax-ymin)*xy_max-(ymax-ymin))/2;
+        pos_ins->xmin[XX] = xmin - ((xmax - xmin) * xy_max - (xmax - xmin)) / 2;
+        pos_ins->xmin[YY] = ymin - ((ymax - ymin) * xy_max - (ymax - ymin)) / 2;
 
-        pos_ins->xmax[XX] = xmax+((xmax-xmin)*xy_max-(xmax-xmin))/2;
-        pos_ins->xmax[YY] = ymax+((ymax-ymin)*xy_max-(ymax-ymin))/2;
+        pos_ins->xmax[XX] = xmax + ((xmax - xmin) * xy_max - (xmax - xmin)) / 2;
+        pos_ins->xmax[YY] = ymax + ((ymax - ymin) * xy_max - (ymax - ymin)) / 2;
     }
     else
     {
@@ -313,10 +317,10 @@ static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_in
         pos_ins->xmax[YY] = ymax;
     }
 
-    if ( (zmax-zmin) < min_memthick)
+    if ( (zmax - zmin) < min_memthick)
     {
-        pos_ins->xmin[ZZ] = zmin+(zmax-zmin)/2.0-0.5*min_memthick;
-        pos_ins->xmax[ZZ] = zmin+(zmax-zmin)/2.0+0.5*min_memthick;
+        pos_ins->xmin[ZZ] = zmin + (zmax - zmin) / 2.0 - 0.5 * min_memthick;
+        pos_ins->xmax[ZZ] = zmin + (zmax - zmin) / 2.0 + 0.5 * min_memthick;
     }
     else
     {
@@ -337,8 +341,8 @@ static real est_prot_area(pos_ins_t *pos_ins, rvec *r, t_block *ins_at, mem_t *m
 
     /* min and max membrane coordinate are altered to reduce the influence of the *
      * boundary region */
-    memmin = mem_p->zmin+0.1*(mem_p->zmax-mem_p->zmin);
-    memmax = mem_p->zmax-0.1*(mem_p->zmax-mem_p->zmin);
+    memmin = mem_p->zmin + 0.1 * (mem_p->zmax - mem_p->zmin);
+    memmax = mem_p->zmax - 0.1 * (mem_p->zmax - mem_p->zmin);
 
     for (x = pos_ins->xmin[XX]; x < pos_ins->xmax[XX]; x += dx)
     {
@@ -349,19 +353,18 @@ static real est_prot_area(pos_ins_t *pos_ins, rvec *r, t_block *ins_at, mem_t *m
             do
             {
                 at = ins_at->index[c];
-                if ( (r[at][XX] >= x) && (r[at][XX] < x+dx) &&
-                     (r[at][YY] >= y) && (r[at][YY] < y+dy) &&
-                     (r[at][ZZ] > memmin) && (r[at][ZZ] < memmax) )
+                if ( (r[at][XX] >= x) && (r[at][XX] < x + dx)
+                     && (r[at][YY] >= y) && (r[at][YY] < y + dy)
+                     && (r[at][ZZ] > memmin) && (r[at][ZZ] < memmax) )
                 {
                     add = 1.0;
                 }
                 c++;
-            }
-            while ( (c < ins_at->nr) && (add < 0.5) );
+            } while ( (c < ins_at->nr) && (add < 0.5) );
             area += add;
         }
     }
-    area = area*dx*dy;
+    area = area * dx * dy;
 
     return area;
 }
@@ -372,7 +375,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     t_block *mem_a;
     real     z, zmin, zmax, mem_area;
     gmx_bool bNew;
-    int     *mol_id;
+    int *    mol_id;
     int      type = 0, block = 0;
 
     nmol  = count = 0;
@@ -383,9 +386,9 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     for (i = 0; i < mem_a->nr; i++)
     {
         at = mem_a->index[i];
-        if ( (r[at][XX] > pos_ins->xmin[XX]) && (r[at][XX] < pos_ins->xmax[XX]) &&
-             (r[at][YY] > pos_ins->xmin[YY]) && (r[at][YY] < pos_ins->xmax[YY]) &&
-             (r[at][ZZ] > pos_ins->xmin[ZZ]) && (r[at][ZZ] < pos_ins->xmax[ZZ]) )
+        if ( (r[at][XX] > pos_ins->xmin[XX]) && (r[at][XX] < pos_ins->xmax[XX])
+             && (r[at][YY] > pos_ins->xmin[YY]) && (r[at][YY] < pos_ins->xmax[YY])
+             && (r[at][ZZ] > pos_ins->xmin[ZZ]) && (r[at][ZZ] < pos_ins->xmax[ZZ]) )
         {
             mol  = get_mol_id(at, mtop, &type, &block);
             bNew = TRUE;
@@ -422,7 +425,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     srenew(mol_id, nmol);
     mem_p->mol_id = mol_id;
 
-    if ((zmax-zmin) > (box[ZZ][ZZ]-0.5))
+    if ((zmax - zmin) > (box[ZZ][ZZ] - 0.5))
     {
         gmx_fatal(FARGS, "Something is wrong with your membrane. Max and min z values are %f and %f.\n"
                   "Maybe your membrane is not centered in the box, but located at the box edge in the z-direction,\n"
@@ -431,14 +434,14 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     }
     mem_p->zmin = zmin;
     mem_p->zmax = zmax;
-    mem_p->zmed = (zmax-zmin)/2+zmin;
+    mem_p->zmed = (zmax - zmin) / 2 + zmin;
 
     /*number of membrane molecules in protein box*/
-    nmolbox = count/mtop->molblock[block].natoms_mol;
+    nmolbox = count / mtop->molblock[block].natoms_mol;
     /*membrane area within the box defined by the min and max coordinates of the embedded molecule*/
-    mem_area = (pos_ins->xmax[XX]-pos_ins->xmin[XX])*(pos_ins->xmax[YY]-pos_ins->xmin[YY]);
+    mem_area = (pos_ins->xmax[XX] - pos_ins->xmin[XX]) * (pos_ins->xmax[YY] - pos_ins->xmin[YY]);
     /*rough estimate of area per lipid, assuming there is only one type of lipid in the membrane*/
-    mem_p->lip_area = 2.0*mem_area/(double)nmolbox;
+    mem_p->lip_area = 2.0 * mem_area / (double)nmolbox;
 
     return mem_p->mem_at.nr;
 }
@@ -488,7 +491,7 @@ static void init_resize(t_block *ins_at, rvec *r_ins, pos_ins_t *pos_ins, mem_t 
 
         if (c > 0)
         {
-            svmul(1/(double)c, pos_ins->geom_cent[i], pos_ins->geom_cent[i]);
+            svmul(1 / (double)c, pos_ins->geom_cent[i], pos_ins->geom_cent[i]);
         }
 
         if (!bALLOW_ASYMMETRY)
@@ -513,7 +516,7 @@ static void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins, rvec fac)
             at = pos_ins->subindex[k][i];
             for (j = 0; j < DIM; j++)
             {
-                r[at][j] = pos_ins->geom_cent[k][j]+fac[j]*(r_ins[c][j]-pos_ins->geom_cent[k][j]);
+                r[at][j] = pos_ins->geom_cent[k][j] + fac[j] * (r_ins[c][j] - pos_ins->geom_cent[k][j]);
             }
             c++;
         }
@@ -532,10 +535,10 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
     real     r_min_rad, z_lip, min_norm;
     gmx_bool bRM;
     rvec     dr, dr_tmp;
-    real    *dist;
-    int     *order;
+    real *   dist;
+    int *    order;
 
-    r_min_rad = probe_rad*probe_rad;
+    r_min_rad = probe_rad * probe_rad;
     snew(rm_p->mol, mtop->mols.nr);
     snew(rm_p->block, mtop->mols.nr);
     nrm    = nupper = 0;
@@ -570,7 +573,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
                     {
                         if (mol_id == mem_p->mol_id[l])
                         {
-                            for (k = mtop->mols.index[mol_id]; k < mtop->mols.index[mol_id+1]; k++)
+                            for (k = mtop->mols.index[mol_id]; k < mtop->mols.index[mol_id + 1]; k++)
                             {
                                 z_lip += r[k][ZZ];
                             }
@@ -613,14 +616,14 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
                     }
                 }
             }
-            dist[i] = dr[XX]*dr[XX]+dr[YY]*dr[YY];
-            j       = i-1;
+            dist[i] = dr[XX] * dr[XX] + dr[YY] * dr[YY];
+            j       = i - 1;
             while (j >= 0 && dist[i] < dist[order[j]])
             {
-                order[j+1] = order[j];
+                order[j + 1] = order[j];
                 j--;
             }
-            order[j+1] = i;
+            order[j + 1] = i;
         }
 
         i = 0;
@@ -640,7 +643,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
             if (bRM)
             {
                 z_lip = 0;
-                for (k = mtop->mols.index[mol_id]; k < mtop->mols.index[mol_id+1]; k++)
+                for (k = mtop->mols.index[mol_id]; k < mtop->mols.index[mol_id + 1]; k++)
                 {
                     z_lip += r[k][ZZ];
                 }
@@ -675,19 +678,19 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
     srenew(rm_p->mol, nrm);
     srenew(rm_p->block, nrm);
 
-    return nupper+nlower;
+    return nupper + nlower;
 }
 
 /*remove all lipids and waters overlapping and update all important structures (e.g. state and mtop)*/
 static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
-    int             i, j, k, n, rm, mol_id, at, block;
-    rvec           *x_tmp, *v_tmp;
-    int            *list, *new_mols;
-    unsigned char  *new_egrp[egcNR];
-    gmx_bool        bRM;
-    int             RMmolblock;
+    int            i, j, k, n, rm, mol_id, at, block;
+    rvec *         x_tmp, *v_tmp;
+    int *          list, *new_mols;
+    unsigned char *new_egrp[egcNR];
+    gmx_bool       bRM;
+    int            RMmolblock;
 
     snew(list, state->natoms);
     n = 0;
@@ -699,7 +702,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         mtop->molblock[block].nmol--;
         for (j = 0; j < mtop->molblock[block].natoms_mol; j++)
         {
-            list[n] = at+j;
+            list[n] = at + j;
             n++;
         }
         mtop->mols.index[mol_id] = -1;
@@ -708,7 +711,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     mtop->mols.nr           -= rm_p->nr;
     mtop->mols.nalloc_index -= rm_p->nr;
     snew(new_mols, mtop->mols.nr);
-    for (i = 0; i < mtop->mols.nr+rm_p->nr; i++)
+    for (i = 0; i < mtop->mols.nr + rm_p->nr; i++)
     {
         j = 0;
         if (mtop->mols.index[i] != -1)
@@ -734,7 +737,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
 
     rm = 0;
-    for (i = 0; i < state->natoms+n; i++)
+    for (i = 0; i < state->natoms + n; i++)
     {
         bRM = FALSE;
         for (j = 0; j < n; j++)
@@ -752,16 +755,16 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
             {
                 if (groups->grpnr[j] != nullptr)
                 {
-                    new_egrp[j][i-rm] = groups->grpnr[j][i];
+                    new_egrp[j][i - rm] = groups->grpnr[j][i];
                 }
             }
-            copy_rvec(state->x[i], x_tmp[i-rm]);
-            copy_rvec(state->v[i], v_tmp[i-rm]);
+            copy_rvec(state->x[i], x_tmp[i - rm]);
+            copy_rvec(state->v[i], v_tmp[i - rm]);
             for (j = 0; j < ins_at->nr; j++)
             {
                 if (i == ins_at->index[j])
                 {
-                    ins_at->index[j] = i-rm;
+                    ins_at->index[j] = i - rm;
                 }
             }
 
@@ -771,7 +774,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
                 {
                     if (i == pos_ins->subindex[j][k])
                     {
-                        pos_ins->subindex[j][k] = i-rm;
+                        pos_ins->subindex[j][k] = i - rm;
                     }
                 }
             }
@@ -807,7 +810,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         }
         else
         {
-            mtop->molblock[i-RMmolblock] = mtop->molblock[i];
+            mtop->molblock[i - RMmolblock] = mtop->molblock[i];
         }
     }
     mtop->nmolblock -= RMmolblock;
@@ -834,14 +837,14 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
     for (i = 0; i < mtop->nmolblock; i++)
     {
         /*loop over molecule blocks*/
-        type         = mtop->molblock[i].type;
-        natom        = mtop->molblock[i].natoms_mol;
-        nmol         = mtop->molblock[i].nmol;
+        type  = mtop->molblock[i].type;
+        natom = mtop->molblock[i].natoms_mol;
+        nmol  = mtop->molblock[i].nmol;
 
-        for (j = 0; j < natom*nmol && bRM[type] == TRUE; j++)
+        for (j = 0; j < natom * nmol && bRM[type] == TRUE; j++)
         {
             /*loop over atoms in the block*/
-            at   = j+atom1; /*atom index = block index + offset*/
+            at   = j + atom1; /*atom index = block index + offset*/
             bINS = FALSE;
 
             for (m = 0; (m < ins_at->nr) && (bINS == FALSE); m++)
@@ -854,10 +857,10 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
             }
             bRM[type] = bINS;
         }
-        atom1 += natom*nmol; /*update offset*/
+        atom1 += natom * nmol; /*update offset*/
         if (bRM[type])
         {
-            rm_at += natom*nmol; /*increment bonded removal counter by # atoms in block*/
+            rm_at += natom * nmol; /*increment bonded removal counter by # atoms in block*/
         }
     }
 
@@ -884,13 +887,13 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 /* Write a topology where the number of molecules is correct for the system after embedding */
 static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
 {
-    int        bMolecules         = 0;
-    FILE      *fpin, *fpout;
-    char       buf[STRLEN], buf2[STRLEN], *temp;
-    int        i, *nmol_rm, nmol, line;
-    char       temporary_filename[STRLEN];
+    int   bMolecules = 0;
+    FILE *fpin, *fpout;
+    char  buf[STRLEN], buf2[STRLEN], *temp;
+    int   i, *nmol_rm, nmol, line;
+    char  temporary_filename[STRLEN];
 
-    fpin  = gmx_ffopen(topfile, "r");
+    fpin = gmx_ffopen(topfile, "r");
     strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
     gmx_tmpnam(temporary_filename);
     fpout = gmx_ffopen(temporary_filename, "w");
@@ -921,9 +924,9 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
                     temp[0] = '\0';
                 }
                 rtrim(buf2);
-                if (buf2[strlen(buf2)-1] == ']')
+                if (buf2[strlen(buf2) - 1] == ']')
                 {
-                    buf2[strlen(buf2)-1] = '\0';
+                    buf2[strlen(buf2) - 1] = '\0';
                     ltrim(buf2);
                     rtrim(buf2);
                     if (gmx_strcasecmp(buf2, "molecules") == 0)
@@ -973,7 +976,7 @@ void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)
         membed->fac[0] += membed->xy_step;
         membed->fac[1] += membed->xy_step;
     }
-    else if (step_rel <= (membed->it_xy+membed->it_z))
+    else if (step_rel <= (membed->it_xy + membed->it_z))
     {
         membed->fac[2] += membed->z_step;
     }
@@ -1009,21 +1012,21 @@ static int search_string(const char *s, int ng, char *gn[])
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
                           t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
 {
-    char                     *ins, **gnames;
-    int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
-    int                       ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
-    real                      prot_area;
-    rvec                     *r_ins = nullptr;
-    t_block                  *ins_at, *rest_at;
-    pos_ins_t                *pos_ins;
-    mem_t                    *mem_p;
-    rm_t                     *rm_p;
-    gmx_groups_t             *groups;
-    gmx_bool                  bExcl = FALSE;
-    t_atoms                   atoms;
-    t_pbc                    *pbc;
-    char                    **piecename = nullptr;
-    gmx_membed_t             *membed    = nullptr;
+    char *        ins, **gnames;
+    int           i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
+    int           ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
+    real          prot_area;
+    rvec *        r_ins = nullptr;
+    t_block *     ins_at, *rest_at;
+    pos_ins_t *   pos_ins;
+    mem_t *       mem_p;
+    rm_t *        rm_p;
+    gmx_groups_t *groups;
+    gmx_bool      bExcl = FALSE;
+    t_atoms       atoms;
+    t_pbc *       pbc;
+    char **       piecename = nullptr;
+    gmx_membed_t *membed    = nullptr;
 
     /* input variables */
     const char *membed_input;
@@ -1040,13 +1043,13 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     gmx_bool    bALLOW_ASYMMETRY = FALSE;
 
     /* sanity check constants */         /* Issue a warning when: */
-    const real min_probe_rad  = 0.2199999; /* A probe radius for overlap between embedded molecule *
+    const real min_probe_rad = 0.2199999;  /* A probe radius for overlap between embedded molecule *
                                             * and rest smaller than this value is probably too small */
-    const real min_xy_init    = 0.0999999; /* the initial shrinking of the molecule to embed is smaller */
-    const int  min_it_xy      = 1000;      /* the number of steps to embed in xy-plane is smaller */
-    const int  min_it_z       = 100;       /* the number of steps to embed in z is smaller */
-    const real prot_vs_box    = 7.5;       /* molecule to embed is large (more then prot_vs_box) with respect */
-    const real box_vs_prot    = 50;        /* to the box size (less than box_vs_prot) */
+    const real min_xy_init   = 0.0999999;  /* the initial shrinking of the molecule to embed is smaller */
+    const int  min_it_xy     = 1000;       /* the number of steps to embed in xy-plane is smaller */
+    const int  min_it_z      = 100;        /* the number of steps to embed in z is smaller */
+    const real prot_vs_box   = 7.5;        /* molecule to embed is large (more then prot_vs_box) with respect */
+    const real box_vs_prot   = 50;         /* to the box size (less than box_vs_prot) */
 
     snew(membed, 1);
     snew(ins_at, 1);
@@ -1135,7 +1138,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                     " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n", warn, ins, it_z);
         }
 
-        if (it_xy+it_z > inputrec->nsteps)
+        if (it_xy + it_z > inputrec->nsteps)
         {
             warn++;
             fprintf(stderr, "\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the "
@@ -1182,11 +1185,11 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         {
             for (j = 0; j < ng; j++)
             {
-                if (inputrec->opts.egp_flags[ng*i+j] == EGP_EXCL)
+                if (inputrec->opts.egp_flags[ng * i + j] == EGP_EXCL)
                 {
                     bExcl = TRUE;
-                    if ( (groups->grps[egcENER].nm_ind[i] != ins_grp_id) ||
-                         (groups->grps[egcENER].nm_ind[j] != ins_grp_id) )
+                    if ( (groups->grps[egcENER].nm_ind[i] != ins_grp_id)
+                         || (groups->grps[egcENER].nm_ind[j] != ins_grp_id) )
                     {
                         gmx_fatal(FARGS, "Energy exclusions \"%s\" and  \"%s\" do not match the group "
                                   "to embed \"%s\"", *groups->grpname[groups->grps[egcENER].nm_ind[i]],
@@ -1211,7 +1214,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         init_mem_at(mem_p, mtop, as_rvec_array(state->x.data()), state->box, pos_ins);
 
         prot_area = est_prot_area(pos_ins, as_rvec_array(state->x.data()), ins_at, mem_p);
-        if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX]*state->box[YY][YY]-state->box[XX][YY]*state->box[YY][XX]) < box_vs_prot) )
+        if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX] * state->box[YY][YY] - state->box[XX][YY] * state->box[YY][XX]) < box_vs_prot) )
         {
             warn++;
             fprintf(stderr, "\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
@@ -1230,7 +1233,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                "The area per lipid is %.4f nm^2.\n", mem_p->nmol, mem_p->lip_area);
 
         /* Maximum number of lipids to be removed*/
-        max_lip_rm = (int)(2*prot_area/mem_p->lip_area);
+        max_lip_rm = (int)(2 * prot_area / mem_p->lip_area);
         printf("Maximum number of lipids that will be removed is %d.\n", max_lip_rm);
 
         printf("\nWill resize the protein by a factor of %.3f in the xy plane and %.3f in the z direction.\n"
@@ -1244,8 +1247,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         membed->fac[0] = membed->fac[1] = xy_fac;
         membed->fac[2] = z_fac;
 
-        membed->xy_step = (xy_max-xy_fac)/(double)(it_xy);
-        membed->z_step  = (z_max-z_fac)/(double)(it_z-1);
+        membed->xy_step = (xy_max - xy_fac) / (double)(it_xy);
+        membed->z_step  = (z_max - z_fac) / (double)(it_z - 1);
 
         resize(r_ins, as_rvec_array(state->x.data()), pos_ins, membed->fac);
 

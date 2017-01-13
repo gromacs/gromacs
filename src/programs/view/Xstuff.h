@@ -58,11 +58,11 @@ typedef unsigned char bmchar;
 typedef char bmchar;
 #endif /* _acc */
 
-#define XTextHeight(font) ((font)->max_bounds.ascent+(font)->max_bounds.descent)
+#define XTextHeight(font) ((font)->max_bounds.ascent + (font)->max_bounds.descent)
 #define XDrawCircle(disp, win, gc, x, y, rad) \
-    XDrawArc(disp, win, gc, x-rad, y-rad, 2*rad, 2*rad, 0, 64*360)
+    XDrawArc(disp, win, gc, x - rad, y - rad, 2 * rad, 2 * rad, 0, 64 * 360)
 #define XFillCircle(disp, win, gc, x, y, rad) \
-    XFillArc(disp, win, gc, x-rad, y-rad, 2*rad, 2*rad, 0, 64*360)
+    XFillArc(disp, win, gc, x - rad, y - rad, 2 * rad, 2 * rad, 0, 64 * 360)
 
 #ifdef NEED_XSTUFF
 

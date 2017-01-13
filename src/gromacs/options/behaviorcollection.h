@@ -90,8 +90,8 @@ class OptionsBehaviorCollection
         void optionsFinished();
 
     private:
-        Options                             *options_;
-        std::vector<OptionsBehaviorPointer>  behaviors_;
+        Options *                           options_;
+        std::vector<OptionsBehaviorPointer> behaviors_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsBehaviorCollection);
 };

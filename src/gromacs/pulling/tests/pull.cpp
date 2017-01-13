@@ -72,7 +72,7 @@ class PullTest : public ::testing::Test
 
         void test(int epbc, matrix box)
         {
-            t_pbc                       pbc;
+            t_pbc pbc;
 
             // PBC stuff
             set_pbc(&pbc, epbc, box);
@@ -90,7 +90,7 @@ class PullTest : public ::testing::Test
             }
 
             {
-                pull_coord_work_t           pcrd;
+                pull_coord_work_t pcrd;
                 // Distance pulling in all 3 dimensions
                 pcrd.params.eGeom   = epullgDIST;
                 pcrd.params.dim[XX] = 1;
@@ -103,26 +103,26 @@ class PullTest : public ::testing::Test
                 {
                     minBoxSize2 = std::min(minBoxSize2, norm2(box[d]));
                 }
-                EXPECT_REAL_EQ_TOL(0.25*minBoxSize2,
+                EXPECT_REAL_EQ_TOL(0.25 * minBoxSize2,
                                    max_pull_distance2(&pcrd, &pbc),
                                    defaultRealTolerance());
             }
 
             {
-                pull_coord_work_t           pcrd;
+                pull_coord_work_t pcrd;
                 // Distance pulling along Z
                 pcrd.params.eGeom   = epullgDIST;
                 pcrd.params.dim[XX] = 0;
                 pcrd.params.dim[YY] = 0;
                 pcrd.params.dim[ZZ] = 1;
                 clear_dvec(pcrd.vec);
-                EXPECT_REAL_EQ_TOL(0.25*boxSizeZSquared,
+                EXPECT_REAL_EQ_TOL(0.25 * boxSizeZSquared,
                                    max_pull_distance2(&pcrd, &pbc),
                                    defaultRealTolerance());
             }
 
             {
-                pull_coord_work_t           pcrd;
+                pull_coord_work_t pcrd;
                 // Directional pulling along Z
                 pcrd.params.eGeom   = epullgDIR;
                 pcrd.params.dim[XX] = 1;
@@ -130,13 +130,13 @@ class PullTest : public ::testing::Test
                 pcrd.params.dim[ZZ] = 1;
                 clear_dvec(pcrd.vec);
                 pcrd.vec[ZZ] = 1;
-                EXPECT_REAL_EQ_TOL(0.25*boxSizeZSquared,
+                EXPECT_REAL_EQ_TOL(0.25 * boxSizeZSquared,
                                    max_pull_distance2(&pcrd, &pbc),
                                    defaultRealTolerance());
             }
 
             {
-                pull_coord_work_t           pcrd;
+                pull_coord_work_t pcrd;
                 // Directional pulling along X
                 pcrd.params.eGeom   = epullgDIR;
                 pcrd.params.dim[XX] = 1;
@@ -150,7 +150,7 @@ class PullTest : public ::testing::Test
                 {
                     minDist2 -= square(box[d][XX]);
                 }
-                EXPECT_REAL_EQ_TOL(0.25*minDist2,
+                EXPECT_REAL_EQ_TOL(0.25 * minDist2,
                                    max_pull_distance2(&pcrd, &pbc),
                                    defaultRealTolerance());
             }

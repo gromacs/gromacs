@@ -86,11 +86,11 @@ struct gmx_ana_indexgrps_t
     }
 
     /** Number of index groups. */
-    int                       nr;
+    int nr;
     /** Array of index groups. */
-    gmx_ana_index_t          *g;
+    gmx_ana_index_t *g;
     /** Group names. */
-    std::vector<std::string>  names;
+    std::vector<std::string> names;
 };
 
 /*!
@@ -106,12 +106,11 @@ struct gmx_ana_indexgrps_t
  * topology (uses Gromacs routine analyse()).
  * If both are null, the index group structure is initialized empty.
  */
-void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
-                       const char *fnm)
+void gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
+                            const char *fnm)
 {
     t_blocka *block = nullptr;
-    char    **names = nullptr;
+    char **   names = nullptr;
 
     if (fnm)
     {
@@ -138,11 +137,11 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
         {
             gmx_ana_index_t *grp = &(*g)->g[i];
 
-            grp->isize = block->index[i+1] - block->index[i];
+            grp->isize = block->index[i + 1] - block->index[i];
             snew(grp->index, grp->isize);
             for (int j = 0; j < grp->isize; ++j)
             {
-                grp->index[j] = block->a[block->index[i]+j];
+                grp->index[j] = block->a[block->index[i] + j];
             }
             grp->nalloc_index = grp->isize;
             (*g)->names.emplace_back(names[i]);
@@ -173,8 +172,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
  *
  * The pointer \p g is invalid after the call.
  */
-void
-gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
+void gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
 {
     delete g;
 }
@@ -183,8 +181,7 @@ gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
  * \param[out] g     Index group structure.
  * \returns    true if \p g is empty, i.e., has 0 index groups.
  */
-bool
-gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g)
+bool gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g)
 {
     return g->nr == 0;
 }
@@ -196,8 +193,7 @@ gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g)
  *
  * The returned pointer should not be freed.
  */
-gmx_ana_index_t *
-gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
+gmx_ana_index_t *gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
 {
     if (n < 0 || n >= g->nr)
     {
@@ -213,9 +209,8 @@ gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
  * \param[in]  n        Number of the group to extract.
  * \returns true if \p n is a valid group in \p src, false otherwise.
  */
-bool
-gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
-                          gmx_ana_indexgrps_t *src, int n)
+bool gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
+                               gmx_ana_indexgrps_t *src, int n)
 {
     destName->clear();
     if (n < 0 || n >= src->nr)
@@ -242,10 +237,9 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
  * Uses the Gromacs routine find_group() to find the actual group;
  * the comparison is case-insensitive.
  */
-bool
-gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
-                       gmx_ana_indexgrps_t *src,
-                       const char *name)
+bool gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
+                            gmx_ana_indexgrps_t *src,
+                            const char *name)
 {
     const char **names;
 
@@ -273,8 +267,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
  * \param[in]  maxn   Maximum number of indices to print
  *      (-1 = print all, 0 = print only names).
  */
-void
-gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int maxn)
+void gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int maxn)
 {
     for (int i = 0; i < g->nr; ++i)
     {
@@ -292,8 +285,7 @@ gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int max
  * \param[in,out] g      Index group structure.
  * \param[in]     isize  Maximum number of atoms to reserve space for.
  */
-void
-gmx_ana_index_reserve(gmx_ana_index_t *g, int isize)
+void gmx_ana_index_reserve(gmx_ana_index_t *g, int isize)
 {
     if (g->nalloc_index < isize)
     {
@@ -308,8 +300,7 @@ gmx_ana_index_reserve(gmx_ana_index_t *g, int isize)
  * Resizes the memory allocated for holding the indices such that the
  * current contents fit.
  */
-void
-gmx_ana_index_squeeze(gmx_ana_index_t *g)
+void gmx_ana_index_squeeze(gmx_ana_index_t *g)
 {
     srenew(g->index, g->isize);
     g->nalloc_index = g->isize;
@@ -320,8 +311,7 @@ gmx_ana_index_squeeze(gmx_ana_index_t *g)
  *
  * Any contents of \p g are discarded without freeing.
  */
-void
-gmx_ana_index_clear(gmx_ana_index_t *g)
+void gmx_ana_index_clear(gmx_ana_index_t *g)
 {
     g->isize        = 0;
     g->index        = nullptr;
@@ -337,8 +327,7 @@ gmx_ana_index_clear(gmx_ana_index_t *g)
  *
  * No copy if \p index is made.
  */
-void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc)
+void gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc)
 {
     g->isize        = isize;
     g->index        = index;
@@ -349,10 +338,9 @@ gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc)
  * \param[out] g      Output structure.
  * \param[in]  natoms Number of atoms.
  */
-void
-gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms)
+void gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms)
 {
-    int  i;
+    int i;
 
     g->isize = natoms;
     snew(g->index, natoms);
@@ -368,8 +356,7 @@ gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms)
  *
  * The pointer \p g is not freed.
  */
-void
-gmx_ana_index_deinit(gmx_ana_index_t *g)
+void gmx_ana_index_deinit(gmx_ana_index_t *g)
 {
     if (g->nalloc_index > 0)
     {
@@ -384,8 +371,7 @@ gmx_ana_index_deinit(gmx_ana_index_t *g)
  * \param[in]  bAlloc If true, memory is allocated at \p dest; otherwise,
  *   it is assumed that enough memory has been allocated for index.
  */
-void
-gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
+void gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
 {
     dest->isize = src->isize;
     if (bAlloc)
@@ -395,7 +381,7 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
     }
     if (dest->isize > 0)
     {
-        std::memcpy(dest->index, src->index, dest->isize*sizeof(*dest->index));
+        std::memcpy(dest->index, src->index, dest->isize * sizeof(*dest->index));
     }
 }
 
@@ -404,8 +390,7 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
  * \param[in]  g      Index group to print.
  * \param[in]  maxn   Maximum number of indices to print (-1 = print all).
  */
-void
-gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn)
+void gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn)
 {
     writer->writeString(gmx::formatString("(%d atoms)", g->isize));
     if (maxn != 0)
@@ -418,7 +403,7 @@ gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn)
         }
         for (int j = 0; j < n; ++j)
         {
-            writer->writeString(gmx::formatString(" %d", g->index[j]+1));
+            writer->writeString(gmx::formatString(" %d", g->index[j] + 1));
         }
         if (n < g->isize)
         {
@@ -428,8 +413,7 @@ gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn)
     writer->ensureLineBreak();
 }
 
-int
-gmx_ana_index_get_max_index(gmx_ana_index_t *g)
+int gmx_ana_index_get_max_index(gmx_ana_index_t *g)
 {
     if (g->isize == 0)
     {
@@ -446,14 +430,13 @@ gmx_ana_index_get_max_index(gmx_ana_index_t *g)
  * \returns    true if the index group is sorted and has no duplicates,
  *   false otherwise.
  */
-bool
-gmx_ana_index_check_sorted(gmx_ana_index_t *g)
+bool gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 {
-    int  i;
+    int i;
 
-    for (i = 0; i < g->isize-1; ++i)
+    for (i = 0; i < g->isize - 1; ++i)
     {
-        if (g->index[i+1] <= g->index[i])
+        if (g->index[i + 1] <= g->index[i])
         {
             return false;
         }
@@ -461,8 +444,7 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
     return true;
 }
 
-bool
-gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
+bool gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
 {
     for (int i = 0; i < g->isize; ++i)
     {
@@ -479,8 +461,7 @@ gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
  ********************************************************************/
 
 /** Helper function for gmx_ana_index_sort(). */
-static int
-cmp_atomid(const void *a, const void *b)
+static int cmp_atomid(const void *a, const void *b)
 {
     if (*(int *)a < *(int *)b)
     {
@@ -496,19 +477,17 @@ cmp_atomid(const void *a, const void *b)
 /*!
  * \param[in,out] g  Index group to be sorted.
  */
-void
-gmx_ana_index_sort(gmx_ana_index_t *g)
+void gmx_ana_index_sort(gmx_ana_index_t *g)
 {
     std::qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
 }
 
-void
-gmx_ana_index_remove_duplicates(gmx_ana_index_t *g)
+void gmx_ana_index_remove_duplicates(gmx_ana_index_t *g)
 {
     int j = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        if (i == 0 || g->index[i-1] != g->index[i])
+        if (i == 0 || g->index[i - 1] != g->index[i])
         {
             g->index[j] = g->index[i];
             ++j;
@@ -522,10 +501,9 @@ gmx_ana_index_remove_duplicates(gmx_ana_index_t *g)
  * \param[in]  b      Index group to check.
  * \returns    true if \p a and \p b are equal, false otherwise.
  */
-bool
-gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
+bool gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
-    int  i;
+    int i;
 
     if (a->isize != b->isize)
     {
@@ -550,10 +528,9 @@ gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
  * If the elements are not in the same order in both groups, the function
  * fails. However, the groups do not need to be sorted.
  */
-bool
-gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
+bool gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
-    int  i, j;
+    int i, j;
 
     for (i = j = 0; j < b->isize; ++i, ++j)
     {
@@ -576,9 +553,8 @@ gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
  *
  * \p dest can be the same as \p a or \p b.
  */
-void
-gmx_ana_index_intersection(gmx_ana_index_t *dest,
-                           gmx_ana_index_t *a, gmx_ana_index_t *b)
+void gmx_ana_index_intersection(gmx_ana_index_t *dest,
+                                gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int i, j, k;
 
@@ -603,9 +579,8 @@ gmx_ana_index_intersection(gmx_ana_index_t *dest,
  *
  * \p dest can equal \p a, but not \p b.
  */
-void
-gmx_ana_index_difference(gmx_ana_index_t *dest,
-                         gmx_ana_index_t *a, gmx_ana_index_t *b)
+void gmx_ana_index_difference(gmx_ana_index_t *dest,
+                              gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int i, j, k;
 
@@ -628,8 +603,7 @@ gmx_ana_index_difference(gmx_ana_index_t *dest,
  * \param[in]  b    Second index group.
  * \returns    Size of the difference \p a - \p b.
  */
-int
-gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b)
+int gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int i, j, k;
 
@@ -665,15 +639,14 @@ gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b)
  * The calculation can be performed in-place by setting \p dest1 equal to
  * \p src.
  */
-void
-gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
-                        gmx_ana_index_t *src, gmx_ana_index_t *g)
+void gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
+                             gmx_ana_index_t *src, gmx_ana_index_t *g)
 {
     int i, j, k;
 
     dest2->index = dest1->index + g->isize;
     dest2->isize = src->isize - g->isize;
-    for (i = g->isize-1, j = src->isize-1, k = dest2->isize-1; i >= 0; --i, --j)
+    for (i = g->isize - 1, j = src->isize - 1, k = dest2->isize - 1; i >= 0; --i, --j)
     {
         while (j >= 0 && src->index[j] != g->index[i])
         {
@@ -697,9 +670,8 @@ gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
  *
  * \see gmx_ana_index_merge()
  */
-void
-gmx_ana_index_union(gmx_ana_index_t *dest,
-                    gmx_ana_index_t *a, gmx_ana_index_t *b)
+void gmx_ana_index_union(gmx_ana_index_t *dest,
+                         gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int dsize;
     int i, j, k;
@@ -725,9 +697,8 @@ gmx_ana_index_union(gmx_ana_index_t *dest,
     }
 }
 
-void
-gmx_ana_index_union_unsorted(gmx_ana_index_t *dest,
-                             gmx_ana_index_t *a, gmx_ana_index_t *b)
+void gmx_ana_index_union_unsorted(gmx_ana_index_t *dest,
+                                  gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     if (gmx_ana_index_check_sorted(b))
     {
@@ -754,9 +725,8 @@ gmx_ana_index_union_unsorted(gmx_ana_index_t *dest,
  *
  * \see gmx_ana_index_union()
  */
-void
-gmx_ana_index_merge(gmx_ana_index_t *dest,
-                    gmx_ana_index_t *a, gmx_ana_index_t *b)
+void gmx_ana_index_merge(gmx_ana_index_t *dest,
+                         gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int i, j, k;
 
@@ -795,8 +765,7 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  *
  * \ingroup module_selection
  */
-static bool
-next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
+static bool next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
 {
     int prev = *id;
     switch (type)
@@ -816,7 +785,7 @@ next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
             {
                 *id = 0;
             }
-            while (*id < top->mols.nr && atomIndex >= top->mols.index[*id+1])
+            while (*id < top->mols.nr && atomIndex >= top->mols.index[*id + 1])
             {
                 ++*id;
             }
@@ -846,9 +815,8 @@ next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
  * \p m should have been initialized somehow (calloc() is enough).
  * \p g should be sorted.
  */
-void
-gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
-                         e_index_t type, bool bComplete)
+void gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
+                              e_index_t type, bool bComplete)
 {
     if (type == INDEX_UNKNOWN)
     {
@@ -892,13 +860,13 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
     }
     else
     {
-        t->nra      = g->isize;
+        t->nra = g->isize;
         if (t->nalloc_a < g->isize)
         {
             srenew(t->a, g->isize);
             t->nalloc_a = g->isize;
         }
-        std::memcpy(t->a, g->index, g->isize*sizeof(*(t->a)));
+        std::memcpy(t->a, g->index, g->isize * sizeof(*(t->a)));
     }
 
     /* Allocate memory for the block index. We don't know in advance
@@ -910,7 +878,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
         t->nalloc_index = g->isize + 1;
     }
     /* Clear counters */
-    t->nr  = 0;
+    t->nr = 0;
     int id   = -1;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
@@ -930,7 +898,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                 {
                     case INDEX_RES:
                     {
-                        int            molnr, atnr_mol;
+                        int molnr, atnr_mol;
                         mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
                         const t_atoms &mol_atoms = top->moltype[top->molblock[molb].type].atoms;
                         int            last_atom = atnr_mol + 1;
@@ -946,7 +914,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                             --first_atom;
                         }
                         int first_mol_atom = top->molblock[molb].globalAtomStart;
-                        first_mol_atom += molnr*top->molblock[molb].natoms_mol;
+                        first_mol_atom += molnr * top->molblock[molb].natoms_mol;
                         first_atom      = first_mol_atom + first_atom + 1;
                         last_atom       = first_mol_atom + last_atom - 1;
                         for (int j = first_atom; j <= last_atom; ++j)
@@ -956,7 +924,7 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                         break;
                     }
                     case INDEX_MOL:
-                        for (int j = top->mols.index[id]; j < top->mols.index[id+1]; ++j)
+                        for (int j = top->mols.index[id]; j < top->mols.index[id + 1]; ++j)
                         {
                             t->a[t->nra++] = j;
                         }
@@ -977,8 +945,8 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
     /* Set the end of the last block */
     t->index[t->nr] = t->nra;
     /* Free any unnecessary memory */
-    srenew(t->index, t->nr+1);
-    t->nalloc_index = t->nr+1;
+    srenew(t->index, t->nr + 1);
+    t->nalloc_index = t->nr + 1;
     if (bComplete)
     {
         srenew(t->a, t->nra);
@@ -994,10 +962,9 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
  *
  * The atoms in \p g are assumed to be sorted.
  */
-bool
-gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
+bool gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
 {
-    int  i, j, bi;
+    int i, j, bi;
 
     i = bi = 0;
     /* Each round in the loop matches one block */
@@ -1009,12 +976,12 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->nr || i + b->index[bi+1] -  b->index[bi] > g->isize)
+        if (bi == b->nr || i + b->index[bi + 1] -  b->index[bi] > g->isize)
         {
             return false;
         }
         /* Check that the block matches the index */
-        for (j = b->index[bi]; j < b->index[bi+1]; ++j, ++i)
+        for (j = b->index[bi]; j < b->index[bi + 1]; ++j, ++i)
         {
             if (g->index[i] != j)
             {
@@ -1035,10 +1002,9 @@ gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
  *
  * The atoms in \p g and \p b->a are assumed to be in the same order.
  */
-bool
-gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
+bool gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
 {
-    int  i, j, bi;
+    int i, j, bi;
 
     i = bi = 0;
     /* Each round in the loop matches one block */
@@ -1050,12 +1016,12 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->nr || i + b->index[bi+1] -  b->index[bi] > g->isize)
+        if (bi == b->nr || i + b->index[bi + 1] -  b->index[bi] > g->isize)
         {
             return false;
         }
         /* Check that the block matches the index */
-        for (j = b->index[bi]; j < b->index[bi+1]; ++j, ++i)
+        for (j = b->index[bi]; j < b->index[bi + 1]; ++j, ++i)
         {
             if (b->a[j] != g->index[i])
             {
@@ -1104,9 +1070,8 @@ static bool is_at_residue_boundary(const gmx_mtop_t *top, int a, int *molb)
  * If \p type is \ref INDEX_UNKNOWN or \ref INDEX_ALL, the return value is
  * always false.
  */
-bool
-gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
-                                 const gmx_mtop_t *top)
+bool gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
+                                      const gmx_mtop_t *top)
 {
     if (g->isize == 0)
     {
@@ -1164,8 +1129,7 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
  *
  * Any contents of \p m are discarded without freeing.
  */
-void
-gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
+void gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
 {
     m->type              = INDEX_UNKNOWN;
     m->refid             = nullptr;
@@ -1191,8 +1155,7 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
  * \param[in]     nr     Maximum number of blocks to reserve space for.
  * \param[in]     isize  Maximum number of atoms to reserve space for.
  */
-void
-gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize)
+void gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize)
 {
     if (m->mapb.nalloc_index < nr + 1)
     {
@@ -1225,11 +1188,10 @@ gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize)
  *
  * \p m should have been initialized somehow (calloc() is enough).
  */
-void
-gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                      const gmx_mtop_t *top, e_index_t type)
+void gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
+                           const gmx_mtop_t *top, e_index_t type)
 {
-    m->type   = type;
+    m->type = type;
     gmx_ana_index_make_block(&m->b, top, g, type, false);
     gmx_ana_indexmap_reserve(m, m->b.nr, m->b.nra);
     int id = -1;
@@ -1244,13 +1206,12 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     m->mapb.nr  = m->b.nr;
     m->mapb.nra = m->b.nra;
     m->mapb.a   = m->b.a;
-    std::memcpy(m->mapb.index, m->b.index, (m->b.nr+1)*sizeof(*(m->mapb.index)));
-    m->bStatic  = true;
+    std::memcpy(m->mapb.index, m->b.index, (m->b.nr + 1) * sizeof(*(m->mapb.index)));
+    m->bStatic = true;
 }
 
-int
-gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
-                                  e_index_t type)
+int gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
+                                      e_index_t type)
 {
     GMX_RELEASE_ASSERT(m->bStatic,
                        "Changing original IDs is not supported after starting "
@@ -1270,7 +1231,7 @@ gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
             const int ii = m->b.a[m->b.index[i]];
             if (next_group_index(ii, top, type, &id))
             {
-                for (int j = m->b.index[i] + 1; j < m->b.index[i+1]; ++j)
+                for (int j = m->b.index[i] + 1; j < m->b.index[i + 1]; ++j)
                 {
                     if (next_group_index(m->b.a[j], top, type, &id))
                     {
@@ -1314,8 +1275,7 @@ gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
  * ugly way, but allows reducing memory usage of static selections by a
  * significant amount.
  */
-void
-gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
+void gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
 {
     sfree(m->mapid);
     sfree(m->mapb.index);
@@ -1341,21 +1301,20 @@ gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
  *
  * \p dest should have been initialized somehow (calloc() is enough).
  */
-void
-gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst)
+void gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst)
 {
     if (bFirst)
     {
         gmx_ana_indexmap_reserve(dest, src->b.nr, src->b.nra);
-        dest->type       = src->type;
-        dest->b.nr       = src->b.nr;
-        dest->b.nra      = src->b.nra;
-        std::memcpy(dest->orgid,      src->orgid,      dest->b.nr*sizeof(*dest->orgid));
-        std::memcpy(dest->b.index,    src->b.index,   (dest->b.nr+1)*sizeof(*dest->b.index));
-        std::memcpy(dest->b.a,        src->b.a,        dest->b.nra*sizeof(*dest->b.a));
+        dest->type  = src->type;
+        dest->b.nr  = src->b.nr;
+        dest->b.nra = src->b.nra;
+        std::memcpy(dest->orgid,      src->orgid,      dest->b.nr * sizeof(*dest->orgid));
+        std::memcpy(dest->b.index,    src->b.index,   (dest->b.nr + 1) * sizeof(*dest->b.index));
+        std::memcpy(dest->b.a,        src->b.a,        dest->b.nra * sizeof(*dest->b.a));
     }
-    dest->mapb.nr    = src->mapb.nr;
-    dest->mapb.nra   = src->mapb.nra;
+    dest->mapb.nr  = src->mapb.nr;
+    dest->mapb.nra = src->mapb.nra;
     if (src->mapb.nalloc_a > 0)
     {
         if (bFirst)
@@ -1363,15 +1322,15 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
             snew(dest->mapb.a, src->mapb.nalloc_a);
             dest->mapb.nalloc_a = src->mapb.nalloc_a;
         }
-        std::memcpy(dest->mapb.a, src->mapb.a, dest->mapb.nra*sizeof(*dest->mapb.a));
+        std::memcpy(dest->mapb.a, src->mapb.a, dest->mapb.nra * sizeof(*dest->mapb.a));
     }
     else
     {
         dest->mapb.a = src->mapb.a;
     }
-    std::memcpy(dest->refid,      src->refid,      dest->mapb.nr*sizeof(*dest->refid));
-    std::memcpy(dest->mapid,      src->mapid,      dest->mapb.nr*sizeof(*dest->mapid));
-    std::memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr+1)*sizeof(*dest->mapb.index));
+    std::memcpy(dest->refid,      src->refid,      dest->mapb.nr * sizeof(*dest->refid));
+    std::memcpy(dest->mapid,      src->mapid,      dest->mapb.nr * sizeof(*dest->mapid));
+    std::memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr + 1) * sizeof(*dest->mapb.index));
     dest->bStatic = src->bStatic;
 }
 
@@ -1382,8 +1341,7 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
  * \param[in]     isize Number of atoms in the \p index array.
  * \param[in]     index List of atoms.
  */
-static void
-set_atoms(gmx_ana_indexmap_t *m, int isize, int *index)
+static void set_atoms(gmx_ana_indexmap_t *m, int isize, int *index)
 {
     m->mapb.nra = isize;
     if (m->mapb.nalloc_a == 0)
@@ -1409,11 +1367,10 @@ set_atoms(gmx_ana_indexmap_t *m, int isize, int *index)
  *
  * \see gmx_ana_indexmap_t
  */
-void
-gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                        bool bMaskOnly)
+void gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
+                             bool bMaskOnly)
 {
-    int  i, j, bi, bj;
+    int i, j, bi, bj;
 
     /* Process the simple cases first */
     if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
@@ -1472,7 +1429,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 ++j;
             }
             /* Mark blocks that did not contain any atoms */
-            while (bj < m->b.nr && m->b.index[bj+1] <= j)
+            while (bj < m->b.nr && m->b.index[bj + 1] <= j)
             {
                 m->refid[bj++] = -1;
             }
@@ -1499,10 +1456,10 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 ++j;
             }
             /* If we have reached a new block, add it */
-            if (m->b.index[bj+1] <= j)
+            if (m->b.index[bj + 1] <= j)
             {
                 /* Skip any blocks in between */
-                while (bj < m->b.nr && m->b.index[bj+1] <= j)
+                while (bj < m->b.nr && m->b.index[bj + 1] <= j)
                 {
                     ++bj;
                 }
@@ -1526,8 +1483,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
  * the pointers set to NULL.
  * The pointer \p m is not freed.
  */
-void
-gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
+void gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
 {
     sfree(m->refid);
     if (m->mapid != m->orgid)

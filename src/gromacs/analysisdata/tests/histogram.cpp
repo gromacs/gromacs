@@ -188,7 +188,7 @@ class SimpleInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
@@ -274,7 +274,7 @@ class WeightedSimpleInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 // Input data for both weighted histogram and bin average module tests.
@@ -312,7 +312,7 @@ class WeightedDataSetInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
@@ -477,7 +477,7 @@ class AverageInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 /*! \brief

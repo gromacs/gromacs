@@ -54,13 +54,15 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     int      natoms;
     t_graph *gr;
 } rmpbc_graph_t;
 
-struct gmx_rmpbc {
-    const t_idef  *idef;
+struct gmx_rmpbc
+{
+    const t_idef * idef;
     int            natoms_init;
     int            ePBC;
     int            ngraph;
@@ -101,7 +103,7 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
         }
         gpbc->ngraph++;
         srenew(gpbc->graph, gpbc->ngraph);
-        gr         = &gpbc->graph[gpbc->ngraph-1];
+        gr         = &gpbc->graph[gpbc->ngraph - 1];
         gr->natoms = natoms;
         gr->gr     = mk_graph(nullptr, gpbc->idef, 0, natoms, FALSE, FALSE);
     }
@@ -228,10 +230,10 @@ void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box)
     /* check periodic boundary */
     for (n = 1; (n < atoms->nr); n++)
     {
-        for (m = DIM-1; m >= 0; m--)
+        for (m = DIM - 1; m >= 0; m--)
         {
-            dist = x[n][m]-x[n-1][m];
-            if (std::abs(dist) > 0.9*box[m][m])
+            dist = x[n][m] - x[n - 1][m];
+            if (std::abs(dist) > 0.9 * box[m][m])
             {
                 if (dist >  0)
                 {

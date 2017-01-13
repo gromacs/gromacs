@@ -94,9 +94,9 @@ void readEntry(XMLNodePtr node, ReferenceDataEntry *entry);
 XMLNodePtr getCDataChildNode(XMLNodePtr node)
 {
     XMLNodePtr cdata = node->FirstChild();
-    while (cdata != nullptr &&
-           cdata->ToText() != nullptr &&
-           !cdata->ToText()->CData())
+    while (cdata != nullptr
+           && cdata->ToText() != nullptr
+           && !cdata->ToText()->CData())
     {
         cdata = cdata->NextSibling();
     }
@@ -129,7 +129,7 @@ std::string getValueFromLeafElement(XMLNodePtr node)
 {
     std::string value;
 
-    XMLNodePtr  childNode = getNextTextChildNode(node->FirstChild());
+    XMLNodePtr childNode = getNextTextChildNode(node->FirstChild());
     while (childNode != nullptr)
     {
         value += std::string(childNode->Value());
@@ -155,7 +155,7 @@ std::string getValueFromLeafElement(XMLNodePtr node)
 //! Make a new entry from \c element.
 ReferenceDataEntry::EntryPointer createEntry(XMLElementPtr element)
 {
-    const char *id = element->Attribute(c_IdAttrName);
+    const char *                     id = element->Attribute(c_IdAttrName);
     ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(element->Value(), id));
     return entry;
 }
@@ -201,8 +201,7 @@ void readEntry(XMLNodePtr element, ReferenceDataEntry *entry)
 }       // namespace
 
 //! \cond internal
-ReferenceDataEntry::EntryPointer
-readReferenceDataFile(const std::string &path)
+ReferenceDataEntry::EntryPointer readReferenceDataFile(const std::string &path)
 {
     tinyxml2::XMLDocument document;
     document.LoadFile(path.c_str());
@@ -295,8 +294,7 @@ std::vector<std::string> breakUpAnyCdataEndTags(const std::string &input)
         }
         strings.push_back(input.substr(startPos, endPos));
         startPos = endPos;
-    }
-    while (endPos != std::string::npos);
+    } while (endPos != std::string::npos);
 
     return strings;
 }
@@ -348,11 +346,11 @@ XMLElementPtr createRootElement(XMLDocumentPtr document)
 }       // namespace
 
 //! \cond internal
-void writeReferenceDataFile(const std::string        &path,
+void writeReferenceDataFile(const std::string &       path,
                             const ReferenceDataEntry &rootEntry)
 {
     // TODO: Error checking
-    tinyxml2::XMLDocument     document;
+    tinyxml2::XMLDocument document;
 
     tinyxml2::XMLDeclaration *declaration = document.NewDeclaration(c_VersionDeclarationString);
     document.InsertEndChild(declaration);

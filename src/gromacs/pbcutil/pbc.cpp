@@ -62,13 +62,14 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-const char *epbc_names[epbcNR+1] =
+const char *epbc_names[epbcNR + 1] =
 {
     "xyz", "no", "xy", "screw", nullptr
 };
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
-enum {
+enum
+{
     epbcdxRECTANGULAR = 1, epbcdxTRICLINIC,
     epbcdx2D_RECT,       epbcdx2D_TRIC,
     epbcdx1D_RECT,       epbcdx1D_TRIC,
@@ -151,10 +152,10 @@ const char *check_box(int ePBC, const matrix box)
     {
         ptr = "The unit cell can not have off-diagonal x-components with screw pbc";
     }
-    else if (std::fabs(box[YY][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
-             (ePBC != epbcXY &&
-              (std::fabs(box[ZZ][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
-               std::fabs(box[ZZ][YY]) > BOX_MARGIN*0.5*box[YY][YY])))
+    else if (std::fabs(box[YY][XX]) > BOX_MARGIN * 0.5 * box[XX][XX]
+             || (ePBC != epbcXY
+                 && (std::fabs(box[ZZ][XX]) > BOX_MARGIN * 0.5 * box[XX][XX]
+                     || std::fabs(box[ZZ][YY]) > BOX_MARGIN * 0.5 * box[YY][YY])))
     {
         ptr = "Triclinic box is too skewed.";
     }
@@ -171,13 +172,13 @@ void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees)
     rvec angle;
     svmul(DEG2RAD, angleInDegrees, angle);
     box[XX][XX] = vec[XX];
-    box[YY][XX] = vec[YY]*cos(angle[ZZ]);
-    box[YY][YY] = vec[YY]*sin(angle[ZZ]);
-    box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
+    box[YY][XX] = vec[YY] * cos(angle[ZZ]);
+    box[YY][YY] = vec[YY] * sin(angle[ZZ]);
+    box[ZZ][XX] = vec[ZZ] * cos(angle[YY]);
     box[ZZ][YY] = vec[ZZ]
-        *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
+        * (cos(angle[XX]) - cos(angle[YY]) * cos(angle[ZZ])) / sin(angle[ZZ]);
     box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
-                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
+                       - box[ZZ][XX] * box[ZZ][XX] - box[ZZ][YY] * box[ZZ][YY]);
 }
 
 real max_cutoff2(int ePBC, const matrix box)
@@ -208,7 +209,7 @@ real max_cutoff2(int ePBC, const matrix box)
         min_ss = std::min(box[XX][XX], std::min(box[YY][YY] - std::fabs(box[ZZ][YY]), box[ZZ][ZZ]));
     }
 
-    return std::min(min_hv2, min_ss*min_ss);
+    return std::min(min_hv2, min_ss * min_ss);
 }
 
 //! Set to true if warning has been printed
@@ -258,7 +259,7 @@ static int correct_box_elem(FILE *fplog, int step, tensor box, int v, int d)
     shift = 0;
 
     /* correct elem d of vector v with vector d */
-    while (box[v][d] > BOX_MARGIN_CORRECT*0.5*box[d][d])
+    while (box[v][d] > BOX_MARGIN_CORRECT * 0.5 * box[d][d])
     {
         if (fplog)
         {
@@ -278,7 +279,7 @@ static int correct_box_elem(FILE *fplog, int step, tensor box, int v, int d)
                       maxshift);
         }
     }
-    while (box[v][d] < -BOX_MARGIN_CORRECT*0.5*box[d][d])
+    while (box[v][d] < -BOX_MARGIN_CORRECT * 0.5 * box[d][d])
     {
         if (fplog)
         {
@@ -318,9 +319,9 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
         /* correct the graph */
         for (i = graph->at_start; i < graph->at_end; i++)
         {
-            graph->ishift[i][YY] -= graph->ishift[i][ZZ]*zy;
-            graph->ishift[i][XX] -= graph->ishift[i][ZZ]*zx;
-            graph->ishift[i][XX] -= graph->ishift[i][YY]*yx;
+            graph->ishift[i][YY] -= graph->ishift[i][ZZ] * zy;
+            graph->ishift[i][XX] -= graph->ishift[i][ZZ] * zx;
+            graph->ishift[i][XX] -= graph->ishift[i][YY] * yx;
         }
     }
 
@@ -369,14 +370,14 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
     }
 
     copy_mat(box, pbc->box);
-    pbc->max_cutoff2    = 0;
-    pbc->dim            = -1;
-    pbc->ntric_vec      = 0;
+    pbc->max_cutoff2 = 0;
+    pbc->dim         = -1;
+    pbc->ntric_vec   = 0;
 
     for (int i = 0; (i < DIM); i++)
     {
         pbc->fbox_diag[i]  =  box[i][i];
-        pbc->hbox_diag[i]  =  pbc->fbox_diag[i]*0.5;
+        pbc->hbox_diag[i]  =  pbc->fbox_diag[i] * 0.5;
         pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
     }
 
@@ -485,9 +486,9 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
         }
         pbc->max_cutoff2 = max_cutoff2(ePBC, box);
 
-        if (pbc->ePBCDX == epbcdxTRICLINIC ||
-            pbc->ePBCDX == epbcdx2D_TRIC ||
-            pbc->ePBCDX == epbcdxSCREW_TRIC)
+        if (pbc->ePBCDX == epbcdxTRICLINIC
+            || pbc->ePBCDX == epbcdx2D_TRIC
+            || pbc->ePBCDX == epbcdxSCREW_TRIC)
         {
             if (debug)
             {
@@ -526,7 +527,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
 
                             for (int d = 0; d < DIM; d++)
                             {
-                                trial[d] = i*box[XX][d] + j*box[YY][d] + k*box[ZZ][d];
+                                trial[d] = i * box[XX][d] + j * box[YY][d] + k * box[ZZ][d];
                                 /* Choose the vector within the brick around 0,0,0 that
                                  * will become the shortest due to shift try.
                                  */
@@ -549,7 +550,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
                                 d2old += gmx::square(pos[d]);
                                 d2new += gmx::square(pos[d] + trial[d]);
                             }
-                            if (BOX_MARGIN*d2new < d2old)
+                            if (BOX_MARGIN * d2new < d2old)
                             {
                                 /* Check if shifts with one box vector less do better */
                                 gmx_bool bUse = TRUE;
@@ -561,9 +562,9 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
                                         real d2new_c = 0;
                                         for (int d = 0; d < DIM; d++)
                                         {
-                                            d2new_c += gmx::square(pos[d] + trial[d] - shift*box[dd][d]);
+                                            d2new_c += gmx::square(pos[d] + trial[d] - shift * box[dd][d]);
                                         }
-                                        if (d2new_c <= BOX_MARGIN*d2new)
+                                        if (d2new_c <= BOX_MARGIN * d2new)
                                         {
                                             bUse = FALSE;
                                         }
@@ -643,8 +644,8 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
         for (int i = 0; i < DIM; i++)
         {
             usePBC[i] = 0;
-            if (domdecCells[i] <= (bSingleDir ? 1 : 2) &&
-                !(ePBC == epbcXY && i == ZZ))
+            if (domdecCells[i] <= (bSingleDir ? 1 : 2)
+                && !(ePBC == epbcXY && i == ZZ))
             {
                 usePBC[i] = 1;
                 npbcdim++;
@@ -689,7 +690,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             }
             break;
         case epbcdxTRICLINIC:
-            for (i = DIM-1; i >= 0; i--)
+            for (i = DIM - 1; i >= 0; i--)
             {
                 while (dx[i] > pbc->hbox_diag[i])
                 {
@@ -747,7 +748,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             break;
         case epbcdx2D_TRIC:
             d2min = 0;
-            for (i = DIM-1; i >= 0; i--)
+            for (i = DIM - 1; i >= 0; i--)
             {
                 if (i != pbc->dim)
                 {
@@ -765,7 +766,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                             dx[j] += pbc->box[i][j];
                         }
                     }
-                    d2min += dx[i]*dx[i];
+                    d2min += dx[i] * dx[i];
                 }
             }
             if (d2min > pbc->max_cutoff2)
@@ -784,7 +785,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                     {
                         if (j != pbc->dim)
                         {
-                            d2trial += trial[j]*trial[j];
+                            d2trial += trial[j] * trial[j];
                         }
                     }
                     if (d2trial < d2min)
@@ -872,7 +873,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
              * can cause unlimited displacements.
              * Also allowing multiple shifts would index fshift beyond bounds.
              */
-            for (i = DIM-1; i >= 1; i--)
+            for (i = DIM - 1; i >= 1; i--)
             {
                 if (dx[i] > pbc->hbox_diag[i])
                 {
@@ -957,7 +958,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             break;
         case epbcdx2D_TRIC:
             d2min = 0;
-            for (i = DIM-1; i >= 1; i--)
+            for (i = DIM - 1; i >= 1; i--)
             {
                 if (i != pbc->dim)
                 {
@@ -977,7 +978,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                         }
                         ishift[i]++;
                     }
-                    d2min += dx[i]*dx[i];
+                    d2min += dx[i] * dx[i];
                 }
             }
             if (pbc->dim != XX)
@@ -1003,7 +1004,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                         ishift[XX]++;
                     }
                 }
-                d2min += dx[XX]*dx[XX];
+                d2min += dx[XX] * dx[XX];
             }
             if (d2min > pbc->max_cutoff2)
             {
@@ -1021,7 +1022,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
                     {
                         if (j != pbc->dim)
                         {
-                            d2trial += trial[j]*trial[j];
+                            d2trial += trial[j] * trial[j];
                         }
                     }
                     if (d2trial < d2min)
@@ -1142,7 +1143,7 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
         case epbcdxTRICLINIC:
         case epbcdx2D_TRIC:
             d2min = 0;
-            for (i = DIM-1; i >= 0; i--)
+            for (i = DIM - 1; i >= 0; i--)
             {
                 if (i != pbc->dim)
                 {
@@ -1160,7 +1161,7 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
                             dx[j] += pbc->box[i][j];
                         }
                     }
-                    d2min += dx[i]*dx[i];
+                    d2min += dx[i] * dx[i];
                 }
             }
             if (d2min > pbc->max_cutoff2)
@@ -1181,7 +1182,7 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
                     {
                         if (j != pbc->dim)
                         {
-                            d2trial += trial[j]*trial[j];
+                            d2trial += trial[j] * trial[j];
                         }
                     }
                     if (d2trial < d2min)
@@ -1252,7 +1253,7 @@ void calc_shifts(const matrix box, rvec shift_vec[])
                 }
                 for (d = 0; d < DIM; d++)
                 {
-                    shift_vec[n][d] = k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
+                    shift_vec[n][d] = k * box[XX][d] + l * box[YY][d] + m * box[ZZ][d];
                 }
             }
         }
@@ -1271,14 +1272,14 @@ void calc_box_center(int ecenter, const matrix box, rvec box_center)
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    box_center[d] += 0.5*box[m][d];
+                    box_center[d] += 0.5 * box[m][d];
                 }
             }
             break;
         case ecenterRECT:
             for (d = 0; d < DIM; d++)
             {
-                box_center[d] = 0.5*box[d][d];
+                box_center[d] = 0.5 * box[d][d];
             }
             break;
         case ecenterZERO:
@@ -1304,7 +1305,7 @@ void calc_triclinic_images(const matrix box, rvec img[])
     /* Get the next 3 in the xy-plane as mirror images */
     for (i = 0; i < 3; i++)
     {
-        svmul(-1, img[i], img[3+i]);
+        svmul(-1, img[i], img[3 + i]);
     }
 
     /* Calculate the first 4 out of xy-plane images */
@@ -1315,13 +1316,13 @@ void calc_triclinic_images(const matrix box, rvec img[])
     }
     for (i = 0; i < 3; i++)
     {
-        rvec_add(img[6], img[i+1], img[7+i]);
+        rvec_add(img[6], img[i + 1], img[7 + i]);
     }
 
     /* Mirror the last 4 from the previous in opposite rotation */
     for (i = 0; i < 4; i++)
     {
-        svmul(-1, img[6 + (2+i) % 4], img[10+i]);
+        svmul(-1, img[6 + (2 + i) % 4], img[10 + i]);
     }
 }
 
@@ -1336,7 +1337,7 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
     n = 0;
     for (i = 2; i <= 5; i += 3)
     {
-        tmp[0] = i-1;
+        tmp[0] = i - 1;
         if (i == 2)
         {
             tmp[1] = 8;
@@ -1345,21 +1346,21 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
         {
             tmp[1] = 6;
         }
-        tmp[2] = (i+1) % 6;
-        tmp[3] = tmp[1]+4;
+        tmp[2] = (i + 1) % 6;
+        tmp[3] = tmp[1] + 4;
         for (j = 0; j < 4; j++)
         {
             for (d = 0; d < DIM; d++)
             {
-                vert[n][d] = img[i][d]+img[tmp[j]][d]+img[tmp[(j+1)%4]][d];
+                vert[n][d] = img[i][d] + img[tmp[j]][d] + img[tmp[(j + 1) % 4]][d];
             }
             n++;
         }
     }
     for (i = 7; i <= 13; i += 6)
     {
-        tmp[0] = (i-7)/2;
-        tmp[1] = tmp[0]+1;
+        tmp[0] = (i - 7) / 2;
+        tmp[1] = tmp[0] + 1;
         if (i == 7)
         {
             tmp[2] = 8;
@@ -1368,12 +1369,12 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
         {
             tmp[2] = 10;
         }
-        tmp[3] = i-1;
+        tmp[3] = i - 1;
         for (j = 0; j < 4; j++)
         {
             for (d = 0; d < DIM; d++)
             {
-                vert[n][d] = img[i][d]+img[tmp[j]][d]+img[tmp[(j+1)%4]][d];
+                vert[n][d] = img[i][d] + img[tmp[j]][d] + img[tmp[(j + 1) % 4]][d];
             }
             n++;
         }
@@ -1388,7 +1389,7 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
         {
             tmp[0] = 0;
         }
-        tmp[1] = tmp[0]+1;
+        tmp[1] = tmp[0] + 1;
         if (i == 9)
         {
             tmp[2] = 6;
@@ -1397,12 +1398,12 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
         {
             tmp[2] = 12;
         }
-        tmp[3] = i-1;
+        tmp[3] = i - 1;
         for (j = 0; j < 4; j++)
         {
             for (d = 0; d < DIM; d++)
             {
-                vert[n][d] = img[i][d]+img[tmp[j]][d]+img[tmp[(j+1)%4]][d];
+                vert[n][d] = img[i][d] + img[tmp[j]][d] + img[tmp[(j + 1) % 4]][d];
             }
             n++;
         }
@@ -1413,7 +1414,7 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
     {
         for (d = 0; d < DIM; d++)
         {
-            vert[i][d] = vert[i][d]*oneFourth+box_center[d];
+            vert[i][d] = vert[i][d] * oneFourth + box_center[d];
         }
     }
 }
@@ -1422,7 +1423,7 @@ int *compact_unitcell_edges()
 {
     /* this is an index in vert[] (see calc_box_vertices) */
     /*static int edge[NCUCEDGE*2];*/
-    int             *edge;
+    int *            edge;
     static const int hexcon[24] = {
         0, 9, 1, 19, 2, 15, 3, 21,
         4, 17, 5, 11, 6, 23, 7, 13,
@@ -1430,18 +1431,18 @@ int *compact_unitcell_edges()
     };
     int              e, i, j;
 
-    snew(edge, NCUCEDGE*2);
+    snew(edge, NCUCEDGE * 2);
 
     e = 0;
     for (i = 0; i < 6; i++)
     {
         for (j = 0; j < 4; j++)
         {
-            edge[e++] = 4*i + j;
-            edge[e++] = 4*i + (j+1) % 4;
+            edge[e++] = 4 * i + j;
+            edge[e++] = 4 * i + (j + 1) % 4;
         }
     }
-    for (i = 0; i < 12*2; i++)
+    for (i = 0; i < 12 * 2; i++)
     {
         edge[e++] = hexcon[i];
     }
@@ -1471,7 +1472,7 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
     {
         for (i = 0; (i < natoms); i++)
         {
-            for (m = npbcdim-1; m >= 0; m--)
+            for (m = npbcdim - 1; m >= 0; m--)
             {
                 while (x[i][m] < 0)
                 {
@@ -1512,17 +1513,17 @@ void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
 void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
                                      int natoms, rvec x[])
 {
-    rvec   box_center, shift_center;
-    real   shm01, shm02, shm12, shift;
-    int    i, m, d;
+    rvec box_center, shift_center;
+    real shm01, shm02, shm12, shift;
+    int  i, m, d;
 
     calc_box_center(ecenter, box, box_center);
 
     /* The product of matrix shm with a coordinate gives the shift vector
        which is required determine the periodic cell position */
-    shm01 = box[1][0]/box[1][1];
-    shm02 = (box[1][1]*box[2][0] - box[2][1]*box[1][0])/(box[1][1]*box[2][2]);
-    shm12 = box[2][1]/box[2][2];
+    shm01 = box[1][0] / box[1][1];
+    shm02 = (box[1][1] * box[2][0] - box[2][1] * box[1][0]) / (box[1][1] * box[2][2]);
+    shm12 = box[2][1] / box[2][2];
 
     clear_rvec(shift_center);
     for (d = 0; d < DIM; d++)
@@ -1532,31 +1533,31 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
     svmul(0.5, shift_center, shift_center);
     rvec_sub(box_center, shift_center, shift_center);
 
-    shift_center[0] = shm01*shift_center[1] + shm02*shift_center[2];
-    shift_center[1] = shm12*shift_center[2];
+    shift_center[0] = shm01 * shift_center[1] + shm02 * shift_center[2];
+    shift_center[1] = shm12 * shift_center[2];
     shift_center[2] = 0;
 
     for (i = 0; (i < natoms); i++)
     {
-        for (m = DIM-1; m >= 0; m--)
+        for (m = DIM - 1; m >= 0; m--)
         {
             shift = shift_center[m];
             if (m == 0)
             {
-                shift += shm01*x[i][1] + shm02*x[i][2];
+                shift += shm01 * x[i][1] + shm02 * x[i][2];
             }
             else if (m == 1)
             {
-                shift += shm12*x[i][2];
+                shift += shm12 * x[i][2];
             }
-            while (x[i][m]-shift < 0)
+            while (x[i][m] - shift < 0)
             {
                 for (d = 0; d <= m; d++)
                 {
                     x[i][d] += box[m][d];
                 }
             }
-            while (x[i][m]-shift >= box[m][m])
+            while (x[i][m] - shift >= box[m][m])
             {
                 for (d = 0; d <= m; d++)
                 {

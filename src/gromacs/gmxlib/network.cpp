@@ -78,7 +78,7 @@ void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
 
 t_commrec *init_commrec()
 {
-    t_commrec    *cr;
+    t_commrec *cr;
 
     snew(cr, 1);
 
@@ -154,7 +154,7 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
     gmx_fill_commrec_from_mpi(cr);
 
     // TODO cr->duty should not be initialized here
-    cr->duty             = (DUTY_PP | DUTY_PME);
+    cr->duty = (DUTY_PP | DUTY_PME);
 
     return cr;
 #else
@@ -219,14 +219,14 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
                 ng, ni);
     }
 
-    if (getenv("GMX_NO_NODECOMM") == nullptr &&
-        ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
+    if (getenv("GMX_NO_NODECOMM") == nullptr
+        && ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
     {
         nc->bUse = TRUE;
         if (fplog)
         {
             fprintf(fplog, "Using two step summing over %d groups of on average %.1f ranks\n\n",
-                    ng, (real)n/(real)ng);
+                    ng, (real)n / (real)ng);
         }
         if (nc->rank_intra > 0)
         {
@@ -742,7 +742,7 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     va_list  ap;
     gmx_bool bFinalize;
 #if GMX_MPI
-    int      result;
+    int result;
     /* Check if we are calling on all processes in MPI_COMM_WORLD */
     MPI_Comm_compare(comm, MPI_COMM_WORLD, &result);
     /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */

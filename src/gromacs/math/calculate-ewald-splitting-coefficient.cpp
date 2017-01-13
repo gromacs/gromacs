@@ -52,17 +52,16 @@ real calc_ewaldcoeff_q(real rc, real rtol)
     {
         i++;
         beta *= 2;
-    }
-    while (std::erfc(beta*rc) > rtol);
+    } while (std::erfc(beta * rc) > rtol);
 
     /* Do a binary search with tolerance 2^-60 */
-    n    = i+60;
+    n    = i + 60;
     low  = 0;
     high = beta;
     for (i = 0; i < n; i++)
     {
-        beta = (low+high)/2;
-        if (std::erfc(beta*rc) > rtol)
+        beta = (low + high) / 2;
+        if (std::erfc(beta * rc) > rtol)
         {
             low = beta;
         }
@@ -77,10 +76,10 @@ real calc_ewaldcoeff_q(real rc, real rtol)
 static real compute_lj_function(real beta, real rc)
 {
     real xrc, xrc2, xrc4, result;
-    xrc    = beta*rc;
-    xrc2   = xrc*xrc;
-    xrc4   = xrc2*xrc2;
-    result = std::exp(-xrc2)*(1 + xrc2 + xrc4/2.0);
+    xrc    = beta * rc;
+    xrc2   = xrc * xrc;
+    xrc4   = xrc2 * xrc2;
+    result = std::exp(-xrc2) * (1 + xrc2 + xrc4 / 2.0);
 
     return result;
 }
@@ -94,8 +93,7 @@ real calc_ewaldcoeff_lj(real rc, real rtol)
     {
         i++;
         beta *= 2.0;
-    }
-    while (compute_lj_function(beta, rc) > rtol);
+    } while (compute_lj_function(beta, rc) > rtol);
 
     /* Do a binary search with tolerance 2^-60 */
     n    = i + 60;

@@ -49,12 +49,13 @@ namespace gmx
 class KeyValueTreeObject;
 }
 
-typedef struct t_inpfile {
+typedef struct t_inpfile
+{
     int      count;     /* sort order for output  */
     gmx_bool bObsolete; /* whether it is an obsolete param value */
     gmx_bool bSet;      /* whether it it has been read out */
-    char    *name;      /* name of the parameter */
-    char    *value;     /* parameter value string */
+    char *   name;      /* name of the parameter */
+    char *   value;     /* parameter value string */
     int      inp_count; /* number of einps read. Only valid for the first item
                                                  in the inpfile list. */
 } t_inpfile;
@@ -86,7 +87,7 @@ void mark_einp_set(int ninp, t_inpfile *inp, const char *name);
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
              warninp_t wi);
 
-gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
+gmx_int64_t get_eint64(int *ninp, t_inpfile * *inp,
                        const char *name, gmx_int64_t def,
                        warninp_t);
 

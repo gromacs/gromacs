@@ -82,7 +82,7 @@ class BooleanOptionStorage : public OptionStorageTemplateSimple<bool>
     private:
         virtual void initConverter(ConverterType *converter);
 
-        BooleanOptionInfo       info_;
+        BooleanOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -106,7 +106,7 @@ class IntegerOptionStorage : public OptionStorageTemplateSimple<int>
         virtual void initConverter(ConverterType *converter);
         virtual void processSetValues(ValueList *values);
 
-        IntegerOptionInfo       info_;
+        IntegerOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -128,7 +128,7 @@ class Int64OptionStorage : public OptionStorageTemplateSimple<gmx_int64_t>
     private:
         virtual void initConverter(ConverterType *converter);
 
-        Int64OptionInfo       info_;
+        Int64OptionInfo info_;
 };
 
 /*! \internal \brief
@@ -154,9 +154,9 @@ class DoubleOptionStorage : public OptionStorageTemplateSimple<double>
         virtual double processValue(const double &value) const;
         virtual void processSetValues(ValueList *values);
 
-        DoubleOptionInfo        info_;
-        bool                    bTime_;
-        double                  factor_;
+        DoubleOptionInfo info_;
+        bool             bTime_;
+        double           factor_;
 };
 
 /*! \internal \brief
@@ -182,9 +182,9 @@ class FloatOptionStorage : public OptionStorageTemplateSimple<float>
         virtual float processValue(const float &value) const;
         virtual void processSetValues(ValueList *values);
 
-        FloatOptionInfo         info_;
-        bool                    bTime_;
-        double                  factor_;
+        FloatOptionInfo info_;
+        bool            bTime_;
+        double          factor_;
 };
 
 /*! \internal \brief
@@ -209,8 +209,8 @@ class StringOptionStorage : public OptionStorageTemplateSimple<std::string>
         virtual void initConverter(ConverterType *converter);
         virtual std::string processValue(const std::string &value) const;
 
-        StringOptionInfo        info_;
-        ValueList               allowed_;
+        StringOptionInfo info_;
+        ValueList        allowed_;
 };
 
 /*! \internal \brief
@@ -251,8 +251,8 @@ class EnumOptionStorage : public OptionStorageTemplateSimple<int>
     private:
         virtual void initConverter(ConverterType *converter);
 
-        EnumOptionInfo            info_;
-        std::vector<std::string>  allowed_;
+        EnumOptionInfo           info_;
+        std::vector<std::string> allowed_;
 };
 
 /*!\}*/

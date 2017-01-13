@@ -60,14 +60,14 @@
  *         Grid Routines
  ***********************************/
 
-const char *range_warn =
-    "Explanation: During neighborsearching, we assign each particle to a grid\n"
-    "based on its coordinates. If your system contains collisions or parameter\n"
-    "errors that give particles very high velocities you might end up with some\n"
-    "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
-    "put these on a grid, so this is usually where we detect those errors.\n"
-    "Make sure your system is properly energy-minimized and that the potential\n"
-    "energy seems reasonable before trying again.";
+const char *range_warn
+    = "Explanation: During neighborsearching, we assign each particle to a grid\n"
+        "based on its coordinates. If your system contains collisions or parameter\n"
+        "errors that give particles very high velocities you might end up with some\n"
+        "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
+        "put these on a grid, so this is usually where we detect those errors.\n"
+        "Make sure your system is properly energy-minimized and that the potential\n"
+        "energy seems reasonable before trying again.";
 
 static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
 {
@@ -82,17 +82,17 @@ static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
         for (d = 0; d < DIM; d++)
         {
             s1[d] += x[i][d];
-            s2[d] += x[i][d]*x[i][d];
+            s2[d] += x[i][d] * x[i][d];
         }
     }
 
-    dsvmul(1.0/n, s1, s1);
-    dsvmul(1.0/n, s2, s2);
+    dsvmul(1.0 / n, s1, s1);
+    dsvmul(1.0 / n, s2, s2);
 
     for (d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d] * s1[d]);
     }
 }
 
@@ -107,11 +107,11 @@ void get_nsgrid_boundaries_vac(real av, real stddev,
      * For a sphere stddev is r/sqrt(5): 99.2% falls within the width.
      * For a Gaussian distribution 98% fall within the width.
      */
-    *bound0 = av - NSGRID_STDDEV_FAC*stddev;
-    *bound1 = av + NSGRID_STDDEV_FAC*stddev;
+    *bound0 = av - NSGRID_STDDEV_FAC * stddev;
+    *bound1 = av + NSGRID_STDDEV_FAC * stddev;
 
-    *bdens0 = av - GRID_STDDEV_FAC*stddev;
-    *bdens1 = av + GRID_STDDEV_FAC*stddev;
+    *bdens0 = av - GRID_STDDEV_FAC * stddev;
+    *bdens1 = av + GRID_STDDEV_FAC * stddev;
 }
 
 static void dd_box_bounds_to_ns_bounds(real box0, real box_size,
@@ -120,11 +120,11 @@ static void dd_box_bounds_to_ns_bounds(real box0, real box_size,
     real av, stddev;
 
     /* Redetermine av and stddev from the DD box boundaries */
-    av     = box0 + 0.5*box_size;
-    stddev = 0.5*box_size/GRID_STDDEV_FAC;
+    av     = box0 + 0.5 * box_size;
+    stddev = 0.5 * box_size / GRID_STDDEV_FAC;
 
-    *gr0 = av - NSGRID_STDDEV_FAC*stddev;
-    *gr1 = av + NSGRID_STDDEV_FAC*stddev;
+    *gr0 = av - NSGRID_STDDEV_FAC * stddev;
+    *gr1 = av + NSGRID_STDDEV_FAC * stddev;
 }
 
 void get_nsgrid_boundaries(int nboundeddim, matrix box,
@@ -179,7 +179,7 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
                 bdens0     = (*gr0)[d];
             }
             /* Check for a DD cell not at a higher edge */
-            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->nc[d]-1)
+            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->nc[d] - 1)
             {
                 grid_x1[d] = (*gr1)[d];
                 bdens1     = (*gr1)[d];
@@ -194,7 +194,7 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
         }
     }
 
-    *grid_density = ncg/vol;
+    *grid_density = ncg / vol;
 }
 
 static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlist,
@@ -219,15 +219,15 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
     }
 
     /* Use the ideal number of cg's per cell to set the ideal cell size */
-    inv_r_ideal = std::cbrt(grid_density/grid->ncg_ideal);
-    if (rlist > 0 && inv_r_ideal*rlist < 1)
+    inv_r_ideal = std::cbrt(grid_density / grid->ncg_ideal);
+    if (rlist > 0 && inv_r_ideal * rlist < 1)
     {
-        inv_r_ideal = 1/rlist;
+        inv_r_ideal = 1 / rlist;
     }
     if (debug)
     {
         fprintf(debug, "CG density %f ideal ns cell size %f\n",
-                grid_density, 1/inv_r_ideal);
+                grid_density, 1 / inv_r_ideal);
     }
 
     clear_rvec(grid->cell_offset);
@@ -247,13 +247,13 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
             /* With DD grid cell jumps only the first decomposition
              * direction has uniform DD cell boundaries.
              */
-            bDDRect = !(ddbox->tric_dir[i] ||
-                        (dd_dlb_is_on(dd) && i != dd->dim[0]));
+            bDDRect = !(ddbox->tric_dir[i]
+                        || (dd_dlb_is_on(dd) && i != dd->dim[0]));
 
             radd = rlist;
-            if (i >= ddbox->npbcdim &&
-                (rlist == 0 ||
-                 izones_x1[i] + radd > ddbox->box0[i] + ddbox->box_size[i]))
+            if (i >= ddbox->npbcdim
+                && (rlist == 0
+                    || izones_x1[i] + radd > ddbox->box0[i] + ddbox->box_size[i]))
             {
                 radd = ddbox->box0[i] + ddbox->box_size[i] - izones_x1[i];
                 if (radd < 0)
@@ -269,7 +269,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
             }
             else
             {
-                size += radd/ddbox->skew_fac[i];
+                size += radd / ddbox->skew_fac[i];
             }
 
             /* Check if the cell boundary in this direction is
@@ -278,12 +278,12 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * any value, we help the compiler avoid warnings and potentially
              * optimize by ensuring that j < DIM here.
              */
-            for (j = i+1; j < grid->npbcdim && j < DIM; j++)
+            for (j = i + 1; j < grid->npbcdim && j < DIM; j++)
             {
                 if (box[j][i] != 0)
                 {
                     /* Correct the offset for the home cell location */
-                    grid->cell_offset[i] += izones_x0[j]*box[j][i]/box[j][j];
+                    grid->cell_offset[i] += izones_x0[j] * box[j][i] / box[j][j];
 
                     /* Correct the offset and size for the off-diagonal
                      * displacement of opposing DD cell corners.
@@ -292,7 +292,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
                      * box[j][i]*rlist/(dd->skew_fac[i]*box[j][j])
                      */
                     /* Determine the shift for the corners of the triclinic box */
-                    add_tric = izones_size[j]*box[j][i]/box[j][j];
+                    add_tric = izones_size[j] * box[j][i] / box[j][j];
                     if (dd->ndim == 1 && j == ZZ)
                     {
                         /* With 1D domain decomposition the cg's are not in
@@ -300,7 +300,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
                          * Therefore we need to add the shift from the trilinic
                          * corner to the corner at y=0.
                          */
-                        add_tric += -box[YY][XX]*box[ZZ][YY]/box[YY][YY];
+                        add_tric += -box[YY][XX] * box[ZZ][YY] / box[YY][YY];
                     }
                     if (box[j][i] < 0)
                     {
@@ -320,12 +320,12 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * we will use the normal grid ns that checks all cells
              * that are within cut-off distance of the i-particle.
              */
-            grid->n[i] = (int)(size*inv_r_ideal + 0.5);
+            grid->n[i] = (int)(size * inv_r_ideal + 0.5);
             if (grid->n[i] < 2)
             {
                 grid->n[i] = 2;
             }
-            grid->cell_size[i] = size/grid->n[i];
+            grid->cell_size[i] = size / grid->n[i];
             grid->ncpddc[i]    = 0;
         }
         else
@@ -335,33 +335,33 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * We can then beforehand exclude certain ns grid cells
              * for non-home i-particles.
              */
-            grid->ncpddc[i] = (int)(izones_size[i]*inv_r_ideal + 0.5);
+            grid->ncpddc[i] = (int)(izones_size[i] * inv_r_ideal + 0.5);
             if (grid->ncpddc[i] < 2)
             {
                 grid->ncpddc[i] = 2;
             }
-            grid->cell_size[i] = izones_size[i]/grid->ncpddc[i];
-            grid->n[i]         = grid->ncpddc[i] + (int)(radd/grid->cell_size[i]) + 1;
+            grid->cell_size[i] = izones_size[i] / grid->ncpddc[i];
+            grid->n[i]         = grid->ncpddc[i] + (int)(radd / grid->cell_size[i]) + 1;
         }
         if (debug)
         {
             fprintf(debug, "grid dim %d size %d x %f: %f - %f\n",
                     i, grid->n[i], grid->cell_size[i],
                     grid->cell_offset[i],
-                    grid->cell_offset[i]+grid->n[i]*grid->cell_size[i]);
+                    grid->cell_offset[i] + grid->n[i] * grid->cell_size[i]);
         }
     }
 
     if (debug)
     {
         fprintf(debug, "CG ncg ideal %d, actual density %.1f\n",
-                grid->ncg_ideal, grid_density*grid->cell_size[XX]*grid->cell_size[YY]*grid->cell_size[ZZ]);
+                grid->ncg_ideal, grid_density * grid->cell_size[XX] * grid->cell_size[YY] * grid->cell_size[ZZ]);
     }
 }
 
 t_grid *init_grid(FILE *fplog, t_forcerec *fr)
 {
-    char   *ptr;
+    char *  ptr;
     t_grid *grid;
 
     snew(grid, 1);
@@ -408,9 +408,9 @@ t_grid *init_grid(FILE *fplog, t_forcerec *fr)
 
 void done_grid(t_grid *grid)
 {
-    grid->nr      = 0;
+    grid->nr = 0;
     clear_ivec(grid->n);
-    grid->ncells  = 0;
+    grid->ncells = 0;
     sfree(grid->cell_index);
     sfree(grid->a);
     sfree(grid->index);
@@ -430,7 +430,7 @@ void done_grid(t_grid *grid)
 int xyz2ci_(int nry, int nrz, int x, int y, int z)
 /* Return the cell index */
 {
-    return (nry*nrz*x+nrz*y+z);
+    return (nry * nrz * x + nrz * y + z);
 }
 
 void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
@@ -441,17 +441,17 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
     range_check_mesg(i, 0, grid->nr, range_warn);
 
     ci  = grid->cell_index[i];
-    *x  = ci / (grid->n[YY]*grid->n[ZZ]);
-    ci -= (*x)*grid->n[YY]*grid->n[ZZ];
+    *x  = ci / (grid->n[YY] * grid->n[ZZ]);
+    ci -= (*x) * grid->n[YY] * grid->n[ZZ];
     *y  = ci / grid->n[ZZ];
-    ci -= (*y)*grid->n[ZZ];
+    ci -= (*y) * grid->n[ZZ];
     *z  = ci;
 }
 
 static int ci_not_used(ivec n)
 {
     /* Return an improbable value */
-    return xyz2ci(n[YY], n[ZZ], 3*n[XX], 3*n[YY], 3*n[ZZ]);
+    return xyz2ci(n[YY], n[ZZ], 3 * n[XX], 3 * n[YY], 3 * n[ZZ]);
 }
 
 static void set_grid_ncg(t_grid *grid, int ncg)
@@ -459,7 +459,7 @@ static void set_grid_ncg(t_grid *grid, int ncg)
     int nr_old, i;
 
     grid->nr = ncg;
-    if (grid->nr+1 > grid->nr_alloc)
+    if (grid->nr + 1 > grid->nr_alloc)
     {
         nr_old         = grid->nr_alloc;
         grid->nr_alloc = over_alloc_dd(grid->nr) + 1;
@@ -477,18 +477,18 @@ void grid_first(FILE *fplog, t_grid *grid,
                 matrix box, rvec izones_x0, rvec izones_x1,
                 real rlist, real grid_density)
 {
-    int    i, m;
+    int i, m;
 
     set_grid_sizes(box, izones_x0, izones_x1, rlist, dd, ddbox, grid, grid_density);
 
-    grid->ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
+    grid->ncells = grid->n[XX] * grid->n[YY] * grid->n[ZZ];
 
-    if (grid->ncells+1 > grid->cells_nalloc)
+    if (grid->ncells + 1 > grid->cells_nalloc)
     {
         /* Allocate double the size so we have some headroom */
-        grid->cells_nalloc = 2*grid->ncells;
-        srenew(grid->nra,  grid->cells_nalloc+1);
-        srenew(grid->index, grid->cells_nalloc+1);
+        grid->cells_nalloc = 2 * grid->ncells;
+        srenew(grid->nra,  grid->cells_nalloc + 1);
+        srenew(grid->index, grid->cells_nalloc + 1);
 
         if (fplog)
         {
@@ -501,7 +501,7 @@ void grid_first(FILE *fplog, t_grid *grid,
     if (m > grid->dc_nalloc)
     {
         /* Allocate with double the initial size for box scaling */
-        grid->dc_nalloc = 2*m;
+        grid->dc_nalloc = 2 * m;
         srenew(grid->dcx2, grid->dc_nalloc);
         srenew(grid->dcy2, grid->dc_nalloc);
         srenew(grid->dcz2, grid->dc_nalloc);
@@ -521,7 +521,7 @@ static void calc_bor(int cg0, int cg1, int ncg, int CG0[2], int CG1[2])
         CG0[0] = cg0;
         CG1[0] = ncg;
         CG0[1] = 0;
-        CG1[1] = cg1-ncg;
+        CG1[1] = cg1 - ncg;
     }
     else
     {
@@ -545,11 +545,11 @@ static void calc_bor(int cg0, int cg1, int ncg, int CG0[2], int CG1[2])
 
 void calc_elemnr(t_grid *grid, int cg0, int cg1, int ncg)
 {
-    int     CG0[2], CG1[2];
-    int    *cell_index = grid->cell_index;
-    int    *nra        = grid->nra;
-    int     i, m, ncells;
-    int     ci, not_used;
+    int  CG0[2], CG1[2];
+    int *cell_index = grid->cell_index;
+    int *nra        = grid->nra;
+    int  i, m, ncells;
+    int  ci, not_used;
 
     ncells = grid->ncells;
     if (ncells <= 0)
@@ -606,13 +606,13 @@ void calc_ptrs(t_grid *grid)
 
 void grid_last(t_grid *grid, int cg0, int cg1, int ncg)
 {
-    int     CG0[2], CG1[2];
-    int     i, m;
-    int     ci, not_used, ind, ncells;
-    int    *cell_index = grid->cell_index;
-    int    *nra        = grid->nra;
-    int    *index      = grid->index;
-    int    *a          = grid->a;
+    int  CG0[2], CG1[2];
+    int  i, m;
+    int  ci, not_used, ind, ncells;
+    int *cell_index = grid->cell_index;
+    int *nra        = grid->nra;
+    int *index      = grid->index;
+    int *a          = grid->a;
 
     ncells = grid->ncells;
     if (ncells <= 0)
@@ -627,11 +627,11 @@ void grid_last(t_grid *grid, int cg0, int cg1, int ncg)
     {
         for (i = CG0[m]; (i < CG1[m]); i++)
         {
-            ci     = cell_index[i];
+            ci = cell_index[i];
             if (ci != not_used)
             {
                 range_check_mesg(ci, 0, ncells, range_warn);
-                ind    = index[ci]+nra[ci]++;
+                ind = index[ci] + nra[ci]++;
                 range_check_mesg(ind, 0, grid->nr, range_warn);
                 a[ind] = i;
             }
@@ -643,12 +643,12 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
                t_grid *grid, int ncg_tot,
                int cg0, int cg1, rvec cg_cm[])
 {
-    int       *cell_index;
-    int        nry, nrz;
-    rvec       n_box, offset;
-    int        zone, ccg0, ccg1, cg, d, not_used;
-    ivec       shift0, useall, b0, b1, ind;
-    gmx_bool   bUse;
+    int *    cell_index;
+    int      nry, nrz;
+    rvec     n_box, offset;
+    int      zone, ccg0, ccg1, cg, d, not_used;
+    ivec     shift0, useall, b0, b1, ind;
+    gmx_bool bUse;
 
     if (cg0 == -1)
     {
@@ -669,7 +669,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
     {
         if (grid->cell_size[d] > 0)
         {
-            n_box[d] = 1/grid->cell_size[d];
+            n_box[d] = 1 / grid->cell_size[d];
         }
         else
         {
@@ -689,7 +689,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         {
             for (d = 0; d < DIM; d++)
             {
-                ind[d] = static_cast<int>((cg_cm[cg][d] - offset[d])*n_box[d]);
+                ind[d] = static_cast<int>((cg_cm[cg][d] - offset[d]) * n_box[d]);
                 /* With pbc we should be done here.
                  * Without pbc cg's outside the grid
                  * should be assigned to the closest grid cell.
@@ -711,7 +711,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         for (zone = 0; zone < dd_zones->n; zone++)
         {
             ccg0 = dd_zones->cg_range[zone];
-            ccg1 = dd_zones->cg_range[zone+1];
+            ccg1 = dd_zones->cg_range[zone + 1];
             if (ccg1 <= cg0 || ccg0 >= cg1)
             {
                 continue;
@@ -757,14 +757,14 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
                 if (cell_index[cg] == -1)
                 {
                     /* This cg has moved to another node */
-                    cell_index[cg] = NSGRID_SIGNAL_MOVED_FAC*grid->ncells;
+                    cell_index[cg] = NSGRID_SIGNAL_MOVED_FAC * grid->ncells;
                     continue;
                 }
 
                 bUse = TRUE;
                 for (d = 0; d < DIM; d++)
                 {
-                    ind[d] = static_cast<int>((cg_cm[cg][d] - offset[d])*n_box[d]);
+                    ind[d] = static_cast<int>((cg_cm[cg][d] - offset[d]) * n_box[d]);
                     /* Here we have to correct for rounding problems,
                      * as this cg_cm to cell index operation is not necessarily
                      * binary identical to the operation for the DD zone assignment
@@ -830,7 +830,7 @@ void check_grid(t_grid *grid)
             {
                 if (ci > 0)
                 {
-                    nra = grid->index[ci]-grid->index[cci];
+                    nra = grid->index[ci] - grid->index[cci];
                     if (nra != grid->nra[cci])
                     {
                         gmx_fatal(FARGS, "nra=%d, grid->nra=%d, cci=%d",
@@ -878,7 +878,7 @@ void print_grid(FILE *log, t_grid *grid)
                 fprintf(log, "%3d%3d%3d%5d%5d", ix, iy, iz, nra, index);
                 for (i = 0; (i < nra); i++)
                 {
-                    fprintf(log, "%5d", grid->a[index+i]);
+                    fprintf(log, "%5d", grid->a[index + i]);
                 }
                 fprintf(log, "\n");
             }

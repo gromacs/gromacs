@@ -65,38 +65,38 @@ typedef struct lambda_components_t
 {
     char **names;  /* Array of strings with names for the lambda vector
                       components */
-    int    N;      /* The number of components */
-    int    Nalloc; /* The number of allocated components */
+    int N;         /* The number of components */
+    int Nalloc;    /* The number of allocated components */
 } lambda_components_t;
 
 /* Structure for a lambda vector or a dhdl derivative direction */
 typedef struct lambda_vec_t
 {
-    double                    *val;   /* The lambda vector component values. Only valid if
+    double *val;                      /* The lambda vector component values. Only valid if
                                          dhdl == -1 */
-    int                        dhdl;  /* The coordinate index for the derivative described by this
+    int dhdl;                         /* The coordinate index for the derivative described by this
                                          structure, or -1 */
     const lambda_components_t *lc;    /* the associated lambda_components
                                          structure */
-    int                        index; /* The state number (init-lambda-state) of this lambda
+    int index;                        /* The state number (init-lambda-state) of this lambda
                                          vector, if known. If not, it is set to -1 */
 } lambda_vec_t;
 
 /* the dhdl.xvg data from a simulation */
 typedef struct xvg_t
 {
-    const char   *filename;
+    const char *  filename;
     int           ftp;           /* file type */
     int           nset;          /* number of lambdas, including dhdl */
-    int          *np;            /* number of data points (du or hists) per lambda */
+    int *         np;            /* number of data points (du or hists) per lambda */
     int           np_alloc;      /* number of points (du or hists) allocated */
     double        temp;          /* temperature */
     lambda_vec_t *lambda;        /* the lambdas (of first index for y). */
-    double       *t;             /* the times (of second index for y) */
-    double      **y;             /* the dU values. y[0] holds the derivative, while
+    double *      t;             /* the times (of second index for y) */
+    double **     y;             /* the dU values. y[0] holds the derivative, while
                                     further ones contain the energy differences between
                                     the native lambda and the 'foreign' lambdas. */
-    lambda_vec_t  native_lambda; /* the native lambda */
+    lambda_vec_t native_lambda;  /* the native lambda */
 
     struct xvg_t *next, *prev;   /*location in the global linked list of xvg_ts*/
 } xvg_t;
@@ -104,18 +104,18 @@ typedef struct xvg_t
 
 typedef struct hist_t
 {
-    unsigned int   *bin[2];                 /* the (forward + reverse) histogram values */
-    double          dx[2];                  /* the histogram spacing. The reverse
+    unsigned int *bin[2];                   /* the (forward + reverse) histogram values */
+    double        dx[2];                    /* the histogram spacing. The reverse
                                                dx is the negative of the forward dx.*/
-    gmx_int64_t     x0[2];                  /* the (forward + reverse) histogram start
+    gmx_int64_t x0[2];                      /* the (forward + reverse) histogram start
                                                    point(s) as int */
 
-    int             nbin[2];                /* the (forward+reverse) number of bins */
-    gmx_int64_t     sum;                    /* the total number of counts. Must be
+    int         nbin[2];                    /* the (forward+reverse) number of bins */
+    gmx_int64_t sum;                        /* the total number of counts. Must be
                                                    the same for forward + reverse.  */
-    int             nhist;                  /* number of hist datas (forward or reverse) */
+    int nhist;                              /* number of hist datas (forward or reverse) */
 
-    double          start_time, delta_time; /* start time, end time of histogram */
+    double start_time, delta_time;          /* start time, end time of histogram */
 } hist_t;
 
 
@@ -137,20 +137,20 @@ typedef struct samples_t
     hist_t *hist; /* a histogram */
 
     /* allocation data: (not NULL for data 'owned' by this struct) */
-    double         *du_alloc, *t_alloc;  /* allocated delta u arrays  */
-    size_t          ndu_alloc, nt_alloc; /* pre-allocated sizes */
-    hist_t         *hist_alloc;          /* allocated hist */
+    double *du_alloc, *t_alloc;          /* allocated delta u arrays  */
+    size_t  ndu_alloc, nt_alloc;         /* pre-allocated sizes */
+    hist_t *hist_alloc;                  /* allocated hist */
 
-    gmx_int64_t     ntot;                /* total number of samples */
-    const char     *filename;            /* the file name this sample comes from */
+    gmx_int64_t ntot;                    /* total number of samples */
+    const char *filename;                /* the file name this sample comes from */
 } samples_t;
 
 /* a sample range (start to end for du-style data, or boolean
     for both du-style data and histograms */
 typedef struct sample_range_t
 {
-    int        start, end; /* start and end index for du style data */
-    gmx_bool   use;        /* whether to use this sample */
+    int      start, end;   /* start and end index for du style data */
+    gmx_bool use;          /* whether to use this sample */
 
     samples_t *s;          /* the samples this range belongs to */
 } sample_range_t;
@@ -161,17 +161,17 @@ typedef struct sample_range_t
     foreign lambda) */
 typedef struct sample_coll_t
 {
-    lambda_vec_t   *native_lambda;     /* these should be the same for all samples
+    lambda_vec_t *native_lambda;       /* these should be the same for all samples
                                           in the histogram */
-    lambda_vec_t   *foreign_lambda;    /* collection */
-    double          temp;              /* the temperature */
+    lambda_vec_t *foreign_lambda;      /* collection */
+    double        temp;                /* the temperature */
 
     int             nsamples;          /* the number of samples */
-    samples_t     **s;                 /* the samples themselves */
+    samples_t **    s;                 /* the samples themselves */
     sample_range_t *r;                 /* the sample ranges */
     int             nsamples_alloc;    /* number of allocated samples */
 
-    gmx_int64_t     ntot;              /* total number of samples in the ranges of
+    gmx_int64_t ntot;                  /* total number of samples in the ranges of
                                               this collection */
 
     struct sample_coll_t *next, *prev; /* next and previous in the list */
@@ -180,12 +180,12 @@ typedef struct sample_coll_t
 /* all the samples associated with a lambda point */
 typedef struct lambda_data_t
 {
-    lambda_vec_t         *lambda;      /* the native lambda (at start time if dynamic) */
-    double                temp;        /* temperature */
+    lambda_vec_t *lambda;              /* the native lambda (at start time if dynamic) */
+    double        temp;                /* temperature */
 
-    sample_coll_t        *sc;          /* the samples */
+    sample_coll_t *sc;                 /* the samples */
 
-    sample_coll_t         sc_head;     /*the pre-allocated list head for the linked list.*/
+    sample_coll_t sc_head;             /*the pre-allocated list head for the linked list.*/
 
     struct lambda_data_t *next, *prev; /* the next and prev in the list */
 } lambda_data_t;
@@ -193,30 +193,31 @@ typedef struct lambda_data_t
 /* Top-level data structure of simulation data */
 typedef struct sim_data_t
 {
-    lambda_data_t      *lb;      /* a lambda data linked list */
-    lambda_data_t       lb_head; /* The head element of the linked list */
+    lambda_data_t *lb;           /* a lambda data linked list */
+    lambda_data_t  lb_head;      /* The head element of the linked list */
 
     lambda_components_t lc;      /* the allowed components of the lambda
                                     vectors */
 } sim_data_t;
 
 /* Top-level data structure with calculated values. */
-typedef struct {
+typedef struct
+{
     sample_coll_t *a, *b;            /* the simulation data */
 
-    double         dg;               /* the free energy difference */
-    double         dg_err;           /* the free energy difference */
+    double dg;                       /* the free energy difference */
+    double dg_err;                   /* the free energy difference */
 
-    double         dg_disc_err;      /* discretization error */
-    double         dg_histrange_err; /* histogram range error */
+    double dg_disc_err;              /* discretization error */
+    double dg_histrange_err;         /* histogram range error */
 
-    double         sa;               /* relative entropy of b in state a */
-    double         sa_err;           /* error in sa */
-    double         sb;               /* relative entropy of a in state b */
-    double         sb_err;           /* error in sb */
+    double sa;                       /* relative entropy of b in state a */
+    double sa_err;                   /* error in sa */
+    double sb;                       /* relative entropy of a in state b */
+    double sb_err;                   /* error in sb */
 
-    double         dg_stddev;        /* expected dg stddev per sample */
-    double         dg_stddev_err;    /* error in dg_stddev */
+    double dg_stddev;                /* expected dg stddev per sample */
+    double dg_stddev_err;            /* error in dg_stddev */
 } barres_t;
 
 
@@ -234,10 +235,10 @@ static void lambda_components_add(lambda_components_t *lc,
 {
     while (lc->N + 1 > lc->Nalloc)
     {
-        lc->Nalloc = (lc->Nalloc == 0) ? 2 : 2*lc->Nalloc;
+        lc->Nalloc = (lc->Nalloc == 0) ? 2 : 2 * lc->Nalloc;
         srenew(lc->names, lc->Nalloc);
     }
-    snew(lc->names[lc->N], name_length+1);
+    snew(lc->names[lc->N], name_length + 1);
     std::strncpy(lc->names[lc->N], name, name_length);
     lc->N++;
 }
@@ -247,7 +248,7 @@ static void lambda_components_add(lambda_components_t *lc,
    the string name does not need to end */
 static gmx_bool lambda_components_check(const lambda_components_t *lc,
                                         int                        index,
-                                        const char                *name,
+                                        const char *               name,
                                         size_t                     name_length)
 {
     size_t len;
@@ -277,7 +278,7 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
 
 /* Find the index of a given lambda component name, or -1 if not found */
 static int lambda_components_find(const lambda_components_t *lc,
-                                  const char                *name,
+                                  const char *               name,
                                   size_t                     name_length)
 {
     int i;
@@ -319,7 +320,7 @@ static void lambda_vec_copy(lambda_vec_t *lv, const lambda_vec_t *orig)
 /* write a lambda vec to a preallocated string */
 static void lambda_vec_print(const lambda_vec_t *lv, char *str, gmx_bool named)
 {
-    int    i;
+    int i;
 
     str[0] = 0; /* reset the string */
     if (lv->dhdl < 0)
@@ -335,7 +336,7 @@ static void lambda_vec_print(const lambda_vec_t *lv, char *str, gmx_bool named)
         for (i = 0; i < lv->lc->N; i++)
         {
             str += sprintf(str, "%g", lv->val[i]);
-            if (i < lv->lc->N-1)
+            if (i < lv->lc->N - 1)
             {
                 str += sprintf(str, ", ");
             }
@@ -383,13 +384,13 @@ static void lambda_vec_print_intermediate(const lambda_vec_t *a,
     str[0] = 0;
     if ( (a->index >= 0) && (b->index >= 0) )
     {
-        sprintf(str, "%6.3f", (a->index+b->index)/2.0);
+        sprintf(str, "%6.3f", (a->index + b->index) / 2.0);
     }
     else
     {
         if ( (a->dhdl < 0) && (b->dhdl < 0) )
         {
-            sprintf(str, "%6.3f", (a->val[0]+b->val[0])/2.0);
+            sprintf(str, "%6.3f", (a->val[0] + b->val[0]) / 2.0);
         }
     }
 }
@@ -415,7 +416,7 @@ static double lambda_vec_abs_diff(const lambda_vec_t *a, const lambda_vec_t *b)
     for (i = 0; i < a->lc->N; i++)
     {
         double df = a->val[i] - b->val[i];
-        ret += df*df;
+        ret += df * df;
     }
     return std::sqrt(ret);
 }
@@ -434,7 +435,7 @@ static gmx_bool lambda_vec_same(const lambda_vec_t *a, const lambda_vec_t *b)
     {
         for (i = 0; i < a->lc->N; i++)
         {
-            if (!gmx_within_tol(a->val[i], b->val[i], 10*GMX_REAL_EPS))
+            if (!gmx_within_tol(a->val[i], b->val[i], 10 * GMX_REAL_EPS))
             {
                 return FALSE;
             }
@@ -488,12 +489,12 @@ static gmx_bool lambda_vec_cmp_foreign(const lambda_vec_t *a,
        which is only valid if there is one component */
     for (i = 0; i < a->lc->N; i++)
     {
-        if (!gmx_within_tol(a->val[i], b->val[i], 10*GMX_REAL_EPS))
+        if (!gmx_within_tol(a->val[i], b->val[i], 10 * GMX_REAL_EPS))
         {
             different = TRUE;
         }
-        norm_a += a->val[i]*a->val[i];
-        norm_b += b->val[i]*b->val[i];
+        norm_a += a->val[i] * a->val[i];
+        norm_b += b->val[i] * b->val[i];
     }
     if (!different)
     {
@@ -535,7 +536,7 @@ static gmx_bool lambda_vec_cmp_native(const lambda_vec_t *a,
         gmx_fatal(FARGS,
                   "Can't compare native lambdas that are derivatives");
     }
-    if (gmx_within_tol(a->val[0], b->val[0], 10*GMX_REAL_EPS))
+    if (gmx_within_tol(a->val[0], b->val[0], 10 * GMX_REAL_EPS))
     {
         return 0;
     }
@@ -687,7 +688,7 @@ static void sample_coll_calc_ntot(sample_coll_t *sc)
 /* find the barsamples_t associated with a lambda that corresponds to
    a specific foreign lambda */
 static sample_coll_t *lambda_data_find_sample_coll(lambda_data_t *l,
-                                                   lambda_vec_t  *foreign_lambda)
+                                                   lambda_vec_t * foreign_lambda)
 {
     sample_coll_t *sc = l->sc->next;
 
@@ -766,7 +767,7 @@ static void sample_coll_insert_sample(sample_coll_t *sc, samples_t *s,
     /* check if there's room */
     if ( (sc->nsamples + 1) > sc->nsamples_alloc)
     {
-        sc->nsamples_alloc = std::max(2*sc->nsamples_alloc, 2);
+        sc->nsamples_alloc = std::max(2 * sc->nsamples_alloc, 2);
         srenew(sc->s, sc->nsamples_alloc);
         srenew(sc->r, sc->nsamples_alloc);
     }
@@ -832,7 +833,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
     gmx_bool xmax_set      = FALSE;
     gmx_bool xmax_set_hard = FALSE; /* whether the xmax is bounded by the
                                        limits of a histogram */
-    double   xmax          = -1;
+    double xmax            = -1;
 
     /* first determine dx and xmin; try the histograms */
     for (i = 0; i < sc->nsamples; i++)
@@ -843,7 +844,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
             for (k = 0; k < hist->nhist; k++)
             {
                 double hdx      = hist->dx[k];
-                double xmax_now = (hist->x0[k]+hist->nbin[k])*hdx;
+                double xmax_now = (hist->x0[k] + hist->nbin[k]) * hdx;
 
                 /* we use the biggest dx*/
                 if ( (!dx_set) || hist->dx[0] > *dx)
@@ -851,22 +852,22 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
                     dx_set = TRUE;
                     *dx    = hist->dx[0];
                 }
-                if ( (!xmin_set) || (hist->x0[k]*hdx) < *xmin)
+                if ( (!xmin_set) || (hist->x0[k] * hdx) < *xmin)
                 {
                     xmin_set = TRUE;
-                    *xmin    = (hist->x0[k]*hdx);
+                    *xmin    = (hist->x0[k] * hdx);
                 }
 
                 if ( (!xmax_set) || (xmax_now > xmax && !xmax_set_hard) )
                 {
                     xmax_set = TRUE;
                     xmax     = xmax_now;
-                    if (hist->bin[k][hist->nbin[k]-1] != 0)
+                    if (hist->bin[k][hist->nbin[k] - 1] != 0)
                     {
                         xmax_set_hard = TRUE;
                     }
                 }
-                if (hist->bin[k][hist->nbin[k]-1] != 0 && (xmax_now < xmax) )
+                if (hist->bin[k][hist->nbin[k] - 1] != 0 && (xmax_now < xmax) )
                 {
                     xmax_set_hard = TRUE;
                     xmax          = xmax_now;
@@ -884,7 +885,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
             int    endi    = sc->r[i].end;
             double du_xmin = sc->s[i]->du[starti];
             double du_xmax = sc->s[i]->du[starti];
-            for (j = starti+1; j < endi; j++)
+            for (j = starti + 1; j < endi; j++)
             {
                 if (sc->s[i]->du[j] < du_xmin)
                 {
@@ -920,12 +921,12 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
     if (!dx_set)
     {
         *nbin = nbin_default;
-        *dx   = (xmax-(*xmin))/((*nbin)-2); /* -2 because we want the last bin to
-                                               be 0, and we count from 0 */
+        *dx   = (xmax - (*xmin)) / ((*nbin) - 2); /* -2 because we want the last bin to
+                                                     be 0, and we count from 0 */
     }
     else
     {
-        *nbin = static_cast<int>((xmax-(*xmin))/(*dx));
+        *nbin = static_cast<int>((xmax - (*xmin)) / (*dx));
     }
 
     if (*nbin > *nbin_alloc)
@@ -949,17 +950,17 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
             for (k = 0; k < hist->nhist; k++)
             {
                 double hdx       = hist->dx[k];
-                double xmin_hist = hist->x0[k]*hdx;
+                double xmin_hist = hist->x0[k] * hdx;
                 for (j = 0; j < hist->nbin[k]; j++)
                 {
                     /* calculate the bin corresponding to the middle of the
                        original bin */
-                    double x     = hdx*(j+0.5) + xmin_hist;
-                    int    binnr = static_cast<int>((x-(*xmin))/(*dx));
+                    double x     = hdx * (j + 0.5) + xmin_hist;
+                    int    binnr = static_cast<int>((x - (*xmin)) / (*dx));
 
                     if (binnr >= *nbin || binnr < 0)
                     {
-                        binnr = (*nbin)-1;
+                        binnr = (*nbin) - 1;
                     }
 
                     (*bin)[binnr] += hist->bin[k][j];
@@ -972,10 +973,10 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
             int endi   = sc->r[i].end;
             for (j = starti; j < endi; j++)
             {
-                int binnr = static_cast<int>((sc->s[i]->du[j]-(*xmin))/(*dx));
+                int binnr = static_cast<int>((sc->s[i]->du[j] - (*xmin)) / (*dx));
                 if (binnr >= *nbin || binnr < 0)
                 {
-                    binnr = (*nbin)-1;
+                    binnr = (*nbin) - 1;
                 }
 
                 (*bin)[binnr]++;
@@ -989,16 +990,16 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
                         int nbin_default, const gmx_output_env_t *oenv)
 {
     char           label_x[STRLEN];
-    const char    *dhdl    = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
-    const char    *title   = "N(\\DeltaH)";
-    const char    *label_y = "Samples";
-    FILE          *fp;
+    const char *   dhdl    = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
+    const char *   title   = "N(\\DeltaH)";
+    const char *   label_y = "Samples";
+    FILE *         fp;
     lambda_data_t *bl;
     int            nsets     = 0;
-    char         **setnames  = nullptr;
+    char **        setnames  = nullptr;
     gmx_bool       first_set = FALSE;
     /* histogram data: */
-    int           *hist       = nullptr;
+    int *          hist       = nullptr;
     int            nbin       = 0;
     int            nbin_alloc = 0;
     double         dx         = 0;
@@ -1025,18 +1026,18 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
 
             nsets++;
             srenew(setnames, nsets);
-            snew(setnames[nsets-1], STRLEN);
+            snew(setnames[nsets - 1], STRLEN);
             if (sc->foreign_lambda->dhdl < 0)
             {
                 lambda_vec_print(sc->native_lambda, buf, FALSE);
                 lambda_vec_print(sc->foreign_lambda, buf2, FALSE);
-                sprintf(setnames[nsets-1], "N(%s(%s=%s) | %s=%s)",
+                sprintf(setnames[nsets - 1], "N(%s(%s=%s) | %s=%s)",
                         deltag, lambda, buf2, lambda, buf);
             }
             else
             {
                 lambda_vec_print(sc->native_lambda, buf, FALSE);
-                sprintf(setnames[nsets-1], "N(%s | %s=%s)",
+                sprintf(setnames[nsets - 1], "N(%s | %s=%s)",
                         dhdl, lambda, buf);
             }
             sc = sc->next;
@@ -1067,8 +1068,8 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
 
             for (i = 0; i < nbin; i++)
             {
-                double xmin = i*dx + minval;
-                double xmax = (i+1)*dx + minval;
+                double xmin = i * dx + minval;
+                double xmax = (i + 1) * dx + minval;
 
                 fprintf(fp, "%g %d\n%g %d\n", xmin, hist[i], xmax, hist[i]);
             }
@@ -1088,26 +1089,25 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
     xvgrclose(fp);
 }
 
-static int
-snprint_lambda_vec(char *str, int sz, const char *label, lambda_vec_t *lambda)
+static int snprint_lambda_vec(char *str, int sz, const char *label, lambda_vec_t *lambda)
 {
     int n = 0;
 
-    n += snprintf(str+n, sz-n, "lambda vector [%s]: ", label);
+    n += snprintf(str + n, sz - n, "lambda vector [%s]: ", label);
     if (lambda->index >= 0)
     {
-        n += snprintf(str+n, sz-n, " init-lambda-state=%d", lambda->index);
+        n += snprintf(str + n, sz - n, " init-lambda-state=%d", lambda->index);
     }
     if (lambda->dhdl >= 0)
     {
-        n += snprintf(str+n, sz-n, " dhdl index=%d", lambda->dhdl);
+        n += snprintf(str + n, sz - n, " dhdl index=%d", lambda->dhdl);
     }
     else
     {
         int i;
         for (i = 0; i < lambda->lc->N; i++)
         {
-            n += snprintf(str+n, sz-n, " (%s) l=%g", lambda->lc->names[i], lambda->val[i]);
+            n += snprintf(str + n, sz - n, " (%s) l=%g", lambda->lc->names[i], lambda->val[i]);
         }
     }
     return n;
@@ -1120,7 +1120,7 @@ static barres_t *barres_list_create(sim_data_t *sd, int *nres,
 {
     lambda_data_t *bl;
     int            nlambda = 0;
-    barres_t      *res;
+    barres_t *     res;
     gmx_bool       dhdl    = FALSE;
     gmx_bool       first   = TRUE;
     lambda_data_t *bl_head = sd->lb;
@@ -1132,7 +1132,7 @@ static barres_t *barres_list_create(sim_data_t *sd, int *nres,
         nlambda++;
         bl = bl->next;
     }
-    snew(res, nlambda-1);
+    snew(res, nlambda - 1);
 
     /* next put the right samples in the res */
     *nres = 0;
@@ -1140,7 +1140,7 @@ static barres_t *barres_list_create(sim_data_t *sd, int *nres,
     while (bl != bl_head)
     {
         sample_coll_t *sc, *scprev;
-        barres_t      *br = &(res[*nres]);
+        barres_t *     br = &(res[*nres]);
         /* there is always a previous one. we search for that as a foreign
            lambda: */
         scprev = lambda_data_find_sample_coll(bl->prev, bl->lambda);
@@ -1223,7 +1223,7 @@ static double barres_list_max_disc_err(barres_t *res, int nres)
                     Wfac =  delta_lambda;
                 }
 
-                disc_err = std::max(disc_err, Wfac*br->a->s[j]->hist->dx[0]);
+                disc_err = std::max(disc_err, Wfac * br->a->s[j]->hist->dx[0]);
             }
         }
         for (j = 0; j < br->b->nsamples; j++)
@@ -1235,7 +1235,7 @@ static double barres_list_max_disc_err(barres_t *res, int nres)
                 {
                     Wfac =  delta_lambda;
                 }
-                disc_err = std::max(disc_err, Wfac*br->b->s[j]->hist->dx[0]);
+                disc_err = std::max(disc_err, Wfac * br->b->s[j]->hist->dx[0]);
             }
         }
     }
@@ -1250,12 +1250,12 @@ static void sample_coll_impose_times(sample_coll_t *sc, double begin_t,
     int i;
     for (i = 0; i < sc->nsamples; i++)
     {
-        samples_t      *s = sc->s[i];
+        samples_t *     s = sc->s[i];
         sample_range_t *r = &(sc->r[i]);
         if (s->hist)
         {
-            double end_time = s->hist->delta_time*s->hist->sum +
-                s->hist->start_time;
+            double end_time = s->hist->delta_time * s->hist->sum
+                + s->hist->start_time;
             if (s->hist->start_time < begin_t || end_time > end_t)
             {
                 r->use = FALSE;
@@ -1268,12 +1268,12 @@ static void sample_coll_impose_times(sample_coll_t *sc, double begin_t,
                 double end_time;
                 if (s->start_time < begin_t)
                 {
-                    r->start = static_cast<int>((begin_t - s->start_time)/s->delta_time);
+                    r->start = static_cast<int>((begin_t - s->start_time) / s->delta_time);
                 }
-                end_time = s->delta_time*s->ndu + s->start_time;
+                end_time = s->delta_time * s->ndu + s->start_time;
                 if (end_time > end_t)
                 {
-                    r->end = static_cast<int>((end_t - s->start_time)/s->delta_time);
+                    r->end = static_cast<int>((end_t - s->start_time) / s->delta_time);
                 }
             }
             else
@@ -1332,17 +1332,17 @@ static void sim_data_impose_times(sim_data_t *sd, double begin, double end)
                 end_t   =   sc->s[j]->start_time;
                 if (sc->s[j]->hist)
                 {
-                    end_t += sc->s[j]->delta_time*sc->s[j]->hist->sum;
+                    end_t += sc->s[j]->delta_time * sc->s[j]->hist->sum;
                 }
                 else
                 {
                     if (sc->s[j]->t)
                     {
-                        end_t = sc->s[j]->t[sc->s[j]->ndu-1];
+                        end_t = sc->s[j]->t[sc->s[j]->ndu - 1];
                     }
                     else
                     {
-                        end_t += sc->s[j]->delta_time*sc->s[j]->ndu;
+                        end_t += sc->s[j]->delta_time * sc->s[j]->ndu;
                     }
                 }
 
@@ -1402,15 +1402,15 @@ static void sim_data_impose_times(sim_data_t *sd, double begin, double end)
 
 
 /* create subsample i out of ni from an existing sample_coll */
-static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
+static gmx_bool sample_coll_create_subsample(sample_coll_t *sc,
                                              sample_coll_t *sc_orig,
                                              int i, int ni)
 {
-    int             j;
+    int j;
 
-    gmx_int64_t     ntot_start;
-    gmx_int64_t     ntot_end;
-    gmx_int64_t     ntot_so_far;
+    gmx_int64_t ntot_start;
+    gmx_int64_t ntot_end;
+    gmx_int64_t ntot_so_far;
 
     *sc = *sc_orig; /* just copy all fields */
 
@@ -1427,8 +1427,8 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 
     /* now fix start and end fields */
     /* the casts avoid possible overflows */
-    ntot_start  = static_cast<gmx_int64_t>(sc_orig->ntot*static_cast<double>(i)/static_cast<double>(ni));
-    ntot_end    = static_cast<gmx_int64_t>(sc_orig->ntot*static_cast<double>(i+1)/static_cast<double>(ni));
+    ntot_start  = static_cast<gmx_int64_t>(sc_orig->ntot * static_cast<double>(i) / static_cast<double>(ni));
+    ntot_end    = static_cast<gmx_int64_t>(sc_orig->ntot * static_cast<double>(i + 1) / static_cast<double>(ni));
     ntot_so_far = 0;
     for (j = 0; j < sc->nsamples; j++)
     {
@@ -1493,8 +1493,8 @@ static gmx_bool sample_coll_create_subsample(sample_coll_t  *sc,
 
                 /* first calculate normalized bounds
                    (where 0 is the start of the hist range, and 1 the end) */
-                ntot_start_norm = (ntot_start-ntot_so_far)/static_cast<double>(ntot_add);
-                ntot_end_norm   = (ntot_end-ntot_so_far)/static_cast<double>(ntot_add);
+                ntot_start_norm = (ntot_start - ntot_so_far) / static_cast<double>(ntot_add);
+                ntot_end_norm   = (ntot_end - ntot_so_far) / static_cast<double>(ntot_add);
 
                 /* now fix the boundaries */
                 ntot_start_norm = std::min(1.0, std::max(0.0, ntot_start_norm));
@@ -1535,7 +1535,7 @@ static void sample_coll_min_max(sample_coll_t *sc, double Wfac,
 
     for (i = 0; i < sc->nsamples; i++)
     {
-        samples_t      *s = sc->s[i];
+        samples_t *     s = sc->s[i];
         sample_range_t *r = &(sc->r[i]);
         if (r->use)
         {
@@ -1543,8 +1543,8 @@ static void sample_coll_min_max(sample_coll_t *sc, double Wfac,
             {
                 for (j = r->start; j < r->end; j++)
                 {
-                    *Wmin = std::min(*Wmin, s->du[j]*Wfac);
-                    *Wmax = std::max(*Wmax, s->du[j]*Wfac);
+                    *Wmin = std::min(*Wmin, s->du[j] * Wfac);
+                    *Wmax = std::max(*Wmax, s->du[j] * Wfac);
                 }
             }
             else
@@ -1557,15 +1557,15 @@ static void sample_coll_min_max(sample_coll_t *sc, double Wfac,
                 }
                 dx = s->hist->dx[hd];
 
-                for (j = s->hist->nbin[hd]-1; j >= 0; j--)
+                for (j = s->hist->nbin[hd] - 1; j >= 0; j--)
                 {
-                    *Wmin = std::min(*Wmin, Wfac*(s->hist->x0[hd])*dx);
-                    *Wmax = std::max(*Wmax, Wfac*(s->hist->x0[hd])*dx);
+                    *Wmin = std::min(*Wmin, Wfac * (s->hist->x0[hd]) * dx);
+                    *Wmax = std::max(*Wmax, Wfac * (s->hist->x0[hd]) * dx);
                     /* look for the highest value bin with values */
                     if (s->hist->bin[hd][j] > 0)
                     {
-                        *Wmin = std::min(*Wmin, Wfac*(j+s->hist->x0[hd]+1)*dx);
-                        *Wmax = std::max(*Wmax, Wfac*(j+s->hist->x0[hd]+1)*dx);
+                        *Wmin = std::min(*Wmin, Wfac * (j + s->hist->x0[hd] + 1) * dx);
+                        *Wmax = std::max(*Wmax, Wfac * (j + s->hist->x0[hd] + 1) * dx);
                         break;
                     }
                 }
@@ -1595,7 +1595,7 @@ static double calc_bar_sum(int n, const double *W, double Wfac, double sbMmDG)
 
     for (i = 0; i < n; i++)
     {
-        sum += 1./(1. + std::exp(Wfac*W[i] + sbMmDG));
+        sum += 1. / (1. + std::exp(Wfac * W[i] + sbMmDG));
     }
 
     return sum;
@@ -1623,7 +1623,7 @@ static double calc_bar_sum_hist(const hist_t *hist, double Wfac, double sbMmDG,
         hd = 1;
     }
     dx     = hist->dx[hd];
-    maxbin = hist->nbin[hd]-1;
+    maxbin = hist->nbin[hd] - 1;
     if (type == 1)
     {
         maxbin = hist->nbin[hd]; /* we also add whatever was out of range */
@@ -1631,10 +1631,10 @@ static double calc_bar_sum_hist(const hist_t *hist, double Wfac, double sbMmDG,
 
     for (i = 0; i < maxbin; i++)
     {
-        double x    = Wfac*((i+hist->x0[hd])+0.5)*dx; /* bin middle */
-        double pxdx = hist->bin[0][i]*normdx;         /* p(x)dx */
+        double x    = Wfac * ((i + hist->x0[hd]) + 0.5) * dx; /* bin middle */
+        double pxdx = hist->bin[0][i] * normdx;               /* p(x)dx */
 
-        sum += pxdx/(1. + std::exp(x + sbMmDG));
+        sum += pxdx / (1. + std::exp(x + sbMmDG));
     }
 
     return sum;
@@ -1649,14 +1649,14 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
     double DG0, DG1, DG2, dDG1;
     double n1, n2; /* numbers of samples as doubles */
 
-    kT   = BOLTZ*temp;
-    beta = 1/kT;
+    kT   = BOLTZ * temp;
+    beta = 1 / kT;
 
     /* count the numbers of samples */
     n1 = ca->ntot;
     n2 = cb->ntot;
 
-    M = std::log(n1/n2);
+    M = std::log(n1 / n2);
 
     /*if (!lambda_vec_same(ca->native_lambda, ca->foreign_lambda))*/
     if (ca->foreign_lambda->dhdl < 0)
@@ -1679,8 +1679,8 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
                       "Can't (yet) do multi-component dhdl interpolation");
         }
 
-        Wfac1 =  beta*delta_lambda;
-        Wfac2 = -beta*delta_lambda;
+        Wfac1 =  beta * delta_lambda;
+        Wfac2 = -beta * delta_lambda;
     }
 
     if (beta < 1)
@@ -1716,44 +1716,44 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
        smaller than what we get out of the BAR averages.
 
        For the comparison we can use twice the tolerance. */
-    while (DG2 - DG0 > 2*tol)
+    while (DG2 - DG0 > 2 * tol)
     {
-        DG1 = 0.5*(DG0 + DG2);
+        DG1 = 0.5 * (DG0 + DG2);
 
         /* calculate the BAR averages */
         dDG1 = 0.;
 
         for (i = 0; i < ca->nsamples; i++)
         {
-            samples_t      *s = ca->s[i];
+            samples_t *     s = ca->s[i];
             sample_range_t *r = &(ca->r[i]);
             if (r->use)
             {
                 if (s->hist)
                 {
-                    dDG1 += calc_bar_sum_hist(s->hist, Wfac1, (M-DG1), type);
+                    dDG1 += calc_bar_sum_hist(s->hist, Wfac1, (M - DG1), type);
                 }
                 else
                 {
                     dDG1 += calc_bar_sum(r->end - r->start, s->du + r->start,
-                                         Wfac1, (M-DG1));
+                                         Wfac1, (M - DG1));
                 }
             }
         }
         for (i = 0; i < cb->nsamples; i++)
         {
-            samples_t      *s = cb->s[i];
+            samples_t *     s = cb->s[i];
             sample_range_t *r = &(cb->r[i]);
             if (r->use)
             {
                 if (s->hist)
                 {
-                    dDG1 -= calc_bar_sum_hist(s->hist, Wfac2, -(M-DG1), type);
+                    dDG1 -= calc_bar_sum_hist(s->hist, Wfac2, -(M - DG1), type);
                 }
                 else
                 {
                     dDG1 -= calc_bar_sum(r->end - r->start, s->du + r->start,
-                                         Wfac2, -(M-DG1));
+                                         Wfac2, -(M - DG1));
                 }
             }
         }
@@ -1772,7 +1772,7 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
         }
     }
 
-    return 0.5*(DG0 + DG2);
+    return 0.5 * (DG0 + DG2);
 }
 
 static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
@@ -1785,8 +1785,8 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
     double Wfac1, Wfac2;
     double n1, n2;
 
-    kT   = BOLTZ*temp;
-    beta = 1/kT;
+    kT   = BOLTZ * temp;
+    beta = 1 / kT;
 
     /* count the numbers of samples */
     n1 = ca->ntot;
@@ -1807,14 +1807,14 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
            multiplication factor.  */
         double delta_lambda = lambda_vec_abs_diff(cb->native_lambda,
                                                   ca->native_lambda);
-        Wfac1 =  beta*delta_lambda;
-        Wfac2 = -beta*delta_lambda;
+        Wfac1 =  beta * delta_lambda;
+        Wfac2 = -beta * delta_lambda;
     }
 
     /* first calculate the average work in both directions */
     for (i = 0; i < ca->nsamples; i++)
     {
-        samples_t      *s = ca->s[i];
+        samples_t *     s = ca->s[i];
         sample_range_t *r = &(ca->r[i]);
         if (r->use)
         {
@@ -1822,7 +1822,7 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
             {
                 for (j = r->start; j < r->end; j++)
                 {
-                    W_ab += Wfac1*s->du[j];
+                    W_ab += Wfac1 * s->du[j];
                 }
             }
             else
@@ -1840,9 +1840,9 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
 
                 for (j = 0; j < s->hist->nbin[0]; j++)
                 {
-                    double x    = Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
-                    double pxdx = s->hist->bin[0][j]*normdx;         /* p(x)dx */
-                    W_ab += pxdx*x;
+                    double x    = Wfac1 * ((j + s->hist->x0[0]) + 0.5) * dx; /*bin ctr*/
+                    double pxdx = s->hist->bin[0][j] * normdx;               /* p(x)dx */
+                    W_ab += pxdx * x;
                 }
             }
         }
@@ -1851,7 +1851,7 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
 
     for (i = 0; i < cb->nsamples; i++)
     {
-        samples_t      *s = cb->s[i];
+        samples_t *     s = cb->s[i];
         sample_range_t *r = &(cb->r[i]);
         if (r->use)
         {
@@ -1859,7 +1859,7 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
             {
                 for (j = r->start; j < r->end; j++)
                 {
-                    W_ba += Wfac1*s->du[j];
+                    W_ba += Wfac1 * s->du[j];
                 }
             }
             else
@@ -1877,9 +1877,9 @@ static void calc_rel_entropy(sample_coll_t *ca, sample_coll_t *cb,
 
                 for (j = 0; j < s->hist->nbin[0]; j++)
                 {
-                    double x    = Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
-                    double pxdx = s->hist->bin[0][j]*normdx;         /* p(x)dx */
-                    W_ba += pxdx*x;
+                    double x    = Wfac1 * ((j + s->hist->x0[0]) + 0.5) * dx; /*bin ctr*/
+                    double pxdx = s->hist->bin[0][j] * normdx;               /* p(x)dx */
+                    W_ba += pxdx * x;
                 }
             }
         }
@@ -1901,8 +1901,8 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
     double Wfac1, Wfac2;
     double n1, n2;
 
-    kT   = BOLTZ*temp;
-    beta = 1/kT;
+    kT   = BOLTZ * temp;
+    beta = 1 / kT;
 
     /* count the numbers of samples */
     n1 = ca->ntot;
@@ -1923,17 +1923,17 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
            multiplication factor.  */
         double delta_lambda = lambda_vec_abs_diff(cb->native_lambda,
                                                   ca->native_lambda);
-        Wfac1 =  beta*delta_lambda;
-        Wfac2 = -beta*delta_lambda;
+        Wfac1 =  beta * delta_lambda;
+        Wfac2 = -beta * delta_lambda;
     }
 
-    M = std::log(n1/n2);
+    M = std::log(n1 / n2);
 
 
     /* calculate average in both directions */
     for (i = 0; i < ca->nsamples; i++)
     {
-        samples_t      *s = ca->s[i];
+        samples_t *     s = ca->s[i];
         sample_range_t *r = &(ca->r[i]);
         if (r->use)
         {
@@ -1941,7 +1941,7 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
             {
                 for (j = r->start; j < r->end; j++)
                 {
-                    sigmafact += 1./(2. + 2.*std::cosh((M + Wfac1*s->du[j] - dg)));
+                    sigmafact += 1. / (2. + 2. * std::cosh((M + Wfac1 * s->du[j] - dg)));
                 }
             }
             else
@@ -1959,17 +1959,17 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
 
                 for (j = 0; j < s->hist->nbin[0]; j++)
                 {
-                    double x    = Wfac1*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
-                    double pxdx = s->hist->bin[0][j]*normdx;         /* p(x)dx */
+                    double x    = Wfac1 * ((j + s->hist->x0[0]) + 0.5) * dx; /*bin ctr*/
+                    double pxdx = s->hist->bin[0][j] * normdx;               /* p(x)dx */
 
-                    sigmafact += pxdx/(2. + 2.*std::cosh((M + x - dg)));
+                    sigmafact += pxdx / (2. + 2. * std::cosh((M + x - dg)));
                 }
             }
         }
     }
     for (i = 0; i < cb->nsamples; i++)
     {
-        samples_t      *s = cb->s[i];
+        samples_t *     s = cb->s[i];
         sample_range_t *r = &(cb->r[i]);
         if (r->use)
         {
@@ -1977,7 +1977,7 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
             {
                 for (j = r->start; j < r->end; j++)
                 {
-                    sigmafact += 1./(2. + 2.*std::cosh((M - Wfac2*s->du[j] - dg)));
+                    sigmafact += 1. / (2. + 2. * std::cosh((M - Wfac2 * s->du[j] - dg)));
                 }
             }
             else
@@ -1995,10 +1995,10 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
 
                 for (j = 0; j < s->hist->nbin[0]; j++)
                 {
-                    double x    = Wfac2*((j+s->hist->x0[0])+0.5)*dx; /*bin ctr*/
-                    double pxdx = s->hist->bin[0][j]*normdx;         /* p(x)dx */
+                    double x    = Wfac2 * ((j + s->hist->x0[0]) + 0.5) * dx; /*bin ctr*/
+                    double pxdx = s->hist->bin[0][j] * normdx;               /* p(x)dx */
 
-                    sigmafact += pxdx/(2. + 2.*std::cosh((M - x - dg)));
+                    sigmafact += pxdx / (2. + 2. * std::cosh((M - x - dg)));
                 }
             }
         }
@@ -2009,7 +2009,7 @@ static void calc_dg_stddev(sample_coll_t *ca, sample_coll_t *cb,
 
     /* Eq. 10 from
        Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
-    *stddev = std::sqrt(((1.0/sigmafact) - ( (n1+n2)/n1 + (n1+n2)/n2 )));
+    *stddev = std::sqrt(((1.0 / sigmafact) - ( (n1 + n2) / n1 + (n1 + n2) / n2 )));
 }
 
 
@@ -2018,8 +2018,8 @@ static void calc_bar(barres_t *br, double tol,
                      int npee_min, int npee_max, gmx_bool *bEE,
                      double *partsum)
 {
-    int      npee, p;
-    double   dg_sig2, sa_sig2, sb_sig2, stddev_sig2; /* intermediate variance values
+    int    npee, p;
+    double dg_sig2, sa_sig2, sb_sig2, stddev_sig2;   /* intermediate variance values
                                                         for calculated quantities */
     double   temp = br->a->temp;
     int      i;
@@ -2058,7 +2058,7 @@ static void calc_bar(barres_t *br, double tol,
         dg_min = calc_bar_lowlevel(br->a, br->b, temp, tol, -1);
         dg_max = calc_bar_lowlevel(br->a, br->b, temp, tol, 1);
 
-        if (std::abs(dg_max - dg_min) > GMX_REAL_EPS*10)
+        if (std::abs(dg_max - dg_min) > GMX_REAL_EPS * 10)
         {
             /* the histogram range  error is the biggest of the differences
                between the best estimate and the extremes */
@@ -2138,42 +2138,42 @@ static void calc_bar(barres_t *br, double tol,
 
                 dgp   = calc_bar_lowlevel(&ca, &cb, temp, tol, 0);
                 dgs  += dgp;
-                dgs2 += dgp*dgp;
+                dgs2 += dgp * dgp;
 
-                partsum[npee*(npee_max+1)+p] += dgp;
+                partsum[npee * (npee_max + 1) + p] += dgp;
 
                 calc_rel_entropy(&ca, &cb, temp, dgp, &sac, &sbc);
                 dsa  += sac;
-                dsa2 += sac*sac;
+                dsa2 += sac * sac;
                 dsb  += sbc;
-                dsb2 += sbc*sbc;
+                dsb2 += sbc * sbc;
                 calc_dg_stddev(&ca, &cb, temp, dgp, &stddevc );
 
                 dstddev  += stddevc;
-                dstddev2 += stddevc*stddevc;
+                dstddev2 += stddevc * stddevc;
 
                 sample_coll_destroy(&ca);
                 sample_coll_destroy(&cb);
             }
             dgs     /= npee;
             dgs2    /= npee;
-            dg_sig2 += (dgs2-dgs*dgs)/(npee-1);
+            dg_sig2 += (dgs2 - dgs * dgs) / (npee - 1);
 
             dsa     /= npee;
             dsa2    /= npee;
             dsb     /= npee;
             dsb2    /= npee;
-            sa_sig2 += (dsa2-dsa*dsa)/(npee-1);
-            sb_sig2 += (dsb2-dsb*dsb)/(npee-1);
+            sa_sig2 += (dsa2 - dsa * dsa) / (npee - 1);
+            sb_sig2 += (dsb2 - dsb * dsb) / (npee - 1);
 
             dstddev     /= npee;
             dstddev2    /= npee;
-            stddev_sig2 += (dstddev2-dstddev*dstddev)/(npee-1);
+            stddev_sig2 += (dstddev2 - dstddev * dstddev) / (npee - 1);
         }
-        br->dg_err        = std::sqrt(dg_sig2/(npee_max - npee_min + 1));
-        br->sa_err        = std::sqrt(sa_sig2/(npee_max - npee_min + 1));
-        br->sb_err        = std::sqrt(sb_sig2/(npee_max - npee_min + 1));
-        br->dg_stddev_err = std::sqrt(stddev_sig2/(npee_max - npee_min + 1));
+        br->dg_err        = std::sqrt(dg_sig2 / (npee_max - npee_min + 1));
+        br->sa_err        = std::sqrt(sa_sig2 / (npee_max - npee_min + 1));
+        br->sb_err        = std::sqrt(sb_sig2 / (npee_max - npee_min + 1));
+        br->dg_stddev_err = std::sqrt(stddev_sig2 / (npee_max - npee_min + 1));
     }
 }
 
@@ -2190,16 +2190,16 @@ static double bar_err(int nbmin, int nbmax, const double *partsum)
         s2 = 0;
         for (b = 0; b < nb; b++)
         {
-            dg  = partsum[nb*(nbmax+1)+b];
+            dg  = partsum[nb * (nbmax + 1) + b];
             s  += dg;
-            s2 += dg*dg;
+            s2 += dg * dg;
         }
         s    /= nb;
         s2   /= nb;
-        svar += (s2 - s*s)/(nb - 1);
+        svar += (s2 - s * s) / (nb - 1);
     }
 
-    return std::sqrt(svar/(nbmax + 1 - nbmin));
+    return std::sqrt(svar / (nbmax + 1 - nbmin));
 }
 
 
@@ -2241,23 +2241,23 @@ static const char *find_value(const char *str)
 
 
 /* read a vector-notation description of a lambda vector */
-static gmx_bool read_lambda_compvec(const char                *str,
-                                    lambda_vec_t              *lv,
+static gmx_bool read_lambda_compvec(const char *               str,
+                                    lambda_vec_t *             lv,
                                     const lambda_components_t *lc_in,
-                                    lambda_components_t       *lc_out,
-                                    const char               **end,
-                                    const char                *fn)
+                                    lambda_components_t *      lc_out,
+                                    const char **              end,
+                                    const char *               fn)
 {
-    gmx_bool    initialize_lc = FALSE;   /* whether to initialize the lambda
+    gmx_bool initialize_lc = FALSE;      /* whether to initialize the lambda
                                             components, or to check them */
-    gmx_bool    start_reached = FALSE;   /* whether the start of component names
+    gmx_bool start_reached = FALSE;      /* whether the start of component names
                                             has been reached */
-    gmx_bool    vector        = FALSE;   /* whether there are multiple components */
-    int         n             = 0;       /* current component number */
-    const char *val_start     = nullptr; /* start of the component name, or NULL
+    gmx_bool    vector     = FALSE;      /* whether there are multiple components */
+    int         n          = 0;          /* current component number */
+    const char *val_start  = nullptr;    /* start of the component name, or NULL
                                             if not in a value */
-    char       *strtod_end;
-    gmx_bool    OK = TRUE;
+    char *   strtod_end;
+    gmx_bool OK = TRUE;
 
     if (end)
     {
@@ -2307,12 +2307,12 @@ static gmx_bool read_lambda_compvec(const char                *str,
                         if (initialize_lc)
                         {
                             lambda_components_add(lc_out, val_start,
-                                                  (str-val_start));
+                                                  (str - val_start));
                         }
                         else
                         {
                             if (!lambda_components_check(lc_out, n, val_start,
-                                                         (str-val_start)))
+                                                         (str - val_start)))
                             {
                                 return FALSE;
                             }
@@ -2392,19 +2392,19 @@ static gmx_bool read_lambda_compvec(const char                *str,
 }
 
 /* read and check the component names from a string */
-static gmx_bool read_lambda_components(const char          *str,
+static gmx_bool read_lambda_components(const char *         str,
                                        lambda_components_t *lc,
-                                       const char         **end,
-                                       const char          *fn)
+                                       const char **        end,
+                                       const char *         fn)
 {
     return read_lambda_compvec(str, nullptr, nullptr, lc, end, fn);
 }
 
 /* read an initialized lambda vector from a string */
-static gmx_bool read_lambda_vector(const char   *str,
+static gmx_bool read_lambda_vector(const char *  str,
                                    lambda_vec_t *lv,
-                                   const char  **end,
-                                   const char   *fn)
+                                   const char ** end,
+                                   const char *  fn)
 {
     return read_lambda_compvec(str, lv, lv->lc, nullptr, end, fn);
 }
@@ -2418,14 +2418,14 @@ static gmx_bool read_lambda_vector(const char   *str,
     lam = the initialized lambda vector
    returns whether to use the data in this set.
  */
-static gmx_bool legend2lambda(const char   *fn,
-                              const char   *legend,
+static gmx_bool legend2lambda(const char *  fn,
+                              const char *  legend,
                               lambda_vec_t *lam)
 {
-    const char   *ptr    = nullptr, *ptr2 = nullptr;
-    gmx_bool      ok     = FALSE;
-    gmx_bool      bdhdl  = FALSE;
-    const char   *tostr  = " to ";
+    const char *ptr   = nullptr, *ptr2 = nullptr;
+    gmx_bool    ok    = FALSE;
+    gmx_bool    bdhdl = FALSE;
+    const char *tostr = " to ";
 
     if (legend == nullptr)
     {
@@ -2442,12 +2442,11 @@ static gmx_bool legend2lambda(const char   *fn,
             ptr = ptr2;
             ptr2++;
         }
-    }
-    while (ptr2 != nullptr && *ptr2 != '\0');
+    } while (ptr2 != nullptr && *ptr2 != '\0');
 
     if (ptr)
     {
-        ptr += std::strlen(tostr)-1; /* and advance past that 'to' */
+        ptr += std::strlen(tostr) - 1; /* and advance past that 'to' */
     }
     else
     {
@@ -2525,12 +2524,12 @@ static gmx_bool legend2lambda(const char   *fn,
                 }
             }
             ptr++;
-            dhdl_index     = lambda_components_find(lam->lc, ptr, (end-ptr));
+            dhdl_index = lambda_components_find(lam->lc, ptr, (end - ptr));
             if (dhdl_index < 0)
             {
                 char buf[STRLEN];
-                std::strncpy(buf, ptr, (end-ptr));
-                buf[(end-ptr)] = '\0';
+                std::strncpy(buf, ptr, (end - ptr));
+                buf[(end - ptr)] = '\0';
                 gmx_fatal(FARGS,
                           "Did not find lambda component for '%s' in %s",
                           buf, fn);
@@ -2556,7 +2555,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
 {
     gmx_bool    bFound;
     const char *ptr;
-    char       *end;
+    char *      end;
     double      native_lambda;
 
     bFound = FALSE;
@@ -2638,7 +2637,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
         }
         if (ptr != nullptr)
         {
-            bFound = (sscanf(ptr+1, "%lf", &(native_lambda)) == 1);
+            bFound = (sscanf(ptr + 1, "%lf", &(native_lambda)) == 1);
             /* add the lambda component name as an empty string */
             if (lc->N > 0)
             {
@@ -2663,10 +2662,10 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
 
 static double filename2lambda(const char *fn)
 {
-    double        lambda;
-    const char   *ptr, *digitptr;
-    char         *endptr;
-    int           dirsep;
+    double      lambda;
+    const char *ptr, *digitptr;
+    char *      endptr;
+    int         dirsep;
     ptr = fn;
     /* go to the end of the path string and search backward to find the last
        directory in the path which has to contain the value of lambda
@@ -2716,11 +2715,11 @@ static double filename2lambda(const char *fn)
 static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
                                   lambda_components_t *lc)
 {
-    int          i;
-    char        *subtitle, **legend, *ptr;
-    int          np;
-    gmx_bool     native_lambda_read = FALSE;
-    char         buf[STRLEN];
+    int      i;
+    char *   subtitle, **legend, *ptr;
+    int      np;
+    gmx_bool native_lambda_read = FALSE;
+    char     buf[STRLEN];
 
     xvg_init(ba);
 
@@ -2732,10 +2731,10 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
         gmx_fatal(FARGS, "File %s contains no usable data.", fn);
     }
     /* Reorder the data */
-    ba->t  = ba->y[0];
+    ba->t = ba->y[0];
     for (i = 1; i < ba->nset; i++)
     {
-        ba->y[i-1] = ba->y[i];
+        ba->y[i - 1] = ba->y[i];
     }
     ba->nset--;
 
@@ -2820,10 +2819,10 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
             {
                 int j;
                 printf("%s: Ignoring set '%s'.\n", fn, legend[i]);
-                for (j = i+1; j < ba->nset; j++)
+                for (j = i + 1; j < ba->nset; j++)
                 {
-                    ba->y[j-1]  = ba->y[j];
-                    legend[j-1] = legend[j];
+                    ba->y[j - 1]  = ba->y[j];
+                    legend[j - 1] = legend[j];
                 }
                 ba->nset--;
             }
@@ -2837,7 +2836,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
 
     if (legend != nullptr)
     {
-        for (i = 0; i < ba->nset-1; i++)
+        for (i = 0; i < ba->nset - 1; i++)
         {
             sfree(legend[i]);
         }
@@ -2847,7 +2846,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
 
 static void read_bar_xvg(char *fn, real *temp, sim_data_t *sd)
 {
-    xvg_t     *barsim;
+    xvg_t *    barsim;
     samples_t *s;
     int        i;
 
@@ -2870,7 +2869,7 @@ static void read_bar_xvg(char *fn, real *temp, sim_data_t *sd)
     snew(s, barsim->nset);
     for (i = 0; i < barsim->nset; i++)
     {
-        samples_init(s+i, &(barsim->native_lambda), &(barsim->lambda[i]),
+        samples_init(s + i, &(barsim->native_lambda), &(barsim->lambda[i]),
                      barsim->temp, lambda_vec_same(&(barsim->native_lambda),
                                                    &(barsim->lambda[i])),
                      fn);
@@ -2878,14 +2877,14 @@ static void read_bar_xvg(char *fn, real *temp, sim_data_t *sd)
         s[i].ndu = barsim->np[i];
         s[i].t   = barsim->t;
 
-        lambda_data_list_insert_sample(sd->lb, s+i);
+        lambda_data_list_insert_sample(sd->lb, s + i);
     }
     {
         char buf[STRLEN];
 
         lambda_vec_print(s[0].native_lambda, buf, FALSE);
         printf("%s: %.1f - %.1f; lambda = %s\n    dH/dl & foreign lambdas:\n",
-               fn, s[0].t[0], s[0].t[s[0].ndu-1], buf);
+               fn, s[0].t[0], s[0].t[s[0].ndu - 1], buf);
         for (i = 0; i < barsim->nset; i++)
         {
             lambda_vec_print(s[i].foreign_lambda, buf, TRUE);
@@ -2903,19 +2902,19 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     int           i, j;
     lambda_vec_t *foreign_lambda;
     int           type;
-    samples_t    *s; /* convenience pointer */
+    samples_t *   s; /* convenience pointer */
     int           startj;
 
     /* check the block types etc. */
-    if ( (blk->nsub < 3) ||
-         (blk->sub[0].type != xdr_datatype_int) ||
-         (blk->sub[1].type != xdr_datatype_double) ||
-         (
-             (blk->sub[2].type != xdr_datatype_float) &&
-             (blk->sub[2].type != xdr_datatype_double)
-         ) ||
-         (blk->sub[0].nr < 1) ||
-         (blk->sub[1].nr < 1) )
+    if ( (blk->nsub < 3)
+         || (blk->sub[0].type != xdr_datatype_int)
+         || (blk->sub[1].type != xdr_datatype_double)
+         || (
+             (blk->sub[2].type != xdr_datatype_float)
+             && (blk->sub[2].type != xdr_datatype_double)
+             )
+         || (blk->sub[0].nr < 1)
+         || (blk->sub[1].nr < 1) )
     {
         gmx_fatal(FARGS,
                   "Unexpected/corrupted block data in file %s around time %f.",
@@ -2972,8 +2971,8 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     /* make room for the data */
     if (s->ndu_alloc < (size_t)(s->ndu + blk->sub[2].nr) )
     {
-        s->ndu_alloc += (s->ndu_alloc < (size_t)blk->sub[2].nr) ?
-            blk->sub[2].nr*2 : s->ndu_alloc;
+        s->ndu_alloc += (s->ndu_alloc < (size_t)blk->sub[2].nr)
+            ? blk->sub[2].nr * 2 : s->ndu_alloc;
         srenew(s->du_alloc, s->ndu_alloc);
         s->du = s->du_alloc;
     }
@@ -2987,16 +2986,16 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     {
         if (blk->sub[2].type == xdr_datatype_float)
         {
-            s->du[startj+j] = blk->sub[2].fval[j];
+            s->du[startj + j] = blk->sub[2].fval[j];
         }
         else
         {
-            s->du[startj+j] = blk->sub[2].dval[j];
+            s->du[startj + j] = blk->sub[2].dval[j];
         }
     }
-    if (start_time + blk->sub[2].nr*delta_time > *last_t)
+    if (start_time + blk->sub[2].nr * delta_time > *last_t)
     {
-        *last_t = start_time + blk->sub[2].nr*delta_time;
+        *last_t = start_time + blk->sub[2].nr * delta_time;
     }
 }
 
@@ -3006,25 +3005,25 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
                                       double *last_t, const char *filename)
 {
     int           i, j;
-    samples_t    *s;
+    samples_t *   s;
     int           nhist;
     lambda_vec_t *foreign_lambda;
     int           type;
     int           nbins[2];
 
     /* check the block types etc. */
-    if ( (blk->nsub < 2) ||
-         (blk->sub[0].type != xdr_datatype_double) ||
-         (blk->sub[1].type != xdr_datatype_int64) ||
-         (blk->sub[0].nr < 2)  ||
-         (blk->sub[1].nr < 2) )
+    if ( (blk->nsub < 2)
+         || (blk->sub[0].type != xdr_datatype_double)
+         || (blk->sub[1].type != xdr_datatype_int64)
+         || (blk->sub[0].nr < 2)
+         || (blk->sub[1].nr < 2) )
     {
         gmx_fatal(FARGS,
                   "Unexpected/corrupted block data in file %s around time %f",
                   filename, start_time);
     }
 
-    nhist = blk->nsub-2;
+    nhist = blk->nsub - 2;
     if (nhist == 0)
     {
         return nullptr;
@@ -3062,7 +3061,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
         {
             for (i = 0; i < native_lambda->lc->N; i++)
             {
-                foreign_lambda->val[i] = blk->sub[0].dval[i+2];
+                foreign_lambda->val[i] = blk->sub[0].dval[i + 2];
             }
         }
     }
@@ -3090,14 +3089,14 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 
     for (i = 0; i < nhist; i++)
     {
-        nbins[i] = blk->sub[i+2].nr;
+        nbins[i] = blk->sub[i + 2].nr;
     }
 
     hist_init(s->hist, nhist, nbins);
 
     for (i = 0; i < nhist; i++)
     {
-        s->hist->x0[i] = blk->sub[1].lval[2+i];
+        s->hist->x0[i] = blk->sub[1].lval[2 + i];
         s->hist->dx[i] = blk->sub[0].dval[1];
         if (i == 1)
         {
@@ -3112,11 +3111,11 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
 
     for (i = 0; i < nhist; i++)
     {
-        gmx_int64_t     sum = 0;
+        gmx_int64_t sum = 0;
 
         for (j = 0; j < s->hist->nbin[i]; j++)
         {
-            int binv = static_cast<int>(blk->sub[i+2].ival[j]);
+            int binv = static_cast<int>(blk->sub[i + 2].ival[j]);
 
             s->hist->bin[i][j] = binv;
             sum               += binv;
@@ -3137,9 +3136,9 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
         }
     }
 
-    if (start_time + s->hist->sum*delta_time > *last_t)
+    if (start_time + s->hist->sum * delta_time > *last_t)
     {
-        *last_t = start_time + s->hist->sum*delta_time;
+        *last_t = start_time + s->hist->sum * delta_time;
     }
     return s;
 }
@@ -3149,16 +3148,16 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
 {
     int            i, j;
     ener_file_t    fp;
-    t_enxframe    *fr;
+    t_enxframe *   fr;
     int            nre;
-    gmx_enxnm_t   *enm           = nullptr;
+    gmx_enxnm_t *  enm           = nullptr;
     double         first_t       = -1;
     double         last_t        = -1;
-    samples_t    **samples_rawdh = nullptr; /* contains samples for raw delta_h  */
-    int           *nhists        = nullptr; /* array to keep count & print at end */
-    int           *npts          = nullptr; /* array to keep count & print at end */
+    samples_t **   samples_rawdh = nullptr; /* contains samples for raw delta_h  */
+    int *          nhists        = nullptr; /* array to keep count & print at end */
+    int *          npts          = nullptr; /* array to keep count & print at end */
     lambda_vec_t **lambdas       = nullptr; /* array to keep count & print at end */
-    lambda_vec_t  *native_lambda;
+    lambda_vec_t * native_lambda;
     int            nsamples = 0;
     lambda_vec_t   start_lambda;
 
@@ -3172,10 +3171,10 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
     while (do_enx(fp, fr))
     {
         /* count the data blocks */
-        int    nblocks_raw  = 0;
-        int    nblocks_hist = 0;
-        int    nlam         = 0;
-        int    k;
+        int nblocks_raw  = 0;
+        int nblocks_hist = 0;
+        int nlam         = 0;
+        int k;
         /* DHCOLL block information: */
         double start_time = 0, delta_time = 0, old_start_lambda = 0, delta_lambda = 0;
         double rtemp      = 0;
@@ -3194,9 +3193,9 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
             if (fr->block[i].id == enxDHCOLL)
             {
                 nlam++;
-                if ( (fr->block[i].nsub < 1) ||
-                     (fr->block[i].sub[0].type != xdr_datatype_double) ||
-                     (fr->block[i].sub[0].nr < 5))
+                if ( (fr->block[i].nsub < 1)
+                     || (fr->block[i].sub[0].type != xdr_datatype_double)
+                     || (fr->block[i].sub[0].nr < 5))
                 {
                     gmx_fatal(FARGS, "Unexpected block data in file %s", fn);
                 }
@@ -3253,8 +3252,8 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                     n_lambda_vec = fr->block[i].sub[1].ival[1];
                     for (j = 0; j < n_lambda_vec; j++)
                     {
-                        const char *name =
-                            efpt_singular_names[fr->block[i].sub[1].ival[1+j]];
+                        const char *name
+                            = efpt_singular_names[fr->block[i].sub[1].ival[1 + j]];
                         if (check)
                         {
                             /* check the components */
@@ -3271,7 +3270,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                     start_lambda.index = fr->block[i].sub[1].ival[0];
                     for (j = 0; j < n_lambda_vec; j++)
                     {
-                        start_lambda.val[j] = fr->block[i].sub[0].dval[5+j];
+                        start_lambda.val[j] = fr->block[i].sub[0].dval[5 + j];
                     }
                 }
                 if (first_t < 0)
@@ -3297,7 +3296,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
             /*native_lambda=start_lambda;*/
             lambda_vec_init(native_lambda, &(sd->lc));
             lambda_vec_copy(native_lambda, &start_lambda);
-            nsamples = nblocks_raw+nblocks_hist;
+            nsamples = nblocks_raw + nblocks_hist;
             snew(nhists, nsamples);
             snew(npts, nsamples);
             snew(lambdas, nsamples);
@@ -3322,14 +3321,14 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                           fn, native_lambda, start_lambda, start_time);
             }
             /* check the number of samples against the previous number */
-            if ( ((nblocks_raw+nblocks_hist) != nsamples) || (nlam != 1 ) )
+            if ( ((nblocks_raw + nblocks_hist) != nsamples) || (nlam != 1 ) )
             {
                 gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n",
-                          fn, nsamples+1, nblocks_raw+nblocks_hist+nlam);
+                          fn, nsamples + 1, nblocks_raw + nblocks_hist + nlam);
             }
             /* check whether last iterations's end time matches with
                the currrent start time */
-            if ( (std::abs(last_t - start_time) > 2*delta_time)  && last_t >= 0)
+            if ( (std::abs(last_t - start_time) > 2 * delta_time)  && last_t >= 0)
             {
                 /* it didn't. We need to store our samples and reallocate */
 
@@ -3397,7 +3396,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                     /* and insert the new sample immediately */
                     for (j = 0; j < nb; j++)
                     {
-                        lambda_data_list_insert_sample(sd->lb, s+j);
+                        lambda_data_list_insert_sample(sd->lb, s + j);
                     }
                 }
             }
@@ -3564,7 +3563,7 @@ int gmx_bar(int argc, char *argv[])
         { "-extp",  FALSE, etBOOL, {&use_dhdl}, "Whether to linearly extrapolate dH/dl values to use as energies"}
     };
 
-    t_filenm           fnm[] = {
+    t_filenm fnm[] = {
         { efXVG, "-f",  "dhdl",   ffOPTRDMULT },
         { efEDR, "-g",  "ener",   ffOPTRDMULT },
         { efXVG, "-o",  "bar",    ffOPTWR },
@@ -3573,20 +3572,20 @@ int gmx_bar(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    int               f;
-    int               nf = 0;    /* file counter */
-    int               nfile_tot; /* total number of input files */
-    int               nxvgfile = 0;
-    int               nedrfile = 0;
-    char            **fxvgnms;
-    char            **fedrnms;
-    sim_data_t        sim_data; /* the simulation data */
-    barres_t         *results;  /* the results */
-    int               nresults; /* number of results in results array */
+    int        f;
+    int        nf = 0;           /* file counter */
+    int        nfile_tot;        /* total number of input files */
+    int        nxvgfile = 0;
+    int        nedrfile = 0;
+    char **    fxvgnms;
+    char **    fedrnms;
+    sim_data_t sim_data;        /* the simulation data */
+    barres_t * results;         /* the results */
+    int        nresults;        /* number of results in results array */
 
-    double           *partsum;
+    double *          partsum;
     double            prec, dg_tot;
-    FILE             *fpb, *fpi;
+    FILE *            fpb, *fpi;
     char              dgformat[20], xvg2format[STRLEN], xvg3format[STRLEN];
     char              buf[STRLEN], buf2[STRLEN];
     char              ktformat[STRLEN], sktformat[STRLEN];
@@ -3595,11 +3594,11 @@ int gmx_bar(int argc, char *argv[])
     double            kT;
     gmx_bool          result_OK = TRUE, bEE = TRUE;
 
-    gmx_bool          disc_err          = FALSE;
-    double            sum_disc_err      = 0.; /* discretization error */
-    gmx_bool          histrange_err     = FALSE;
-    double            sum_histrange_err = 0.; /* histogram range error */
-    double            stat_err          = 0.; /* statistical error */
+    gmx_bool disc_err          = FALSE;
+    double   sum_disc_err      = 0.;          /* discretization error */
+    gmx_bool histrange_err     = FALSE;
+    double   sum_histrange_err = 0.;          /* histogram range error */
+    double   stat_err          = 0.;          /* statistical error */
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW,
@@ -3640,7 +3639,7 @@ int gmx_bar(int argc, char *argv[])
     }
     prec = std::pow(10.0, static_cast<double>(-nd));
 
-    snew(partsum, (nbmax+1)*(nbmax+1));
+    snew(partsum, (nbmax + 1) * (nbmax + 1));
     nf = 0;
 
     /* read in all files. First xvg files */
@@ -3684,13 +3683,13 @@ int gmx_bar(int argc, char *argv[])
 
 
     /*sprintf(lamformat,"%%6.3f");*/
-    sprintf( dgformat, "%%%d.%df", 3+nd, nd);
+    sprintf( dgformat, "%%%d.%df", 3 + nd, nd);
     /* the format strings of the results in kT */
-    sprintf( ktformat, "%%%d.%df", 5+nd, nd);
-    sprintf( sktformat, "%%%ds", 6+nd);
+    sprintf( ktformat, "%%%d.%df", 5 + nd, nd);
+    sprintf( sktformat, "%%%ds", 6 + nd);
     /* the format strings of the errors in kT */
-    sprintf( kteformat, "%%%d.%df", 3+nd, nd);
-    sprintf( skteformat, "%%%ds", 4+nd);
+    sprintf( kteformat, "%%%d.%df", 3 + nd, nd);
+    sprintf( skteformat, "%%%ds", 4 + nd);
     sprintf(xvg2format, "%s %s\n", "%s", dgformat);
     sprintf(xvg3format, "%s %s %s\n", "%s", dgformat, dgformat);
 
@@ -3727,21 +3726,21 @@ int gmx_bar(int argc, char *argv[])
         /* Determine the free energy difference with a factor of 10
          * more accuracy than requested for printing.
          */
-        calc_bar(&(results[f]), 0.1*prec, nbmin, nbmax,
+        calc_bar(&(results[f]), 0.1 * prec, nbmin, nbmax,
                  &bEE, partsum);
 
-        if (results[f].dg_disc_err > prec/10.)
+        if (results[f].dg_disc_err > prec / 10.)
         {
             disc_err = TRUE;
         }
-        if (results[f].dg_histrange_err > prec/10.)
+        if (results[f].dg_histrange_err > prec / 10.)
         {
             histrange_err = TRUE;
         }
     }
 
     /* print results in kT */
-    kT   = BOLTZ*temp;
+    kT = BOLTZ * temp;
 
     printf("\nTemperature: %g K\n", temp);
 
@@ -3823,8 +3822,8 @@ int gmx_bar(int argc, char *argv[])
         printf("\n");
 
         /* Check for negative relative entropy with a 95% certainty. */
-        if (results[f].sa < -2*results[f].sa_err ||
-            results[f].sb < -2*results[f].sb_err)
+        if (results[f].sa < -2 * results[f].sa_err
+            || results[f].sb < -2 * results[f].sb_err)
         {
             result_OK = FALSE;
         }
@@ -3842,7 +3841,7 @@ int gmx_bar(int argc, char *argv[])
 
     /* final results in kJ/mol */
     printf("\n\nFinal results in kJ/mol:\n\n");
-    dg_tot  = 0;
+    dg_tot = 0;
     for (f = 0; f < nresults; f++)
     {
 
@@ -3868,18 +3867,18 @@ int gmx_bar(int argc, char *argv[])
         printf("%s - %s", buf, buf2);
         printf(",   DG ");
 
-        printf(dgformat, results[f].dg*kT);
+        printf(dgformat, results[f].dg * kT);
         if (bEE)
         {
             printf(" +/- ");
-            printf(dgformat, results[f].dg_err*kT);
+            printf(dgformat, results[f].dg_err * kT);
         }
         if (histrange_err)
         {
             printf(" (max. range err. = ");
-            printf(dgformat, results[f].dg_histrange_err*kT);
+            printf(dgformat, results[f].dg_histrange_err * kT);
             printf(")");
-            sum_histrange_err += results[f].dg_histrange_err*kT;
+            sum_histrange_err += results[f].dg_histrange_err * kT;
         }
 
         printf("\n");
@@ -3888,14 +3887,14 @@ int gmx_bar(int argc, char *argv[])
     printf("\n");
     printf("total ");
     lambda_vec_print_short(results[0].a->native_lambda, buf);
-    lambda_vec_print_short(results[nresults-1].b->native_lambda, buf2);
+    lambda_vec_print_short(results[nresults - 1].b->native_lambda, buf2);
     printf("%s - %s", buf, buf2);
     printf(",   DG ");
 
-    printf(dgformat, dg_tot*kT);
+    printf(dgformat, dg_tot * kT);
     if (bEE)
     {
-        stat_err = bar_err(nbmin, nbmax, partsum)*kT;
+        stat_err = bar_err(nbmin, nbmax, partsum) * kT;
         printf(" +/- ");
         printf(dgformat, std::max(std::max(stat_err, sum_disc_err), sum_histrange_err));
     }
@@ -3924,7 +3923,7 @@ int gmx_bar(int argc, char *argv[])
 
     if (fpi != nullptr)
     {
-        lambda_vec_print_short(results[nresults-1].b->native_lambda, buf);
+        lambda_vec_print_short(results[nresults - 1].b->native_lambda, buf);
         fprintf(fpi, xvg2format, buf, dg_tot);
         xvgrclose(fpi);
     }

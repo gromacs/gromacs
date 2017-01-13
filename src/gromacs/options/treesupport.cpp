@@ -114,7 +114,7 @@ class TreeAssignHelper
             }
         }
 
-        void assignArray(const std::string       &key,
+        void assignArray(const std::string &      key,
                          const KeyValueTreeArray &array)
         {
             if (array.isObjectArray())
@@ -146,7 +146,7 @@ class TreeIterationHelper : private OptionsVisitor
 {
     public:
         TreeIterationHelper(const KeyValueTreeObject &root,
-                            KeyValueTreeBuilder      *builder)
+                            KeyValueTreeBuilder *     builder)
             : currentSourceObject_(&root),
               currentObjectBuilder_(builder->rootObject())
         {
@@ -166,10 +166,10 @@ class TreeIterationHelper : private OptionsVisitor
             auto               parentBuilder = currentObjectBuilder_;
             auto               parentObject  = currentSourceObject_;
             currentObjectBuilder_ = currentObjectBuilder_.addObject(name);
-            currentSourceObject_  =
-                (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
-                 ? &(*currentSourceObject_)[name].asObject()
-                 : nullptr);
+            currentSourceObject_
+                = (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
+                   ? &(*currentSourceObject_)[name].asObject()
+                   : nullptr);
             processOptionSection(section);
             currentSourceObject_  = parentObject;
             currentObjectBuilder_ = parentBuilder;
@@ -197,7 +197,7 @@ class TreeIterationHelper : private OptionsVisitor
             {
                 const KeyValueTreeValue &value = (*currentSourceObject_)[name];
                 GMX_RELEASE_ASSERT(!value.isObject(), "Value objects not supported in this context");
-                std::vector<Variant>     values;
+                std::vector<Variant> values;
                 if (value.isArray())
                 {
                     for (const auto &arrayValue : value.asArray().values())
@@ -230,25 +230,24 @@ class TreeIterationHelper : private OptionsVisitor
             }
         }
 
-        const KeyValueTreeObject  *currentSourceObject_;
-        KeyValueTreeObjectBuilder  currentObjectBuilder_;
+        const KeyValueTreeObject *currentSourceObject_;
+        KeyValueTreeObjectBuilder currentObjectBuilder_;
 };
 
 }   // namespace
 
 //! \cond libapi
 
-void assignOptionsFromKeyValueTree(Options                   *options,
-                                   const KeyValueTreeObject  &tree,
+void assignOptionsFromKeyValueTree(Options *                  options,
+                                   const KeyValueTreeObject & tree,
                                    IKeyValueTreeErrorHandler *errorHandler)
 {
     TreeAssignHelper helper(options, errorHandler);
     helper.assignAll(tree);
 }
 
-KeyValueTreeObject
-adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
-                              const Options            &options)
+KeyValueTreeObject adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
+                                                 const Options &           options)
 {
     KeyValueTreeBuilder builder;
     TreeIterationHelper helper(tree, &builder);

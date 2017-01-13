@@ -56,7 +56,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#define EPSI0 (EPSILON0*E_CHARGE*E_CHARGE*AVOGADRO/(KILO*NANO)) /* EPSILON0 in SI units */
+#define EPSI0 (EPSILON0 * E_CHARGE * E_CHARGE * AVOGADRO / (KILO * NANO)) /* EPSILON0 in SI units */
 
 static void index_atom2mol(int *n, int *index, t_block *mols)
 {
@@ -73,10 +73,10 @@ static void index_atom2mol(int *n, int *index, t_block *mols)
             mol++;
             if (mol >= mols->nr)
             {
-                gmx_fatal(FARGS, "Atom index out of range: %d", index[i]+1);
+                gmx_fatal(FARGS, "Atom index out of range: %d", index[i] + 1);
             }
         }
-        for (j = mols->index[mol]; j < mols->index[mol+1]; j++)
+        for (j = mols->index[mol]; j < mols->index[mol + 1]; j++)
         {
             if (i >= nat || index[i] != j)
             {
@@ -110,7 +110,7 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
     for (i = 0; i < top.mols.nr; i++)
     {
         k    = top.mols.index[i];
-        l    = top.mols.index[i+1];
+        l    = top.mols.index[i + 1];
         mtot = 0.0;
         qtot = 0.0;
 
@@ -122,8 +122,8 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
 
         for (j = k; j < l; j++)
         {
-            top.atoms.atom[j].q -= top.atoms.atom[j].m*qtot/mtot;
-            mass2[j]             = top.atoms.atom[j].m/mtot;
+            top.atoms.atom[j].q -= top.atoms.atom[j].m * qtot / mtot;
+            mass2[j]             = top.atoms.atom[j].m / mtot;
             qmol[j]              = qtot;
         }
 
@@ -162,20 +162,20 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
 
     for (d = 0; d < DIM; d++)
     {
-        hbox[d] = 0.5*box[d][d];
+        hbox[d] = 0.5 * box[d][d];
     }
     for (i = 0; i < natoms; i++)
     {
-        for (m = DIM-1; m >= 0; m--)
+        for (m = DIM - 1; m >= 0; m--)
         {
-            while (x[i][m]-xp[i][m] <= -hbox[m])
+            while (x[i][m] - xp[i][m] <= -hbox[m])
             {
                 for (d = 0; d <= m; d++)
                 {
                     x[i][d] += box[m][d];
                 }
             }
-            while (x[i][m]-xp[i][m] > hbox[m])
+            while (x[i][m] - xp[i][m] > hbox[m])
             {
                 for (d = 0; d <= m; d++)
                 {
@@ -212,7 +212,7 @@ static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int 
         clear_rvec(mt1);
         clear_rvec(mt2);
         k = top.mols.index[index0[i]];
-        l = top.mols.index[index0[i+1]];
+        l = top.mols.index[index0[i + 1]];
         for (j = k; j < l; j++)
         {
             svmul(mass2[j], fr[j], tmp);
@@ -248,22 +248,22 @@ static real calceps(real prefactor, real md2, real mj2, real cor, real eps_rf, g
 
     if (bCOR)
     {
-        epsilon = md2-2.0*cor+mj2;
+        epsilon = md2 - 2.0 * cor + mj2;
     }
     else
     {
-        epsilon = md2+mj2+2.0*cor;
+        epsilon = md2 + mj2 + 2.0 * cor;
     }
 
     if (eps_rf == 0.0)
     {
-        epsilon = 1.0+prefactor*epsilon;
+        epsilon = 1.0 + prefactor * epsilon;
 
     }
     else
     {
-        epsilon  = 2.0*eps_rf+1.0+2.0*eps_rf*prefactor*epsilon;
-        epsilon /= 2.0*eps_rf+1.0-prefactor*epsilon;
+        epsilon  = 2.0 * eps_rf + 1.0 + 2.0 * eps_rf * prefactor * epsilon;
+        epsilon /= 2.0 * eps_rf + 1.0 - prefactor * epsilon;
     }
 
 
@@ -289,7 +289,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
         {
             real corint;
 
-            rfr      = static_cast<real>(nfr+i)/nshift;
+            rfr      = static_cast<real>(nfr + i) / nshift;
             cacf[i] /= rfr;
 
             if (time[vfr[i]] <= time[vfr[ei]])
@@ -299,12 +299,12 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 
             fprintf(fcacf, "%.3f\t%10.6g\t%10.6g\n", time[vfr[i]], cacf[i], sigma);
 
-            if ((i+1) < nfr)
+            if ((i + 1) < nfr)
             {
-                deltat = (time[vfr[i+1]]-time[vfr[i]]);
+                deltat = (time[vfr[i + 1]] - time[vfr[i]]);
             }
-            corint = 2.0*deltat*cacf[i]*prefactor;
-            if (i == 0 || (i+1) == nfr)
+            corint = 2.0 * deltat * cacf[i] * prefactor;
+            if (i == 0 || (i + 1) == nfr)
             {
                 corint *= 0.5;
             }
@@ -326,7 +326,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[])
 {
 
-    int     i;
+    int i;
 
     fprintf(fmjdsp, "#Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n", prefactor);
 
@@ -335,7 +335,7 @@ static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], i
 
         if (refr[i] != 0.0)
         {
-            dsp2[i] *= prefactor/refr[i];
+            dsp2[i] *= prefactor / refr[i];
             fprintf(fmjdsp, "%.3f\t%10.6g\n", time[i], dsp2[i]);
         }
 
@@ -353,54 +353,54 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        int *index0, int indexm[], real mass2[],
                        real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
-    int       i, j;
-    int       valloc, nalloc, nfr, nvfr;
-    int       vshfr;
-    real     *xshfr       = nullptr;
-    int      *vfr         = nullptr;
-    real      refr        = 0.0;
-    real     *cacf        = nullptr;
-    real     *time        = nullptr;
-    real     *djc         = nullptr;
-    real      corint      = 0.0;
-    real      prefactorav = 0.0;
-    real      prefactor   = 0.0;
-    real      volume;
-    real      volume_av = 0.0;
-    real      dk_s, dk_d, dk_f;
-    real      mj    = 0.0;
-    real      mj2   = 0.0;
-    real      mjd   = 0.0;
-    real      mjdav = 0.0;
-    real      md2   = 0.0;
-    real      mdav2 = 0.0;
-    real      sgk;
-    rvec      mja_tmp;
-    rvec      mjd_tmp;
-    rvec      mdvec;
-    rvec     *mu    = nullptr;
-    rvec     *xp    = nullptr;
-    rvec     *v0    = nullptr;
-    rvec     *mjdsp = nullptr;
-    real     *dsp2  = nullptr;
-    real      t0;
-    real      rtmp;
+    int   i, j;
+    int   valloc, nalloc, nfr, nvfr;
+    int   vshfr;
+    real *xshfr       = nullptr;
+    int * vfr         = nullptr;
+    real  refr        = 0.0;
+    real *cacf        = nullptr;
+    real *time        = nullptr;
+    real *djc         = nullptr;
+    real  corint      = 0.0;
+    real  prefactorav = 0.0;
+    real  prefactor   = 0.0;
+    real  volume;
+    real  volume_av = 0.0;
+    real  dk_s, dk_d, dk_f;
+    real  mj    = 0.0;
+    real  mj2   = 0.0;
+    real  mjd   = 0.0;
+    real  mjdav = 0.0;
+    real  md2   = 0.0;
+    real  mdav2 = 0.0;
+    real  sgk;
+    rvec  mja_tmp;
+    rvec  mjd_tmp;
+    rvec  mdvec;
+    rvec *mu    = nullptr;
+    rvec *xp    = nullptr;
+    rvec *v0    = nullptr;
+    rvec *mjdsp = nullptr;
+    real *dsp2  = nullptr;
+    real  t0;
+    real  rtmp;
 
-    rvec      tmp;
-    rvec     *mtrans = nullptr;
+    rvec  tmp;
+    rvec *mtrans = nullptr;
 
     /*
      * Variables for the least-squares fit for Einstein-Helfand and Green-Kubo
      */
 
-    int          bi, ei, ie, ii;
-    real         rest  = 0.0;
-    real         sigma = 0.0;
-    real         malt  = 0.0;
-    real         err   = 0.0;
-    real        *xfit;
-    real        *yfit;
-    gmx_rmpbc_t  gpbc = nullptr;
+    int         bi, ei, ie, ii;
+    real        rest  = 0.0;
+    real        sigma = 0.0;
+    real        malt  = 0.0;
+    real        err   = 0.0;
+    real *      xfit;
+    real *      yfit;
+    gmx_rmpbc_t gpbc = nullptr;
 
     /*
      * indices for EH
@@ -439,7 +439,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     do
     {
 
-        refr = (nfr+1);
+        refr = (nfr + 1);
 
         if (nfr >= nalloc)
         {
@@ -468,7 +468,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
         }
 
-        time[nfr] = fr.time-t0;
+        time[nfr] = fr.time - t0;
 
         if (time[nfr] <= bfit)
         {
@@ -510,13 +510,13 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         }
 
         /*if(mod(nfr,nshift)==0){*/
-        if (nfr%nshift == 0)
+        if (nfr % nshift == 0)
         {
             for (j = nfr; j >= 0; j--)
             {
                 rvec_sub(mtrans[nfr], mtrans[j], tmp);
-                dsp2[nfr-j]  += norm2(tmp);
-                xshfr[nfr-j] += 1.0;
+                dsp2[nfr - j]  += norm2(tmp);
+                xshfr[nfr - j] += 1.0;
             }
         }
 
@@ -566,17 +566,17 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
             if (bACF || bINT)
             {
                 /*if(mod(nvfr,nshift)==0){*/
-                if (nvfr%nshift == 0)
+                if (nvfr % nshift == 0)
                 {
                     for (j = nvfr; j >= 0; j--)
                     {
                         if (bACF)
                         {
-                            cacf[nvfr-j] += iprod(v0[nvfr], v0[j]);
+                            cacf[nvfr - j] += iprod(v0[nvfr], v0[j]);
                         }
                         if (bINT)
                         {
-                            djc[nvfr-j] += iprod(mu[vfr[j]], v0[nvfr]);
+                            djc[nvfr - j] += iprod(mu[vfr[j]], v0[nvfr]);
                         }
                     }
                     vshfr++;
@@ -595,25 +595,24 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         mj2 += iprod(mtrans[nfr], mtrans[nfr]);
         md2 += iprod(mu[nfr], mu[nfr]);
 
-        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2/refr, norm(mja_tmp)/refr);
+        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2 / refr, norm(mja_tmp) / refr);
         fprintf(fmd, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",    \
-                time[nfr], mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2/refr, norm(mdvec)/refr);
+                time[nfr], mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2 / refr, norm(mdvec) / refr);
 
         nfr++;
 
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
 
     gmx_rmpbc_done(gpbc);
 
     volume_av /= refr;
 
     prefactor  = 1.0;
-    prefactor /= 3.0*EPSILON0*volume_av*BOLTZ*temp;
+    prefactor /= 3.0 * EPSILON0 * volume_av * BOLTZ * temp;
 
 
-    prefactorav  = E_CHARGE*E_CHARGE;
-    prefactorav /= volume_av*BOLTZMANN*temp*NANO*6.0;
+    prefactorav  = E_CHARGE * E_CHARGE;
+    prefactorav /= volume_av * BOLTZMANN * temp * NANO * 6.0;
 
     fprintf(stderr, "Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n", prefactorav);
 
@@ -628,8 +627,8 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     mjd /= refr;
     md2 /= refr;
 
-    svmul(1.0/refr, mdvec, mdvec);
-    svmul(1.0/refr, mja_tmp, mja_tmp);
+    svmul(1.0 / refr, mdvec, mdvec);
+    svmul(1.0 / refr, mja_tmp, mja_tmp);
 
     mdav2 = norm2(mdvec);
     mj    = norm2(mja_tmp);
@@ -645,7 +644,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         {
 
             printf("\nCalculating M_D - current correlation integral ... \n");
-            corint = calc_cacf(mcor, prefactorav/EPSI0, djc, time, nvfr, vfr, ie, nshift);
+            corint = calc_cacf(mcor, prefactorav / EPSI0, djc, time, nvfr, vfr, ie, nshift);
 
         }
 
@@ -653,30 +652,30 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         {
 
             printf("\nCalculating current autocorrelation ... \n");
-            sgk = calc_cacf(outf, prefactorav/PICO, cacf, time, nvfr, vfr, ie, nshift);
+            sgk = calc_cacf(outf, prefactorav / PICO, cacf, time, nvfr, vfr, ie, nshift);
 
             if (ie > ii)
             {
 
-                snew(xfit, ie-ii+1);
-                snew(yfit, ie-ii+1);
+                snew(xfit, ie - ii + 1);
+                snew(yfit, ie - ii + 1);
 
                 for (i = ii; i <= ie; i++)
                 {
 
-                    xfit[i-ii] = std::log(time[vfr[i]]);
-                    rtmp       = std::abs(cacf[i]);
-                    yfit[i-ii] = std::log(rtmp);
+                    xfit[i - ii] = std::log(time[vfr[i]]);
+                    rtmp         = std::abs(cacf[i]);
+                    yfit[i - ii] = std::log(rtmp);
 
                 }
 
-                lsq_y_ax_b(ie-ii, xfit, yfit, &sigma, &malt, &err, &rest);
+                lsq_y_ax_b(ie - ii, xfit, yfit, &sigma, &malt, &err, &rest);
 
                 malt = std::exp(malt);
 
                 sigma += 1.0;
 
-                malt *= prefactorav*2.0e12/sigma;
+                malt *= prefactorav * 2.0e12 / sigma;
 
                 sfree(xfit);
                 sfree(yfit);
@@ -695,15 +694,15 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     fprintf(stderr, "********************************************\n");
 
 
-    dk_f = calceps(prefactor, md2-mdav2, mj2-mj, mjd-mjdav, eps_rf, FALSE);
+    dk_f = calceps(prefactor, md2 - mdav2, mj2 - mj, mjd - mjdav, eps_rf, FALSE);
     fprintf(stderr, "\n\nFluctuations:\n epsilon=%f\n\n", dk_f);
-    fprintf(stderr, "\n deltaM_D , deltaM_J, deltaM_JD:  (%f, %f, %f)\n", md2-mdav2, mj2-mj, mjd-mjdav);
+    fprintf(stderr, "\n deltaM_D , deltaM_J, deltaM_JD:  (%f, %f, %f)\n", md2 - mdav2, mj2 - mj, mjd - mjdav);
     fprintf(stderr, "\n********************************************\n");
     if (bINT)
     {
-        dk_d = calceps(prefactor, md2-mdav2, mj2-mj, corint, eps_rf, TRUE);
+        dk_d = calceps(prefactor, md2 - mdav2, mj2 - mj, corint, eps_rf, TRUE);
         fprintf(stderr, "\nStatic dielectric constant using integral and fluctuations: %f\n", dk_d);
-        fprintf(stderr, "\n < M_JM_D > via integral:  %.3f\n", -1.0*corint);
+        fprintf(stderr, "\n < M_JM_D > via integral:  %.3f\n", -1.0 * corint);
     }
 
     fprintf(stderr, "\n***************************************************");
@@ -715,7 +714,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     if (bACF && (ii < nvfr))
     {
         fprintf(stderr, "Integral and integrated fit to the current acf yields at t=%f:\n", time[vfr[ii]]);
-        fprintf(stderr, "sigma=%8.3f (pure integral: %.3f)\n", sgk-malt*std::pow(time[vfr[ii]], sigma), sgk);
+        fprintf(stderr, "sigma=%8.3f (pure integral: %.3f)\n", sgk - malt * std::pow(time[vfr[ii]], sigma), sgk);
     }
 
     if (ei > bi)
@@ -723,23 +722,23 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         fprintf(stderr, "\nStart fit at %f ps (%f).\n", time[bi], bfit);
         fprintf(stderr, "End fit at %f ps (%f).\n\n", time[ei], efit);
 
-        snew(xfit, ei-bi+1);
-        snew(yfit, ei-bi+1);
+        snew(xfit, ei - bi + 1);
+        snew(yfit, ei - bi + 1);
 
         for (i = bi; i <= ei; i++)
         {
-            xfit[i-bi] = time[i];
-            yfit[i-bi] = dsp2[i];
+            xfit[i - bi] = time[i];
+            yfit[i - bi] = dsp2[i];
         }
 
-        lsq_y_ax_b(ei-bi, xfit, yfit, &sigma, &malt, &err, &rest);
+        lsq_y_ax_b(ei - bi, xfit, yfit, &sigma, &malt, &err, &rest);
 
         sigma *= 1e12;
-        dk_d   = calceps(prefactor, md2, 0.5*malt/prefactorav, corint, eps_rf, TRUE);
+        dk_d   = calceps(prefactor, md2, 0.5 * malt / prefactorav, corint, eps_rf, TRUE);
 
         fprintf(stderr, "Einstein-Helfand fit to the MSD of the translational dipole moment yields:\n\n");
         fprintf(stderr, "sigma=%.4f\n", sigma);
-        fprintf(stderr, "translational fraction of M^2: %.4f\n", 0.5*malt/prefactorav);
+        fprintf(stderr, "translational fraction of M^2: %.4f\n", 0.5 * malt / prefactorav);
         fprintf(stderr, "Dielectric constant using EH: %.4f\n", dk_d);
 
         sfree(xfit);
@@ -776,15 +775,15 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 int gmx_current(int argc, char *argv[])
 {
 
-    static int             nshift  = 1000;
-    static real            temp    = 300.0;
-    static real            eps_rf  = 0.0;
-    static gmx_bool        bNoJump = TRUE;
-    static real            bfit    = 100.0;
-    static real            bvit    = 0.5;
-    static real            efit    = 400.0;
-    static real            evit    = 5.0;
-    t_pargs                pa[]    = {
+    static int      nshift  = 1000;
+    static real     temp    = 300.0;
+    static real     eps_rf  = 0.0;
+    static gmx_bool bNoJump = TRUE;
+    static real     bfit    = 100.0;
+    static real     bvit    = 0.5;
+    static real     efit    = 400.0;
+    static real     evit    = 5.0;
+    t_pargs         pa[]    = {
         { "-sh", FALSE, etINT, {&nshift},
           "Shift of the frames for averaging the correlation functions and the mean-square displacement."},
         { "-nojump", FALSE, etBOOL, {&bNoJump},
@@ -803,31 +802,31 @@ int gmx_current(int argc, char *argv[])
           "Temperature for calculating epsilon."}
     };
 
-    gmx_output_env_t      *oenv;
-    t_topology             top;
-    char                 **grpname = nullptr;
-    const char            *indexfn;
-    t_trxframe             fr;
-    real                  *mass2 = nullptr;
-    matrix                 box;
-    int                   *index0;
-    int                   *indexm = nullptr;
-    int                    isize;
-    t_trxstatus           *status;
-    int                    flags = 0;
-    gmx_bool               bACF;
-    gmx_bool               bINT;
-    int                    ePBC = -1;
-    int                    nmols;
-    int                    i;
-    real                  *qmol;
-    FILE                  *outf   = nullptr;
-    FILE                  *mcor   = nullptr;
-    FILE                  *fmj    = nullptr;
-    FILE                  *fmd    = nullptr;
-    FILE                  *fmjdsp = nullptr;
-    FILE                  *fcur   = nullptr;
-    t_filenm               fnm[]  = {
+    gmx_output_env_t *oenv;
+    t_topology        top;
+    char **           grpname = nullptr;
+    const char *      indexfn;
+    t_trxframe        fr;
+    real *            mass2 = nullptr;
+    matrix            box;
+    int *             index0;
+    int *             indexm = nullptr;
+    int               isize;
+    t_trxstatus *     status;
+    int               flags = 0;
+    gmx_bool          bACF;
+    gmx_bool          bINT;
+    int               ePBC = -1;
+    int               nmols;
+    int               i;
+    real *            qmol;
+    FILE *            outf   = nullptr;
+    FILE *            mcor   = nullptr;
+    FILE *            fmj    = nullptr;
+    FILE *            fmd    = nullptr;
+    FILE *            fmjdsp = nullptr;
+    FILE *            fcur   = nullptr;
+    t_filenm          fnm[]  = {
         { efTPS,  nullptr,  nullptr, ffREAD }, /* this is for the topology */
         { efNDX, nullptr, nullptr, ffOPTRD },
         { efTRX, "-f", nullptr, ffREAD },      /* and this for the trajectory */

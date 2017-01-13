@@ -151,7 +151,7 @@ typedef struct gmx_file_position_t
 gmx_file_position_t;
 
 int gmx_fio_get_output_file_positions(gmx_file_position_t ** outputfiles,
-                                      int                   *nfiles );
+                                      int *                  nfiles );
 /* Return the name and file pointer positions for all currently open
  * output files. This is used for saving in the checkpoint files, so we
  * can truncate output files upon restart-with-appending.

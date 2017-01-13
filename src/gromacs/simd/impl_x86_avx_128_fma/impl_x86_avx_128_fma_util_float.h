@@ -58,23 +58,21 @@ namespace gmx
  * throughput just-so-slightly.
  */
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdFloat    scalar,
-                        SimdFloat *  triplets0,
-                        SimdFloat *  triplets1,
-                        SimdFloat *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat   scalar,
+                                                        SimdFloat * triplets0,
+                                                        SimdFloat * triplets1,
+                                                        SimdFloat * triplets2)
 {
     triplets0->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(1, 0, 0, 0));
     triplets1->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(2, 2, 1, 1));
     triplets2->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(3, 3, 3, 2));
 }
 
-static inline float gmx_simdcall
-reduceIncr4ReturnSum(float *    m,
-                     SimdFloat  v0,
-                     SimdFloat  v1,
-                     SimdFloat  v2,
-                     SimdFloat  v3)
+static inline float gmx_simdcall reduceIncr4ReturnSum(float *   m,
+                                                      SimdFloat v0,
+                                                      SimdFloat v1,
+                                                      SimdFloat v2,
+                                                      SimdFloat v3)
 {
     _MM_TRANSPOSE4_PS(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_, v3.simdInternal_);
     v0.simdInternal_ = _mm_add_ps(v0.simdInternal_, v1.simdInternal_);

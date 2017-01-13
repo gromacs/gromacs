@@ -38,8 +38,7 @@
 namespace gmx
 {
 
-static inline void
-simdPrefetch(void * m)
+static inline void simdPrefetch(void * m)
 {
 #ifdef __GNUC__
     __builtin_prefetch(m);

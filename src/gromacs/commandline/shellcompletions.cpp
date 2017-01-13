@@ -119,7 +119,7 @@ class OptionCompletionWriter : public OptionsVisitor
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        void writeOptionCompletion(const OptionInfo  &option,
+        void writeOptionCompletion(const OptionInfo & option,
                                    const std::string &completion);
 
         TextWriter &out_;
@@ -193,19 +193,19 @@ class ShellCompletionWriter::Impl
 
         std::string completionFunctionName(const char *moduleName) const
         {
-            std::string result =
-                formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
+            std::string result
+                = formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
             std::replace(result.begin(), result.end(), '-', '_');
             return result;
         }
 
-        std::string                   binaryName_;
+        std::string binaryName_;
         // Never releases ownership.
-        std::unique_ptr<TextWriter>   file_;
+        std::unique_ptr<TextWriter> file_;
 };
 
-ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,
-                                             ShellCompletionFormat  format)
+ShellCompletionWriter::ShellCompletionWriter(const std::string &   binaryName,
+                                             ShellCompletionFormat format)
     : impl_(new Impl(binaryName, format))
 {
 }
@@ -225,7 +225,7 @@ void ShellCompletionWriter::startCompletions()
 }
 
 void ShellCompletionWriter::writeModuleCompletions(
-        const char    *moduleName,
+        const char *   moduleName,
         const Options &options)
 {
     TextWriter &out = *impl_->file_;
@@ -263,7 +263,7 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
     OptionsListWriter lister;
     lister.visitSection(options.rootSection());
-    std::string       completions(lister.optionList());
+    std::string completions(lister.optionList());
     for (ModuleNameList::const_iterator i = modules.begin();
          i != modules.end(); ++i)
     {

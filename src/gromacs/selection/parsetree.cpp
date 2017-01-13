@@ -264,8 +264,7 @@ namespace
  * The returned string is used as the context for errors reported during
  * parsing.
  */
-std::string
-formatCurrentErrorContext(yyscan_t scanner)
+std::string formatCurrentErrorContext(yyscan_t scanner)
 {
     return gmx::formatString(
             "While parsing '%s'",
@@ -274,8 +273,7 @@ formatCurrentErrorContext(yyscan_t scanner)
 
 } // namespace
 
-bool
-_gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
+bool _gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
 {
     try
     {
@@ -297,8 +295,7 @@ _gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
     }
 }
 
-bool
-_gmx_selparser_handle_error(yyscan_t scanner)
+bool _gmx_selparser_handle_error(yyscan_t scanner)
 {
     std::string context(gmx::formatString("Invalid selection '%s'",
                                           _gmx_sel_lexer_pselstr(scanner)));
@@ -354,9 +351,9 @@ SelectionParserValue::SelectionParserValue(
  */
 
 SelectionParserParameter::SelectionParserParameter(
-        const char                      *name,
-        SelectionParserValueListPointer  values,
-        const SelectionLocation         &location)
+        const char *                    name,
+        SelectionParserValueListPointer values,
+        const SelectionLocation &       location)
     : name_(name != nullptr ? name : ""), location_(location),
       values_(values ? std::move(values)
               : SelectionParserValueListPointer(new SelectionParserValueList))
@@ -382,11 +379,10 @@ SelectionParserParameter::SelectionParserParameter(
  * is set for an element, the function returns immediately, and the recursive
  * operation does not descend beyond such elements.
  */
-void
-_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel)
+void _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel)
 {
-    bool                bUseChildType = false;
-    bool                bOnlySingleChildren;
+    bool bUseChildType = false;
+    bool bOnlySingleChildren;
 
     /* Return if the flags have already been set */
     if (sel->flags & SEL_FLAGSSET)
@@ -498,20 +494,19 @@ _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel)
  * expressions with the same method to coexist peacefully.
  * Calls sel_datafunc() if one is specified for the method.
  */
-void
-_gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
-                                yyscan_t                                scanner)
+void _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
+                                     yyscan_t                                scanner)
 {
     int                 nparams;
     gmx_ana_selparam_t *orgparam;
     gmx_ana_selparam_t *param;
     int                 i;
-    void               *mdata;
+    void *              mdata;
 
-    nparams   = sel->u.expr.method->nparams;
-    orgparam  = sel->u.expr.method->param;
+    nparams  = sel->u.expr.method->nparams;
+    orgparam = sel->u.expr.method->param;
     snew(param, nparams);
-    memcpy(param, orgparam, nparams*sizeof(gmx_ana_selparam_t));
+    memcpy(param, orgparam, nparams * sizeof(gmx_ana_selparam_t));
     for (i = 0; i < nparams; ++i)
     {
         param[i].flags &= ~SPAR_SET;
@@ -531,9 +526,9 @@ _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
             {
                 ++n;
             }
-            _gmx_selvalue_reserve(&param[i].val, n+1);
+            _gmx_selvalue_reserve(&param[i].val, n + 1);
             memcpy(param[i].val.u.s, orgparam[i].val.u.s,
-                   (n+1)*sizeof(param[i].val.u.s[0]));
+                   (n + 1) * sizeof(param[i].val.u.s[0]));
         }
     }
     mdata = nullptr;
@@ -560,10 +555,9 @@ _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
  * Makes a copy of \p method and stores it in \p sel->u.expr.method,
  * and calls _gmx_selelem_init_method_params();
  */
-void
-_gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
-                        gmx_ana_selmethod_t                    *method,
-                        yyscan_t                                scanner)
+void _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
+                             gmx_ana_selmethod_t *                   method,
+                             yyscan_t                                scanner)
 {
     _gmx_selelem_set_vtype(sel, method->type);
     sel->setName(method->name);
@@ -580,10 +574,9 @@ _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
  * \param[in,out] sel    Selection element to initialize.
  * \param[in]     rpost  Reference position type to use (NULL = default).
  */
-static void
-set_refpos_type(gmx::PositionCalculationCollection *pcc,
-                const SelectionTreeElementPointer  &sel,
-                const char                         *rpost)
+static void set_refpos_type(gmx::PositionCalculationCollection *pcc,
+                            const SelectionTreeElementPointer & sel,
+                            const char *                        rpost)
 {
     if (!rpost)
     {
@@ -605,15 +598,14 @@ set_refpos_type(gmx::PositionCalculationCollection *pcc,
     }
 }
 
-gmx::SelectionTreeElementPointer
-_gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
-                         const gmx::SelectionTreeElementPointer &right,
-                         char op, yyscan_t scanner)
+gmx::SelectionTreeElementPointer _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
+                                                          const gmx::SelectionTreeElementPointer &right,
+                                                          char op, yyscan_t scanner)
 {
     SelectionTreeElementPointer sel(
             new SelectionTreeElement(
                     SEL_ARITHMETIC, _gmx_sel_lexer_get_current_location(scanner)));
-    sel->v.type        = REAL_VALUE;
+    sel->v.type = REAL_VALUE;
     switch (op)
     {
         case '+': sel->u.arith.type = ARITH_PLUS; break;
@@ -622,7 +614,7 @@ _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
         case '/': sel->u.arith.type = ARITH_DIV;  break;
         case '^': sel->u.arith.type = ARITH_EXP;  break;
     }
-    char               buf[2] {
+    char buf[2] {
         op, 0
     };
     sel->setName(buf);
@@ -642,23 +634,22 @@ _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * comparison expressions.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
-                         const gmx::SelectionTreeElementPointer &right,
-                         const char *cmpop, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
+                                                     const gmx::SelectionTreeElementPointer &right,
+                                                     const char *cmpop, yyscan_t scanner)
 {
-    SelectionTreeElementPointer  sel(
+    SelectionTreeElementPointer sel(
             new SelectionTreeElement(
                     SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_method(sel, &sm_compare, scanner);
 
     SelectionParserParameterList params;
-    const char                  *name;
+    const char *                 name;
     // Create the parameter for the left expression.
-    name  = left->v.type == INT_VALUE ? "int1" : "real1";
+    name = left->v.type == INT_VALUE ? "int1" : "real1";
     params.push_back(SelectionParserParameter::createFromExpression(name, left));
     // Create the parameter for the right expression.
-    name  = right->v.type == INT_VALUE ? "int2" : "real2";
+    name = right->v.type == INT_VALUE ? "int2" : "real2";
     params.push_back(SelectionParserParameter::createFromExpression(name, right));
     // Create the parameter for the operator.
     // TODO: Consider whether a proper location is needed.
@@ -687,13 +678,12 @@ _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * selection methods that do not take parameters.
  */
-static SelectionTreeElementPointer
-init_keyword_internal(gmx_ana_selmethod_t *method,
-                      gmx::SelectionStringMatchType matchType,
-                      SelectionParserValueListPointer args,
-                      const char *rpost, yyscan_t scanner)
+static SelectionTreeElementPointer init_keyword_internal(gmx_ana_selmethod_t *method,
+                                                         gmx::SelectionStringMatchType matchType,
+                                                         SelectionParserValueListPointer args,
+                                                         const char *rpost, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
     if (method->nparams > 0)
     {
@@ -702,7 +692,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
                           "Keyword initialization called with non-keyword method"));
     }
 
-    const SelectionLocation    &location = _gmx_sel_lexer_get_current_location(scanner);
+    const SelectionLocation &location = _gmx_sel_lexer_get_current_location(scanner);
     // TODO: If there are arguments, the location would be better as just the
     // location of the keyword itself.
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_EXPRESSION, location));
@@ -752,10 +742,9 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * selection methods that do not take parameters.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
-                      gmx::SelectionParserValueListPointer args,
-                      const char *rpost, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
+                                                  gmx::SelectionParserValueListPointer args,
+                                                  const char *rpost, yyscan_t scanner)
 {
     return init_keyword_internal(method, gmx::eStringMatchType_Auto, std::move(args),
                                  rpost, scanner);
@@ -772,11 +761,10 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * keyword string matching.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
-                               gmx::SelectionStringMatchType matchType,
-                               gmx::SelectionParserValueListPointer args,
-                               const char *rpost, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
+                                                           gmx::SelectionStringMatchType matchType,
+                                                           gmx::SelectionParserValueListPointer args,
+                                                           const char *rpost, yyscan_t scanner)
 {
     GMX_RELEASE_ASSERT(method->type == STR_VALUE,
                        "String keyword method called for a non-string-valued method");
@@ -795,10 +783,9 @@ _gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * expressions like "z of ...".
  */
-SelectionTreeElementPointer
-_gmx_sel_init_keyword_of(gmx_ana_selmethod_t                    *method,
-                         const gmx::SelectionTreeElementPointer &group,
-                         const char *rpost, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_keyword_of(gmx_ana_selmethod_t *method,
+                                                     const gmx::SelectionTreeElementPointer &group,
+                                                     const char *rpost, yyscan_t scanner)
 {
     // TODO Provide an error if rpost is provided.
     GMX_UNUSED_VALUE(rpost);
@@ -820,12 +807,11 @@ _gmx_sel_init_keyword_of(gmx_ana_selmethod_t                    *method,
  * use of any keyword in \c "same KEYWORD as" without requiring special
  * handling somewhere else (or sacrificing the simple syntax).
  */
-SelectionTreeElementPointer
-_gmx_sel_init_method(gmx_ana_selmethod_t                      *method,
-                     gmx::SelectionParserParameterListPointer  params,
-                     const char *rpost, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_method(gmx_ana_selmethod_t *method,
+                                                 gmx::SelectionParserParameterListPointer params,
+                                                 const char *rpost, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
@@ -852,11 +838,10 @@ _gmx_sel_init_method(gmx_ana_selmethod_t                      *method,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * selection modifiers.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_modifier(gmx_ana_selmethod_t                      *method,
-                       gmx::SelectionParserParameterListPointer  params,
-                       const gmx::SelectionTreeElementPointer   &sel,
-                       yyscan_t                                  scanner)
+SelectionTreeElementPointer _gmx_sel_init_modifier(gmx_ana_selmethod_t *                    method,
+                                                   gmx::SelectionParserParameterListPointer params,
+                                                   const gmx::SelectionTreeElementPointer & sel,
+                                                   yyscan_t                                 scanner)
 {
     _gmx_sel_finish_method(scanner);
     SelectionTreeElementPointer modifier(
@@ -896,11 +881,10 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t                      *method,
  * This function handles the creation of a gmx::SelectionTreeElement object for
  * evaluation of reference positions.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
-                       const char *type, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
+                                                   const char *type, yyscan_t scanner)
 {
-    SelectionTreeElementPointer  root(
+    SelectionTreeElementPointer root(
             new SelectionTreeElement(
                     SEL_EXPRESSION, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_method(root, &sm_keyword_pos, scanner);
@@ -920,10 +904,9 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
  * \param[in] scanner Scanner data structure.
  * \returns   The creates selection element.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_const_position(real x, real y, real z, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_const_position(real x, real y, real z, yyscan_t scanner)
 {
-    rvec                        pos {
+    rvec pos {
         x, y, z
     };
 
@@ -944,8 +927,7 @@ _gmx_sel_init_const_position(real x, real y, real z, yyscan_t scanner)
  * See gmx_ana_indexgrps_find() for information on how \p name is matched
  * against the index groups.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 {
 
     SelectionTreeElementPointer sel(
@@ -958,7 +940,7 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+        gmx_ana_indexgrps_t *    grps = _gmx_sel_lexer_indexgrps(scanner);
         gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
         sel->resolveIndexGroupReference(grps, sc->gall.isize);
     }
@@ -971,8 +953,7 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
  * \param[in] scanner Scanner data structure.
  * \returns   The created selection element.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_group_by_id(int id, yyscan_t scanner)
+SelectionTreeElementPointer _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 {
     SelectionTreeElementPointer sel(
             new SelectionTreeElement(
@@ -984,7 +965,7 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+        gmx_ana_indexgrps_t *    grps = _gmx_sel_lexer_indexgrps(scanner);
         gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
         sel->resolveIndexGroupReference(grps, sc->gall.isize);
     }
@@ -1000,9 +981,8 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
  * The reference count of \p sel is updated, but no other modifications are
  * made.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel,
-                           yyscan_t                                scanner)
+SelectionTreeElementPointer _gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel,
+                                                       yyscan_t                                scanner)
 {
     SelectionTreeElementPointer ref;
 
@@ -1031,10 +1011,9 @@ _gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel,
  * This function handles the creation of root (\ref SEL_ROOT)
  * gmx::SelectionTreeElement objects for selections.
  */
-SelectionTreeElementPointer
-_gmx_sel_init_selection(const char                             *name,
-                        const gmx::SelectionTreeElementPointer &sel,
-                        yyscan_t                                scanner)
+SelectionTreeElementPointer _gmx_sel_init_selection(const char *                            name,
+                                                    const gmx::SelectionTreeElementPointer &sel,
+                                                    yyscan_t                                scanner)
 {
     if (sel->v.type != POS_VALUE)
     {
@@ -1086,14 +1065,13 @@ _gmx_sel_init_selection(const char                             *name,
  * for variable assignments. A \ref SEL_ROOT element and a \ref SEL_SUBEXPR
  * element are both created.
  */
-SelectionTreeElementPointer
-_gmx_sel_assign_variable(const char                             *name,
-                         const gmx::SelectionTreeElementPointer &expr,
-                         yyscan_t                                scanner)
+SelectionTreeElementPointer _gmx_sel_assign_variable(const char *                            name,
+                                                     const gmx::SelectionTreeElementPointer &expr,
+                                                     yyscan_t                                scanner)
 {
-    gmx_ana_selcollection_t     *sc      = _gmx_sel_lexer_selcollection(scanner);
-    const char                  *pselstr = _gmx_sel_lexer_pselstr(scanner);
-    SelectionTreeElementPointer  root;
+    gmx_ana_selcollection_t *   sc      = _gmx_sel_lexer_selcollection(scanner);
+    const char *                pselstr = _gmx_sel_lexer_pselstr(scanner);
+    SelectionTreeElementPointer root;
 
     _gmx_selelem_update_flags(expr);
     /* Check if this is a constant non-group value */
@@ -1118,7 +1096,7 @@ _gmx_sel_assign_variable(const char                             *name,
         root->child.reset(new SelectionTreeElement(SEL_SUBEXPR, location));
         root->child->setName(name);
         _gmx_selelem_set_vtype(root->child, expr->v.type);
-        root->child->child  = expr;
+        root->child->child = expr;
         /* Update flags */
         _gmx_selelem_update_flags(root);
         gmx::ExceptionInitializer errors("Invalid index group reference(s)");
@@ -1153,10 +1131,9 @@ _gmx_sel_assign_variable(const char                             *name,
  * Appends \p sel after the last root element, and returns either \p sel
  * (if it was non-NULL) or the last element (if \p sel was NULL).
  */
-SelectionTreeElementPointer
-_gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
-                          gmx::SelectionTreeElementPointer        last,
-                          yyscan_t                                scanner)
+SelectionTreeElementPointer _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
+                                                      gmx::SelectionTreeElementPointer        last,
+                                                      yyscan_t                                scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
@@ -1209,8 +1186,7 @@ _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
  * This is used to terminate interactive parsers when the correct number of
  * selections has been provided.
  */
-bool
-_gmx_sel_parser_should_finish(yyscan_t scanner)
+bool _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     return (int)sc->sel.size() == _gmx_sel_lexer_exp_selcount(scanner);

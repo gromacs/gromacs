@@ -273,11 +273,11 @@ class OptionStorageTemplate : public AbstractOptionStorage
         /*! \brief
          * Vector for temporary storage of values before commitSet() is called.
          */
-        ValueList               setValues_;
+        ValueList setValues_;
         //! Final storage for option values.
-        const StorePointer      store_;
+        const StorePointer store_;
         // This never releases ownership.
-        std::unique_ptr<T>      defaultValueIfSet_;
+        std::unique_ptr<T> defaultValueIfSet_;
 
         // Copy and assign disallowed by base.
 };
@@ -321,8 +321,8 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         {
         }
         //! Initializes the storage.
-        OptionStorageTemplateSimple(const AbstractOption                            &settings,
-                                    typename OptionStorageTemplate<T>::StorePointer  store)
+        OptionStorageTemplateSimple(const AbstractOption &                          settings,
+                                    typename OptionStorageTemplate<T>::StorePointer store)
             : OptionStorageTemplate<T>(settings, std::move(store)), initialized_(false)
         {
         }
@@ -375,8 +375,8 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
             }
         }
 
-        ConverterType  converter_;
-        bool           initialized_;
+        ConverterType converter_;
+        bool          initialized_;
 };
 
 
@@ -391,8 +391,8 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
     : AbstractOptionStorage(settings, staticFlags),
       store_(createStore(settings.storeVector_,
                          settings.store_, settings.countptr_,
-                         (settings.isVector() ?
-                          settings.maxValueCount_ : settings.minValueCount_)))
+                         (settings.isVector()
+                          ? settings.maxValueCount_ : settings.minValueCount_)))
 {
     if (hasFlag(efOption_NoDefaultValue)
         && (settings.defaultValue_ != nullptr

@@ -57,8 +57,8 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
     int                     a;
     double                  tmA, tmB;
-    const t_atom           *atom;
-    t_mdatoms              *md;
+    const t_atom *          atom;
+    t_mdatoms *             md;
     gmx_mtop_atomloop_all_t aloop;
 
     snew(md, 1);
@@ -117,10 +117,10 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int homenr,
               t_mdatoms *md)
 {
-    gmx_bool              bLJPME;
-    const t_grpopts      *opts;
-    const gmx_groups_t   *groups;
-    int                   nthreads gmx_unused;
+    gmx_bool            bLJPME;
+    const t_grpopts *   opts;
+    const gmx_groups_t *groups;
+    int                 nthreads gmx_unused;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
@@ -180,9 +180,9 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         {
             srenew(md->cACC, md->nalloc);
         }
-        if (opts->nFreeze &&
-            (opts->ngfrz > 1 ||
-             opts->nFreeze[0][XX] || opts->nFreeze[0][YY] || opts->nFreeze[0][ZZ]))
+        if (opts->nFreeze
+            && (opts->ngfrz > 1
+                || opts->nFreeze[0][XX] || opts->nFreeze[0][YY] || opts->nFreeze[0][ZZ]))
         {
             srenew(md->cFREEZE, md->nalloc);
         }
@@ -228,9 +228,9 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
     {
         try
         {
-            int      g, ag;
-            real     mA, mB, fac;
-            real     c6, c12;
+            int  g, ag;
+            real mA, mB, fac;
+            real c6, c12;
 
             if (index == nullptr)
             {
@@ -266,15 +266,15 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                  */
                 if (ir->bd_fric > 0)
                 {
-                    mA = 0.5*ir->bd_fric*ir->delta_t;
-                    mB = 0.5*ir->bd_fric*ir->delta_t;
+                    mA = 0.5 * ir->bd_fric * ir->delta_t;
+                    mB = 0.5 * ir->bd_fric * ir->delta_t;
                 }
                 else
                 {
                     /* The friction coefficient is mass/tau_t */
-                    fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
-                    mA  = 0.5*atom.m*fac;
-                    mB  = 0.5*atom.mB*fac;
+                    fac = ir->delta_t / opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
+                    mA  = 0.5 * atom.m * fac;
+                    mB  = 0.5 * atom.mB * fac;
                 }
             }
             else
@@ -284,10 +284,10 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             if (md->nMassPerturbed)
             {
-                md->massA[i]  = mA;
-                md->massB[i]  = mB;
+                md->massA[i] = mA;
+                md->massB[i] = mB;
             }
-            md->massT[i]    = mA;
+            md->massT[i] = mA;
 
             if (mA == 0.0)
             {
@@ -304,7 +304,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     /* Set the mass of completely frozen particles to ALMOST_ZERO
                      * iso 0 to avoid div by zero in lincs or shake.
                      */
-                    md->invmass[i]  = ALMOST_ZERO;
+                    md->invmass[i] = ALMOST_ZERO;
                 }
                 else
                 {
@@ -312,38 +312,38 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                      * If such particles are constrained, the frozen dimensions
                      * should not be updated with the constrained coordinates.
                      */
-                    md->invmass[i]  = 1.0/mA;
+                    md->invmass[i] = 1.0 / mA;
                 }
                 for (int d = 0; d < DIM; d++)
                 {
-                    md->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0/mA);
+                    md->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0 / mA);
                 }
             }
             else
             {
-                md->invmass[i]  = 1.0/mA;
+                md->invmass[i] = 1.0 / mA;
                 for (int d = 0; d < DIM; d++)
                 {
-                    md->invMassPerDim[i][d] = 1.0/mA;
+                    md->invMassPerDim[i][d] = 1.0 / mA;
                 }
             }
 
-            md->chargeA[i]      = atom.q;
-            md->typeA[i]        = atom.type;
+            md->chargeA[i] = atom.q;
+            md->typeA[i]   = atom.type;
             if (bLJPME)
             {
-                c6                = mtop->ffparams.iparams[atom.type*(mtop->ffparams.atnr+1)].lj.c6;
-                c12               = mtop->ffparams.iparams[atom.type*(mtop->ffparams.atnr+1)].lj.c12;
-                md->sqrt_c6A[i]   = sqrt(c6);
+                c6              = mtop->ffparams.iparams[atom.type * (mtop->ffparams.atnr + 1)].lj.c6;
+                c12             = mtop->ffparams.iparams[atom.type * (mtop->ffparams.atnr + 1)].lj.c12;
+                md->sqrt_c6A[i] = sqrt(c6);
                 if (c6 == 0.0 || c12 == 0)
                 {
                     md->sigmaA[i] = 1.0;
                 }
                 else
                 {
-                    md->sigmaA[i] = gmx::sixthroot(c12/c6);
+                    md->sigmaA[i] = gmx::sixthroot(c12 / c6);
                 }
-                md->sigma3A[i]    = 1/(md->sigmaA[i]*md->sigmaA[i]*md->sigmaA[i]);
+                md->sigma3A[i] = 1 / (md->sigmaA[i] * md->sigmaA[i] * md->sigmaA[i]);
             }
             if (md->nPerturbed)
             {
@@ -352,59 +352,59 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 md->typeB[i]      = atom.typeB;
                 if (bLJPME)
                 {
-                    c6                = mtop->ffparams.iparams[atom.typeB*(mtop->ffparams.atnr+1)].lj.c6;
-                    c12               = mtop->ffparams.iparams[atom.typeB*(mtop->ffparams.atnr+1)].lj.c12;
-                    md->sqrt_c6B[i]   = sqrt(c6);
+                    c6              = mtop->ffparams.iparams[atom.typeB * (mtop->ffparams.atnr + 1)].lj.c6;
+                    c12             = mtop->ffparams.iparams[atom.typeB * (mtop->ffparams.atnr + 1)].lj.c12;
+                    md->sqrt_c6B[i] = sqrt(c6);
                     if (c6 == 0.0 || c12 == 0)
                     {
                         md->sigmaB[i] = 1.0;
                     }
                     else
                     {
-                        md->sigmaB[i] = gmx::sixthroot(c12/c6);
+                        md->sigmaB[i] = gmx::sixthroot(c12 / c6);
                     }
-                    md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
+                    md->sigma3B[i] = 1 / (md->sigmaB[i] * md->sigmaB[i] * md->sigmaB[i]);
                 }
             }
-            md->ptype[i]    = atom.ptype;
+            md->ptype[i] = atom.ptype;
             if (md->cTC)
             {
-                md->cTC[i]    = groups->grpnr[egcTC][ag];
+                md->cTC[i] = groups->grpnr[egcTC][ag];
             }
-            md->cENER[i]    =
-                (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
+            md->cENER[i]
+                = (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
             if (md->cACC)
             {
-                md->cACC[i]   = groups->grpnr[egcACC][ag];
+                md->cACC[i] = groups->grpnr[egcACC][ag];
             }
             if (md->cVCM)
             {
-                md->cVCM[i]       = groups->grpnr[egcVCM][ag];
+                md->cVCM[i] = groups->grpnr[egcVCM][ag];
             }
             if (md->cORF)
             {
-                md->cORF[i]       = groups->grpnr[egcORFIT][ag];
+                md->cORF[i] = groups->grpnr[egcORFIT][ag];
             }
 
             if (md->cU1)
             {
-                md->cU1[i]        = groups->grpnr[egcUser1][ag];
+                md->cU1[i] = groups->grpnr[egcUser1][ag];
             }
             if (md->cU2)
             {
-                md->cU2[i]        = groups->grpnr[egcUser2][ag];
+                md->cU2[i] = groups->grpnr[egcUser2][ag];
             }
 
             if (ir->bQMMM)
             {
-                if (groups->grpnr[egcQMMM] == nullptr ||
-                    groups->grpnr[egcQMMM][ag] < groups->grps[egcQMMM].nr-1)
+                if (groups->grpnr[egcQMMM] == nullptr
+                    || groups->grpnr[egcQMMM][ag] < groups->grps[egcQMMM].nr - 1)
                 {
-                    md->bQM[i]      = TRUE;
+                    md->bQM[i] = TRUE;
                 }
                 else
                 {
-                    md->bQM[i]      = FALSE;
+                    md->bQM[i] = FALSE;
                 }
             }
         }
@@ -433,16 +433,16 @@ void update_mdatoms(t_mdatoms *md, real lambda)
         {
             if (md->bPerturbed[i])
             {
-                md->massT[i] = L1*md->massA[i] + lambda*md->massB[i];
+                md->massT[i] = L1 * md->massA[i] + lambda * md->massB[i];
                 /* Atoms with invmass 0 or ALMOST_ZERO are massless or frozen
                  * and their invmass does not depend on lambda.
                  */
-                if (md->invmass[i] > 1.1*ALMOST_ZERO)
+                if (md->invmass[i] > 1.1 * ALMOST_ZERO)
                 {
-                    md->invmass[i] = 1.0/md->massT[i];
+                    md->invmass[i] = 1.0 / md->massT[i];
                     for (int d = 0; d < DIM; d++)
                     {
-                        if (md->invMassPerDim[i][d] > 1.1*ALMOST_ZERO)
+                        if (md->invMassPerDim[i][d] > 1.1 * ALMOST_ZERO)
                         {
                             md->invMassPerDim[i][d] = md->invmass[i];
                         }
@@ -452,7 +452,7 @@ void update_mdatoms(t_mdatoms *md, real lambda)
         }
 
         /* Update the system mass for the change in lambda */
-        md->tmass  = L1*md->tmassA + lambda*md->tmassB;
+        md->tmass = L1 * md->tmassA + lambda * md->tmassB;
     }
 
     md->lambda = lambda;

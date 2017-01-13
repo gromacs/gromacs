@@ -70,7 +70,7 @@ const char *fflib_forcefield_doc()
 void fflib_filename_base(const char *filename, char *filebase, int maxlen)
 {
     const char *cptr;
-    char       *ptr;
+    char *      ptr;
 
     cptr = strrchr(filename, DIR_SEPARATOR);
     if (cptr != nullptr)
@@ -99,7 +99,7 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
 int fflib_search_file_end(const char *ffdir,
                           const char *file_end,
                           gmx_bool    bFatalError,
-                          char     ***filenames)
+                          char ***    filenames)
 {
     try
     {
@@ -120,7 +120,7 @@ int fflib_search_file_end(const char *ffdir,
         {
             result[i] = gmx::Path::join(ffdir, result[i]);
         }
-        char    **fns;
+        char **fns;
         snew(fns, count);
         for (int i = 0; i < count; ++i)
         {

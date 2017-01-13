@@ -61,9 +61,8 @@ namespace gmx
 namespace test
 {
 
-EnergyFrameReaderPtr
-openEnergyFileToReadFields(const std::string              &filename,
-                           const std::vector<std::string> &namesOfRequiredEnergyFields)
+EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string &             filename,
+                                                const std::vector<std::string> &namesOfRequiredEnergyFields)
 {
     ener_file_ptr energyFile(open_enx(filename.c_str(), "r"));
 
@@ -152,8 +151,7 @@ EnergyFrameReader::EnergyFrameReader(const std::map<std::string, int> &indicesOf
 {
 }
 
-bool
-EnergyFrameReader::readNextFrame()
+bool EnergyFrameReader::readNextFrame()
 {
     if (haveProbedForNextFrame_)
     {
@@ -171,8 +169,7 @@ EnergyFrameReader::readNextFrame()
     return nextFrameExists_ = do_enx(energyFileGuard_.get(), enxframeGuard_.get());
 }
 
-EnergyFrame
-EnergyFrameReader::frame()
+EnergyFrame EnergyFrameReader::frame()
 {
     EnergyFrame energyFrame;
 

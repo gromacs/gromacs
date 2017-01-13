@@ -100,7 +100,7 @@ class SelectionOptionManager::Impl
             }
 
             //! Storage object to which the selections will be added.
-            SelectionOptionStorage     *storage_;
+            SelectionOptionStorage *storage_;
         };
 
         //! Collection for a list of selection requests.
@@ -128,7 +128,7 @@ class SelectionOptionManager::Impl
                 }
 
             private:
-                RequestList    *requests_;
+                RequestList *requests_;
         };
 
         /*! \brief
@@ -159,11 +159,11 @@ class SelectionOptionManager::Impl
         void requestUnsetRequiredOptions();
 
         //! Selection collection to which selections are stored.
-        SelectionCollection    &collection_;
+        SelectionCollection &collection_;
         //! List of selection options (storage objects) this manager manages.
-        OptionList              options_;
+        OptionList options_;
         //! List of selections requested for later parsing.
-        RequestList             requests_;
+        RequestList requests_;
 };
 
 SelectionOptionManager::Impl::Impl(SelectionCollection *collection)
@@ -179,7 +179,7 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
         requestUnsetRequiredOptions();
     }
 
-    RequestsClearer               clearRequestsOnExit(&requests_);
+    RequestsClearer clearRequestsOnExit(&requests_);
 
     SelectionList::const_iterator first = selections.begin();
     SelectionList::const_iterator last  = first;
@@ -265,39 +265,34 @@ SelectionOptionManager::~SelectionOptionManager()
 {
 }
 
-void
-SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
+void SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 {
     impl_->requests_.reserve(impl_->options_.size() + 1);
     impl_->options_.push_back(storage);
 }
 
-void
-SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
-                                           const std::string      &value,
-                                           bool                    bFullValue)
+void SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
+                                                const std::string &     value,
+                                                bool                    bFullValue)
 {
     SelectionList selections = impl_->collection_.parseFromString(value);
     storage->addSelections(selections, bFullValue);
 }
 
-void
-SelectionOptionManager::requestOptionDelayedParsing(
+void SelectionOptionManager::requestOptionDelayedParsing(
         SelectionOptionStorage *storage)
 {
     impl_->requests_.emplace_back(storage);
 }
 
-bool
-SelectionOptionManager::hasRequestedSelections() const
+bool SelectionOptionManager::hasRequestedSelections() const
 {
     return !impl_->requests_.empty();
 }
 
-void
-SelectionOptionManager::initOptions(IOptionsContainer *options)
+void SelectionOptionManager::initOptions(IOptionsContainer *options)
 {
-    bool allowOnlyAtomOutput = true;
+    bool                             allowOnlyAtomOutput = true;
     Impl::OptionList::const_iterator iter;
     for (iter = impl_->options_.begin(); iter != impl_->options_.end(); ++iter)
     {
@@ -314,18 +309,17 @@ SelectionOptionManager::initOptions(IOptionsContainer *options)
     impl_->collection_.initOptions(options, typeOption);
 }
 
-void
-SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
+void SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 {
-    Impl::RequestsClearer             clearRequestsOnExit(&impl_->requests_);
+    Impl::RequestsClearer clearRequestsOnExit(&impl_->requests_);
 
     Impl::RequestList::const_iterator i;
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
     {
         const Impl::SelectionRequest &request = *i;
-        std::string                   context =
-            formatString("for option '%s'\n(%s)",
-                         request.name().c_str(), request.description().c_str());
+        std::string                   context
+            = formatString("for option '%s'\n(%s)",
+                           request.name().c_str(), request.description().c_str());
         SelectionList selections
             = impl_->collection_.parseFromStdin(request.count(), bInteractive,
                                                 context);
@@ -333,8 +327,7 @@ SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
     }
 }
 
-void
-SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
+void SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
 {
     SelectionList selections = impl_->collection_.parseFromFile(filename);
     try
@@ -350,8 +343,7 @@ SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
     }
 }
 
-void
-SelectionOptionManager::parseRequestedFromString(const std::string &str)
+void SelectionOptionManager::parseRequestedFromString(const std::string &str)
 {
     SelectionList selections = impl_->collection_.parseFromString(str);
     impl_->placeSelectionsInRequests(selections);

@@ -114,26 +114,26 @@ class MdrunComparisonFixture : public MdrunTestFixture
          *
          * \throws  std::bad_alloc     if out of memory */
         void prepareMdpFile(const MdpFieldValues &mdpFieldValues,
-                            const char           *integrator,
-                            const char           *tcoupl,
-                            const char           *pcoupl);
+                            const char *          integrator,
+                            const char *          tcoupl,
+                            const char *          pcoupl);
         /*! \brief Run mdrun two ways in a test. Subclasses must override this method.
          *
          * It is expected that this method calls
          * prepareMdpFieldValues() and prepareMdpFile() to help set up
          * a call to grompp with gromppCallerRef. Then mdrun will be
          * called and perhaps energies and forces compared. */
-        virtual void runTest(const CommandLine     &gromppCallerRef,
-                             const char            *simulationName,
-                             const char            *integrator,
-                             const char            *tcoupl,
-                             const char            *pcoupl,
+        virtual void runTest(const CommandLine &    gromppCallerRef,
+                             const char *           simulationName,
+                             const char *           integrator,
+                             const char *           tcoupl,
+                             const char *           pcoupl,
                              FloatingPointTolerance tolerance) = 0;
         //! Convenience overload of runTest() for cases that don't need to customize the command line for grompp
-        virtual void runTest(const char            *simulationName,
-                             const char            *integrator,
-                             const char            *tcoupl,
-                             const char            *pcoupl,
+        virtual void runTest(const char *           simulationName,
+                             const char *           integrator,
+                             const char *           tcoupl,
+                             const char *           pcoupl,
                              FloatingPointTolerance tolerance);
 };
 

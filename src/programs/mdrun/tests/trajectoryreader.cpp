@@ -97,8 +97,7 @@ TrajectoryFrameReader::TrajectoryFrameReader(const std::string &filename)
     oenvGuard_.reset(oenv);
 }
 
-bool
-TrajectoryFrameReader::readNextFrame()
+bool TrajectoryFrameReader::readNextFrame()
 {
     if (haveProbedForNextFrame_)
     {
@@ -138,8 +137,7 @@ TrajectoryFrameReader::readNextFrame()
     return nextFrameExists_;
 }
 
-TrajectoryFrame
-TrajectoryFrameReader::frame()
+TrajectoryFrame TrajectoryFrameReader::frame()
 {
     TrajectoryFrame frame;
 
@@ -203,17 +201,17 @@ void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
             if (reference.frame_->bX && test.frame_->bX)
             {
                 EXPECT_REAL_EQ_TOL(reference.frame_->x[i][d], test.frame_->x[i][d], tolerance)
-                << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                << " x[" << i << "][" << d << "] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
             }
             if (reference.frame_->bV && test.frame_->bV)
             {
                 EXPECT_REAL_EQ_TOL(reference.frame_->v[i][d], test.frame_->v[i][d], tolerance)
-                << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                << " v[" << i << "][" << d << "] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
             }
             if (reference.frame_->bF && test.frame_->bF)
             {
                 EXPECT_REAL_EQ_TOL(reference.frame_->f[i][d], test.frame_->f[i][d], tolerance)
-                << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                << " f[" << i << "][" << d << "] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
             }
         }
     }

@@ -79,7 +79,7 @@ class RunnerModule : public ICommandLineOptionsModule
         }
 
         virtual void init(CommandLineModuleSettings * /*settings*/) {}
-        virtual void initOptions(IOptionsContainer                 *options,
+        virtual void initOptions(IOptionsContainer *                options,
                                  ICommandLineOptionsModuleSettings *settings);
         virtual void optionsFinished();
         virtual int run();
@@ -93,7 +93,7 @@ class RunnerModule : public ICommandLineOptionsModule
 void RunnerModule::initOptions(
         IOptionsContainer *options, ICommandLineOptionsModuleSettings *settings)
 {
-    std::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
+    std::shared_ptr<TimeUnitBehavior> timeUnitBehavior(
             new TimeUnitBehavior());
     std::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
             new SelectionOptionBehavior(&selections_,
@@ -130,7 +130,7 @@ int RunnerModule::run()
     t_pbc  pbc;
     t_pbc *ppbc = settings_.hasPBC() ? &pbc : nullptr;
 
-    int    nframes = 0;
+    int                                 nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
             module_->startFrames(dataOptions, selections_));
@@ -148,8 +148,7 @@ int RunnerModule::run()
         module_->finishFrameSerial(nframes);
 
         ++nframes;
-    }
-    while (common_.readNextFrame());
+    } while (common_.readNextFrame());
     module_->finishFrames(pdata.get());
     if (pdata.get() != nullptr)
     {
@@ -183,8 +182,7 @@ int RunnerModule::run()
  */
 
 // static
-int
-TrajectoryAnalysisCommandLineRunner::runAsMain(
+int TrajectoryAnalysisCommandLineRunner::runAsMain(
         int argc, char *argv[], ModuleFactoryMethod factory)
 {
     auto runnerFactory = [factory]
@@ -195,8 +193,7 @@ TrajectoryAnalysisCommandLineRunner::runAsMain(
 }
 
 // static
-void
-TrajectoryAnalysisCommandLineRunner::registerModule(
+void TrajectoryAnalysisCommandLineRunner::registerModule(
         CommandLineModuleManager *manager, const char *name,
         const char *description, ModuleFactoryMethod factory)
 {

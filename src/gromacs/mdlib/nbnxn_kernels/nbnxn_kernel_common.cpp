@@ -38,19 +38,17 @@
 
 #include "gromacs/pbcutil/ishift.h"
 
-static void
-clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
+static void clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 {
     int i;
 
-    for (i = 0; i < nbat->natoms*nbat->fstride; i++)
+    for (i = 0; i < nbat->natoms * nbat->fstride; i++)
     {
         f[i] = 0;
     }
 }
 
-static void
-clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
+static void clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
 {
     const nbnxn_buffer_flags_t *flags;
     gmx_bitmask_t               our_flag;
@@ -64,9 +62,9 @@ clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
     {
         if (!bitmask_is_disjoint(flags->flag[b], our_flag))
         {
-            a0 = b*NBNXN_BUFFERFLAG_SIZE;
+            a0 = b * NBNXN_BUFFERFLAG_SIZE;
             a1 = a0 + NBNXN_BUFFERFLAG_SIZE;
-            for (i = a0*nbat->fstride; i < a1*nbat->fstride; i++)
+            for (i = a0 * nbat->fstride; i < a1 * nbat->fstride; i++)
             {
                 f[i] = 0;
             }
@@ -74,8 +72,7 @@ clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
     }
 }
 
-void
-clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f)
+void clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f)
 {
     if (nbat->bUseBufferFlags)
     {
@@ -87,22 +84,20 @@ clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f)
     }
 }
 
-void
-clear_fshift(real *fshift)
+void clear_fshift(real *fshift)
 {
     int i;
 
-    for (i = 0; i < SHIFTS*DIM; i++)
+    for (i = 0; i < SHIFTS * DIM; i++)
     {
         fshift[i] = 0;
     }
 }
 
-void
-reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
-                           int                         nlist,
-                           real                       *Vvdw,
-                           real                       *Vc)
+void reduce_energies_over_lists(const nbnxn_atomdata_t *nbat,
+                                int                     nlist,
+                                real *                  Vvdw,
+                                real *                  Vc)
 {
     int nb;
     int i, j, ind, indr;
@@ -112,16 +107,16 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
         for (i = 0; i < nbat->nenergrp; i++)
         {
             /* Reduce the diagonal terms */
-            ind        = i*nbat->nenergrp + i;
+            ind        = i * nbat->nenergrp + i;
             Vvdw[ind] += nbat->out[nb].Vvdw[ind];
             Vc[ind]   += nbat->out[nb].Vc[ind];
 
             /* Reduce the off-diagonal terms */
-            for (j = i+1; j < nbat->nenergrp; j++)
+            for (j = i + 1; j < nbat->nenergrp; j++)
             {
                 /* The output should contain only one off-diagonal part */
-                ind        = i*nbat->nenergrp + j;
-                indr       = j*nbat->nenergrp + i;
+                ind        = i * nbat->nenergrp + j;
+                indr       = j * nbat->nenergrp + i;
                 Vvdw[ind] += nbat->out[nb].Vvdw[ind] + nbat->out[nb].Vvdw[indr];
                 Vc[ind]   += nbat->out[nb].Vc[ind]   + nbat->out[nb].Vc[indr];
             }

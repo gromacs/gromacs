@@ -91,36 +91,36 @@ void ewald_LRcorrection(int numAtomsLocal,
         /* We need to correct only self interactions */
         numAtomsToBeCorrected = numAtomsLocal;
     }
-    int         start =  (numAtomsToBeCorrected* thread     )/numThreads;
-    int         end   =  (numAtomsToBeCorrected*(thread + 1))/numThreads;
+    int start =  (numAtomsToBeCorrected * thread     ) / numThreads;
+    int end   =  (numAtomsToBeCorrected * (thread + 1)) / numThreads;
 
-    int         i, i1, i2, j, k, m, iv, jv, q;
-    int        *AA;
-    double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
-    double      Vexcl_lj;
-    real        one_4pi_eps;
-    real        v, vc, qiA, qiB, dr2, rinv;
-    real        Vself_q[2], Vself_lj[2], Vdipole[2], rinv2, ewc_q = fr->ewaldcoeff_q, ewcdr;
-    real        ewc_lj = fr->ewaldcoeff_lj, ewc_lj2 = ewc_lj * ewc_lj;
-    real        c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, c6L = 0, rinv6;
-    rvec        df, dx, mutot[2], dipcorrA, dipcorrB;
-    tensor      dxdf_q = {{0}}, dxdf_lj = {{0}};
-    real        vol    = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-    real        L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
-    real        chargecorr[2] = { 0, 0 };
-    gmx_bool    bMolPBC       = fr->bMolPBC;
-    gmx_bool    bDoingLBRule  = (fr->ljpme_combination_rule == eljpmeLB);
-    gmx_bool    bNeedLongRangeCorrection;
+    int      i, i1, i2, j, k, m, iv, jv, q;
+    int *    AA;
+    double   Vexcl_q, dvdl_excl_q, dvdl_excl_lj;    /* Necessary for precision */
+    double   Vexcl_lj;
+    real     one_4pi_eps;
+    real     v, vc, qiA, qiB, dr2, rinv;
+    real     Vself_q[2], Vself_lj[2], Vdipole[2], rinv2, ewc_q = fr->ewaldcoeff_q, ewcdr;
+    real     ewc_lj = fr->ewaldcoeff_lj, ewc_lj2 = ewc_lj * ewc_lj;
+    real     c6Ai   = 0, c6Bi = 0, c6A = 0, c6B = 0, ewcdr2, ewcdr4, c6L = 0, rinv6;
+    rvec     df, dx, mutot[2], dipcorrA, dipcorrB;
+    tensor   dxdf_q = {{0}}, dxdf_lj = {{0}};
+    real     vol    = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+    real     L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
+    real     chargecorr[2] = { 0, 0 };
+    gmx_bool bMolPBC       = fr->bMolPBC;
+    gmx_bool bDoingLBRule  = (fr->ljpme_combination_rule == eljpmeLB);
+    gmx_bool bNeedLongRangeCorrection;
 
     /* This routine can be made faster by using tables instead of analytical interactions
      * However, that requires a thorough verification that they are correct in all cases.
      */
 
-    one_4pi_eps   = ONE_4PI_EPS0/fr->epsilon_r;
-    vr0_q         = ewc_q*M_2_SQRTPI;
+    one_4pi_eps = ONE_4PI_EPS0 / fr->epsilon_r;
+    vr0_q       = ewc_q * M_2_SQRTPI;
     if (EVDW_PME(fr->vdwtype))
     {
-        vr0_lj    = -gmx::power6(ewc_lj)/6.0;
+        vr0_lj = -gmx::power6(ewc_lj) / 6.0;
     }
 
     AA           = excl->a;
@@ -130,15 +130,15 @@ void ewald_LRcorrection(int numAtomsLocal,
     dvdl_excl_lj = 0;
     Vdipole[0]   = 0;
     Vdipole[1]   = 0;
-    L1_q         = 1.0-lambda_q;
-    L1_lj        = 1.0-lambda_lj;
+    L1_q         = 1.0 - lambda_q;
+    L1_lj        = 1.0 - lambda_lj;
     /* Note that we have to transform back to gromacs units, since
      * mu_tot contains the dipole in debye units (for output).
      */
     for (i = 0; (i < DIM); i++)
     {
-        mutot[0][i] = mu_tot[0][i]*DEBYE2ENM;
-        mutot[1][i] = mu_tot[1][i]*DEBYE2ENM;
+        mutot[0][i] = mu_tot[0][i] * DEBYE2ENM;
+        mutot[1][i] = mu_tot[1][i] * DEBYE2ENM;
         dipcorrA[i] = 0;
         dipcorrB[i] = 0;
     }
@@ -148,25 +148,25 @@ void ewald_LRcorrection(int numAtomsLocal,
         case eewg3D:
             if (epsilon_surface != 0)
             {
-                dipole_coeff =
-                    2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface + fr->epsilon_r)*vol);
+                dipole_coeff
+                    = 2 * M_PI * ONE_4PI_EPS0 / ((2 * epsilon_surface + fr->epsilon_r) * vol);
                 for (i = 0; (i < DIM); i++)
                 {
-                    dipcorrA[i] = 2*dipole_coeff*mutot[0][i];
-                    dipcorrB[i] = 2*dipole_coeff*mutot[1][i];
+                    dipcorrA[i] = 2 * dipole_coeff * mutot[0][i];
+                    dipcorrB[i] = 2 * dipole_coeff * mutot[1][i];
                 }
             }
             break;
         case eewg3DC:
-            dipole_coeff  = 2*M_PI*one_4pi_eps/vol;
-            dipcorrA[ZZ]  = 2*dipole_coeff*mutot[0][ZZ];
-            dipcorrB[ZZ]  = 2*dipole_coeff*mutot[1][ZZ];
+            dipole_coeff = 2 * M_PI * one_4pi_eps / vol;
+            dipcorrA[ZZ] = 2 * dipole_coeff * mutot[0][ZZ];
+            dipcorrB[ZZ] = 2 * dipole_coeff * mutot[1][ZZ];
             for (int q = 0; q < (bHaveChargeOrTypePerturbed ? 2 : 1); q++)
             {
                 /* Avoid charge corrections with near-zero net charge */
                 if (fabs(fr->qsum[q]) > 1e-4)
                 {
-                    chargecorr[q] = 2*dipole_coeff*fr->qsum[q];
+                    chargecorr[q] = 2 * dipole_coeff * fr->qsum[q];
                 }
             }
             break;
@@ -187,7 +187,7 @@ void ewald_LRcorrection(int numAtomsLocal,
         for (i = start; (i < end); i++)
         {
             /* Initiate local variables (for this i-particle) to 0 */
-            qiA = chargeA[i]*one_4pi_eps;
+            qiA = chargeA[i] * one_4pi_eps;
             if (EVDW_PME(fr->vdwtype))
             {
                 c6Ai = C6A[i];
@@ -198,8 +198,8 @@ void ewald_LRcorrection(int numAtomsLocal,
             }
             if (calc_excl_corr)
             {
-                i1  = excl->index[i];
-                i2  = excl->index[i+1];
+                i1 = excl->index[i];
+                i2 = excl->index[i + 1];
 
                 /* Loop over excluded neighbours */
                 for (j = i1; (j < i2); j++)
@@ -214,13 +214,13 @@ void ewald_LRcorrection(int numAtomsLocal,
                      */
                     if (k > i)
                     {
-                        qqA = qiA*chargeA[k];
+                        qqA = qiA * chargeA[k];
                         if (EVDW_PME(fr->vdwtype))
                         {
-                            c6A  = c6Ai * C6A[k];
+                            c6A = c6Ai * C6A[k];
                             if (bDoingLBRule)
                             {
-                                c6A *= gmx::power6(0.5*(sigmaA[i]+sigmaA[k]))*sigma3A[k];
+                                c6A *= gmx::power6(0.5 * (sigmaA[i] + sigmaA[k])) * sigma3A[k];
                             }
                         }
                         if (qqA != 0.0 || c6A != 0.0)
@@ -229,13 +229,13 @@ void ewald_LRcorrection(int numAtomsLocal,
                             if (bMolPBC)
                             {
                                 /* Cheap pbc_dx, assume excluded pairs are at short distance. */
-                                for (m = DIM-1; (m >= 0); m--)
+                                for (m = DIM - 1; (m >= 0); m--)
                                 {
-                                    if (dx[m] > 0.5*box[m][m])
+                                    if (dx[m] > 0.5 * box[m][m])
                                     {
                                         rvec_dec(dx, box[m]);
                                     }
-                                    else if (dx[m] < -0.5*box[m][m])
+                                    else if (dx[m] < -0.5 * box[m][m])
                                     {
                                         rvec_inc(dx, box[m]);
                                     }
@@ -247,15 +247,15 @@ void ewald_LRcorrection(int numAtomsLocal,
                              */
                             if (dr2 != 0)
                             {
-                                rinv              = gmx::invsqrt(dr2);
-                                rinv2             = rinv*rinv;
+                                rinv  = gmx::invsqrt(dr2);
+                                rinv2 = rinv * rinv;
                                 if (qqA != 0.0)
                                 {
                                     real dr, fscal;
 
-                                    dr       = 1.0/rinv;
-                                    ewcdr    = ewc_q*dr;
-                                    vc       = qqA*std::erf(ewcdr)*rinv;
+                                    dr       = 1.0 / rinv;
+                                    ewcdr    = ewc_q * dr;
+                                    vc       = qqA * std::erf(ewcdr) * rinv;
                                     Vexcl_q += vc;
 #if GMX_DOUBLE
                                     /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
@@ -268,12 +268,12 @@ void ewald_LRcorrection(int numAtomsLocal,
                                      * to normalise the relative position vector dx */
                                     if (ewcdr > R_ERF_R_INACC)
                                     {
-                                        fscal = rinv2*(vc - qqA*ewc_q*M_2_SQRTPI*exp(-ewcdr*ewcdr));
+                                        fscal = rinv2 * (vc - qqA * ewc_q * M_2_SQRTPI * exp(-ewcdr * ewcdr));
                                     }
                                     else
                                     {
                                         /* Use a fourth order series expansion for small ewcdr */
-                                        fscal = ewc_q*ewc_q*qqA*vr0_q*(2.0/3.0 - 0.4*ewcdr*ewcdr);
+                                        fscal = ewc_q * ewc_q * qqA * vr0_q * (2.0 / 3.0 - 0.4 * ewcdr * ewcdr);
                                     }
 
                                     /* The force vector is obtained by multiplication with
@@ -286,7 +286,7 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     {
                                         for (jv = 0; (jv < DIM); jv++)
                                         {
-                                            dxdf_q[iv][jv] += dx[iv]*df[jv];
+                                            dxdf_q[iv][jv] += dx[iv] * df[jv];
                                         }
                                     }
                                 }
@@ -295,18 +295,18 @@ void ewald_LRcorrection(int numAtomsLocal,
                                 {
                                     real fscal;
 
-                                    rinv6     = rinv2*rinv2*rinv2;
-                                    ewcdr2    = ewc_lj2*dr2;
-                                    ewcdr4    = ewcdr2*ewcdr2;
+                                    rinv6  = rinv2 * rinv2 * rinv2;
+                                    ewcdr2 = ewc_lj2 * dr2;
+                                    ewcdr4 = ewcdr2 * ewcdr2;
                                     /* We get the excluded long-range contribution from -C6*(1-g(r))
                                      * g(r) is also defined in the manual under LJ-PME
                                      */
-                                    vc        = -c6A*rinv6*(1.0 - exp(-ewcdr2)*(1 + ewcdr2 + 0.5*ewcdr4));
+                                    vc        = -c6A * rinv6 * (1.0 - exp(-ewcdr2) * (1 + ewcdr2 + 0.5 * ewcdr4));
                                     Vexcl_lj += vc;
                                     /* The force is the derivative of the potential vc.
                                      * fscal is the scalar force pre-multiplied by rinv,
                                      * to normalise the relative position vector dx */
-                                    fscal     = 6.0*vc*rinv2 + c6A*rinv6*exp(-ewcdr2)*ewc_lj2*ewcdr4;
+                                    fscal = 6.0 * vc * rinv2 + c6A * rinv6 * exp(-ewcdr2) * ewc_lj2 * ewcdr4;
 
                                     /* The force vector is obtained by multiplication with
                                      * the relative position vector
@@ -318,15 +318,15 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     {
                                         for (jv = 0; (jv < DIM); jv++)
                                         {
-                                            dxdf_lj[iv][jv] += dx[iv]*df[jv];
+                                            dxdf_lj[iv][jv] += dx[iv] * df[jv];
                                         }
                                     }
                                 }
                             }
                             else
                             {
-                                Vexcl_q  += qqA*vr0_q;
-                                Vexcl_lj += c6A*vr0_lj;
+                                Vexcl_q  += qqA * vr0_q;
+                                Vexcl_lj += c6A * vr0_lj;
                             }
                         }
                     }
@@ -337,11 +337,11 @@ void ewald_LRcorrection(int numAtomsLocal,
             {
                 for (j = 0; (j < DIM); j++)
                 {
-                    f[i][j] -= dipcorrA[j]*chargeA[i];
+                    f[i][j] -= dipcorrA[j] * chargeA[i];
                 }
                 if (chargecorr[0] != 0)
                 {
-                    f[i][ZZ] += chargecorr[0]*chargeA[i]*x[i][ZZ];
+                    f[i][ZZ] += chargecorr[0] * chargeA[i] * x[i][ZZ];
                 }
             }
         }
@@ -351,8 +351,8 @@ void ewald_LRcorrection(int numAtomsLocal,
         for (i = start; (i < end); i++)
         {
             /* Initiate local variables (for this i-particle) to 0 */
-            qiA = chargeA[i]*one_4pi_eps;
-            qiB = chargeB[i]*one_4pi_eps;
+            qiA = chargeA[i] * one_4pi_eps;
+            qiB = chargeB[i] * one_4pi_eps;
             if (EVDW_PME(fr->vdwtype))
             {
                 c6Ai = C6A[i];
@@ -365,8 +365,8 @@ void ewald_LRcorrection(int numAtomsLocal,
             }
             if (calc_excl_corr)
             {
-                i1  = excl->index[i];
-                i2  = excl->index[i+1];
+                i1 = excl->index[i];
+                i2 = excl->index[i + 1];
 
                 /* Loop over excluded neighbours */
                 for (j = i1; (j < i2); j++)
@@ -374,38 +374,38 @@ void ewald_LRcorrection(int numAtomsLocal,
                     k = AA[j];
                     if (k > i)
                     {
-                        qqA = qiA*chargeA[k];
-                        qqB = qiB*chargeB[k];
+                        qqA = qiA * chargeA[k];
+                        qqB = qiB * chargeB[k];
                         if (EVDW_PME(fr->vdwtype))
                         {
-                            c6A = c6Ai*C6A[k];
-                            c6B = c6Bi*C6B[k];
+                            c6A = c6Ai * C6A[k];
+                            c6B = c6Bi * C6B[k];
                             if (bDoingLBRule)
                             {
-                                c6A *= gmx::power6(0.5*(sigmaA[i]+sigmaA[k]))*sigma3A[k];
-                                c6B *= gmx::power6(0.5*(sigmaB[i]+sigmaB[k]))*sigma3B[k];
+                                c6A *= gmx::power6(0.5 * (sigmaA[i] + sigmaA[k])) * sigma3A[k];
+                                c6B *= gmx::power6(0.5 * (sigmaB[i] + sigmaB[k])) * sigma3B[k];
                             }
                         }
                         if (qqA != 0.0 || qqB != 0.0 || c6A != 0.0 || c6B != 0.0)
                         {
                             real fscal;
 
-                            qqL   = L1_q*qqA + lambda_q*qqB;
+                            qqL = L1_q * qqA + lambda_q * qqB;
                             if (EVDW_PME(fr->vdwtype))
                             {
-                                c6L = L1_lj*c6A + lambda_lj*c6B;
+                                c6L = L1_lj * c6A + lambda_lj * c6B;
                             }
                             rvec_sub(x[i], x[k], dx);
                             if (bMolPBC)
                             {
                                 /* Cheap pbc_dx, assume excluded pairs are at short distance. */
-                                for (m = DIM-1; (m >= 0); m--)
+                                for (m = DIM - 1; (m >= 0); m--)
                                 {
-                                    if (dx[m] > 0.5*box[m][m])
+                                    if (dx[m] > 0.5 * box[m][m])
                                     {
                                         rvec_dec(dx, box[m]);
                                     }
-                                    else if (dx[m] < -0.5*box[m][m])
+                                    else if (dx[m] < -0.5 * box[m][m])
                                     {
                                         rvec_inc(dx, box[m]);
                                     }
@@ -414,20 +414,20 @@ void ewald_LRcorrection(int numAtomsLocal,
                             dr2 = norm2(dx);
                             if (dr2 != 0)
                             {
-                                rinv    = gmx::invsqrt(dr2);
-                                rinv2   = rinv*rinv;
+                                rinv  = gmx::invsqrt(dr2);
+                                rinv2 = rinv * rinv;
                                 if (qqA != 0.0 || qqB != 0.0)
                                 {
                                     real dr;
 
-                                    dr           = 1.0/rinv;
-                                    v            = std::erf(ewc_q*dr)*rinv;
-                                    vc           = qqL*v;
-                                    Vexcl_q     += vc;
+                                    dr       = 1.0 / rinv;
+                                    v        = std::erf(ewc_q * dr) * rinv;
+                                    vc       = qqL * v;
+                                    Vexcl_q += vc;
                                     /* fscal is the scalar force pre-multiplied by rinv,
                                      * to normalise the relative position vector dx */
-                                    fscal        = rinv2*(vc-qqL*ewc_q*M_2_SQRTPI*exp(-ewc_q*ewc_q*dr2));
-                                    dvdl_excl_q += (qqB - qqA)*v;
+                                    fscal        = rinv2 * (vc - qqL * ewc_q * M_2_SQRTPI * exp(-ewc_q * ewc_q * dr2));
+                                    dvdl_excl_q += (qqB - qqA) * v;
 
                                     /* The force vector is obtained by multiplication with
                                      * the relative position vector
@@ -439,23 +439,23 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     {
                                         for (jv = 0; (jv < DIM); jv++)
                                         {
-                                            dxdf_q[iv][jv] += dx[iv]*df[jv];
+                                            dxdf_q[iv][jv] += dx[iv] * df[jv];
                                         }
                                     }
                                 }
 
                                 if ((c6A != 0.0 || c6B != 0.0) && EVDW_PME(fr->vdwtype))
                                 {
-                                    rinv6         = rinv2*rinv2*rinv2;
-                                    ewcdr2        = ewc_lj2*dr2;
-                                    ewcdr4        = ewcdr2*ewcdr2;
-                                    v             = -rinv6*(1.0 - exp(-ewcdr2)*(1 + ewcdr2 + 0.5*ewcdr4));
-                                    vc            = c6L*v;
-                                    Vexcl_lj     += vc;
+                                    rinv6     = rinv2 * rinv2 * rinv2;
+                                    ewcdr2    = ewc_lj2 * dr2;
+                                    ewcdr4    = ewcdr2 * ewcdr2;
+                                    v         = -rinv6 * (1.0 - exp(-ewcdr2) * (1 + ewcdr2 + 0.5 * ewcdr4));
+                                    vc        = c6L * v;
+                                    Vexcl_lj += vc;
                                     /* fscal is the scalar force pre-multiplied by rinv,
                                      * to normalise the relative position vector dx */
-                                    fscal         = 6.0*vc*rinv2 + c6L*rinv6*exp(-ewcdr2)*ewc_lj2*ewcdr4;
-                                    dvdl_excl_lj += (c6B - c6A)*v;
+                                    fscal         = 6.0 * vc * rinv2 + c6L * rinv6 * exp(-ewcdr2) * ewc_lj2 * ewcdr4;
+                                    dvdl_excl_lj += (c6B - c6A) * v;
 
                                     /* The force vector is obtained by multiplication with
                                      * the relative position vector
@@ -467,17 +467,17 @@ void ewald_LRcorrection(int numAtomsLocal,
                                     {
                                         for (jv = 0; (jv < DIM); jv++)
                                         {
-                                            dxdf_lj[iv][jv] += dx[iv]*df[jv];
+                                            dxdf_lj[iv][jv] += dx[iv] * df[jv];
                                         }
                                     }
                                 }
                             }
                             else
                             {
-                                Vexcl_q      += qqL*vr0_q;
-                                dvdl_excl_q  += (qqB - qqA)*vr0_q;
-                                Vexcl_lj     += c6L*vr0_lj;
-                                dvdl_excl_lj += (c6B - c6A)*vr0_lj;
+                                Vexcl_q      += qqL * vr0_q;
+                                dvdl_excl_q  += (qqB - qqA) * vr0_q;
+                                Vexcl_lj     += c6L * vr0_lj;
+                                dvdl_excl_lj += (c6B - c6A) * vr0_lj;
                             }
                         }
                     }
@@ -488,13 +488,13 @@ void ewald_LRcorrection(int numAtomsLocal,
             {
                 for (j = 0; (j < DIM); j++)
                 {
-                    f[i][j] -= L1_q*dipcorrA[j]*chargeA[i]
-                        + lambda_q*dipcorrB[j]*chargeB[i];
+                    f[i][j] -= L1_q * dipcorrA[j] * chargeA[i]
+                        + lambda_q * dipcorrB[j] * chargeB[i];
                 }
                 if (chargecorr[0] != 0 || chargecorr[1] != 0)
                 {
-                    f[i][ZZ] += (L1_q*chargecorr[0]*chargeA[i]
-                                 + lambda_q*chargecorr[1])*x[i][ZZ];
+                    f[i][ZZ] += (L1_q * chargecorr[0] * chargeA[i]
+                                 + lambda_q * chargecorr[1]) * x[i][ZZ];
                 }
             }
         }
@@ -503,8 +503,8 @@ void ewald_LRcorrection(int numAtomsLocal,
     {
         for (jv = 0; (jv < DIM); jv++)
         {
-            vir_q[iv][jv]  += 0.5*dxdf_q[iv][jv];
-            vir_lj[iv][jv] += 0.5*dxdf_lj[iv][jv];
+            vir_q[iv][jv]  += 0.5 * dxdf_q[iv][jv];
+            vir_lj[iv][jv] += 0.5 * dxdf_lj[iv][jv];
         }
     }
 
@@ -521,10 +521,10 @@ void ewald_LRcorrection(int numAtomsLocal,
             if (calc_excl_corr)
             {
                 /* Self-energy correction */
-                Vself_q[q] = ewc_q*one_4pi_eps*fr->q2sum[q]*M_1_SQRTPI;
+                Vself_q[q] = ewc_q * one_4pi_eps * fr->q2sum[q] * M_1_SQRTPI;
                 if (EVDW_PME(fr->vdwtype))
                 {
-                    Vself_lj[q] =  fr->c6sum[q]*0.5*vr0_lj;
+                    Vself_lj[q] =  fr->c6sum[q] * 0.5 * vr0_lj;
                 }
             }
 
@@ -536,11 +536,11 @@ void ewald_LRcorrection(int numAtomsLocal,
             {
                 if (ewald_geometry == eewg3D)
                 {
-                    Vdipole[q] = dipole_coeff*iprod(mutot[q], mutot[q]);
+                    Vdipole[q] = dipole_coeff * iprod(mutot[q], mutot[q]);
                 }
                 else if (ewald_geometry == eewg3DC)
                 {
-                    Vdipole[q] = dipole_coeff*mutot[q][ZZ]*mutot[q][ZZ];
+                    Vdipole[q] = dipole_coeff * mutot[q][ZZ] * mutot[q][ZZ];
 
                     if (chargecorr[q] != 0)
                     {
@@ -554,9 +554,9 @@ void ewald_LRcorrection(int numAtomsLocal,
                         real        sumQZ2 = 0;
                         for (int i = 0; i < numAtomsLocal; i++)
                         {
-                            sumQZ2 += qPtr[i]*x[i][ZZ]*x[i][ZZ];
+                            sumQZ2 += qPtr[i] * x[i][ZZ] * x[i][ZZ];
                         }
-                        Vdipole[q] -= dipole_coeff*fr->qsum[q]*(sumQZ2 + fr->qsum[q]*box[ZZ][ZZ]*box[ZZ][ZZ]/12);
+                        Vdipole[q] -= dipole_coeff * fr->qsum[q] * (sumQZ2 + fr->qsum[q] * box[ZZ][ZZ] * box[ZZ][ZZ] / 12);
                     }
                 }
             }
@@ -572,14 +572,14 @@ void ewald_LRcorrection(int numAtomsLocal,
     }
     else
     {
-        *Vcorr_q = L1_q*(Vdipole[0] - Vself_q[0])
-            + lambda_q*(Vdipole[1] - Vself_q[1])
+        *Vcorr_q = L1_q * (Vdipole[0] - Vself_q[0])
+            + lambda_q * (Vdipole[1] - Vself_q[1])
             - Vexcl_q;
         *dvdlambda_q += Vdipole[1] - Vself_q[1]
             - (Vdipole[0] - Vself_q[0]) - dvdl_excl_q;
         if (EVDW_PME(fr->vdwtype))
         {
-            *Vcorr_lj      = -(L1_lj*Vself_lj[0] + lambda_lj*Vself_lj[1]) - Vexcl_lj;
+            *Vcorr_lj      = -(L1_lj * Vself_lj[0] + lambda_lj * Vself_lj[1]) - Vexcl_lj;
             *dvdlambda_lj += -Vself_lj[1] + Vself_lj[0] - dvdl_excl_lj;
         }
     }
@@ -588,7 +588,7 @@ void ewald_LRcorrection(int numAtomsLocal,
     {
         fprintf(debug, "Long Range corrections for Ewald interactions:\n");
         fprintf(debug, "q2sum = %g, Vself_q=%g c6sum = %g, Vself_lj=%g\n",
-                L1_q*fr->q2sum[0]+lambda_q*fr->q2sum[1], L1_q*Vself_q[0]+lambda_q*Vself_q[1], L1_lj*fr->c6sum[0]+lambda_lj*fr->c6sum[1], L1_lj*Vself_lj[0]+lambda_lj*Vself_lj[1]);
+                L1_q * fr->q2sum[0] + lambda_q * fr->q2sum[1], L1_q * Vself_q[0] + lambda_q * Vself_q[1], L1_lj * fr->c6sum[0] + lambda_lj * fr->c6sum[1], L1_lj * Vself_lj[0] + lambda_lj * Vself_lj[1]);
         fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);
         fprintf(debug, "Lennard-Jones Long Range correction: Vexcl=%g\n", Vexcl_lj);
         if (MASTER(cr) && thread == 0)
@@ -596,7 +596,7 @@ void ewald_LRcorrection(int numAtomsLocal,
             if (epsilon_surface > 0 || ewald_geometry == eewg3DC)
             {
                 fprintf(debug, "Total dipole correction: Vdipole=%g\n",
-                        L1_q*Vdipole[0]+lambda_q*Vdipole[1]);
+                        L1_q * Vdipole[0] + lambda_q * Vdipole[1]);
             }
         }
     }

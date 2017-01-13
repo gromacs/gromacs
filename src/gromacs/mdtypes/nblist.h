@@ -76,7 +76,8 @@ enum gmx_table_format
     GMX_TABLE_FORMAT_NR
 };
 
-enum {
+enum
+{
     eNL_VDWQQ, eNL_VDW, eNL_QQ,
     eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE,
     eNL_VDWQQ_WATER, eNL_QQ_WATER,
@@ -86,10 +87,11 @@ enum {
 
 #define MAX_CG 1024
 
-typedef struct {
-    int     ncg;
-    int     nj;
-    int     jcg[MAX_CG];
+typedef struct
+{
+    int ncg;
+    int nj;
+    int jcg[MAX_CG];
 } t_ns_buf;
 
 
@@ -105,39 +107,39 @@ typedef struct {
 
 typedef struct t_nblist
 {
-    int             igeometry;    /* The type of list (atom, water, etc.)  */
-    int             ielec;        /* Coulomb loop type index for kernels   */
-    int             ielecmod;     /* Coulomb modifier (e.g. switch/shift)  */
-    int             ivdw;         /* VdW loop type index for kernels       */
-    int             ivdwmod;      /* VdW modifier (e.g. switch/shift)      */
-    int             type;         /* Type of interaction, listed in
+    int igeometry;                /* The type of list (atom, water, etc.)  */
+    int ielec;                    /* Coulomb loop type index for kernels   */
+    int ielecmod;                 /* Coulomb modifier (e.g. switch/shift)  */
+    int ivdw;                     /* VdW loop type index for kernels       */
+    int ivdwmod;                  /* VdW modifier (e.g. switch/shift)      */
+    int type;                     /* Type of interaction, listed in
                                      gmx_nblist_interaction_type           */
 
-    int             nri, maxnri;  /* Current/max number of i particles	   */
-    int             nrj, maxnrj;  /* Current/max number of j particles	   */
-    int *           iinr;         /* The i-elements                        */
-    int *           iinr_end;     /* The end atom, only with enlistCG      */
-    int *           gid;          /* Index in energy arrays                */
-    int *           shift;        /* Shift vector index                    */
-    int *           jindex;       /* Index in jjnr                         */
-    int *           jjnr;         /* The j-atom list                       */
-    int *           jjnr_end;     /* The end atom, only with enltypeCG     */
-    char *          excl_fep;     /* Exclusions for FEP with Verlet scheme */
-    t_excl *        excl;         /* Exclusions, only with enltypeCG       */
+    int      nri, maxnri;         /* Current/max number of i particles	   */
+    int      nrj, maxnrj;         /* Current/max number of j particles	   */
+    int *    iinr;                /* The i-elements                        */
+    int *    iinr_end;            /* The end atom, only with enlistCG      */
+    int *    gid;                 /* Index in energy arrays                */
+    int *    shift;               /* Shift vector index                    */
+    int *    jindex;              /* Index in jjnr                         */
+    int *    jjnr;                /* The j-atom list                       */
+    int *    jjnr_end;            /* The end atom, only with enltypeCG     */
+    char *   excl_fep;            /* Exclusions for FEP with Verlet scheme */
+    t_excl * excl;                /* Exclusions, only with enltypeCG       */
 
     /* We use separate pointers for kernels that compute both potential
      * and force (vf suffix), only potential (v) or only force (f)
      */
-    void *          kernelptr_vf;
-    void *          kernelptr_v;
-    void *          kernelptr_f;
+    void * kernelptr_vf;
+    void * kernelptr_v;
+    void * kernelptr_f;
 
     /* Pad the list of neighbors for each i atom with "-1" entries up to the
      * simd_padding_width, if it is larger than 0. This is necessary for many
      * accelerated kernels using single-instruction multiple-data operations
      * internally.
      */
-    int             simd_padding_width;
+    int simd_padding_width;
 
 } t_nblist;
 
@@ -160,29 +162,29 @@ typedef struct t_nblist
 /* Structure describing the data in a single table */
 typedef struct t_forcetable
 {
-    enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
-    enum gmx_table_format       format;      /* Interpolation type and data format */
+    enum gmx_table_interaction interaction;  /* Types of interactions stored in this table */
+    enum gmx_table_format      format;       /* Interpolation type and data format */
 
-    real                        r;           /* range of the table */
-    int                         n;           /* n+1 is the number of table points */
-    real                        scale;       /* distance (nm) between two table points */
-    real *                      data;        /* the actual table data */
+    real   r;                                /* range of the table */
+    int    n;                                /* n+1 is the number of table points */
+    real   scale;                            /* distance (nm) between two table points */
+    real * data;                             /* the actual table data */
 
     /* Some information about the table layout. This can also be derived from the interpolation
      * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
      * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
      * It is always true that stride = formatsize*ninteractions
      */
-    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
-    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
-    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
+    int formatsize;                            /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int ninteractions;                         /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int stride;                                /* Distance to next table point (number of fp variables per table point in total) */
 } t_forcetable;
 
 typedef struct t_nblists
 {
-    struct t_forcetable   *table_elec;
-    struct t_forcetable   *table_vdw;
-    struct t_forcetable   *table_elec_vdw;
+    struct t_forcetable *table_elec;
+    struct t_forcetable *table_vdw;
+    struct t_forcetable *table_elec_vdw;
 
     /* The actual neighbor lists, short and long range, see enum above
      * for definition of neighborlist indices.
@@ -191,25 +193,26 @@ typedef struct t_nblists
     struct t_nblist nlist_lr[eNL_NR];
 } t_nblists;
 
-typedef struct gmx_ns_t {
+typedef struct gmx_ns_t
+{
     gmx_bool      bCGlist;
-    int          *simple_aaj;
+    int *         simple_aaj;
     struct t_grid*grid;
-    t_excl       *bexcl;
-    gmx_bool     *bHaveVdW;
-    t_ns_buf    **ns_buf;
-    gmx_bool     *bExcludeAlleg;
+    t_excl *      bexcl;
+    gmx_bool *    bHaveVdW;
+    t_ns_buf **   ns_buf;
+    gmx_bool *    bExcludeAlleg;
     int           nra_alloc;
     int           cg_alloc;
-    int         **nl_sr;
-    int          *nsr;
-    int         **nl_lr_ljc;
-    int         **nl_lr_one;
-    int          *nlr_ljc;
-    int          *nlr_one;
+    int **        nl_sr;
+    int *         nsr;
+    int **        nl_lr_ljc;
+    int **        nl_lr_one;
+    int *         nlr_ljc;
+    int *         nlr_one;
     /* the nblists should probably go in here */
-    gmx_bool      nblist_initialized; /* has the nblist been initialized?  */
-    int           dump_nl;            /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
+    gmx_bool nblist_initialized;      /* has the nblist been initialized?  */
+    int      dump_nl;                 /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
 } gmx_ns_t;
 
 #endif /* GMX_MDTYPES_NBLIST_H */

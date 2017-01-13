@@ -98,26 +98,25 @@ struct gmx_fft_mkl
 struct gmx_fft
 #endif
 {
-    int                ndim;          /**< Number of dimensions in FFT  */
-    int                nx;            /**< Length of X transform        */
-    int                ny;            /**< Length of Y transform        */
-    int                nz;            /**< Length of Z transform        */
-    int                real_fft;      /**< 1 if real FFT, otherwise 0   */
-    DFTI_DESCRIPTOR *  inplace[3];    /**< in-place FFT                 */
-    DFTI_DESCRIPTOR *  ooplace[4];    /**< out-of-place FFT             */
-    t_complex     *    work;          /**< Enable out-of-place c2r FFT  */
+    int               ndim;           /**< Number of dimensions in FFT  */
+    int               nx;             /**< Length of X transform        */
+    int               ny;             /**< Length of Y transform        */
+    int               nz;             /**< Length of Z transform        */
+    int               real_fft;       /**< 1 if real FFT, otherwise 0   */
+    DFTI_DESCRIPTOR * inplace[3];     /**< in-place FFT                 */
+    DFTI_DESCRIPTOR * ooplace[4];     /**< out-of-place FFT             */
+    t_complex *       work;           /**< Enable out-of-place c2r FFT  */
 };
 
 
 
-int
-gmx_fft_init_1d(gmx_fft_t *             pfft,
-                int                     nx,
-                gmx_fft_flag gmx_unused flags)
+int gmx_fft_init_1d(gmx_fft_t *             pfft,
+                    int                     nx,
+                    gmx_fft_flag gmx_unused flags)
 {
-    gmx_fft_t      fft;
-    int            d;
-    int            status;
+    gmx_fft_t fft;
+    int       d;
+    int       status;
 
     if (pfft == NULL)
     {
@@ -186,14 +185,13 @@ gmx_fft_init_1d(gmx_fft_t *             pfft,
 
 
 
-int
-gmx_fft_init_1d_real(gmx_fft_t *             pfft,
-                     int                     nx,
-                     gmx_fft_flag gmx_unused flags)
+int gmx_fft_init_1d_real(gmx_fft_t *             pfft,
+                         int                     nx,
+                         gmx_fft_flag gmx_unused flags)
 {
-    gmx_fft_t      fft;
-    int            d;
-    int            status;
+    gmx_fft_t fft;
+    int       d;
+    int       status;
 
     if (pfft == NULL)
     {
@@ -270,17 +268,16 @@ gmx_fft_init_1d_real(gmx_fft_t *             pfft,
 
 
 
-int
-gmx_fft_init_2d_real(gmx_fft_t *             pfft,
-                     int                     nx,
-                     int                     ny,
-                     gmx_fft_flag gmx_unused flags)
+int gmx_fft_init_2d_real(gmx_fft_t *             pfft,
+                         int                     nx,
+                         int                     ny,
+                         gmx_fft_flag gmx_unused flags)
 {
-    gmx_fft_t      fft;
-    int            d;
-    int            status;
-    MKL_LONG       stride[2];
-    MKL_LONG       nyc;
+    gmx_fft_t fft;
+    int       d;
+    int       status;
+    MKL_LONG  stride[2];
+    MKL_LONG  nyc;
 
     if (pfft == NULL)
     {
@@ -294,7 +291,7 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
         return ENOMEM;
     }
 
-    nyc = (ny/2 + 1);
+    nyc = (ny / 2 + 1);
 
     /* Mark all handles invalid */
     for (d = 0; d < 3; d++)
@@ -313,16 +310,16 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
 
     if (status == 0)
     {
-        stride[0]  = 0;
-        stride[1]  = nyc;
+        stride[0] = 0;
+        stride[1] = nyc;
 
-        status =
-            (DftiSetValue(fft->inplace[0], DFTI_PLACEMENT, DFTI_INPLACE)    ||
-             DftiSetValue(fft->inplace[0], DFTI_NUMBER_OF_TRANSFORMS, nyc)  ||
-             DftiSetValue(fft->inplace[0], DFTI_INPUT_DISTANCE, 1)          ||
-             DftiSetValue(fft->inplace[0], DFTI_INPUT_STRIDES, stride)      ||
-             DftiSetValue(fft->inplace[0], DFTI_OUTPUT_DISTANCE, 1)         ||
-             DftiSetValue(fft->inplace[0], DFTI_OUTPUT_STRIDES, stride));
+        status
+            = (DftiSetValue(fft->inplace[0], DFTI_PLACEMENT, DFTI_INPLACE)
+               || DftiSetValue(fft->inplace[0], DFTI_NUMBER_OF_TRANSFORMS, nyc)
+               || DftiSetValue(fft->inplace[0], DFTI_INPUT_DISTANCE, 1)
+               || DftiSetValue(fft->inplace[0], DFTI_INPUT_STRIDES, stride)
+               || DftiSetValue(fft->inplace[0], DFTI_OUTPUT_DISTANCE, 1)
+               || DftiSetValue(fft->inplace[0], DFTI_OUTPUT_STRIDES, stride));
     }
 
     if (status == 0)
@@ -341,13 +338,13 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
         stride[0] = 0;
         stride[1] = nyc;
 
-        status =
-            (DftiSetValue(fft->ooplace[0], DFTI_PLACEMENT, DFTI_NOT_INPLACE) ||
-             DftiSetValue(fft->ooplace[0], DFTI_NUMBER_OF_TRANSFORMS, nyc)   ||
-             DftiSetValue(fft->ooplace[0], DFTI_INPUT_DISTANCE, 1)           ||
-             DftiSetValue(fft->ooplace[0], DFTI_INPUT_STRIDES, stride)       ||
-             DftiSetValue(fft->ooplace[0], DFTI_OUTPUT_DISTANCE, 1)          ||
-             DftiSetValue(fft->ooplace[0], DFTI_OUTPUT_STRIDES, stride));
+        status
+            = (DftiSetValue(fft->ooplace[0], DFTI_PLACEMENT, DFTI_NOT_INPLACE)
+               || DftiSetValue(fft->ooplace[0], DFTI_NUMBER_OF_TRANSFORMS, nyc)
+               || DftiSetValue(fft->ooplace[0], DFTI_INPUT_DISTANCE, 1)
+               || DftiSetValue(fft->ooplace[0], DFTI_INPUT_STRIDES, stride)
+               || DftiSetValue(fft->ooplace[0], DFTI_OUTPUT_DISTANCE, 1)
+               || DftiSetValue(fft->ooplace[0], DFTI_OUTPUT_STRIDES, stride));
     }
 
     if (status == 0)
@@ -367,14 +364,14 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
         stride[0] = 0;
         stride[1] = 1;
 
-        status =
-            (DftiSetValue(fft->inplace[1], DFTI_PLACEMENT, DFTI_INPLACE)             ||
-             DftiSetValue(fft->inplace[1], DFTI_NUMBER_OF_TRANSFORMS, (MKL_LONG)nx)  ||
-             DftiSetValue(fft->inplace[1], DFTI_INPUT_DISTANCE, 2*nyc)               ||
-             DftiSetValue(fft->inplace[1], DFTI_INPUT_STRIDES, stride)               ||
-             DftiSetValue(fft->inplace[1], DFTI_OUTPUT_DISTANCE, 2*nyc)              ||
-             DftiSetValue(fft->inplace[1], DFTI_OUTPUT_STRIDES, stride)              ||
-             DftiCommitDescriptor(fft->inplace[1]));
+        status
+            = (DftiSetValue(fft->inplace[1], DFTI_PLACEMENT, DFTI_INPLACE)
+               || DftiSetValue(fft->inplace[1], DFTI_NUMBER_OF_TRANSFORMS, (MKL_LONG)nx)
+               || DftiSetValue(fft->inplace[1], DFTI_INPUT_DISTANCE, 2 * nyc)
+               || DftiSetValue(fft->inplace[1], DFTI_INPUT_STRIDES, stride)
+               || DftiSetValue(fft->inplace[1], DFTI_OUTPUT_DISTANCE, 2 * nyc)
+               || DftiSetValue(fft->inplace[1], DFTI_OUTPUT_STRIDES, stride)
+               || DftiCommitDescriptor(fft->inplace[1]));
     }
 
 
@@ -389,14 +386,14 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
         stride[0] = 0;
         stride[1] = 1;
 
-        status =
-            (DftiSetValue(fft->ooplace[1], DFTI_PLACEMENT, DFTI_NOT_INPLACE)           ||
-             DftiSetValue(fft->ooplace[1], DFTI_NUMBER_OF_TRANSFORMS, (MKL_LONG)nx)    ||
-             DftiSetValue(fft->ooplace[1], DFTI_INPUT_DISTANCE, (MKL_LONG)ny)          ||
-             DftiSetValue(fft->ooplace[1], DFTI_INPUT_STRIDES, stride)                 ||
-             DftiSetValue(fft->ooplace[1], DFTI_OUTPUT_DISTANCE, 2*nyc)                ||
-             DftiSetValue(fft->ooplace[1], DFTI_OUTPUT_STRIDES, stride)                ||
-             DftiCommitDescriptor(fft->ooplace[1]));
+        status
+            = (DftiSetValue(fft->ooplace[1], DFTI_PLACEMENT, DFTI_NOT_INPLACE)
+               || DftiSetValue(fft->ooplace[1], DFTI_NUMBER_OF_TRANSFORMS, (MKL_LONG)nx)
+               || DftiSetValue(fft->ooplace[1], DFTI_INPUT_DISTANCE, (MKL_LONG)ny)
+               || DftiSetValue(fft->ooplace[1], DFTI_INPUT_STRIDES, stride)
+               || DftiSetValue(fft->ooplace[1], DFTI_OUTPUT_DISTANCE, 2 * nyc)
+               || DftiSetValue(fft->ooplace[1], DFTI_OUTPUT_STRIDES, stride)
+               || DftiCommitDescriptor(fft->ooplace[1]));
     }
 
 
@@ -411,20 +408,20 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
         stride[0] = 0;
         stride[1] = 1;
 
-        status =
-            (DftiSetValue(fft->ooplace[2], DFTI_PLACEMENT, DFTI_NOT_INPLACE)           ||
-             DftiSetValue(fft->ooplace[2], DFTI_NUMBER_OF_TRANSFORMS, (MKL_LONG)nx)    ||
-             DftiSetValue(fft->ooplace[2], DFTI_INPUT_DISTANCE, 2*nyc)                 ||
-             DftiSetValue(fft->ooplace[2], DFTI_INPUT_STRIDES, stride)                 ||
-             DftiSetValue(fft->ooplace[2], DFTI_OUTPUT_DISTANCE, (MKL_LONG)ny)         ||
-             DftiSetValue(fft->ooplace[2], DFTI_OUTPUT_STRIDES, stride)                ||
-             DftiCommitDescriptor(fft->ooplace[2]));
+        status
+            = (DftiSetValue(fft->ooplace[2], DFTI_PLACEMENT, DFTI_NOT_INPLACE)
+               || DftiSetValue(fft->ooplace[2], DFTI_NUMBER_OF_TRANSFORMS, (MKL_LONG)nx)
+               || DftiSetValue(fft->ooplace[2], DFTI_INPUT_DISTANCE, 2 * nyc)
+               || DftiSetValue(fft->ooplace[2], DFTI_INPUT_STRIDES, stride)
+               || DftiSetValue(fft->ooplace[2], DFTI_OUTPUT_DISTANCE, (MKL_LONG)ny)
+               || DftiSetValue(fft->ooplace[2], DFTI_OUTPUT_STRIDES, stride)
+               || DftiCommitDescriptor(fft->ooplace[2]));
     }
 
 
     if (status == 0)
     {
-        void *memory = malloc(sizeof(t_complex)*(nx*(ny/2+1)));
+        void *memory = malloc(sizeof(t_complex) * (nx * (ny / 2 + 1)));
         if (nullptr == memory)
         {
             status = ENOMEM;
@@ -448,17 +445,16 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
     return 0;
 }
 
-int
-gmx_fft_1d(gmx_fft_t                  fft,
-           enum gmx_fft_direction     dir,
-           void *                     in_data,
-           void *                     out_data)
+int gmx_fft_1d(gmx_fft_t              fft,
+               enum gmx_fft_direction dir,
+               void *                 in_data,
+               void *                 out_data)
 {
     int inplace = (in_data == out_data);
     int status  = 0;
 
-    if ( (fft->real_fft == 1) || (fft->ndim != 1) ||
-         ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
+    if ( (fft->real_fft == 1) || (fft->ndim != 1)
+         || ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
@@ -498,17 +494,16 @@ gmx_fft_1d(gmx_fft_t                  fft,
 
 
 
-int
-gmx_fft_1d_real(gmx_fft_t                  fft,
-                enum gmx_fft_direction     dir,
-                void *                     in_data,
-                void *                     out_data)
+int gmx_fft_1d_real(gmx_fft_t              fft,
+                    enum gmx_fft_direction dir,
+                    void *                 in_data,
+                    void *                 out_data)
 {
     int inplace = (in_data == out_data);
     int status  = 0;
 
-    if ( (fft->real_fft != 1) || (fft->ndim != 1) ||
-         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+    if ( (fft->real_fft != 1) || (fft->ndim != 1)
+         || ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
@@ -547,17 +542,16 @@ gmx_fft_1d_real(gmx_fft_t                  fft,
 }
 
 
-int
-gmx_fft_2d_real(gmx_fft_t                  fft,
-                enum gmx_fft_direction     dir,
-                void *                     in_data,
-                void *                     out_data)
+int gmx_fft_2d_real(gmx_fft_t              fft,
+                    enum gmx_fft_direction dir,
+                    void *                 in_data,
+                    void *                 out_data)
 {
     int inplace = (in_data == out_data);
     int status  = 0;
 
-    if ( (fft->real_fft != 1) || (fft->ndim != 2) ||
-         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+    if ( (fft->real_fft != 1) || (fft->ndim != 2)
+         || ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
@@ -603,8 +597,7 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
     return status;
 }
 
-void
-gmx_fft_destroy(gmx_fft_t    fft)
+void gmx_fft_destroy(gmx_fft_t fft)
 {
     int d;
 

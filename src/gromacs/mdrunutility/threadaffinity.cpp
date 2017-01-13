@@ -106,20 +106,19 @@ static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
     return invalidLocally;
 }
 
-static bool
-get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
-                           const t_commrec *cr,
-                           const gmx::HardwareTopology &hwTop,
-                           int   threads,
-                           bool  automatic,
-                           int pin_offset, int * pin_stride,
-                           int **localityOrder)
+static bool get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
+                                       const t_commrec *cr,
+                                       const gmx::HardwareTopology &hwTop,
+                                       int   threads,
+                                       bool  automatic,
+                                       int pin_offset, int * pin_stride,
+                                       int **localityOrder)
 {
-    int                          hwThreads;
-    int                          hwThreadsPerCore = 0;
-    bool                         bPickPinStride;
-    bool                         haveTopology;
-    bool                         invalidValue;
+    int  hwThreads;
+    int  hwThreadsPerCore = 0;
+    bool bPickPinStride;
+    bool haveTopology;
+    bool invalidValue;
 
     haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
 
@@ -134,9 +133,9 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
 
     if (haveTopology)
     {
-        hwThreads           = hwTop.machine().logicalProcessorCount;
+        hwThreads = hwTop.machine().logicalProcessorCount;
         // Just use the value for the first core
-        hwThreadsPerCore    = hwTop.machine().sockets[0].cores[0].hwThreads.size();
+        hwThreadsPerCore = hwTop.machine().sockets[0].cores[0].hwThreads.size();
         snew(*localityOrder, hwThreads);
         int i = 0;
         for (auto &s : hwTop.machine().sockets)
@@ -153,8 +152,8 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     else
     {
         /* topology information not available or invalid, ignore it */
-        hwThreads       = hwTop.machine().logicalProcessorCount;
-        *localityOrder  = nullptr;
+        hwThreads      = hwTop.machine().logicalProcessorCount;
+        *localityOrder = nullptr;
     }
     // Only warn about the first problem per node.  Otherwise, the first test
     // failing would essentially always cause also the other problems get
@@ -207,13 +206,13 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     }
     validLayout = validLayout && !invalidValue;
 
-    invalidValue   = false;
+    invalidValue = false;
     /* do we need to choose the pinning stride? */
     bPickPinStride = (*pin_stride == 0);
 
     if (bPickPinStride)
     {
-        if (haveTopology && pin_offset + threads*hwThreadsPerCore <= hwThreads)
+        if (haveTopology && pin_offset + threads * hwThreadsPerCore <= hwThreads)
         {
             /* Put one thread on each physical core */
             *pin_stride = hwThreadsPerCore;
@@ -229,14 +228,14 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
              * and probably threads are already pinned by the queuing system,
              * so we wouldn't end up here in the first place.
              */
-            *pin_stride = (hwThreads - pin_offset)/threads;
+            *pin_stride = (hwThreads - pin_offset) / threads;
         }
     }
     else
     {
         /* Check the placement of the thread with the largest index to make sure
          * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
-        invalidValue = (pin_offset + (threads-1)*(*pin_stride) >= hwThreads);
+        invalidValue = (pin_offset + (threads - 1) * (*pin_stride) >= hwThreads);
     }
     if (invalidWithinSimulation(cr, invalidValue) && !alreadyWarned)
     {
@@ -274,12 +273,12 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
     {
         try
         {
-            int      thread_id, thread_id_node;
-            int      index, core;
+            int thread_id, thread_id_node;
+            int index, core;
 
             thread_id      = gmx_omp_get_thread_num();
             thread_id_node = thread0_id_node + thread_id;
-            index          = offset + thread_id_node*core_pinning_stride;
+            index          = offset + thread_id_node * core_pinning_stride;
             if (localityOrder != nullptr)
             {
                 core = localityOrder[index];
@@ -353,17 +352,16 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
    Thus it is important that GROMACS sets the affinity internally
    if only PME is using threads.
  */
-void
-gmx_set_thread_affinity(FILE                        *fplog,
-                        const gmx::MDLogger         &mdlog,
-                        const t_commrec             *cr,
-                        const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local,
-                        gmx::IThreadAffinityAccess  *affinityAccess)
+void gmx_set_thread_affinity(FILE *                       fplog,
+                             const gmx::MDLogger &        mdlog,
+                             const t_commrec *            cr,
+                             const gmx_hw_opt_t *         hw_opt,
+                             const gmx::HardwareTopology &hwTop,
+                             int                          nthread_local,
+                             gmx::IThreadAffinityAccess * affinityAccess)
 {
-    int        thread0_id_node, nthread_node;
-    int *      localityOrder = nullptr;
+    int   thread0_id_node, nthread_node;
+    int * localityOrder = nullptr;
 
     if (hw_opt->thread_affinity == threadaffOFF)
     {
@@ -414,8 +412,8 @@ gmx_set_thread_affinity(FILE                        *fplog,
     }
 #endif
 
-    int  offset              = hw_opt->core_pinning_offset;
-    int  core_pinning_stride = hw_opt->core_pinning_stride;
+    int offset              = hw_opt->core_pinning_offset;
+    int core_pinning_stride = hw_opt->core_pinning_stride;
     if (offset != 0)
     {
         GMX_LOG(mdlog.warning).appendTextFormatted("Applying core pinning offset %d", offset);
@@ -425,9 +423,9 @@ gmx_set_thread_affinity(FILE                        *fplog,
     bool validLayout
         = get_thread_affinity_layout(fplog, mdlog, cr, hwTop, nthread_node, automatic,
                                      offset, &core_pinning_stride, &localityOrder);
-    const gmx::sfree_guard  localityOrderGuard(localityOrder);
+    const gmx::sfree_guard localityOrderGuard(localityOrder);
 
-    bool                    allAffinitiesSet;
+    bool allAffinitiesSet;
     if (validLayout)
     {
         allAffinitiesSet = set_affinity(cr, nthread_local, thread0_id_node,
@@ -451,12 +449,11 @@ gmx_set_thread_affinity(FILE                        *fplog,
  * will honor it and disable mdrun internal affinity setting.
  * Note that this will only work on Linux as we use a GNU feature.
  */
-void
-gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
-                              const t_commrec     *cr,
-                              gmx_hw_opt_t        *hw_opt,
-                              int  gmx_unused      nthreads_hw_avail,
-                              gmx_bool             bAfterOpenmpInit)
+void gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
+                                   const t_commrec *    cr,
+                                   gmx_hw_opt_t *       hw_opt,
+                                   int  gmx_unused      nthreads_hw_avail,
+                                   gmx_bool             bAfterOpenmpInit)
 {
     GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
 
@@ -544,7 +541,7 @@ gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog,
      */
     if (isInitialized)
     {
-        gmx_bool  bAllSet_All;
+        gmx_bool bAllSet_All;
 
         MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
         bAllSet = bAllSet_All;

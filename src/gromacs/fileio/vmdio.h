@@ -44,8 +44,8 @@ struct t_trxframe;
 struct gmx_vmdplugin_t
 {
     molfile_plugin_t *api;
-    const char       *filetype;
-    void             *handle;
+    const char *      filetype;
+    void *            handle;
     gmx_bool          bV;
 };
 

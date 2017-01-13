@@ -43,12 +43,13 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/topology/atoms.h"
 
-typedef struct {
-    char    *elem, *type;
-    double   q, m;
-    int      nbonds;
-    char   **bond;
-    double  *blen;
+typedef struct
+{
+    char *  elem, *type;
+    double  q, m;
+    int     nbonds;
+    char ** bond;
+    double *blen;
 } t_nm2type;
 
 t_nm2type *rd_nm2type(const char *ffdir, int *nnm);

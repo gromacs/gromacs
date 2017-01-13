@@ -59,9 +59,9 @@
 t_inpfile *read_inpfile(const char *fn, int *ninp,
                         warninp_t wi)
 {
-    FILE      *in;
+    FILE *     in;
     char       buf[STRLEN], lbuf[STRLEN], rbuf[STRLEN], warn_buf[STRLEN];
-    char      *ptr, *cptr;
+    char *     ptr, *cptr;
     t_inpfile *inp = nullptr;
     int        nin, lc, i, j, k;
 
@@ -76,7 +76,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     nin = lc  = 0;
     do
     {
-        ptr = fgets2(buf, STRLEN-1, in);
+        ptr = fgets2(buf, STRLEN - 1, in);
         lc++;
         set_warning_line(wi, fn, lc);
         if (ptr)
@@ -123,7 +123,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                 }
                 else
                 {
-                    for (i = j+1, k = 0; (buf[i] != '\0'); i++, k++)
+                    for (i = j + 1, k = 0; (buf[i] != '\0'); i++, k++)
                     {
                         rbuf[k] = buf[i];
                     }
@@ -145,12 +145,12 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                         {
                             /* add a new item */
                             srenew(inp, ++nin);
-                            inp[nin-1].inp_count  = 1;
-                            inp[nin-1].count      = 0;
-                            inp[nin-1].bObsolete  = FALSE;
-                            inp[nin-1].bSet       = FALSE;
-                            inp[nin-1].name       = gmx_strdup(lbuf);
-                            inp[nin-1].value      = gmx_strdup(rbuf);
+                            inp[nin - 1].inp_count = 1;
+                            inp[nin - 1].count     = 0;
+                            inp[nin - 1].bObsolete = FALSE;
+                            inp[nin - 1].bSet      = FALSE;
+                            inp[nin - 1].name      = gmx_strdup(lbuf);
+                            inp[nin - 1].value     = gmx_strdup(rbuf);
                         }
                         else
                         {
@@ -163,8 +163,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                 }
             }
         }
-    }
-    while (ptr);
+    } while (ptr);
 
     gmx_ffclose(in);
 
@@ -181,8 +180,8 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
 
 gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(int ninp, t_inpfile inp[])
 {
-    gmx::KeyValueTreeBuilder  builder;
-    auto                      root = builder.rootObject();
+    gmx::KeyValueTreeBuilder builder;
+    auto                     root = builder.rootObject();
     for (int i = 0; i < ninp; ++i)
     {
         const char *value = inp[i].value;
@@ -269,7 +268,7 @@ void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUn
 
 void replace_inp_entry(int ninp, t_inpfile *inp, const char *old_entry, const char *new_entry)
 {
-    int  i;
+    int i;
 
     for (i = 0; (i < ninp); i++)
     {
@@ -322,8 +321,8 @@ void mark_einp_set(int ninp, t_inpfile *inp, const char *name)
 
 static int get_einp(int *ninp, t_inpfile **inp, const char *name)
 {
-    int    i;
-    int    notfound = FALSE;
+    int i;
+    int notfound = FALSE;
 
     i = search_einp(*ninp, *inp, name);
     if (i == -1)
@@ -365,7 +364,7 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     if (ii == -1)
     {
         sprintf(buf, "%d", def);
-        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+        (*inp)[(*ninp) - 1].value = gmx_strdup(buf);
 
         return def;
     }
@@ -387,16 +386,16 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
                        const char *name, gmx_int64_t def,
                        warninp_t wi)
 {
-    char            buf[32], *ptr, warn_buf[STRLEN];
-    int             ii;
-    gmx_int64_t     ret;
+    char        buf[32], *ptr, warn_buf[STRLEN];
+    int         ii;
+    gmx_int64_t ret;
 
     ii = get_einp(ninp, inp, name);
 
     if (ii == -1)
     {
         sprintf(buf, "%" GMX_PRId64, def);
-        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+        (*inp)[(*ninp) - 1].value = gmx_strdup(buf);
 
         return def;
     }
@@ -426,7 +425,7 @@ double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
     if (ii == -1)
     {
         sprintf(buf, "%g", def);
-        (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+        (*inp)[(*ninp) - 1].value = gmx_strdup(buf);
 
         return def;
     }
@@ -456,11 +455,11 @@ const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *d
         if (def)
         {
             sprintf(buf, "%s", def);
-            (*inp)[(*ninp)-1].value = gmx_strdup(buf);
+            (*inp)[(*ninp) - 1].value = gmx_strdup(buf);
         }
         else
         {
-            (*inp)[(*ninp)-1].value = nullptr;
+            (*inp)[(*ninp) - 1].value = nullptr;
         }
 
         return def;
@@ -483,7 +482,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 
     if (ii == -1)
     {
-        (*inp)[(*ninp)-1].value = gmx_strdup(defs[0]);
+        (*inp)[(*ninp) - 1].value = gmx_strdup(defs[0]);
 
         return 0;
     }
@@ -500,11 +499,11 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
     {
         n += sprintf(buf, "Invalid enum '%s' for variable %s, using '%s'\n",
                      (*inp)[ii].value, name, defs[0]);
-        n += sprintf(buf+n, "Next time use one of:");
+        n += sprintf(buf + n, "Next time use one of:");
         j  = 0;
         while (defs[j])
         {
-            n += sprintf(buf+n, " '%s'", defs[j]);
+            n += sprintf(buf + n, " '%s'", defs[j]);
             j++;
         }
         if (wi != nullptr)

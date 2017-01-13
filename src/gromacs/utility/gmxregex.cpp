@@ -109,7 +109,7 @@ class Regex::Impl
             }
         }
 
-        regex_t                 regex_;
+        regex_t regex_;
 };
 #elif HAVE_CXX11_REGEX
 class Regex::Impl
@@ -150,7 +150,7 @@ class Regex::Impl
         }
 
     private:
-        std::regex              regex_;
+        std::regex regex_;
 };
 #else
 class Regex::Impl

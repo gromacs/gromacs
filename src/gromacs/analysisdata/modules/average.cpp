@@ -66,9 +66,9 @@ class AnalysisDataAverageModule::Impl
         Impl() : bDataSets_(false) {}
 
         //! Averaging helper objects for each input data set.
-        std::vector<AnalysisDataFrameAverager>  averagers_;
+        std::vector<AnalysisDataFrameAverager> averagers_;
         //! Whether to average all columns in a data set into a single value.
-        bool                                    bDataSets_;
+        bool bDataSets_;
 };
 
 AnalysisDataAverageModule::AnalysisDataAverageModule()
@@ -91,8 +91,7 @@ int AnalysisDataAverageModule::flags() const
            | efAllowMultipleDataSets;
 }
 
-void
-AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     if (impl_->bDataSets_)
     {
@@ -115,13 +114,11 @@ AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
     }
 }
 
-void
-AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
+void AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 
-void
-AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     if (impl_->bDataSets_)
     {
@@ -140,13 +137,11 @@ AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
     }
 }
 
-void
-AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
+void AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 
-void
-AnalysisDataAverageModule::dataFinished()
+void AnalysisDataAverageModule::dataFinished()
 {
     allocateValues();
     for (int i = 0; i < columnCount(); ++i)
@@ -208,9 +203,9 @@ class AnalysisDataFrameAverageModule::Impl
 {
     public:
         //! Storage implementation object.
-        AnalysisDataStorage     storage_;
+        AnalysisDataStorage storage_;
         //! Number of samples in a frame for each data set.
-        std::vector<int>        sampleCount_;
+        std::vector<int> sampleCount_;
 };
 
 AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()
@@ -222,29 +217,25 @@ AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()
 {
 }
 
-int
-AnalysisDataFrameAverageModule::frameCount() const
+int AnalysisDataFrameAverageModule::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
 
-int
-AnalysisDataFrameAverageModule::flags() const
+int AnalysisDataFrameAverageModule::flags() const
 {
     return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
            | efAllowMultipleDataSets;
 }
 
-void
-AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     setColumnCount(0, data->dataSetCount());
     impl_->sampleCount_.resize(data->dataSetCount());
     impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
-void
-AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &header)
+void AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
     for (int i = 0; i < columnCount(); ++i)
@@ -254,12 +245,11 @@ AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &head
     }
 }
 
-void
-AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     const int                 dataSet = points.dataSetIndex();
-    AnalysisDataStorageFrame &frame   =
-        impl_->storage_.currentFrame(points.frameIndex());
+    AnalysisDataStorageFrame &frame
+        = impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
@@ -273,26 +263,22 @@ AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &point
     }
 }
 
-void
-AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &header)
+void AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
     impl_->storage_.finishFrame(header.index());
 }
 
-void
-AnalysisDataFrameAverageModule::dataFinished()
+void AnalysisDataFrameAverageModule::dataFinished()
 {
     impl_->storage_.finishDataStorage();
 }
 
-AnalysisDataFrameRef
-AnalysisDataFrameAverageModule::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataFrameAverageModule::tryGetDataFrameInternal(int index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
-bool
-AnalysisDataFrameAverageModule::requestStorageInternal(int nframes)
+bool AnalysisDataFrameAverageModule::requestStorageInternal(int nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }

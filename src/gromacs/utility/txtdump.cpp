@@ -73,21 +73,21 @@ int pr_title(FILE *fp, int indent, const char *title)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%s:\n", title);
-    return (indent+INDENT);
+    return (indent + INDENT);
 }
 
 int pr_title_n(FILE *fp, int indent, const char *title, int n)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%s (%d):\n", title, n);
-    return (indent+INDENT);
+    return (indent + INDENT);
 }
 
 int pr_title_nxn(FILE *fp, int indent, const char *title, int n1, int n2)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%s (%dx%d):\n", title, n1, n2);
-    return (indent+INDENT);
+    return (indent + INDENT);
 }
 
 void pr_reals(FILE *fp, int indent, const char *title, const real *vec, int n)

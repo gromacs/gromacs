@@ -124,9 +124,9 @@
 #endif
 
 //! First step used in pressure scaling
-gmx_int64_t         deform_init_init_step_tpx;
+gmx_int64_t deform_init_init_step_tpx;
 //! Initial box for pressure scaling
-matrix              deform_init_box_tpx;
+matrix deform_init_box_tpx;
 //! MPI variable for use in pressure scaling
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
@@ -140,10 +140,10 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 struct mdrunner_arglist
 {
     gmx_hw_opt_t            hw_opt;
-    FILE                   *fplog;
-    t_commrec              *cr;
+    FILE *                  fplog;
+    t_commrec *             cr;
     int                     nfile;
-    const t_filenm         *fnm;
+    const t_filenm *        fnm;
     const gmx_output_env_t *oenv;
     gmx_bool                bVerbose;
     int                     nstglobalcomm;
@@ -152,12 +152,12 @@ struct mdrunner_arglist
     int                     npme;
     real                    rdd;
     real                    rconstr;
-    const char             *dddlb_opt;
+    const char *            dddlb_opt;
     real                    dlb_scale;
-    const char             *ddcsx;
-    const char             *ddcsy;
-    const char             *ddcsz;
-    const char             *nbpu_opt;
+    const char *            ddcsx;
+    const char *            ddcsy;
+    const char *            ddcsz;
+    const char *            nbpu_opt;
     int                     nstlist_cmdline;
     gmx_int64_t             nsteps_cmdline;
     int                     nstepout;
@@ -187,8 +187,8 @@ static void mdrunner_start_fn(void *arg)
                                                 copy pointed-to items, of course,
                                                 but those are all const. */
         t_commrec *cr;                       /* we need a local version of this */
-        FILE      *fplog = nullptr;
-        t_filenm  *fnm;
+        FILE *     fplog = nullptr;
+        t_filenm * fnm;
 
         fnm = dup_tfn(mc.nfile, mc.fnm);
 
@@ -234,8 +234,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 {
     int                      ret;
     struct mdrunner_arglist *mda;
-    t_commrec               *crn; /* the new commrec */
-    t_filenm                *fnmn;
+    t_commrec *              crn; /* the new commrec */
+    t_filenm *               fnmn;
 
     /* first check whether we even need to start tMPI */
     if (hw_opt->nthreads_tmpi < 2)
@@ -304,11 +304,11 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
  * We determine the extra cost of the non-bonded kernels compared to
  * a reference nstlist value of 10 (which is the default in grompp).
  */
-static const int    nbnxnReferenceNstlist = 10;
+static const int nbnxnReferenceNstlist = 10;
 //! The values to try when switching
-const int           nstlist_try[] = { 20, 25, 40 };
+const int nstlist_try[] = { 20, 25, 40 };
 //! Number of elements in the neighborsearch list trials.
-#define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
+#define NNSTL  sizeof(nstlist_try) / sizeof(nstlist_try[0])
 /* Increase nstlist until the non-bonded cost increases more than listfac_ok,
  * but never more than listfac_max.
  * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
@@ -320,19 +320,19 @@ const int           nstlist_try[] = { 20, 25, 40 };
  */
 /* CPU: pair-search is about a factor 1.5 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_cpu_listfac_ok    = 1.05;
+static const float nbnxn_cpu_listfac_ok = 1.05;
 //! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_cpu_listfac_max   = 1.09;
+static const float nbnxn_cpu_listfac_max = 1.09;
 /* CPU: pair-search is about a factor 2-3 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_knl_listfac_ok    = 1.22;
+static const float nbnxn_knl_listfac_ok = 1.22;
 //! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_knl_listfac_max   = 1.3;
+static const float nbnxn_knl_listfac_max = 1.3;
 /* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_gpu_listfac_ok    = 1.20;
+static const float nbnxn_gpu_listfac_ok = 1.20;
 //! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_gpu_listfac_max   = 1.30;
+static const float nbnxn_gpu_listfac_max = 1.30;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
@@ -347,11 +347,11 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     real                   rlist_new, rlist_prev;
     size_t                 nstlist_ind = 0;
     gmx_bool               bBox, bDD, bCont;
-    const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
-    const char            *nve_err  = "Can not increase nstlist because an NVE ensemble is used";
-    const char            *vbd_err  = "Can not increase nstlist because verlet-buffer-tolerance is not set or used";
-    const char            *box_err  = "Can not increase nstlist because the box is too small";
-    const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
+    const char *           nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
+    const char *           nve_err  = "Can not increase nstlist because an NVE ensemble is used";
+    const char *           vbd_err  = "Can not increase nstlist because verlet-buffer-tolerance is not set or used";
+    const char *           box_err  = "Can not increase nstlist because the box is too small";
+    const char *           dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
 
     if (nstlist_cmdline <= 0)
@@ -449,13 +449,13 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     ir->nstlist  = nbnxnReferenceNstlist;
     calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, nullptr,
                             &rlistWithReferenceNstlist);
-    ir->nstlist  = nstlist_prev;
+    ir->nstlist = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
-                                              mtop->natoms/det(box));
-    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_ok) - rlist_inc;
-    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_max) - rlist_inc;
+                                              mtop->natoms / det(box));
+    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_ok) - rlist_inc;
+    rlist_max = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_max) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
@@ -504,7 +504,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
                 /* Increase nstlist */
                 nstlist_prev = ir->nstlist;
                 rlist_prev   = rlist_new;
-                bCont        = (nstlist_ind+1 < NNSTL && rlist_new < rlist_ok);
+                bCont        = (nstlist_ind + 1 < NNSTL && rlist_new < rlist_ok);
             }
             else
             {
@@ -517,8 +517,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
 
         nstlist_ind++;
-    }
-    while (bCont);
+    } while (bCont);
 
     if (!bBox || !bDD)
     {
@@ -542,24 +541,24 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         {
             fprintf(fp, "%s\n\n", buf);
         }
-        ir->rlist     = rlist_new;
+        ir->rlist = rlist_new;
     }
 }
 
 /*! \brief Initialize variables for Verlet scheme simulation */
-static void prepare_verlet_scheme(FILE                           *fplog,
-                                  t_commrec                      *cr,
-                                  t_inputrec                     *ir,
-                                  int                             nstlist_cmdline,
-                                  const gmx_mtop_t               *mtop,
-                                  matrix                          box,
-                                  gmx_bool                        bUseGPU,
-                                  const gmx::CpuInfo             &cpuinfo)
+static void prepare_verlet_scheme(FILE *              fplog,
+                                  t_commrec *         cr,
+                                  t_inputrec *        ir,
+                                  int                 nstlist_cmdline,
+                                  const gmx_mtop_t *  mtop,
+                                  matrix              box,
+                                  gmx_bool            bUseGPU,
+                                  const gmx::CpuInfo &cpuinfo)
 {
     /* For NVE simulations, we will retain the initial list buffer */
-    if (EI_DYNAMICS(ir->eI) &&
-        ir->verletbuf_tol > 0 &&
-        !(EI_MD(ir->eI) && ir->etc == etcNO))
+    if (EI_DYNAMICS(ir->eI)
+        && ir->verletbuf_tol > 0
+        && !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
@@ -581,7 +580,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                         ir->rlist, rlist_new,
                         ls.cluster_size_i, ls.cluster_size_j);
             }
-            ir->rlist     = rlist_new;
+            ir->rlist = rlist_new;
         }
     }
 
@@ -604,7 +603,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
  */
 static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
                                     gmx_int64_t          nsteps_cmdline,
-                                    t_inputrec          *ir)
+                                    t_inputrec *         ir)
 {
     assert(ir);
 
@@ -619,7 +618,7 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
         {
             sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps, %.3g ps",
                     gmx_step_str(nsteps_cmdline, sbuf_steps),
-                    fabs(nsteps_cmdline*ir->delta_t));
+                    fabs(nsteps_cmdline * ir->delta_t));
         }
         else
         {
@@ -707,19 +706,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int imdport, unsigned long Flags)
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
-    t_inputrec               *inputrec;
+    t_inputrec *              inputrec;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
-    t_nrnb                   *nrnb;
-    gmx_mtop_t               *mtop          = nullptr;
-    t_mdatoms                *mdatoms       = nullptr;
-    t_forcerec               *fr            = nullptr;
-    t_fcdata                 *fcd           = nullptr;
+    t_nrnb *                  nrnb;
+    gmx_mtop_t *              mtop          = nullptr;
+    t_mdatoms *               mdatoms       = nullptr;
+    t_forcerec *              fr            = nullptr;
+    t_fcdata *                fcd           = nullptr;
     real                      ewaldcoeff_q  = 0;
     real                      ewaldcoeff_lj = 0;
-    struct gmx_pme_t        **pmedata       = nullptr;
-    gmx_vsite_t              *vsite         = nullptr;
+    struct gmx_pme_t **       pmedata       = nullptr;
+    gmx_vsite_t *             vsite         = nullptr;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
     gmx_wallcycle_t           wcycle;
@@ -729,9 +728,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_edsam_t               ed           = nullptr;
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
-    gmx_hw_info_t            *hwinfo       = nullptr;
+    gmx_hw_info_t *           hwinfo       = nullptr;
     /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU            = FALSE;
+    gmx_bool bUseGPU = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -783,16 +782,16 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
-                       getenv("GMX_EMULATE_GPU") != nullptr);
+            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0
+                       || getenv("GMX_EMULATE_GPU") != nullptr);
 
             /* TODO add GPU kernels for this and replace this check by:
              * (bUseGPU && (ir->vdwtype == evdwPME &&
              *               ir->ljpme_combination_rule == eljpmeLB))
              * update the message text and the content of nbnxn_acceleration_supported.
              */
-            if (bUseGPU &&
-                !nbnxn_gpu_acceleration_supported(mdlog, inputrec, bRerunMD))
+            if (bUseGPU
+                && !nbnxn_gpu_acceleration_supported(mdlog, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
                 if (bForceUseGPU)
@@ -864,7 +863,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (hw_opt->nthreads_tmpi > 1)
         {
-            t_commrec *cr_old       = cr;
+            t_commrec *cr_old = cr;
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
                                         oenv, bVerbose, nstglobalcomm,
@@ -908,8 +907,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
-    if (!PAR(cr) &&
-        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || npme > 0))
+    if (!PAR(cr)
+        && (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || npme > 0))
     {
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
@@ -926,8 +925,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   );
     }
 
-    if (bRerunMD &&
-        (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
+    if (bRerunMD
+        && (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
     {
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
@@ -1055,8 +1054,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
     }
 
-    if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
-                     inputrec->eI == eiNM))
+    if (PAR(cr) && !(EI_TPI(inputrec->eI)
+                     || inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
                                            dd_rank_order,
@@ -1127,8 +1126,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
 #ifndef NDEBUG
-    if (EI_TPI(inputrec->eI) &&
-        inputrec->cutoff_scheme == ecutsVERLET)
+    if (EI_TPI(inputrec->eI)
+        && inputrec->cutoff_scheme == ecutsVERLET)
     {
         gmx_feenableexcept();
     }
@@ -1227,8 +1226,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* With periodic molecules the charge groups should be whole at start up
          * and the virtual sites should not be far from their proper positions.
          */
-        if (!inputrec->bContinuation && MASTER(cr) &&
-            !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
+        if (!inputrec->bContinuation && MASTER(cr)
+            && !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
         {
             /* Make molecules whole at start of run */
             if (fr->ePBC != epbcNONE)
@@ -1262,7 +1261,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         /* We don't need the state */
         stateInstance.reset();
-        state         = nullptr;
+        state = nullptr;
 
         ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
         ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);
@@ -1303,7 +1302,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             nChargePerturbed = mdatoms->nChargePerturbed;
             if (EVDW_PME(inputrec->vdwtype))
             {
-                nTypePerturbed   = mdatoms->nTypePerturbed;
+                nTypePerturbed = mdatoms->nTypePerturbed;
             }
         }
         if (cr->npmenodes > 0)
@@ -1346,10 +1345,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->bPull)
         {
             /* Initialize pull code */
-            inputrec->pull_work =
-                init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
-                          mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+            inputrec->pull_work
+                = init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
+                            mtop, cr, oenv, inputrec->fepvals->init_lambda,
+                            EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
         }
 
         if (inputrec->bRot)

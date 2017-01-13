@@ -60,7 +60,7 @@ static void pme_calc_pidx(int start, int end,
     int   si;
     real *xptr, s;
     real  rxx, ryx, rzx, ryy, rzy;
-    int  *pd;
+    int * pd;
 
     /* Calculate PME task index (pidx) for each grid index.
      * Here we always assign equally sized slabs to each node
@@ -84,10 +84,10 @@ static void pme_calc_pidx(int start, int end,
         /* Calculate the node index in x-dimension */
         for (i = start; i < end; i++)
         {
-            xptr   = x[i];
+            xptr = x[i];
             /* Fractional coordinates along box vectors */
-            s     = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
-            si    = (int)(s + 2*nslab) % nslab;
+            s     = nslab * (xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx);
+            si    = (int)(s + 2 * nslab) % nslab;
             pd[i] = si;
             count[si]++;
         }
@@ -99,10 +99,10 @@ static void pme_calc_pidx(int start, int end,
         /* Calculate the node index in y-dimension */
         for (i = start; i < end; i++)
         {
-            xptr   = x[i];
+            xptr = x[i];
             /* Fractional coordinates along box vectors */
-            s     = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
-            si    = (int)(s + 2*nslab) % nslab;
+            s     = nslab * (xptr[YY] * ryy + xptr[ZZ] * rzy);
+            si    = (int)(s + 2 * nslab) % nslab;
             pd[i] = si;
             count[si]++;
         }
@@ -121,8 +121,8 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
     {
         try
         {
-            pme_calc_pidx(natoms* thread   /nthread,
-                          natoms*(thread+1)/nthread,
+            pme_calc_pidx(natoms * thread   / nthread,
+                          natoms * (thread + 1) / nthread,
                           recipbox, x, atc, atc->count_thread[thread]);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -147,13 +147,13 @@ static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
     srenew(th[YY], nalloc);
     /* In z we add padding, this is only required for the aligned SIMD code */
     sfree_aligned(*ptr_z);
-    snew_aligned(*ptr_z, nalloc+2*padding, SIMD4_ALIGNMENT);
+    snew_aligned(*ptr_z, nalloc + 2 * padding, SIMD4_ALIGNMENT);
     th[ZZ] = *ptr_z + padding;
 
     for (i = 0; i < padding; i++)
     {
-        (*ptr_z)[               i] = 0;
-        (*ptr_z)[padding+nalloc+i] = 0;
+        (*ptr_z)[               i]     = 0;
+        (*ptr_z)[padding + nalloc + i] = 0;
     }
 }
 
@@ -169,9 +169,9 @@ static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
     }
 
     realloc_splinevec(spline->theta, &spline->ptr_theta_z,
-                      atc->pme_order*atc->nalloc);
+                      atc->pme_order * atc->nalloc);
     realloc_splinevec(spline->dtheta, &spline->ptr_dtheta_z,
-                      atc->pme_order*atc->nalloc);
+                      atc->pme_order * atc->nalloc);
 }
 
 void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
@@ -267,7 +267,7 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
     commnode  = atc->node_dest;
     buf_index = atc->buf_index;
 
-    nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
+    nnodes_comm = std::min(2 * atc->maxshift, atc->nslab - 1);
 
     nsend = 0;
     for (i = 0; i < nnodes_comm; i++)
@@ -282,7 +282,7 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
             gmx_fatal(FARGS, "%d particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
                       "This usually means that your system is not well equilibrated.",
                       n - (atc->count[atc->nodeid] + nsend),
-                      pme->nodeid, 'x'+atc->dimind);
+                      pme->nodeid, 'x' + atc->dimind);
         }
 
         if (nsend > pme->buf_nalloc)
@@ -348,13 +348,13 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
             {
                 /* Communicate the coordinates */
                 pme_dd_sendrecv(atc, FALSE, i,
-                                pme->bufv[buf_pos], scount*sizeof(rvec),
-                                atc->x[local_pos], rcount*sizeof(rvec));
+                                pme->bufv[buf_pos], scount * sizeof(rvec),
+                                atc->x[local_pos], rcount * sizeof(rvec));
             }
             /* Communicate the coefficients */
             pme_dd_sendrecv(atc, FALSE, i,
-                            pme->bufr+buf_pos, scount*sizeof(real),
-                            atc->coefficient+local_pos, rcount*sizeof(real));
+                            pme->bufr + buf_pos, scount * sizeof(real),
+                            atc->coefficient + local_pos, rcount * sizeof(real));
             buf_pos   += scount;
             local_pos += atc->rcount[i];
         }
@@ -371,7 +371,7 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     commnode  = atc->node_dest;
     buf_index = atc->buf_index;
 
-    nnodes_comm = std::min(2*atc->maxshift, atc->nslab-1);
+    nnodes_comm = std::min(2 * atc->maxshift, atc->nslab - 1);
 
     local_pos = atc->count[atc->nodeid];
     buf_pos   = 0;
@@ -383,8 +383,8 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         {
             /* Communicate the forces */
             pme_dd_sendrecv(atc, TRUE, i,
-                            atc->f[local_pos], scount*sizeof(rvec),
-                            pme->bufv[buf_pos], rcount*sizeof(rvec));
+                            atc->f[local_pos], scount * sizeof(rvec),
+                            pme->bufv[buf_pos], rcount * sizeof(rvec));
             local_pos += scount;
         }
         buf_index[commnode[i]] = buf_pos;
@@ -432,9 +432,8 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     }
 }
 
-void
-do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr,
-                     gmx_bool bFirst, rvec x[], real *data)
+void do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr,
+                          gmx_bool bFirst, rvec x[], real *data)
 {
     int             d;
     pme_atomcomm_t *atc;
@@ -442,9 +441,9 @@ do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr
 
     for (d = pme->ndecompdim - 1; d >= 0; d--)
     {
-        int             n_d;
-        rvec           *x_d;
-        real           *param_d;
+        int   n_d;
+        rvec *x_d;
+        real *param_d;
 
         if (d == pme->ndecompdim - 1)
         {

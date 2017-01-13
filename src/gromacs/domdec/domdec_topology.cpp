@@ -86,26 +86,29 @@
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
 
-typedef struct {
-    int  *index;  /* Index for each atom into il                  */
-    int  *il;     /* ftype|type|a0|...|an|ftype|...               */
+typedef struct
+{
+    int *index;   /* Index for each atom into il                  */
+    int *il;      /* ftype|type|a0|...|an|ftype|...               */
 } reverse_ilist_t;
 
-typedef struct {
-    int  a_start;
-    int  a_end;
-    int  natoms_mol;
-    int  type;
+typedef struct
+{
+    int a_start;
+    int a_end;
+    int natoms_mol;
+    int type;
 } molblock_ind_t;
 
 /*! \brief Struct for thread local work data for local topology generation */
-typedef struct {
-    t_idef     idef;             /**< Partial local topology */
-    int      **vsite_pbc;        /**< vsite PBC structure */
-    int       *vsite_pbc_nalloc; /**< Allocation sizes for vsite_pbc */
-    int        nbonded;          /**< The number of bondeds in this struct */
-    t_blocka   excl;             /**< List of exclusions */
-    int        excl_count;       /**< The total exclusion count for \p excl */
+typedef struct
+{
+    t_idef   idef;               /**< Partial local topology */
+    int **   vsite_pbc;          /**< vsite PBC structure */
+    int *    vsite_pbc_nalloc;   /**< Allocation sizes for vsite_pbc */
+    int      nbonded;            /**< The number of bondeds in this struct */
+    t_blocka excl;               /**< List of exclusions */
+    int      excl_count;         /**< The total exclusion count for \p excl */
 } thread_work_t;
 
 /*! \brief Struct for the reverse topology: links bonded interactions to atomsx */
@@ -121,11 +124,11 @@ struct gmx_reverse_top_t
     reverse_ilist_t *ril_mt;                      /**< Reverse ilist for all moltypes      */
     int              ril_mt_tot_size;             /**< The size of ril_mt[?].index summed over all entries */
     int              ilsort;                      /**< The sorting state of bondeds for free energy */
-    molblock_ind_t  *mbi;                         /**< molblock to global atom index for quick lookup of molblocks on atom index */
+    molblock_ind_t * mbi;                         /**< molblock to global atom index for quick lookup of molblocks on atom index */
     int              nmolblock;                   /**< The number of molblocks, size of \p mbi */
 
-    gmx_bool         bIntermolecularInteractions; /**< Do we have intermolecular interactions? */
-    reverse_ilist_t  ril_intermol;                /**< Intermolecular reverse ilist */
+    gmx_bool        bIntermolecularInteractions;  /**< Do we have intermolecular interactions? */
+    reverse_ilist_t ril_intermol;                 /**< Intermolecular reverse ilist */
 
     /* Work data structures for multi-threading */
     int            nthread;           /**< The number of threads to be used */
@@ -154,11 +157,11 @@ static int nral_rt(int ftype)
 static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck,
                                gmx_bool bConstr, gmx_bool bSettle)
 {
-    return (((interaction_function[ftype].flags & IF_BOND) &&
-             !(interaction_function[ftype].flags & IF_VSITE) &&
-             (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO))) ||
-            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
-            (bSettle && ftype == F_SETTLE));
+    return (((interaction_function[ftype].flags & IF_BOND)
+             && !(interaction_function[ftype].flags & IF_VSITE)
+             && (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO)))
+            || (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC))
+            || (bSettle && ftype == F_SETTLE));
 }
 
 /*! \brief Print a header on error messages */
@@ -185,7 +188,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
 {
     int *assigned;
     int  nril_mol = ril->index[nat_mol];
-    snew(assigned, nmol*nril_mol);
+    snew(assigned, nmol * nril_mol);
 
     int *gatindex = cr->dd->gatindex;
     for (int ftype = 0; ftype < F_NRE; ftype++)
@@ -195,7 +198,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
             int            nral = NRAL(ftype);
             const t_ilist *il   = &idef->il[ftype];
             const t_iatom *ia   = il->iatoms;
-            for (int i = 0; i < il->nr; i += 1+nral)
+            for (int i = 0; i < il->nr; i += 1 + nral)
             {
                 int a0 = gatindex[ia[1]];
                 /* Check if this interaction is in
@@ -203,27 +206,27 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                  */
                 if (a0 >= a_start && a0 < a_end)
                 {
-                    int  mol    = (a0 - a_start)/nat_mol;
-                    int  a0_mol = (a0 - a_start) - mol*nat_mol;
+                    int  mol    = (a0 - a_start) / nat_mol;
+                    int  a0_mol = (a0 - a_start) - mol * nat_mol;
                     int  j_mol  = ril->index[a0_mol];
                     bool found  = false;
-                    while (j_mol < ril->index[a0_mol+1] && !found)
+                    while (j_mol < ril->index[a0_mol + 1] && !found)
                     {
-                        int j       = mol*nril_mol + j_mol;
+                        int j       = mol * nril_mol + j_mol;
                         int ftype_j = ril->il[j_mol];
                         /* Here we need to check if this interaction has
                          * not already been assigned, since we could have
                          * multiply defined interactions.
                          */
-                        if (ftype == ftype_j && ia[0] == ril->il[j_mol+1] &&
-                            assigned[j] == 0)
+                        if (ftype == ftype_j && ia[0] == ril->il[j_mol + 1]
+                            && assigned[j] == 0)
                         {
                             /* Check the atoms */
                             found = true;
                             for (int a = 0; a < nral; a++)
                             {
-                                if (gatindex[ia[1+a]] !=
-                                    a_start + mol*nat_mol + ril->il[j_mol+2+a])
+                                if (gatindex[ia[1 + a]]
+                                    != a_start + mol * nat_mol + ril->il[j_mol + 2 + a])
                                 {
                                     found = false;
                                 }
@@ -245,7 +248,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
         }
     }
 
-    gmx_sumi(nmol*nril_mol, assigned, cr);
+    gmx_sumi(nmol * nril_mol, assigned, cr);
 
     int nprint = 10;
     int i      = 0;
@@ -256,9 +259,9 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
         {
             int ftype = ril->il[j_mol];
             int nral  = NRAL(ftype);
-            int j     = mol*nril_mol + j_mol;
-            if (assigned[j] == 0 &&
-                !(interaction_function[ftype].flags & IF_VSITE))
+            int j     = mol * nril_mol + j_mol;
+            if (assigned[j] == 0
+                && !(interaction_function[ftype].flags & IF_VSITE))
             {
                 if (DDMASTER(cr->dd))
                 {
@@ -273,8 +276,8 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                     int a;
                     for (a = 0; a < nral; a++)
                     {
-                        fprintf(fplog, "%5d", ril->il[j_mol+2+a]+1);
-                        fprintf(stderr, "%5d", ril->il[j_mol+2+a]+1);
+                        fprintf(fplog, "%5d", ril->il[j_mol + 2 + a] + 1);
+                        fprintf(stderr, "%5d", ril->il[j_mol + 2 + a] + 1);
                     }
                     while (a < 4)
                     {
@@ -287,9 +290,9 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                     for (a = 0; a < nral; a++)
                     {
                         fprintf(fplog, "%6d",
-                                a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
+                                a_start + mol * nat_mol + ril->il[j_mol + 2 + a] + 1);
                         fprintf(stderr, "%6d",
-                                a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
+                                a_start + mol * nat_mol + ril->il[j_mol + 2 + a] + 1);
                     }
                     fprintf(fplog, "\n");
                     fprintf(stderr, "\n");
@@ -313,7 +316,7 @@ static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
                                              const t_idef *idef)
 {
     int                      mb, a_start, a_end;
-    const gmx_molblock_t    *molb;
+    const gmx_molblock_t *   molb;
     const gmx_reverse_top_t *rt;
 
     rt = cr->dd->reverse_top;
@@ -324,7 +327,7 @@ static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
     {
         molb    = &mtop->molblock[mb];
         a_start = a_end;
-        a_end   = a_start + molb->nmol*molb->natoms_mol;
+        a_end   = a_start + molb->nmol * molb->natoms_mol;
 
         print_missing_interactions_mb(fplog, cr, rt,
                                       *(mtop->moltype[molb->type].name),
@@ -341,10 +344,10 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
                                    const gmx_localtop_t *top_local,
                                    t_state *state_local)
 {
-    int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
-    int             ftype, nral;
-    char            buf[STRLEN];
-    gmx_domdec_t   *dd;
+    int           ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
+    int           ftype, nral;
+    char          buf[STRLEN];
+    gmx_domdec_t *dd;
 
     dd = cr->dd;
 
@@ -359,7 +362,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         nral      = NRAL(ftype);
-        cl[ftype] = top_local->idef.il[ftype].nr/(1+nral);
+        cl[ftype] = top_local->idef.il[ftype].nr / (1 + nral);
     }
 
     gmx_sumi(F_NRE, cl, cr);
@@ -379,13 +382,13 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
              * into F_CONSTR. So in the if statement we skip F_CONSTRNC
              * and add these constraints when doing F_CONSTR.
              */
-            if (((interaction_function[ftype].flags & IF_BOND) &&
-                 (dd->reverse_top->bBCheck
-                  || !(interaction_function[ftype].flags & IF_LIMZERO)))
+            if (((interaction_function[ftype].flags & IF_BOND)
+                 && (dd->reverse_top->bBCheck
+                     || !(interaction_function[ftype].flags & IF_LIMZERO)))
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
-                n    = gmx_mtop_ftype_count(top_global, ftype);
+                n = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
                 {
                     n += gmx_mtop_ftype_count(top_global, F_CONSTRNC);
@@ -448,10 +451,10 @@ static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
     /* binary search for molblock_ind */
     while (TRUE)
     {
-        mid = (start+end)/2;
+        mid = (start + end) / 2;
         if (i_gl >= mbi[mid].a_end)
         {
-            start = mid+1;
+            start = mid + 1;
         }
         else if (i_gl < mbi[mid].a_start)
         {
@@ -468,7 +471,7 @@ static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
 
     *mt    = mbi->type;
     *mol   = (i_gl - mbi->a_start) / mbi->natoms_mol;
-    *i_mol = (i_gl - mbi->a_start) - (*mol)*mbi->natoms_mol;
+    *i_mol = (i_gl - mbi->a_start) - (*mol) * mbi->natoms_mol;
 }
 
 /*! \brief Count the exclusions for all atoms in \p cgs */
@@ -483,10 +486,10 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
     for (cg = 0; cg < cgs->nr; cg++)
     {
         at0 = cgs->index[cg];
-        at1 = cgs->index[cg+1];
+        at1 = cgs->index[cg + 1];
         for (at = at0; at < at1; at++)
         {
-            for (excl = excls->index[at]; excl < excls->index[at+1]; excl++)
+            for (excl = excls->index[at]; excl < excls->index[at + 1]; excl++)
             {
                 atj = excls->a[excl];
                 if (atj > at)
@@ -500,7 +503,7 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
             }
 
             *n_excl_at_max = std::max(*n_excl_at_max,
-                                      excls->index[at+1] - excls->index[at]);
+                                      excls->index[at + 1] - excls->index[at]);
         }
     }
 }
@@ -525,14 +528,14 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
     nint = 0;
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE)) ||
-            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
-            (bSettle && ftype == F_SETTLE))
+        if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
+            || (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC))
+            || (bSettle && ftype == F_SETTLE))
         {
             bVSite = (interaction_function[ftype].flags & IF_VSITE);
             nral   = NRAL(ftype);
             il     = &il_mt[ftype];
-            for (i = 0; i < il->nr; i += 1+nral)
+            for (i = 0; i < il->nr; i += 1 + nral)
             {
                 ia = il->iatoms + i;
                 if (bLinkToAllAtoms)
@@ -554,18 +557,18 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                 }
                 for (link = 0; link < nlink; link++)
                 {
-                    a = ia[1+link];
+                    a = ia[1 + link];
                     if (bAssign)
                     {
                         assert(r_il); //with bAssign not allowed to be null
                         assert(r_index);
-                        r_il[r_index[a]+count[a]] =
-                            (ftype == F_CONSTRNC ? F_CONSTR : ftype);
-                        r_il[r_index[a]+count[a]+1] = ia[0];
-                        for (j = 1; j < 1+nral; j++)
+                        r_il[r_index[a] + count[a]]
+                                                        = (ftype == F_CONSTRNC ? F_CONSTR : ftype);
+                        r_il[r_index[a] + count[a] + 1] = ia[0];
+                        for (j = 1; j < 1 + nral; j++)
                         {
                             /* Store the molecular atom number */
-                            r_il[r_index[a]+count[a]+1+j] = ia[j];
+                            r_il[r_index[a] + count[a] + 1 + j] = ia[j];
                         }
                     }
                     if (interaction_function[ftype].flags & IF_VSITE)
@@ -576,17 +579,17 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                              * which of the constructing atoms are
                              * vsites again.
                              */
-                            r_il[r_index[a]+count[a]+2+nral] = 0;
-                            for (j = 2; j < 1+nral; j++)
+                            r_il[r_index[a] + count[a] + 2 + nral] = 0;
+                            for (j = 2; j < 1 + nral; j++)
                             {
                                 if (atom[ia[j]].ptype == eptVSite)
                                 {
-                                    r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
+                                    r_il[r_index[a] + count[a] + 2 + nral] |= (2 << j);
                                 }
                             }
                             /* Store vsite pbc atom in a second extra entry */
-                            r_il[r_index[a]+count[a]+2+nral+1] =
-                                (vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
+                            r_il[r_index[a] + count[a] + 2 + nral + 1]
+                                = (vsite_pbc ? vsite_pbc[ftype - F_VSITE2][i / (1 + nral)] : -2);
                         }
                     }
                     else
@@ -595,8 +598,8 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                          * uniquely assigned and can be assigned
                          * to multiple nodes with recursive vsites.
                          */
-                        if (bBCheck ||
-                            !(interaction_function[ftype].flags & IF_LIMZERO))
+                        if (bBCheck
+                            || !(interaction_function[ftype].flags & IF_LIMZERO))
                         {
                             nint++;
                         }
@@ -629,22 +632,22 @@ static int make_reverse_ilist(const t_ilist *ilist,
                            bConstr, bSettle, bBCheck, nullptr, nullptr,
                            bLinkToAllAtoms, FALSE);
 
-    snew(ril_mt->index, nat_mt+1);
+    snew(ril_mt->index, nat_mt + 1);
     ril_mt->index[0] = 0;
     for (i = 0; i < nat_mt; i++)
     {
-        ril_mt->index[i+1] = ril_mt->index[i] + count[i];
-        count[i]           = 0;
+        ril_mt->index[i + 1] = ril_mt->index[i] + count[i];
+        count[i]             = 0;
     }
     snew(ril_mt->il, ril_mt->index[nat_mt]);
 
     /* Store the interactions */
-    nint_mt =
-        low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc,
-                               count,
-                               bConstr, bSettle, bBCheck,
-                               ril_mt->index, ril_mt->il,
-                               bLinkToAllAtoms, TRUE);
+    nint_mt
+        = low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc,
+                                 count,
+                                 bConstr, bSettle, bBCheck,
+                                 ril_mt->index, ril_mt->il,
+                                 bLinkToAllAtoms, TRUE);
 
     sfree(count);
 
@@ -666,8 +669,8 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
 {
     int                mt, i, mb;
     gmx_reverse_top_t *rt;
-    int               *nint_mt;
-    gmx_moltype_t     *molt;
+    int *              nint_mt;
+    gmx_moltype_t *    molt;
     int                thread;
 
     snew(rt, 1);
@@ -690,11 +693,11 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         }
 
         /* Make the atom to interaction list for this molecule type */
-        nint_mt[mt] =
-            make_reverse_ilist(molt->ilist, &molt->atoms,
-                               vsite_pbc_molt ? vsite_pbc_molt[mt] : nullptr,
-                               rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
-                               &rt->ril_mt[mt]);
+        nint_mt[mt]
+            = make_reverse_ilist(molt->ilist, &molt->atoms,
+                                 vsite_pbc_molt ? vsite_pbc_molt[mt] : nullptr,
+                                 rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
+                                 &rt->ril_mt[mt]);
 
         rt->ril_mt_tot_size += rt->ril_mt[mt].index[molt->atoms.nr];
     }
@@ -706,7 +709,7 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     *nint = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
-        *nint += mtop->molblock[mb].nmol*nint_mt[mtop->molblock[mb].type];
+        *nint += mtop->molblock[mb].nmol * nint_mt[mtop->molblock[mb].type];
     }
     sfree(nint_mt);
 
@@ -722,11 +725,11 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         atoms_global.nr   = mtop->natoms;
         atoms_global.atom = nullptr; /* Only used with virtual sites */
 
-        *nint +=
-            make_reverse_ilist(mtop->intermolecular_ilist, &atoms_global,
-                               nullptr,
-                               rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
-                               &rt->ril_intermol);
+        *nint
+            += make_reverse_ilist(mtop->intermolecular_ilist, &atoms_global,
+                                  nullptr,
+                                  rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
+                                  &rt->ril_intermol);
     }
 
     if (bFE && gmx_mtop_bondeds_free_energy(mtop))
@@ -745,7 +748,7 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         rt->mbi[mb].a_start    = i;
-        i += mtop->molblock[mb].nmol*mtop->molblock[mb].natoms_mol;
+        i                     += mtop->molblock[mb].nmol * mtop->molblock[mb].natoms_mol;
         rt->mbi[mb].a_end      = i;
         rt->mbi[mb].natoms_mol = mtop->molblock[mb].natoms_mol;
         rt->mbi[mb].type       = mtop->molblock[mb].type;
@@ -757,8 +760,8 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     {
         for (thread = 0; thread < rt->nthread; thread++)
         {
-            snew(rt->th_work[thread].vsite_pbc, F_VSITEN-F_VSITE2+1);
-            snew(rt->th_work[thread].vsite_pbc_nalloc, F_VSITEN-F_VSITE2+1);
+            snew(rt->th_work[thread].vsite_pbc, F_VSITEN - F_VSITE2 + 1);
+            snew(rt->th_work[thread].vsite_pbc_nalloc, F_VSITEN - F_VSITE2 + 1);
         }
     }
 
@@ -788,9 +791,9 @@ void dd_make_reverse_top(FILE *fplog,
 
     gmx_reverse_top_t *rt = dd->reverse_top;
 
-    if (rt->ril_mt_tot_size >= 200000 &&
-        mtop->mols.nr > 1 &&
-        mtop->nmolblock == 1 && mtop->molblock[0].nmol == 1)
+    if (rt->ril_mt_tot_size >= 200000
+        && mtop->mols.nr > 1
+        && mtop->nmolblock == 1 && mtop->molblock[0].nmol == 1)
     {
         /* mtop comes from a pre Gromacs 4 tpr file */
         const char *note = "NOTE: The tpr file used for this simulation is in an old format, for less memory usage and possibly more performance create a new tpr file with an up to date version of grompp";
@@ -812,8 +815,8 @@ void dd_make_reverse_top(FILE *fplog,
      * group cut-off scheme loops over a list of exclusions, so there each
      * excluded pair should appear exactly once.
      */
-    rt->bExclRequired = (ir->cutoff_scheme == ecutsGROUP &&
-                         inputrecExclForces(ir));
+    rt->bExclRequired = (ir->cutoff_scheme == ecutsGROUP
+                         && inputrecExclForces(ir));
 
     int nexcl, mb;
 
@@ -823,15 +826,15 @@ void dd_make_reverse_top(FILE *fplog,
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         gmx_molblock_t *molb;
-        gmx_moltype_t  *molt;
+        gmx_moltype_t * molt;
         int             n_excl_mol, n_excl_icg, n_excl_at_max;
 
-        molb                = &mtop->molblock[mb];
-        molt                = &mtop->moltype[molb->type];
+        molb = &mtop->molblock[mb];
+        molt = &mtop->moltype[molb->type];
         count_excls(&molt->cgs, &molt->excls,
                     &n_excl_mol, &n_excl_icg, &n_excl_at_max);
-        nexcl              += molb->nmol*n_excl_mol;
-        dd->n_intercg_excl += molb->nmol*n_excl_icg;
+        nexcl              += molb->nmol * n_excl_mol;
+        dd->n_intercg_excl += molb->nmol * n_excl_icg;
         rt->n_excl_at_max   = std::max(rt->n_excl_at_max, n_excl_at_max);
     }
     if (rt->bExclRequired)
@@ -874,18 +877,17 @@ void dd_make_reverse_top(FILE *fplog,
  * confuses static analysis tools unless we fuse the vsite
  * atom-indexing organization code with the ifunc-adding code, so that
  * they can see that nral is the same value. */
-static gmx_inline void
-add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
-                     int nral, gmx_bool bHomeA,
-                     int a, int a_gl, int a_mol,
-                     const t_iatom *iatoms,
-                     t_ilist *il)
+static gmx_inline void add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
+                                            int nral, gmx_bool bHomeA,
+                                            int a, int a_gl, int a_mol,
+                                            const t_iatom *iatoms,
+                                            t_ilist *il)
 {
     t_iatom *liatoms;
 
-    if (il->nr+1+nral > il->nalloc)
+    if (il->nr + 1 + nral > il->nalloc)
     {
-        il->nalloc = over_alloc_large(il->nr+1+nral);
+        il->nalloc = over_alloc_large(il->nr + 1 + nral);
         srenew(il->iatoms, il->nalloc);
     }
     liatoms = il->iatoms + il->nr;
@@ -905,7 +907,7 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
         tiatoms[1] = -a_gl - 1;
     }
 
-    for (int k = 2; k < 1+nral; k++)
+    for (int k = 2; k < 1 + nral; k++)
     {
         int ak_gl = a_gl + iatoms[k] - a_mol;
         if (!ga2la_get_home(ga2la, ak_gl, &tiatoms[k]))
@@ -916,7 +918,7 @@ add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t *ga2la,
         // Note that ga2la_get_home always sets the third parameter if
         // it returns TRUE
     }
-    for (int k = 0; k < 1+nral; k++)
+    for (int k = 0; k < 1 + nral; k++)
     {
         liatoms[k] = tiatoms[k];
     }
@@ -928,9 +930,9 @@ static gmx_inline void add_ifunc(int nral, t_iatom *tiatoms, t_ilist *il)
     t_iatom *liatoms;
     int      k;
 
-    if (il->nr+1+nral > il->nalloc)
+    if (il->nr + 1 + nral > il->nalloc)
     {
-        il->nalloc = over_alloc_large(il->nr+1+nral);
+        il->nalloc = over_alloc_large(il->nr + 1 + nral);
         srenew(il->iatoms, il->nalloc);
     }
     liatoms = il->iatoms + il->nr;
@@ -952,10 +954,10 @@ static void add_posres(int mol, int a_mol, const gmx_molblock_t *molb,
     /* This position restraint has not been added yet,
      * so it's index is the current number of position restraints.
      */
-    n = idef->il[F_POSRES].nr/2;
-    if (n+1 > idef->iparams_posres_nalloc)
+    n = idef->il[F_POSRES].nr / 2;
+    if (n + 1 > idef->iparams_posres_nalloc)
     {
-        idef->iparams_posres_nalloc = over_alloc_dd(n+1);
+        idef->iparams_posres_nalloc = over_alloc_dd(n + 1);
         srenew(idef->iparams_posres, idef->iparams_posres_nalloc);
     }
     ip = &idef->iparams_posres[n];
@@ -963,7 +965,7 @@ static void add_posres(int mol, int a_mol, const gmx_molblock_t *molb,
     *ip = ip_in[iatoms[0]];
 
     /* Get the position restraint coordinates from the molblock */
-    a_molb = mol*molb->natoms_mol + a_mol;
+    a_molb = mol * molb->natoms_mol + a_mol;
     if (a_molb >= molb->nposres_xA)
     {
         gmx_incons("Not enough position restraint coordinates");
@@ -998,10 +1000,10 @@ static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
     /* This flat-bottom position restraint has not been added yet,
      * so it's index is the current number of position restraints.
      */
-    n = idef->il[F_FBPOSRES].nr/2;
-    if (n+1 > idef->iparams_fbposres_nalloc)
+    n = idef->il[F_FBPOSRES].nr / 2;
+    if (n + 1 > idef->iparams_fbposres_nalloc)
     {
-        idef->iparams_fbposres_nalloc = over_alloc_dd(n+1);
+        idef->iparams_fbposres_nalloc = over_alloc_dd(n + 1);
         srenew(idef->iparams_fbposres, idef->iparams_fbposres_nalloc);
     }
     ip = &idef->iparams_fbposres[n];
@@ -1009,7 +1011,7 @@ static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
     *ip = ip_in[iatoms[0]];
 
     /* Get the position restriant coordinats from the molblock */
-    a_molb = mol*molb->natoms_mol + a_mol;
+    a_molb = mol * molb->natoms_mol + a_mol;
     if (a_molb >= molb->nposres_xA)
     {
         gmx_incons("Not enough position restraint coordinates");
@@ -1033,7 +1035,7 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
                       t_idef *idef, int **vsite_pbc, int *vsite_pbc_nalloc)
 {
     int     k, vsi, pbc_a_mol;
-    t_iatom tiatoms[1+MAXATOMLIST];
+    t_iatom tiatoms[1 + MAXATOMLIST];
     int     j, ftype_r, nral_r;
 
     /* Add this interaction to the local topology */
@@ -1041,22 +1043,22 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
 
     if (vsite_pbc)
     {
-        vsi = idef->il[ftype].nr/(1+nral) - 1;
-        if (vsi >= vsite_pbc_nalloc[ftype-F_VSITE2])
+        vsi = idef->il[ftype].nr / (1 + nral) - 1;
+        if (vsi >= vsite_pbc_nalloc[ftype - F_VSITE2])
         {
-            vsite_pbc_nalloc[ftype-F_VSITE2] = over_alloc_large(vsi+1);
-            srenew(vsite_pbc[ftype-F_VSITE2], vsite_pbc_nalloc[ftype-F_VSITE2]);
+            vsite_pbc_nalloc[ftype - F_VSITE2] = over_alloc_large(vsi + 1);
+            srenew(vsite_pbc[ftype - F_VSITE2], vsite_pbc_nalloc[ftype - F_VSITE2]);
         }
         if (bHomeA)
         {
-            pbc_a_mol = iatoms[1+nral+1];
+            pbc_a_mol = iatoms[1 + nral + 1];
             if (pbc_a_mol < 0)
             {
                 /* The pbc flag is one of the following two options:
                  * -2: vsite and all constructing atoms are within the same cg, no pbc
                  * -1: vsite and its first constructing atom are in the same cg, do pbc
                  */
-                vsite_pbc[ftype-F_VSITE2][vsi] = pbc_a_mol;
+                vsite_pbc[ftype - F_VSITE2][vsi] = pbc_a_mol;
             }
             else
             {
@@ -1065,7 +1067,7 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
                  * Since the order of the atoms does not change within a charge
                  * group, we do not need the global to local atom index.
                  */
-                vsite_pbc[ftype-F_VSITE2][vsi] = a + pbc_a_mol - iatoms[1];
+                vsite_pbc[ftype - F_VSITE2][vsi] = a + pbc_a_mol - iatoms[1];
             }
         }
         else
@@ -1075,27 +1077,27 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
              * But we always turn on full_pbc to assure that higher order
              * recursion works correctly.
              */
-            vsite_pbc[ftype-F_VSITE2][vsi] = -1;
+            vsite_pbc[ftype - F_VSITE2][vsi] = -1;
         }
     }
 
-    if (iatoms[1+nral])
+    if (iatoms[1 + nral])
     {
         /* Check for recursion */
-        for (k = 2; k < 1+nral; k++)
+        for (k = 2; k < 1 + nral; k++)
         {
-            if ((iatoms[1+nral] & (2<<k)) && (tiatoms[k] < 0))
+            if ((iatoms[1 + nral] & (2 << k)) && (tiatoms[k] < 0))
             {
                 /* This construction atoms is a vsite and not a home atom */
                 if (gmx_debug_at)
                 {
-                    fprintf(debug, "Constructing atom %d of vsite atom %d is a vsite and non-home\n", iatoms[k]+1, a_mol+1);
+                    fprintf(debug, "Constructing atom %d of vsite atom %d is a vsite and non-home\n", iatoms[k] + 1, a_mol + 1);
                 }
                 /* Find the vsite construction */
 
                 /* Check all interactions assigned to this atom */
                 j = index[iatoms[k]];
-                while (j < index[iatoms[k]+1])
+                while (j < index[iatoms[k] + 1])
                 {
                     ftype_r = rtil[j++];
                     nral_r  = NRAL(ftype_r);
@@ -1103,8 +1105,8 @@ static void add_vsite(gmx_ga2la_t *ga2la, const int *index, const int *rtil,
                     {
                         /* Add this vsite (recursion) */
                         add_vsite(ga2la, index, rtil, ftype_r, nral_r,
-                                  FALSE, -1, a_gl+iatoms[k]-iatoms[1], iatoms[k],
-                                  rtil+j, idef, vsite_pbc, vsite_pbc_nalloc);
+                                  FALSE, -1, a_gl + iatoms[k] - iatoms[1], iatoms[k],
+                                  rtil + j, idef, vsite_pbc, vsite_pbc_nalloc);
                         j += 1 + nral_r + 2;
                     }
                     else
@@ -1134,7 +1136,7 @@ static void make_la2lc(gmx_domdec_t *dd)
     /* Make the local atom to local cg index */
     for (cg = 0; cg < dd->ncg_tot; cg++)
     {
-        for (a = cgindex[cg]; a < cgindex[cg+1]; a++)
+        for (a = cgindex[cg]; a < cgindex[cg + 1]; a++)
         {
             la2lc[a] = cg;
         }
@@ -1163,7 +1165,7 @@ static void combine_blocka(t_blocka *dest, const thread_work_t *src, int nsrc)
 {
     int ni, na, s, i;
 
-    ni = src[nsrc-1].excl.nr;
+    ni = src[nsrc - 1].excl.nr;
     na = 0;
     for (s = 0; s < nsrc; s++)
     {
@@ -1171,23 +1173,23 @@ static void combine_blocka(t_blocka *dest, const thread_work_t *src, int nsrc)
     }
     if (ni + 1 > dest->nalloc_index)
     {
-        dest->nalloc_index = over_alloc_large(ni+1);
+        dest->nalloc_index = over_alloc_large(ni + 1);
         srenew(dest->index, dest->nalloc_index);
     }
     if (dest->nra + na > dest->nalloc_a)
     {
-        dest->nalloc_a = over_alloc_large(dest->nra+na);
+        dest->nalloc_a = over_alloc_large(dest->nra + na);
         srenew(dest->a, dest->nalloc_a);
     }
     for (s = 1; s < nsrc; s++)
     {
-        for (i = dest->nr+1; i < src[s].excl.nr+1; i++)
+        for (i = dest->nr + 1; i < src[s].excl.nr + 1; i++)
         {
             dest->index[i] = dest->nra + src[s].excl.index[i];
         }
         for (i = 0; i < src[s].excl.nra; i++)
         {
-            dest->a[dest->nra+i] = src[s].excl.a[i];
+            dest->a[dest->nra + i] = src[s].excl.a[i];
         }
         dest->nr   = src[s].excl.nr;
         dest->nra += src[s].excl.nra;
@@ -1219,23 +1221,23 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 
             if (ild->nr + n > ild->nalloc)
             {
-                ild->nalloc = over_alloc_large(ild->nr+n);
+                ild->nalloc = over_alloc_large(ild->nr + n);
                 srenew(ild->iatoms, ild->nalloc);
             }
 
             gmx_bool vpbc;
             int      nral1 = 0, ftv = 0;
 
-            vpbc = ((interaction_function[ftype].flags & IF_VSITE) &&
-                    vsite->vsite_pbc_loc != nullptr);
+            vpbc = ((interaction_function[ftype].flags & IF_VSITE)
+                    && vsite->vsite_pbc_loc != nullptr);
             if (vpbc)
             {
                 nral1 = 1 + NRAL(ftype);
                 ftv   = ftype - F_VSITE2;
-                if ((ild->nr + n)/nral1 > vsite->vsite_pbc_loc_nalloc[ftv])
+                if ((ild->nr + n) / nral1 > vsite->vsite_pbc_loc_nalloc[ftv])
                 {
-                    vsite->vsite_pbc_loc_nalloc[ftv] =
-                        over_alloc_large((ild->nr + n)/nral1);
+                    vsite->vsite_pbc_loc_nalloc[ftv]
+                        = over_alloc_large((ild->nr + n) / nral1);
                     srenew(vsite->vsite_pbc_loc[ftv],
                            vsite->vsite_pbc_loc_nalloc[ftv]);
                 }
@@ -1249,14 +1251,14 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 ils = &src[s].idef.il[ftype];
                 for (i = 0; i < ils->nr; i++)
                 {
-                    ild->iatoms[ild->nr+i] = ils->iatoms[i];
+                    ild->iatoms[ild->nr + i] = ils->iatoms[i];
                 }
                 if (vpbc)
                 {
                     for (i = 0; i < ils->nr; i += nral1)
                     {
-                        vsite->vsite_pbc_loc[ftv][(ild->nr+i)/nral1] =
-                            src[s].vsite_pbc[ftv][i/nral1];
+                        vsite->vsite_pbc_loc[ftv][(ild->nr + i) / nral1]
+                            = src[s].vsite_pbc[ftv][i / nral1];
                     }
                 }
 
@@ -1266,7 +1268,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             /* Position restraints need an additional treatment */
             if (ftype == F_POSRES || ftype == F_FBPOSRES)
             {
-                int nposres = dest->il[ftype].nr/2;
+                int nposres = dest->il[ftype].nr / 2;
                 if (nposres > dest->iparams_posres_nalloc)
                 {
                     dest->iparams_posres_nalloc = over_alloc_large(nposres);
@@ -1275,16 +1277,16 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 /* Set nposres to the number of original position restraints in dest */
                 for (int s = 1; s < nsrc; s++)
                 {
-                    nposres -= src[s].idef.il[ftype].nr/2;
+                    nposres -= src[s].idef.il[ftype].nr / 2;
                 }
                 for (int s = 1; s < nsrc; s++)
                 {
                     if (ftype == F_POSRES)
                     {
-                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
+                        for (int i = 0; i < src[s].idef.il[ftype].nr / 2; i++)
                         {
                             /* Correct the index into iparams_posres */
-                            dest->il[ftype].iatoms[nposres*2] = nposres;
+                            dest->il[ftype].iatoms[nposres * 2] = nposres;
                             /* Copy the position restraint force parameters */
                             dest->iparams_posres[nposres] = src[s].idef.iparams_posres[i];
                             nposres++;
@@ -1292,10 +1294,10 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                     }
                     else
                     {
-                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
+                        for (int i = 0; i < src[s].idef.il[ftype].nr / 2; i++)
                         {
                             /* Correct the index into iparams_fbposres */
-                            dest->il[ftype].iatoms[nposres*2] = nposres;
+                            dest->il[ftype].iatoms[nposres * 2] = nposres;
                             /* Copy the position restraint force parameters */
                             dest->iparams_fbposres[nposres] = src[s].idef.iparams_fbposres[i];
                             nposres++;
@@ -1309,26 +1311,25 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 
 /*! \brief Check and when available assign bonded interactions for local atom i
  */
-static gmx_inline void
-check_assign_interactions_atom(int i, int i_gl,
-                               int mol, int i_mol,
-                               const int *index, const int *rtil,
-                               gmx_bool bInterMolInteractions,
-                               int ind_start, int ind_end,
-                               const gmx_domdec_t *dd,
-                               const gmx_domdec_zones_t *zones,
-                               const gmx_molblock_t *molb,
-                               gmx_bool bRCheckMB, ivec rcheck, gmx_bool bRCheck2B,
-                               real rc2,
-                               int *la2lc,
-                               t_pbc *pbc_null,
-                               rvec *cg_cm,
-                               const t_iparams *ip_in,
-                               t_idef *idef,
-                               int **vsite_pbc, int *vsite_pbc_nalloc,
-                               int iz,
-                               gmx_bool bBCheck,
-                               int *nbonded_local)
+static gmx_inline void check_assign_interactions_atom(int i, int i_gl,
+                                                      int mol, int i_mol,
+                                                      const int *index, const int *rtil,
+                                                      gmx_bool bInterMolInteractions,
+                                                      int ind_start, int ind_end,
+                                                      const gmx_domdec_t *dd,
+                                                      const gmx_domdec_zones_t *zones,
+                                                      const gmx_molblock_t *molb,
+                                                      gmx_bool bRCheckMB, ivec rcheck, gmx_bool bRCheck2B,
+                                                      real rc2,
+                                                      int *la2lc,
+                                                      t_pbc *pbc_null,
+                                                      rvec *cg_cm,
+                                                      const t_iparams *ip_in,
+                                                      t_idef *idef,
+                                                      int **vsite_pbc, int *vsite_pbc_nalloc,
+                                                      int iz,
+                                                      gmx_bool bBCheck,
+                                                      int *nbonded_local)
 {
     int j;
 
@@ -1432,22 +1433,22 @@ check_assign_interactions_atom(int i, int i_gl,
                         kz -= zones->n;
                     }
                     /* Check zone interaction assignments */
-                    bUse = ((iz < zones->nizone &&
-                             iz <= kz &&
-                             kz >= zones->izone[iz].j0 &&
-                             kz <  zones->izone[iz].j1) ||
-                            (kz < zones->nizone &&
-                                  iz > kz &&
-                             iz >= zones->izone[kz].j0 &&
-                             iz <  zones->izone[kz].j1));
+                    bUse = ((iz < zones->nizone
+                             && iz <= kz
+                             && kz >= zones->izone[iz].j0
+                             && kz <  zones->izone[iz].j1)
+                            || (kz < zones->nizone &&
+                                     iz > kz
+                                && iz >= zones->izone[kz].j0
+                                && iz <  zones->izone[kz].j1));
                     if (bUse)
                     {
                         tiatoms[1] = i;
                         tiatoms[2] = a_loc;
                         /* If necessary check the cgcm distance */
-                        if (bRCheck2B &&
-                            dd_dist2(pbc_null, cg_cm, la2lc,
-                                     tiatoms[1], tiatoms[2]) >= rc2)
+                        if (bRCheck2B
+                            && dd_dist2(pbc_null, cg_cm, la2lc,
+                                        tiatoms[1], tiatoms[2]) >= rc2)
                         {
                             bUse = FALSE;
                         }
@@ -1510,8 +1511,8 @@ check_assign_interactions_atom(int i, int i_gl,
                         }
                     }
                 }
-                bUse = (bUse &&
-                        k_zero[XX] && k_zero[YY] && k_zero[ZZ]);
+                bUse = (bUse
+                        && k_zero[XX] && k_zero[YY] && k_zero[ZZ]);
                 if (bRCheckMB)
                 {
                     int d;
@@ -1522,10 +1523,10 @@ check_assign_interactions_atom(int i, int i_gl,
                          * the cut-off to avoid possible multiple
                          * assignments of bonded interactions.
                          */
-                        if (rcheck[d] &&
-                            k_plus[d] &&
-                            dd_dist2(pbc_null, cg_cm, la2lc,
-                                     tiatoms[k_zero[d]], tiatoms[k_plus[d]]) >= rc2)
+                        if (rcheck[d]
+                            && k_plus[d]
+                            && dd_dist2(pbc_null, cg_cm, la2lc,
+                                        tiatoms[k_zero[d]], tiatoms[k_plus[d]]) >= rc2)
                         {
                             bUse = FALSE;
                         }
@@ -1539,8 +1540,8 @@ check_assign_interactions_atom(int i, int i_gl,
                 /* Sum so we can check in global_stat
                  * if we have everything.
                  */
-                if (bBCheck ||
-                    !(interaction_function[ftype].flags & IF_LIMZERO))
+                if (bBCheck
+                    || !(interaction_function[ftype].flags & IF_LIMZERO))
                 {
                     (*nbonded_local)++;
                 }
@@ -1569,7 +1570,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              int at_start, int at_end)
 {
     int                i, i_gl, mb, mt, mol, i_mol;
-    int               *index, *rtil;
+    int *              index, *rtil;
     gmx_bool           bBCheck;
     gmx_reverse_top_t *rt;
     int                nbonded_local;
@@ -1591,7 +1592,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
 
         check_assign_interactions_atom(i, i_gl, mol, i_mol,
                                        index, rtil, FALSE,
-                                       index[i_mol], index[i_mol+1],
+                                       index[i_mol], index[i_mol + 1],
                                        dd, zones,
                                        &molb[mb],
                                        bRCheckMB, rcheck, bRCheck2B, rc2,
@@ -1635,12 +1636,12 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
 static void set_no_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    int iz, t_blocka *lexcls)
 {
-    int  a0, a1, a;
+    int a0, a1, a;
 
     a0 = dd->cgindex[zones->cg_range[iz]];
-    a1 = dd->cgindex[zones->cg_range[iz+1]];
+    a1 = dd->cgindex[zones->cg_range[iz + 1]];
 
-    for (a = a0+1; a < a1+1; a++)
+    for (a = a0 + 1; a < a1 + 1; a++)
     {
         lexcls->index[a] = lexcls->nra;
     }
@@ -1661,11 +1662,11 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                    int iz,
                                    int cg_start, int cg_end)
 {
-    int               n_excl_at_max, n, count, jla0, jla1, jla;
-    int               cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
-    const t_blocka   *excls;
-    gmx_ga2la_t      *ga2la;
-    int               cell;
+    int             n_excl_at_max, n, count, jla0, jla1, jla;
+    int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
+    const t_blocka *excls;
+    gmx_ga2la_t *   ga2la;
+    int             cell;
 
     ga2la = dd->ga2la;
 
@@ -1681,15 +1682,15 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     count = 0;
     for (cg = cg_start; cg < cg_end; cg++)
     {
-        if (n + (cg_end - cg_start)*n_excl_at_max > lexcls->nalloc_a)
+        if (n + (cg_end - cg_start) * n_excl_at_max > lexcls->nalloc_a)
         {
-            lexcls->nalloc_a = over_alloc_large(n + (cg_end - cg_start)*n_excl_at_max);
+            lexcls->nalloc_a = over_alloc_large(n + (cg_end - cg_start) * n_excl_at_max);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
         la0 = dd->cgindex[cg];
-        la1 = dd->cgindex[cg+1];
-        if (GET_CGINFO_EXCL_INTER(cginfo[cg]) ||
-            !GET_CGINFO_EXCL_INTRA(cginfo[cg]))
+        la1 = dd->cgindex[cg + 1];
+        if (GET_CGINFO_EXCL_INTER(cginfo[cg])
+            || !GET_CGINFO_EXCL_INTRA(cginfo[cg]))
         {
             /* Copy the exclusions from the global top */
             for (la = la0; la < la1; la++)
@@ -1698,7 +1699,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                 a_gl              = dd->gatindex[la];
                 global_atomnr_to_moltype_ind(dd->reverse_top, a_gl, &mb, &mt, &mol, &a_mol);
                 excls = &moltype[mt].excls;
-                for (j = excls->index[a_mol]; j < excls->index[a_mol+1]; j++)
+                for (j = excls->index[a_mol]; j < excls->index[a_mol + 1]; j++)
                 {
                     aj_mol = excls->a[j];
                     /* This computation of jla is only correct intra-cg */
@@ -1730,7 +1731,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                          * to the DD cutoff (not cutoff_min as
                          * for the other bonded interactions).
                          */
-                        if (ga2la_get(ga2la, a_gl+aj_mol-a_mol, &jla, &cell))
+                        if (ga2la_get(ga2la, a_gl + aj_mol - a_mol, &jla, &cell))
                         {
                             if (iz == 0 && cell == 0)
                             {
@@ -1741,9 +1742,9 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                                     count++;
                                 }
                             }
-                            else if (jla >= jla0 && jla < jla1 &&
-                                     (!bRCheck ||
-                                      dd_dist2(pbc_null, cg_cm, la2lc, la, jla) < rc2))
+                            else if (jla >= jla0 && jla < jla1
+                                     && (!bRCheck
+                                         || dd_dist2(pbc_null, cg_cm, la2lc, la, jla) < rc2))
                             {
                                 /* jla > la, since jla0 > la */
                                 lexcls->a[n++] = jla;
@@ -1770,7 +1771,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                         lexcls->a[n++] = j;
                     }
                 }
-                count += ((la1 - la0)*(la1 - la0 - 1))/2;
+                count += ((la1 - la0) * (la1 - la0 - 1)) / 2;
             }
             else
             {
@@ -1871,9 +1872,9 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
 /*! \brief Ensure we have enough space in \p ba for \p nindex_max indices */
 static void check_alloc_index(t_blocka *ba, int nindex_max)
 {
-    if (nindex_max+1 > ba->nalloc_index)
+    if (nindex_max + 1 > ba->nalloc_index)
     {
-        ba->nalloc_index = over_alloc_dd(nindex_max+1);
+        ba->nalloc_index = over_alloc_dd(nindex_max + 1);
         srenew(ba->index, ba->nalloc_index);
     }
 }
@@ -1885,7 +1886,7 @@ static void check_exclusions_alloc(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     int nr;
     int thread;
 
-    nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
+    nr = dd->cgindex[zones->izone[zones->nizone - 1].cg1];
 
     check_alloc_index(lexcls, nr);
 
@@ -1901,7 +1902,7 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 {
     int la0, la;
 
-    lexcls->nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
+    lexcls->nr = dd->cgindex[zones->izone[zones->nizone - 1].cg1];
 
     if (dd->n_intercg_excl == 0)
     {
@@ -1924,7 +1925,7 @@ static void finish_local_exclusions(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 /*! \brief Clear a t_idef struct */
 static void clear_idef(t_idef *idef)
 {
-    int  ftype;
+    int ftype;
 
     /* Clear the counts */
     for (ftype = 0; ftype < F_NRE; ftype++)
@@ -1978,15 +1979,15 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
     rt = dd->reverse_top;
 
-    rc2 = rc*rc;
+    rc2 = rc * rc;
 
     /* Clear the counts */
     clear_idef(idef);
     nbonded_local = 0;
 
-    lexcls->nr    = 0;
-    lexcls->nra   = 0;
-    *excl_count   = 0;
+    lexcls->nr  = 0;
+    lexcls->nra = 0;
+    *excl_count = 0;
 
     for (izone = 0; izone < nzone_bondeds; izone++)
     {
@@ -1999,13 +2000,13 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             try
             {
                 int       cg0t, cg1t;
-                t_idef   *idef_t;
-                int     **vsite_pbc;
-                int      *vsite_pbc_nalloc;
+                t_idef *  idef_t;
+                int **    vsite_pbc;
+                int *     vsite_pbc_nalloc;
                 t_blocka *excl_t;
 
-                cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
-                cg1t = cg0 + ((cg1 - cg0)*(thread+1))/rt->nthread;
+                cg0t = cg0 + ((cg1 - cg0) * thread   ) / rt->nthread;
+                cg1t = cg0 + ((cg1 - cg0) * (thread + 1)) / rt->nthread;
 
                 if (thread == 0)
                 {
@@ -2036,15 +2037,15 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     vsite_pbc_nalloc = nullptr;
                 }
 
-                rt->th_work[thread].nbonded =
-                    make_bondeds_zone(dd, zones,
-                                      mtop->molblock,
-                                      bRCheckMB, rcheck, bRCheck2B, rc2,
-                                      la2lc, pbc_null, cg_cm, idef->iparams,
-                                      idef_t,
-                                      vsite_pbc, vsite_pbc_nalloc,
-                                      izone,
-                                      dd->cgindex[cg0t], dd->cgindex[cg1t]);
+                rt->th_work[thread].nbonded
+                    = make_bondeds_zone(dd, zones,
+                                        mtop->molblock,
+                                        bRCheckMB, rcheck, bRCheck2B, rc2,
+                                        la2lc, pbc_null, cg_cm, idef->iparams,
+                                        idef_t,
+                                        vsite_pbc, vsite_pbc_nalloc,
+                                        izone,
+                                        dd->cgindex[cg0t], dd->cgindex[cg1t]);
 
                 if (izone < nzone_excl)
                 {
@@ -2059,8 +2060,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         excl_t->nra = 0;
                     }
 
-                    if (dd->cgindex[dd->ncg_tot] == dd->ncg_tot &&
-                        !rt->bExclRequired)
+                    if (dd->cgindex[dd->ncg_tot] == dd->ncg_tot
+                        && !rt->bExclRequired)
                     {
                         /* No charge groups and no distance check required */
                         make_exclusions_zone(dd, zones,
@@ -2071,13 +2072,13 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     }
                     else
                     {
-                        rt->th_work[thread].excl_count =
-                            make_exclusions_zone_cg(dd, zones,
-                                                    mtop->moltype, bRCheck2B, rc2,
-                                                    la2lc, pbc_null, cg_cm, cginfo,
-                                                    excl_t,
-                                                    izone,
-                                                    cg0t, cg1t);
+                        rt->th_work[thread].excl_count
+                            = make_exclusions_zone_cg(dd, zones,
+                                                      mtop->moltype, bRCheck2B, rc2,
+                                                      la2lc, pbc_null, cg_cm, cginfo,
+                                                      excl_t,
+                                                      izone,
+                                                      cg0t, cg1t);
                     }
                 }
             }
@@ -2153,8 +2154,8 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     dd_make_local_cgs(dd, &ltop->cgs);
 
-    bRCheckMB   = FALSE;
-    bRCheck2B   = FALSE;
+    bRCheckMB = FALSE;
+    bRCheck2B = FALSE;
 
     if (dd->reverse_top->bInterCGInteractions)
     {
@@ -2172,8 +2173,8 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
             /* Only need to check for dimensions where the part of the box
              * that is not communicated is smaller than the cut-off.
              */
-            if (d < npbcdim && dd->nc[d] > 1 &&
-                (dd->nc[d] - npulse[d])*cellsize_min[d] < 2*rc)
+            if (d < npbcdim && dd->nc[d] > 1
+                && (dd->nc[d] - npulse[d]) * cellsize_min[d] < 2 * rc)
             {
                 if (dd->nc[d] == 2)
                 {
@@ -2207,13 +2208,13 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         }
     }
 
-    dd->nbonded_local =
-        make_local_bondeds_excls(dd, zones, mtop, fr->cginfo,
-                                 bRCheckMB, rcheck, bRCheck2B, rc,
-                                 dd->la2lc,
-                                 pbc_null, cgcm_or_x,
-                                 &ltop->idef, vsite,
-                                 &ltop->excls, &nexcl);
+    dd->nbonded_local
+        = make_local_bondeds_excls(dd, zones, mtop, fr->cginfo,
+                                   bRCheckMB, rcheck, bRCheck2B, rc,
+                                   dd->la2lc,
+                                   pbc_null, cgcm_or_x,
+                                   &ltop->idef, vsite,
+                                   &ltop->excls, &nexcl);
 
     /* The ilist is not sorted yet,
      * we can only do this when we have the charge arrays.
@@ -2225,7 +2226,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
         dd->nbonded_local += nexcl;
     }
 
-    ltop->atomtypes  = mtop->atomtypes;
+    ltop->atomtypes = mtop->atomtypes;
 }
 
 void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
@@ -2260,7 +2261,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
         top->idef.il[i].iatoms = nullptr;
         top->idef.il[i].nalloc = 0;
     }
-    top->idef.ilsort   = ilsortUNKNOWN;
+    top->idef.ilsort = ilsortUNKNOWN;
 
     return top;
 }
@@ -2278,7 +2279,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[3] = state_global->nhchainlength;
         buf[4] = state_global->dfhist ? state_global->dfhist->nlambda : 0;
     }
-    dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
+    dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE * sizeof(int), buf);
 
     init_state(state_local, 0, buf[1], buf[2], buf[3], buf[4]);
     state_local->flags = buf[0];
@@ -2291,7 +2292,7 @@ static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
     gmx_bool bFound;
 
     bFound = FALSE;
-    for (k = link->index[cg_gl]; k < link->index[cg_gl+1]; k++)
+    for (k = link->index[cg_gl]; k < link->index[cg_gl + 1]; k++)
     {
         GMX_RELEASE_ASSERT(link->a, "Inconsistent NULL pointer while making charge-group links");
         if (link->a[k] == cg_gl_j)
@@ -2301,16 +2302,16 @@ static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
     }
     if (!bFound)
     {
-        GMX_RELEASE_ASSERT(link->a || link->index[cg_gl+1]+1 > link->nalloc_a,
+        GMX_RELEASE_ASSERT(link->a || link->index[cg_gl + 1] + 1 > link->nalloc_a,
                            "Inconsistent allocation of link");
         /* Add this charge group link */
-        if (link->index[cg_gl+1]+1 > link->nalloc_a)
+        if (link->index[cg_gl + 1] + 1 > link->nalloc_a)
         {
-            link->nalloc_a = over_alloc_large(link->index[cg_gl+1]+1);
+            link->nalloc_a = over_alloc_large(link->index[cg_gl + 1] + 1);
             srenew(link->a, link->nalloc_a);
         }
-        link->a[link->index[cg_gl+1]] = cg_gl_j;
-        link->index[cg_gl+1]++;
+        link->a[link->index[cg_gl + 1]] = cg_gl_j;
+        link->index[cg_gl + 1]++;
     }
 }
 
@@ -2322,7 +2323,7 @@ static int *make_at2cg(t_block *cgs)
     snew(at2cg, cgs->index[cgs->nr]);
     for (cg = 0; cg < cgs->nr; cg++)
     {
-        for (a = cgs->index[cg]; a < cgs->index[cg+1]; a++)
+        for (a = cgs->index[cg]; a < cgs->index[cg + 1]; a++)
         {
             at2cg[a] = cg;
         }
@@ -2334,16 +2335,16 @@ static int *make_at2cg(t_block *cgs)
 t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                   cginfo_mb_t *cginfo_mb)
 {
-    gmx_bool            bExclRequired;
-    int                 mb, cg_offset, cg, cg_gl, a, aj, i, j, ftype, nral, nlink_mol, mol, ncgi;
-    gmx_molblock_t     *molb;
-    gmx_moltype_t      *molt;
-    t_block            *cgs;
-    t_blocka           *excls;
-    int                *a2c;
-    reverse_ilist_t     ril, ril_intermol;
-    t_blocka           *link;
-    cginfo_mb_t        *cgi_mb;
+    gmx_bool        bExclRequired;
+    int             mb, cg_offset, cg, cg_gl, a, aj, i, j, ftype, nral, nlink_mol, mol, ncgi;
+    gmx_molblock_t *molb;
+    gmx_moltype_t * molt;
+    t_block *       cgs;
+    t_blocka *      excls;
+    int *           a2c;
+    reverse_ilist_t ril, ril_intermol;
+    t_blocka *      link;
+    cginfo_mb_t *   cgi_mb;
 
     /* For each charge group make a list of other charge groups
      * in the system that a linked to it via bonded interactions
@@ -2369,7 +2370,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
     }
 
     snew(link, 1);
-    snew(link->index, ncg_mtop(mtop)+1);
+    snew(link->index, ncg_mtop(mtop) + 1);
     link->nalloc_a = 0;
     link->a        = nullptr;
 
@@ -2400,12 +2401,12 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         {
             for (cg = 0; cg < cgs->nr; cg++)
             {
-                cg_gl                = cg_offset + cg;
-                link->index[cg_gl+1] = link->index[cg_gl];
-                for (a = cgs->index[cg]; a < cgs->index[cg+1]; a++)
+                cg_gl                  = cg_offset + cg;
+                link->index[cg_gl + 1] = link->index[cg_gl];
+                for (a = cgs->index[cg]; a < cgs->index[cg + 1]; a++)
                 {
                     i = ril.index[a];
-                    while (i < ril.index[a+1])
+                    while (i < ril.index[a + 1])
                     {
                         ftype = ril.il[i++];
                         nral  = NRAL(ftype);
@@ -2413,10 +2414,10 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                         i++;
                         for (j = 0; j < nral; j++)
                         {
-                            aj = ril.il[i+j];
+                            aj = ril.il[i + j];
                             if (a2c[aj] != cg)
                             {
-                                check_link(link, cg_gl, cg_offset+a2c[aj]);
+                                check_link(link, cg_gl, cg_offset + a2c[aj]);
                             }
                         }
                         i += nral_rt(ftype);
@@ -2424,12 +2425,12 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                     if (bExclRequired)
                     {
                         /* Exclusions always go both ways */
-                        for (j = excls->index[a]; j < excls->index[a+1]; j++)
+                        for (j = excls->index[a]; j < excls->index[a + 1]; j++)
                         {
                             aj = excls->a[j];
                             if (a2c[aj] != cg)
                             {
-                                check_link(link, cg_gl, cg_offset+a2c[aj]);
+                                check_link(link, cg_gl, cg_offset + a2c[aj]);
                             }
                         }
                     }
@@ -2437,7 +2438,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                     if (mtop->bIntermolecularInteractions)
                     {
                         i = ril_intermol.index[a];
-                        while (i < ril_intermol.index[a+1])
+                        while (i < ril_intermol.index[a + 1])
                         {
                             ftype = ril_intermol.il[i++];
                             nral  = NRAL(ftype);
@@ -2448,14 +2449,14 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                 /* Here we assume we have no charge groups;
                                  * this has been checked above.
                                  */
-                                aj = ril_intermol.il[i+j];
+                                aj = ril_intermol.il[i + j];
                                 check_link(link, cg_gl, aj);
                             }
                             i += nral_rt(ftype);
                         }
                     }
                 }
-                if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
+                if (link->index[cg_gl + 1] - link->index[cg_gl] > 0)
                 {
                     SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg]);
                     ncgi++;
@@ -2464,7 +2465,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
             cg_offset += cgs->nr;
         }
-        nlink_mol = link->index[cg_offset] - link->index[cg_offset-cgs->nr];
+        nlink_mol = link->index[cg_offset] - link->index[cg_offset - cgs->nr];
 
         destroy_reverse_ilist(&ril);
         sfree(a2c);
@@ -2477,21 +2478,21 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         if (molb->nmol > mol)
         {
             /* Copy the data for the rest of the molecules in this block */
-            link->nalloc_a += (molb->nmol - mol)*nlink_mol;
+            link->nalloc_a += (molb->nmol - mol) * nlink_mol;
             srenew(link->a, link->nalloc_a);
             for (; mol < molb->nmol; mol++)
             {
                 for (cg = 0; cg < cgs->nr; cg++)
                 {
-                    cg_gl                = cg_offset + cg;
-                    link->index[cg_gl+1] =
-                        link->index[cg_gl+1-cgs->nr] + nlink_mol;
-                    for (j = link->index[cg_gl]; j < link->index[cg_gl+1]; j++)
+                    cg_gl = cg_offset + cg;
+                    link->index[cg_gl + 1]
+                        = link->index[cg_gl + 1 - cgs->nr] + nlink_mol;
+                    for (j = link->index[cg_gl]; j < link->index[cg_gl + 1]; j++)
                     {
-                        link->a[j] = link->a[j-nlink_mol] + cgs->nr;
+                        link->a[j] = link->a[j - nlink_mol] + cgs->nr;
                     }
-                    if (link->index[cg_gl+1] - link->index[cg_gl] > 0 &&
-                        cg_gl - cgi_mb->cg_start < cgi_mb->cg_mod)
+                    if (link->index[cg_gl + 1] - link->index[cg_gl] > 0
+                        && cg_gl - cgi_mb->cg_start < cgi_mb->cg_mod)
                     {
                         SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg_gl - cgi_mb->cg_start]);
                         ncgi++;
@@ -2515,7 +2516,8 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
     return link;
 }
 
-typedef struct {
+typedef struct
+{
     real r2;
     int  ftype;
     int  a1;
@@ -2549,21 +2551,21 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt, int *at2cg,
             int            nral = NRAL(ftype);
             if (nral > 1)
             {
-                for (int i = 0; i < il->nr; i += 1+nral)
+                for (int i = 0; i < il->nr; i += 1 + nral)
                 {
                     for (int ai = 0; ai < nral; ai++)
                     {
-                        int cgi = at2cg[il->iatoms[i+1+ai]];
+                        int cgi = at2cg[il->iatoms[i + 1 + ai]];
                         for (int aj = ai + 1; aj < nral; aj++)
                         {
-                            int cgj = at2cg[il->iatoms[i+1+aj]];
+                            int cgj = at2cg[il->iatoms[i + 1 + aj]];
                             if (cgi != cgj)
                             {
                                 real rij2 = distance2(cg_cm[cgi], cg_cm[cgj]);
 
                                 update_max_bonded_distance(rij2, ftype,
-                                                           il->iatoms[i+1+ai],
-                                                           il->iatoms[i+1+aj],
+                                                           il->iatoms[i + 1 + ai],
+                                                           il->iatoms[i + 1 + aj],
                                                            (nral == 2) ? bd_2b : bd_mb);
                             }
                         }
@@ -2578,7 +2580,7 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt, int *at2cg,
         for (int ai = 0; ai < excls->nr; ai++)
         {
             int cgi = at2cg[ai];
-            for (int j = excls->index[ai]; j < excls->index[ai+1]; j++)
+            for (int j = excls->index[ai]; j < excls->index[ai + 1]; j++)
             {
                 int cgj = at2cg[excls->a[j]];
                 if (cgi != cgj)
@@ -2614,7 +2616,7 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
             /* No nral>1 check here, since intermol interactions always
              * have nral>=2 (and the code is also correct for nral=1).
              */
-            for (int i = 0; i < il->nr; i += 1+nral)
+            for (int i = 0; i < il->nr; i += 1 + nral)
             {
                 for (int ai = 0; ai < nral; ai++)
                 {
@@ -2625,7 +2627,7 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
                         rvec dx;
                         real rij2;
 
-                        int  atom_j = il->iatoms[i + 1 + aj];
+                        int atom_j = il->iatoms[i + 1 + aj];
 
                         pbc_dx(&pbc, x[atom_i], x[atom_j], dx);
 
@@ -2694,8 +2696,8 @@ static int have_vsite_molt(gmx_moltype_t *molt)
     bVSite = FALSE;
     for (i = 0; i < F_NRE; i++)
     {
-        if ((interaction_function[i].flags & IF_VSITE) &&
-            molt->ilist[i].nr > 0)
+        if ((interaction_function[i].flags & IF_VSITE)
+            && molt->ilist[i].nr > 0)
         {
             bVSite = TRUE;
         }
@@ -2711,15 +2713,15 @@ void dd_bonded_cg_distance(FILE *fplog,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb)
 {
-    gmx_bool           bExclRequired;
-    int                mb, at_offset, *at2cg, mol;
-    t_graph            graph;
-    gmx_vsite_t       *vsite;
-    gmx_molblock_t    *molb;
-    gmx_moltype_t     *molt;
-    rvec              *xs, *cg_cm;
-    bonded_distance_t  bd_2b = { 0, -1, -1, -1 };
-    bonded_distance_t  bd_mb = { 0, -1, -1, -1 };
+    gmx_bool          bExclRequired;
+    int               mb, at_offset, *at2cg, mol;
+    t_graph           graph;
+    gmx_vsite_t *     vsite;
+    gmx_molblock_t *  molb;
+    gmx_moltype_t *   molt;
+    rvec *            xs, *cg_cm;
+    bonded_distance_t bd_2b = { 0, -1, -1, -1 };
+    bonded_distance_t bd_mb = { 0, -1, -1, -1 };
 
     bExclRequired = inputrecExclForces(ir);
 
@@ -2734,7 +2736,7 @@ void dd_bonded_cg_distance(FILE *fplog,
         molt = &mtop->moltype[molb->type];
         if (molt->cgs.nr == 1 || molb->nmol == 0)
         {
-            at_offset += molb->nmol*molt->atoms.nr;
+            at_offset += molb->nmol * molt->atoms.nr;
         }
         else
         {
@@ -2751,7 +2753,7 @@ void dd_bonded_cg_distance(FILE *fplog,
             {
                 get_cgcm_mol(molt, &mtop->ffparams, ir->ePBC, &graph, box,
                              have_vsite_molt(molt) ? vsite : nullptr,
-                             x+at_offset, xs, cg_cm);
+                             x + at_offset, xs, cg_cm);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };
                 bonded_distance_t bd_mol_mb = { 0, -1, -1, -1 };

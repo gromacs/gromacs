@@ -49,7 +49,8 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     int    nx, ny;
     real   dx, dy;
     real **data;
@@ -67,49 +68,49 @@ static real interpolate(real phi, real psi, t_shiftdata *sd)
      */
     while (phi < 0)
     {
-        phi += 2*M_PI;
+        phi += 2 * M_PI;
     }
     while (psi < 0)
     {
-        psi += 2*M_PI;
+        psi += 2 * M_PI;
     }
-    phi    = 2*M_PI-phi;
+    phi = 2 * M_PI - phi;
 
-    fphi  = phi*sd->dx;
-    fpsi  = psi*sd->dy;
+    fphi = phi * sd->dx;
+    fpsi = psi * sd->dy;
 
     iphi  = static_cast<int>(fphi);
     ipsi  = static_cast<int>(fpsi);
     fphi -= iphi; /* Fraction (offset from gridpoint) */
     fpsi -= ipsi;
 
-    wx0   = 1.0-fphi;
+    wx0   = 1.0 - fphi;
     wx1   = fphi;
-    wy0   = 1.0-fpsi;
+    wy0   = 1.0 - fpsi;
     wy1   = fpsi;
     iphi  = iphi % sd->nx;
     ipsi  = ipsi % sd->ny;
-    iphi1 = (iphi+1) % sd->nx;
-    ipsi1 = (ipsi+1) % sd->ny;
+    iphi1 = (iphi + 1) % sd->nx;
+    ipsi1 = (ipsi + 1) % sd->ny;
 
-    return (sd->data[iphi]  [ipsi]  * wx0*wy0 +
-            sd->data[iphi1] [ipsi]  * wx1*wy0 +
-            sd->data[iphi]  [ipsi1] * wx0*wy1 +
-            sd->data[iphi1] [ipsi1] * wx1*wy1);
+    return (sd->data[iphi]  [ipsi]  * wx0 * wy0
+            + sd->data[iphi1] [ipsi]  * wx1 * wy0
+            + sd->data[iphi]  [ipsi1] * wx0 * wy1
+            + sd->data[iphi1] [ipsi1] * wx1 * wy1);
 }
 
 static void dump_sd(const char *fn, t_shiftdata *sd)
 {
-    FILE  *fp;
-    int    i, j;
-    char   buf[256];
-    int    nnx, nny, nfac = 4, nlevels = 20;
-    real   phi, psi, *x_phi, *y_psi, **newdata;
-    real   lo, hi;
-    t_rgb  rlo = { 1, 0, 0 }, rhi = { 0, 0, 1 };
+    FILE *fp;
+    int   i, j;
+    char  buf[256];
+    int   nnx, nny, nfac = 4, nlevels = 20;
+    real  phi, psi, *x_phi, *y_psi, **newdata;
+    real  lo, hi;
+    t_rgb rlo = { 1, 0, 0 }, rhi = { 0, 0, 1 };
 
-    nnx = sd->nx*nfac+1;
-    nny = sd->ny*nfac+1;
+    nnx = sd->nx * nfac + 1;
+    nny = sd->ny * nfac + 1;
     snew(x_phi, nnx);
     snew(y_psi, nny);
     snew(newdata, nnx);
@@ -118,14 +119,14 @@ static void dump_sd(const char *fn, t_shiftdata *sd)
     for (i = 0; (i < nnx); i++)
     {
         snew(newdata[i], nny);
-        phi      = i*2*M_PI/(nnx-1);
-        x_phi[i] = phi*RAD2DEG-180;
+        phi      = i * 2 * M_PI / (nnx - 1);
+        x_phi[i] = phi * RAD2DEG - 180;
         for (j = 0; (j < nny); j++)
         {
-            psi = j*2*M_PI/(nny-1);
+            psi = j * 2 * M_PI / (nny - 1);
             if (i == 0)
             {
-                y_psi[j] = psi*RAD2DEG-180;
+                y_psi[j] = psi * RAD2DEG - 180;
             }
             /*if (((i % nfac) == 0) && ((j % nfac) == 0))
                newdata[i][j] = sd->data[i/nfac][j/nfac];
@@ -150,7 +151,7 @@ static void dump_sd(const char *fn, t_shiftdata *sd)
 
 static t_shiftdata *read_shifts(const char *fn)
 {
-    FILE        *fp;
+    FILE *       fp;
     double       xx;
     int          i, j, nx, ny;
     t_shiftdata *sd;
@@ -164,12 +165,12 @@ static t_shiftdata *read_shifts(const char *fn)
 
     sd->nx = nx;
     sd->ny = ny;
-    sd->dx = nx/(2*M_PI);
-    sd->dy = ny/(2*M_PI);
-    snew(sd->data, nx+1);
+    sd->dx = nx / (2 * M_PI);
+    sd->dy = ny / (2 * M_PI);
+    snew(sd->data, nx + 1);
     for (i = 0; (i <= nx); i++)
     {
-        snew(sd->data[i], ny+1);
+        snew(sd->data[i], ny + 1);
         for (j = 0; (j < ny); j++)
         {
             if (i == nx)
@@ -229,8 +230,8 @@ void do_pp2shifts(FILE *fp, int nf, int nlist, t_dlist dlist[], real **dih)
             "Residue", "delta Ca", "delta Ha", "delta CO", "delta Cb");
     for (i = 0; (i < nlist); i++)
     {
-        if ((has_dihedral(edPhi, &(dlist[i]))) &&
-            (has_dihedral(edPsi, &(dlist[i]))))
+        if ((has_dihedral(edPhi, &(dlist[i])))
+            && (has_dihedral(edPsi, &(dlist[i]))))
         {
             Phi = dlist[i].j0[edPhi];
             Psi = dlist[i].j0[edPsi];
@@ -246,7 +247,7 @@ void do_pp2shifts(FILE *fp, int nf, int nlist, t_dlist dlist[], real **dih)
                 ha += interpolate(phi, psi, ha_sd);
             }
             fprintf(fp, "%12s  %10g  %10g  %10g  %10g\n",
-                    dlist[i].name, ca/nf, ha/nf, co/nf, cb/nf);
+                    dlist[i].name, ca / nf, ha / nf, co / nf, cb / nf);
         }
     }
     fprintf(fp, "\n");

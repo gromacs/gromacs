@@ -50,31 +50,30 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
-void
-do_md_trajectory_writing(FILE             *fplog,
-                         t_commrec        *cr,
-                         int               nfile,
-                         const t_filenm    fnm[],
-                         gmx_int64_t       step,
-                         gmx_int64_t       step_rel,
-                         double            t,
-                         t_inputrec       *ir,
-                         t_state          *state,
-                         t_state          *state_global,
-                         energyhistory_t  *energyHistory,
-                         gmx_mtop_t       *top_global,
-                         t_forcerec       *fr,
-                         gmx_mdoutf_t      outf,
-                         t_mdebin         *mdebin,
-                         gmx_ekindata_t   *ekind,
-                         PaddedRVecVector *f,
-                         int              *nchkpt,
-                         gmx_bool          bCPT,
-                         gmx_bool          bRerunMD,
-                         gmx_bool          bLastStep,
-                         gmx_bool          bDoConfOut,
-                         gmx_bool          bSumEkinhOld
-                         )
+void do_md_trajectory_writing(FILE *            fplog,
+                              t_commrec *       cr,
+                              int               nfile,
+                              const t_filenm    fnm[],
+                              gmx_int64_t       step,
+                              gmx_int64_t       step_rel,
+                              double            t,
+                              t_inputrec *      ir,
+                              t_state *         state,
+                              t_state *         state_global,
+                              energyhistory_t * energyHistory,
+                              gmx_mtop_t *      top_global,
+                              t_forcerec *      fr,
+                              gmx_mdoutf_t      outf,
+                              t_mdebin *        mdebin,
+                              gmx_ekindata_t *  ekind,
+                              PaddedRVecVector *f,
+                              int *             nchkpt,
+                              gmx_bool          bCPT,
+                              gmx_bool          bRerunMD,
+                              gmx_bool          bLastStep,
+                              gmx_bool          bDoConfOut,
+                              gmx_bool          bSumEkinhOld
+                              )
 {
     int   mdof_flags;
     rvec *x_for_confout = nullptr;
@@ -149,9 +148,9 @@ do_md_trajectory_writing(FILE             *fplog,
         {
             (*nchkpt)++;
         }
-        if (bLastStep && step_rel == ir->nsteps &&
-            bDoConfOut && MASTER(cr) &&
-            !bRerunMD)
+        if (bLastStep && step_rel == ir->nsteps
+            && bDoConfOut && MASTER(cr)
+            && !bRerunMD)
         {
             if (fr->bMolPBC && state == state_global)
             {

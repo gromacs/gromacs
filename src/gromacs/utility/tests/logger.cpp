@@ -62,8 +62,8 @@ TEST_F(LoggerTest, LogsToStream)
     gmx::StringOutputStream stream;
     gmx::LoggerBuilder      builder;
     builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &stream);
-    gmx::LoggerOwner        owner  = builder.build();
-    const gmx::MDLogger    &logger = owner.logger();
+    gmx::LoggerOwner     owner  = builder.build();
+    const gmx::MDLogger &logger = owner.logger();
     GMX_LOG(logger.info).appendText("line");
     GMX_LOG(logger.warning).appendText("par").asParagraph();
     GMX_LOG(logger.info).appendText("line2");
@@ -74,12 +74,12 @@ TEST_F(LoggerTest, LogsToFile)
 {
     gmx::test::TestFileManager files;
     std::string                filename(files.getTemporaryFilePath("log.txt"));
-    FILE                      *fp = fopen(filename.c_str(), "w");
+    FILE *                     fp = fopen(filename.c_str(), "w");
     {
-        gmx::LoggerBuilder      builder;
+        gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::Info, fp);
-        gmx::LoggerOwner        owner  = builder.build();
-        const gmx::MDLogger    &logger = owner.logger();
+        gmx::LoggerOwner     owner  = builder.build();
+        const gmx::MDLogger &logger = owner.logger();
         GMX_LOG(logger.info).appendText("line");
         GMX_LOG(logger.warning).appendText("par").asParagraph();
         GMX_LOG(logger.info).appendText("line2");
@@ -93,8 +93,8 @@ TEST_F(LoggerTest, LevelFilteringWorks)
     gmx::StringOutputStream stream;
     gmx::LoggerBuilder      builder;
     builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &stream);
-    gmx::LoggerOwner        owner  = builder.build();
-    const gmx::MDLogger    &logger = owner.logger();
+    gmx::LoggerOwner     owner  = builder.build();
+    const gmx::MDLogger &logger = owner.logger();
     GMX_LOG(logger.info).appendText("line");
     GMX_LOG(logger.warning).appendText("par").asParagraph();
     GMX_LOG(logger.info).appendText("line2");
@@ -108,8 +108,8 @@ TEST_F(LoggerTest, LogsToMultipleStreams)
     gmx::LoggerBuilder      builder;
     builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &stream1);
     builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &stream2);
-    gmx::LoggerOwner        owner  = builder.build();
-    const gmx::MDLogger    &logger = owner.logger();
+    gmx::LoggerOwner     owner  = builder.build();
+    const gmx::MDLogger &logger = owner.logger();
     GMX_LOG(logger.info).appendText("line");
     GMX_LOG(logger.warning).appendText("par").asParagraph();
     GMX_LOG(logger.info).appendText("line2");

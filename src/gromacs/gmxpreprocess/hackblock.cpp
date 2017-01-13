@@ -161,7 +161,7 @@ void clear_t_hack(t_hack *hack)
     hack->nctl  = 0;
     for (i = 0; i < 4; i++)
     {
-        hack->a[i]  = nullptr;
+        hack->a[i] = nullptr;
     }
     for (i = 0; i < DIM; i++)
     {
@@ -200,8 +200,7 @@ static gmx_bool contains_char(t_rbonded *s, char c)
     return bRet;
 }
 
-int
-rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
+int rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
 {
     int      i, k;
     int      foundPos = -1;
@@ -220,7 +219,7 @@ rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natom
             atomsMatch = TRUE;
             for (k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms-1-k]);
+                atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms - 1 - k]);
             }
         }
         if (atomsMatch)

@@ -71,12 +71,12 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
         "sansb12", "8x13bold", "8x13",
         "9x15", "6x13", "fixed"
     };
-#define MAXNAMES (sizeof(fontnames)/sizeof(fontnames[0]))
-    unsigned int       i;
-    XFontStruct       *font;
-    int                count;
-    char             **fontlist;
-    bool               bFont = false;
+#define MAXNAMES (sizeof(fontnames) / sizeof(fontnames[0]))
+    unsigned int i;
+    XFontStruct *font;
+    int          count;
+    char **      fontlist;
+    bool         bFont = false;
 
     if (name)
     {
@@ -109,12 +109,12 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
 
 static GC GetGC(Display *disp, XFontStruct *font)
 {
-    XGCValues     values;
+    XGCValues values;
 
     values.font       = font->fid;
     values.foreground = WhitePixel(disp, DefaultScreen(disp));
 
-    return XCreateGC(disp, DefaultRootWindow(disp), GCForeground|GCFont, &values);
+    return XCreateGC(disp, DefaultRootWindow(disp), GCForeground | GCFont, &values);
 }
 
 void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col)
@@ -147,10 +147,10 @@ static t_wlist *GetWList(t_x11 *x11, Window w)
 
 static void MainLoop(t_x11 *x11)
 {
-    bool        bReturn;
-    XEvent      event;
-    t_wlist    *curs;
-    Window      w;
+    bool     bReturn;
+    XEvent   event;
+    t_wlist *curs;
+    Window   w;
 
     for (bReturn = false; (!bReturn); )
     {
@@ -309,17 +309,17 @@ t_x11 *GetX11(int *argc, char *argv[])
         DirectColor, TrueColor, PseudoColor,
         StaticColor, GrayScale, StaticGray
     };
-#define NCLASS (sizeof(v_class)/sizeof(v_class[0]))
+#define NCLASS (sizeof(v_class) / sizeof(v_class[0]))
 
-    XVisualInfo     v_info;
-    t_x11          *x11;
-    int             ARGC;
-    char          **ARGV;
-    char           *display;
-    char           *fontname;
-    char           *title, *FG = nullptr, *BG = nullptr;
-    bool            bVerbose = false;
-    int             i;
+    XVisualInfo v_info;
+    t_x11 *     x11;
+    int         ARGC;
+    char **     ARGV;
+    char *      display;
+    char *      fontname;
+    char *      title, *FG = nullptr, *BG = nullptr;
+    bool        bVerbose = false;
+    int         i;
 
     title = gmx_strdup(argv[0]);
 
@@ -335,7 +335,7 @@ t_x11 *GetX11(int *argc, char *argv[])
         {
             if (strlen(argv[i]) > 1)
             {
-                if ((*argc) > i+1)
+                if ((*argc) > i + 1)
                 {
                     switch (argv[i][1])
                     {
@@ -418,13 +418,13 @@ t_x11 *GetX11(int *argc, char *argv[])
     x11->cmap   = DefaultColormap(x11->disp, x11->screen);
 
     /* These colours will be mapped to black on a monochrome screen */
-    x11->fg = BLACK = BLUE = GREEN = CYAN = RED = BROWN = GREY = DARKGREY =
-                                        BlackPixel(x11->disp, x11->screen);
+    x11->fg                             = BLACK = BLUE = GREEN = CYAN = RED = BROWN = GREY = DARKGREY
+                                        = BlackPixel(x11->disp, x11->screen);
 
     /* These colours will be mapped to white on a monochrome screen */
-    x11->bg       =
-        LIGHTBLUE = LIGHTGREY = LIGHTGREEN = LIGHTCYAN = LIGHTRED = VIOLET = YELLOW = WHITE =
-                                        WhitePixel(x11->disp, x11->screen);
+    x11->bg
+                                            = LIGHTBLUE = LIGHTGREY = LIGHTGREEN = LIGHTCYAN = LIGHTRED = VIOLET = YELLOW = WHITE
+                                            = WhitePixel(x11->disp, x11->screen);
 
     if (x11->depth > 1)
     {

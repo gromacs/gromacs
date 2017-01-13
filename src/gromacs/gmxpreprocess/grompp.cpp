@@ -99,13 +99,13 @@
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
-    int  i, n;
+    int i, n;
 
     n = 0;
     /* For all the molecule types */
     for (i = 0; i < nrmols; i++)
     {
-        n += mols[i].plist[ifunc].nr;
+        n                      += mols[i].plist[ifunc].nr;
         mols[i].plist[ifunc].nr = 0;
     }
     return n;
@@ -138,7 +138,7 @@ static int check_atom_names(const char *fn1, const char *fn2,
                     {
                         fprintf(stderr,
                                 "Warning: atom name %d in %s and %s does not match (%s - %s)\n",
-                                i+1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
+                                i + 1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
                     }
                     else if (nmismatch == MAXMISMATCH)
                     {
@@ -175,13 +175,13 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
                 /* Get the energy group of the first atom in this charge group */
                 firstj  = astart + molt->cgs.index[cg];
                 firsteg = ggrpnr(&mtop->groups, egcENER, firstj);
-                for (j = molt->cgs.index[cg]+1; j < molt->cgs.index[cg+1]; j++)
+                for (j = molt->cgs.index[cg] + 1; j < molt->cgs.index[cg + 1]; j++)
                 {
-                    eg = ggrpnr(&mtop->groups, egcENER, astart+j);
+                    eg = ggrpnr(&mtop->groups, egcENER, astart + j);
                     if (eg != firsteg)
                     {
                         gmx_fatal(FARGS, "atoms %d and %d in charge group %d of molecule type '%s' are in different energy groups",
-                                  firstj+1, astart+j+1, cg+1, *molt->name);
+                                  firstj + 1, astart + j + 1, cg + 1, *molt->name);
                     }
                 }
             }
@@ -198,7 +198,7 @@ static void check_cg_sizes(const char *topfn, t_block *cgs, warninp_t wi)
     maxsize = 0;
     for (cg = 0; cg < cgs->nr; cg++)
     {
-        maxsize = std::max(maxsize, cgs->index[cg+1]-cgs->index[cg]);
+        maxsize = std::max(maxsize, cgs->index[cg + 1] - cgs->index[cg]);
     }
 
     if (maxsize > MAX_CHARGEGROUP_SIZE)
@@ -240,11 +240,11 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
      */
     int            min_steps_warn = 5;
     int            min_steps_note = 10;
-    t_iparams     *ip;
+    t_iparams *    ip;
     int            molt;
     gmx_moltype_t *moltype, *w_moltype;
-    t_atom        *atom;
-    t_ilist       *ilist, *ilb, *ilc, *ils;
+    t_atom *       atom;
+    t_ilist *      ilist, *ilb, *ilc, *ils;
     int            ftype;
     int            i, a1, a2, w_a1, w_a2, j;
     real           twopi2, limit2, fc, re, m1, m2, period2, w_period2;
@@ -253,9 +253,9 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     ip = mtop->ffparams.iparams;
 
-    twopi2 = gmx::square(2*M_PI);
+    twopi2 = gmx::square(2 * M_PI);
 
-    limit2 = gmx::square(min_steps_note*dt);
+    limit2 = gmx::square(min_steps_note * dt);
 
     w_a1      = w_a2 = -1;
     w_period2 = -1.0;
@@ -283,15 +283,15 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                 if (ftype == F_G96BONDS)
                 {
                     /* Convert squared sqaure fc to harmonic fc */
-                    fc = 2*fc*re;
+                    fc = 2 * fc * re;
                 }
-                a1 = ilb->iatoms[i+1];
-                a2 = ilb->iatoms[i+2];
+                a1 = ilb->iatoms[i + 1];
+                a2 = ilb->iatoms[i + 2];
                 m1 = atom[a1].m;
                 m2 = atom[a2].m;
                 if (fc > 0 && m1 > 0 && m2 > 0)
                 {
-                    period2 = twopi2*m1*m2/((m1 + m2)*fc);
+                    period2 = twopi2 * m1 * m2 / ((m1 + m2) * fc);
                 }
                 else
                 {
@@ -307,22 +307,22 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                     bFound = FALSE;
                     for (j = 0; j < ilc->nr; j += 3)
                     {
-                        if ((ilc->iatoms[j+1] == a1 && ilc->iatoms[j+2] == a2) ||
-                            (ilc->iatoms[j+1] == a2 && ilc->iatoms[j+2] == a1))
+                        if ((ilc->iatoms[j + 1] == a1 && ilc->iatoms[j + 2] == a2)
+                            || (ilc->iatoms[j + 1] == a2 && ilc->iatoms[j + 2] == a1))
                         {
                             bFound = TRUE;
                         }
                     }
                     for (j = 0; j < ils->nr; j += 4)
                     {
-                        if ((a1 == ils->iatoms[j+1] || a1 == ils->iatoms[j+2] || a1 == ils->iatoms[j+3]) &&
-                            (a2 == ils->iatoms[j+1] || a2 == ils->iatoms[j+2] || a2 == ils->iatoms[j+3]))
+                        if ((a1 == ils->iatoms[j + 1] || a1 == ils->iatoms[j + 2] || a1 == ils->iatoms[j + 3])
+                            && (a2 == ils->iatoms[j + 1] || a2 == ils->iatoms[j + 2] || a2 == ils->iatoms[j + 3]))
                         {
                             bFound = TRUE;
                         }
                     }
-                    if (!bFound &&
-                        (w_moltype == nullptr || period2 < w_period2))
+                    if (!bFound
+                        && (w_moltype == nullptr || period2 < w_period2))
                     {
                         w_moltype = moltype;
                         w_a1      = a1;
@@ -336,19 +336,19 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     if (w_moltype != nullptr)
     {
-        bWarn = (w_period2 < gmx::square(min_steps_warn*dt));
+        bWarn = (w_period2 < gmx::square(min_steps_warn * dt));
         /* A check that would recognize most water models */
-        bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O' &&
-                  w_moltype->atoms.nr <= 5);
+        bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O'
+                  && w_moltype->atoms.nr <= 5);
         sprintf(warn_buf, "The bond in molecule-type %s between atoms %d %s and %d %s has an estimated oscillational period of %.1e ps, which is less than %d times the time step of %.1e ps.\n"
                 "%s",
                 *w_moltype->name,
-                w_a1+1, *w_moltype->atoms.atomname[w_a1],
-                w_a2+1, *w_moltype->atoms.atomname[w_a2],
+                w_a1 + 1, *w_moltype->atoms.atomname[w_a1],
+                w_a2 + 1, *w_moltype->atoms.atomname[w_a2],
                 std::sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
-                bWater ?
-                "Maybe you asked for fexible water." :
-                "Maybe you forgot to change the constraints mdp option.");
+                bWater
+                ? "Maybe you asked for fexible water."
+                : "Maybe you forgot to change the constraints mdp option.");
         if (bWarn)
         {
             warning(wi, warn_buf);
@@ -363,15 +363,15 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 static void check_vel(gmx_mtop_t *mtop, rvec v[])
 {
     gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
+    const t_atom *          atom;
     int                     a;
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
-        if (atom->ptype == eptShell ||
-            atom->ptype == eptBond  ||
-            atom->ptype == eptVSite)
+        if (atom->ptype == eptShell
+            || atom->ptype == eptBond
+            || atom->ptype == eptVSite)
         {
             clear_rvec(v[a]);
         }
@@ -383,15 +383,15 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
                                   warninp_t   wi)
 {
     gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
+    const t_atom *          atom;
     int                     a, nshells = 0;
     char                    warn_buf[STRLEN];
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
-        if (atom->ptype == eptShell ||
-            atom->ptype == eptBond)
+        if (atom->ptype == eptShell
+            || atom->ptype == eptBond)
         {
             nshells++;
         }
@@ -416,7 +416,7 @@ static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
     nint = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
-        nint += mtop->molblock[mb].nmol*mi[mtop->molblock[mb].type].plist[ftype].nr;
+        nint += mtop->molblock[mb].nmol * mi[mtop->molblock[mb].type].plist[ftype].nr;
     }
 
     return nint;
@@ -429,7 +429,7 @@ static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
 static void renumber_moltypes(gmx_mtop_t *sys,
                               int *nmolinfo, t_molinfo **molinfo)
 {
-    int       *order, norder, i;
+    int *      order, norder, i;
     int        mb, mi;
     t_molinfo *minew;
 
@@ -498,18 +498,17 @@ static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
     }
 }
 
-static void
-new_status(const char *topfile, const char *topppfile, const char *confin,
-           t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
-           gmx_bool bGenVel, gmx_bool bVerbose, t_state *state,
-           gpp_atomtype_t atype, gmx_mtop_t *sys,
-           int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
-           t_params plist[],
-           int *comb, double *reppow, real *fudgeQQ,
-           gmx_bool bMorse,
-           warninp_t wi)
+static void new_status(const char *topfile, const char *topppfile, const char *confin,
+                       t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
+                       gmx_bool bGenVel, gmx_bool bVerbose, t_state *state,
+                       gpp_atomtype_t atype, gmx_mtop_t *sys,
+                       int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
+                       t_params plist[],
+                       int *comb, double *reppow, real *fudgeQQ,
+                       gmx_bool bMorse,
+                       warninp_t wi)
 {
-    t_molinfo      *molinfo = nullptr;
+    t_molinfo *     molinfo = nullptr;
     int             nmolblock;
     gmx_molblock_t *molblock, *molbs;
     int             mb, i, nrmols, nmismatch;
@@ -539,12 +538,12 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     sys->natoms = 0;
     for (mb = 0; mb < nmolblock; mb++)
     {
-        if (sys->nmolblock > 0 &&
-            molblock[mb].type == sys->molblock[sys->nmolblock-1].type)
+        if (sys->nmolblock > 0
+            && molblock[mb].type == sys->molblock[sys->nmolblock - 1].type)
         {
             /* Merge consecutive blocks with the same molecule type */
-            sys->molblock[sys->nmolblock-1].nmol += molblock[mb].nmol;
-            sys->natoms += molblock[mb].nmol*sys->molblock[sys->nmolblock-1].natoms_mol;
+            sys->molblock[sys->nmolblock - 1].nmol += molblock[mb].nmol;
+            sys->natoms                            += molblock[mb].nmol * sys->molblock[sys->nmolblock - 1].natoms_mol;
         }
         else if (molblock[mb].nmol > 0)
         {
@@ -554,7 +553,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             molbs->natoms_mol = molinfo[molbs->type].atoms.nr;
             molbs->nposres_xA = 0;
             molbs->nposres_xB = 0;
-            sys->natoms      += molbs->nmol*molbs->natoms_mol;
+            sys->natoms      += molbs->nmol * molbs->natoms_mol;
             sys->nmolblock++;
         }
     }
@@ -603,8 +602,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
 
     t_topology *conftop;
-    rvec       *x = nullptr;
-    rvec       *v = nullptr;
+    rvec *      x = nullptr;
+    rvec *      v = nullptr;
     snew(conftop, 1);
     init_state(state, 0, 0, 0, 0, 0);
     read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
@@ -657,8 +656,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "double-checking input for internal consistency...\n");
     }
     {
-        int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
-                                         nint_ftype(sys, molinfo, F_CONSTRNC));
+        int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR)
+                                         + nint_ftype(sys, molinfo, F_CONSTRNC));
         int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
         double_check(ir, state->box,
                      bHasNormalConstraints,
@@ -668,9 +667,9 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
 
     if (bGenVel)
     {
-        real                   *mass;
+        real *                  mass;
         gmx_mtop_atomloop_all_t aloop;
-        const t_atom           *atom;
+        const t_atom *          atom;
 
         snew(mass, state->natoms);
         aloop = gmx_mtop_atomloop_all_init(sys);
@@ -800,8 +799,8 @@ static void cont_status(const char *slog, const char *ener,
     copy_state(slog, &fr, bReadVel, state, &use_time);
 
     /* Find the appropriate frame */
-    while ((fr_time == -1 || fr.time < fr_time) &&
-           read_next_frame(oenv, fp, &fr))
+    while ((fr_time == -1 || fr.time < fr_time)
+           && read_next_frame(oenv, fp, &fr))
     {
         copy_state(slog, &fr, bReadVel, state, &use_time);
     }
@@ -830,18 +829,18 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         rvec com,
                         warninp_t wi)
 {
-    gmx_bool       *hadAtom;
-    rvec           *x, *v, *xp;
+    gmx_bool *      hadAtom;
+    rvec *          x, *v, *xp;
     dvec            sum;
     double          totmass;
-    t_topology     *top;
+    t_topology *    top;
     matrix          box, invbox;
     int             natoms, npbcdim = 0;
     char            warn_buf[STRLEN];
     int             a, i, ai, j, k, mb, nat_molb;
     gmx_molblock_t *molb;
-    t_params       *pr, *prfb;
-    t_atom         *atom;
+    t_params *      pr, *prfb;
+    t_atom *        atom;
 
     snew(top, 1);
     read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
@@ -875,7 +874,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molb     = &mtop->molblock[mb];
-        nat_molb = molb->nmol*mtop->moltype[molb->type].atoms.nr;
+        nat_molb = molb->nmol * mtop->moltype[molb->type].atoms.nr;
         pr       = &(molinfo[molb->type].plist[F_POSRES]);
         prfb     = &(molinfo[molb->type].plist[F_FBPOSRES]);
         if (pr->nr > 0 || prfb->nr > 0)
@@ -887,7 +886,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-                              ai+1, *molinfo[molb->type].name, fn, natoms);
+                              ai + 1, *molinfo[molb->type].name, fn, natoms);
                 }
                 hadAtom[ai] = TRUE;
                 if (rc_scaling == erscCOM)
@@ -895,9 +894,9 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                     /* Determine the center of mass of the posres reference coordinates */
                     for (j = 0; j < npbcdim; j++)
                     {
-                        sum[j] += atom[ai].m*x[a+ai][j];
+                        sum[j] += atom[ai].m * x[a + ai][j];
                     }
-                    totmass  += atom[ai].m;
+                    totmass += atom[ai].m;
                 }
             }
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
@@ -907,16 +906,16 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-                              ai+1, *molinfo[molb->type].name, fn, natoms);
+                              ai + 1, *molinfo[molb->type].name, fn, natoms);
                 }
                 if (rc_scaling == erscCOM && hadAtom[ai] == FALSE)
                 {
                     /* Determine the center of mass of the posres reference coordinates */
                     for (j = 0; j < npbcdim; j++)
                     {
-                        sum[j] += atom[ai].m*x[a+ai][j];
+                        sum[j] += atom[ai].m * x[a + ai][j];
                     }
-                    totmass  += atom[ai].m;
+                    totmass += atom[ai].m;
                 }
             }
             if (!bTopB)
@@ -925,7 +924,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 snew(molb->posres_xA, molb->nposres_xA);
                 for (i = 0; i < nat_molb; i++)
                 {
-                    copy_rvec(x[a+i], molb->posres_xA[i]);
+                    copy_rvec(x[a + i], molb->posres_xA[i]);
                 }
             }
             else
@@ -934,7 +933,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                 snew(molb->posres_xB, molb->nposres_xB);
                 for (i = 0; i < nat_molb; i++)
                 {
-                    copy_rvec(x[a+i], molb->posres_xB[i]);
+                    copy_rvec(x[a + i], molb->posres_xB[i]);
                 }
             }
         }
@@ -948,7 +947,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
         }
         for (j = 0; j < npbcdim; j++)
         {
-            com[j] = sum[j]/totmass;
+            com[j] = sum[j] / totmass;
         }
         fprintf(stderr, "The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f\n", com[XX], com[YY], com[ZZ]);
     }
@@ -960,7 +959,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             molb     = &mtop->molblock[mb];
-            nat_molb = molb->nmol*mtop->moltype[molb->type].atoms.nr;
+            nat_molb = molb->nmol * mtop->moltype[molb->type].atoms.nr;
             if (molb->nposres_xA > 0 || molb->nposres_xB > 0)
             {
                 xp = (!bTopB ? molb->posres_xA : molb->posres_xB);
@@ -972,9 +971,9 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         {
                             /* Convert from Cartesian to crystal coordinates */
                             xp[i][j] *= invbox[j][j];
-                            for (k = j+1; k < npbcdim; k++)
+                            for (k = j + 1; k < npbcdim; k++)
                             {
-                                xp[i][j] += invbox[k][j]*xp[i][k];
+                                xp[i][j] += invbox[k][j] * xp[i][k];
                             }
                         }
                         else if (rc_scaling == erscCOM)
@@ -993,9 +992,9 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             for (j = 0; j < npbcdim; j++)
             {
                 com[j] *= invbox[j][j];
-                for (k = j+1; k < npbcdim; k++)
+                for (k = j + 1; k < npbcdim; k++)
                 {
-                    com[j] += invbox[k][j]*com[k];
+                    com[j] += invbox[k][j] * com[k];
                 }
             }
         }
@@ -1048,8 +1047,8 @@ static int nrdf_internal(t_atoms *atoms)
     for (i = 0; i < atoms->nr; i++)
     {
         /* Vsite ptype might not be set here yet, so also check the mass */
-        if ((atoms->atom[i].ptype == eptAtom ||
-             atoms->atom[i].ptype == eptNucleus)
+        if ((atoms->atom[i].ptype == eptAtom
+             || atoms->atom[i].ptype == eptNucleus)
             && atoms->atom[i].m > 0)
         {
             nmass++;
@@ -1060,18 +1059,17 @@ static int nrdf_internal(t_atoms *atoms)
         case 0:  nrdf = 0; break;
         case 1:  nrdf = 0; break;
         case 2:  nrdf = 1; break;
-        default: nrdf = nmass*3 - 6; break;
+        default: nrdf = nmass * 3 - 6; break;
     }
 
     return nrdf;
 }
 
-void
-spline1d( double        dx,
-          double *      y,
-          int           n,
-          double *      u,
-          double *      y2 )
+void spline1d( double   dx,
+               double * y,
+               int      n,
+               double * u,
+               double * y2 )
 {
     int    i;
     double p, q;
@@ -1079,67 +1077,65 @@ spline1d( double        dx,
     y2[0] = 0.0;
     u[0]  = 0.0;
 
-    for (i = 1; i < n-1; i++)
+    for (i = 1; i < n - 1; i++)
     {
-        p     = 0.5*y2[i-1]+2.0;
-        y2[i] = -0.5/p;
-        q     = (y[i+1]-2.0*y[i]+y[i-1])/dx;
-        u[i]  = (3.0*q/dx-0.5*u[i-1])/p;
+        p     = 0.5 * y2[i - 1] + 2.0;
+        y2[i] = -0.5 / p;
+        q     = (y[i + 1] - 2.0 * y[i] + y[i - 1]) / dx;
+        u[i]  = (3.0 * q / dx - 0.5 * u[i - 1]) / p;
     }
 
-    y2[n-1] = 0.0;
+    y2[n - 1] = 0.0;
 
-    for (i = n-2; i >= 0; i--)
+    for (i = n - 2; i >= 0; i--)
     {
-        y2[i] = y2[i]*y2[i+1]+u[i];
+        y2[i] = y2[i] * y2[i + 1] + u[i];
     }
 }
 
 
-void
-interpolate1d( double     xmin,
-               double     dx,
-               double *   ya,
-               double *   y2a,
-               double     x,
-               double *   y,
-               double *   y1)
+void interpolate1d( double   xmin,
+                    double   dx,
+                    double * ya,
+                    double * y2a,
+                    double   x,
+                    double * y,
+                    double * y1)
 {
     int    ix;
     double a, b;
 
-    ix = static_cast<int>((x-xmin)/dx);
+    ix = static_cast<int>((x - xmin) / dx);
 
-    a = (xmin+(ix+1)*dx-x)/dx;
-    b = (x-xmin-ix*dx)/dx;
+    a = (xmin + (ix + 1) * dx - x) / dx;
+    b = (x - xmin - ix * dx) / dx;
 
-    *y  = a*ya[ix]+b*ya[ix+1]+((a*a*a-a)*y2a[ix]+(b*b*b-b)*y2a[ix+1])*(dx*dx)/6.0;
-    *y1 = (ya[ix+1]-ya[ix])/dx-(3.0*a*a-1.0)/6.0*dx*y2a[ix]+(3.0*b*b-1.0)/6.0*dx*y2a[ix+1];
+    *y  = a * ya[ix] + b * ya[ix + 1] + ((a * a * a - a) * y2a[ix] + (b * b * b - b) * y2a[ix + 1]) * (dx * dx) / 6.0;
+    *y1 = (ya[ix + 1] - ya[ix]) / dx - (3.0 * a * a - 1.0) / 6.0 * dx * y2a[ix] + (3.0 * b * b - 1.0) / 6.0 * dx * y2a[ix + 1];
 }
 
 
-void
-setup_cmap (int              grid_spacing,
-            int              nc,
-            real *           grid,
-            gmx_cmap_t *     cmap_grid)
+void setup_cmap (int          grid_spacing,
+                 int          nc,
+                 real *       grid,
+                 gmx_cmap_t * cmap_grid)
 {
     double *tmp_u, *tmp_u2, *tmp_yy, *tmp_y1, *tmp_t2, *tmp_grid;
 
-    int     i, j, k, ii, jj, kk, idx;
-    int     offset;
-    double  dx, xmin, v, v1, v2, v12;
-    double  phi, psi;
+    int    i, j, k, ii, jj, kk, idx;
+    int    offset;
+    double dx, xmin, v, v1, v2, v12;
+    double phi, psi;
 
-    snew(tmp_u, 2*grid_spacing);
-    snew(tmp_u2, 2*grid_spacing);
-    snew(tmp_yy, 2*grid_spacing);
-    snew(tmp_y1, 2*grid_spacing);
-    snew(tmp_t2, 2*grid_spacing*2*grid_spacing);
-    snew(tmp_grid, 2*grid_spacing*2*grid_spacing);
+    snew(tmp_u, 2 * grid_spacing);
+    snew(tmp_u2, 2 * grid_spacing);
+    snew(tmp_yy, 2 * grid_spacing);
+    snew(tmp_y1, 2 * grid_spacing);
+    snew(tmp_t2, 2 * grid_spacing * 2 * grid_spacing);
+    snew(tmp_grid, 2 * grid_spacing * 2 * grid_spacing);
 
-    dx   = 360.0/grid_spacing;
-    xmin = -180.0-dx*grid_spacing/2;
+    dx   = 360.0 / grid_spacing;
+    xmin = -180.0 - dx * grid_spacing / 2;
 
     for (kk = 0; kk < nc; kk++)
     {
@@ -1149,48 +1145,48 @@ setup_cmap (int              grid_spacing,
          */
         offset = kk * grid_spacing * grid_spacing * 2;
 
-        for (i = 0; i < 2*grid_spacing; i++)
+        for (i = 0; i < 2 * grid_spacing; i++)
         {
-            ii = (i+grid_spacing-grid_spacing/2)%grid_spacing;
+            ii = (i + grid_spacing - grid_spacing / 2) % grid_spacing;
 
-            for (j = 0; j < 2*grid_spacing; j++)
+            for (j = 0; j < 2 * grid_spacing; j++)
             {
-                jj = (j+grid_spacing-grid_spacing/2)%grid_spacing;
-                tmp_grid[i*grid_spacing*2+j] = grid[offset+ii*grid_spacing+jj];
+                jj                                 = (j + grid_spacing - grid_spacing / 2) % grid_spacing;
+                tmp_grid[i * grid_spacing * 2 + j] = grid[offset + ii * grid_spacing + jj];
             }
         }
 
-        for (i = 0; i < 2*grid_spacing; i++)
+        for (i = 0; i < 2 * grid_spacing; i++)
         {
-            spline1d(dx, &(tmp_grid[2*grid_spacing*i]), 2*grid_spacing, tmp_u, &(tmp_t2[2*grid_spacing*i]));
+            spline1d(dx, &(tmp_grid[2 * grid_spacing * i]), 2 * grid_spacing, tmp_u, &(tmp_t2[2 * grid_spacing * i]));
         }
 
-        for (i = grid_spacing/2; i < grid_spacing+grid_spacing/2; i++)
+        for (i = grid_spacing / 2; i < grid_spacing + grid_spacing / 2; i++)
         {
-            ii  = i-grid_spacing/2;
-            phi = ii*dx-180.0;
+            ii  = i - grid_spacing / 2;
+            phi = ii * dx - 180.0;
 
-            for (j = grid_spacing/2; j < grid_spacing+grid_spacing/2; j++)
+            for (j = grid_spacing / 2; j < grid_spacing + grid_spacing / 2; j++)
             {
-                jj  = j-grid_spacing/2;
-                psi = jj*dx-180.0;
+                jj  = j - grid_spacing / 2;
+                psi = jj * dx - 180.0;
 
-                for (k = 0; k < 2*grid_spacing; k++)
+                for (k = 0; k < 2 * grid_spacing; k++)
                 {
-                    interpolate1d(xmin, dx, &(tmp_grid[2*grid_spacing*k]),
-                                  &(tmp_t2[2*grid_spacing*k]), psi, &tmp_yy[k], &tmp_y1[k]);
+                    interpolate1d(xmin, dx, &(tmp_grid[2 * grid_spacing * k]),
+                                  &(tmp_t2[2 * grid_spacing * k]), psi, &tmp_yy[k], &tmp_y1[k]);
                 }
 
-                spline1d(dx, tmp_yy, 2*grid_spacing, tmp_u, tmp_u2);
+                spline1d(dx, tmp_yy, 2 * grid_spacing, tmp_u, tmp_u2);
                 interpolate1d(xmin, dx, tmp_yy, tmp_u2, phi, &v, &v1);
-                spline1d(dx, tmp_y1, 2*grid_spacing, tmp_u, tmp_u2);
+                spline1d(dx, tmp_y1, 2 * grid_spacing, tmp_u, tmp_u2);
                 interpolate1d(xmin, dx, tmp_y1, tmp_u2, phi, &v2, &v12);
 
-                idx = ii*grid_spacing+jj;
-                cmap_grid->cmapdata[kk].cmap[idx*4]   = grid[offset+ii*grid_spacing+jj];
-                cmap_grid->cmapdata[kk].cmap[idx*4+1] = v1;
-                cmap_grid->cmapdata[kk].cmap[idx*4+2] = v2;
-                cmap_grid->cmapdata[kk].cmap[idx*4+3] = v12;
+                idx                                       = ii * grid_spacing + jj;
+                cmap_grid->cmapdata[kk].cmap[idx * 4]     = grid[offset + ii * grid_spacing + jj];
+                cmap_grid->cmapdata[kk].cmap[idx * 4 + 1] = v1;
+                cmap_grid->cmapdata[kk].cmap[idx * 4 + 2] = v2;
+                cmap_grid->cmapdata[kk].cmap[idx * 4 + 3] = v12;
             }
         }
     }
@@ -1202,13 +1198,13 @@ void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 
     cmap_grid->ngrid        = ngrid;
     cmap_grid->grid_spacing = grid_spacing;
-    nelem                   = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
+    nelem                   = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
 
     snew(cmap_grid->cmapdata, ngrid);
 
     for (i = 0; i < cmap_grid->ngrid; i++)
     {
-        snew(cmap_grid->cmapdata[i].cmap, 4*nelem);
+        snew(cmap_grid->cmapdata[i].cmap, 4 * nelem);
     }
 }
 
@@ -1217,7 +1213,7 @@ static int count_constraints(gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi)
 {
     int             count, count_mol, i, mb;
     gmx_molblock_t *molb;
-    t_params       *plist;
+    t_params *      plist;
     char            buf[STRLEN];
 
     count = 0;
@@ -1231,7 +1227,7 @@ static int count_constraints(gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi)
         {
             if (i == F_SETTLE)
             {
-                count_mol += 3*plist[i].nr;
+                count_mol += 3 * plist[i].nr;
             }
             else if (interaction_function[i].flags & IF_CONSTRAINT)
             {
@@ -1248,7 +1244,7 @@ static int count_constraints(gmx_mtop_t *mtop, t_molinfo *mi, warninp_t wi)
                     nrdf_internal(&mi[molb->type].atoms));
             warning(wi, buf);
         }
-        count += molb->nmol*count_mol;
+        count += molb->nmol * count_mol;
     }
 
     return count;
@@ -1269,12 +1265,12 @@ static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
         for (i = 0; i < natoms; i++)
         {
             q = atoms->atom[i].q;
-            if ((get_atomtype_radius(atoms->atom[i].type, atype)    == 0  ||
-                 get_atomtype_vol(atoms->atom[i].type, atype)       == 0  ||
-                 get_atomtype_surftens(atoms->atom[i].type, atype)  == 0  ||
-                 get_atomtype_gb_radius(atoms->atom[i].type, atype) == 0  ||
-                 get_atomtype_S_hct(atoms->atom[i].type, atype)     == 0) &&
-                q != 0)
+            if ((get_atomtype_radius(atoms->atom[i].type, atype)    == 0
+                 || get_atomtype_vol(atoms->atom[i].type, atype)       == 0
+                 || get_atomtype_surftens(atoms->atom[i].type, atype)  == 0
+                 || get_atomtype_gb_radius(atoms->atom[i].type, atype) == 0
+                 || get_atomtype_S_hct(atoms->atom[i].type, atype)     == 0)
+                && q != 0)
             {
                 fprintf(stderr, "\nGB parameter(s) zero for atom type '%s' while charge is %g\n",
                         get_atomtype_name(atoms->atom[i].type, atype), q);
@@ -1292,7 +1288,7 @@ static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
 
 static void check_gbsa_params(gpp_atomtype_t atype)
 {
-    int  nmiss, i;
+    int nmiss, i;
 
     /* If we are doing GBSA, check that we got the parameters we need
      * This checking is to see if there are GBSA paratmeters for all
@@ -1302,11 +1298,11 @@ static void check_gbsa_params(gpp_atomtype_t atype)
     nmiss = 0;
     for (i = 0; i < get_atomtype_ntypes(atype); i++)
     {
-        if (get_atomtype_radius(i, atype)    < 0 ||
-            get_atomtype_vol(i, atype)       < 0 ||
-            get_atomtype_surftens(i, atype)  < 0 ||
-            get_atomtype_gb_radius(i, atype) < 0 ||
-            get_atomtype_S_hct(i, atype)     < 0)
+        if (get_atomtype_radius(i, atype)    < 0
+            || get_atomtype_vol(i, atype)       < 0
+            || get_atomtype_surftens(i, atype)  < 0
+            || get_atomtype_gb_radius(i, atype) < 0
+            || get_atomtype_S_hct(i, atype)     < 0)
         {
             fprintf(stderr, "\nGB parameter(s) missing or negative for atom type '%s'\n",
                     get_atomtype_name(i, atype));
@@ -1323,17 +1319,17 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 
 static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
-                      rvec             *v)
+                      rvec *            v)
 {
     gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
+    const t_atom *          atom;
     int                     a;
 
-    double                  sum_mv2 = 0;
+    double sum_mv2 = 0;
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
-        sum_mv2 += atom->m*norm2(v[a]);
+        sum_mv2 += atom->m * norm2(v[a]);
     }
 
     double nrdf = 0;
@@ -1342,7 +1338,7 @@ static real calc_temp(const gmx_mtop_t *mtop,
         nrdf += ir->opts.nrdf[g];
     }
 
-    return sum_mv2/(nrdf*BOLTZ);
+    return sum_mv2 / (nrdf * BOLTZ);
 }
 
 static real get_max_reference_temp(const t_inputrec *ir,
@@ -1396,9 +1392,9 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (((interaction_function[ftype].flags & IF_BOND) && ftype != F_CONNBONDS) ||
-            (interaction_function[ftype].flags & IF_CONSTRAINT) ||
-            ftype == F_SETTLE)
+        if (((interaction_function[ftype].flags & IF_BOND) && ftype != F_CONNBONDS)
+            || (interaction_function[ftype].flags & IF_CONSTRAINT)
+            || ftype == F_SETTLE)
         {
             const t_ilist *il   = &molt->ilist[ftype];
             int            nral = NRAL(ftype);
@@ -1416,8 +1412,8 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
     int numDanglingAtoms = 0;
     for (int a = 0; a < atoms->nr; a++)
     {
-        if (atoms->atom[a].ptype != eptVSite &&
-            count[a] == 0)
+        if (atoms->atom[a].ptype != eptVSite
+            && count[a] == 0)
         {
             fprintf(stderr, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
                     a + 1, *atoms->atomname[a], *molt->name);
@@ -1446,7 +1442,7 @@ static void checkForUnboundAtoms(const gmx_mtop_t *mtop,
 }
 
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
-                              t_inputrec       *ir,
+                              t_inputrec *      ir,
                               real              buffer_temp,
                               matrix            box,
                               warninp_t         wi)
@@ -1476,11 +1472,11 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     }
 
     printf("Calculated rlist for %dx%d atom pair-list as %.3f nm, buffer size %.3f nm\n",
-           1, 1, rlist_1x1, rlist_1x1-std::max(ir->rvdw, ir->rcoulomb));
+           1, 1, rlist_1x1, rlist_1x1 - std::max(ir->rvdw, ir->rcoulomb));
 
     printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
            ls.cluster_size_i, ls.cluster_size_j,
-           ir->rlist, ir->rlist-std::max(ir->rvdw, ir->rcoulomb));
+           ir->rlist, ir->rlist - std::max(ir->rvdw, ir->rcoulomb));
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
@@ -1591,28 +1587,28 @@ int gmx_grompp(int argc, char *argv[])
         "interpret the output messages before attempting to bypass them with",
         "this option."
     };
-    t_gromppopts      *opts;
-    gmx_mtop_t        *sys;
+    t_gromppopts *     opts;
+    gmx_mtop_t *       sys;
     int                nmi;
-    t_molinfo         *mi, *intermolecular_interactions;
+    t_molinfo *        mi, *intermolecular_interactions;
     gpp_atomtype_t     atype;
-    t_inputrec        *ir;
+    t_inputrec *       ir;
     int                nvsite, comb, mt;
-    t_params          *plist;
+    t_params *         plist;
     matrix             box;
     real               fudgeQQ;
     double             reppow;
     char               fn[STRLEN], fnB[STRLEN];
-    const char        *mdparin;
+    const char *       mdparin;
     int                ntype;
     gmx_bool           bNeedVel, bGenVel;
     gmx_bool           have_atomnumber;
-    gmx_output_env_t  *oenv;
+    gmx_output_env_t * oenv;
     gmx_bool           bVerbose = FALSE;
     warninp_t          wi;
     char               warn_buf[STRLEN];
 
-    t_filenm           fnm[] = {
+    t_filenm fnm[] = {
         { efMDP, nullptr,  nullptr,        ffREAD  },
         { efMDP, "-po", "mdout",     ffWRITE },
         { efSTX, "-c",  nullptr,        ffREAD  },
@@ -1731,8 +1727,8 @@ int gmx_grompp(int argc, char *argv[])
     /* set parameters for virtual site construction (not for vsiten) */
     for (mt = 0; mt < sys->nmoltype; mt++)
     {
-        nvsite +=
-            set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
+        nvsite
+            += set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
     }
     /* now throw away all obsolete bonds, angles and dihedrals: */
     /* note: constraints are ALWAYS removed */
@@ -1953,7 +1949,7 @@ int gmx_grompp(int argc, char *argv[])
                 else
                 {
                     sprintf(warn_buf, "NVE simulation with an initial temperature of zero: will use a Verlet buffer of %d%%. Check your energy drift!",
-                            (int)(verlet_buffer_ratio_NVE_T0*100 + 0.5));
+                            (int)(verlet_buffer_ratio_NVE_T0 * 100 + 0.5));
                     warning_note(wi, warn_buf);
                 }
             }
@@ -1968,8 +1964,8 @@ int gmx_grompp(int argc, char *argv[])
                  * Since we don't actually use verletbuf_tol, we set it to -1
                  * so it can't be misused later.
                  */
-                ir->rlist         *= 1.0 + verlet_buffer_ratio_NVE_T0;
-                ir->verletbuf_tol  = -1;
+                ir->rlist        *= 1.0 + verlet_buffer_ratio_NVE_T0;
+                ir->verletbuf_tol = -1;
             }
             else
             {
@@ -1978,22 +1974,22 @@ int gmx_grompp(int argc, char *argv[])
                  * Note that we can't warn when nsteps=0, since we don't
                  * know how many steps the user intends to run.
                  */
-                if (EI_MD(ir->eI) && ir->etc == etcNO && ir->nstlist > 1 &&
-                    ir->nsteps > 0)
+                if (EI_MD(ir->eI) && ir->etc == etcNO && ir->nstlist > 1
+                    && ir->nsteps > 0)
                 {
                     const real driftTolerance = 0.01;
                     /* We use 2 DOF per atom = 2kT pot+kin energy,
                      * to be on the safe side with constraints.
                      */
-                    const real totalEnergyDriftPerAtomPerPicosecond = 2*BOLTZ*buffer_temp/(ir->nsteps*ir->delta_t);
+                    const real totalEnergyDriftPerAtomPerPicosecond = 2 * BOLTZ * buffer_temp / (ir->nsteps * ir->delta_t);
 
-                    if (ir->verletbuf_tol > 1.1*driftTolerance*totalEnergyDriftPerAtomPerPicosecond)
+                    if (ir->verletbuf_tol > 1.1 * driftTolerance * totalEnergyDriftPerAtomPerPicosecond)
                     {
                         sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%% when using constraints, you might need to set verlet-buffer-tolerance to %.1e.",
-                                ir->verletbuf_tol, ir->nsteps*ir->delta_t,
-                                (int)(ir->verletbuf_tol/totalEnergyDriftPerAtomPerPicosecond*100 + 0.5),
-                                (int)(100*driftTolerance + 0.5),
-                                driftTolerance*totalEnergyDriftPerAtomPerPicosecond);
+                                ir->verletbuf_tol, ir->nsteps * ir->delta_t,
+                                (int)(ir->verletbuf_tol / totalEnergyDriftPerAtomPerPicosecond * 100 + 0.5),
+                                (int)(100 * driftTolerance + 0.5),
+                                driftTolerance * totalEnergyDriftPerAtomPerPicosecond);
                         warning_note(wi, warn_buf);
                     }
                 }
@@ -2141,8 +2137,8 @@ int gmx_grompp(int argc, char *argv[])
          * charges. This will double the cost, but the optimal performance will
          * then probably be at a slightly larger cut-off and grid spacing.
          */
-        if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
-            (ir->efep != efepNO && ratio > 2.0/3.0))
+        if ((ir->efep == efepNO && ratio > 1.0 / 2.0)
+            || (ir->efep != efepNO && ratio > 2.0 / 3.0))
         {
             warning_note(wi,
                          "The optimal PME mesh load for parallel simulations is below 0.5\n"

@@ -73,13 +73,13 @@ class AutocorrTest : public ::testing::Test
 {
     protected:
 
-        static int                                  nrFrames_;
-        static CorrelationDataSetPointer            data_;
+        static int                       nrFrames_;
+        static CorrelationDataSetPointer data_;
         // Need raw pointer for passing this to C routines
-        static t_pargs                            * tempArgs_;
+        static t_pargs * tempArgs_;
 
-        test::TestReferenceData                     refData_;
-        test::TestReferenceChecker                  checker_;
+        test::TestReferenceData    refData_;
+        test::TestReferenceChecker checker_;
 
         // Use erefdataCreateMissing for creating new files
         AutocorrTest( )
@@ -97,9 +97,9 @@ class AutocorrTest : public ::testing::Test
         {
             int         n        = 0;
             std::string fileName = "testCOS3.xvg";
-            data_                = CorrelationDataSetPointer(new CorrelationDataSet(fileName));
-            nrFrames_            = data_->getNrLines();
-            tempArgs_            = add_acf_pargs(&n, nullptr);
+            data_     = CorrelationDataSetPointer(new CorrelationDataSet(fileName));
+            nrFrames_ = data_->getNrLines();
+            tempArgs_ = add_acf_pargs(&n, nullptr);
         }
 
         static void TearDownTestCase()
@@ -111,10 +111,10 @@ class AutocorrTest : public ::testing::Test
 
         void test(unsigned long mode, bool bNormalize)
         {
-            bool              bAverage      = true;
-            bool              bVerbose      = false;
-            int               nrRestart     = 1;
-            int               dim           = getDim(mode);
+            bool              bAverage  = true;
+            bool              bVerbose  = false;
+            int               nrRestart = 1;
+            int               dim       = getDim(mode);
             std::vector<real> result;
 
             for (int i = 0; i < nrFrames_; i++)
@@ -174,9 +174,9 @@ class AutocorrTest : public ::testing::Test
 
 };
 
-int                         AutocorrTest::nrFrames_;
-CorrelationDataSetPointer   AutocorrTest::data_;
-t_pargs                   * AutocorrTest::tempArgs_;
+int                       AutocorrTest::nrFrames_;
+CorrelationDataSetPointer AutocorrTest::data_;
+t_pargs *                 AutocorrTest::tempArgs_;
 
 TEST_F (AutocorrTest, EacNormal)
 {

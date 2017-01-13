@@ -86,13 +86,13 @@ class SelectionParserSymbol::Impl
         }
 
         //! Name of the symbol.
-        std::string                     name_;
+        std::string name_;
         //! Type of the symbol.
-        SymbolType                      type_;
+        SymbolType type_;
         //! Pointer to the method structure (\ref MethodSymbol).
-        gmx_ana_selmethod_t            *meth_;
+        gmx_ana_selmethod_t *meth_;
         //! Pointer to the variable value (\ref VariableSymbol).
-        SelectionTreeElementPointer     var_;
+        SelectionTreeElementPointer var_;
 };
 
 SelectionParserSymbol::SelectionParserSymbol(Impl *impl)
@@ -104,28 +104,24 @@ SelectionParserSymbol::~SelectionParserSymbol()
 {
 }
 
-const std::string &
-SelectionParserSymbol::name() const
+const std::string &SelectionParserSymbol::name() const
 {
     return impl_->name_;
 }
 
-SelectionParserSymbol::SymbolType
-SelectionParserSymbol::type() const
+SelectionParserSymbol::SymbolType SelectionParserSymbol::type() const
 {
     return impl_->type_;
 }
 
-gmx_ana_selmethod_t *
-SelectionParserSymbol::methodValue() const
+gmx_ana_selmethod_t *SelectionParserSymbol::methodValue() const
 {
     GMX_RELEASE_ASSERT(type() == MethodSymbol,
                        "Attempting to get method handle for a non-method symbol");
     return impl_->meth_;
 }
 
-const gmx::SelectionTreeElementPointer &
-SelectionParserSymbol::variableValue() const
+const gmx::SelectionTreeElementPointer &SelectionParserSymbol::variableValue() const
 {
     GMX_RELEASE_ASSERT(type() == VariableSymbol,
                        "Attempting to get variable value for a non-variable symbol");
@@ -165,17 +161,15 @@ class SelectionParserSymbolTable::Impl
         void addPositionSymbols();
 
         //! Symbols in this symbol table.
-        SymbolMap               symbols_;
+        SymbolMap symbols_;
 };
 
-void
-SelectionParserSymbolTable::Impl::addSymbol(SymbolPointer symbol)
+void SelectionParserSymbolTable::Impl::addSymbol(SymbolPointer symbol)
 {
     symbols_.insert(std::make_pair(symbol->name(), std::move(symbol)));
 }
 
-void
-SelectionParserSymbolTable::Impl::addReservedSymbols()
+void SelectionParserSymbolTable::Impl::addReservedSymbols()
 {
     const char *const sym_reserved[] = {
         "group",
@@ -199,8 +193,7 @@ SelectionParserSymbolTable::Impl::addReservedSymbols()
     }
 }
 
-void
-SelectionParserSymbolTable::Impl::addPositionSymbols()
+void SelectionParserSymbolTable::Impl::addPositionSymbols()
 {
     const char *const *postypes
         = gmx::PositionCalculationCollection::typeEnumValues;
@@ -250,9 +243,9 @@ class SelectionParserSymbolIterator::Impl
         }
 
         //! Underlying iterator to the symbol container.
-        IteratorType            iter_;
+        IteratorType iter_;
         //! End of the symbol container being iterated.
-        IteratorType            end_;
+        IteratorType end_;
 };
 
 SelectionParserSymbolIterator::SelectionParserSymbolIterator(Impl *impl)
@@ -294,8 +287,7 @@ SelectionParserSymbolIterator &SelectionParserSymbolIterator::operator++()
     do
     {
         ++impl_->iter_;
-    }
-    while (impl_->iter_ != impl_->end_ && impl_->iter_->second->type() != type);
+    } while (impl_->iter_ != impl_->end_ && impl_->iter_->second->type() != type);
     return *this;
 }
 
@@ -314,8 +306,7 @@ SelectionParserSymbolTable::~SelectionParserSymbolTable()
 {
 }
 
-const SelectionParserSymbol *
-SelectionParserSymbolTable::findSymbol(const std::string &name) const
+const SelectionParserSymbol *SelectionParserSymbolTable::findSymbol(const std::string &name) const
 {
     Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
     if (sym == impl_->symbols_.end())
@@ -329,8 +320,7 @@ SelectionParserSymbolTable::findSymbol(const std::string &name) const
     return nullptr;
 }
 
-SelectionParserSymbolIterator
-SelectionParserSymbolTable::beginIterator(SelectionParserSymbol::SymbolType type) const
+SelectionParserSymbolIterator SelectionParserSymbolTable::beginIterator(SelectionParserSymbol::SymbolType type) const
 {
     Impl::SymbolMap::const_iterator sym;
     Impl::SymbolMap::const_iterator end = impl_->symbols_.end();
@@ -345,16 +335,14 @@ SelectionParserSymbolTable::beginIterator(SelectionParserSymbol::SymbolType type
     return endIterator();
 }
 
-SelectionParserSymbolIterator
-SelectionParserSymbolTable::endIterator() const
+SelectionParserSymbolIterator SelectionParserSymbolTable::endIterator() const
 {
     return SelectionParserSymbolIterator(
             new SelectionParserSymbolIterator::Impl(impl_->symbols_.end()));
 }
 
-void
-SelectionParserSymbolTable::addVariable(const char                             *name,
-                                        const gmx::SelectionTreeElementPointer &sel)
+void SelectionParserSymbolTable::addVariable(const char *                            name,
+                                             const gmx::SelectionTreeElementPointer &sel)
 {
     // In the current parser implementation, a syntax error is produced before
     // this point is reached, but the check is here for robustness.
@@ -381,9 +369,8 @@ SelectionParserSymbolTable::addVariable(const char                             *
     impl_->addSymbol(std::move(sym));
 }
 
-void
-SelectionParserSymbolTable::addMethod(const char          *name,
-                                      gmx_ana_selmethod_t *method)
+void SelectionParserSymbolTable::addMethod(const char *         name,
+                                           gmx_ana_selmethod_t *method)
 {
     if (impl_->symbols_.find(name) != impl_->symbols_.end())
     {

@@ -65,10 +65,10 @@
  * Prints GPU information strings on this node into the stderr and log.
  * Only used for logging errors in heterogenous MPI configurations.
  */
-static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
+static void print_gpu_detection_stats(const gmx::MDLogger & mdlog,
                                       const gmx_gpu_info_t *gpu_info)
 {
-    char onhost[HOSTNAMELEN+10];
+    char onhost[HOSTNAMELEN + 10];
     int  ngpu;
 
     if (!gpu_info->bDetectGPUs)
@@ -132,7 +132,7 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     {
         if (nrank % gpu_opt->n_dev_compatible == 0)
         {
-            nshare = gmx_gpu_sharing_supported() ? nrank/gpu_opt->n_dev_compatible : 1;
+            nshare = gmx_gpu_sharing_supported() ? nrank / gpu_opt->n_dev_compatible : 1;
         }
         else
         {
@@ -152,7 +152,7 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     }
 
     /* Here we will waste GPUs when nrank < gpu_opt->n_dev_compatible */
-    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible*nshare, nrank);
+    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible * nshare, nrank);
     if (!gmx_multiple_gpu_per_node_supported())
     {
         gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_use, 1);
@@ -161,7 +161,7 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     for (int i = 0; i != gpu_opt->n_dev_use; ++i)
     {
         /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i/nshare];
+        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i / nshare];
     }
 }
 
@@ -170,8 +170,8 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              gmx_bool bForceUseGPU,
                              gmx_gpu_opt_t *gpu_opt)
 {
-    int              i;
-    char             sbuf[STRLEN], stmp[STRLEN];
+    int  i;
+    char sbuf[STRLEN], stmp[STRLEN];
 
     /* Bail if binary is not compiled with GPU acceleration, but this is either
      * explicitly (-nb gpu) or implicitly (gpu ID passed) requested. */

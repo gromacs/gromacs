@@ -86,7 +86,7 @@ class SimpleInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 // Multipoint input data for gmx::AnalysisDataAverageModule tests.
@@ -120,7 +120,7 @@ class MultipointInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 // Input data with multiple data sets for gmx::AnalysisDataAverageModule tests.
@@ -158,7 +158,7 @@ class MultiDataSetInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 

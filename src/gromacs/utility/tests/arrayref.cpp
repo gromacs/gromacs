@@ -115,16 +115,16 @@ class ArrayRefTest : public ::testing::Test
          * Note that test cases must call this->runTests(), because
          * that's how the derived-class templates that implement
          * type-parameterized tests actually work. */
-        void runTests(ValueType     *a,
-                      size_t         aSize,
-                      ValueType     *aData,
-                      ArrayRefType  &arrayRef)
+        void runTests(ValueType *   a,
+                      size_t        aSize,
+                      ValueType *   aData,
+                      ArrayRefType &arrayRef)
         {
             ASSERT_EQ(aSize, arrayRef.size());
             ASSERT_FALSE(arrayRef.empty());
             EXPECT_EQ(aData, arrayRef.data());
             EXPECT_EQ(a[0], arrayRef.front());
-            EXPECT_EQ(a[aSize-1], arrayRef.back());
+            EXPECT_EQ(a[aSize - 1], arrayRef.back());
             for (size_t i = 0; i != aSize; ++i)
             {
                 EXPECT_EQ(a[i], arrayRef[i]);

@@ -113,7 +113,7 @@ class DefaultExecutableEnvironment : public IExecutableEnvironment
         }
 
     private:
-        std::string   initialWorkingDirectory_;
+        std::string initialWorkingDirectory_;
 };
 
 /*! \brief
@@ -126,7 +126,7 @@ class DefaultExecutableEnvironment : public IExecutableEnvironment
  * If a binary with the given name cannot be located, \p invokedName is
  * returned.
  */
-std::string findFullBinaryPath(const std::string            &invokedName,
+std::string findFullBinaryPath(const std::string &           invokedName,
                                const IExecutableEnvironment &env)
 {
     std::string searchName = invokedName;
@@ -240,7 +240,7 @@ std::string findFallbackInstallationPrefixPath()
  * that they use up-to-date data files from the source tree.
  */
 std::string findInstallationPrefixPath(const std::string &binaryPath,
-                                       bool              *bSourceLayout)
+                                       bool *             bSourceLayout)
 {
     *bSourceLayout = false;
     // Don't search anything if binary cannot be found.
@@ -310,15 +310,15 @@ class CommandLineProgramContext::Impl
          */
         void findBinaryPath() const;
 
-        ExecutableEnvironmentPointer  executableEnv_;
-        std::string                   invokedName_;
-        std::string                   programName_;
-        std::string                   displayName_;
-        std::string                   commandLine_;
-        mutable std::string           fullBinaryPath_;
-        mutable std::string           installationPrefix_;
-        mutable bool                  bSourceLayout_;
-        mutable Mutex                 binaryPathMutex_;
+        ExecutableEnvironmentPointer executableEnv_;
+        std::string                  invokedName_;
+        std::string                  programName_;
+        std::string                  displayName_;
+        std::string                  commandLine_;
+        mutable std::string          fullBinaryPath_;
+        mutable std::string          installationPrefix_;
+        mutable bool                 bSourceLayout_;
+        mutable Mutex                binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl()
@@ -421,9 +421,9 @@ InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
     if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();
-        impl_->installationPrefix_ =
-            Path::normalize(findInstallationPrefixPath(impl_->fullBinaryPath_,
-                                                       &impl_->bSourceLayout_));
+        impl_->installationPrefix_
+            = Path::normalize(findInstallationPrefixPath(impl_->fullBinaryPath_,
+                                                         &impl_->bSourceLayout_));
     }
     return InstallationPrefixInfo(
             impl_->installationPrefix_.c_str(),

@@ -47,6 +47,6 @@
  *
  * \ingroup module_utility
  */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
+#define asize(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 #endif

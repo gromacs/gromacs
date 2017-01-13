@@ -48,12 +48,13 @@
          Please keep it that way. */
 
 /* Globals for trajectory input */
-typedef struct {
+typedef struct
+{
     real     t;
     gmx_bool bSet;
 } t_timecontrol;
 
-static t_timecontrol       timecontrol[TNR] = {
+static t_timecontrol timecontrol[TNR] = {
     { 0, FALSE },
     { 0, FALSE },
     { 0, FALSE }

@@ -72,7 +72,7 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
-        bool                       bHidden_;
+        bool bHidden_;
 };
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
@@ -154,7 +154,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 }
 
 //! Enum value for testing.
-enum TestEnum {
+enum TestEnum
+{
     eFoo, eBar
 };
 
@@ -168,7 +169,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
 
     Options options;
 
-    bool    bValue = true;
+    bool bValue = true;
     options.addOption(BooleanOption("bool").description("Boolean option")
                           .store(&bValue));
 

@@ -96,33 +96,33 @@ void MultiSimTest::organizeMdpFile(const char *controlVariable,
 {
     const real  baseTemperature = 298;
     const real  basePressure    = 1;
-    std::string mdpFileContents =
-        formatString("nsteps = %d\n"
-                     "nstlog = 1\n"
-                     "nstcalcenergy = 1\n"
-                     "tcoupl = v-rescale\n"
-                     "tc-grps = System\n"
-                     "tau-t = 1\n"
-                     "ref-t = %f\n"
-                     // pressure coupling (if active)
-                     "tau-p = 1\n"
-                     "ref-p = %f\n"
-                     "compressibility = 4.5e-5\n"
-                     // velocity generation
-                     "gen-vel = yes\n"
-                     "gen-temp = %f\n"
-                     // control variable specification
-                     "%s\n",
-                     numSteps,
-                     baseTemperature + 0.0001*rank_,
-                     basePressure * std::pow(1.01, rank_),
-                     /* Set things up so that the initial KE decreases with
-                        increasing replica number, so that the (identical)
-                        starting PE decreases on the first step more for the
-                        replicas with higher number, which will tend to force
-                        replica exchange to occur. */
-                     std::max(baseTemperature - 10 * rank_, real(0)),
-                     controlVariable);
+    std::string mdpFileContents
+        = formatString("nsteps = %d\n"
+                       "nstlog = 1\n"
+                       "nstcalcenergy = 1\n"
+                       "tcoupl = v-rescale\n"
+                       "tc-grps = System\n"
+                       "tau-t = 1\n"
+                       "ref-t = %f\n"
+                       // pressure coupling (if active)
+                       "tau-p = 1\n"
+                       "ref-p = %f\n"
+                       "compressibility = 4.5e-5\n"
+                       // velocity generation
+                       "gen-vel = yes\n"
+                       "gen-temp = %f\n"
+                       // control variable specification
+                       "%s\n",
+                       numSteps,
+                       baseTemperature + 0.0001 * rank_,
+                       basePressure * std::pow(1.01, rank_),
+                       /* Set things up so that the initial KE decreases with
+                          increasing replica number, so that the (identical)
+                          starting PE decreases on the first step more for the
+                          replicas with higher number, which will tend to force
+                          replica exchange to occur. */
+                       std::max(baseTemperature - 10 * rank_, real(0)),
+                       controlVariable);
     runner_.useStringAsMdpFile(mdpFileContents);
 }
 
@@ -155,7 +155,7 @@ void MultiSimTest::runMaxhTest()
 
     TerminationHelper helper(&fileManager_, mdrunCaller_.get(), &runner_);
     // Make sure -maxh has a chance to propagate
-    int               numSteps = 100;
+    int numSteps = 100;
     organizeMdpFile("pcoupl = no", numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */

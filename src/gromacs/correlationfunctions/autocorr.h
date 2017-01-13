@@ -60,25 +60,25 @@ extern "C" {
 #endif
 
 /*! \brief Normal correlation f(t)*f(t+dt) */
-#define eacNormal (1<<0)
+#define eacNormal (1 << 0)
 /*! \brief Cosine correlation cos(f(t)-f(t+dt)) */
-#define eacCos    (1<<1)
+#define eacCos    (1 << 1)
 /*! \brief Vector correlation f(t).f(t+dt) */
-#define eacVector (1<<2)
+#define eacVector (1 << 2)
 /*! \brief Norm of cross product |f(t) (x) f(t+dt)| */
-#define eacRcross (1<<3  | eacVector)
+#define eacRcross (1 << 3  | eacVector)
 /*! \brief Vector with Legendre polynomial of order 0 (same as vector) */
-#define eacP0     (1<<4  | eacVector)
+#define eacP0     (1 << 4  | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_1(f(t).f(t+dt)) */
-#define eacP1     (1<<5  | eacVector)
+#define eacP1     (1 << 5  | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_2(f(t).f(t+dt)) */
-#define eacP2     (1<<6  | eacVector)
+#define eacP2     (1 << 6  | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_3(f(t).f(t+dt)) */
-#define eacP3     (1<<7  | eacVector)
+#define eacP3     (1 << 7  | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_4(f(t).f(t+dt)) */
-#define eacP4     (1<<8  | eacVector)
+#define eacP4     (1 << 8  | eacVector)
 /*! \brief Binary identy correlation (f(t) == f(t+dt)) */
-#define eacIden   (1<<9) //Not supported for multiple cores
+#define eacIden   (1 << 9) //Not supported for multiple cores
 
 /*! \brief
  * Add commandline arguments related to autocorrelations to the existing array.

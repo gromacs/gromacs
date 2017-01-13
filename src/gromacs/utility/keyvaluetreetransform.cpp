@@ -87,7 +87,7 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                     }
                     return &iter->second;
                 }
-                void setMapping(const KeyValueTreePath  &path,
+                void setMapping(const KeyValueTreePath & path,
                                 const KeyValueTreeValue &value)
                 {
                     if (value.isObject())
@@ -108,8 +108,7 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                 std::map<std::string, Entry> childEntries_;
         };
 
-        virtual KeyValueTreePath
-        originalPath(const KeyValueTreePath &path) const
+        virtual KeyValueTreePath originalPath(const KeyValueTreePath &path) const
         {
             const Entry *entry = &rootEntry_;
             for (const auto &element : path.elements())
@@ -184,14 +183,14 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                     return &result.first->second;
                 }
 
-                void collectMappedPaths(const KeyValueTreePath        &prefix,
+                void collectMappedPaths(const KeyValueTreePath &       prefix,
                                         std::vector<KeyValueTreePath> *result) const
                 {
                     for (const auto &value : childRules_)
                     {
                         KeyValueTreePath path = prefix;
                         path.append(value.first);
-                        const Rule      &rule = value.second;
+                        const Rule &rule = value.second;
                         if (rule.transform_)
                         {
                             result->push_back(path);
@@ -203,10 +202,10 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                     }
                 }
 
-                KeyValueTreePath            targetPath_;
-                std::string                 targetKey_;
-                TransformFunction           transform_;
-                ChildRuleMap                childRules_;
+                KeyValueTreePath  targetPath_;
+                std::string       targetKey_;
+                TransformFunction transform_;
+                ChildRuleMap      childRules_;
         };
 
         class Transformer
@@ -241,7 +240,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                 void doChildTransforms(const Rule *rule, const KeyValueTreeObject &object);
                 void applyTransformedValue(const Rule *rule, KeyValueTreeValue &&value);
 
-                IKeyValueTreeErrorHandler               *errorHandler_;
+                IKeyValueTreeErrorHandler *              errorHandler_;
                 KeyValueTreeBuilder                      builder_;
                 std::unique_ptr<KeyValueTreeBackMapping> backMapping_;
                 KeyValueTreePath                         context_;
@@ -267,7 +266,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
             rootRule_.reset(new Rule(keyMatchType));
         }
 
-        std::unique_ptr<Rule>  rootRule_;
+        std::unique_ptr<Rule> rootRule_;
 };
 
 /********************************************************************
@@ -375,9 +374,8 @@ std::vector<KeyValueTreePath> KeyValueTreeTransformer::mappedPaths() const
     return result;
 }
 
-KeyValueTreeTransformResult
-KeyValueTreeTransformer::transform(const KeyValueTreeObject  &tree,
-                                   IKeyValueTreeErrorHandler *errorHandler) const
+KeyValueTreeTransformResult KeyValueTreeTransformer::transform(const KeyValueTreeObject & tree,
+                                                               IKeyValueTreeErrorHandler *errorHandler) const
 {
     internal::KeyValueTreeTransformerImpl::Transformer transformer(errorHandler);
     transformer.transform(impl_->rootRule_.get(), tree);
@@ -421,7 +419,7 @@ class KeyValueTreeTransformRuleBuilder::Data
             else
             {
                 std::string lastKey = fromPath_.pop_last();
-                Rule       *rule    = impl->getOrCreateRootRule();
+                Rule *      rule    = impl->getOrCreateRootRule();
                 for (const std::string &key : fromPath_.elements())
                 {
                     rule = rule->getOrCreateChildRule(key);
@@ -430,10 +428,10 @@ class KeyValueTreeTransformRuleBuilder::Data
             }
         }
 
-        KeyValueTreePath         fromPath_;
-        KeyValueTreePath         toPath_;
-        Rule::TransformFunction  transform_;
-        StringCompareType        keyMatchType_;
+        KeyValueTreePath        fromPath_;
+        KeyValueTreePath        toPath_;
+        Rule::TransformFunction transform_;
+        StringCompareType       keyMatchType_;
 };
 
 /********************************************************************
@@ -472,22 +470,22 @@ void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatc
 void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
         std::function<Variant(const Variant &)> transform)
 {
-    data_->transform_ =
-        [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
-        {
-            builder->setVariantValue(transform(value.asVariant()));
-        };
+    data_->transform_
+        = [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
+            {
+                builder->setVariantValue(transform(value.asVariant()));
+            };
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToObject(
         std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform)
 {
-    data_->transform_ =
-        [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
-        {
-            KeyValueTreeObjectBuilder obj = builder->createObject();
-            transform(&obj, value.asVariant());
-        };
+    data_->transform_
+        = [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
+            {
+                KeyValueTreeObjectBuilder obj = builder->createObject();
+                transform(&obj, value.asVariant());
+            };
 }
 
 } // namespace gmx

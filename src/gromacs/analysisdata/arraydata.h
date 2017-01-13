@@ -203,7 +203,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * \p dest should not have previous contents.
          */
         static void copyContents(const AbstractAnalysisArrayData *src,
-                                 AbstractAnalysisArrayData       *dest);
+                                 AbstractAnalysisArrayData *      dest);
 
     private:
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;

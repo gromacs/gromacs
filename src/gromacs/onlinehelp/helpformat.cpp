@@ -87,7 +87,7 @@ class TextTableFormatter::Impl
             //! Returns the title of the column.
             const std::string &title() const { return title_; }
             //! Returns the width of the column.
-            int                width() const { return width_; }
+            int width() const { return width_; }
             /*! \brief
              * Returns the first line offset for the current row.
              *
@@ -128,12 +128,12 @@ class TextTableFormatter::Impl
                 }
                 if (bWrap_)
                 {
-                    TextLineWrapperSettings  settings;
+                    TextLineWrapperSettings settings;
                     settings.setLineLength(columnWidth);
-                    TextLineWrapper          wrapper(settings);
-                    const std::string       &currentLine = lines_[nextLineIndex_];
-                    const size_t             prevOffset  = nextLineOffset_;
-                    const size_t             nextOffset
+                    TextLineWrapper    wrapper(settings);
+                    const std::string &currentLine = lines_[nextLineIndex_];
+                    const size_t       prevOffset  = nextLineOffset_;
+                    const size_t       nextOffset
                         = wrapper.findNextLine(currentLine, prevOffset);
                     if (nextOffset >= currentLine.size())
                     {
@@ -153,19 +153,19 @@ class TextTableFormatter::Impl
             }
 
             //! Statit data: title of the column.
-            std::string                 title_;
+            std::string title_;
             //! Static data: width of the column.
-            int                         width_;
+            int width_;
             //! Static data: whether to automatically wrap input text.
-            bool                        bWrap_;
+            bool bWrap_;
             //! First line offset for the current row.
-            int                         firstLine_;
+            int firstLine_;
             //! Text lines for the current row.
-            std::vector<std::string>    lines_;
+            std::vector<std::string> lines_;
             //! Formatting state: index in `lines_` for the next line.
-            int                         nextLineIndex_;
+            int nextLineIndex_;
             //! Formatting state: offset within line `nextLineIndex_` for the next line.
-            size_t                      nextLineOffset_;
+            size_t nextLineOffset_;
         };
 
         //! Container type for column data.
@@ -193,15 +193,15 @@ class TextTableFormatter::Impl
         }
 
         //! Container for column data.
-        ColumnList              columns_;
+        ColumnList columns_;
         //! Indentation before the first column.
-        int                     firstColumnIndent_;
+        int firstColumnIndent_;
         //! Indentation before the last column if folded.
-        int                     foldLastColumnToNextLineIndent_;
+        int foldLastColumnToNextLineIndent_;
         //! If true, no output has yet been produced.
-        bool                    bFirstRow_;
+        bool bFirstRow_;
         //! If true, a header will be printed before the first row.
-        bool                    bPrintHeader_;
+        bool bPrintHeader_;
 };
 
 TextTableFormatter::Impl::Impl()
@@ -260,7 +260,7 @@ void TextTableFormatter::clear()
 
 void TextTableFormatter::addColumnLine(int index, const std::string &text)
 {
-    Impl::ColumnData        &column = impl_->columnData(index);
+    Impl::ColumnData &       column = impl_->columnData(index);
     TextLineWrapper          wrapper;
     std::vector<std::string> lines(wrapper.wrapToVector(text));
     column.lines_.insert(column.lines_.end(), lines.begin(), lines.end());
@@ -269,7 +269,7 @@ void TextTableFormatter::addColumnLine(int index, const std::string &text)
 void TextTableFormatter::addColumnHelpTextBlock(
         int index, const HelpWriterContext &context, const std::string &text)
 {
-    Impl::ColumnData       &column = impl_->columnData(index);
+    Impl::ColumnData &      column = impl_->columnData(index);
     TextLineWrapperSettings settings;
     // TODO: If in the future, there is actually a coupling between the markup
     // and the wrapping, this must be postponed into formatRow(), where we do

@@ -84,7 +84,7 @@ class Path
         static bool exists(const std::string &path);
         static std::string getWorkingDirectory();
 
-        static void splitPathEnvironment(const std::string        &pathEnv,
+        static void splitPathEnvironment(const std::string &       pathEnv,
                                          std::vector<std::string> *result);
         static std::vector<std::string> getExecutablePaths();
 

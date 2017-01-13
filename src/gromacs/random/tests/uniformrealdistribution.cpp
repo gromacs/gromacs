@@ -57,11 +57,11 @@ namespace
 
 TEST(UniformRealDistributionTest, GenerateCanonical)
 {
-    gmx::test::TestReferenceData        data;
-    gmx::test::TestReferenceChecker     checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
-    std::vector<real>                   result;
+    gmx::ThreeFry2x64<8> rng(123456, gmx::RandomDomain::Other);
+    std::vector<real>    result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -72,12 +72,12 @@ TEST(UniformRealDistributionTest, GenerateCanonical)
 
 TEST(UniformRealDistributionTest, Output)
 {
-    gmx::test::TestReferenceData            data;
-    gmx::test::TestReferenceChecker         checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>                    rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformRealDistribution<real>      dist(1.0, 10.0);
-    std::vector<real>                       result;
+    gmx::ThreeFry2x64<8>               rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformRealDistribution<real> dist(1.0, 10.0);
+    std::vector<real>                  result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -88,11 +88,11 @@ TEST(UniformRealDistributionTest, Output)
 
 TEST(UniformRealDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformRealDistribution<real>  distA(2.0, 5.0);
-    gmx::UniformRealDistribution<real>  distB(2.0, 5.0);
-    gmx::UniformRealDistribution<real>  distC(3.0, 5.0);
-    gmx::UniformRealDistribution<real>  distD(2.0, 4.0);
+    gmx::ThreeFry2x64<8>               rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformRealDistribution<real> distA(2.0, 5.0);
+    gmx::UniformRealDistribution<real> distB(2.0, 5.0);
+    gmx::UniformRealDistribution<real> distC(3.0, 5.0);
+    gmx::UniformRealDistribution<real> distD(2.0, 4.0);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -102,10 +102,10 @@ TEST(UniformRealDistributionTest, Logical)
 
 TEST(UniformRealDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                             rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformRealDistribution<real>               distA(2.0, 5.0);
-    gmx::UniformRealDistribution<real>               distB(2.0, 5.0);
-    gmx::UniformRealDistribution<real>::result_type  valA, valB;
+    gmx::ThreeFry2x64<8>                            rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformRealDistribution<real>              distA(2.0, 5.0);
+    gmx::UniformRealDistribution<real>              distB(2.0, 5.0);
+    gmx::UniformRealDistribution<real>::result_type valA, valB;
 
     valA = distA(rng);
 

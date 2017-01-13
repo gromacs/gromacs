@@ -56,7 +56,7 @@
  */
 static int zeroPaddingSize(int n)
 {
-    return 2*n;
+    return 2 * n;
 }
 
 /*! \brief
@@ -68,10 +68,10 @@ static int zeroPaddingSize(int n)
 static void complexConjugatMult(double in1[], double in2[])
 {
     double res[2];
-    res[0]  = in1[0] * in2[0] + in1[1] * in2[1];
-    res[1]  = in1[0] * -in2[1] + in1[1] * in2[0];
-    in1[0]  = res[0];
-    in1[1]  = res[1];
+    res[0] = in1[0] * in2[0] + in1[1] * in2[1];
+    res[1] = in1[0] * -in2[1] + in1[1] * in2[0];
+    in1[0] = res[0];
+    in1[1] = res[1];
 }
 
 /*! \brief
@@ -85,9 +85,9 @@ static void complexConjugatMult(double in1[], double in2[])
  */
 static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft)
 {
-    int             i;
-    const int       size = zeroPaddingSize(n);
-    double    **    in1, ** in2;
+    int       i;
+    const int size = zeroPaddingSize(n);
+    double ** in1, ** in2;
     snew(in1, size);
     snew(in2, size);
 
@@ -99,17 +99,17 @@ static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft
 
     for (i = 0; i < n; i++)
     {
-        in1[i][0]  = (double)f[i];
-        in1[i][1]  = 0;
-        in2[i][0]  = (double)g[i];
-        in2[i][1]  = 0;
+        in1[i][0] = (double)f[i];
+        in1[i][1] = 0;
+        in2[i][0] = (double)g[i];
+        in2[i][1] = 0;
     }
     for (; i < size; i++)
     {
-        in1[i][0]  = 0;
-        in1[i][1]  = 0;
-        in2[i][0]  = 0;
-        in2[i][1]  = 0;
+        in1[i][0] = 0;
+        in1[i][1] = 0;
+        in2[i][0] = 0;
+        in2[i][1] = 0;
     }
 
 

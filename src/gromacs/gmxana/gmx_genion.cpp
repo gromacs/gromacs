@@ -68,11 +68,11 @@ static void insert_ion(int nsa, int *nwater,
                        real rmin,
                        gmx::DefaultRandomEngine * rng)
 {
-    int                                i, ei, nw;
-    real                               rmin2;
-    rvec                               dx;
-    gmx_int64_t                        maxrand;
-    gmx::UniformIntDistribution<int>   dist(0, *nwater-1);
+    int                              i, ei, nw;
+    real                             rmin2;
+    rvec                             dx;
+    gmx_int64_t                      maxrand;
+    gmx::UniformIntDistribution<int> dist(0, *nwater - 1);
 
     nw       = *nwater;
     maxrand  = nw;
@@ -82,35 +82,34 @@ static void insert_ion(int nsa, int *nwater,
     {
         ei = dist(*rng);
         maxrand--;
-    }
-    while (bSet[ei] && (maxrand > 0));
+    } while (bSet[ei] && (maxrand > 0));
     if (bSet[ei])
     {
         gmx_fatal(FARGS, "No more replaceable solvent!");
     }
 
     fprintf(stderr, "Replacing solvent molecule %d (atom %d) with %s\n",
-            ei, index[nsa*ei], ionname);
+            ei, index[nsa * ei], ionname);
 
     /* Replace solvent molecule charges with ion charge */
     bSet[ei] = TRUE;
     repl[ei] = sign;
 
-    atoms->atom[index[nsa*ei]].q = q;
+    atoms->atom[index[nsa * ei]].q = q;
     for (i = 1; i < nsa; i++)
     {
-        atoms->atom[index[nsa*ei+i]].q = 0;
+        atoms->atom[index[nsa * ei + i]].q = 0;
     }
 
     /* Mark all solvent molecules within rmin as unavailable for substitution */
     if (rmin > 0)
     {
-        rmin2 = rmin*rmin;
+        rmin2 = rmin * rmin;
         for (i = 0; (i < nw); i++)
         {
             if (!bSet[i])
             {
-                pbc_dx(pbc, x[index[nsa*ei]], x[index[nsa*i]], dx);
+                pbc_dx(pbc, x[index[nsa * ei]], x[index[nsa * i]], dx);
                 if (iprod(dx, dx) < rmin2)
                 {
                     bSet[i] = TRUE;
@@ -127,7 +126,7 @@ static char *aname(const char *mname)
     int   i;
 
     str = gmx_strdup(mname);
-    i   = std::strlen(str)-1;
+    i   = std::strlen(str) - 1;
     while (i > 1 && (std::isdigit(str[i]) || (str[i] == '+') || (str[i] == '-')))
     {
         str[i] = '\0';
@@ -142,7 +141,7 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
                const char *p_name, const char *n_name)
 {
     int    i, j, k, r, np, nn, starta, startr, npi, nni;
-    rvec  *xt;
+    rvec * xt;
     char **pptr = nullptr, **nptr = nullptr, **paptr = nullptr, **naptr = nullptr;
 
     snew(xt, atoms->nr);
@@ -158,7 +157,7 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
         {
             for (k = 0; k < nsa; k++)
             {
-                copy_rvec(x[index[nsa*i+k]], xt[j++]);
+                copy_rvec(x[index[nsa * i + k]], xt[j++]);
             }
         }
         else if (r > 0)
@@ -171,10 +170,10 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
         }
     }
 
-    if (np+nn > 0)
+    if (np + nn > 0)
     {
         /* Put the positive and negative ions at the end */
-        starta = index[nsa*(nw - np - nn)];
+        starta = index[nsa * (nw - np - nn)];
         startr = atoms->atom[starta].resind;
 
         if (np)
@@ -198,9 +197,9 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
             r = repl[i];
             if (r > 0)
             {
-                j = starta+npi;
-                k = startr+npi;
-                copy_rvec(x[index[nsa*i]], xt[j]);
+                j = starta + npi;
+                k = startr + npi;
+                copy_rvec(x[index[nsa * i]], xt[j]);
                 atoms->atomname[j]     = paptr;
                 atoms->atom[j].resind  = k;
                 atoms->resinfo[k].name = pptr;
@@ -208,23 +207,23 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
             }
             else if (r < 0)
             {
-                j = starta+np+nni;
-                k = startr+np+nni;
-                copy_rvec(x[index[nsa*i]], xt[j]);
+                j = starta + np + nni;
+                k = startr + np + nni;
+                copy_rvec(x[index[nsa * i]], xt[j]);
                 atoms->atomname[j]     = naptr;
                 atoms->atom[j].resind  = k;
                 atoms->resinfo[k].name = nptr;
                 nni++;
             }
         }
-        for (i = index[nsa*nw-1]+1; i < atoms->nr; i++)
+        for (i = index[nsa * nw - 1] + 1; i < atoms->nr; i++)
         {
-            j                  = i-(nsa-1)*(np+nn);
+            j                  = i - (nsa - 1) * (np + nn);
             atoms->atomname[j] = atoms->atomname[i];
             atoms->atom[j]     = atoms->atom[i];
             copy_rvec(x[i], xt[j]);
         }
-        atoms->nr -= (nsa-1)*(np+nn);
+        atoms->nr -= (nsa - 1) * (np + nn);
 
         /* Copy the new positions back */
         for (i = index[0]; i < atoms->nr; i++)
@@ -238,14 +237,14 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
 static void update_topol(const char *topinout, int p_num, int n_num,
                          const char *p_name, const char *n_name, char *grpname)
 {
-    FILE    *fpin, *fpout;
+    FILE *   fpin, *fpout;
     char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = nullptr;
     int      line, i, nmol_line, sol_line, nsol_last;
     gmx_bool bMolecules;
     char     temporary_filename[STRLEN];
 
     printf("\nProcessing topology\n");
-    fpin  = gmx_ffopen(topinout, "r");
+    fpin = gmx_ffopen(topinout, "r");
     std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
     fpout = gmx_fopen_temporary(temporary_filename);
 
@@ -271,9 +270,9 @@ static void update_topol(const char *topinout, int p_num, int n_num,
                 temp[0] = '\0';
             }
             rtrim(buf2);
-            if (buf2[std::strlen(buf2)-1] == ']')
+            if (buf2[std::strlen(buf2) - 1] == ']')
             {
-                buf2[std::strlen(buf2)-1] = '\0';
+                buf2[std::strlen(buf2) - 1] = '\0';
                 ltrim(buf2);
                 rtrim(buf2);
                 bMolecules = (gmx_strcasecmp(buf2, "molecules") == 0);
@@ -294,7 +293,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
                 sscanf(buf, "%*s %d", &nsol_last);
             }
             /* Store this molecules section line */
-            srenew(mol_line, nmol_line+1);
+            srenew(mol_line, nmol_line + 1);
             mol_line[nmol_line] = gmx_strdup(buf);
             nmol_line++;
         }
@@ -306,10 +305,10 @@ static void update_topol(const char *topinout, int p_num, int n_num,
         gmx_ffclose(fpout);
         gmx_fatal(FARGS, "No line with moleculetype '%s' found the [ molecules ] section of file '%s'", grpname, topinout);
     }
-    if (nsol_last < p_num+n_num)
+    if (nsol_last < p_num + n_num)
     {
         gmx_ffclose(fpout);
-        gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname, topinout, nsol_last, p_num+n_num);
+        gmx_fatal(FARGS, "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' has less solvent molecules (%d) than were replaced (%d)", grpname, topinout, nsol_last, p_num + n_num);
     }
 
     /* Print all the molecule entries */
@@ -323,7 +322,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
         {
             printf("Replacing %d solute molecules in topology file (%s) "
                    " by %d %s and %d %s ions.\n",
-                   p_num+n_num, topinout, p_num, p_name, n_num, n_name);
+                   p_num + n_num, topinout, p_num, p_name, n_num, n_name);
             nsol_last -= p_num + n_num;
             if (nsol_last > 0)
             {
@@ -346,7 +345,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
 
 int gmx_genion(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] randomly replaces solvent molecules with monoatomic ions.",
         "The group of solvent molecules should be continuous and all molecules",
         "should have the same number of atoms.",
@@ -361,7 +360,7 @@ int gmx_genion(int argc, char *argv[])
         "added, without sign, for the uncommon states only.[PAR]",
         "For larger ions, e.g. sulfate we recommended using [gmx-insert-molecules]."
     };
-    const char        *bugs[] = {
+    const char *       bugs[] = {
         "If you specify a salt concentration existing ions are not taken into "
         "account. In effect you therefore specify the amount of salt to be added.",
     };
@@ -384,17 +383,17 @@ int gmx_genion(int argc, char *argv[])
         { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
     t_topology         top;
-    rvec              *x, *v;
+    rvec *             x, *v;
     real               vol, qtot;
     matrix             box;
     t_atoms            atoms;
     t_pbc              pbc;
-    int               *repl, ePBC;
-    int               *index;
-    char              *grpname;
-    gmx_bool          *bSet;
+    int *              repl, ePBC;
+    int *              index;
+    char *             grpname;
+    gmx_bool *         bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
-    gmx_output_env_t  *oenv;
+    gmx_output_env_t * oenv;
     t_filenm           fnm[] = {
         { efTPR, nullptr,  nullptr,      ffREAD  },
         { efNDX, nullptr,  nullptr,      ffOPTRD },
@@ -437,13 +436,13 @@ int gmx_genion(int argc, char *argv[])
     {
         /* Compute number of ions to be added */
         vol   = det(box);
-        nsalt = std::round(conc*vol*AVOGADRO/1e24);
-        p_num = abs(nsalt*n_q);
-        n_num = abs(nsalt*p_q);
+        nsalt = std::round(conc * vol * AVOGADRO / 1e24);
+        p_num = abs(nsalt * n_q);
+        n_num = abs(nsalt * p_q);
     }
     if (bNeutral)
     {
-        int qdelta = p_num*p_q + n_num*n_q + iqtot;
+        int qdelta = p_num * p_q + n_num * n_q + iqtot;
 
         /* Check if the system is neutralizable
          * is (qdelta == p_q*p_num + n_q*n_num) solvable for p_num and n_num? */
@@ -481,17 +480,17 @@ int gmx_genion(int argc, char *argv[])
         get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nwa, &index, &grpname);
         for (i = 1; i < nwa; i++)
         {
-            if (index[i] != index[i-1]+1)
+            if (index[i] != index[i - 1] + 1)
             {
                 gmx_fatal(FARGS, "The solvent group %s is not continuous: "
                           "index[%d]=%d, index[%d]=%d",
-                          grpname, i, index[i-1]+1, i+1, index[i]+1);
+                          grpname, i, index[i - 1] + 1, i + 1, index[i] + 1);
             }
         }
         nsa = 1;
-        while ((nsa < nwa) &&
-               (atoms.atom[index[nsa]].resind ==
-                atoms.atom[index[nsa-1]].resind))
+        while ((nsa < nwa)
+               && (atoms.atom[index[nsa]].resind
+                   == atoms.atom[index[nsa - 1]].resind))
         {
             nsa++;
         }
@@ -500,9 +499,9 @@ int gmx_genion(int argc, char *argv[])
             gmx_fatal(FARGS, "Your solvent group size (%d) is not a multiple of %d",
                       nwa, nsa);
         }
-        nw = nwa/nsa;
+        nw = nwa / nsa;
         fprintf(stderr, "Number of (%d-atomic) solvent molecules: %d\n", nsa, nw);
-        if (p_num+n_num > nw)
+        if (p_num + n_num > nw)
         {
             gmx_fatal(FARGS, "Not enough solvent for adding ions");
         }

@@ -115,7 +115,7 @@ namespace gmx
  *
  * \tparam RealType Floating-point type, real by default in GROMACS.
  */
-template<class RealType = real>
+template <class RealType = real>
 class GammaDistribution
 {
     public:
@@ -126,9 +126,9 @@ class GammaDistribution
         class param_type
         {
             /*! \brief First parameter of gamma distribution */
-            result_type  alpha_;
+            result_type alpha_;
             /*! \brief Second parameter of gamma distribution */
-            result_type  beta_;
+            result_type beta_;
 
             public:
                 /*! \brief Reference back to the distribution class */
@@ -151,8 +151,7 @@ class GammaDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator==(const param_type &x) const
+                bool operator==(const param_type &x) const
                 {
                     return alpha_ == x.alpha_ && beta_ == x.beta_;
                 }
@@ -161,8 +160,7 @@ class GammaDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
+                bool operator!=(const param_type &x) const { return !operator==(x); }
         };
 
     public:
@@ -182,8 +180,7 @@ class GammaDistribution
         explicit GammaDistribution(const param_type &param) : param_(param) {}
 
         /*! \brief Flush all internal saved values  */
-        void
-        reset() {}
+        void reset() {}
 
         /*! \brief Return values from gamma distribution with internal parameters
          *
@@ -191,9 +188,8 @@ class GammaDistribution
          *
          *  \param  g     Random engine
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
+        template <class Rng>
+        result_type operator()(Rng &g) { return (*this)(g, param_); }
 
         /*! \brief Return value from gamma distribution with given parameters
          *
@@ -202,13 +198,12 @@ class GammaDistribution
          *  \param  g     Random engine
          *  \param  param Parameters to use
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        template <class Rng>
+        result_type operator()(Rng &g, const param_type &param)
         {
-            result_type                            alpha = param.alpha();
-            UniformRealDistribution<result_type>   uniformDist(0, 1);
-            ExponentialDistribution<result_type>   expDist;
+            result_type                          alpha = param.alpha();
+            UniformRealDistribution<result_type> uniformDist(0, 1);
+            ExponentialDistribution<result_type> expDist;
 
             result_type x;
 
@@ -229,8 +224,8 @@ class GammaDistribution
 
                     if (w != 0)
                     {
-                        const result_type y = std::sqrt(c / w) *
-                            (u - result_type(0.5));
+                        const result_type y = std::sqrt(c / w)
+                            * (u - result_type(0.5));
                         x = b + y;
 
                         if (x >= 0)
@@ -267,7 +262,7 @@ class GammaDistribution
                     }
                     else
                     {
-                        const result_type e = -std::log((1.0 - u)/alpha);
+                        const result_type e = -std::log((1.0 - u) / alpha);
                         x = std::pow(1.0 - alpha + alpha * e, 1.0 / alpha);
 
                         if (x <= e + es)
@@ -281,38 +276,32 @@ class GammaDistribution
         }
 
         /*! \brief Return the first parameter of gamma distribution */
-        result_type
-        alpha() const { return param_.alpha(); }
+        result_type alpha() const { return param_.alpha(); }
 
         /*! \brief Return the second parameter of gamma distribution */
-        result_type
-        beta() const { return param_.beta(); }
+        result_type beta() const { return param_.beta(); }
 
         /*! \brief Return the full parameter class of gamma distribution */
         param_type param() const { return param_; }
 
         /*! \brief Smallest value that can be returned from gamma distribution */
-        result_type
-        min() const { return 0; }
+        result_type min() const { return 0; }
 
         /*! \brief Largest value that can be returned from gamma distribution */
-        result_type
-        max() const { return std::numeric_limits<result_type>::infinity(); }
+        result_type max() const { return std::numeric_limits<result_type>::infinity(); }
 
         /*! \brief True if two gamma distributions will produce the same values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator==(const GammaDistribution &x) const
+        bool operator==(const GammaDistribution &x) const
         { return param_ == x.param_; }
 
         /*! \brief True if two gamma distributions will produce different values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator!=(const GammaDistribution &x) const
+        bool operator!=(const GammaDistribution &x) const
         { return !operator==(x); }
 
     private:

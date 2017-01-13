@@ -44,7 +44,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
+typedef struct
+{
     char c1; /* should all be non-zero (and printable and not '"') */
     char c2; /*
               * should all be zero (single char color names: smaller xpm's)
@@ -54,20 +55,22 @@ typedef struct {
 
 typedef short t_matelmt;
 
-typedef struct {
+typedef struct
+{
     t_xpmelmt   code; /* see comment for t_xpmelmt */
     const char *desc;
     t_rgb       rgb;
 } t_mapping;
 
-#define MAT_SPATIAL_X (1<<0)
-#define MAT_SPATIAL_Y (1<<1)
+#define MAT_SPATIAL_X (1 << 0)
+#define MAT_SPATIAL_Y (1 << 1)
 /* Defines if x and y are spatial dimensions,
  * when not, there are n axis ticks at the middle of the elements,
  * when set, there are n+1 axis ticks at the edges of the elements.
  */
 
-typedef struct {
+typedef struct
+{
     unsigned int flags; /* The possible flags are defined above */
     int          nx, ny;
     int          y0;
@@ -76,11 +79,11 @@ typedef struct {
     char         label_x[256];
     char         label_y[256];
     gmx_bool     bDiscrete;
-    real        *axis_x;
-    real        *axis_y;
-    t_matelmt  **matrix;
+    real *       axis_x;
+    real *       axis_y;
+    t_matelmt ** matrix;
     int          nmap;
-    t_mapping   *map;
+    t_mapping *  map;
 } t_matrix;
 /* title      matrix title
  * legend     label for the continuous legend

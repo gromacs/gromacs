@@ -68,10 +68,10 @@ static int strip_dssp(char *dsspfile, int nres,
                       const gmx_output_env_t *oenv)
 {
     static gmx_bool bFirst = TRUE;
-    static char    *ssbuf;
-    FILE           *tapeout;
+    static char *   ssbuf;
+    FILE *          tapeout;
     static int      xsize, frame;
-    char            buf[STRLEN+1];
+    char            buf[STRLEN + 1];
     char            SSTP;
     int             i, nr, iacc, nresidues;
     int             naccf, naccb; /* Count hydrophobic and hydrophilic residues */
@@ -84,8 +84,7 @@ static int strip_dssp(char *dsspfile, int nres,
     do
     {
         fgets2(buf, STRLEN, tapeout);
-    }
-    while (std::strstr(buf, "KAPPA") == nullptr);
+    } while (std::strstr(buf, "KAPPA") == nullptr);
     if (bFirst)
     {
         /* Since we also have empty lines in the dssp output (temp) file,
@@ -94,7 +93,7 @@ static int strip_dssp(char *dsspfile, int nres,
          * we allocate 2*nres-1, since for each chain there is a
          * separating line in the temp file. (At most each residue
          * could have been defined as a separate chain.) */
-        snew(ssbuf, 2*nres-1);
+        snew(ssbuf, 2 * nres - 1);
     }
 
     iaccb     = iaccf = 0;
@@ -154,7 +153,7 @@ static int strip_dssp(char *dsspfile, int nres,
         snew(mat->axis_y, nr);
         for (i = 0; i < nr; i++)
         {
-            mat->axis_y[i] = i+1;
+            mat->axis_y[i] = i + 1;
         }
         mat->axis_x = nullptr;
         mat->matrix = nullptr;
@@ -181,7 +180,7 @@ static int strip_dssp(char *dsspfile, int nres,
 
     if (fTArea)
     {
-        fprintf(fTArea, "%10g  %10g  %10g\n", t, 0.01*iaccb, 0.01*iaccf);
+        fprintf(fTArea, "%10g  %10g  %10g\n", t, 0.01 * iaccb, 0.01 * iaccf);
     }
     gmx_ffclose(tapeout);
 
@@ -193,9 +192,9 @@ static int strip_dssp(char *dsspfile, int nres,
 
 static gmx_bool *bPhobics(t_atoms *atoms)
 {
-    int         i, nb;
-    char      **cb;
-    gmx_bool   *bb;
+    int       i, nb;
+    char **   cb;
+    gmx_bool *bb;
 
 
     nb = get_lines("phbres.dat", &cb);
@@ -215,7 +214,7 @@ static void check_oo(t_atoms *atoms)
 {
     char *OOO;
 
-    int   i;
+    int i;
 
     OOO = gmx_strdup("O");
 
@@ -239,10 +238,10 @@ static void check_oo(t_atoms *atoms)
 static void norm_acc(t_atoms *atoms, int nres,
                      real av_area[], real norm_av_area[])
 {
-    int     i, n, n_surf;
+    int i, n, n_surf;
 
     char    surffn[] = "surface.dat";
-    char  **surf_res, **surf_lines;
+    char ** surf_res, **surf_lines;
     double *surf;
 
     n_surf = get_lines(surffn, &surf_lines);
@@ -271,8 +270,8 @@ static void norm_acc(t_atoms *atoms, int nres,
 
 void prune_ss_legend(t_matrix *mat)
 {
-    gmx_bool  *present;
-    int       *newnum;
+    gmx_bool * present;
+    int *      newnum;
     int        i, r, f, newnmap;
     t_mapping *newmap;
 
@@ -297,7 +296,7 @@ void prune_ss_legend(t_matrix *mat)
             newnum[i] = newnmap;
             newnmap++;
             srenew(newmap, newnmap);
-            newmap[newnmap-1] = mat->map[i];
+            newmap[newnmap - 1] = mat->map[i];
         }
     }
     if (newnmap != mat->nmap)
@@ -333,7 +332,7 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
             }
         }
         fp   = gmx_ffopen(fn, "w");
-        nlev = static_cast<int>(hi-lo+1);
+        nlev = static_cast<int>(hi - lo + 1);
         write_xpm(fp, 0, "Solvent Accessible Surface", "Surface (A^2)",
                   "Time", "Residue Index", nframe, nres,
                   mat->axis_x, mat->axis_y, accr, lo, hi, rlo, rhi, &nlev);
@@ -344,8 +343,8 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
 void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
                 const gmx_output_env_t *oenv)
 {
-    FILE        *fp;
-    t_mapping   *map;
+    FILE *       fp;
+    t_mapping *  map;
     int          f, r, *count, *total, ss_count, total_count;
     size_t       s;
     const char** leg;
@@ -353,11 +352,11 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     map = mat->map;
     snew(count, mat->nmap);
     snew(total, mat->nmap);
-    snew(leg, mat->nmap+1);
+    snew(leg, mat->nmap + 1);
     leg[0] = "Structure";
     for (s = 0; s < (size_t)mat->nmap; s++)
     {
-        leg[s+1] = gmx_strdup(map[s].desc);
+        leg[s + 1] = gmx_strdup(map[s].desc);
     }
 
     fp = xvgropen(outfile, "Secondary Structure",
@@ -381,7 +380,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
         }
     }
     fprintf(fp, "\"\n");
-    xvgr_legend(fp, mat->nmap+1, leg, oenv);
+    xvgr_legend(fp, mat->nmap + 1, leg, oenv);
 
     total_count = 0;
     for (s = 0; s < (size_t)mat->nmap; s++)
@@ -438,7 +437,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 
 int gmx_do_dssp(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] ",
         "reads a trajectory file and computes the secondary structure for",
         "each time frame ",
@@ -486,33 +485,33 @@ int gmx_do_dssp(int argc, char *argv[])
           "DSSP major version. Syntax changed with version 2"}
     };
 
-    t_trxstatus       *status;
-    FILE              *tapein;
-    FILE              *ss, *acc, *fTArea, *tmpf;
-    const char        *fnSCount, *fnArea, *fnTArea, *fnAArea;
-    const char        *leg[] = { "Phobic", "Phylic" };
-    t_topology         top;
-    int                ePBC;
-    t_atoms           *atoms;
-    t_matrix           mat;
-    int                nres, nr0, naccr, nres_plus_separators;
-    gmx_bool          *bPhbres, bDoAccSurf;
-    real               t;
-    int                i, j, natoms, nframe = 0;
-    matrix             box = {{0}};
-    int                gnx;
-    char              *grpnm, *ss_str;
-    int               *index;
-    rvec              *xp, *x;
-    int               *average_area;
-    real             **accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
-    char               pdbfile[32], tmpfile[32];
-    char               dssp[256];
-    const char        *dptr;
-    gmx_output_env_t  *oenv;
-    gmx_rmpbc_t        gpbc = nullptr;
+    t_trxstatus *     status;
+    FILE *            tapein;
+    FILE *            ss, *acc, *fTArea, *tmpf;
+    const char *      fnSCount, *fnArea, *fnTArea, *fnAArea;
+    const char *      leg[] = { "Phobic", "Phylic" };
+    t_topology        top;
+    int               ePBC;
+    t_atoms *         atoms;
+    t_matrix          mat;
+    int               nres, nr0, naccr, nres_plus_separators;
+    gmx_bool *        bPhbres, bDoAccSurf;
+    real              t;
+    int               i, j, natoms, nframe = 0;
+    matrix            box = {{0}};
+    int               gnx;
+    char *            grpnm, *ss_str;
+    int *             index;
+    rvec *            xp, *x;
+    int *             average_area;
+    real **           accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
+    char              pdbfile[32], tmpfile[32];
+    char              dssp[256];
+    const char *      dptr;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = nullptr;
 
-    t_filenm           fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",   nullptr,      ffREAD },
         { efTPS, nullptr,   nullptr,      ffREAD },
         { efNDX, nullptr,   nullptr,      ffOPTRD },
@@ -653,9 +652,9 @@ int gmx_do_dssp(int argc, char *argv[])
         {
             naccr += 10;
             srenew(accr, naccr);
-            for (i = naccr-10; i < naccr; i++)
+            for (i = naccr - 10; i < naccr; i++)
             {
-                snew(accr[i], 2*atoms->nres-1);
+                snew(accr[i], 2 * atoms->nres - 1);
             }
         }
         gmx_rmpbc(gpbc, natoms, box, x);
@@ -682,8 +681,7 @@ int gmx_do_dssp(int argc, char *argv[])
         remove(tmpfile);
         remove(pdbfile);
         nframe++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trj(status);
     if (fTArea)
@@ -702,7 +700,7 @@ int gmx_do_dssp(int argc, char *argv[])
     if (opt2bSet("-ssdump", NFILE, fnm))
     {
         ss = opt2FILE("-ssdump", NFILE, fnm, "w");
-        snew(ss_str, nres+1);
+        snew(ss_str, nres + 1);
         fprintf(ss, "%d\n", nres);
         for (j = 0; j < mat.nx; j++)
         {
@@ -735,7 +733,7 @@ int gmx_do_dssp(int argc, char *argv[])
                            "Residue", "A\\S2", oenv);
             for (i = 0; (i < nres); i++)
             {
-                fprintf(acc, "%5d  %10g %10g\n", i+1, av_area[i], norm_av_area[i]);
+                fprintf(acc, "%5d  %10g %10g\n", i + 1, av_area[i], norm_av_area[i]);
             }
             xvgrclose(acc);
         }

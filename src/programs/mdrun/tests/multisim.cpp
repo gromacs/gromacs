@@ -85,7 +85,7 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
 
     const char *pcoupl = GetParam();
     // Do some different small numbers of steps in each simulation
-    int         numSteps = rank_ % 4;
+    int numSteps = rank_ % 4;
     organizeMdpFile(pcoupl, numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */

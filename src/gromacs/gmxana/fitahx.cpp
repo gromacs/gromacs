@@ -47,7 +47,7 @@
 
 static void my_calc_xcm(int nbb, int bbind[], rvec x[], rvec xcm)
 {
-    int    i, m, ai;
+    int i, m, ai;
 
     clear_rvec(xcm);
     for (i = 0; (i < nbb); i++)
@@ -99,9 +99,9 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
     for (i = 0; (i < nca); i++)
     {
         ai           = caindex[i];
-        xref[ai][XX] = rad*std::cos(phi0);
-        xref[ai][YY] = rad*std::sin(phi0);
-        xref[ai][ZZ] = d*i;
+        xref[ai][XX] = rad * std::cos(phi0);
+        xref[ai][YY] = rad * std::sin(phi0);
+        xref[ai][ZZ] = d * i;
 
         /* Set the mass to select that this Calpha contributes to fitting */
         mass[ai] = 10.0;
@@ -163,5 +163,5 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
             mass[ai] = 0.0;
         }
     }
-    return std::sqrt(trms/nca);
+    return std::sqrt(trms / nca);
 }

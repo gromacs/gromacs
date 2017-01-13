@@ -120,16 +120,16 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
                 : name(name), bDynamic(bDynamic)
             { }
 
-            std::string         name;
-            bool                bDynamic;
+            std::string name;
+            bool        bDynamic;
         };
 
-        std::string             fnm_;
-        std::vector<GroupInfo>  groups_;
-        FILE                   *fp_;
-        int                     currentGroup_;
-        int                     currentSize_;
-        bool                    bAnyWritten_;
+        std::string            fnm_;
+        std::vector<GroupInfo> groups_;
+        FILE *                 fp_;
+        int                    currentGroup_;
+        int                    currentSize_;
+        bool                   bAnyWritten_;
 };
 
 /********************************************************************
@@ -194,8 +194,7 @@ void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*heade
 }
 
 
-void
-IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     if (fp_ == nullptr)
     {
@@ -270,20 +269,20 @@ enum PdbAtomsSelection
     PdbAtomsSelection_Selected
 };
 //! String values corresponding to ResidueNumbering.
-const char *const     cResNumberEnum[] = { "number", "index" };
+const char *const cResNumberEnum[] = { "number", "index" };
 //! String values corresponding to PdbAtomsSelection.
-const char *const     cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
+const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
 
 class Select : public TrajectoryAnalysisModule
 {
     public:
         Select();
 
-        virtual void initOptions(IOptionsContainer          *options,
+        virtual void initOptions(IOptionsContainer *         options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+                                  const TopologyInformation &       top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -292,31 +291,31 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        SelectionList                       sel_;
+        SelectionList sel_;
 
-        std::string                         fnSize_;
-        std::string                         fnFrac_;
-        std::string                         fnIndex_;
-        std::string                         fnNdx_;
-        std::string                         fnMask_;
-        std::string                         fnOccupancy_;
-        std::string                         fnPDB_;
-        std::string                         fnLifetime_;
-        bool                                bTotNorm_;
-        bool                                bFracNorm_;
-        bool                                bResInd_;
-        bool                                bCumulativeLifetimes_;
-        ResidueNumbering                    resNumberType_;
-        PdbAtomsSelection                   pdbAtoms_;
+        std::string       fnSize_;
+        std::string       fnFrac_;
+        std::string       fnIndex_;
+        std::string       fnNdx_;
+        std::string       fnMask_;
+        std::string       fnOccupancy_;
+        std::string       fnPDB_;
+        std::string       fnLifetime_;
+        bool              bTotNorm_;
+        bool              bFracNorm_;
+        bool              bResInd_;
+        bool              bCumulativeLifetimes_;
+        ResidueNumbering  resNumberType_;
+        PdbAtomsSelection pdbAtoms_;
 
-        const TopologyInformation          *top_;
-        std::vector<int>                    totsize_;
-        AnalysisData                        sdata_;
-        AnalysisData                        cdata_;
-        AnalysisData                        idata_;
-        AnalysisData                        mdata_;
-        AnalysisDataAverageModulePointer    occupancyModule_;
-        AnalysisDataLifetimeModulePointer   lifetimeModule_;
+        const TopologyInformation *       top_;
+        std::vector<int>                  totsize_;
+        AnalysisData                      sdata_;
+        AnalysisData                      cdata_;
+        AnalysisData                      idata_;
+        AnalysisData                      mdata_;
+        AnalysisDataAverageModulePointer  occupancyModule_;
+        AnalysisDataLifetimeModulePointer lifetimeModule_;
 };
 
 Select::Select()
@@ -341,8 +340,7 @@ Select::Select()
 }
 
 
-void
-Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] writes out basic data about dynamic selections.",
@@ -465,8 +463,7 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
                            .description("Cumulate subintervals of longer intervals in -olt"));
 }
 
-void
-Select::optionsFinished(TrajectoryAnalysisSettings *settings)
+void Select::optionsFinished(TrajectoryAnalysisSettings *settings)
 {
     if (!fnPDB_.empty())
     {
@@ -475,9 +472,8 @@ Select::optionsFinished(TrajectoryAnalysisSettings *settings)
     }
 }
 
-void
-Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                     const TopologyInformation        &top)
+void Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation &       top)
 {
     bResInd_ = (resNumberType_ == ResidueNumbering_ByIndex);
 
@@ -597,16 +593,15 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-void
-Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                     TrajectoryAnalysisModuleData *pdata)
+void Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
+                          TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
     AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
     AnalysisDataHandle   idh = pdata->dataHandle(idata_);
     AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology          *top = top_->topology();
+    t_topology *         top = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -665,27 +660,25 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
 }
 
 
-void
-Select::finishAnalysis(int /*nframes*/)
+void Select::finishAnalysis(int /*nframes*/)
 {
 }
 
 
-void
-Select::writeOutput()
+void Select::writeOutput()
 {
     if (!fnPDB_.empty())
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
                            "Topology should have been loaded or an error given earlier");
-        t_atoms            atoms;
+        t_atoms atoms;
         atoms = top_->topology()->atoms;
-        t_pdbinfo         *pdbinfo;
+        t_pdbinfo *pdbinfo;
         snew(pdbinfo, atoms.nr);
-        const sfree_guard  pdbinfoGuard(pdbinfo);
+        const sfree_guard pdbinfoGuard(pdbinfo);
         if (atoms.havePdbInfo)
         {
-            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+            std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr * sizeof(*pdbinfo));
         }
         else
         {
@@ -700,7 +693,7 @@ Select::writeOutput()
         {
             for (int i = 0; i < sel_[g].posCount(); ++i)
             {
-                ConstArrayRef<int>                 atomIndices
+                ConstArrayRef<int> atomIndices
                     = sel_[g].position(i).atomIndices();
                 ConstArrayRef<int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
@@ -735,9 +728,9 @@ Select::writeOutput()
                     ConstArrayRef<int> atomIndices = sel_[g].atomIndices();
                     atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
                 }
-                std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
-                                                 atomIndicesSet.end());
-                t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
+                std::vector<int> allAtomIndices(atomIndicesSet.begin(),
+                                                atomIndicesSet.end());
+                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
                 write_trxframe_indexed(status, &fr, allAtomIndices.size(),
                                        allAtomIndices.data(), nullptr);
                 close_trx(status);
@@ -767,9 +760,9 @@ Select::writeOutput()
 
 }       // namespace
 
-const char SelectInfo::name[]             = "select";
-const char SelectInfo::shortDescription[] =
-    "Print general information about selections";
+const char SelectInfo::name[] = "select";
+const char SelectInfo::shortDescription[]
+    = "Print general information about selections";
 
 TrajectoryAnalysisModulePointer SelectInfo::create()
 {

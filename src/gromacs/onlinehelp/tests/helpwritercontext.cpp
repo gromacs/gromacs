@@ -63,9 +63,9 @@ namespace
 class HelpWriterContextTest : public gmx::test::StringTestBase
 {
     public:
-        void testFormatting(const std::string     &text,
-                            gmx::HelpOutputFormat  format,
-                            const char            *id)
+        void testFormatting(const std::string &   text,
+                            gmx::HelpOutputFormat format,
+                            const char *          id)
         {
             gmx::HelpWriterContext context(nullptr, format);
             std::string            result

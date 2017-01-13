@@ -75,8 +75,8 @@ void TestFileInputRedirector::addExistingFile(const char *filename)
     existingFiles_.insert(filename);
 }
 
-bool TestFileInputRedirector::fileExists(const char            *filename,
-                                         File::NotFoundHandler  onNotFound) const
+bool TestFileInputRedirector::fileExists(const char *          filename,
+                                         File::NotFoundHandler onNotFound) const
 {
     if (existingFiles_.count(filename) == 0)
     {
@@ -97,8 +97,8 @@ class TestFileOutputRedirector::Impl
         typedef std::shared_ptr<StringOutputStream> StringStreamPointer;
         typedef std::pair<std::string, StringStreamPointer> FileListEntry;
 
-        StringStreamPointer         stdoutStream_;
-        std::vector<FileListEntry>  fileList_;
+        StringStreamPointer        stdoutStream_;
+        std::vector<FileListEntry> fileList_;
 };
 
 /********************************************************************
@@ -124,8 +124,7 @@ TextOutputStream &TestFileOutputRedirector::standardOutput()
     return *impl_->stdoutStream_;
 }
 
-TextOutputStreamPointer
-TestFileOutputRedirector::openTextOutputFile(const char *filename)
+TextOutputStreamPointer TestFileOutputRedirector::openTextOutputFile(const char *filename)
 {
     Impl::StringStreamPointer stream(new StringOutputStream);
     impl_->fileList_.emplace_back(filename, stream);

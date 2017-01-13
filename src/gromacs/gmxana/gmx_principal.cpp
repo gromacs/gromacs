@@ -56,15 +56,14 @@
 #include "gromacs/utility/smalloc.h"
 
 
-void
-calc_principal_axes(const t_topology *top,
-                    rvec             *x,
-                    int              *index,
-                    int               n,
-                    matrix            axes,
-                    rvec              inertia)
+void calc_principal_axes(const t_topology *top,
+                         rvec *            x,
+                         int *             index,
+                         int               n,
+                         matrix            axes,
+                         rvec              inertia)
 {
-    rvec   xcm;
+    rvec xcm;
 
     sub_xcm(x, n, index, top->atoms.atom, xcm, FALSE);
     principal_comp(n, index, top->atoms.atom, x, axes, inertia);
@@ -72,7 +71,7 @@ calc_principal_axes(const t_topology *top,
 
 int gmx_principal(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *    desc[] = {
         "[THISMODULE] calculates the three principal axes of inertia for a group",
         "of atoms. NOTE: Old versions of GROMACS wrote the output data in a",
         "strange transposed way. As of GROMACS 5.0, the output file paxis1.dat",
@@ -80,32 +79,32 @@ int gmx_principal(int argc, char *argv[])
         "each frame, and similarly for the middle and minor axes in paxis2.dat",
         "and paxis3.dat."
     };
-    static gmx_bool   foo = FALSE;
+    static gmx_bool foo = FALSE;
 
-    t_pargs           pa[] = {
+    t_pargs      pa[] = {
         { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
     };
-    t_trxstatus      *status;
-    t_topology        top;
-    int               ePBC;
-    real              t;
-    rvec        *     x;
+    t_trxstatus *status;
+    t_topology   top;
+    int          ePBC;
+    real         t;
+    rvec *       x;
 
     int               natoms;
-    char             *grpname;
+    char *            grpname;
     int               i, gnx;
-    int              *index;
+    int *             index;
     rvec              moi;
-    FILE        *     axis1;
-    FILE        *     axis2;
-    FILE        *     axis3;
-    FILE        *     fmoi;
+    FILE *            axis1;
+    FILE *            axis2;
+    FILE *            axis3;
+    FILE *            fmoi;
     matrix            axes, box;
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
-    char   **         legend;
+    char **           legend;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",   nullptr,       ffREAD },
         { efTPS, nullptr,   nullptr,       ffREAD },
         { efNDX, nullptr,   nullptr,       ffOPTRD },
@@ -127,7 +126,7 @@ int gmx_principal(int argc, char *argv[])
     for (i = 0; i < DIM; i++)
     {
         snew(legend[i], STRLEN);
-        sprintf(legend[i], "%c component", 'X'+i);
+        sprintf(legend[i], "%c component", 'X' + i);
     }
 
     axis1 = xvgropen(opt2fn("-a1", NFILE, fnm), "Principal axis 1 (major axis)",
@@ -146,8 +145,8 @@ int gmx_principal(int argc, char *argv[])
     sprintf(legend[YY], "Axis 2 (middle)");
     sprintf(legend[ZZ], "Axis 3 (minor)");
 
-    fmoi  = xvgropen(opt2fn("-om", NFILE, fnm), "Moments of inertia around inertial axes",
-                     output_env_get_xvgr_tlabel(oenv), "I (au nm\\S2\\N)", oenv);
+    fmoi = xvgropen(opt2fn("-om", NFILE, fnm), "Moments of inertia around inertial axes",
+                    output_env_get_xvgr_tlabel(oenv), "I (au nm\\S2\\N)", oenv);
     xvgr_legend(fmoi, DIM, (const char **)legend, oenv);
 
     for (i = 0; i < DIM; i++)
@@ -174,8 +173,7 @@ int gmx_principal(int argc, char *argv[])
         fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[YY][XX], axes[YY][YY], axes[YY][ZZ]);
         fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[ZZ][XX], axes[ZZ][YY], axes[ZZ][ZZ]);
         fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

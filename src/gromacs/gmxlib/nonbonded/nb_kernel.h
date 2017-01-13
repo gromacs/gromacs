@@ -57,32 +57,32 @@ extern "C" {
  */
 typedef struct
 {
-    int                flags;
-    t_blocka *         exclusions;
-    real *             lambda;
-    real *             dvdl;
+    int        flags;
+    t_blocka * exclusions;
+    real *     lambda;
+    real *     dvdl;
 
     /* pointers to tables */
-    t_forcetable *     table_elec;
-    t_forcetable *     table_vdw;
-    t_forcetable *     table_elec_vdw;
+    t_forcetable * table_elec;
+    t_forcetable * table_vdw;
+    t_forcetable * table_elec_vdw;
 
     /* potentials */
-    real *             energygrp_elec;
-    real *             energygrp_vdw;
-    real *             energygrp_polarization;
+    real * energygrp_elec;
+    real * energygrp_vdw;
+    real * energygrp_polarization;
 }
 nb_kernel_data_t;
 
 
 typedef void
-    nb_kernel_t (t_nblist *                nlist,
-                 rvec *                    x,
-                 rvec *                    f,
-                 t_forcerec *              fr,
-                 t_mdatoms *               mdatoms,
-                 nb_kernel_data_t *        kernel_data,
-                 t_nrnb *                  nrnb);
+    nb_kernel_t (t_nblist *         nlist,
+                 rvec *             x,
+                 rvec *             f,
+                 t_forcerec *       fr,
+                 t_mdatoms *        mdatoms,
+                 nb_kernel_data_t * kernel_data,
+                 t_nrnb *           nrnb);
 
 
 /* Structure with a kernel pointer and settings. This cannot be abstract
@@ -116,24 +116,24 @@ typedef void
  */
 typedef struct nb_kernel_info
 {
-    nb_kernel_t *   kernelptr;
-    const char *    kernelname;
-    const char *    architecture;     /* e.g. "C", "SSE", "BlueGene", etc. */
+    nb_kernel_t * kernelptr;
+    const char *  kernelname;
+    const char *  architecture;       /* e.g. "C", "SSE", "BlueGene", etc. */
 
-    const char *    electrostatics;
-    const char *    electrostatics_modifier;
-    const char *    vdw;
-    const char *    vdw_modifier;
-    const char *    geometry;
-    const char *    other;  /* Any extra info you want/need to select a kernel */
-    const char *    vf;     /* "PotentialAndForce", "Potential", or "Force" */
+    const char * electrostatics;
+    const char * electrostatics_modifier;
+    const char * vdw;
+    const char * vdw_modifier;
+    const char * geometry;
+    const char * other;     /* Any extra info you want/need to select a kernel */
+    const char * vf;        /* "PotentialAndForce", "Potential", or "Force" */
 }
 nb_kernel_info_t;
 
 
 void
-nb_kernel_list_add_kernels(nb_kernel_info_t *   new_kernelinfo,
-                           int                  new_size);
+nb_kernel_list_add_kernels(nb_kernel_info_t * new_kernelinfo,
+                           int                new_size);
 
 int
 nb_kernel_list_hash_init(void);
@@ -156,15 +156,15 @@ nb_kernel_list_hash_init(void);
  * single invocation.
  */
 nb_kernel_t *
-nb_kernel_list_findkernel(FILE *              log,
-                          const char *        architecture,
-                          const char *        electrostatics,
-                          const char *        electrostatics_modifier,
-                          const char *        vdw,
-                          const char *        vdw_modifier,
-                          const char *        geometry,
-                          const char *        other,
-                          const char *        vf);
+nb_kernel_list_findkernel(FILE *       log,
+                          const char * architecture,
+                          const char * electrostatics,
+                          const char * electrostatics_modifier,
+                          const char * vdw,
+                          const char * vdw_modifier,
+                          const char * geometry,
+                          const char * other,
+                          const char * vf);
 
 
 

@@ -75,7 +75,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
             for (zi = 0; zi < dd_zones->n; zi++)
             {
-                ca1[zi] = dd->cgindex[dd_zones->cg_range[zi+1]];
+                ca1[zi] = dd->cgindex[dd_zones->cg_range[zi + 1]];
             }
             i = 0;
             for (zi = 0; zi < dd_zones->nizone && zi < dd_zones->n; zi++)
@@ -88,7 +88,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
                 }
                 while (i < nblist->nri && nblist->iinr[i] < ca1[zi])
                 {
-                    for (j = nblist->jindex[i]; (j < nblist->jindex[i+1]); j++)
+                    for (j = nblist->jindex[i]; (j < nblist->jindex[i + 1]); j++)
                     {
                         aj = nblist->jjnr[j];
                         zj = zj0;
@@ -117,16 +117,16 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
                 {
                     nii = 3;
                 }
-                nj = nblist->jindex[i+1] - nblist->jindex[i];
+                nj = nblist->jindex[i + 1] - nblist->jindex[i];
                 fprintf(out, "i: %d shift: %d gid: %d nj: %d\n",
                         ddglatnr(dd, nblist->iinr[i]),
                         nblist->shift[i], nblist->gid[i], nj);
                 for (ii = 0; ii < nii; ii++)
                 {
-                    for (j = nblist->jindex[i]; (j < nblist->jindex[i+1]); j++)
+                    for (j = nblist->jindex[i]; (j < nblist->jindex[i + 1]); j++)
                     {
                         fprintf(out, "  i: %5d  j: %5d\n",
-                                ddglatnr(dd, nblist->iinr[i]+ii),
+                                ddglatnr(dd, nblist->iinr[i] + ii),
                                 ddglatnr(dd, nblist->jjnr[j]));
                     }
                 }
@@ -140,7 +140,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
 void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)
 {
-    int  n, i;
+    int n, i;
 
     fprintf(out, "Neighborlist:\n");
 

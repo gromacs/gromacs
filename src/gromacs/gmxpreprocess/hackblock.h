@@ -45,7 +45,8 @@
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
-enum {
+enum
+{
     ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsCMAP, ebtsNR
 };
 extern const char *btsNames[ebtsNR];
@@ -55,9 +56,10 @@ extern const int   btsNiatoms[ebtsNR];
    free/clear/copy/merge_t_* functions stay updated */
 
 /* BONDEDS */
-typedef struct {
-    char  *a[MAXATOMLIST]; /* atom names */
-    char  *s;              /* optional define string which gets copied from
+typedef struct
+{
+    char *a[MAXATOMLIST];  /* atom names */
+    char *s;               /* optional define string which gets copied from
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
     gmx_bool match;        /* boolean to mark that the entry has been found */
@@ -68,67 +70,72 @@ typedef struct {
     char*   &am() { return a[4]; }
 } t_rbonded;
 
-typedef struct {
+typedef struct
+{
     int        type;     /* The type of bonded interaction */
     int        nb;       /* number of bondeds */
     t_rbonded *b;        /* bondeds */
 } t_rbondeds;
 
 /* RESIDUES (rtp) */
-typedef struct {
-    char         *resname;
+typedef struct
+{
+    char *resname;
     /* The base file name this rtp entry was read from */
-    char         *filebase;
+    char *filebase;
     /* atom data */
-    int           natom;
-    t_atom       *atom;
-    char       ***atomname;
-    int          *cgnr;
+    int     natom;
+    t_atom *atom;
+    char ***atomname;
+    int *   cgnr;
     /* Bonded interaction setup */
-    gmx_bool      bKeepAllGeneratedDihedrals;
-    int           nrexcl;
-    gmx_bool      bGenerateHH14Interactions;
-    gmx_bool      bRemoveDihedralIfWithImproper;
+    gmx_bool bKeepAllGeneratedDihedrals;
+    int      nrexcl;
+    gmx_bool bGenerateHH14Interactions;
+    gmx_bool bRemoveDihedralIfWithImproper;
     /* list of bonded interactions to add */
-    t_rbondeds    rb[ebtsNR];
+    t_rbondeds rb[ebtsNR];
 } t_restp;
 
 /* Block to hack residues */
-typedef struct {
-    int      nr;      /* Number of atoms to hack    */
-    char    *oname;   /* Old name                   */
-    char    *nname;   /* New name                   */
+typedef struct
+{
+    int   nr;         /* Number of atoms to hack    */
+    char *oname;      /* Old name                   */
+    char *nname;      /* New name                   */
     /* the type of hack depends on the setting of oname and nname:
      * if oname==NULL                we're adding, must have tp>0 also!
      * if oname!=NULL && nname==NULL we're deleting
      * if oname!=NULL && nname!=NULL we're replacing
      */
-    t_atom     *atom; /* New atom data              */
-    int         cgnr; /* chargegroup number. if not read will be NOTSET */
-    int         tp;   /* Type of attachment (1..11) */
-    int         nctl; /* How many control atoms there are */
-    char       *a[4]; /* Control atoms i,j,k,l	  */
-    gmx_bool    bAlreadyPresent;
-    gmx_bool    bXSet;
-    rvec        newx; /* calculated new position    */
-    int         newi; /* new atom index number (after additions) */
+    t_atom * atom;    /* New atom data              */
+    int      cgnr;    /* chargegroup number. if not read will be NOTSET */
+    int      tp;      /* Type of attachment (1..11) */
+    int      nctl;    /* How many control atoms there are */
+    char *   a[4];    /* Control atoms i,j,k,l	  */
+    gmx_bool bAlreadyPresent;
+    gmx_bool bXSet;
+    rvec     newx;    /* calculated new position    */
+    int      newi;    /* new atom index number (after additions) */
     char*      &ai() { return a[0]; }
     char*      &aj() { return a[1]; }
     char*      &ak() { return a[2]; }
     char*      &al() { return a[3]; }
 } t_hack;
 
-typedef struct {
-    char      *name;     /* Name of hack block (residue or terminus) */
-    char      *filebase; /* The base file name this entry was read from */
-    int        nhack;    /* Number of atoms to hack                  */
-    int        maxhack;  /* used for efficient srenew-ing            */
-    t_hack    *hack;     /* Hack list                                */
+typedef struct
+{
+    char *  name;        /* Name of hack block (residue or terminus) */
+    char *  filebase;    /* The base file name this entry was read from */
+    int     nhack;       /* Number of atoms to hack                  */
+    int     maxhack;     /* used for efficient srenew-ing            */
+    t_hack *hack;        /* Hack list                                */
     /* list of bonded interactions to add */
     t_rbondeds rb[ebtsNR];
 } t_hackblock;
 
-typedef struct {
+typedef struct
+{
     char *res1, *res2;
     char *atom1, *atom2;
     char *newres1, *newres2;

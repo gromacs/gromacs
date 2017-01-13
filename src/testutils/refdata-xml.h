@@ -76,7 +76,7 @@ readReferenceDataFile(const std::string &path);
  *
  * \ingroup module_testutils
  */
-void writeReferenceDataFile(const std::string        &path,
+void writeReferenceDataFile(const std::string &       path,
                             const ReferenceDataEntry &root);
 //! \endcond
 

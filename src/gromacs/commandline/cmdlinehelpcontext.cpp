@@ -88,13 +88,13 @@ class CommandLineHelpContext::Impl
         }
 
         //! Wrapped lower-level context.
-        HelpWriterContext      writerContext_;
+        HelpWriterContext writerContext_;
         //! Display name for the module for which help is written.
-        std::string            moduleDisplayName_;
+        std::string moduleDisplayName_;
         //! Shell completion writer (`NULL` if not doing completions).
         ShellCompletionWriter *completionWriter_;
         //! Whether hidden options should be shown in help output.
-        bool                   bHidden_;
+        bool bHidden_;
 };
 
 CommandLineHelpContext::CommandLineHelpContext(

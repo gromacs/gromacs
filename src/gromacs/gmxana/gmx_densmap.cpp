@@ -60,7 +60,7 @@
 
 int gmx_densmap(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
         "The output [REF].xpm[ref] file can be visualized with for instance xv",
@@ -100,7 +100,7 @@ int gmx_densmap(int argc, char *argv[])
     static const char *eaver[] = { nullptr, "z", "y", "x", nullptr };
     static const char *eunit[] = { nullptr, "nm-3", "nm-2", "count", nullptr };
 
-    t_pargs            pa[] = {
+    t_pargs           pa[] = {
         { "-bin", FALSE, etREAL, {&bin},
           "Grid size (nm)" },
         { "-aver", FALSE, etENUM, {eaver},
@@ -128,27 +128,27 @@ int gmx_densmap(int argc, char *argv[])
         { "-dmax", FALSE, etREAL, {&dmax},
           "Maximum density in output (0 means calculate it)"},
     };
-    gmx_bool           bXmin, bXmax, bRadial;
-    FILE              *fp;
-    t_trxstatus       *status;
-    t_topology         top;
-    int                ePBC = -1;
-    rvec              *x, xcom[2], direction, center, dx;
-    matrix             box;
-    real               t, m, mtot;
-    t_pbc              pbc;
-    int                cav = 0, c1 = 0, c2 = 0;
-    char             **grpname, buf[STRLEN];
-    const char        *unit;
-    int                i, j, k, l, ngrps, anagrp, *gnx = nullptr, nindex, nradial = 0, nfr, nmpower;
-    int              **ind = nullptr, *index;
-    real             **grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
-    real               invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
-    int                nlev   = 51;
-    t_rgb              rlo    = {1, 1, 1}, rhi = {0, 0, 0};
-    gmx_output_env_t  *oenv;
-    const char        *label[] = { "x (nm)", "y (nm)", "z (nm)" };
-    t_filenm           fnm[]   = {
+    gmx_bool          bXmin, bXmax, bRadial;
+    FILE *            fp;
+    t_trxstatus *     status;
+    t_topology        top;
+    int               ePBC = -1;
+    rvec *            x, xcom[2], direction, center, dx;
+    matrix            box;
+    real              t, m, mtot;
+    t_pbc             pbc;
+    int               cav = 0, c1 = 0, c2 = 0;
+    char **           grpname, buf[STRLEN];
+    const char *      unit;
+    int               i, j, k, l, ngrps, anagrp, *gnx = nullptr, nindex, nradial = 0, nfr, nmpower;
+    int **            ind = nullptr, *index;
+    real **           grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
+    real              invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
+    int               nlev   = 51;
+    t_rgb             rlo    = {1, 1, 1}, rhi = {0, 0, 0};
+    gmx_output_env_t *oenv;
+    const char *      label[] = { "x (nm)", "y (nm)", "z (nm)" };
+    t_filenm          fnm[]   = {
         { efTRX, "-f",   nullptr,       ffREAD },
         { efTPS, nullptr,   nullptr,       ffOPTRD },
         { efNDX, nullptr,   nullptr,       ffOPTRD },
@@ -156,7 +156,7 @@ int gmx_densmap(int argc, char *argv[])
         { efXPM, "-o",   "densmap",   ffWRITE }
     };
 #define NFILE asize(fnm)
-    int                npargs;
+    int npargs;
 
     npargs = asize(pa);
 
@@ -241,22 +241,22 @@ int gmx_densmap(int argc, char *argv[])
     {
         if (n1 == 0)
         {
-            n1 = static_cast<int>(box[c1][c1]/bin + 0.5);
+            n1 = static_cast<int>(box[c1][c1] / bin + 0.5);
         }
         if (n2 == 0)
         {
-            n2 = static_cast<int>(box[c2][c2]/bin + 0.5);
+            n2 = static_cast<int>(box[c2][c2] / bin + 0.5);
         }
     }
     else
     {
-        n1      = static_cast<int>(2*amax/bin + 0.5);
-        nradial = static_cast<int>(rmax/bin + 0.5);
-        invspa  = n1/(2*amax);
-        invspz  = nradial/rmax;
+        n1      = static_cast<int>(2 * amax / bin + 0.5);
+        nradial = static_cast<int>(rmax / bin + 0.5);
+        invspa  = n1 / (2 * amax);
+        invspz  = nradial / rmax;
         if (bMirror)
         {
-            n2 = 2*nradial;
+            n2 = 2 * nradial;
         }
         else
         {
@@ -279,22 +279,22 @@ int gmx_densmap(int argc, char *argv[])
         {
             box1      += box[c1][c1];
             box2      += box[c2][c2];
-            invcellvol = n1*n2;
+            invcellvol = n1 * n2;
             if (nmpower == -3)
             {
                 invcellvol /= det(box);
             }
             else if (nmpower == -2)
             {
-                invcellvol /= box[c1][c1]*box[c2][c2];
+                invcellvol /= box[c1][c1] * box[c2][c2];
             }
             for (i = 0; i < nindex; i++)
             {
                 j = index[i];
-                if ((!bXmin || x[j][cav] >= xmin) &&
-                    (!bXmax || x[j][cav] <= xmax))
+                if ((!bXmin || x[j][cav] >= xmin)
+                    && (!bXmax || x[j][cav] <= xmax))
                 {
-                    m1 = x[j][c1]/box[c1][c1];
+                    m1 = x[j][c1] / box[c1][c1];
                     if (m1 >= 1)
                     {
                         m1 -= 1;
@@ -303,7 +303,7 @@ int gmx_densmap(int argc, char *argv[])
                     {
                         m1 += 1;
                     }
-                    m2 = x[j][c2]/box[c2][c2];
+                    m2 = x[j][c2] / box[c2][c2];
                     if (m2 >= 1)
                     {
                         m2 -= 1;
@@ -312,7 +312,7 @@ int gmx_densmap(int argc, char *argv[])
                     {
                         m2 += 1;
                     }
-                    grid[static_cast<int>(m1*n1)][static_cast<int>(m2*n2)] += invcellvol;
+                    grid[static_cast<int>(m1 * n1)][static_cast<int>(m2 * n2)] += invcellvol;
                 }
             }
         }
@@ -337,17 +337,17 @@ int gmx_densmap(int argc, char *argv[])
                         m = top.atoms.atom[k].m;
                         for (l = 0; l < DIM; l++)
                         {
-                            xcom[i][l] += m*x[k][l];
+                            xcom[i][l] += m * x[k][l];
                         }
                         mtot += m;
                     }
-                    svmul(1/mtot, xcom[i], xcom[i]);
+                    svmul(1 / mtot, xcom[i], xcom[i]);
                 }
             }
             pbc_dx(&pbc, xcom[1], xcom[0], direction);
             for (i = 0; i < DIM; i++)
             {
-                center[i] = xcom[0][i] + 0.5*direction[i];
+                center[i] = xcom[0][i] + 0.5 * direction[i];
             }
             unitv(direction, direction);
             for (i = 0; i < nindex; i++)
@@ -355,20 +355,19 @@ int gmx_densmap(int argc, char *argv[])
                 j = index[i];
                 pbc_dx(&pbc, x[j], center, dx);
                 axial = iprod(dx, direction);
-                r     = std::sqrt(norm2(dx) - axial*axial);
+                r     = std::sqrt(norm2(dx) - axial * axial);
                 if (axial >= -amax && axial < amax && r < rmax)
                 {
                     if (bMirror)
                     {
                         r += rmax;
                     }
-                    grid[static_cast<int>((axial + amax)*invspa)][static_cast<int>(r*invspz)] += 1;
+                    grid[static_cast<int>((axial + amax) * invspa)][static_cast<int>(r * invspz)] += 1;
                 }
             }
         }
         nfr++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     /* normalize gridpoints */
@@ -396,9 +395,9 @@ int gmx_densmap(int argc, char *argv[])
             {
                 switch (nmpower)
                 {
-                    case -3: vol = M_PI*(j+1)*(j+1)/(invspz*invspz*invspa); break;
-                    case -2: vol =            (j+1)/(invspz*invspa);        break;
-                    default: vol =             j+1;                         break;
+                    case -3: vol = M_PI * (j + 1) * (j + 1) / (invspz * invspz * invspa); break;
+                    case -2: vol =            (j + 1) / (invspz * invspa);        break;
+                    default: vol =             j + 1;                         break;
                 }
                 if (bMirror)
                 {
@@ -408,10 +407,10 @@ int gmx_densmap(int argc, char *argv[])
                 {
                     k = j;
                 }
-                grid[i][k] /= nfr*(vol - vol_old);
+                grid[i][k] /= nfr * (vol - vol_old);
                 if (bMirror)
                 {
-                    grid[i][nradial-1-j] = grid[i][k];
+                    grid[i][nradial - 1 - j] = grid[i][k];
                 }
                 vol_old = vol;
                 if (grid[i][k] > maxgrid)
@@ -427,8 +426,8 @@ int gmx_densmap(int argc, char *argv[])
         maxgrid = dmax;
     }
 
-    snew(tickx, n1+1);
-    snew(tickz, n2+1);
+    snew(tickx, n1 + 1);
+    snew(tickz, n2 + 1);
     if (!bRadial)
     {
         /* normalize box-axes */
@@ -436,31 +435,31 @@ int gmx_densmap(int argc, char *argv[])
         box2 /= nfr;
         for (i = 0; i <= n1; i++)
         {
-            tickx[i] = i*box1/n1;
+            tickx[i] = i * box1 / n1;
         }
         for (i = 0; i <= n2; i++)
         {
-            tickz[i] = i*box2/n2;
+            tickz[i] = i * box2 / n2;
         }
     }
     else
     {
         for (i = 0; i <= n1; i++)
         {
-            tickx[i] = i/invspa - amax;
+            tickx[i] = i / invspa - amax;
         }
         if (bMirror)
         {
             for (i = 0; i <= n2; i++)
             {
-                tickz[i] = i/invspz - rmax;
+                tickz[i] = i / invspz - rmax;
             }
         }
         else
         {
             for (i = 0; i <= n2; i++)
             {
-                tickz[i] = i/invspz;
+                tickz[i] = i / invspz;
             }
         }
     }
@@ -485,15 +484,15 @@ int gmx_densmap(int argc, char *argv[])
     {
         if (!bXmax)
         {
-            sprintf(buf+std::strlen(buf), ", %c > %g nm", eaver[0][0], xmin);
+            sprintf(buf + std::strlen(buf), ", %c > %g nm", eaver[0][0], xmin);
         }
         else if (!bXmin)
         {
-            sprintf(buf+std::strlen(buf), ", %c < %g nm", eaver[0][0], xmax);
+            sprintf(buf + std::strlen(buf), ", %c < %g nm", eaver[0][0], xmax);
         }
         else
         {
-            sprintf(buf+std::strlen(buf), ", %c: %g - %g nm", eaver[0][0], xmin, xmax);
+            sprintf(buf + std::strlen(buf), ", %c: %g - %g nm", eaver[0][0], xmin, xmax);
         }
     }
     if (ftp2bSet(efDAT, NFILE, fnm))

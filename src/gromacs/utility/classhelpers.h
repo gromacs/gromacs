@@ -74,7 +74,7 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
-    ClassName &operator=(const ClassName &) = delete
+    ClassName & operator=(const ClassName &) = delete
 
 #ifdef DOXYGEN
 /*! \brief
@@ -89,9 +89,9 @@ namespace gmx
 #else
 #define GMX_DEFAULT_CONSTRUCTORS(ClassName) \
     ClassName()                                             = default;    \
-    ClassName                 &operator=(const ClassName &) = default;    \
+    ClassName &                operator=(const ClassName &) = default;    \
     ClassName(const ClassName &)                            = default;    \
-    ClassName                 &operator=(ClassName &&)      = default;    \
+    ClassName &                operator=(ClassName &&)      = default;    \
     ClassName(ClassName &&)                                 = default
 #endif
 

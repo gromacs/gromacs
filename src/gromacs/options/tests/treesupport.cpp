@@ -67,21 +67,21 @@ namespace
 
 TEST(TreeValueSupportAssignTest, AssignsFromTree)
 {
-    int                      a0 = 0, a1 = 0;
-    std::string              b1;
+    int         a0 = 0, a1 = 0;
+    std::string b1;
 
-    gmx::Options             options;
+    gmx::Options options;
     options.addOption(gmx::IntegerOption("a").store(&a0));
-    auto                     sec = options.addSection(gmx::OptionSection("s"));
+    auto sec = options.addSection(gmx::OptionSection("s"));
     sec.addOption(gmx::IntegerOption("a").store(&a1));
     sec.addOption(gmx::StringOption("b").store(&b1));
 
     gmx::KeyValueTreeBuilder builder;
     builder.rootObject().addValue<int>("a", 2);
-    auto                     obj = builder.rootObject().addObject("s");
+    auto obj = builder.rootObject().addObject("s");
     obj.addValue<int>("a", 1);
     obj.addValue<std::string>("b", "foo");
-    gmx::KeyValueTreeObject  tree = builder.build();
+    gmx::KeyValueTreeObject tree = builder.build();
 
     ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr));
     EXPECT_NO_THROW_GMX(options.finish());
@@ -101,21 +101,21 @@ TEST(TreeValueSupportAssignTest, AssignsFromTreeWithArrays)
     std::vector<int>         a0;
     std::vector<SectionData> s;
 
-    gmx::Options             options;
+    gmx::Options options;
     options.addOption(gmx::IntegerOption("a").storeVector(&a0).multiValue());
-    auto                     sec = options.addSection(gmx::RepeatingOptionSection<SectionData>("s").storeVector(&s));
+    auto sec = options.addSection(gmx::RepeatingOptionSection<SectionData>("s").storeVector(&s));
     sec.addOption(gmx::IntegerOption("a").store(&sec.bind().a));
 
     gmx::KeyValueTreeBuilder builder;
     auto                     array = builder.rootObject().addUniformArray<int>("a");
     array.addValue(1);
     array.addValue(2);
-    auto                     objArray = builder.rootObject().addObjectArray("s");
-    auto                     obj1     = objArray.addObject();
+    auto objArray = builder.rootObject().addObjectArray("s");
+    auto obj1     = objArray.addObject();
     obj1.addValue<int>("a", 3);
-    auto                     obj2 = objArray.addObject();
+    auto obj2 = objArray.addObject();
     obj2.addValue<int>("a", 4);
-    gmx::KeyValueTreeObject  tree = builder.build();
+    gmx::KeyValueTreeObject tree = builder.build();
 
     ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr));
     EXPECT_NO_THROW_GMX(options.finish());
@@ -130,16 +130,16 @@ TEST(TreeValueSupportAssignTest, AssignsFromTreeWithArrays)
 
 TEST(TreeValueSupportAssignErrorTest, HandlesInvalidValue)
 {
-    int                      a1 = 0;
+    int a1 = 0;
 
-    gmx::Options             options;
-    auto                     sec = options.addSection(gmx::OptionSection("s"));
+    gmx::Options options;
+    auto         sec = options.addSection(gmx::OptionSection("s"));
     sec.addOption(gmx::IntegerOption("a").store(&a1));
 
     gmx::KeyValueTreeBuilder builder;
     auto                     obj = builder.rootObject().addObject("s");
     obj.addValue<std::string>("a", "foo");
-    gmx::KeyValueTreeObject  tree = builder.build();
+    gmx::KeyValueTreeObject tree = builder.build();
 
     EXPECT_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr),
                      gmx::InvalidInputError);
@@ -162,8 +162,8 @@ class TreeValueSupportAdjustTest : public ::testing::Test
             checker.checkKeyValueTreeObject(tree, "Output");
         }
 
-        gmx::Options              options_;
-        gmx::KeyValueTreeBuilder  builder_;
+        gmx::Options             options_;
+        gmx::KeyValueTreeBuilder builder_;
 };
 
 TEST_F(TreeValueSupportAdjustTest, FillsDefaultValues)

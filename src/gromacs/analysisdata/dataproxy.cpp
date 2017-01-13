@@ -61,15 +61,13 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
 }
 
 
-int
-AnalysisDataProxy::frameCount() const
+int AnalysisDataProxy::frameCount() const
 {
     return source_.frameCount();
 }
 
 
-AnalysisDataFrameRef
-AnalysisDataProxy::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 {
     AnalysisDataFrameRef frame = source_.tryGetDataFrame(index);
     if (!frame.isValid())
@@ -80,23 +78,20 @@ AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 }
 
 
-bool
-AnalysisDataProxy::requestStorageInternal(int nframes)
+bool AnalysisDataProxy::requestStorageInternal(int nframes)
 {
     return source_.requestStorage(nframes);
 }
 
 
-int
-AnalysisDataProxy::flags() const
+int AnalysisDataProxy::flags() const
 {
     return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
            | efAllowMultipleDataSets;
 }
 
 
-void
-AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
     setDataSetCount(data->dataSetCount());
@@ -108,9 +103,8 @@ AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 }
 
 
-bool
-AnalysisDataProxy::parallelDataStarted(
-        AbstractAnalysisData              *data,
+bool AnalysisDataProxy::parallelDataStarted(
+        AbstractAnalysisData *             data,
         const AnalysisDataParallelOptions &options)
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
@@ -125,8 +119,7 @@ AnalysisDataProxy::parallelDataStarted(
 }
 
 
-void
-AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
+void AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 {
     if (bParallel_)
     {
@@ -139,8 +132,7 @@ AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 }
 
 
-void
-AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     AnalysisDataPointSetRef columns(points, firstColumn_, columnSpan_);
     if (columns.columnCount() > 0)
@@ -157,8 +149,7 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 }
 
 
-void
-AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
+void AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
 {
     if (bParallel_)
     {
@@ -170,8 +161,7 @@ AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
     }
 }
 
-void
-AnalysisDataProxy::frameFinishedSerial(int frameIndex)
+void AnalysisDataProxy::frameFinishedSerial(int frameIndex)
 {
     if (bParallel_)
     {
@@ -182,8 +172,7 @@ AnalysisDataProxy::frameFinishedSerial(int frameIndex)
 }
 
 
-void
-AnalysisDataProxy::dataFinished()
+void AnalysisDataProxy::dataFinished()
 {
     moduleManager().notifyDataFinish();
 }

@@ -41,8 +41,7 @@
 namespace gmx
 {
 
-static inline void
-simdPrefetch(const void * m)
+static inline void simdPrefetch(const void * m)
 {
     _mm_prefetch((const char *)m, _MM_HINT_T0);
 }

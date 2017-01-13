@@ -129,12 +129,12 @@ class ParseCommonArgsTest : public ::testing::Test
 
         // This must be a member that persists until the end of the test,
         // because string arguments are not duplicated in the output.
-        CommandLine                 args_;
+        CommandLine args_;
 
     private:
-        gmx_output_env_t           *oenv_;
-        size_t                      fileCount_;
-        gmx::test::TestFileManager  tempFiles_;
+        gmx_output_env_t *         oenv_;
+        size_t                     fileCount_;
+        gmx::test::TestFileManager tempFiles_;
 };
 
 /********************************************************************
@@ -194,7 +194,7 @@ TEST_F(ParseCommonArgsTest, ParsesRealArgs)
 
 TEST_F(ParseCommonArgsTest, ParsesStringArgs)
 {
-    const char       *value1 = "def", *value2 = "", *value3 = "default";
+    const char *      value1 = "def", *value2 = "", *value3 = "default";
     t_pargs           pa[]   = {
         { "-s1", FALSE, etSTR, {&value1}, "Description" },
         { "-s2", FALSE, etSTR, {&value2}, "Description" },
@@ -285,9 +285,9 @@ TEST_F(ParseCommonArgsTest, ParsesTimeArgsWithTimeUnit)
 
 TEST_F(ParseCommonArgsTest, ParsesEnumArgs)
 {
-    const char       *value1[] = {nullptr, "none", "on", "off", nullptr };
-    const char       *value2[] = {nullptr, "def", "value", "value_other", nullptr };
-    const char       *value3[] = {nullptr, "default", "value", nullptr };
+    const char *      value1[] = {nullptr, "none", "on", "off", nullptr };
+    const char *      value2[] = {nullptr, "def", "value", "value_other", nullptr };
+    const char *      value3[] = {nullptr, "default", "value", nullptr };
     t_pargs           pa[]     = {
         { "-s1", FALSE, etENUM, {value1}, "Description" },
         { "-s2", FALSE, etENUM, {value2}, "Description" },
@@ -462,13 +462,13 @@ TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
 
 TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
 {
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },
         { efGRO, "-g", nullptr, ffREAD }
     };
     args_.append("test");
-    std::string       expectedF = addFileArg("-f", ".pdb.gz", efFull);
-    std::string       expectedG = addFileArg("-g", ".gro.Z", efFull);
+    std::string expectedF = addFileArg("-f", ".pdb.gz", efFull);
+    std::string expectedG = addFileArg("-g", ".gro.Z", efFull);
     expectedF = gmx::Path::stripExtension(expectedF);
     expectedG = gmx::Path::stripExtension(expectedG);
     parseFromArgs(0, fnm, gmx::EmptyArrayRef());
@@ -479,11 +479,11 @@ TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
 
 TEST_F(ParseCommonArgsTest, AcceptsUnknownTrajectoryExtension)
 {
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD }
     };
     args_.append("test");
-    std::string       expected = addFileArg("-f", ".foo", efFull);
+    std::string expected = addFileArg("-f", ".foo", efFull);
     parseFromArgs(0, fnm, gmx::EmptyArrayRef());
     EXPECT_EQ(expected, opt2fn("-f", nfile(), fnm));
     done_filenms(nfile(), fnm);
@@ -491,18 +491,18 @@ TEST_F(ParseCommonArgsTest, AcceptsUnknownTrajectoryExtension)
 
 TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
 {
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f1", nullptr, ffREAD },
         { efTRX, "-f2", nullptr, ffREAD },
         { efTRX, "-f3", nullptr, ffREAD },
         { efTRX, "-f4", nullptr, ffREAD }
     };
     args_.append("test");
-    std::string       expected1 = addFileArg("-f1", "1.xtc", efNoExtension);
-    std::string       expected2 = addFileArg("-f2", "2.gro", efNoExtension);
-    std::string       expected3 = addFileArg("-f3", "3.tng", efNoExtension);
-    std::string       expected4 = addFileArg("-f4", ".gro", efEmptyValue);
-    std::string       def4      = gmx::Path::stripExtension(expected4);
+    std::string expected1 = addFileArg("-f1", "1.xtc", efNoExtension);
+    std::string expected2 = addFileArg("-f2", "2.gro", efNoExtension);
+    std::string expected3 = addFileArg("-f3", "3.tng", efNoExtension);
+    std::string expected4 = addFileArg("-f4", ".gro", efEmptyValue);
+    std::string def4      = gmx::Path::stripExtension(expected4);
     fnm[3].fn = def4.c_str();
     parseFromArgs(0, fnm, gmx::EmptyArrayRef());
     EXPECT_EQ(expected1, opt2fn("-f1", nfile(), fnm));
@@ -514,18 +514,18 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
 
 TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileName)
 {
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f1", nullptr,  ffREAD },
         { efSTO, "-f2", "foo", ffREAD },
         { efTRX, "-f3", nullptr,  ffREAD },
         { efSTX, "-f4", nullptr,  ffREAD }
     };
     args_.append("test");
-    std::string       expected1 = addFileArg("-f1", "1.trr", efNoExtension);
-    std::string       expected2 = addFileArg("-f2", ".pdb", efEmptyValue);
-    std::string       expected3 = addFileArg("-f3", ".trr", efEmptyValue);
-    std::string       expected4 = addFileArg(nullptr, ".pdb", efEmptyValue);
-    std::string       deffnm    = gmx::Path::stripExtension(expected3);
+    std::string expected1 = addFileArg("-f1", "1.trr", efNoExtension);
+    std::string expected2 = addFileArg("-f2", ".pdb", efEmptyValue);
+    std::string expected3 = addFileArg("-f3", ".trr", efEmptyValue);
+    std::string expected4 = addFileArg(nullptr, ".pdb", efEmptyValue);
+    std::string deffnm    = gmx::Path::stripExtension(expected3);
     args_.append("-deffnm");
     args_.append(deffnm);
     parseFromArgs(PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());

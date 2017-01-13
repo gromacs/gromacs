@@ -47,7 +47,8 @@ extern "C"
 {
 #endif
 
-enum {
+enum
+{
     eWXR_NO, eWXR_YES, eWXR_NOFIT
 };
 
@@ -83,10 +84,10 @@ extern void write_eigenvectors(const char *trrname, int natoms, const real mat[]
  * and the corresponding indices (start counting on 0) in eigvalnr[].
  * Returns the number of values read.
  */
-int read_eigval  (const char *          fn,
-                  int                   nmax,
-                  int                   eigvalnr[],
-                  real                  eigval[]);
+int read_eigval  (const char * fn,
+                  int          nmax,
+                  int          eigvalnr[],
+                  real         eigval[]);
 
 #ifdef __cplusplus
 }

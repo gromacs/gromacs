@@ -123,8 +123,8 @@ t_molwin *init_mw(t_x11 *x11, Window Parent,
     mw->wd.self   = XCreateSimpleWindow(x11->disp, Parent, x, y, width, height, 1, fg, bg);
     x11->RegisterCallback(x11, mw->wd.self, Parent, MWCallBack, mw);
     x11->SetInputMask(x11, mw->wd.self,
-                      ExposureMask | StructureNotifyMask |
-                      ButtonPressMask);
+                      ExposureMask | StructureNotifyMask
+                      | ButtonPressMask);
     return mw;
 }
 
@@ -186,7 +186,7 @@ static void draw_atom(Display *disp, Window w, GC gc,
     XSetForeground(disp, gc, col[ai]);
     if (bBall)
     {
-        XFillCircle(disp, w, gc, xi, yi, size[ai]-1);
+        XFillCircle(disp, w, gc, xi, yi, size[ai] - 1);
         XSetForeground(disp, gc, BLACK);
         XDrawCircle(disp, w, gc, xi, yi, size[ai]);
         /*    XSetForeground(disp,gc,WHITE);
@@ -194,12 +194,12 @@ static void draw_atom(Display *disp, Window w, GC gc,
     }
     else if (bPlus)
     {
-        XDrawLine(disp, w, gc, xi-MSIZE, yi, xi+MSIZE+1, yi);
-        XDrawLine(disp, w, gc, xi, yi-MSIZE, xi, yi+MSIZE+1);
+        XDrawLine(disp, w, gc, xi - MSIZE, yi, xi + MSIZE + 1, yi);
+        XDrawLine(disp, w, gc, xi, yi - MSIZE, xi, yi + MSIZE + 1);
     }
     else
     {
-        XDrawLine(disp, w, gc, xi-1, yi, xi+1, yi);
+        XDrawLine(disp, w, gc, xi - 1, yi, xi + 1, yi);
     }
 
 }
@@ -214,7 +214,7 @@ static void my_init_pbc(matrix box)
     for (i = 0; (i < DIM); i++)
     {
         gl_fbox[i]  =  box[i][i];
-        gl_hbox[i]  =  gl_fbox[i]*0.5;
+        gl_hbox[i]  =  gl_fbox[i] * 0.5;
         gl_mhbox[i] = -gl_hbox[i];
     }
 }
@@ -226,7 +226,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
     for (i = 0; (i < DIM); i++)
     {
-        dx = x1[i]-x2[i];
+        dx = x1[i] - x2[i];
         if (dx > gl_hbox[i])
         {
             return false;
@@ -243,9 +243,9 @@ static void draw_bond(Display *disp, Window w, GC gc,
                       int ai, int aj, iv2 vec2[],
                       rvec x[], unsigned long col[], int size[], bool bBalls)
 {
-    unsigned long   ic, jc;
-    int             xi, yi, xj, yj;
-    int             xm, ym;
+    unsigned long ic, jc;
+    int           xi, yi, xj, yj;
+    int           xm, ym;
 
     if (bBalls)
     {
@@ -265,8 +265,8 @@ static void draw_bond(Display *disp, Window w, GC gc,
 
             if (ic != jc)
             {
-                xm = (xi+xj) >> 1;
-                ym = (yi+yj) >> 1;
+                xm = (xi + xj) >> 1;
+                ym = (yi + yj) >> 1;
 
                 XSetForeground(disp, gc, ic);
                 XDrawLine(disp, w, gc, xi, yi, xm, ym);
@@ -290,7 +290,7 @@ int compare_obj(const void *a, const void *b)
     oa = static_cast<const t_object *>(a);
     ob = static_cast<const t_object *>(b);
 
-    z = oa->z-ob->z;
+    z = oa->z - ob->z;
 
     if (z < 0)
     {
@@ -330,18 +330,18 @@ void z_fill(t_manager *man, real *zz)
 
 int filter_vis(t_manager *man)
 {
-    int          i, nobj, nvis, nhide;
-    int          ai;
-    bool         bAdd, *bVis;
-    t_object    *obj;
-    t_object    *newobj;
+    int       i, nobj, nvis, nhide;
+    int       ai;
+    bool      bAdd, *bVis;
+    t_object *obj;
+    t_object *newobj;
 
     nobj = man->nobj;
     snew(newobj, nobj);
     obj   = man->obj;
     bVis  = man->bVis;
     nvis  = 0;
-    nhide = nobj-1;
+    nhide = nobj - 1;
     for (i = 0; (i < nobj); i++, obj++)
     {
         ai   = obj->ai;
@@ -373,9 +373,9 @@ void draw_objects(Display *disp, Window w, GC gc, int nobj,
                   unsigned long col[], int size[], bool bShowHydro, int bond_type,
                   bool bPlus)
 {
-    bool         bBalls;
-    int          i;
-    t_object    *obj;
+    bool      bBalls;
+    int       i;
+    t_object *obj;
 
     bBalls = false;
     switch (bond_type)
@@ -425,9 +425,9 @@ static void v4_to_iv2(vec4 x4, iv2 v2, int x0, int y0, real sx, real sy)
 {
     real inv_z;
 
-    inv_z  = 1.0/x4[ZZ];
-    v2[XX] = x0+sx*x4[XX]*inv_z;
-    v2[YY] = y0-sy*x4[YY]*inv_z;
+    inv_z  = 1.0 / x4[ZZ];
+    v2[XX] = x0 + sx * x4[XX] * inv_z;
+    v2[YY] = y0 - sy * x4[YY] * inv_z;
 }
 
 static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
@@ -465,8 +465,8 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
         XSetForeground(x11->disp, x11->gc, YELLOW);
         for (i = 0; i < NCUCEDGE; i++)
         {
-            i0 = edge[2*i];
-            i1 = edge[2*i+1];
+            i0 = edge[2 * i];
+            i1 = edge[2 * i + 1];
             XDrawLine(x11->disp, w, x11->gc,
                       vec2[i0][XX], vec2[i0][YY], vec2[i1][XX], vec2[i1][YY]);
         }
@@ -477,7 +477,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
         {
             for (j = 0; (j < DIM); j++)
             {
-                box_center[j] -= 0.5*box[j][j];
+                box_center[j] -= 0.5 * box[j][j];
             }
         }
         else
@@ -486,7 +486,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
             {
                 for (j = 0; (j < DIM); j++)
                 {
-                    box_center[j] -= 0.5*box[i][j];
+                    box_center[j] -= 0.5 * box[i][j];
                 }
             }
         }
@@ -499,12 +499,12 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
                 {
                     for (k = 0; (k < DIM); k++)
                     {
-                        corner[i][k] += rect_tri[i][j]*box[j][k];
+                        corner[i][k] += rect_tri[i][j] * box[j][k];
                     }
                 }
                 else
                 {
-                    corner[i][j] = rect_tri[i][j]*box[j][j];
+                    corner[i][j] = rect_tri[i][j] * box[j][j];
                 }
             }
             rvec_inc(corner[i], box_center);
@@ -533,7 +533,7 @@ void set_sizes(t_manager *man)
     {
         if (man->bVis[i])
         {
-            man->size[i] = 180*man->vdw[i];
+            man->size[i] = 180 * man->vdw[i];
         }
     }
 }
@@ -542,11 +542,11 @@ void draw_mol(t_x11 *x11, t_manager *man)
 {
     static char tstr[2][20];
     static int  ntime = 0;
-    t_windata  *win;
-    t_3dview   *view;
-    t_molwin   *mw;
+    t_windata * win;
+    t_3dview *  view;
+    t_molwin *  mw;
     int         i, x0, y0, nvis;
-    iv2        *vec2;
+    iv2 *       vec2;
     real        sx, sy;
     vec4        x4;
 
@@ -561,10 +561,10 @@ void draw_mol(t_x11 *x11, t_manager *man)
     win = &(mw->wd);
 
     vec2 = man->ix;
-    x0   = win->width/2;
-    y0   = win->height/2;
-    sx   = win->width/2*view->sc_x;
-    sy   = win->height/2*view->sc_y;
+    x0   = win->width / 2;
+    y0   = win->height / 2;
+    sx   = win->width / 2 * view->sc_x;
+    sy   = win->height / 2 * view->sc_y;
 
     my_init_pbc(man->box);
 
@@ -586,10 +586,10 @@ void draw_mol(t_x11 *x11, t_manager *man)
 
     /* Draw Time */
     std::sprintf(tstr[ntime], "Time: %.3f ps", man->time);
-    if (std::strcmp(tstr[ntime], tstr[1-ntime]) != 0)
+    if (std::strcmp(tstr[ntime], tstr[1 - ntime]) != 0)
     {
         set_vbtime(x11, man->vbox, tstr[ntime]);
-        ntime = 1-ntime;
+        ntime = 1 - ntime;
     }
 
     if (mw->boxtype != esbNone)
@@ -615,7 +615,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
     {
         if (man->bLabel[i] && man->bVis[i])
         {
-            XDrawString(x11->disp, win->self, x11->gc, vec2[i][XX]+2, vec2[i][YY]-2,
+            XDrawString(x11->disp, win->self, x11->gc, vec2[i][XX] + 2, vec2[i][YY] - 2,
                         man->szLab[i], std::strlen(man->szLab[i]));
         }
     }

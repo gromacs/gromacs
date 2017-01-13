@@ -55,13 +55,14 @@ const char *fontnm[efontNR] = {
 /* Internal psdata structure (abstract datatype)
  * to maintain the current state of the ps engine.
  */
-struct t_int_psdata  {
-    FILE   *fp;
-    int     maxrgb;
-    int     nrgb;
-    t_rgb  *rgb;
-    real    gen_ybox;
-    int     ostack;
+struct t_int_psdata
+{
+    FILE * fp;
+    int    maxrgb;
+    int    nrgb;
+    t_rgb *rgb;
+    real   gen_ybox;
+    int    ostack;
 };
 
 
@@ -135,7 +136,7 @@ static int search_col(t_psdata ps, real r, real g, real b)
     ps->rgb[i].b = b;
     ps->nrgb++;
 
-    return (ps->nrgb-1);
+    return (ps->nrgb - 1);
 }
 
 void ps_color(t_psdata ps, real r, real g, real b)
@@ -171,7 +172,7 @@ void ps_rgb_nbox(t_psdata ps, t_rgb *rgb, real n)
     if (n > 2)
     {
         ps_rgb(ps, rgb);
-        fprintf(ps->fp, "/y %g by\n", n*ps->gen_ybox);
+        fprintf(ps->fp, "/y %g by\n", n * ps->gen_ybox);
         /* macro by is defined in ps_init_rgb_nbox */
     }
     else
@@ -228,10 +229,10 @@ void ps_line(t_psdata ps, real x1, real y1, real x2, real y2)
 static void do_box(t_psdata ps, real x1, real y1, real x2, real y2)
 {
     ps_moveto(ps, x1, y1);
-    ps_linerel(ps, 0, (real)(y2-y1));
-    ps_linerel(ps, (real)(x2-x1), 0);
-    ps_linerel(ps, 0, (real)(y1-y2));
-    ps_linerel(ps, (real)(x1-x2), 0);
+    ps_linerel(ps, 0, (real)(y2 - y1));
+    ps_linerel(ps, (real)(x2 - x1), 0);
+    ps_linerel(ps, 0, (real)(y1 - y2));
+    ps_linerel(ps, (real)(x1 - x2), 0);
 }
 
 void ps_box(t_psdata ps, real x1, real y1, real x2, real y2)

@@ -70,7 +70,7 @@ static int round_check(real r, int limit, int ftype, const char *name)
         i = (int)(r - 0.5);
     }
 
-    if (r-i > 0.01 || r-i < -0.01)
+    if (r - i > 0.01 || r - i < -0.01)
     {
         gmx_fatal(FARGS, "A non-integer value (%f) was supplied for '%s' in %s",
                   r, name, interaction_function[ftype].longname);
@@ -112,9 +112,8 @@ static void set_ljparams(int comb, double reppow, double v, double w,
 /* A return value of 0 means parameters were assigned successfully,
  * returning -1 means this is an all-zero interaction that should not be added.
  */
-static int
-assign_param(t_functype ftype, t_iparams *newparam,
-             real old[MAXFORCEPARAM], int comb, double reppow)
+static int assign_param(t_functype ftype, t_iparams *newparam,
+                        real old[MAXFORCEPARAM], int comb, double reppow)
 {
     int      i, j;
     gmx_bool all_param_zero = TRUE;
@@ -133,8 +132,8 @@ assign_param(t_functype ftype, t_iparams *newparam,
 
     if (all_param_zero == TRUE)
     {
-        if (IS_ANGLE(ftype) || IS_RESTRAINT_TYPE(ftype) || ftype == F_IDIHS ||
-            ftype == F_PDIHS || ftype == F_PIDIHS || ftype == F_RBDIHS || ftype == F_FOURDIHS)
+        if (IS_ANGLE(ftype) || IS_RESTRAINT_TYPE(ftype) || ftype == F_IDIHS
+            || ftype == F_PDIHS || ftype == F_PIDIHS || ftype == F_RBDIHS || ftype == F_FOURDIHS)
         {
             return -1;
         }
@@ -144,9 +143,9 @@ assign_param(t_functype ftype, t_iparams *newparam,
     {
         case F_G96ANGLES:
             /* Post processing of input data: store cosine iso angle itself */
-            newparam->harmonic.rA  = cos(old[0]*DEG2RAD);
+            newparam->harmonic.rA  = cos(old[0] * DEG2RAD);
             newparam->harmonic.krA = old[1];
-            newparam->harmonic.rB  = cos(old[2]*DEG2RAD);
+            newparam->harmonic.rB  = cos(old[2] * DEG2RAD);
             newparam->harmonic.krB = old[3];
             break;
         case F_G96BONDS:
@@ -203,7 +202,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->qangle.theta = old[0];
             for (i = 0; i < 5; i++)
             {
-                newparam->qangle.c[i] = old[i+1];
+                newparam->qangle.c[i] = old[i + 1];
             }
             break;
         case F_LINEAR_ANGLES:
@@ -226,17 +225,17 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->harmonic.krA = old[1];
             break;
         case F_MORSE:
-            newparam->morse.b0A    = old[0];
-            newparam->morse.cbA    = old[1];
-            newparam->morse.betaA  = old[2];
-            newparam->morse.b0B    = old[3];
-            newparam->morse.cbB    = old[4];
-            newparam->morse.betaB  = old[5];
+            newparam->morse.b0A   = old[0];
+            newparam->morse.cbA   = old[1];
+            newparam->morse.betaA = old[2];
+            newparam->morse.b0B   = old[3];
+            newparam->morse.cbB   = old[4];
+            newparam->morse.betaB = old[5];
             break;
         case F_CUBICBONDS:
-            newparam->cubic.b0    = old[0];
-            newparam->cubic.kb    = old[1];
-            newparam->cubic.kcub  = old[2];
+            newparam->cubic.b0   = old[0];
+            newparam->cubic.kb   = old[1];
+            newparam->cubic.kcub = old[2];
             break;
         case F_CONNBONDS:
             break;
@@ -249,12 +248,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->anharm_polarize.khyp  = old[2];
             break;
         case F_WATER_POL:
-            newparam->wpol.al_x   = old[0];
-            newparam->wpol.al_y   = old[1];
-            newparam->wpol.al_z   = old[2];
-            newparam->wpol.rOH    = old[3];
-            newparam->wpol.rHH    = old[4];
-            newparam->wpol.rOD    = old[5];
+            newparam->wpol.al_x = old[0];
+            newparam->wpol.al_y = old[1];
+            newparam->wpol.al_z = old[2];
+            newparam->wpol.rOH  = old[3];
+            newparam->wpol.rHH  = old[4];
+            newparam->wpol.rOD  = old[5];
             break;
         case F_THOLE_POL:
             newparam->thole.a      = old[0];
@@ -262,7 +261,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->thole.alpha2 = old[2];
             if ((old[1] > 0) && (old[2] > 0))
             {
-                newparam->thole.rfac = old[0]*gmx::invsixthroot(old[1]*old[2]);
+                newparam->thole.rfac = old[0] * gmx::invsixthroot(old[1] * old[2]);
             }
             else
             {
@@ -334,11 +333,11 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->posres.pos0B[ZZ] = old[11];
             break;
         case F_FBPOSRES:
-            newparam->fbposres.geom     = round_check(old[0], 0, ftype, "geometry");
+            newparam->fbposres.geom = round_check(old[0], 0, ftype, "geometry");
             if (!(newparam->fbposres.geom > efbposresZERO && newparam->fbposres.geom < efbposresNR))
             {
                 gmx_fatal(FARGS, "Invalid geometry for flat-bottomed position restraint.\n"
-                          "Expected number between 1 and %d. Found %d\n", efbposresNR-1,
+                          "Expected number between 1 and %d. Found %d\n", efbposresNR - 1,
                           newparam->fbposres.geom);
             }
             newparam->fbposres.r        = old[1];
@@ -364,18 +363,18 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->orires.kfac  = old[5];
             break;
         case F_DIHRES:
-            newparam->dihres.phiA   = old[0];
-            newparam->dihres.dphiA  = old[1];
-            newparam->dihres.kfacA  = old[2];
-            newparam->dihres.phiB   = old[3];
-            newparam->dihres.dphiB  = old[4];
-            newparam->dihres.kfacB  = old[5];
+            newparam->dihres.phiA  = old[0];
+            newparam->dihres.dphiA = old[1];
+            newparam->dihres.kfacA = old[2];
+            newparam->dihres.phiB  = old[3];
+            newparam->dihres.dphiB = old[4];
+            newparam->dihres.kfacB = old[5];
             break;
         case F_RBDIHS:
             for (i = 0; (i < NR_RBDIHS); i++)
             {
                 newparam->rbdihs.rbcA[i] = old[i];
-                newparam->rbdihs.rbcB[i] = old[NR_RBDIHS+i];
+                newparam->rbdihs.rbcB[i] = old[NR_RBDIHS + i];
             }
             break;
         case F_CBTDIHS:
@@ -390,18 +389,18 @@ assign_param(t_functype ftype, t_iparams *newparam,
              * Ryckaert-Bellemans form.
              */
             /* Use conversion formula for OPLS to Ryckaert-Bellemans: */
-            newparam->rbdihs.rbcA[0] = old[1]+0.5*(old[0]+old[2]);
-            newparam->rbdihs.rbcA[1] = 0.5*(3.0*old[2]-old[0]);
-            newparam->rbdihs.rbcA[2] = 4.0*old[3]-old[1];
-            newparam->rbdihs.rbcA[3] = -2.0*old[2];
-            newparam->rbdihs.rbcA[4] = -4.0*old[3];
+            newparam->rbdihs.rbcA[0] = old[1] + 0.5 * (old[0] + old[2]);
+            newparam->rbdihs.rbcA[1] = 0.5 * (3.0 * old[2] - old[0]);
+            newparam->rbdihs.rbcA[2] = 4.0 * old[3] - old[1];
+            newparam->rbdihs.rbcA[3] = -2.0 * old[2];
+            newparam->rbdihs.rbcA[4] = -4.0 * old[3];
             newparam->rbdihs.rbcA[5] = 0.0;
 
-            newparam->rbdihs.rbcB[0] = old[NR_FOURDIHS+1]+0.5*(old[NR_FOURDIHS+0]+old[NR_FOURDIHS+2]);
-            newparam->rbdihs.rbcB[1] = 0.5*(3.0*old[NR_FOURDIHS+2]-old[NR_FOURDIHS+0]);
-            newparam->rbdihs.rbcB[2] = 4.0*old[NR_FOURDIHS+3]-old[NR_FOURDIHS+1];
-            newparam->rbdihs.rbcB[3] = -2.0*old[NR_FOURDIHS+2];
-            newparam->rbdihs.rbcB[4] = -4.0*old[NR_FOURDIHS+3];
+            newparam->rbdihs.rbcB[0] = old[NR_FOURDIHS + 1] + 0.5 * (old[NR_FOURDIHS + 0] + old[NR_FOURDIHS + 2]);
+            newparam->rbdihs.rbcB[1] = 0.5 * (3.0 * old[NR_FOURDIHS + 2] - old[NR_FOURDIHS + 0]);
+            newparam->rbdihs.rbcB[2] = 4.0 * old[NR_FOURDIHS + 3] - old[NR_FOURDIHS + 1];
+            newparam->rbdihs.rbcB[3] = -2.0 * old[NR_FOURDIHS + 2];
+            newparam->rbdihs.rbcB[4] = -4.0 * old[NR_FOURDIHS + 3];
             newparam->rbdihs.rbcB[5] = 0.0;
             break;
         case F_CONSTR:
@@ -483,11 +482,11 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
                     /* Occasionally, the way the 1-3 reference distance is
                      * computed can lead to non-binary-identical results, but I
                      * don't know why. */
-                    if ((gmx_within_tol(newparam.gb.sar,  ffparams->iparams[type].gb.sar,  1e-6)) &&
-                        (gmx_within_tol(newparam.gb.st,   ffparams->iparams[type].gb.st,   1e-6)) &&
-                        (gmx_within_tol(newparam.gb.pi,   ffparams->iparams[type].gb.pi,   1e-6)) &&
-                        (gmx_within_tol(newparam.gb.gbr,  ffparams->iparams[type].gb.gbr,  1e-6)) &&
-                        (gmx_within_tol(newparam.gb.bmlt, ffparams->iparams[type].gb.bmlt, 1e-6)))
+                    if ((gmx_within_tol(newparam.gb.sar,  ffparams->iparams[type].gb.sar,  1e-6))
+                        && (gmx_within_tol(newparam.gb.st,   ffparams->iparams[type].gb.st,   1e-6))
+                        && (gmx_within_tol(newparam.gb.pi,   ffparams->iparams[type].gb.pi,   1e-6))
+                        && (gmx_within_tol(newparam.gb.gbr,  ffparams->iparams[type].gb.gbr,  1e-6))
+                        && (gmx_within_tol(newparam.gb.bmlt, ffparams->iparams[type].gb.bmlt, 1e-6)))
                     {
                         return type;
                     }
@@ -525,7 +524,7 @@ static void append_interaction(t_ilist *ilist,
     int i, where1;
 
     where1     = ilist->nr;
-    ilist->nr += nral+1;
+    ilist->nr += nral + 1;
 
     ilist->iatoms[where1++] = type;
     for (i = 0; (i < nral); i++)
@@ -539,7 +538,7 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
                            int *maxtypes,
                            gmx_bool bNB, gmx_bool bAppend)
 {
-    int     k, type, nr, nral, delta, start;
+    int k, type, nr, nral, delta, start;
 
     start = ffparams->ntypes;
     nr    = p->nr;
@@ -563,8 +562,8 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
         {
             assert(il);
             nral  = NRAL(ftype);
-            delta = nr*(nral+1);
-            srenew(il->iatoms, il->nr+delta);
+            delta = nr * (nral + 1);
+            srenew(il->iatoms, il->nr + delta);
             append_interaction(il, type, nral, p->param[k].a);
         }
     }
@@ -578,8 +577,8 @@ void convert_params(int atnr, t_params nbtypes[],
     int             i, maxtypes, mt;
     unsigned long   flags;
     gmx_ffparams_t *ffp;
-    gmx_moltype_t  *molt;
-    t_params       *plist;
+    gmx_moltype_t * molt;
+    t_params *      plist;
 
     maxtypes = 0;
 
@@ -606,9 +605,9 @@ void convert_params(int atnr, t_params nbtypes[],
             plist = mi[mt].plist;
 
             flags = interaction_function[i].flags;
-            if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND) ||
-                                                 (flags & IF_VSITE) ||
-                                                 (flags & IF_CONSTRAINT)))
+            if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND)
+                                                 || (flags & IF_VSITE)
+                                                 || (flags & IF_CONSTRAINT)))
             {
                 enter_function(&(plist[i]), (t_functype)i, comb, reppow,
                                ffp, &molt->ilist[i],

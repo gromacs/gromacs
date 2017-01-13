@@ -39,9 +39,10 @@
 
 #include "gromacs/utility/real.h"
 
-struct t_energy {
+struct t_energy
+{
     //! The current energy.
-    real   e;
+    real e;
     //! The running average of the energy
     double eav;
     //! The sum of energies until now.

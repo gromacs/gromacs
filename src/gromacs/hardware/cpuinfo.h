@@ -174,12 +174,10 @@ class CpuInfo
          *  optimizations, you want to check whether it was possible to detect
          *  the information you need.
          */
-        SupportLevel
-        supportLevel() const { return supportLevel_; }
+        SupportLevel supportLevel() const { return supportLevel_; }
 
         /*! \brief Enumerated value for vendor */
-        Vendor
-        vendor() const { return vendor_; }
+        Vendor vendor() const { return vendor_; }
 
         /*! \brief String description of vendor:
          *
@@ -187,27 +185,22 @@ class CpuInfo
          *          map of vendor names. This can only happen if we extend the enum
          *          type but forget to add the string with the vendor name.
          */
-        const std::string &
-        vendorString() const
+        const std::string &vendorString() const
         {
             return s_vendorStrings_.at(vendor_);
         }
 
         /*! \brief String description of processor */
-        const std::string &
-        brandString() const { return brandString_; }
+        const std::string &brandString() const { return brandString_; }
 
         /*! \brief Major version/generation of the processor */
-        int
-        family() const { return family_; }
+        int family() const { return family_; }
 
         /*! \brief Middle version of the processor */
-        int
-        model() const { return model_; }
+        int model() const { return model_; }
 
         /*! \brief Minor version of the processor */
-        int
-        stepping() const { return stepping_; }
+        int stepping() const { return stepping_; }
 
         /*! \brief Check for availability of specific feature
          *
@@ -215,8 +208,7 @@ class CpuInfo
          *
          *  \return True if the feature is available, otherwise false.
          */
-        bool
-        feature(Feature f) const
+        bool feature(Feature f) const
         {
             // If the entry is present in the set it is supported
             return (features_.count(f) != 0);
@@ -228,8 +220,7 @@ class CpuInfo
          *          map of feature names. This can only happen if we extend the enum
          *          type but forget to add the string with the feature name.
          */
-        static const std::string &
-        featureString(Feature f)
+        static const std::string &featureString(Feature f)
         {
             return s_featureStrings_.at(f);
         }
@@ -239,8 +230,7 @@ class CpuInfo
          *  This is only intended for logfiles, debugging or similar output when we
          *  need a full list of all the features available on the CPU.
          */
-        const std::set<Feature> &
-        featureSet() const
+        const std::set<Feature> &featureSet() const
         {
             return features_;
         }
@@ -262,22 +252,21 @@ class CpuInfo
          *        method to check if this information is available rather than
          *        relying on the length of the vector.
          */
-        const std::vector<LogicalProcessor> &
-        logicalProcessors() const { return logicalProcessors_; }
+        const std::vector<LogicalProcessor> &logicalProcessors() const { return logicalProcessors_; }
 
     private:
         CpuInfo();
 
-        SupportLevel                                 supportLevel_;      //!< Available cpuinfo information
-        Vendor                                       vendor_;            //!<  Value of vendor for current cpu
-        std::string                                  brandString_;       //!<  Text description of cpu
-        int                                          family_;            //!<  Major version of current cpu
-        int                                          model_;             //!<  Middle version of current cpu
-        int                                          stepping_;          //!<  Minor version of current cpu
-        std::set<Feature>                            features_;          //!< Set of features supported on this cpu
-        std::vector<LogicalProcessor>                logicalProcessors_; //!< Simple logical processor topology
-        static const std::map<Vendor, std::string>   s_vendorStrings_;   //!< Text description of each vendor
-        static const std::map<Feature, std::string>  s_featureStrings_;  //!< Text description of each feature
+        SupportLevel                                supportLevel_;       //!< Available cpuinfo information
+        Vendor                                      vendor_;             //!<  Value of vendor for current cpu
+        std::string                                 brandString_;        //!<  Text description of cpu
+        int                                         family_;             //!<  Major version of current cpu
+        int                                         model_;              //!<  Middle version of current cpu
+        int                                         stepping_;           //!<  Minor version of current cpu
+        std::set<Feature>                           features_;           //!< Set of features supported on this cpu
+        std::vector<LogicalProcessor>               logicalProcessors_;  //!< Simple logical processor topology
+        static const std::map<Vendor, std::string>  s_vendorStrings_;    //!< Text description of each vendor
+        static const std::map<Feature, std::string> s_featureStrings_;   //!< Text description of each feature
 };                                                                       // class CpuInfo
 
 /*! \brief Return true if the CPU is an Intel x86 Nehalem

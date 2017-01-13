@@ -103,9 +103,9 @@ void MockModule::checkHelpContext(const gmx::CommandLineHelpContext &context) co
     EXPECT_EQ(expectedDisplayName_, context.moduleDisplayName());
 
     gmx::TextLineWrapperSettings settings;
-    std::string                  moduleName =
-        context.writerContext().substituteMarkupAndWrapToString(
-                settings, "[THISMODULE]");
+    std::string                  moduleName
+        = context.writerContext().substituteMarkupAndWrapToString(
+                    settings, "[THISMODULE]");
     EXPECT_EQ(expectedDisplayName_, moduleName);
 }
 
@@ -140,9 +140,9 @@ class CommandLineModuleManagerTestBase::Impl
             manager_.setOutputRedirector(&redirector_);
         }
 
-        TestFileOutputRedirector   redirector_;
-        CommandLineProgramContext  programContext_;
-        CommandLineModuleManager   manager_;
+        TestFileOutputRedirector  redirector_;
+        CommandLineProgramContext programContext_;
+        CommandLineModuleManager  manager_;
 };
 
 CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase()
@@ -161,26 +161,23 @@ void CommandLineModuleManagerTestBase::initManager(
     impl_.reset(new Impl(args, realBinaryName));
 }
 
-MockModule &
-CommandLineModuleManagerTestBase::addModule(const char *name, const char *description)
+MockModule &CommandLineModuleManagerTestBase::addModule(const char *name, const char *description)
 {
     MockModule *module = new MockModule(name, description);
     manager().addModule(gmx::CommandLineModulePointer(module));
     return *module;
 }
 
-MockOptionsModule &
-CommandLineModuleManagerTestBase::addOptionsModule(const char *name, const char *description)
+MockOptionsModule &CommandLineModuleManagerTestBase::addOptionsModule(const char *name, const char *description)
 {
-    std::unique_ptr<MockOptionsModule>  modulePtr(new MockOptionsModule());
-    MockOptionsModule                  *module = modulePtr.get();
+    std::unique_ptr<MockOptionsModule> modulePtr(new MockOptionsModule());
+    MockOptionsModule *                module = modulePtr.get();
     gmx::ICommandLineOptionsModule::registerModuleDirect(
             &manager(), name, description, std::move(modulePtr));
     return *module;
 }
 
-MockHelpTopic &
-CommandLineModuleManagerTestBase::addHelpTopic(const char *name, const char *title)
+MockHelpTopic &CommandLineModuleManagerTestBase::addHelpTopic(const char *name, const char *title)
 {
     MockHelpTopic *topic = new MockHelpTopic(name, title, "Help text");
     manager().addHelpTopic(gmx::HelpTopicPointer(topic));

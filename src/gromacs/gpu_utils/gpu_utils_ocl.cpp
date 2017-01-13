@@ -94,8 +94,7 @@ static bool is_compatible_gpu(int stat)
  * \return true if version is 14.4 or later (= OS X version 10.10.4),
  *         or OS is not Darwin.
  */
-static bool
-runningOnCompatibleOSForAmd()
+static bool runningOnCompatibleOSForAmd()
 {
 #ifdef __APPLE__
     int    mib[2];
@@ -105,10 +104,10 @@ runningOnCompatibleOSForAmd()
     mib[0] = CTL_KERN;
     mib[1] = KERN_OSRELEASE;
 
-    sysctl(mib, sizeof(mib)/sizeof(mib[0]), kernelVersion, &len, NULL, 0);
+    sysctl(mib, sizeof(mib) / sizeof(mib[0]), kernelVersion, &len, NULL, 0);
 
     int major = strtod(kernelVersion, NULL);
-    int minor = strtod(strchr(kernelVersion, '.')+1, NULL);
+    int minor = strtod(strchr(kernelVersion, '.') + 1, NULL);
 
     // Kernel 14.4 corresponds to OS X 10.10.4
     return (major > 14 || (major == 14 && minor >= 4));
@@ -151,8 +150,8 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
             return OCL_VENDOR_NVIDIA;
         }
         else
-        if (strstr(vendor_name, "AMD") ||
-            strstr(vendor_name, "Advanced Micro Devices"))
+        if (strstr(vendor_name, "AMD")
+            || strstr(vendor_name, "Advanced Micro Devices"))
         {
             return OCL_VENDOR_AMD;
         }
@@ -349,7 +348,7 @@ void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 
 //! This function is documented in the header file
 void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
-                          gmx_gpu_opt_t        *gpu_opt)
+                          gmx_gpu_opt_t *       gpu_opt)
 {
     int  i, ncompat;
     int *compat;
@@ -371,14 +370,14 @@ void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
 
     gpu_opt->n_dev_compatible = ncompat;
     snew(gpu_opt->dev_compatible, ncompat);
-    memcpy(gpu_opt->dev_compatible, compat, ncompat*sizeof(*compat));
+    memcpy(gpu_opt->dev_compatible, compat, ncompat * sizeof(*compat));
     sfree(compat);
 }
 
 //! This function is documented in the header file
-gmx_bool check_selected_gpus(int                  *checkres,
+gmx_bool check_selected_gpus(int *                 checkres,
                              const gmx_gpu_info_t *gpu_info,
-                             gmx_gpu_opt_t        *gpu_opt)
+                             gmx_gpu_opt_t *       gpu_opt)
 {
     int  i, id;
     bool bAllOk;
@@ -405,8 +404,8 @@ gmx_bool check_selected_gpus(int                  *checkres,
         /* devices are stored in increasing order of IDs in gpu_dev */
         gpu_opt->dev_use[i] = id;
 
-        checkres[i] = (id >= gpu_info->n_dev) ?
-            egpuNonexistent : gpu_info->gpu_dev[id].stat;
+        checkres[i] = (id >= gpu_info->n_dev)
+            ? egpuNonexistent : gpu_info->gpu_dev[id].stat;
 
         bAllOk = bAllOk && is_compatible_gpu(checkres[i]);
     }
@@ -425,11 +424,11 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
         return;
     }
 
-    gmx_device_info_t  *dinfo = &gpu_info->gpu_dev[index];
+    gmx_device_info_t *dinfo = &gpu_info->gpu_dev[index];
 
-    bool                bGpuExists =
-        dinfo->stat == egpuCompatible ||
-        dinfo->stat == egpuIncompatible;
+    bool bGpuExists
+        = dinfo->stat == egpuCompatible
+            || dinfo->stat == egpuIncompatible;
 
     if (!bGpuExists)
     {
@@ -449,9 +448,9 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
 //! This function is documented in the header file
 gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
                   int                              mygpu,
-                  char                            *result_str,
+                  char *                           result_str,
                   const gmx_gpu_info_t gmx_unused *gpu_info,
-                  const gmx_gpu_opt_t             *gpu_opt
+                  const gmx_gpu_opt_t *            gpu_opt
                   )
 {
     assert(result_str);
@@ -460,7 +459,7 @@ gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
 
     if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
     {
-        char        sbuf[STRLEN];
+        char sbuf[STRLEN];
         sprintf(sbuf, "Trying to initialize an non-existent GPU: "
                 "there are %d %s-selected GPU(s), but #%d was requested.",
                 gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
@@ -488,9 +487,9 @@ gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
 }
 
 //! This function is documented in the header file
-int get_gpu_device_id(const gmx_gpu_info_t  *,
-                      const gmx_gpu_opt_t  *gpu_opt,
-                      int                   idx)
+int get_gpu_device_id(const gmx_gpu_info_t *,
+                      const gmx_gpu_opt_t *gpu_opt,
+                      int                  idx)
 {
     assert(gpu_opt);
     assert(idx >= 0 && idx < gpu_opt->n_dev_use);
@@ -500,7 +499,7 @@ int get_gpu_device_id(const gmx_gpu_info_t  *,
 
 //! This function is documented in the header file
 char* get_ocl_gpu_device_name(const gmx_gpu_info_t *gpu_info,
-                              const gmx_gpu_opt_t  *gpu_opt,
+                              const gmx_gpu_opt_t * gpu_opt,
                               int                   idx)
 {
     assert(gpu_info);
@@ -562,7 +561,7 @@ cl_int dbg_ocl_kernel_name_address(void* kernel)
 
 void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free)
+                                  gmx_host_free_t ** nb_free)
 {
     if (bUseGpuKernels)
     {

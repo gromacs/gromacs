@@ -49,23 +49,21 @@
 namespace gmx
 {
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdDouble    scalar,
-                        SimdDouble *  triplets0,
-                        SimdDouble *  triplets1,
-                        SimdDouble *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
+                                                        SimdDouble * triplets0,
+                                                        SimdDouble * triplets1,
+                                                        SimdDouble * triplets2)
 {
     triplets0->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(0, 0));
     triplets1->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(1, 0));
     triplets2->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(1, 1));
 }
 
-static inline double
-reduceIncr4ReturnSum(double *    m,
-                     SimdDouble  v0,
-                     SimdDouble  v1,
-                     SimdDouble  v2,
-                     SimdDouble  v3)
+static inline double reduceIncr4ReturnSum(double *   m,
+                                          SimdDouble v0,
+                                          SimdDouble v1,
+                                          SimdDouble v2,
+                                          SimdDouble v3)
 {
     __m128d t1, t2, t3, t4;
 

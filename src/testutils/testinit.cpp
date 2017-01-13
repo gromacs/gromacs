@@ -133,8 +133,8 @@ class TestProgramContext : public IProgramContext
         }
 
     private:
-        const IProgramContext           &context_;
-        std::string                      dataPath_;
+        const IProgramContext &context_;
+        std::string            dataPath_;
 };
 
 //! Prints the command-line options for the unit test binary.

@@ -121,10 +121,10 @@ class ThreadAffinityTestHelper
         }
 
     private:
-        t_commrec                         *cr_;
-        gmx_hw_opt_t                      *hwOpt_;
-        std::unique_ptr<HardwareTopology>  hwTop_;
-        MockThreadAffinityAccess           affinityAccess_;
+        t_commrec *                       cr_;
+        gmx_hw_opt_t *                    hwOpt_;
+        std::unique_ptr<HardwareTopology> hwTop_;
+        MockThreadAffinityAccess          affinityAccess_;
 };
 
 } // namespace test

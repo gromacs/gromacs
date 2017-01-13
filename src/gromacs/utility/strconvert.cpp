@@ -77,8 +77,8 @@ bool boolFromString(const char *value)
 int intFromString(const char *str)
 {
     errno = 0;
-    char           *endptr;
-    const long int  value = std::strtol(str, &endptr, 10);
+    char *         endptr;
+    const long int value = std::strtol(str, &endptr, 10);
     if (errno == ERANGE
         || value < std::numeric_limits<int>::min()
         || value > std::numeric_limits<int>::max())
@@ -97,8 +97,8 @@ int intFromString(const char *str)
 gmx_int64_t int64FromString(const char *str)
 {
     errno = 0;
-    char              *endptr;
-    const gmx_int64_t  value = str_to_int64_t(str, &endptr);
+    char *            endptr;
+    const gmx_int64_t value = str_to_int64_t(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
@@ -115,8 +115,8 @@ gmx_int64_t int64FromString(const char *str)
 float floatFromString(const char *str)
 {
     errno = 0;
-    char         *endptr;
-    const double  value = std::strtod(str, &endptr);
+    char *       endptr;
+    const double value = std::strtod(str, &endptr);
     if (errno == ERANGE
         || value < -std::numeric_limits<float>::max()
         || value >  std::numeric_limits<float>::max())
@@ -135,8 +135,8 @@ float floatFromString(const char *str)
 double doubleFromString(const char *str)
 {
     errno = 0;
-    char         *endptr;
-    const double  value = std::strtod(str, &endptr);
+    char *       endptr;
+    const double value = std::strtod(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)

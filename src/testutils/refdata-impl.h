@@ -93,8 +93,8 @@ class ReferenceDataEntry
             {
                 return children_.end();
             }
-            ChildIterator  child          = prev;
-            bool           wrappingSearch = true;
+            ChildIterator child          = prev;
+            bool          wrappingSearch = true;
             if (child != children_.end())
             {
                 if (id == nullptr && (*child)->id().empty())
@@ -123,8 +123,7 @@ class ReferenceDataEntry
                 {
                     child = children_.begin();
                 }
-            }
-            while (child != children_.end() && child != prev);
+            } while (child != children_.end() && child != prev);
             return children_.end();
         }
         bool isValidChild(const ChildIterator &prev) const

@@ -137,13 +137,13 @@ int ir_optimal_nsttcouple(const t_inputrec *ir)
         }
     }
 
-    if (nmin == 0 || ir->delta_t*nwanted <= tau_min)
+    if (nmin == 0 || ir->delta_t * nwanted <= tau_min)
     {
         n = nwanted;
     }
     else
     {
-        n = (int)(tau_min/(ir->delta_t*nmin) + 0.001);
+        n = (int)(tau_min / (ir->delta_t * nmin) + 0.001);
         if (n < 1)
         {
             n = 1;
@@ -184,19 +184,19 @@ int pcouple_min_integration_steps(int epc)
 
 int ir_optimal_nstpcouple(const t_inputrec *ir)
 {
-    int  nmin, nwanted, n;
+    int nmin, nwanted, n;
 
     nmin = pcouple_min_integration_steps(ir->epc);
 
     nwanted = nst_wanted(ir);
 
-    if (nmin == 0 || ir->delta_t*nwanted <= ir->tau_p)
+    if (nmin == 0 || ir->delta_t * nwanted <= ir->tau_p)
     {
         n = nwanted;
     }
     else
     {
-        n = static_cast<int>(ir->tau_p/(ir->delta_t*nmin) + 0.001);
+        n = static_cast<int>(ir->tau_p / (ir->delta_t * nmin) + 0.001);
         if (n < 1)
         {
             n = 1;
@@ -212,20 +212,20 @@ int ir_optimal_nstpcouple(const t_inputrec *ir)
 
 gmx_bool ir_coulomb_switched(const t_inputrec *ir)
 {
-    return (ir->coulombtype == eelSWITCH ||
-            ir->coulombtype == eelSHIFT ||
-            ir->coulombtype == eelENCADSHIFT ||
-            ir->coulombtype == eelPMESWITCH ||
-            ir->coulombtype == eelPMEUSERSWITCH ||
-            ir->coulomb_modifier == eintmodPOTSWITCH ||
-            ir->coulomb_modifier == eintmodFORCESWITCH);
+    return (ir->coulombtype == eelSWITCH
+            || ir->coulombtype == eelSHIFT
+            || ir->coulombtype == eelENCADSHIFT
+            || ir->coulombtype == eelPMESWITCH
+            || ir->coulombtype == eelPMEUSERSWITCH
+            || ir->coulomb_modifier == eintmodPOTSWITCH
+            || ir->coulomb_modifier == eintmodFORCESWITCH);
 }
 
 gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec *ir)
 {
-    return (ir->cutoff_scheme == ecutsVERLET ||
-            ir_coulomb_switched(ir) || ir->coulomb_modifier != eintmodNONE ||
-            ir->coulombtype == eelRF_ZERO);
+    return (ir->cutoff_scheme == ecutsVERLET
+            || ir_coulomb_switched(ir) || ir->coulomb_modifier != eintmodNONE
+            || ir->coulombtype == eelRF_ZERO);
 }
 
 gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir)
@@ -235,17 +235,17 @@ gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir)
 
 gmx_bool ir_vdw_switched(const t_inputrec *ir)
 {
-    return (ir->vdwtype == evdwSWITCH ||
-            ir->vdwtype == evdwSHIFT ||
-            ir->vdwtype == evdwENCADSHIFT ||
-            ir->vdw_modifier == eintmodPOTSWITCH ||
-            ir->vdw_modifier == eintmodFORCESWITCH);
+    return (ir->vdwtype == evdwSWITCH
+            || ir->vdwtype == evdwSHIFT
+            || ir->vdwtype == evdwENCADSHIFT
+            || ir->vdw_modifier == eintmodPOTSWITCH
+            || ir->vdw_modifier == eintmodFORCESWITCH);
 }
 
 gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir)
 {
-    return (ir->cutoff_scheme == ecutsVERLET ||
-            ir_vdw_switched(ir) || ir->vdw_modifier != eintmodNONE);
+    return (ir->cutoff_scheme == ecutsVERLET
+            || ir_vdw_switched(ir) || ir->vdw_modifier != eintmodNONE);
 }
 
 gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
@@ -266,7 +266,7 @@ static void done_pull_params(pull_params_t *pull)
 {
     int i;
 
-    for (i = 0; i < pull->ngroup+1; i++)
+    for (i = 0; i < pull->ngroup + 1; i++)
     {
         done_pull_group(pull->group);
     }
@@ -428,7 +428,7 @@ static void pr_grp_opts(FILE *out, int indent, const char *title, const t_grpopt
         fprintf(out, "energygrp-flags[%3d]:", i);
         for (m = 0; (m < opts->ngener); m++)
         {
-            fprintf(out, " %d", opts->egp_flags[opts->ngener*i+m]);
+            fprintf(out, " %d", opts->egp_flags[opts->ngener * i + m]);
         }
         fprintf(out, "\n");
     }
@@ -667,7 +667,8 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
     char str[STRLEN];
 
     /* Enums for better readability of the code */
-    enum {
+    enum
+    {
         eCompA = 0, eCompB
     };
 
@@ -707,7 +708,7 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
     {
         for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
         {
-            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A'+ic);
+            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A' + ic);
             PI(str, swap->grp[ig].nmolReq[ic]);
         }
     }
@@ -1012,8 +1013,8 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
             {
                 sprintf(buf1, "inputrec->grpopts.egp_flags[%d]", i);
                 cmp_int(fp, buf1, j,
-                        opt1->egp_flags[opt1->ngener*i+j],
-                        opt2->egp_flags[opt1->ngener*i+j]);
+                        opt1->egp_flags[opt1->ngener * i + j],
+                        opt2->egp_flags[opt1->ngener * i + j]);
             }
         }
     }
@@ -1270,8 +1271,8 @@ void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
 
 gmx_bool inputrecDeform(const t_inputrec *ir)
 {
-    return (ir->deform[XX][XX] != 0 || ir->deform[YY][YY] != 0 || ir->deform[ZZ][ZZ] != 0 ||
-            ir->deform[YY][XX] != 0 || ir->deform[ZZ][XX] != 0 || ir->deform[ZZ][YY] != 0);
+    return (ir->deform[XX][XX] != 0 || ir->deform[YY][YY] != 0 || ir->deform[ZZ][ZZ] != 0
+            || ir->deform[YY][XX] != 0 || ir->deform[ZZ][XX] != 0 || ir->deform[ZZ][YY] != 0);
 }
 
 gmx_bool inputrecDynamicBox(const t_inputrec *ir)
@@ -1281,36 +1282,36 @@ gmx_bool inputrecDynamicBox(const t_inputrec *ir)
 
 gmx_bool inputrecPreserveShape(const t_inputrec *ir)
 {
-    return  (ir->epc != epcNO && ir->deform[XX][XX] == 0 &&
-             (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
+    return  (ir->epc != epcNO && ir->deform[XX][XX] == 0
+             && (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
 }
 
 gmx_bool inputrecNeedMutot(const t_inputrec *ir)
 {
-    return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype)) &&
-            (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
+    return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype))
+            && (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
 }
 
 gmx_bool inputrecExclForces(const t_inputrec *ir)
 {
-    return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype)) ||
-            ir->implicit_solvent != eisNO);
+    return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype))
+            || ir->implicit_solvent != eisNO);
 }
 
 gmx_bool inputrecNptTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
-             (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) )
+             && (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
 }
 
 gmx_bool inputrecNvtTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
-             (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) )
+             && (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
 }
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
-             (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
+    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) )
+             && (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }

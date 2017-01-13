@@ -70,29 +70,29 @@ class AnalysisDataDisplacementModule::Impl
         ~Impl();
 
         //! Maximum number of particles for which the displacements are calculated.
-        int                     nmax;
+        int nmax;
         //! Maximum time for which the displacements are needed.
-        real                    tmax;
+        real tmax;
         //! Number of dimensions per data point.
-        int                     ndim;
+        int ndim;
 
         //! true if no frames have been read.
-        bool                    bFirst;
+        bool bFirst;
         //! Stores the time of the first frame.
-        real                    t0;
+        real t0;
         //! Stores the time interval between frames.
-        real                    dt;
+        real dt;
         //! Stores the time of the current frame.
-        real                    t;
+        real t;
         //! Stores the index in the store for the current positions.
-        int                     ci;
+        int ci;
 
         //! Maximum number of positions to store for a particle.
-        int                            max_store;
+        int max_store;
         //! The total number of positions ever stored (can be larger than \p max_store).
-        int                            nstored;
+        int nstored;
         //! Old values.
-        real                          *oldval;
+        real *oldval;
         //! The most recently calculated displacements.
         std::vector<AnalysisDataValue> currValues_;
 
@@ -129,15 +129,13 @@ AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule()
 }
 
 
-void
-AnalysisDataDisplacementModule::setMaxTime(real tmax)
+void AnalysisDataDisplacementModule::setMaxTime(real tmax)
 {
     _impl->tmax = tmax;
 }
 
 
-void
-AnalysisDataDisplacementModule::setMSDHistogram(
+void AnalysisDataDisplacementModule::setMSDHistogram(
         AnalysisDataBinAverageModulePointer histm)
 {
     GMX_RELEASE_ASSERT(_impl->histm == nullptr, "Can only set MSD histogram once");
@@ -146,29 +144,25 @@ AnalysisDataDisplacementModule::setMSDHistogram(
 }
 
 
-AnalysisDataFrameRef
-AnalysisDataDisplacementModule::tryGetDataFrameInternal(int /*index*/) const
+AnalysisDataFrameRef AnalysisDataDisplacementModule::tryGetDataFrameInternal(int /*index*/) const
 {
     return AnalysisDataFrameRef();
 }
 
 
-bool
-AnalysisDataDisplacementModule::requestStorageInternal(int /*nframes*/)
+bool AnalysisDataDisplacementModule::requestStorageInternal(int /*nframes*/)
 {
     return false;
 }
 
 
-int
-AnalysisDataDisplacementModule::flags() const
+int AnalysisDataDisplacementModule::flags() const
 {
     return efAllowMulticolumn;
 }
 
 
-void
-AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 {
     if (data->columnCount() % _impl->ndim != 0)
     {
@@ -184,8 +178,7 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 }
 
 
-void
-AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &header)
+void AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     // Initialize times.
     if (_impl->bFirst)
@@ -212,7 +205,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
     {
-        _impl->max_store = _impl->nmax * (int)(_impl->tmax/_impl->dt + 1);
+        _impl->max_store = _impl->nmax * (int)(_impl->tmax / _impl->dt + 1);
         srenew(_impl->oldval, _impl->max_store);
     }
 
@@ -234,8 +227,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
 }
 
 
-void
-AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     if (points.firstColumn() % _impl->ndim != 0
         || points.columnCount() % _impl->ndim != 0)
@@ -249,8 +241,7 @@ AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &point
 }
 
 
-void
-AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
+void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
     if (_impl->nstored <= 1)
     {
@@ -301,8 +292,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
 }
 
 
-void
-AnalysisDataDisplacementModule::dataFinished()
+void AnalysisDataDisplacementModule::dataFinished()
 {
     if (_impl->nstored >= 2)
     {

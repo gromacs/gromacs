@@ -58,8 +58,8 @@
  * settings to decide when to use _mm_pause(). This should eventually be
  * changed into proper detection of the intrinsics uses, not SIMD.
  */
-#if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA || \
-    GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
+#if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA    \
+    || GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
 #    include <xmmintrin.h>
 #endif
 #else
@@ -136,8 +136,8 @@ static gmx_inline void gmx_pause()
      * settings to decide when to use _mm_pause(). This should eventually be
      * changed into proper detection of the intrinsics uses, not SIMD.
      */
-#if (GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA || \
-     GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !defined(__MINGW32__)
+#if (GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA    \
+     || GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !defined(__MINGW32__)
     /* Replace with tbb::internal::atomic_backoff when/if we use TBB */
     _mm_pause();
 #elif defined __MIC__

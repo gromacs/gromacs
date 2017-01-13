@@ -55,13 +55,12 @@ namespace gmx
 // that use a SIMD offset variable first.
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double *  base,
-                             SimdDInt32      simdoffset,
-                             SimdDouble *    v0,
-                             SimdDouble *    v1,
-                             SimdDouble *    v2,
-                             SimdDouble *    v3)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
+                                                             SimdDInt32     simdoffset,
+                                                             SimdDouble *   v0,
+                                                             SimdDouble *   v1,
+                                                             SimdDouble *   v2,
+                                                             SimdDouble *   v3)
 {
     assert(std::size_t(base) % 32 == 0);
     assert(align % 4 == 0);
@@ -85,17 +84,16 @@ gatherLoadBySimdIntTranspose(const double *  base,
     // The 8 corresponds to sizeof(double), but debug builds with gcc require
     // an immediate since sizeof() is taken as a function.
     v0->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base,   8);
-    v1->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base+1, 8);
-    v2->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base+2, 8);
-    v3->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base+3, 8);
+    v1->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base + 1, 8);
+    v2->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base + 2, 8);
+    v3->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base + 3, 8);
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const double *  base,
-                              SimdDInt32      simdoffset,
-                              SimdDouble *    v0,
-                              SimdDouble *    v1)
+static inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double * base,
+                                                              SimdDInt32     simdoffset,
+                                                              SimdDouble *   v0,
+                                                              SimdDouble *   v1)
 {
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
@@ -118,15 +116,14 @@ gatherLoadUBySimdIntTranspose(const double *  base,
     }
 
     v0->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base,   8);
-    v1->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base+1, 8);
+    v1->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base + 1, 8);
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double *    base,
-                             SimdDInt32        simdoffset,
-                             SimdDouble *      v0,
-                             SimdDouble *      v1)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
+                                                             SimdDInt32     simdoffset,
+                                                             SimdDouble *   v0,
+                                                             SimdDouble *   v1)
 {
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -137,24 +134,22 @@ gatherLoadBySimdIntTranspose(const double *    base,
 
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double *        base,
-                    const std::int32_t    offset[],
-                    SimdDouble *          v0,
-                    SimdDouble *          v1,
-                    SimdDouble *          v2,
-                    SimdDouble *          v3)
+static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble *       v0,
+                                                    SimdDouble *       v1,
+                                                    SimdDouble *       v2,
+                                                    SimdDouble *       v3)
 {
     assert(std::size_t(offset) % 64 == 0);
     gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), v0, v1, v2, v3);
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double *        base,
-                    const std::int32_t    offset[],
-                    SimdDouble *          v0,
-                    SimdDouble *          v1)
+static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble *       v0,
+                                                    SimdDouble *       v1)
 {
     assert(std::size_t(offset) % 64 == 0);
     gatherLoadBySimdIntTranspose<align>(base, simdLoadDI(offset), v0, v1);
@@ -163,12 +158,11 @@ gatherLoadTranspose(const double *        base,
 static const int c_simdBestPairAlignmentDouble = 2;
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUTranspose(const double *        base,
-                     const std::int32_t    offset[],
-                     SimdDouble *          v0,
-                     SimdDouble *          v1,
-                     SimdDouble *          v2)
+static inline void gmx_simdcall gatherLoadUTranspose(const double *     base,
+                                                     const std::int32_t offset[],
+                                                     SimdDouble *       v0,
+                                                     SimdDouble *       v1,
+                                                     SimdDouble *       v2)
 {
     SimdDInt32 simdoffset;
 
@@ -193,17 +187,16 @@ gatherLoadUTranspose(const double *        base,
     }
 
     v0->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base,   8);
-    v1->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base+1, 8);
-    v2->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base+2, 8);
+    v1->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base + 1, 8);
+    v2->simdInternal_ = _mm512_i32gather_pd(simdoffset.simdInternal_, base + 2, 8);
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterStoreU(double *            base,
-                       const std::int32_t  offset[],
-                       SimdDouble          v0,
-                       SimdDouble          v1,
-                       SimdDouble          v2)
+static inline void gmx_simdcall transposeScatterStoreU(double *           base,
+                                                       const std::int32_t offset[],
+                                                       SimdDouble         v0,
+                                                       SimdDouble         v1,
+                                                       SimdDouble         v2)
 {
     SimdDInt32 simdoffset;
 
@@ -228,17 +221,16 @@ transposeScatterStoreU(double *            base,
     }
 
     _mm512_i32scatter_pd(base,   simdoffset.simdInternal_, v0.simdInternal_, 8);
-    _mm512_i32scatter_pd(base+1, simdoffset.simdInternal_, v1.simdInternal_, 8);
-    _mm512_i32scatter_pd(base+2, simdoffset.simdInternal_, v2.simdInternal_, 8);
+    _mm512_i32scatter_pd(base + 1, simdoffset.simdInternal_, v1.simdInternal_, 8);
+    _mm512_i32scatter_pd(base + 2, simdoffset.simdInternal_, v2.simdInternal_, 8);
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterIncrU(double *            base,
-                      const std::int32_t  offset[],
-                      SimdDouble          v0,
-                      SimdDouble          v1,
-                      SimdDouble          v2)
+static inline void gmx_simdcall transposeScatterIncrU(double *           base,
+                                                      const std::int32_t offset[],
+                                                      SimdDouble         v0,
+                                                      SimdDouble         v1,
+                                                      SimdDouble         v2)
 {
     __m512d t[4], t5, t6, t7, t8;
     GMX_ALIGNED(std::int64_t, 8)    o[8];
@@ -287,12 +279,11 @@ transposeScatterIncrU(double *            base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterDecrU(double *            base,
-                      const std::int32_t  offset[],
-                      SimdDouble          v0,
-                      SimdDouble          v1,
-                      SimdDouble          v2)
+static inline void gmx_simdcall transposeScatterDecrU(double *           base,
+                                                      const std::int32_t offset[],
+                                                      SimdDouble         v0,
+                                                      SimdDouble         v1,
+                                                      SimdDouble         v2)
 {
     __m512d t[4], t5, t6, t7, t8;
     GMX_ALIGNED(std::int64_t, 8)    o[8];
@@ -340,11 +331,10 @@ transposeScatterDecrU(double *            base,
     }
 }
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdDouble    scalar,
-                        SimdDouble *  triplets0,
-                        SimdDouble *  triplets1,
-                        SimdDouble *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
+                                                        SimdDouble * triplets0,
+                                                        SimdDouble * triplets1,
+                                                        SimdDouble * triplets2)
 {
     triplets0->simdInternal_ = _mm512_castsi512_pd(_mm512_permutexvar_epi32(_mm512_set_epi32(5, 4, 5, 4, 3, 2, 3, 2, 3, 2, 1, 0, 1, 0, 1, 0),
                                                                             _mm512_castpd_si512(scalar.simdInternal_)));
@@ -355,12 +345,11 @@ expandScalarsToTriplets(SimdDouble    scalar,
 }
 
 
-static inline double gmx_simdcall
-reduceIncr4ReturnSum(double *    m,
-                     SimdDouble  v0,
-                     SimdDouble  v1,
-                     SimdDouble  v2,
-                     SimdDouble  v3)
+static inline double gmx_simdcall reduceIncr4ReturnSum(double *   m,
+                                                       SimdDouble v0,
+                                                       SimdDouble v1,
+                                                       SimdDouble v2,
+                                                       SimdDouble v3)
 {
     __m512d t0, t2;
     __m256d t3, t4;
@@ -387,9 +376,8 @@ reduceIncr4ReturnSum(double *    m,
     return _mm_cvtsd_f64(_mm256_castpd256_pd128(t3));
 }
 
-static inline SimdDouble gmx_simdcall
-loadDualHsimd(const double * m0,
-              const double * m1)
+static inline SimdDouble gmx_simdcall loadDualHsimd(const double * m0,
+                                                    const double * m1)
 {
     assert(std::size_t(m0) % 32 == 0);
     assert(std::size_t(m1) % 32 == 0);
@@ -400,8 +388,7 @@ loadDualHsimd(const double * m0,
     };
 }
 
-static inline SimdDouble gmx_simdcall
-loadDuplicateHsimd(const double * m)
+static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double * m)
 {
     assert(std::size_t(m) % 32 == 0);
 
@@ -410,20 +397,18 @@ loadDuplicateHsimd(const double * m)
     };
 }
 
-static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double * m)
+static inline SimdDouble gmx_simdcall load1DualHsimd(const double * m)
 {
     return {
                _mm512_insertf64x4(_mm512_broadcastsd_pd(_mm_load_sd(m)),
-                                  _mm256_broadcastsd_pd(_mm_load_sd(m+1)), 1)
+                                  _mm256_broadcastsd_pd(_mm_load_sd(m + 1)), 1)
     };
 }
 
 
-static inline void gmx_simdcall
-storeDualHsimd(double *     m0,
-               double *     m1,
-               SimdDouble   a)
+static inline void gmx_simdcall storeDualHsimd(double *   m0,
+                                               double *   m1,
+                                               SimdDouble a)
 {
     assert(std::size_t(m0) % 32 == 0);
     assert(std::size_t(m1) % 32 == 0);
@@ -432,10 +417,9 @@ storeDualHsimd(double *     m0,
     _mm256_store_pd(m1, _mm512_extractf64x4_pd(a.simdInternal_, 1));
 }
 
-static inline void gmx_simdcall
-incrDualHsimd(double *     m0,
-              double *     m1,
-              SimdDouble   a)
+static inline void gmx_simdcall incrDualHsimd(double *   m0,
+                                              double *   m1,
+                                              SimdDouble a)
 {
     assert(std::size_t(m0) % 32 == 0);
     assert(std::size_t(m1) % 32 == 0);
@@ -453,9 +437,8 @@ incrDualHsimd(double *     m0,
     _mm256_store_pd(m1, x);
 }
 
-static inline void gmx_simdcall
-decrHsimd(double *    m,
-          SimdDouble  a)
+static inline void gmx_simdcall decrHsimd(double *   m,
+                                          SimdDouble a)
 {
     __m256d t;
 
@@ -469,16 +452,15 @@ decrHsimd(double *    m,
 
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTransposeHsimd(const double *       base0,
-                         const double *       base1,
-                         const std::int32_t   offset[],
-                         SimdDouble *         v0,
-                         SimdDouble *         v1)
+static inline void gmx_simdcall gatherLoadTransposeHsimd(const double *     base0,
+                                                         const double *     base1,
+                                                         const std::int32_t offset[],
+                                                         SimdDouble *       v0,
+                                                         SimdDouble *       v1)
 {
-    __m128i  idx0, idx1;
-    __m256i  idx;
-    __m512d  tmp1, tmp2;
+    __m128i idx0, idx1;
+    __m256i idx;
+    __m512d tmp1, tmp2;
 
     assert(std::size_t(offset) % 16 == 0);
     assert(std::size_t(base0) % 16 == 0);
@@ -499,13 +481,12 @@ gatherLoadTransposeHsimd(const double *       base0,
     v1->simdInternal_ = _mm512_shuffle_f64x2(tmp1, tmp2, 0xEE );
 }
 
-static inline double gmx_simdcall
-reduceIncr4ReturnSumHsimd(double *     m,
-                          SimdDouble   v0,
-                          SimdDouble   v1)
+static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double *   m,
+                                                            SimdDouble v0,
+                                                            SimdDouble v1)
 {
-    __m512d  t0;
-    __m256d  t2, t3;
+    __m512d t0;
+    __m256d t2, t3;
 
     assert(std::size_t(m) % 32 == 0);
 

@@ -49,7 +49,7 @@ void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
     int i;
     for (i = 0; i < size; i++)
     {
-        result[i] += cabs2(list[i])/tsteps;
+        result[i] += cabs2(list[i]) / tsteps;
     }
 
 }
@@ -61,13 +61,13 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
     gmx_fft_t  fftp;
     t_complex *ftspect1;            /* Spatial FFT of interface for each time frame and interface ftint[time,xycoord][0], ftintf[time,xycoord][1] for interface 1 and 2                 respectively */
     t_complex *ftspect2;
-    real      *pspectavg1;          /*power -spectrum 1st interface*/
-    real      *pspectavg2;          /* -------------- 2nd interface*/
-    real      *temp;
-    FILE      *datfile1, *datfile2; /*data-files with interface data*/
+    real *     pspectavg1;          /*power -spectrum 1st interface*/
+    real *     pspectavg2;          /* -------------- 2nd interface*/
+    real *     temp;
+    FILE *     datfile1, *datfile2; /*data-files with interface data*/
     int        n;                   /*time index*/
-    int        fy  = ybins/2+1;     /* number of (symmetric) fourier y elements; */
-    int        rfl = xbins*fy;      /*length of real - DFT == Symmetric 2D matrix*/
+    int        fy  = ybins / 2 + 1; /* number of (symmetric) fourier y elements; */
+    int        rfl = xbins * fy;    /*length of real - DFT == Symmetric 2D matrix*/
 
 /*Prepare data structures for FFT, with time averaging of power spectrum*/
     if (gmx_fft_init_2d_real(&fftp, xbins, ybins, GMX_FFT_FLAG_NONE) != 0)
@@ -106,7 +106,7 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
     for (n = 0; n < rfl; n++)
     {
         fprintf(datfile1, "%d\t%d\t %8.6f\n", (n / fy), (n % fy), pspectavg1[n]);
-        fprintf(datfile2, "%d\t%d\t %8.6f\n", (n /fy), (n % fy), pspectavg2[n]);
+        fprintf(datfile2, "%d\t%d\t %8.6f\n", (n / fy), (n % fy), pspectavg2[n]);
     }
     gmx_ffclose(datfile1);
     gmx_ffclose(datfile2);
@@ -120,8 +120,8 @@ void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t, int xb, int yb,
 {
     real ***surf;
 
-    int     xy = xb*yb;
-    int     i, n;
+    int xy = xb * yb;
+    int i, n;
 
     snew(surf, 2);
     snew(surf[0], t);

@@ -128,10 +128,10 @@ void TopologyManager::requestForces()
 
 void TopologyManager::loadTopology(const char *filename)
 {
-    bool    fullTopology;
-    int     ePBC;
-    rvec   *xtop = nullptr;
-    matrix  box;
+    bool   fullTopology;
+    int    ePBC;
+    rvec * xtop = nullptr;
+    matrix box;
 
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
     snew(mtop_, 1);
@@ -146,7 +146,7 @@ void TopologyManager::loadTopology(const char *filename)
         frame_->bX     = TRUE;
         snew(frame_->x, frame_->natoms);
         std::memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
-        frame_->bBox   = TRUE;
+        frame_->bBox = TRUE;
         copy_mat(box, frame_->box);
     }
 
@@ -162,11 +162,11 @@ void TopologyManager::initAtoms(int count)
     init_t_atoms(&mtop_->moltype[0].atoms, count, FALSE);
     mtop_->nmolblock = 1;
     snew(mtop_->molblock, 1);
-    mtop_->molblock[0].type            = 0;
-    mtop_->molblock[0].nmol            = 1;
-    mtop_->molblock[0].natoms_mol      = count;
-    mtop_->natoms                      = count;
-    mtop_->maxres_renum                = 0;
+    mtop_->molblock[0].type       = 0;
+    mtop_->molblock[0].nmol       = 1;
+    mtop_->molblock[0].natoms_mol = count;
+    mtop_->natoms                 = count;
+    mtop_->maxres_renum           = 0;
     gmx_mtop_finalize(mtop_);
     GMX_RELEASE_ASSERT(mtop_->maxres_renum == 0, "maxres_renum in mtop can be modified by an env.var., that is not supported in this test");
     t_atoms &atoms = this->atoms();
@@ -201,7 +201,7 @@ void TopologyManager::initAtomTypes(const ConstArrayRef<const char *> &types)
     }
     t_atoms &atoms = this->atoms();
     snew(atoms.atomtype, atoms.nr);
-    size_t   j = 0;
+    size_t j = 0;
     for (int i = 0; i < atoms.nr; ++i, ++j)
     {
         if (j == types.size())

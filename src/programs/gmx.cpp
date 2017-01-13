@@ -47,8 +47,7 @@
 
 #include "legacymodules.h"
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
     try

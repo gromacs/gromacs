@@ -66,9 +66,9 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
                             const rvec x[], const rvec *v, int ePBC, const matrix box,
                             int nindex, int index[])
 {
-    FILE       *out;
-    int         ftp;
-    t_trxframe  fr;
+    FILE *     out;
+    int        ftp;
+    t_trxframe fr;
 
     ftp = fn2ftp(outfile);
     switch (ftp)
@@ -122,9 +122,9 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
 void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms,
                     const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
-    FILE       *out;
-    int         ftp;
-    t_trxframe  fr;
+    FILE *     out;
+    int        ftp;
+    t_trxframe fr;
 
     ftp = fn2ftp(outfile);
     switch (ftp)
@@ -177,7 +177,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
                          const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
     int     ftp;
-    FILE   *out;
+    FILE *  out;
     t_atoms atoms;
 
     ftp = fn2ftp(outfile);
@@ -203,10 +203,10 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
 
 static void get_stx_coordnum(const char *infile, int *natoms)
 {
-    FILE      *in;
+    FILE *     in;
     int        ftp;
     t_trxframe fr;
-    char       g96_line[STRLEN+1];
+    char       g96_line[STRLEN + 1];
 
     ftp = fn2ftp(infile);
     range_check(ftp, 0, efNR);
@@ -252,13 +252,13 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
      */
     const int chainMinAtoms = 15;
 
-    int       chainnum = 0;
-    char      chainid  = 'A';
-    bool      outOfIds = false;
+    int  chainnum = 0;
+    char chainid  = 'A';
+    bool outOfIds = false;
     for (int m = 0; m < mols->nr; m++)
     {
         int a0 = mols->index[m];
-        int a1 = mols->index[m+1];
+        int a1 = mols->index[m + 1];
         int c;
         if (a1 - a0 >= chainMinAtoms && !outOfIds)
         {
@@ -308,10 +308,10 @@ static void read_stx_conf(const char *infile,
                           t_symtab *symtab, char ***name, t_atoms *atoms,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
-    FILE       *in;
-    t_trxframe  fr;
-    int         ftp;
-    char        g96_line[STRLEN+1];
+    FILE *     in;
+    t_trxframe fr;
+    int        ftp;
+    char       g96_line[STRLEN + 1];
 
     if (atoms->nr == 0)
     {
@@ -344,7 +344,7 @@ static void read_stx_conf(const char *infile,
             read_g96_conf(in, infile, &fr, symtab, g96_line);
             gmx_fio_fclose(in);
             copy_mat(fr.box, box);
-            *name     = put_symtab(symtab, fr.title);
+            *name = put_symtab(symtab, fr.title);
             sfree(const_cast<char *>(fr.title));
             break;
         case efPDB:
@@ -427,9 +427,9 @@ void readConfAndTopology(const char *infile,
     }
     else
     {
-        t_symtab   symtab;
-        char     **name;
-        t_atoms    atoms;
+        t_symtab symtab;
+        char **  name;
+        t_atoms  atoms;
 
         open_symtab(&symtab);
 

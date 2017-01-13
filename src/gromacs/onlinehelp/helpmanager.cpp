@@ -93,7 +93,7 @@ class HelpManager::Impl
          * The first item is always the root topic, and each item is a subtopic
          * of the preceding item.  The last item is the currently active topic.
          */
-        TopicStack               topicStack_;
+        TopicStack topicStack_;
 };
 
 std::string HelpManager::Impl::currentTopicAsString() const
@@ -115,8 +115,8 @@ std::string HelpManager::Impl::currentTopicAsString() const
  * HelpManager
  */
 
-HelpManager::HelpManager(const IHelpTopic         &rootTopic,
-                         const HelpWriterContext  &context)
+HelpManager::HelpManager(const IHelpTopic &       rootTopic,
+                         const HelpWriterContext &context)
     : impl_(new Impl(context))
 {
     impl_->topicStack_.push_back(&rootTopic);
@@ -160,9 +160,9 @@ void HelpManager::enterTopic(const std::string &name)
 
 void HelpManager::writeCurrentTopic() const
 {
-    const IHelpTopic         &topic = impl_->currentTopic();
-    const char               *title = topic.title();
-    HelpWriterContext         context(impl_->rootContext_);
+    const IHelpTopic &topic = impl_->currentTopic();
+    const char *      title = topic.title();
+    HelpWriterContext context(impl_->rootContext_);
     context.enterSubSection(title != nullptr ? title : "");
     topic.writeHelp(context);
 }

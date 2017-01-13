@@ -52,11 +52,11 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
     char *line0;
     char *dum;
 
-    snew(line0, n+1);
+    snew(line0, n + 1);
 
     do
     {
-        if (!fgets(line0, n+1, fp))
+        if (!fgets(line0, n + 1, fp))
         {
             sfree(line0);
             return FALSE;
@@ -69,7 +69,7 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
         else if (static_cast<int>(std::strlen(line0)) == n)
         {
             fprintf(stderr, "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
-            line0[n-1] = '\0';
+            line0[n - 1] = '\0';
         }
         else
         {
@@ -84,8 +84,7 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
         std::strncpy(line, line0, n);
         dum = line0;
         ltrim(dum);
-    }
-    while (dum[0] == '\0');
+    } while (dum[0] == '\0');
 
     sfree(line0);
     return TRUE;
@@ -138,7 +137,7 @@ static int fget_lines(FILE *in, const char *db, char ***strings)
     char **ptr;
     char   buf[STRLEN];
     int    i, nstr;
-    char  *pret;
+    char * pret;
 
     pret = fgets(buf, STRLEN, in);
     if (pret == nullptr  || sscanf(buf, "%d", &nstr) != 1)

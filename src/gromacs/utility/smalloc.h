@@ -428,10 +428,10 @@ void set_over_alloc_dd(gmx_bool set);
 int over_alloc_dd(int n);
 
 /** Over allocation for small data types: int, real etc. */
-#define over_alloc_small(n) (int)(OVER_ALLOC_FAC*(n) + 8000)
+#define over_alloc_small(n) (int)(OVER_ALLOC_FAC * (n) + 8000)
 
 /** Over allocation for large data types: complex structs */
-#define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
+#define over_alloc_large(n) (int)(OVER_ALLOC_FAC * (n) + 1000)
 
 #ifdef __cplusplus
 }

@@ -50,12 +50,12 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        int *nvec, int **eignr,
                        rvec ***eigvec, real **eigval)
 {
-    gmx_trr_header_t   head;
-    int                i, snew_size;
-    struct t_fileio   *status;
-    rvec              *x;
-    matrix             box;
-    gmx_bool           bOK;
+    gmx_trr_header_t head;
+    int              i, snew_size;
+    struct t_fileio *status;
+    rvec *           x;
+    matrix           box;
+    gmx_bool         bOK;
 
     *bDMR = FALSE;
 
@@ -127,7 +127,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         }
         i                = head.step;
         (*eigval)[*nvec] = head.t;
-        (*eignr)[*nvec]  = i-1;
+        (*eignr)[*nvec]  = i - 1;
         snew((*eigvec)[*nvec], *natoms);
         for (i = 0; i < *natoms; i++)
         {
@@ -149,9 +149,9 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
     struct t_fileio *trrout;
     int              ndim, i, j, d, vec;
     matrix           zerobox;
-    rvec            *x;
+    rvec *           x;
 
-    ndim = natoms*DIM;
+    ndim = natoms * DIM;
     clear_mat(zerobox);
     snew(x, natoms);
 
@@ -175,7 +175,7 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
     /* misuse lambda: 0/1 mass weighted analysis no/yes */
     gmx_trr_write_frame(trrout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, nullptr, nullptr);
 
-    for (i = 0; i <= (end-begin); i++)
+    for (i = 0; i <= (end - begin); i++)
     {
 
         if (!bReverse)
@@ -184,19 +184,19 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
         }
         else
         {
-            vec = ndim-i-1;
+            vec = ndim - i - 1;
         }
 
         for (j = 0; j < natoms; j++)
         {
             for (d = 0; d < DIM; d++)
             {
-                x[j][d] = mat[vec*ndim+DIM*j+d];
+                x[j][d] = mat[vec * ndim + DIM * j + d];
             }
         }
 
         /* Store the eigenvalue in the time field */
-        gmx_trr_write_frame(trrout, begin+i, eigval[vec], 0, zerobox, natoms, x, nullptr, nullptr);
+        gmx_trr_write_frame(trrout, begin + i, eigval[vec], 0, zerobox, natoms, x, nullptr, nullptr);
     }
     gmx_trr_close(trrout);
 

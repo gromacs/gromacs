@@ -201,15 +201,15 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
-        OptionFileType          optionType_;
-        int                     legacyType_;
-        const char             *defaultBasename_;
-        int                     defaultType_;
-        bool                    bLegacyOptionalBehavior_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
-        bool                    bAllowMissing_;
+        OptionFileType optionType_;
+        int            legacyType_;
+        const char *   defaultBasename_;
+        int            defaultType_;
+        bool           bLegacyOptionalBehavior_;
+        bool           bRead_;
+        bool           bWrite_;
+        bool           bLibrary_;
+        bool           bAllowMissing_;
 
         /*! \brief
          * Needed to initialize FileNameOptionStorage from this class without

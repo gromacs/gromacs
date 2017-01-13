@@ -157,16 +157,14 @@ class AlignedAllocator
          *  \param r Reference to object of type T
          *  \return Pointer to T memory
          */
-        pointer
-        address(reference r) const { return &r; }
+        pointer address(reference r) const { return &r; }
 
         /*! \brief Return address of a const object
          *
          *  \param r Const reference to object of type T
          *  \return Pointer to T memory
          */
-        const_pointer
-        address(const_reference r) const { return &r; }
+        const_pointer address(const_reference r) const { return &r; }
 
         /*! \brief Do the actual memory allocation
          *
@@ -179,10 +177,9 @@ class AlignedAllocator
          *
          *  \throws std::bad_alloc if the allocation fails.
          */
-        pointer
-        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
+        pointer allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
         {
-            void *p = internal::alignedMalloc(n*sizeof(T));
+            void *p = internal::alignedMalloc(n * sizeof(T));
 
             if (p == nullptr)
             {
@@ -199,8 +196,7 @@ class AlignedAllocator
          * \param p  Pointer to previously allocated memory returned from allocate()
          * \param n  number of objects previously passed to allocate()
          */
-        void
-        deallocate(pointer p, std::size_t gmx_unused n)
+        void deallocate(pointer p, std::size_t gmx_unused n)
         {
             internal::alignedFree(p);
         }
@@ -211,16 +207,14 @@ class AlignedAllocator
          * \param p      Adress of memory where to construct object
          * \param args   Variable-length list of arguments to constructor
          */
-        template<class ... Args>
-        void
-        construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
+        template <class ... Args>
+        void construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
 
         /*! \brief Call the destructor of object without releasing memory
          *
          * \param p  Address of memory where to destroy object
          */
-        void
-        destroy(pointer p) { p->~value_type(); }
+        void destroy(pointer p) { p->~value_type(); }
 
         /*! \brief Return largest number of objects that can be allocated
          *
@@ -228,8 +222,7 @@ class AlignedAllocator
          * the size of each object is the largest value that can be represented
          * by size_type.
          */
-        std::size_t
-        max_size() const { return (static_cast<size_t>(0) - static_cast<size_t>(1)) / sizeof(T); }
+        std::size_t max_size() const { return (static_cast<size_t>(0) - static_cast<size_t>(1)) / sizeof(T); }
 
         /*! \brief Return true if two allocators are identical
          *
@@ -237,9 +230,8 @@ class AlignedAllocator
          *
          * This is a member function of the left-hand-side allocator.
          */
-        template<class T2>
-        bool
-        operator==(const AlignedAllocator<T2> &gmx_unused rhs) const { return std::is_same<T, T2>::value; GMX_UNUSED_VALUE(rhs); }
+        template <class T2>
+        bool operator==(const AlignedAllocator<T2> &gmx_unused rhs) const { return std::is_same<T, T2>::value; GMX_UNUSED_VALUE(rhs); }
 
         /*! \brief Return true if two allocators are different
          *
@@ -247,8 +239,7 @@ class AlignedAllocator
          *
          * This is a member function of the left-hand-side allocator.
          */
-        bool
-        operator!=(const AlignedAllocator &rhs) const { return !operator==(rhs); }
+        bool operator!=(const AlignedAllocator &rhs) const { return !operator==(rhs); }
 };
 
 }      // namespace gmx

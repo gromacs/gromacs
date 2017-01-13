@@ -91,7 +91,7 @@ extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_c
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
 
 /* Fw. decl, */
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
+static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t *           nbparam,
                                           const gmx_device_info_t *dev_info);
 
 
@@ -111,10 +111,10 @@ static bool use_texobj(const gmx_device_info_t *dev_info)
  * \param[in]   pointer to nonbonded paramter struct
  * \return      true if combination rules are used in this run, false otherwise
  */
-static inline bool useLjCombRule(const cu_nbparam_t  *nbparam)
+static inline bool useLjCombRule(const cu_nbparam_t *nbparam)
 {
-    return (nbparam->vdwtype == evdwCuCUTCOMBGEOM ||
-            nbparam->vdwtype == evdwCuCUTCOMBLB);
+    return (nbparam->vdwtype == evdwCuCUTCOMBGEOM
+            || nbparam->vdwtype == evdwCuCUTCOMBLB);
 }
 
 /*! \brief Set up float texture object.
@@ -127,7 +127,7 @@ static inline bool useLjCombRule(const cu_nbparam_t  *nbparam)
  * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
  */
 static void setup1DFloatTexture(cudaTextureObject_t &texObj,
-                                void                *devPtr,
+                                void *               devPtr,
                                 size_t               sizeInBytes)
 {
     cudaError_t      stat;
@@ -135,15 +135,15 @@ static void setup1DFloatTexture(cudaTextureObject_t &texObj,
     cudaTextureDesc  td;
 
     memset(&rd, 0, sizeof(rd));
-    rd.resType                  = cudaResourceTypeLinear;
-    rd.res.linear.devPtr        = devPtr;
-    rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
-    rd.res.linear.desc.x        = 32;
-    rd.res.linear.sizeInBytes   = sizeInBytes;
+    rd.resType                = cudaResourceTypeLinear;
+    rd.res.linear.devPtr      = devPtr;
+    rd.res.linear.desc.f      = cudaChannelFormatKindFloat;
+    rd.res.linear.desc.x      = 32;
+    rd.res.linear.sizeInBytes = sizeInBytes;
 
     memset(&td, 0, sizeof(td));
-    td.readMode                 = cudaReadModeElementType;
-    stat = cudaCreateTextureObject(&texObj, &rd, &td, NULL);
+    td.readMode = cudaReadModeElementType;
+    stat        = cudaCreateTextureObject(&texObj, &rd, &td, NULL);
     CU_RET_ERR(stat, "cudaCreateTextureObject failed");
 }
 
@@ -176,11 +176,11 @@ static void setup1DFloatTexture(const struct texture<float, 1, cudaReadModeEleme
     it just re-uploads the table.
  */
 static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
-                                           cu_nbparam_t              *nbp,
-                                           const gmx_device_info_t   *dev_info)
+                                           cu_nbparam_t *             nbp,
+                                           const gmx_device_info_t *  dev_info)
 {
-    float       *coul_tab;
-    cudaError_t  stat;
+    float *     coul_tab;
+    cudaError_t stat;
 
     if (nbp->coulomb_tab != NULL)
     {
@@ -188,9 +188,9 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
     }
 
     /* initialize table data in nbp and crete/copy into in global mem */
-    stat = cudaMalloc((void **)&coul_tab, ic->tabq_size*sizeof(*coul_tab));
+    stat = cudaMalloc((void **)&coul_tab, ic->tabq_size * sizeof(*coul_tab));
     CU_RET_ERR(stat, "cudaMalloc failed on coulumb_tab");
-    cu_copy_H2D(coul_tab, ic->tabq_coul_F, ic->tabq_size*sizeof(*coul_tab));
+    cu_copy_H2D(coul_tab, ic->tabq_coul_F, ic->tabq_size * sizeof(*coul_tab));
 
     nbp->coulomb_tab       = coul_tab;
     nbp->coulomb_tab_size  = ic->tabq_size;
@@ -199,12 +199,12 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
     if (use_texobj(dev_info))
     {
         setup1DFloatTexture(nbp->coulomb_tab_texobj, nbp->coulomb_tab,
-                            nbp->coulomb_tab_size*sizeof(*nbp->coulomb_tab));
+                            nbp->coulomb_tab_size * sizeof(*nbp->coulomb_tab));
     }
     else
     {
         setup1DFloatTexture(&nbnxn_cuda_get_coulomb_tab_texref(), nbp->coulomb_tab,
-                            nbp->coulomb_tab_size*sizeof(*nbp->coulomb_tab));
+                            nbp->coulomb_tab_size * sizeof(*nbp->coulomb_tab));
     }
 }
 
@@ -215,12 +215,12 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 {
     cudaError_t stat;
 
-    ad->ntypes  = ntypes;
-    stat        = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
+    ad->ntypes = ntypes;
+    stat       = cudaMalloc((void**)&ad->shift_vec, SHIFTS * sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
     ad->bShiftVecUploaded = false;
 
-    stat = cudaMalloc((void**)&ad->fshift, SHIFTS*sizeof(*ad->fshift));
+    stat = cudaMalloc((void**)&ad->fshift, SHIFTS * sizeof(*ad->fshift));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
 
     stat = cudaMalloc((void**)&ad->e_lj, sizeof(*ad->e_lj));
@@ -292,20 +292,20 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 }
 
 /*! Copies all parameters related to the cut-off from ic to nbp */
-static void set_cutoff_parameters(cu_nbparam_t              *nbp,
+static void set_cutoff_parameters(cu_nbparam_t *             nbp,
                                   const interaction_const_t *ic)
 {
-    nbp->ewald_beta       = ic->ewaldcoeff_q;
-    nbp->sh_ewald         = ic->sh_ewald;
-    nbp->epsfac           = ic->epsfac;
-    nbp->two_k_rf         = 2.0 * ic->k_rf;
-    nbp->c_rf             = ic->c_rf;
-    nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
-    nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->ewald_beta  = ic->ewaldcoeff_q;
+    nbp->sh_ewald    = ic->sh_ewald;
+    nbp->epsfac      = ic->epsfac;
+    nbp->two_k_rf    = 2.0 * ic->k_rf;
+    nbp->c_rf        = ic->c_rf;
+    nbp->rvdw_sq     = ic->rvdw * ic->rvdw;
+    nbp->rcoulomb_sq = ic->rcoulomb * ic->rcoulomb;
+    nbp->rlist_sq    = ic->rlist * ic->rlist;
 
-    nbp->sh_lj_ewald      = ic->sh_lj_ewald;
-    nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
+    nbp->sh_lj_ewald   = ic->sh_lj_ewald;
+    nbp->ewaldcoeff_lj = ic->ewaldcoeff_lj;
 
     nbp->rvdw_switch      = ic->rvdw_switch;
     nbp->dispersion_shift = ic->dispersion_shift;
@@ -326,8 +326,8 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
  * \param[in]  numElem   number of elements in the hostPtr
  * \param[in]  devInfo   pointer to the info struct of the device in use
  */
-static void initParamLookupTable(float                    * &devPtr,
-                                 cudaTextureObject_t       &texObj,
+static void initParamLookupTable(float * &devPtr,
+                                 cudaTextureObject_t &texObj,
                                  const struct texture<float, 1, cudaReadModeElementType> *texRef,
                                  const float               *hostPtr,
                                  int                        numElem,
@@ -335,9 +335,9 @@ static void initParamLookupTable(float                    * &devPtr,
 {
     cudaError_t stat;
 
-    size_t      sizeInBytes = numElem*sizeof(*devPtr);
+    size_t sizeInBytes = numElem * sizeof(*devPtr);
 
-    stat  = cudaMalloc((void **)&devPtr, sizeInBytes);
+    stat = cudaMalloc((void **)&devPtr, sizeInBytes);
     CU_RET_ERR(stat, "cudaMalloc failed in initParamLookupTable");
     cu_copy_H2D(devPtr, (void *)hostPtr, sizeInBytes);
 
@@ -352,14 +352,14 @@ static void initParamLookupTable(float                    * &devPtr,
 }
 
 /*! Initializes the nonbonded parameter data structure. */
-static void init_nbparam(cu_nbparam_t              *nbp,
+static void init_nbparam(cu_nbparam_t *             nbp,
                          const interaction_const_t *ic,
-                         const nbnxn_atomdata_t    *nbat,
-                         const gmx_device_info_t   *dev_info)
+                         const nbnxn_atomdata_t *   nbat,
+                         const gmx_device_info_t *  dev_info)
 {
-    int         ntypes;
+    int ntypes;
 
-    ntypes  = nbat->ntype;
+    ntypes = nbat->ntype;
 
     set_cutoff_parameters(nbp, ic);
 
@@ -454,7 +454,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
                              &nbnxn_cuda_get_nbfp_texref(),
-                             nbat->nbfp, 2*ntypes*ntypes, dev_info);
+                             nbat->nbfp, 2 * ntypes * ntypes, dev_info);
     }
 
     /* set up LJ-PME parameter lookup table */
@@ -462,26 +462,26 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
                              &nbnxn_cuda_get_nbfp_comb_texref(),
-                             nbat->nbfp_comb, 2*ntypes, dev_info);
+                             nbat->nbfp_comb, 2 * ntypes, dev_info);
     }
 }
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
-void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
-                                        const interaction_const_t   *ic)
+void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t * nbv,
+                                        const interaction_const_t *ic)
 {
     if (!nbv || nbv->grp[0].kernel_type != nbnxnk8x8x8_GPU)
     {
         return;
     }
-    gmx_nbnxn_cuda_t *nb    = nbv->gpu_nbv;
-    cu_nbparam_t     *nbp   = nb->nbparam;
+    gmx_nbnxn_cuda_t *nb  = nbv->gpu_nbv;
+    cu_nbparam_t *    nbp = nb->nbparam;
 
     set_cutoff_parameters(nbp, ic);
 
-    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
-                                                 nb->dev_info);
+    nbp->eeltype = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
+                                          nb->dev_info);
 
     init_ewald_coulomb_force_table(ic, nb->nbparam, nb->dev_info);
 }
@@ -491,9 +491,9 @@ static void init_plist(cu_plist_t *pl)
 {
     /* initialize to NULL pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
-    pl->sci     = NULL;
-    pl->cj4     = NULL;
-    pl->excl    = NULL;
+    pl->sci  = NULL;
+    pl->cj4  = NULL;
+    pl->excl = NULL;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     pl->na_c        = -1;
@@ -564,8 +564,8 @@ static void init_timings(gmx_wallclock_gpu_t *t)
 }
 
 /*! Initializes simulation constant data. */
-static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
-                                  const interaction_const_t      *ic,
+static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t *              nb,
+                                  const interaction_const_t *     ic,
                                   const nonbonded_verlet_group_t *nbv_group)
 {
     init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype);
@@ -575,11 +575,11 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
-                    const gmx_gpu_info_t      *gpu_info,
-                    const gmx_gpu_opt_t       *gpu_opt,
+void nbnxn_gpu_init(gmx_nbnxn_cuda_t **        p_nb,
+                    const gmx_gpu_info_t *     gpu_info,
+                    const gmx_gpu_opt_t *      gpu_opt,
                     const interaction_const_t *ic,
-                    nonbonded_verlet_group_t  *nbv_grp,
+                    nonbonded_verlet_group_t * nbv_grp,
                     int                        my_gpu_index,
                     int                        /*rank*/,
                     gmx_bool                   bLocalAndNonlocal)
@@ -657,9 +657,9 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
        - with multiple streams = domain-decomposition;
        - when turned off by GMX_DISABLE_CUDA_TIMING/GMX_DISABLE_GPU_TIMING.
      */
-    nb->bDoTime = (!nb->bUseTwoStreams &&
-                   (getenv("GMX_DISABLE_CUDA_TIMING") == NULL) &&
-                   (getenv("GMX_DISABLE_GPU_TIMING") == NULL));
+    nb->bDoTime = (!nb->bUseTwoStreams
+                   && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL)
+                   && (getenv("GMX_DISABLE_GPU_TIMING") == NULL));
 
     if (nb->bDoTime)
     {
@@ -681,15 +681,15 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     }
 }
 
-void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
+void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t *      nb,
                              const nbnxn_pairlist_t *h_plist,
                              int                     iloc)
 {
-    char          sbuf[STRLEN];
-    cudaError_t   stat;
-    bool          bDoTime    = nb->bDoTime;
-    cudaStream_t  stream     = nb->stream[iloc];
-    cu_plist_t   *d_plist    = nb->plist[iloc];
+    char         sbuf[STRLEN];
+    cudaError_t  stat;
+    bool         bDoTime = nb->bDoTime;
+    cudaStream_t stream  = nb->stream[iloc];
+    cu_plist_t * d_plist = nb->plist[iloc];
 
     if (d_plist->na_c < 0)
     {
@@ -736,11 +736,11 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
     d_plist->bDoPrune = true;
 }
 
-void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
+void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t *      nb,
                                const nbnxn_atomdata_t *nbatom)
 {
-    cu_atomdata_t *adat  = nb->atdat;
-    cudaStream_t   ls    = nb->stream[eintLocal];
+    cu_atomdata_t *adat = nb->atdat;
+    cudaStream_t   ls   = nb->stream[eintLocal];
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
@@ -755,8 +755,8 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
 static void nbnxn_cuda_clear_f(gmx_nbnxn_cuda_t *nb, int natoms_clear)
 {
     cudaError_t    stat;
-    cu_atomdata_t *adat  = nb->atdat;
-    cudaStream_t   ls    = nb->stream[eintLocal];
+    cu_atomdata_t *adat = nb->atdat;
+    cudaStream_t   ls   = nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
@@ -766,8 +766,8 @@ static void nbnxn_cuda_clear_f(gmx_nbnxn_cuda_t *nb, int natoms_clear)
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb)
 {
     cudaError_t    stat;
-    cu_atomdata_t *adat  = nb->atdat;
-    cudaStream_t   ls    = nb->stream[eintLocal];
+    cu_atomdata_t *adat = nb->atdat;
+    cudaStream_t   ls   = nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
@@ -788,16 +788,16 @@ void nbnxn_gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
     }
 }
 
-void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
+void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t *             nb,
                              const struct nbnxn_atomdata_t *nbat)
 {
     cudaError_t    stat;
     int            nalloc, natoms;
     bool           realloced;
-    bool           bDoTime   = nb->bDoTime;
-    cu_timers_t   *timers    = nb->timers;
-    cu_atomdata_t *d_atdat   = nb->atdat;
-    cudaStream_t   ls        = nb->stream[eintLocal];
+    bool           bDoTime = nb->bDoTime;
+    cu_timers_t *  timers  = nb->timers;
+    cu_atomdata_t *d_atdat = nb->atdat;
+    cudaStream_t   ls      = nb->stream[eintLocal];
 
     natoms    = nbat->natoms;
     realloced = false;
@@ -824,18 +824,18 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
             cu_free_buffered(d_atdat->lj_comb);
         }
 
-        stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
+        stat = cudaMalloc((void **)&d_atdat->f, nalloc * sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
-        stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
+        stat = cudaMalloc((void **)&d_atdat->xq, nalloc * sizeof(*d_atdat->xq));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");
         if (useLjCombRule(nb->nbparam))
         {
-            stat = cudaMalloc((void **)&d_atdat->lj_comb, nalloc*sizeof(*d_atdat->lj_comb));
+            stat = cudaMalloc((void **)&d_atdat->lj_comb, nalloc * sizeof(*d_atdat->lj_comb));
             CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->lj_comb");
         }
         else
         {
-            stat = cudaMalloc((void **)&d_atdat->atom_types, nalloc*sizeof(*d_atdat->atom_types));
+            stat = cudaMalloc((void **)&d_atdat->atom_types, nalloc * sizeof(*d_atdat->atom_types));
             CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
         }
 
@@ -855,12 +855,12 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     if (useLjCombRule(nb->nbparam))
     {
         cu_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb,
-                          natoms*sizeof(*d_atdat->lj_comb), ls);
+                          natoms * sizeof(*d_atdat->lj_comb), ls);
     }
     else
     {
         cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
-                          natoms*sizeof(*d_atdat->atom_types), ls);
+                          natoms * sizeof(*d_atdat->atom_types), ls);
     }
 
     if (bDoTime)
@@ -870,7 +870,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     }
 }
 
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
+static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t *           nbparam,
                                           const gmx_device_info_t *dev_info)
 {
     cudaError_t stat;
@@ -895,22 +895,22 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
 
 void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 {
-    cudaError_t      stat;
-    cu_atomdata_t   *atdat;
-    cu_nbparam_t    *nbparam;
-    cu_plist_t      *plist, *plist_nl;
-    cu_timers_t     *timers;
+    cudaError_t    stat;
+    cu_atomdata_t *atdat;
+    cu_nbparam_t * nbparam;
+    cu_plist_t *   plist, *plist_nl;
+    cu_timers_t *  timers;
 
     if (nb == NULL)
     {
         return;
     }
 
-    atdat       = nb->atdat;
-    nbparam     = nb->nbparam;
-    plist       = nb->plist[eintLocal];
-    plist_nl    = nb->plist[eintNonlocal];
-    timers      = nb->timers;
+    atdat    = nb->atdat;
+    nbparam  = nb->nbparam;
+    plist    = nb->plist[eintLocal];
+    plist_nl = nb->plist[eintNonlocal];
+    timers   = nb->timers;
 
     nbnxn_cuda_free_nbparam_table(nbparam, nb->dev_info);
 
@@ -1052,13 +1052,13 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
 
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)
 {
-    return nb != NULL ?
-           gpu_min_ci_balanced_factor*nb->dev_info->prop.multiProcessorCount : 0;
+    return nb != NULL
+           ? gpu_min_ci_balanced_factor * nb->dev_info->prop.multiProcessorCount : 0;
 
 }
 
 gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)
 {
-    return ((nb->nbparam->eeltype == eelCuEWALD_ANA) ||
-            (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
+    return ((nb->nbparam->eeltype == eelCuEWALD_ANA)
+            || (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
 }

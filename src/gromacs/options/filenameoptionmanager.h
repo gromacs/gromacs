@@ -148,7 +148,7 @@ class FileNameOptionManager : public IOptionManager
          * a FileNameOption.  The return value (if non-empty) is used as the
          * value of the option instead of the user-provided one.
          */
-        std::string completeFileName(const std::string        &value,
+        std::string completeFileName(const std::string &       value,
                                      const FileNameOptionInfo &option);
         /*! \brief
          * Completes default values for file name options.
@@ -167,7 +167,7 @@ class FileNameOptionManager : public IOptionManager
          * If the return value is non-empty, it is used as the default value
          * for the option instead of \p prefix + default extension.
          */
-        std::string completeDefaultFileName(const std::string        &prefix,
+        std::string completeDefaultFileName(const std::string &       prefix,
                                             const FileNameOptionInfo &option);
 
     private:

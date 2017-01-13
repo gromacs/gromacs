@@ -56,7 +56,8 @@ struct gmx_output_env_t;
 /*! \brief
  * Enum to select fitting functions
  */
-enum {
+enum
+{
     effnNONE, effnEXP1, effnEXP2, effnEXPEXP,
     effnEXP5, effnEXP7, effnEXP9,
     effnVAC,  effnERF,  effnERREST, effnPRES, effnNR
@@ -67,7 +68,7 @@ enum {
  * This is exported for now in order to use when
  * calling parse_common_args.
  */
-extern const char *s_ffn[effnNR+2];
+extern const char *s_ffn[effnNR + 2];
 
 /*! \brief
  * Returns  description corresponding to the enum above, or NULL if out of range

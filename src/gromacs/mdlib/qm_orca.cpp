@@ -99,8 +99,8 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     int        i;
     t_QMMMrec *QMMMrec;
-    FILE      *out, *pcFile, *addInputFile, *LJCoeff;
-    char      *buf, *orcaInput, *addInputFilename, *LJCoeffFilename, *pcFilename, *exclInName, *exclOutName;
+    FILE *     out, *pcFile, *addInputFile, *LJCoeff;
+    char *     buf, *orcaInput, *addInputFilename, *LJCoeffFilename, *pcFilename, *exclInName, *exclOutName;
 
     QMMMrec = fr->qr;
 
@@ -220,9 +220,9 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         }
         fprintf(out, "%3d %10.7f  %10.7f  %10.7f\n",
                 atomNr,
-                qm->xQM[i][XX]/0.1,
-                qm->xQM[i][YY]/0.1,
-                qm->xQM[i][ZZ]/0.1);
+                qm->xQM[i][XX] / 0.1,
+                qm->xQM[i][YY] / 0.1,
+                qm->xQM[i][ZZ] / 0.1);
     }
     fprintf(out, "*\n");
 
@@ -239,9 +239,9 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         {
             fprintf(pcFile, "%8.4f %10.7f  %10.7f  %10.7f\n",
                     mm->MMcharges[i],
-                    mm->xMM[i][XX]/0.1,
-                    mm->xMM[i][YY]/0.1,
-                    mm->xMM[i][ZZ]/0.1);
+                    mm->xMM[i][XX] / 0.1,
+                    mm->xMM[i][YY] / 0.1,
+                    mm->xMM[i][ZZ] / 0.1);
         }
         fprintf(pcFile, "\n");
         fclose(pcFile);
@@ -261,10 +261,10 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
     real
         QMener;
     FILE
-       *xyz, *pcgrad, *engrad;
+    *   xyz, *pcgrad, *engrad;
     int k;
     t_QMMMrec
-       *QMMMrec;
+    * QMMMrec;
     QMMMrec = fr->qr;
     /* in case of an optimization, the coordinates are printed in the
      * xyz file, the energy and gradients for the QM part are stored in the engrad file
@@ -350,36 +350,36 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
      * (atom1 x \n atom1 y \n atom1 z \n atom2 x ...
      */
 
-    for (i = 0; i < 3*qm->nrQMatoms; i++)
+    for (i = 0; i < 3 * qm->nrQMatoms; i++)
     {
-        k = i/3;
+        k = i / 3;
         if (fgets(buf, 300, engrad) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
 #if GMX_DOUBLE
-        if (i%3 == 0)
+        if (i % 3 == 0)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][XX]);
         }
-        else if (i%3 == 1)
+        else if (i % 3 == 1)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][YY]);
         }
-        else if (i%3 == 2)
+        else if (i % 3 == 2)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][ZZ]);
         }
 #else
-        if (i%3 == 0)
+        if (i % 3 == 0)
         {
             sscanf(buf, "%f\n", &QMgrad[k][XX]);
         }
-        else if (i%3 == 1)
+        else if (i % 3 == 1)
         {
             sscanf(buf, "%f\n", &QMgrad[k][YY]);
         }
-        else if (i%3 == 2)
+        else if (i % 3 == 2)
         {
             sscanf(buf, "%f\n", &QMgrad[k][ZZ]);
         }
@@ -456,9 +456,9 @@ real call_orca(t_forcerec *fr,
     real
         QMener;
     rvec
-       *QMgrad, *MMgrad;
+    * QMgrad, *MMgrad;
     char
-       *exe;
+    * exe;
 
     snew(exe, 30);
     sprintf(exe, "%s", "orca");
@@ -474,19 +474,19 @@ real call_orca(t_forcerec *fr,
     {
         for (j = 0; j < DIM; j++)
         {
-            f[i][j]      = HARTREE_BOHR2MD*QMgrad[i][j];
-            fshift[i][j] = HARTREE_BOHR2MD*QMgrad[i][j];
+            f[i][j]      = HARTREE_BOHR2MD * QMgrad[i][j];
+            fshift[i][j] = HARTREE_BOHR2MD * QMgrad[i][j];
         }
     }
     for (i = 0; i < mm->nrMMatoms; i++)
     {
         for (j = 0; j < DIM; j++)
         {
-            f[i+qm->nrQMatoms][j]      = HARTREE_BOHR2MD*MMgrad[i][j];
-            fshift[i+qm->nrQMatoms][j] = HARTREE_BOHR2MD*MMgrad[i][j];
+            f[i + qm->nrQMatoms][j]      = HARTREE_BOHR2MD * MMgrad[i][j];
+            fshift[i + qm->nrQMatoms][j] = HARTREE_BOHR2MD * MMgrad[i][j];
         }
     }
-    QMener = QMener*HARTREE2KJ*AVOGADRO;
+    QMener = QMener * HARTREE2KJ * AVOGADRO;
     step++;
     free(exe);
     return(QMener);

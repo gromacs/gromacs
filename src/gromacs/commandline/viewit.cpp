@@ -48,7 +48,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
-static const int   can_view_ftp[] = {
+static const int can_view_ftp[] = {
     0,
     efEPS,           efXPM,         efXVG,          efPDB
 };
@@ -138,8 +138,8 @@ void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[])
 
     for (i = 0; i < nf; i++)
     {
-        if (can_view(fnm[i].ftp) && is_output(&(fnm[i])) &&
-            ( !is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
+        if (can_view(fnm[i].ftp) && is_output(&(fnm[i]))
+            && ( !is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
         {
             do_view(oenv, fnm[i].fns[0], nullptr);
         }

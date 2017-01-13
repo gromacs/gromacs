@@ -52,11 +52,13 @@ struct t_rot;
 struct warninp;
 typedef warninp *warninp_t;
 
-enum {
+enum
+{
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
 };
 
-enum {
+enum
+{
     ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
 };
 
@@ -64,16 +66,16 @@ struct t_gromppopts
 {
     int      warnings;
     int      nshake;
-    char    *include;
-    char    *define;
+    char *   include;
+    char *   define;
     gmx_bool bGenVel;
     gmx_bool bGenPairs;
     real     tempi;
     int      seed;
     gmx_bool bOrire;
     gmx_bool bMorse;
-    char    *wall_atomtype[2];
-    char    *couple_moltype;
+    char *   wall_atomtype[2];
+    char *   couple_moltype;
     int      couple_lam0;
     int      couple_lam1;
     gmx_bool bCoupleIntra;

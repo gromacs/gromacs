@@ -57,17 +57,17 @@ static void low_rotate_conf(int natom, rvec *x, real alfa, real beta, real gamma
         copy_rvec(x[i], x_old);
         /*calculate new x[i] by rotation alfa around the x-axis*/
         x[i][XX] =   x_old[XX];
-        x[i][YY] =             cos(alfa)*x_old[YY] - sin(alfa)*x_old[ZZ];
-        x[i][ZZ] =             sin(alfa)*x_old[YY] + cos(alfa)*x_old[ZZ];
+        x[i][YY] =             cos(alfa) * x_old[YY] - sin(alfa) * x_old[ZZ];
+        x[i][ZZ] =             sin(alfa) * x_old[YY] + cos(alfa) * x_old[ZZ];
         copy_rvec(x[i], x_old);
         /*calculate new x[i] by rotation beta around the y-axis*/
-        x[i][XX] =   cos(beta)*x_old[XX]           + sin(beta)*x_old[ZZ];
+        x[i][XX] =   cos(beta) * x_old[XX]           + sin(beta) * x_old[ZZ];
         x[i][YY] =                       x_old[YY];
-        x[i][ZZ] = -sin(beta)*x_old[XX]           + cos(beta)*x_old[ZZ];
+        x[i][ZZ] = -sin(beta) * x_old[XX]           + cos(beta) * x_old[ZZ];
         copy_rvec(x[i], x_old);
         /*calculate new x[i] by rotation gamma around the z-axis*/
-        x[i][XX] = x_old[XX]*cos(gamma) - x_old[YY]*sin(gamma);
-        x[i][YY] = x_old[XX]*sin(gamma) + x_old[YY]*cos(gamma);
+        x[i][XX] = x_old[XX] * cos(gamma) - x_old[YY] * sin(gamma);
+        x[i][YY] = x_old[XX] * sin(gamma) + x_old[YY] * cos(gamma);
         x[i][ZZ] =                                             x_old[ZZ];
     }
 }
@@ -108,7 +108,7 @@ void make_new_box(int natoms, rvec *x, matrix box, rvec box_space,
     /*calculate the new box sizes for cubic and octahedral ...*/
     for (m = 0; (m < DIM); m++)
     {
-        box[m][m] = xmax[m]-xmin[m]+2*box_space[m];
+        box[m][m] = xmax[m] - xmin[m] + 2 * box_space[m];
     }
 
     /*move the molecule to the center of the box*/
@@ -118,7 +118,7 @@ void make_new_box(int natoms, rvec *x, matrix box, rvec box_space,
         {
             for (m = 0; (m < DIM); m++)
             {
-                x[i][m] += 0.5*(box[m][m]-xmin[m]-xmax[m]);
+                x[i][m] += 0.5 * (box[m][m] - xmin[m] - xmax[m]);
             }
         }
     }

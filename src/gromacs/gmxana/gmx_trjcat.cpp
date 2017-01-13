@@ -214,7 +214,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                     gmx_fatal(FARGS, "Error reading user input" );
                 }
 
-                inputstring[std::strlen(inputstring)-1] = 0;
+                inputstring[std::strlen(inputstring) - 1] = 0;
 
                 if (inputstring[0] == 'c' || inputstring[0] == 'C')
                 {
@@ -223,8 +223,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                     ok           = TRUE;
                     settime[i]   = FLT_MAX;
                 }
-                else if (inputstring[0] == 'l' ||
-                         inputstring[0] == 'L')
+                else if (inputstring[0] == 'l'
+                         || inputstring[0] == 'L')
                 {
                     cont_type[i] = TIME_LAST;
                     bSort        = FALSE;
@@ -233,8 +233,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                 }
                 else
                 {
-                    settime[i] = strtod(inputstring, &chptr)*
-                        output_env_get_time_invfactor(oenv);
+                    settime[i] = strtod(inputstring, &chptr)
+                        * output_env_get_time_invfactor(oenv);
                     if (chptr == inputstring)
                     {
                         fprintf(stderr, "'%s' not recognized as a floating point number, 'c' or 'l'. "
@@ -246,8 +246,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                         ok           = TRUE;
                     }
                 }
-            }
-            while (!ok);
+            } while (!ok);
         }
         if (cont_type[0] != TIME_EXPLICIT)
         {
@@ -283,8 +282,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                         fnms[i],
                         output_env_conv_time(oenv, settime[i]), output_env_get_time_unit(oenv),
                         output_env_conv_time(oenv, timestep[i]), output_env_get_time_unit(oenv));
-                if (i > 0 &&
-                    cont_type[i-1] == TIME_EXPLICIT && settime[i] == settime[i-1])
+                if (i > 0
+                    && cont_type[i - 1] == TIME_EXPLICIT && settime[i] == settime[i - 1])
                 {
                     fprintf(stderr, " WARNING: same Start time as previous");
                 }
@@ -314,7 +313,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
     t_trxstatus **fp_in, **fp_out;
     gmx_bool      bCont, *bSet;
     real          t, first_time = 0;
-    t_trxframe   *trx;
+    t_trxframe *  trx;
 
     snew(fp_in, nset);
     snew(trx, nset);
@@ -356,7 +355,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
     }
     do
     {
-        while ((k+1 < nval) && ((trx[0].time - time[k+1]) > dt_remd*0.1))
+        while ((k + 1 < nval) && ((trx[0].time - time[k + 1]) > dt_remd * 0.1))
         {
             k++;
         }
@@ -397,8 +396,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
         {
             bCont = bCont && read_next_frame(oenv, fp_in[i], &trx[i]);
         }
-    }
-    while (bCont);
+    } while (bCont);
 
     for (i = 0; (i < nset); i++)
     {
@@ -409,7 +407,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
 
 int gmx_trjcat(int argc, char *argv[])
 {
-    const char     *desc[] =
+    const char *desc[] =
     {
         "[THISMODULE] concatenates several input trajectory files in sorted order. ",
         "In case of double time frames the one in the later file is used. ",
@@ -470,21 +468,21 @@ int gmx_trjcat(int argc, char *argv[])
     };
 #define npargs asize(pa)
     int               ftpin, i, frame, frame_out;
-    t_trxstatus      *status, *trxout = nullptr;
+    t_trxstatus *     status, *trxout = nullptr;
     real              t_corr;
     t_trxframe        fr, frout;
-    char            **fnms, **fnms_out, *out_file;
+    char **           fnms, **fnms_out, *out_file;
     int               n_append;
     gmx_bool          bNewFile, bIndex, bWrite;
     int               nfile_in, nfile_out, *cont_type;
-    real             *readtime, *timest, *settime;
+    real *            readtime, *timest, *settime;
     real              first_time  = 0, lasttime, last_ok_t = -1, timestep;
     gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0, j;
-    int              *index = nullptr, imax;
-    char             *grpname;
-    real            **val = nullptr, *t = nullptr, dt_remd;
+    int *             index = nullptr, imax;
+    char *            grpname;
+    real **           val = nullptr, *t = nullptr, dt_remd;
     int               n, nset, ftpout = -1, prevEndStep = 0, filetype;
     gmx_off_t         fpos;
     gmx_output_env_t *oenv;
@@ -586,7 +584,7 @@ int gmx_trjcat(int argc, char *argv[])
             snew(fnms_out, nset);
             for (i = 0; (i < nset); i++)
             {
-                snew(fnms_out[i], std::strlen(buf)+32);
+                snew(fnms_out[i], std::strlen(buf) + 32);
                 sprintf(fnms_out[i], "%d_%s", i, buf);
             }
             sfree(buf);
@@ -595,12 +593,12 @@ int gmx_trjcat(int argc, char *argv[])
     }
     else
     {
-        snew(readtime, nfile_in+1);
-        snew(timest, nfile_in+1);
+        snew(readtime, nfile_in + 1);
+        snew(timest, nfile_in + 1);
         scan_trj_files(fnms, nfile_in, readtime, timest, imax, oenv);
 
-        snew(settime, nfile_in+1);
-        snew(cont_type, nfile_in+1);
+        snew(settime, nfile_in + 1);
+        snew(cont_type, nfile_in + 1);
         edit_files(fnms, nfile_in, readtime, timest, settime, cont_type, bSetTime, bSort,
                    oenv);
 
@@ -712,11 +710,11 @@ int gmx_trjcat(int argc, char *argv[])
 
                 /* xtc_seek_time broken for trajectories containing only 1 or 2 frames
                  *     or when seek time = 0 */
-                if (nfile_in > 1 && settime[1] < last_frame_time+timest[0]*0.5)
+                if (nfile_in > 1 && settime[1] < last_frame_time + timest[0] * 0.5)
                 {
                     /* Jump to one time-frame before the start of next
                      *  trajectory file */
-                    searchtime = settime[1]-timest[0]*1.25;
+                    searchtime = settime[1] - timest[0] * 1.25;
                 }
                 else
                 {
@@ -727,7 +725,7 @@ int gmx_trjcat(int argc, char *argv[])
                     gmx_fatal(FARGS, "Error seeking to append position.");
                 }
                 read_next_frame(oenv, status, &fr);
-                if (std::abs(searchtime - fr.time) > timest[0]*0.5)
+                if (std::abs(searchtime - fr.time) > timest[0] * 0.5)
                 {
                     gmx_fatal(FARGS, "Error seeking: attempted to seek to %f but got %f.",
                               searchtime, fr.time);
@@ -750,7 +748,7 @@ int gmx_trjcat(int argc, char *argv[])
         }
         /* Lets stitch up some files */
         timestep = timest[0];
-        for (i = n_append+1; (i < nfile_in); i++)
+        for (i = n_append + 1; (i < nfile_in); i++)
         {
             /* Open next file */
 
@@ -769,14 +767,14 @@ int gmx_trjcat(int argc, char *argv[])
                     if (cont_type[i] == TIME_CONTINUE)
                     {
                         begin        = frout.time;
-                        begin       += 0.5*timestep;
+                        begin       += 0.5 * timestep;
                         settime[i]   = frout.time;
                         cont_type[i] = TIME_EXPLICIT;
                     }
                     else if (cont_type[i] == TIME_LAST)
                     {
                         begin  = frout.time;
-                        begin += 0.5*timestep;
+                        begin += 0.5 * timestep;
                     }
                     /* Or, if the time in the next part should be changed by the
                      * same amount, start at half a timestep from the last time
@@ -789,8 +787,8 @@ int gmx_trjcat(int argc, char *argv[])
                 /* Or, if time is set explicitly, we check for overlap/gap */
                 if (cont_type[i] == TIME_EXPLICIT)
                 {
-                    if ( ( i < nfile_in ) &&
-                         ( frout.time < settime[i]-1.5*timestep ) )
+                    if ( ( i < nfile_in )
+                         && ( frout.time < settime[i] - 1.5 * timestep ) )
                     {
                         fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
                                 "spacing than the rest,\n"
@@ -815,7 +813,7 @@ int gmx_trjcat(int argc, char *argv[])
 
             if (cont_type[i] == TIME_EXPLICIT)
             {
-                t_corr = settime[i]-fr.time;
+                t_corr = settime[i] - fr.time;
             }
             /* t_corr is the amount we want to change the time.
              * If the user has chosen not to change the time for
@@ -847,7 +845,7 @@ int gmx_trjcat(int argc, char *argv[])
                     frout.step += prevEndStep;
                 }
                 /* quit if we have reached the end of what should be written */
-                if ((end > 0) && (frout.time > end+GMX_REAL_EPS))
+                if ((end > 0) && (frout.time > end + GMX_REAL_EPS))
                 {
                     i = nfile_in;
                     break;
@@ -862,11 +860,11 @@ int gmx_trjcat(int argc, char *argv[])
                 /* write till last frame of this traj
                    and skip first frame(s) of next traj */
                 {
-                    bWrite = ( frout.time > lasttime+0.5*timestep );
+                    bWrite = ( frout.time > lasttime + 0.5 * timestep );
                 }
                 else /* write till first frame of next traj */
                 {
-                    bWrite = ( frout.time < settime[i+1]-0.5*timestep );
+                    bWrite = ( frout.time < settime[i + 1] - 0.5 * timestep );
                 }
 
                 if (bWrite && (frout.time >= begin) )
@@ -908,8 +906,7 @@ int gmx_trjcat(int argc, char *argv[])
                         }
                     }
                 }
-            }
-            while (read_next_frame(oenv, status, &fr));
+            } while (read_next_frame(oenv, status, &fr));
 
             close_trj(status);
         }

@@ -60,7 +60,7 @@ class TngTest : public ::testing::Test
         TngTest()
         {
         }
-        gmx::test::TestFileManager      fileManager_;
+        gmx::test::TestFileManager fileManager_;
 };
 
 TEST_F(TngTest, CanOpenTngFile)

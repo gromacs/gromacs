@@ -90,8 +90,8 @@ class TestExecutableEnvironment : public gmx::IExecutableEnvironment
             return path_;
         }
 
-        std::string               workingDirectory_;
-        std::vector<std::string>  path_;
+        std::string              workingDirectory_;
+        std::vector<std::string> path_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TestExecutableEnvironment);
 };
@@ -106,16 +106,16 @@ class CommandLineProgramContextTest : public ::testing::Test
         CommandLineProgramContextTest()
             : env_(new TestExecutableEnvironment())
         {
-            expectedExecutable_ =
-                Path::normalize(
-                        Path::join(env_->getWorkingDirectory(),
-                                   "bin/test-exe" EXECUTABLE_EXTENSION));
+            expectedExecutable_
+                = Path::normalize(
+                            Path::join(env_->getWorkingDirectory(),
+                                       "bin/test-exe" EXECUTABLE_EXTENSION));
         }
 
         void testBinaryPathSearch(const char *argv0)
         {
             ASSERT_TRUE(env_.get() != nullptr);
-            gmx::CommandLineProgramContext  info(1, &argv0, move(env_));
+            gmx::CommandLineProgramContext info(1, &argv0, move(env_));
             EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
         }
         void testBinaryPathSearch(const std::string &argv0)

@@ -123,8 +123,7 @@ using ::testing::internal::FloatingPoint;
  * floating-point values.
  */
 template <typename FloatType>
-typename FloatingPoint<FloatType>::Bits
-floatingPointToBiasedInteger(const FloatingPoint<FloatType> &value)
+typename FloatingPoint<FloatType>::Bits floatingPointToBiasedInteger(const FloatingPoint<FloatType> &value)
 {
     if (value.sign_bit())
     {
@@ -221,7 +220,7 @@ std::string FloatingPointDifference::toString() const
     if (termMagnitude_ > 0)
     {
         // If the reference value is finite we calculate the proper quotient
-        relDiffStr = formatString("%.3g", std::abs(absoluteDifference_/termMagnitude_));
+        relDiffStr = formatString("%.3g", std::abs(absoluteDifference_ / termMagnitude_));
     }
     else if (absoluteDifference_ == 0.0)
     {
@@ -289,10 +288,10 @@ bool FloatingPointTolerance::isWithin(
 
 std::string FloatingPointTolerance::toString(const FloatingPointDifference &difference) const
 {
-    std::string        result;
-    const double       absoluteTolerance
+    std::string  result;
+    const double absoluteTolerance
         = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
-    const double       relativeTolerance
+    const double relativeTolerance
         = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
     const gmx_uint64_t ulpTolerance
         = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
@@ -330,8 +329,7 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
 
 // Doxygen does not recognize this as the same function as in the header...
 //! \cond
-FloatingPointTolerance
-relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
+FloatingPointTolerance relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
 {
     const double absoluteTolerance = std::abs(magnitude) * tolerance;
     return FloatingPointTolerance(absoluteTolerance, absoluteTolerance,

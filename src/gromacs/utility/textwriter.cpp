@@ -79,12 +79,12 @@ class TextWriter::Impl
             else if (lastNewLine[1] != '\0')
             {
                 newLineCount_       = 0;
-                currentLineLength_ += std::strlen(lastNewLine+1);
+                currentLineLength_ += std::strlen(lastNewLine + 1);
             }
             else
             {
                 currentLineLength_ = 0;
-                int newLineCount   = 0;
+                int newLineCount = 0;
                 while (lastNewLine >= str && *lastNewLine == '\n')
                 {
                     ++newLineCount;

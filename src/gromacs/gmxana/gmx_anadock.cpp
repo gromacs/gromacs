@@ -56,39 +56,40 @@
 
 static const char *etitles[] = { "E-docked", "Free Energy" };
 
-typedef struct {
-    real     edocked, efree;
-    int      index, cluster_id;
-    t_atoms  atoms;
-    rvec    *x;
-    int      ePBC;
-    matrix   box;
+typedef struct
+{
+    real    edocked, efree;
+    int     index, cluster_id;
+    t_atoms atoms;
+    rvec *  x;
+    int     ePBC;
+    matrix  box;
 } t_pdbfile;
 
 static t_pdbfile *read_pdbf(const char *fn)
 {
     t_pdbfile *pdbf;
     double     e;
-    FILE      *fp;
+    FILE *     fp;
 
     snew(pdbf, 1);
     t_topology top;
     read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, nullptr, pdbf->box, FALSE);
     pdbf->atoms = top.atoms;
     fp          = gmx_ffopen(fn, "r");
-    char       buf[256], *ptr;
+    char buf[256], *ptr;
     while ((ptr = fgets2(buf, 255, fp)) != nullptr)
     {
         if (std::strstr(buf, "Intermolecular") != nullptr)
         {
             ptr = std::strchr(buf, '=');
-            sscanf(ptr+1, "%lf", &e);
+            sscanf(ptr + 1, "%lf", &e);
             pdbf->edocked = e;
         }
         else if (std::strstr(buf, "Estimated Free") != nullptr)
         {
             ptr = std::strchr(buf, '=');
-            sscanf(ptr+1, "%lf", &e);
+            sscanf(ptr + 1, "%lf", &e);
             pdbf->efree = e;
         }
     }
@@ -105,17 +106,17 @@ static t_pdbfile **read_em_all(const char *fn, int *npdbf)
     gmx_bool    bExist;
 
     std::strcpy(buf, fn);
-    buf[std::strlen(buf)-4] = '\0';
-    maxpdbf                 = 100;
+    buf[std::strlen(buf) - 4] = '\0';
+    maxpdbf                   = 100;
     snew(pdbf, maxpdbf);
     i = 0;
     do
     {
-        sprintf(name, "%s_%d.pdb", buf, i+1);
+        sprintf(name, "%s_%d.pdb", buf, i + 1);
         if ((bExist = gmx_fexist(name)) == TRUE)
         {
             pdbf[i]        = read_pdbf(name);
-            pdbf[i]->index = i+1;
+            pdbf[i]->index = i + 1;
             i++;
             if (i >= maxpdbf)
             {
@@ -123,8 +124,7 @@ static t_pdbfile **read_em_all(const char *fn, int *npdbf)
                 srenew(pdbf, maxpdbf);
             }
         }
-    }
-    while (bExist);
+    } while (bExist);
 
     *npdbf = i;
 
@@ -205,8 +205,8 @@ static void clust_stat(FILE *fp, int start, int end, t_pdbfile *pdbf[])
     ef = gmx_stats_init();
     for (i = start; (i < end); i++)
     {
-        gmx_stats_add_point(ed, i-start, pdbf[i]->edocked, 0, 0);
-        gmx_stats_add_point(ef, i-start, pdbf[i]->efree, 0, 0);
+        gmx_stats_add_point(ed, i - start, pdbf[i]->edocked, 0, 0);
+        gmx_stats_add_point(ef, i - start, pdbf[i]->efree, 0, 0);
     }
     gmx_stats_get_ase(ed, &aver, &sigma, nullptr);
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[FALSE], aver, sigma);
@@ -230,7 +230,7 @@ static real rmsd_dist(t_pdbfile *pa, t_pdbfile *pb, gmx_bool bRMSD)
             rvec_sub(pa->x[i], pb->x[i], dx);
             rmsd += iprod(dx, dx);
         }
-        rmsd = std::sqrt(rmsd/pa->atoms.nr);
+        rmsd = std::sqrt(rmsd / pa->atoms.nr);
     }
     else
     {
@@ -259,9 +259,9 @@ static void line(FILE *fp)
 static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
                            gmx_bool bFree, gmx_bool bRMSD, real cutoff)
 {
-    int   i, j, k;
-    int  *cndx, ncluster;
-    real  rmsd;
+    int  i, j, k;
+    int *cndx, ncluster;
+    real rmsd;
 
     bFreeSort = bFree;
     qsort(pdbf, npdb, sizeof(pdbf[0]), pdbf_comp);
@@ -301,7 +301,7 @@ static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
     cndx[j++] = 0;
     for (i = 1; (i < npdb); i++)
     {
-        if (pdbf[i]->cluster_id != pdbf[i-1]->cluster_id)
+        if (pdbf[i]->cluster_id != pdbf[i - 1]->cluster_id)
         {
             cndx[j++] = i;
         }
@@ -320,9 +320,9 @@ static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
         fprintf(fp, "Cluster: %3d  %s: %10.5f kJ/mol %3d elements\n",
                 j, etitles[bFree],
                 bFree ? pdbf[cndx[j]]->efree : pdbf[cndx[j]]->edocked,
-                cndx[j+1]-cndx[j]);
-        clust_stat(fp, cndx[j], cndx[j+1], pdbf);
-        for (k = cndx[j]; (k < cndx[j+1]); k++)
+                cndx[j + 1] - cndx[j]);
+        clust_stat(fp, cndx[j], cndx[j + 1], pdbf);
+        for (k = cndx[j]; (k < cndx[j + 1]); k++)
         {
             fprintf(fp, "  %3d", pdbf[k]->index);
         }
@@ -334,7 +334,7 @@ static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
 
 int gmx_anadock(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] analyses the results of an Autodock run and clusters the",
         "structures together, based on distance or RMSD. The docked energy",
         "and free energy estimates are analysed, and for each cluster the",
@@ -351,9 +351,9 @@ int gmx_anadock(int argc, char *argv[])
     };
     gmx_output_env_t *oenv;
 #define NFILE asize(fnm)
-    static gmx_bool   bFree  = FALSE, bRMS = TRUE;
-    static real       cutoff = 0.2;
-    t_pargs           pa[]   = {
+    static gmx_bool bFree  = FALSE, bRMS = TRUE;
+    static real     cutoff = 0.2;
+    t_pargs         pa[]   = {
         { "-free",   FALSE, etBOOL, {&bFree},
           "Use Free energy estimate from autodock for sorting the classes" },
         { "-rms",    FALSE, etBOOL, {&bRMS},
@@ -363,7 +363,7 @@ int gmx_anadock(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE       *fp;
+    FILE *      fp;
     t_pdbfile **pdbf = nullptr;
     int         npdbf;
 

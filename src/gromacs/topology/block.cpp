@@ -50,7 +50,7 @@ void init_block(t_block *block)
     block->nr           = 0;
     block->nalloc_index = 1;
     snew(block->index, block->nalloc_index);
-    block->index[0]     = 0;
+    block->index[0] = 0;
 }
 
 void init_blocka(t_blocka *block)
@@ -59,9 +59,9 @@ void init_blocka(t_blocka *block)
     block->nra          = 0;
     block->nalloc_index = 1;
     snew(block->index, block->nalloc_index);
-    block->index[0]     = 0;
-    block->nalloc_a     = 0;
-    block->a            = nullptr;
+    block->index[0] = 0;
+    block->nalloc_a = 0;
+    block->a        = nullptr;
 }
 
 t_blocka *new_blocka(void)
@@ -76,15 +76,15 @@ t_blocka *new_blocka(void)
 
 void done_block(t_block *block)
 {
-    block->nr    = 0;
+    block->nr = 0;
     sfree(block->index);
     block->nalloc_index = 0;
 }
 
 void done_blocka(t_blocka *block)
 {
-    block->nr    = 0;
-    block->nra   = 0;
+    block->nr  = 0;
+    block->nra = 0;
     sfree(block->index);
     sfree(block->a);
     block->index        = nullptr;
@@ -105,9 +105,9 @@ void stupid_fill_block(t_block *grp, int natom, gmx_bool bOneIndexGroup)
     }
     else
     {
-        grp->nalloc_index = natom+1;
+        grp->nalloc_index = natom + 1;
         snew(grp->index, grp->nalloc_index);
-        snew(grp->index, natom+1);
+        snew(grp->index, natom + 1);
         for (int i = 0; i <= natom; ++i)
         {
             grp->index[i] = i;
@@ -137,18 +137,18 @@ void stupid_fill_blocka(t_blocka *grp, int natom)
 
 void copy_blocka(const t_blocka *src, t_blocka *dest)
 {
-    dest->nr           = src->nr;
+    dest->nr = src->nr;
     /* Workaround for inconsistent handling of nalloc_index in
      * other parts of the code. Often nalloc_index and nalloc_a
      * are not set.
      */
     dest->nalloc_index = std::max(src->nalloc_index, dest->nr + 1);
     snew(dest->index, dest->nalloc_index);
-    for (int i = 0; i < dest->nr+1; ++i)
+    for (int i = 0; i < dest->nr + 1; ++i)
     {
         dest->index[i] = src->index[i];
     }
-    dest->nra      = src->nra;
+    dest->nra = src->nra;
     /* See above. */
     dest->nalloc_a = std::max(src->nalloc_a, dest->nra);
     snew(dest->a, dest->nalloc_a);
@@ -191,13 +191,13 @@ static void low_pr_blocka(FILE *fp, int indent, const char *title, const t_block
         indent = pr_blocka_title(fp, indent, title, block);
         for (i = 0; i <= block->nr; i++)
         {
-            pr_indent(fp, indent+INDENT);
+            pr_indent(fp, indent + INDENT);
             fprintf(fp, "%s->index[%d]=%d\n",
                     title, bShowNumbers ? i : -1, block->index[i]);
         }
         for (i = 0; i < block->nra; i++)
         {
-            pr_indent(fp, indent+INDENT);
+            pr_indent(fp, indent + INDENT);
             fprintf(fp, "%s->a[%d]=%d\n",
                     title, bShowNumbers ? i : -1, block->a[i]);
         }
@@ -220,7 +220,7 @@ void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx
         {
             for (i = 0; i < block->nr; i++)
             {
-                int end  = block->index[i+1];
+                int end = block->index[i + 1];
                 pr_indent(fp, indent);
                 if (end <= start)
                 {
@@ -230,7 +230,7 @@ void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx
                 {
                     fprintf(fp, "%s[%d]={%d..%d}\n",
                             title, bShowNumbers ? i : -1,
-                            bShowNumbers ? start : -1, bShowNumbers ? end-1 : -1);
+                            bShowNumbers ? start : -1, bShowNumbers ? end - 1 : -1);
                 }
                 start = end;
             }
@@ -255,7 +255,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
         {
             for (i = 0; i < block->nr; i++)
             {
-                end  = block->index[i+1];
+                end  = block->index[i + 1];
                 size = pr_indent(fp, indent);
                 if (end <= start)
                 {
@@ -265,7 +265,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
                 {
                     size += fprintf(fp, "%s[%d][%d..%d]={",
                                     title, bShowNumbers ? i : -1,
-                                    bShowNumbers ? start : -1, bShowNumbers ? end-1 : -1);
+                                    bShowNumbers ? start : -1, bShowNumbers ? end - 1 : -1);
                 }
                 for (j = start; j < end; j++)
                 {
@@ -276,7 +276,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
                     if ((size) > (USE_WIDTH))
                     {
                         fprintf(fp, "\n");
-                        size = pr_indent(fp, indent+INDENT);
+                        size = pr_indent(fp, indent + INDENT);
                     }
                     size += fprintf(fp, "%d", block->a[j]);
                 }

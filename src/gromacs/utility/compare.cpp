@@ -154,21 +154,20 @@ void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
 
 gmx_bool equal_real(real i1, real i2, real ftol, real abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
+    return ( ( 2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol ) || fabs(i1 - i2) <= abstol );
 }
 
 static gmx_bool equal_float(float i1, float i2, float ftol, float abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
+    return ( ( 2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol ) || fabs(i1 - i2) <= abstol );
 }
 
 static gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
+    return ( ( 2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol ) || fabs(i1 - i2) <= abstol );
 }
 
-void
-cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)
+void cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)
 {
     if (!equal_real(i1, i2, ftol, abstol))
     {
@@ -183,8 +182,7 @@ cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real a
     }
 }
 
-void
-cmp_float(FILE *fp, const char *s, int index, float i1, float i2, float ftol, float abstol)
+void cmp_float(FILE *fp, const char *s, int index, float i1, float i2, float ftol, float abstol)
 {
     if (!equal_float(i1, i2, ftol, abstol))
     {
@@ -199,8 +197,7 @@ cmp_float(FILE *fp, const char *s, int index, float i1, float i2, float ftol, fl
     }
 }
 
-void
-cmp_double(FILE *fp, const char *s, int index, double i1, double i2, double ftol, double abstol)
+void cmp_double(FILE *fp, const char *s, int index, double i1, double i2, double ftol, double abstol)
 {
     if (!equal_double(i1, i2, ftol, abstol))
     {

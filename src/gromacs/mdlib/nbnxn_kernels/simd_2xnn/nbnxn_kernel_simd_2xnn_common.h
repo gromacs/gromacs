@@ -53,7 +53,7 @@
 #endif
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
+#define UNROLLJ    (GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     UNROLLJ
@@ -74,13 +74,12 @@ using namespace gmx;
 /* As add_ener_grp, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
-static gmx_inline void
-add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
+static gmx_inline void add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 {
-    for (int jj = 0; jj < (UNROLLJ/2); jj++)
+    for (int jj = 0; jj < (UNROLLJ / 2); jj++)
     {
-        incrDualHsimd(v0+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2,
-                      v1+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2, e_S);
+        incrDualHsimd(v0 + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH / 2,
+                      v1 + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH / 2, e_S);
     }
 }
 #endif
@@ -92,17 +91,16 @@ typedef SimdReal     SimdBitMask;
 #endif
 
 
-static gmx_inline void gmx_simdcall
-gmx_load_simd_2xnn_interactions(int                  excl,
-                                SimdBitMask          filter_S0,
-                                SimdBitMask          filter_S2,
-                                SimdBool            *interact_S0,
-                                SimdBool            *interact_S2)
+static gmx_inline void gmx_simdcall gmx_load_simd_2xnn_interactions(int         excl,
+                                                                    SimdBitMask filter_S0,
+                                                                    SimdBitMask filter_S2,
+                                                                    SimdBool *  interact_S0,
+                                                                    SimdBool *  interact_S2)
 {
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     SimdInt32 mask_pr_S(excl);
-    *interact_S0  = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );
-    *interact_S2  = cvtIB2B( testBits( mask_pr_S & filter_S2 ) );
+    *interact_S0 = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );
+    *interact_S2 = cvtIB2B( testBits( mask_pr_S & filter_S2 ) );
 #elif GMX_SIMD_HAVE_LOGICAL
     union
     {
@@ -111,14 +109,14 @@ gmx_load_simd_2xnn_interactions(int                  excl,
 #else
         std::int32_t i;
 #endif
-        real         r;
+        real r;
     } conv;
 
     conv.i = excl;
-    SimdReal      mask_pr_S(conv.r);
+    SimdReal mask_pr_S(conv.r);
 
-    *interact_S0  = testBits( mask_pr_S & filter_S0 );
-    *interact_S2  = testBits( mask_pr_S & filter_S2 );
+    *interact_S0 = testBits( mask_pr_S & filter_S0 );
+    *interact_S2 = testBits( mask_pr_S & filter_S2 );
 #endif
 }
 

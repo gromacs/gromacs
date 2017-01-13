@@ -87,7 +87,7 @@ TEST(SimdScalarMathTest, inv)
 {
     real x0 = 1.2345;
 
-    EXPECT_EQ(real(1.0)/x0, inv(x0));
+    EXPECT_EQ(real(1.0) / x0, inv(x0));
 }
 
 TEST(SimdScalarMathTest, maskzInvsqrt)
@@ -202,13 +202,13 @@ TEST(SimdScalarMathTest, pmeForceCorrection)
 
     // Calculate reference value for z2!=0
     real z   = std::sqrt(z2);
-    real ref = 2.0*std::exp(-z2)/(std::sqrt(M_PI)*z2) - std::erf(z)/(z2*z);
+    real ref = 2.0 * std::exp(-z2) / (std::sqrt(M_PI) * z2) - std::erf(z) / (z2 * z);
 
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
 #else
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 #endif
 
     EXPECT_REAL_EQ_TOL(ref, pmeForceCorrection(z2), tolerance);
@@ -220,13 +220,13 @@ TEST(SimdScalarMathTest, pmePotentialCorrection)
 
     // Calculate reference value for z2!=0
     real z   = std::sqrt(z2);
-    real ref = std::erf(z)/z;
+    real ref = std::erf(z) / z;
 
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
 #else
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 #endif
 
     EXPECT_REAL_EQ_TOL(ref, pmePotentialCorrection(z2), tolerance);
@@ -253,7 +253,7 @@ TEST(SimdScalarMathTest, invSingleAccuracy)
 {
     double x0 = 1.2345;
 
-    EXPECT_EQ(1.0f/static_cast<float>(x0),
+    EXPECT_EQ(1.0f / static_cast<float>(x0),
               static_cast<float>(invSingleAccuracy(x0)));
 }
 
@@ -381,10 +381,10 @@ TEST(SimdScalarMathTest, pmeForceCorrectionSingleAccuracy)
 
     // Calculate reference value for z2!=0 in single precision
     float z   = std::sqrt(static_cast<float>(z2));
-    float ref = 2.0*std::exp(static_cast<float>(-z2))/(std::sqrt(static_cast<float>(M_PI))*z2) - std::erf(z)/(z2*z);
+    float ref = 2.0 * std::exp(static_cast<float>(-z2)) / (std::sqrt(static_cast<float>(M_PI)) * z2) - std::erf(z) / (z2 * z);
 
     // Pme correction only needs to be ~1e-6 accuracy single
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 
     EXPECT_REAL_EQ_TOL(ref, static_cast<float>(pmeForceCorrectionSingleAccuracy(z2)), tolerance);
 }
@@ -395,10 +395,10 @@ TEST(SimdScalarMathTest, pmePotentialCorrectionSingleAccuracy)
 
     // Calculate reference value for z2!=0 in single precision
     float z   = std::sqrt(static_cast<float>(z2));
-    float ref = std::erf(z)/z;
+    float ref = std::erf(z) / z;
 
     // Pme correction only needs to be ~1e-6 accuracy single
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 
     EXPECT_REAL_EQ_TOL(ref, static_cast<float>(pmePotentialCorrectionSingleAccuracy(z2)), tolerance);
 }

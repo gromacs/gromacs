@@ -129,7 +129,7 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                 }
                 else
                 {
-                    if (gmx[g+1] != ' ')
+                    if (gmx[g + 1] != ' ')
                     {
                         buf[b++] = ' ';
                     }
@@ -142,10 +142,10 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                 switch (xvgf)
                 {
                     case exvgXMGRACE:
-                        sprintf(buf+b, "%s", "\\f{}");
+                        sprintf(buf + b, "%s", "\\f{}");
                         break;
                     case exvgXMGR:
-                        sprintf(buf+b, "%s", "\\4");
+                        sprintf(buf + b, "%s", "\\4");
                         break;
                     default:
                         buf[b] = '\0';
@@ -160,10 +160,10 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                 switch (xvgf)
                 {
                     case exvgXMGRACE:
-                        sprintf(buf+b, "%s", "\\x");
+                        sprintf(buf + b, "%s", "\\x");
                         break;
                     case exvgXMGR:
-                        sprintf(buf+b, "%s", "\\8");
+                        sprintf(buf + b, "%s", "\\8");
                         break;
                     default:
                         buf[b] = '\0';
@@ -176,8 +176,8 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
             {
                 /* Check for special symbol */
                 i = 0;
-                while (sym[i] != nullptr &&
-                       gmx_strncasecmp(sym[i], gmx+g, std::strlen(sym[i])) != 0)
+                while (sym[i] != nullptr
+                       && gmx_strncasecmp(sym[i], gmx + g, std::strlen(sym[i])) != 0)
                 {
                     i++;
                 }
@@ -191,15 +191,15 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                     switch (xvgf)
                     {
                         case exvgXMGRACE:
-                            sprintf(buf+b, "%s%c%s", "\\x", c, "\\f{}");
+                            sprintf(buf + b, "%s%c%s", "\\x", c, "\\f{}");
                             break;
                         case exvgXMGR:
-                            sprintf(buf+b, "%s%c%s", "\\8", c, "\\4");
+                            sprintf(buf + b, "%s%c%s", "\\8", c, "\\4");
                             break;
                         default:
-                            std::strncat(buf+b, gmx+g, std::strlen(sym[i]));
+                            std::strncat(buf + b, gmx + g, std::strlen(sym[i]));
                             b += std::strlen(sym[i]);
-                            if (gmx[g+std::strlen(sym[i])] != ' ')
+                            if (gmx[g + std::strlen(sym[i])] != ' ')
                             {
                                 buf[b++] = ' ';
                             }
@@ -284,7 +284,7 @@ FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
                     const char *yaxis, int exvg_graph_type,
                     const gmx_output_env_t *oenv)
 {
-    FILE  *fp;
+    FILE *fp;
 
     fp = gmx_fio_fopen(fn, "w");
 
@@ -299,8 +299,7 @@ FILE *xvgropen(const char *fn, const char *title, const char *xaxis,
     return xvgropen_type(fn, title, xaxis, yaxis, exvggtXNY, oenv);
 }
 
-void
-xvgrclose(FILE *fp)
+void xvgrclose(FILE *fp)
 {
     gmx_fio_fclose(fp);
 }
@@ -386,12 +385,12 @@ void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
                 if (output_env_get_xvg_format(oenv) == exvgXMGR)
                 {
                     fprintf(out, "@ legend string %d \"%s\"\n",
-                            i+nr_first, xvgrstr(setname[i], oenv, buf, STRLEN));
+                            i + nr_first, xvgrstr(setname[i], oenv, buf, STRLEN));
                 }
                 else
                 {
                     fprintf(out, "@ s%d legend \"%s\"\n",
-                            i+nr_first, xvgrstr(setname[i], oenv, buf, STRLEN));
+                            i + nr_first, xvgrstr(setname[i], oenv, buf, STRLEN));
                 }
             }
         }
@@ -441,8 +440,8 @@ void xvgr_box(FILE *out,
 /* reads a line into ptr, adjusting len and renewing ptr if neccesary */
 static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
 {
-    int   len_remaining = *len; /* remaining amount of allocated bytes in buf */
-    int   curp          = 0;    /* current position in buf to read into */
+    int len_remaining = *len;   /* remaining amount of allocated bytes in buf */
+    int curp          = 0;      /* current position in buf to read into */
 
     do
     {
@@ -467,10 +466,9 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
             /* if last line, skip */
             return nullptr;
         }
-        curp         += len_remaining-1; /* overwrite the nul char in next iteration */
+        curp         += len_remaining - 1; /* overwrite the nul char in next iteration */
         len_remaining = 1;
-    }
-    while ((std::strchr(*ptr, '\n') == nullptr) && (!feof(fp)));
+    } while ((std::strchr(*ptr, '\n') == nullptr) && (!feof(fp)));
 
     if (*len + STRLEN >= maxlen)
     {
@@ -485,9 +483,9 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
     {
         /* now remove newline */
         int slen = std::strlen(*ptr);
-        if ((*ptr)[slen-1] == '\n')
+        if ((*ptr)[slen - 1] == '\n')
         {
-            (*ptr)[slen-1] = '\0';
+            (*ptr)[slen - 1] = '\0';
         }
     }
 
@@ -498,7 +496,7 @@ static int wordcount(char *ptr)
 {
     int i, n = 0, is[2];
     int cur = 0;
-#define prev (1-cur)
+#define prev (1 - cur)
 
     if (nullptr != ptr)
     {
@@ -522,7 +520,7 @@ static int wordcount(char *ptr)
 static char *read_xvgr_string(const char *line)
 {
     const char *ptr0, *ptr1;
-    char       *str;
+    char *      str;
 
     ptr0 = std::strchr(line, '"');
     if (ptr0 != nullptr)
@@ -531,8 +529,8 @@ static char *read_xvgr_string(const char *line)
         ptr1 = std::strchr(ptr0, '"');
         if (ptr1 != nullptr)
         {
-            str            = gmx_strdup(ptr0);
-            str[ptr1-ptr0] = '\0';
+            str              = gmx_strdup(ptr0);
+            str[ptr1 - ptr0] = '\0';
         }
         else
         {
@@ -550,14 +548,14 @@ static char *read_xvgr_string(const char *line)
 int read_xvg_legend(const char *fn, double ***y, int *ny,
                     char **subtitle, char ***legend)
 {
-    FILE    *fp;
-    char    *ptr;
-    char    *base = nullptr;
-    char    *fmt  = nullptr;
+    FILE *   fp;
+    char *   ptr;
+    char *   base = nullptr;
+    char *   fmt  = nullptr;
     int      k, line = 0, nny, nx, maxx, rval, legend_nalloc, set, nchar;
     double   lf;
     double **yy = nullptr;
-    char    *tmpbuf;
+    char *   tmpbuf;
     int      len = STRLEN;
     *ny  = 0;
     nny  = 0;
@@ -576,7 +574,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
         *legend = nullptr;
     }
 
-    while ((ptr = fgets3(fp, &tmpbuf, &len, 10*STRLEN)) != nullptr && ptr[0] != '&')
+    while ((ptr = fgets3(fp, &tmpbuf, &len, 10 * STRLEN)) != nullptr && ptr[0] != '&')
     {
         line++;
         trim(ptr);
@@ -638,8 +636,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                     return 0;
                 }
                 snew(yy, nny);
-                snew(fmt, 3*nny+1);
-                snew(base, 3*nny+1);
+                snew(fmt, 3 * nny + 1);
+                snew(base, 3 * nny + 1);
             }
             /* Allocate column space */
             if (nx >= maxx)
@@ -666,8 +664,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                     break;
                 }
                 yy[k][nx] = lf;
-                srenew(fmt, 3*(nny+1)+1);
-                srenew(base, 3*nny+1);
+                srenew(fmt, 3 * (nny + 1) + 1);
+                srenew(base, 3 * nny + 1);
                 std::strcat(base, "%*s");
             }
             if (k != nny)
@@ -694,8 +692,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
         if (*ny - 1 > legend_nalloc)
         {
             assert(legend);
-            srenew(*legend, *ny-1);
-            for (set = legend_nalloc; set < *ny-1; set++)
+            srenew(*legend, *ny - 1);
+            for (set = legend_nalloc; set < *ny - 1; set++)
             {
                 (*legend)[set] = nullptr;
             }
@@ -719,7 +717,7 @@ void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
     fp = xvgropen(fn, title, "X", "Y", oenv);
     if (leg)
     {
-        xvgr_legend(fp, ny-1, leg, oenv);
+        xvgr_legend(fp, ny - 1, leg, oenv);
     }
     for (i = 0; (i < nx); i++)
     {
@@ -736,14 +734,14 @@ real **read_xvg_time(const char *fn,
                      gmx_bool bHaveT, gmx_bool bTB, real tb, gmx_bool bTE, real te,
                      int nsets_in, int *nset, int *nval, real *dt, real **t)
 {
-    FILE      *fp;
+    FILE *fp;
 #define MAXLINELEN 16384
-    char       line0[MAXLINELEN];
-    char      *line;
-    int        t_nalloc, *val_nalloc, a, narg, n, sin, set, nchar;
-    double     dbl;
-    gmx_bool   bEndOfSet, bTimeInRange, bFirstLine = TRUE;
-    real     **val;
+    char     line0[MAXLINELEN];
+    char *   line;
+    int      t_nalloc, *val_nalloc, a, narg, n, sin, set, nchar;
+    double   dbl;
+    gmx_bool bEndOfSet, bTimeInRange, bFirstLine = TRUE;
+    real **  val;
 
     t_nalloc   = 0;
     *t         = nullptr;
@@ -797,8 +795,8 @@ real **read_xvg_time(const char *fn,
 
                 a            = 0;
                 bTimeInRange = TRUE;
-                while ((a < narg || (nsets_in == 1 && n == 0)) &&
-                       sscanf(line, "%lf%n", &dbl, &nchar) == 1 && bTimeInRange)
+                while ((a < narg || (nsets_in == 1 && n == 0))
+                       && sscanf(line, "%lf%n", &dbl, &nchar) == 1 && bTimeInRange)
                 {
                     /* Use set=-1 as the time "set" */
                     if (sin)
@@ -820,7 +818,7 @@ real **read_xvg_time(const char *fn,
                         }
                         else
                         {
-                            set = a-1;
+                            set = a - 1;
                         }
                     }
                     if (set == -1 && ((bTB && dbl < tb) || (bTE && dbl > te)))
@@ -838,7 +836,7 @@ real **read_xvg_time(const char *fn,
                             }
                             if (set >= 0)
                             {
-                                *nset = set+1;
+                                *nset = set + 1;
                                 srenew(val, *nset);
                                 srenew(val_nalloc, *nset);
                                 val_nalloc[set] = 0;
@@ -871,7 +869,7 @@ real **read_xvg_time(const char *fn,
                     a++;
                     line += nchar;
                 }
-                if (line0[strlen(line0)-1] != '\n')
+                if (line0[strlen(line0) - 1] != '\n')
                 {
                     fprintf(stderr, "File %s does not end with a newline, ignoring the last line\n", fn);
                 }
@@ -887,7 +885,7 @@ real **read_xvg_time(const char *fn,
                         {
                             fprintf(stderr, "Invalid line in %s:\n%s"
                                     "Using zeros for the last %d sets\n",
-                                    fn, line0, narg-a);
+                                    fn, line0, narg - a);
                         }
                         n++;
                     }
@@ -911,7 +909,7 @@ real **read_xvg_time(const char *fn,
             }
             if (n > 1)
             {
-                *dt = (real)((*t)[n-1]-(*t)[0])/(n-1.0);
+                *dt = (real)((*t)[n - 1] - (*t)[0]) / (n - 1.0);
             }
             else
             {
@@ -923,7 +921,7 @@ real **read_xvg_time(const char *fn,
             if (n < *nval)
             {
                 fprintf(stderr, "Set %d is shorter (%d) than the previous set (%d)\n",
-                        sin+1, n, *nval);
+                        sin + 1, n, *nval);
                 *nval = n;
                 fprintf(stderr, "Will use only the first %d points of every set\n",
                         *nval);

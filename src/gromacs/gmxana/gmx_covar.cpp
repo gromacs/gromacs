@@ -62,7 +62,7 @@
 
 int gmx_covar(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] calculates and diagonalizes the (mass-weighted)",
         "covariance matrix.",
         "All structures are fitted to the structure in the structure file.",
@@ -109,34 +109,34 @@ int gmx_covar(int argc, char *argv[])
         { "-pbc",  FALSE,  etBOOL, {&bPBC},
           "Apply corrections for periodic boundary conditions" }
     };
-    FILE             *out = nullptr; /* initialization makes all compilers happy */
-    t_trxstatus      *status;
+    FILE *            out = nullptr; /* initialization makes all compilers happy */
+    t_trxstatus *     status;
     t_topology        top;
     int               ePBC;
-    t_atoms          *atoms;
-    rvec             *x, *xread, *xref, *xav, *xproj;
+    t_atoms *         atoms;
+    rvec *            x, *xread, *xref, *xav, *xproj;
     matrix            box, zerobox;
-    real             *sqrtm, *mat, *eigenvalues, sum, trace, inv_nframes;
+    real *            sqrtm, *mat, *eigenvalues, sum, trace, inv_nframes;
     real              t, tstart, tend, **mat2;
     real              xj, *w_rls = nullptr;
     real              min, max, *axis;
     int               natoms, nat, nframes0, nframes, nlevels;
     gmx_int64_t       ndim, i, j, k, l;
     int               WriteXref;
-    const char       *fitfile, *trxfile, *ndxfile;
-    const char       *eigvalfile, *eigvecfile, *averfile, *logfile;
-    const char       *asciifile, *xpmfile, *xpmafile;
+    const char *      fitfile, *trxfile, *ndxfile;
+    const char *      eigvalfile, *eigvecfile, *averfile, *logfile;
+    const char *      asciifile, *xpmfile, *xpmafile;
     char              str[STRLEN], *fitname, *ananame;
     int               d, dj, nfit;
-    int              *index, *ifit;
+    int *             index, *ifit;
     gmx_bool          bDiffMass1, bDiffMass2;
     char              timebuf[STRLEN];
     t_rgb             rlo, rmi, rhi;
-    real             *eigenvectors;
+    real *            eigenvectors;
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",  nullptr, ffREAD },
         { efTPS, nullptr,  nullptr, ffREAD },
         { efNDX, nullptr,  nullptr, ffOPTRD },
@@ -197,7 +197,7 @@ int gmx_covar(int argc, char *argv[])
             w_rls[ifit[i]] = atoms->atom[ifit[i]].m;
             if (i)
             {
-                bDiffMass1 = bDiffMass1 || (w_rls[ifit[i]] != w_rls[ifit[i-1]]);
+                bDiffMass1 = bDiffMass1 || (w_rls[ifit[i]] != w_rls[ifit[i - 1]]);
             }
         }
     }
@@ -210,7 +210,7 @@ int gmx_covar(int argc, char *argv[])
             sqrtm[i] = std::sqrt(atoms->atom[index[i]].m);
             if (i)
             {
-                bDiffMass2 = bDiffMass2 || (sqrtm[i] != sqrtm[i-1]);
+                bDiffMass2 = bDiffMass2 || (sqrtm[i] != sqrtm[i - 1]);
             }
         }
         else
@@ -252,12 +252,12 @@ int gmx_covar(int argc, char *argv[])
 
     snew(x, natoms);
     snew(xav, natoms);
-    ndim = natoms*DIM;
+    ndim = natoms * DIM;
     if (std::sqrt(static_cast<real>(GMX_INT64_MAX)) < static_cast<real>(ndim))
     {
         gmx_fatal(FARGS, "Number of degrees of freedoms to large for matrix.\n");
     }
-    snew(mat, ndim*ndim);
+    snew(mat, ndim * ndim);
 
     fprintf(stderr, "Calculating the average structure ...\n");
     nframes0 = 0;
@@ -283,11 +283,10 @@ int gmx_covar(int argc, char *argv[])
         {
             rvec_inc(xav[i], xread[index[i]]);
         }
-    }
-    while (read_next_x(oenv, status, &t, xread, box));
+    } while (read_next_x(oenv, status, &t, xread, box));
     close_trj(status);
 
-    inv_nframes = 1.0/nframes0;
+    inv_nframes = 1.0 / nframes0;
     for (i = 0; i < natoms; i++)
     {
         for (d = 0; d < DIM; d++)
@@ -337,21 +336,20 @@ int gmx_covar(int argc, char *argv[])
         {
             for (dj = 0; dj < DIM; dj++)
             {
-                k  = ndim*(DIM*j+dj);
+                k  = ndim * (DIM * j + dj);
                 xj = x[j][dj];
                 for (i = j; i < natoms; i++)
                 {
-                    l = k+DIM*i;
+                    l = k + DIM * i;
                     for (d = 0; d < DIM; d++)
                     {
-                        mat[l+d] += x[i][d]*xj;
+                        mat[l + d] += x[i][d] * xj;
                     }
                 }
             }
         }
-    }
-    while (read_next_x(oenv, status, &t, xread, box) &&
-           (bRef || nframes < nframes0));
+    } while (read_next_x(oenv, status, &t, xread, box)
+             && (bRef || nframes < nframes0));
     close_trj(status);
     gmx_rmpbc_done(gpbc);
 
@@ -372,17 +370,17 @@ int gmx_covar(int argc, char *argv[])
     }
 
     /* correct the covariance matrix for the mass */
-    inv_nframes = 1.0/nframes;
+    inv_nframes = 1.0 / nframes;
     for (j = 0; j < natoms; j++)
     {
         for (dj = 0; dj < DIM; dj++)
         {
             for (i = j; i < natoms; i++)
             {
-                k = ndim*(DIM*j+dj)+DIM*i;
+                k = ndim * (DIM * j + dj) + DIM * i;
                 for (d = 0; d < DIM; d++)
                 {
-                    mat[k+d] = mat[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
+                    mat[k + d] = mat[k + d] * inv_nframes * sqrtm[i] * sqrtm[j];
                 }
             }
         }
@@ -393,14 +391,14 @@ int gmx_covar(int argc, char *argv[])
     {
         for (i = j; i < ndim; i++)
         {
-            mat[ndim*i+j] = mat[ndim*j+i];
+            mat[ndim * i + j] = mat[ndim * j + i];
         }
     }
 
     trace = 0;
     for (i = 0; i < ndim; i++)
     {
-        trace += mat[i*ndim+i];
+        trace += mat[i * ndim + i];
     }
     fprintf(stderr, "\nTrace of the covariance matrix: %g (%snm^2)\n",
             trace, bM ? "u " : "");
@@ -413,7 +411,7 @@ int gmx_covar(int argc, char *argv[])
             for (i = 0; i < ndim; i += 3)
             {
                 fprintf(out, "%g %g %g\n",
-                        mat[ndim*j+i], mat[ndim*j+i+1], mat[ndim*j+i+2]);
+                        mat[ndim * j + i], mat[ndim * j + i + 1], mat[ndim * j + i + 2]);
             }
         }
         gmx_ffclose(out);
@@ -426,7 +424,7 @@ int gmx_covar(int argc, char *argv[])
         snew(mat2, ndim);
         for (j = 0; j < ndim; j++)
         {
-            mat2[j] = &(mat[ndim*j]);
+            mat2[j] = &(mat[ndim * j]);
             for (i = 0; i <= j; i++)
             {
                 if (mat2[j][i] < min)
@@ -442,7 +440,7 @@ int gmx_covar(int argc, char *argv[])
         snew(axis, ndim);
         for (i = 0; i < ndim; i++)
         {
-            axis[i] = i+1;
+            axis[i] = i + 1;
         }
         rlo.r   = 0; rlo.g = 0; rlo.b = 1;
         rmi.r   = 1; rmi.g = 1; rmi.b = 1;
@@ -461,19 +459,19 @@ int gmx_covar(int argc, char *argv[])
     {
         min = 0;
         max = 0;
-        snew(mat2, ndim/DIM);
-        for (i = 0; i < ndim/DIM; i++)
+        snew(mat2, ndim / DIM);
+        for (i = 0; i < ndim / DIM; i++)
         {
-            snew(mat2[i], ndim/DIM);
+            snew(mat2[i], ndim / DIM);
         }
-        for (j = 0; j < ndim/DIM; j++)
+        for (j = 0; j < ndim / DIM; j++)
         {
             for (i = 0; i <= j; i++)
             {
                 mat2[j][i] = 0;
                 for (d = 0; d < DIM; d++)
                 {
-                    mat2[j][i] += mat[ndim*(DIM*j+d)+DIM*i+d];
+                    mat2[j][i] += mat[ndim * (DIM * j + d) + DIM * i + d];
                 }
                 if (mat2[j][i] < min)
                 {
@@ -486,10 +484,10 @@ int gmx_covar(int argc, char *argv[])
                 mat2[i][j] = mat2[j][i];
             }
         }
-        snew(axis, ndim/DIM);
-        for (i = 0; i < ndim/DIM; i++)
+        snew(axis, ndim / DIM);
+        for (i = 0; i < ndim / DIM; i++)
         {
-            axis[i] = i+1;
+            axis[i] = i + 1;
         }
         rlo.r   = 0; rlo.g = 0; rlo.b = 1;
         rmi.r   = 1; rmi.g = 1; rmi.b = 1;
@@ -497,11 +495,11 @@ int gmx_covar(int argc, char *argv[])
         out     = gmx_ffopen(xpmafile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
-                   "atom", "atom", ndim/DIM, ndim/DIM, axis, axis,
+                   "atom", "atom", ndim / DIM, ndim / DIM, axis, axis,
                    mat2, min, 0.0, max, rlo, rmi, rhi, &nlevels);
         gmx_ffclose(out);
         sfree(axis);
-        for (i = 0; i < ndim/DIM; i++)
+        for (i = 0; i < ndim / DIM; i++)
         {
             sfree(mat2[i]);
         }
@@ -512,9 +510,9 @@ int gmx_covar(int argc, char *argv[])
     /* call diagonalization routine */
 
     snew(eigenvalues, ndim);
-    snew(eigenvectors, ndim*ndim);
+    snew(eigenvectors, ndim * ndim);
 
-    std::memcpy(eigenvectors, mat, ndim*ndim*sizeof(real));
+    std::memcpy(eigenvectors, mat, ndim * ndim * sizeof(real));
     fprintf(stderr, "\nDiagonalizing ...\n");
     fflush(stderr);
     eigensolver(eigenvectors, ndim, 0, ndim, eigenvalues, mat);
@@ -529,7 +527,7 @@ int gmx_covar(int argc, char *argv[])
     }
     fprintf(stderr, "\nSum of the eigenvalues: %g (%snm^2)\n",
             sum, bM ? "u " : "");
-    if (std::abs(trace-sum) > 0.01*trace)
+    if (std::abs(trace - sum) > 0.01 * trace)
     {
         fprintf(stderr, "\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
     }
@@ -537,9 +535,9 @@ int gmx_covar(int argc, char *argv[])
     /* Set 'end', the maximum eigenvector and -value index used for output */
     if (end == -1)
     {
-        if (nframes-1 < ndim)
+        if (nframes - 1 < ndim)
         {
-            end = nframes-1;
+            end = nframes - 1;
             fprintf(stderr, "\nWARNING: there are fewer frames in your trajectory than there are\n");
             fprintf(stderr, "degrees of freedom in your system. Only generating the first\n");
             fprintf(stderr, "%d out of %d eigenvectors and eigenvalues.\n", end, static_cast<int>(ndim));
@@ -558,7 +556,7 @@ int gmx_covar(int argc, char *argv[])
                    "Eigenvector index", str, oenv);
     for (i = 0; (i < end); i++)
     {
-        fprintf (out, "%10d %g\n", static_cast<int>(i+1), eigenvalues[ndim-1-i]);
+        fprintf (out, "%10d %g\n", static_cast<int>(i + 1), eigenvalues[ndim - 1 - i]);
     }
     xvgrclose(out);
 

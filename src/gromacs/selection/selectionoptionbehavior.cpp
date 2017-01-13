@@ -78,7 +78,7 @@ class SelectionOptionBehavior::Impl
 {
     public:
         Impl(SelectionCollection *selections,
-             ITopologyProvider   *topologyProvider)
+             ITopologyProvider *  topologyProvider)
             : selections_(*selections), topologyProvider_(*topologyProvider),
               manager_(selections), grps_(nullptr)
         {
@@ -174,17 +174,17 @@ class SelectionOptionBehavior::Impl
             }
         }
 
-        SelectionCollection    &selections_;
-        ITopologyProvider      &topologyProvider_;
-        SelectionOptionManager  manager_;
+        SelectionCollection &  selections_;
+        ITopologyProvider &    topologyProvider_;
+        SelectionOptionManager manager_;
         //! Name of the index file (empty if no index file provided).
-        std::string             ndxfile_;
-        gmx_ana_indexgrps_t    *grps_;
+        std::string          ndxfile_;
+        gmx_ana_indexgrps_t *grps_;
 };
 
 SelectionOptionBehavior::SelectionOptionBehavior(
         SelectionCollection *selections,
-        ITopologyProvider   *topologyProvider)
+        ITopologyProvider *  topologyProvider)
     : impl_(new Impl(selections, topologyProvider))
 {
 }
@@ -193,8 +193,7 @@ SelectionOptionBehavior::~SelectionOptionBehavior()
 {
 }
 
-void
-SelectionOptionBehavior::initOptions(IOptionsContainer *options)
+void SelectionOptionBehavior::initOptions(IOptionsContainer *options)
 {
     options->addOption(FileNameOption("n")
                            .filetype(eftIndex).inputFile()
@@ -205,14 +204,12 @@ SelectionOptionBehavior::initOptions(IOptionsContainer *options)
     impl_->manager_.initOptions(options);
 }
 
-void
-SelectionOptionBehavior::initBehavior(Options *options)
+void SelectionOptionBehavior::initBehavior(Options *options)
 {
     options->addManager(&impl_->manager_);
 }
 
-void
-SelectionOptionBehavior::optionsFinished()
+void SelectionOptionBehavior::optionsFinished()
 {
     impl_->promptSelections();
     impl_->compileSelections();

@@ -57,14 +57,14 @@ static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
     int    i, j;
     double fac, fac0, fac1;
 
-    fac  = first + (I*(last-first))/(N-1);
-    fac0 = 1-fac;
+    fac  = first + (I * (last - first)) / (N - 1);
+    fac0 = 1 - fac;
     fac1 = fac;
     for (i = 0; (i < n); i++)
     {
         for (j = 0; (j < DIM); j++)
         {
-            xx[i][j] = fac0*x1[i][j] + fac1*x2[i][j];
+            xx[i][j] = fac0 * x1[i][j] + fac1 * x2[i][j];
         }
     }
 
@@ -73,7 +73,7 @@ static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
 
 int gmx_morph(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] does a linear interpolation of conformations in order to",
         "create intermediates. Of course these are completely unphysical, but",
         "that you may try to justify yourself. Output is in the form of a ",
@@ -89,7 +89,7 @@ int gmx_morph(int argc, char *argv[])
         "if explicitly selected ([TT]-or[tt] option). In that case, an index file may be",
         "read to select the group from which the RMS is computed."
     };
-    t_filenm          fnm[] = {
+    t_filenm    fnm[] = {
         { efSTX, "-f1", "conf1",  ffREAD },
         { efSTX, "-f2", "conf2",  ffREAD },
         { efTRX, "-o",  "interm", ffWRITE },
@@ -111,15 +111,15 @@ int gmx_morph(int argc, char *argv[])
         { "-fit",     FALSE, etBOOL, {&bFit},
           "Do a least squares fit of the second to the first structure before interpolating" }
     };
-    const char       *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
-    FILE             *fp    = nullptr;
+    const char *      leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
+    FILE *            fp    = nullptr;
     int               i, isize, is_lsq, nat1, nat2;
-    t_trxstatus      *status;
-    int              *index, *index_lsq, *index_all, *dummy;
-    rvec             *x1, *x2, *xx;
+    t_trxstatus *     status;
+    int *             index, *index_lsq, *index_all, *dummy;
+    rvec *            x1, *x2, *xx;
     matrix            box;
     real              rms1, rms2, fac, *mass;
-    char             *grpname;
+    char *            grpname;
     gmx_bool          bRMS;
     gmx_output_env_t *oenv;
 
@@ -142,7 +142,7 @@ int gmx_morph(int argc, char *argv[])
                   nat1, nat2);
     }
     snew(xx, nat1);
-    t_atoms  &atoms = top->atoms;
+    t_atoms &atoms = top->atoms;
 
     snew(mass, nat1);
     snew(index_all, nat1);

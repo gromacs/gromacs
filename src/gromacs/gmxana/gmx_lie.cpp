@@ -55,7 +55,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     int  nlj, nqq;
     int *lj;
     int *qq;
@@ -81,20 +82,20 @@ static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
     snew(ld, 1);
     for (; (i < nre); i++)
     {
-        if ((std::strstr(names[i].name, ligand) != nullptr) &&
-            (std::strstr(names[i].name, self) == nullptr))
+        if ((std::strstr(names[i].name, ligand) != nullptr)
+            && (std::strstr(names[i].name, self) == nullptr))
         {
             if (std::strstr(names[i].name, "LJ") != nullptr)
             {
                 ld->nlj++;
                 srenew(ld->lj, ld->nlj);
-                ld->lj[ld->nlj-1] = i;
+                ld->lj[ld->nlj - 1] = i;
             }
             else if (std::strstr(names[i].name, "Coul") != nullptr)
             {
                 ld->nqq++;
                 srenew(ld->qq, ld->nqq);
-                ld->qq[ld->nqq-1] = i;
+                ld->qq[ld->nqq - 1] = i;
             }
         }
     }
@@ -132,12 +133,12 @@ real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
     }
 
     /* And now the great LIE formula: */
-    return fac_lj*(lj_tot-lie_lj)+fac_qq*(qq_tot-lie_qq);
+    return fac_lj * (lj_tot - lie_lj) + fac_qq * (qq_tot - lie_qq);
 }
 
 int gmx_lie(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] computes a free energy estimate based on an energy analysis",
         "from nonbonded energies. One needs an energy file with the following components:",
         "Coul-(A-B) LJ-SR (A-B) etc.[PAR]",
@@ -163,17 +164,17 @@ int gmx_lie(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE             *out;
+    FILE *            out;
     int               nre, nframes = 0, ct = 0;
     ener_file_t       fp;
-    t_liedata        *ld;
-    gmx_enxnm_t      *enm = nullptr;
-    t_enxframe       *fr;
+    t_liedata *       ld;
+    gmx_enxnm_t *     enm = nullptr;
+    t_enxframe *      fr;
     real              lie;
     double            lieaver = 0, lieav2 = 0;
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efEDR, "-f",    "ener",     ffREAD   },
         { efXVG, "-o",    "lie",      ffWRITE  }
     };
@@ -200,7 +201,7 @@ int gmx_lie(int argc, char *argv[])
         {
             lie      = calc_lie(ld, fr->ener, lie_lj, lie_qq, fac_lj, fac_qq);
             lieaver += lie;
-            lieav2  += lie*lie;
+            lieav2  += lie * lie;
             nframes++;
             fprintf(out, "%10g  %10g\n", fr->t, lie);
         }
@@ -211,8 +212,8 @@ int gmx_lie(int argc, char *argv[])
 
     if (nframes > 0)
     {
-        printf("DGbind = %.3f (%.3f)\n", lieaver/nframes,
-               std::sqrt(lieav2/nframes-gmx::square(lieaver/nframes)));
+        printf("DGbind = %.3f (%.3f)\n", lieaver / nframes,
+               std::sqrt(lieav2 / nframes - gmx::square(lieaver / nframes)));
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");

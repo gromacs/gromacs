@@ -129,12 +129,14 @@ void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *a
     lo_ffprintf(fp1, fp2, buf);
 }
 
-typedef struct {
+typedef struct
+{
     int  ncl;
     int *cl;
 } t_clusters;
 
-typedef struct {
+typedef struct
+{
     int  nr;
     int *nb;
 } t_nnb;
@@ -154,10 +156,10 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
                  int seed, real kT,
                  const char *conv, gmx_output_env_t *oenv)
 {
-    FILE      *fp = nullptr;
-    real       ecur, enext, emin, prob, enorm;
-    int        i, j, iswap, jswap, nn, nuphill = 0;
-    t_mat     *minimum;
+    FILE * fp = nullptr;
+    real   ecur, enext, emin, prob, enorm;
+    int    i, j, iswap, jswap, nn, nuphill = 0;
+    t_mat *minimum;
 
     if (seed == 0)
     {
@@ -183,9 +185,9 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
         {
             if (m->mat[i][j] > enorm)
             {
-                enorm   = m->mat[i][j];
-                iswap   = i;
-                jswap   = j;
+                enorm = m->mat[i][j];
+                iswap = i;
+                jswap = j;
             }
         }
     }
@@ -195,12 +197,12 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
         return;
     }
     swap_rows(m, 0, iswap);
-    swap_rows(m, m->n1-1, jswap);
+    swap_rows(m, m->n1 - 1, jswap);
     emin = ecur = mat_energy(m);
     printf("Largest distance %g between %d and %d. Energy: %g.\n",
            enorm, iswap, jswap, emin);
 
-    nn  = m->nn;
+    nn = m->nn;
 
     /* Initiate and store global minimum */
     minimum     = init_mat(nn, m->b1D);
@@ -213,8 +215,8 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
                       "Energy", "Step", oenv);
     }
 
-    gmx::UniformIntDistribution<int>     intDistNN(1, nn-2); // [1,nn-2]
-    gmx::UniformRealDistribution<real>   realDistOne;        // [0,1)
+    gmx::UniformIntDistribution<int>   intDistNN(1, nn - 2); // [1,nn-2]
+    gmx::UniformRealDistribution<real> realDistOne;          // [0,1)
 
     for (i = 0; (i < maxiter); i++)
     {
@@ -223,8 +225,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
         {
             iswap = intDistNN(rng);
             jswap = intDistNN(rng);
-        }
-        while ((iswap == jswap) || (iswap >= nn-1) || (jswap >= nn-1));
+        } while ((iswap == jswap) || (iswap >= nn - 1) || (jswap >= nn - 1));
 
         /* Apply swap and compute energy */
         swap_rows(m, iswap, jswap);
@@ -245,7 +246,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
         else if (kT > 0)
         {
             /* Try Monte Carlo step */
-            prob = std::exp(-(enext-ecur)/(enorm*kT));
+            prob = std::exp(-(enext - ecur) / (enorm * kT));
         }
 
         if (prob == 1 || realDistOne(rng) < prob)
@@ -282,7 +283,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
         fprintf(log, "%10g  %5d  %10g\n",
                 time[m->m_ind[i]],
                 m->m_ind[i],
-                (i < m->nn-1) ? m->mat[m->m_ind[i]][m->m_ind[i+1]] : 0);
+                (i < m->nn - 1) ? m->mat[m->m_ind[i]][m->m_ind[i + 1]] : 0);
     }
 
     if (nullptr != fp)
@@ -293,14 +294,14 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
 
 static void calc_dist(int nind, rvec x[], real **d)
 {
-    int      i, j;
-    real    *xi;
-    rvec     dx;
+    int   i, j;
+    real *xi;
+    rvec  dx;
 
-    for (i = 0; (i < nind-1); i++)
+    for (i = 0; (i < nind - 1); i++)
     {
         xi = x[i];
-        for (j = i+1; (j < nind); j++)
+        for (j = i + 1; (j < nind); j++)
         {
             /* Should use pbc_dx when analysing multiple molecueles,
              * but the box is not stored for every frame.
@@ -317,15 +318,15 @@ static real rms_dist(int isize, real **d, real **d_r)
     real r, r2;
 
     r2 = 0.0;
-    for (i = 0; (i < isize-1); i++)
+    for (i = 0; (i < isize - 1); i++)
     {
-        for (j = i+1; (j < isize); j++)
+        for (j = i + 1; (j < isize); j++)
         {
-            r   = d[i][j]-d_r[i][j];
-            r2 += r*r;
+            r   = d[i][j] - d_r[i][j];
+            r2 += r * r;
         }
     }
-    r2 /= (isize*(isize-1))/2;
+    r2 /= (isize * (isize - 1)) / 2;
 
     return std::sqrt(r2);
 }
@@ -349,17 +350,17 @@ static bool nrnb_comp(const t_nnb &a, const t_nnb &b)
 void gather(t_mat *m, real cutoff, t_clusters *clust)
 {
     t_clustid *c;
-    t_dist    *d;
+    t_dist *   d;
     int        i, j, k, nn, cid, n1, diff;
     gmx_bool   bChange;
 
     /* First we sort the entries in the RMSD matrix */
     n1 = m->nn;
-    nn = ((n1-1)*n1)/2;
+    nn = ((n1 - 1) * n1) / 2;
     snew(d, nn);
     for (i = k = 0; (i < n1); i++)
     {
-        for (j = i+1; (j < n1); j++, k++)
+        for (j = i + 1; (j < n1); j++, k++)
         {
             d[k].i    = i;
             d[k].j    = j;
@@ -370,7 +371,7 @@ void gather(t_mat *m, real cutoff, t_clusters *clust)
     {
         gmx_incons("gather algortihm");
     }
-    std::sort(d, d+nn, rms_dist_comp);
+    std::sort(d, d + nn, rms_dist_comp);
 
     /* Now we make a cluster index for all of the conformations */
     c = new_clustid(n1);
@@ -397,27 +398,26 @@ void gather(t_mat *m, real cutoff, t_clusters *clust)
                 }
             }
         }
-    }
-    while (bChange);
+    } while (bChange);
     fprintf(stderr, "\nSorting and renumbering clusters\n");
     /* Sort on cluster number */
-    std::sort(c, c+n1, clust_id_comp);
+    std::sort(c, c + n1, clust_id_comp);
 
     /* Renumber clusters */
     cid = 1;
     for (k = 1; k < n1; k++)
     {
-        if (c[k].clust != c[k-1].clust)
+        if (c[k].clust != c[k - 1].clust)
         {
-            c[k-1].clust = cid;
+            c[k - 1].clust = cid;
             cid++;
         }
         else
         {
-            c[k-1].clust = cid;
+            c[k - 1].clust = cid;
         }
     }
-    c[k-1].clust = cid;
+    c[k - 1].clust = cid;
     if (debug)
     {
         for (k = 0; (k < n1); k++)
@@ -479,12 +479,12 @@ gmx_bool jp_same(int **nnb, int i, int j, int P)
 static void jarvis_patrick(int n1, real **mat, int M, int P,
                            real rmsdcut, t_clusters *clust)
 {
-    t_dist     *row;
-    t_clustid  *c;
-    int       **nnb;
-    int         i, j, k, cid, diff, maxval;
-    gmx_bool    bChange;
-    real      **mcpy = nullptr;
+    t_dist *   row;
+    t_clustid *c;
+    int **     nnb;
+    int        i, j, k, cid, diff, maxval;
+    gmx_bool   bChange;
+    real **    mcpy = nullptr;
 
     if (rmsdcut < 0)
     {
@@ -503,16 +503,16 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
             row[j].j    = j;
             row[j].dist = mat[i][j];
         }
-        std::sort(row, row+n1, rms_dist_comp);
+        std::sort(row, row + n1, rms_dist_comp);
         if (M > 0)
         {
             /* Put the M nearest neighbors in the list */
-            snew(nnb[i], M+1);
+            snew(nnb[i], M + 1);
             for (j = k = 0; (k < M) && (j < n1) && (mat[i][row[j].j] < rmsdcut); j++)
             {
                 if (row[j].j  != i)
                 {
-                    nnb[i][k]  = row[j].j;
+                    nnb[i][k] = row[j].j;
                     k++;
                 }
             }
@@ -538,7 +538,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
             }
             if (k == maxval)
             {
-                srenew(nnb[i], maxval+1);
+                srenew(nnb[i], maxval + 1);
             }
             nnb[i][k] = -1;
         }
@@ -564,7 +564,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
     mcpy = mk_matrix(n1, n1, FALSE);
     for (i = 0; i < n1; i++)
     {
-        for (j = i+1; j < n1; j++)
+        for (j = i + 1; j < n1; j++)
         {
             mcpy[i][j] = jp_same(nnb, i, j, P);
         }
@@ -575,7 +575,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
         bChange = FALSE;
         for (i = 0; i < n1; i++)
         {
-            for (j = i+1; j < n1; j++)
+            for (j = i + 1; j < n1; j++)
             {
                 if (mcpy[i][j])
                 {
@@ -595,29 +595,28 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
                 }
             }
         }
-    }
-    while (bChange);
+    } while (bChange);
 
     fprintf(stderr, "\nSorting and renumbering clusters\n");
     /* Sort on cluster number */
-    std::sort(c, c+n1, clust_id_comp);
+    std::sort(c, c + n1, clust_id_comp);
 
     /* Renumber clusters */
     cid = 1;
     for (k = 1; k < n1; k++)
     {
-        if (c[k].clust != c[k-1].clust)
+        if (c[k].clust != c[k - 1].clust)
         {
-            c[k-1].clust = cid;
+            c[k - 1].clust = cid;
             cid++;
         }
         else
         {
-            c[k-1].clust = cid;
+            c[k - 1].clust = cid;
         }
     }
-    c[k-1].clust = cid;
-    clust->ncl   = cid;
+    c[k - 1].clust = cid;
+    clust->ncl     = cid;
     for (k = 0; k < n1; k++)
     {
         clust->cl[c[k].conf] = c[k].clust;
@@ -661,7 +660,7 @@ static void dump_nnb (FILE *fp, const char *title, int n1, t_nnb *nnb)
 static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 {
     t_dist *row;
-    t_nnb  *nnb;
+    t_nnb * nnb;
     int     i, j, k, j1, maxval;
 
     /* Put all neighbors nearer than rmsdcut in the list */
@@ -688,16 +687,16 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
         }
         /* store nr of neighbors, we'll need that */
         nnb[i].nr = k;
-        if (i%(1+n1/100) == 0)
+        if (i % (1 + n1 / 100) == 0)
         {
-            fprintf(stderr, "%3d%%\b\b\b\b", (i*100+1)/n1);
+            fprintf(stderr, "%3d%%\b\b\b\b", (i * 100 + 1) / n1);
         }
     }
     fprintf(stderr, "%3d%%\n", 100);
     sfree(row);
 
     /* sort neighbor list on number of neighbors, largest first */
-    std::sort(nnb, nnb+n1, nrnb_comp);
+    std::sort(nnb, nnb + n1, nrnb_comp);
 
     if (debug)
     {
@@ -740,7 +739,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
         }
         /* sort again on nnb[].nr, because we have new # neighbors: */
         /* but we only need to sort upto i, i.e. when nnb[].nr>0 */
-        std::sort(nnb, nnb+i, nrnb_comp);
+        std::sort(nnb, nnb + i, nrnb_comp);
 
         fprintf(stderr, "\b\b\b\b%4d", k);
         /* new cluster id */
@@ -758,13 +757,13 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
         fprintf(debug, "\n");
     }
 
-    clust->ncl = k-1;
+    clust->ncl = k - 1;
 }
 
 rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
                       int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
-    rvec       **xx, *x;
+    rvec **      xx, *x;
     matrix       box;
     real         t;
     int          i, i0, j, max_nf;
@@ -802,10 +801,9 @@ rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
             i0++;
         }
         i++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "Allocated %lu bytes for frames\n",
-            (unsigned long) (max_nf*isize*sizeof(**xx)));
+            (unsigned long) (max_nf * isize * sizeof(**xx)));
     fprintf(stderr, "Read %d frames from trajectory %s\n", i0, fn);
     *nframe = i0;
     sfree(x);
@@ -894,7 +892,7 @@ static void mark_clusters(int nf, real **mat, real val, t_clusters *clust)
 static char *parse_filename(const char *fn, int maxnr)
 {
     int         i;
-    char       *fnout;
+    char *      fnout;
     const char *ext;
     char        buf[STRLEN];
 
@@ -903,7 +901,7 @@ static char *parse_filename(const char *fn, int maxnr)
         gmx_fatal(FARGS, "will not number filename %s containing '%c'", fn, '%');
     }
     /* number of digits needed in numbering */
-    i = static_cast<int>((std::log(static_cast<real>(maxnr))/std::log(10.0)) + 1);
+    i = static_cast<int>((std::log(static_cast<real>(maxnr)) / std::log(10.0)) + 1);
     /* split fn and ext */
     ext = std::strrchr(fn, '.');
     if (!ext)
@@ -913,7 +911,7 @@ static char *parse_filename(const char *fn, int maxnr)
     ext++;
     /* insert e.g. '%03d' between fn and ext */
     sprintf(buf, "%s%%0%dd.%s", fn, i, ext);
-    snew(fnout, std::strlen(buf)+1);
+    snew(fnout, std::strlen(buf) + 1);
     std::strcpy(fnout, buf);
 
     return fnout;
@@ -923,9 +921,9 @@ static void ana_trans(t_clusters *clust, int nf,
                       const char *transfn, const char *ntransfn, FILE *log,
                       t_rgb rlo, t_rgb rhi, const gmx_output_env_t *oenv)
 {
-    FILE  *fp;
+    FILE * fp;
     real **trans, *axis;
-    int   *ntrans;
+    int *  ntrans;
     int    i, ntranst, maxtrans;
     char   buf[STRLEN];
 
@@ -934,20 +932,20 @@ static void ana_trans(t_clusters *clust, int nf,
     snew(axis, clust->ncl);
     for (i = 0; i < clust->ncl; i++)
     {
-        axis[i] = i+1;
+        axis[i] = i + 1;
         snew(trans[i], clust->ncl);
     }
     ntranst  = 0;
     maxtrans = 0;
     for (i = 1; i < nf; i++)
     {
-        if (clust->cl[i] != clust->cl[i-1])
+        if (clust->cl[i] != clust->cl[i - 1])
         {
             ntranst++;
-            ntrans[clust->cl[i-1]-1]++;
-            ntrans[clust->cl[i]-1]++;
-            trans[clust->cl[i-1]-1][clust->cl[i]-1]++;
-            maxtrans = static_cast<int>(std::max(static_cast<real>(maxtrans), trans[clust->cl[i]-1][clust->cl[i-1]-1]));
+            ntrans[clust->cl[i - 1] - 1]++;
+            ntrans[clust->cl[i] - 1]++;
+            trans[clust->cl[i - 1] - 1][clust->cl[i] - 1]++;
+            maxtrans = static_cast<int>(std::max(static_cast<real>(maxtrans), trans[clust->cl[i] - 1][clust->cl[i - 1] - 1]));
         }
     }
     ffprintf_dd(stderr, log, buf, "Counted %d transitions in total, "
@@ -955,7 +953,7 @@ static void ana_trans(t_clusters *clust, int nf,
     if (transfn)
     {
         fp = gmx_ffopen(transfn, "w");
-        i  = std::min(maxtrans+1, 80);
+        i  = std::min(maxtrans + 1, 80);
         write_xpm(fp, 0, "Cluster Transitions", "# transitions",
                   "from cluster", "to cluster",
                   clust->ncl, clust->ncl, axis, axis, trans,
@@ -968,7 +966,7 @@ static void ana_trans(t_clusters *clust, int nf,
                       oenv);
         for (i = 0; i < clust->ncl; i++)
         {
-            fprintf(fp, "%5d %5d\n", i+1, ntrans[i]);
+            fprintf(fp, "%5d %5d\n", i + 1, ntrans[i]);
         }
         xvgrclose(fp);
     }
@@ -993,14 +991,14 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              gmx_bool bFit, FILE *log, t_rgb rlo, t_rgb rhi,
                              const gmx_output_env_t *oenv)
 {
-    FILE        *size_fp = nullptr;
+    FILE *       size_fp = nullptr;
     char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
     t_trxstatus *trxout  = nullptr;
     t_trxstatus *trxsout = nullptr;
     int          i, i1, cl, nstr, *structure, first = 0, midstr;
-    gmx_bool    *bWrite = nullptr;
+    gmx_bool *   bWrite = nullptr;
     real         r, clrmsd, midrmsd;
-    rvec        *xav = nullptr;
+    rvec *       xav = nullptr;
     matrix       zerobox;
 
     clear_mat(zerobox);
@@ -1212,7 +1210,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                     bWrite[i] = FALSE;
                 }
             }
-            if (cl < write_ncl+1 && nstr > write_nst)
+            if (cl < write_ncl + 1 && nstr > write_nst)
             {
                 /* Dump all structures for this cluster */
                 /* generate numbered filename (there is a %d in trxfn!) */
@@ -1244,7 +1242,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             {
                 for (i = 0; i < natom; i++)
                 {
-                    svmul(1.0/nstr, xav[i], xav[i]);
+                    svmul(1.0 / nstr, xav[i], xav[i]);
                 }
             }
             else
@@ -1317,7 +1315,7 @@ static void convert_mat(t_matrix *mat, t_mat *rms)
 
 int gmx_cluster(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] can cluster structures using several different methods.",
         "Distances between structures can be determined from a trajectory",
         "or read from an [REF].xpm[ref] matrix file with the [TT]-dm[tt] option.",
@@ -1392,35 +1390,36 @@ int gmx_cluster(int argc, char *argv[])
         "   of the cluster.",
     };
 
-    FILE              *fp, *log;
-    int                nf, i, i1, i2, j;
-    gmx_int64_t        nrms = 0;
+    FILE *      fp, *log;
+    int         nf, i, i1, i2, j;
+    gmx_int64_t nrms = 0;
 
-    matrix             box;
-    rvec              *xtps, *usextps, *x1, **xx = nullptr;
-    const char        *fn, *trx_out_fn;
-    t_clusters         clust;
-    t_mat             *rms, *orig = nullptr;
-    real              *eigenvalues;
-    t_topology         top;
-    int                ePBC;
-    t_atoms            useatoms;
-    t_matrix          *readmat = nullptr;
-    real              *eigenvectors;
+    matrix      box;
+    rvec *      xtps, *usextps, *x1, **xx = nullptr;
+    const char *fn, *trx_out_fn;
+    t_clusters  clust;
+    t_mat *     rms, *orig = nullptr;
+    real *      eigenvalues;
+    t_topology  top;
+    int         ePBC;
+    t_atoms     useatoms;
+    t_matrix *  readmat = nullptr;
+    real *      eigenvectors;
 
-    int                isize = 0, ifsize = 0, iosize = 0;
-    int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr;
-    char              *grpname;
-    real               rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
-    char               buf[STRLEN], buf1[80], title[STRLEN];
-    gmx_bool           bAnalyze, bUseRmsdCut, bJP_RMSD = FALSE, bReadMat, bReadTraj, bPBC = TRUE;
+    int      isize = 0, ifsize = 0, iosize = 0;
+    int *    index = nullptr, *fitidx = nullptr, *outidx = nullptr;
+    char *   grpname;
+    real     rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
+    char     buf[STRLEN], buf1[80], title[STRLEN];
+    gmx_bool bAnalyze, bUseRmsdCut, bJP_RMSD = FALSE, bReadMat, bReadTraj, bPBC = TRUE;
 
     int                method, ncluster = 0;
     static const char *methodname[] = {
         nullptr, "linkage", "jarvis-patrick", "monte-carlo",
         "diagonalization", "gromos", nullptr
     };
-    enum {
+    enum
+    {
         m_null, m_linkage, m_jarvis_patrick,
         m_monte_carlo, m_diagonalize, m_gromos, m_nr
     };
@@ -1438,7 +1437,7 @@ int gmx_cluster(int argc, char *argv[])
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    t_pargs           pa[] = {
+    t_pargs  pa[] = {
         { "-dista", FALSE, etBOOL, {&bRMSdist},
           "Use RMSD of distances instead of RMS deviation" },
         { "-nlevels", FALSE, etINT,  {&nlevels},
@@ -1483,7 +1482,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-pbc", FALSE, etBOOL,
           { &bPBC }, "PBC check" }
     };
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",     nullptr,        ffOPTRD },
         { efTPS, "-s",     nullptr,        ffOPTRD },
         { efNDX, nullptr,     nullptr,        ffOPTRD },
@@ -1511,13 +1510,13 @@ int gmx_cluster(int argc, char *argv[])
     }
 
     /* parse options */
-    bReadMat   = opt2bSet("-dm", NFILE, fnm);
-    bReadTraj  = opt2bSet("-f", NFILE, fnm) || !bReadMat;
-    if (opt2parg_bSet("-av", asize(pa), pa) ||
-        opt2parg_bSet("-wcl", asize(pa), pa) ||
-        opt2parg_bSet("-nst", asize(pa), pa) ||
-        opt2parg_bSet("-rmsmin", asize(pa), pa) ||
-        opt2bSet("-cl", NFILE, fnm) )
+    bReadMat  = opt2bSet("-dm", NFILE, fnm);
+    bReadTraj = opt2bSet("-f", NFILE, fnm) || !bReadMat;
+    if (opt2parg_bSet("-av", asize(pa), pa)
+        || opt2parg_bSet("-wcl", asize(pa), pa)
+        || opt2parg_bSet("-nst", asize(pa), pa)
+        || opt2parg_bSet("-rmsmin", asize(pa), pa)
+        || opt2bSet("-cl", NFILE, fnm) )
     {
         trx_out_fn = opt2fn("-cl", NFILE, fnm);
     }
@@ -1548,8 +1547,8 @@ int gmx_cluster(int argc, char *argv[])
         gmx_fatal(FARGS, "Invalid method");
     }
 
-    bAnalyze = (method == m_linkage || method == m_jarvis_patrick ||
-                method == m_gromos );
+    bAnalyze = (method == m_linkage || method == m_jarvis_patrick
+                || method == m_gromos );
 
     /* Open log file */
     log = ftp2FILE(efLOG, NFILE, fnm, "w");
@@ -1729,7 +1728,7 @@ int gmx_cluster(int argc, char *argv[])
     else   /* !bReadMat */
     {
         rms  = init_mat(nf, method == m_diagonalize);
-        nrms = (static_cast<gmx_int64_t>(nf)*static_cast<gmx_int64_t>(nf-1))/2;
+        nrms = (static_cast<gmx_int64_t>(nf) * static_cast<gmx_int64_t>(nf - 1)) / 2;
         if (!bRMSdist)
         {
             fprintf(stderr, "Computing %dx%d RMS deviation matrix\n", nf, nf);
@@ -1737,7 +1736,7 @@ int gmx_cluster(int argc, char *argv[])
             snew(x1, isize);
             for (i1 = 0; i1 < nf; i1++)
             {
-                for (i2 = i1+1; i2 < nf; i2++)
+                for (i2 = i1 + 1; i2 < nf; i2++)
                 {
                     for (i = 0; i < isize; i++)
                     {
@@ -1750,7 +1749,7 @@ int gmx_cluster(int argc, char *argv[])
                     rmsd = rmsdev(isize, mass, xx[i2], x1);
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
-                nrms -= nf-i1-1;
+                nrms -= nf - i1 - 1;
                 fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
                 fflush(stderr);
             }
@@ -1771,12 +1770,12 @@ int gmx_cluster(int argc, char *argv[])
             for (i1 = 0; i1 < nf; i1++)
             {
                 calc_dist(isize, xx[i1], d1);
-                for (i2 = i1+1; (i2 < nf); i2++)
+                for (i2 = i1 + 1; (i2 < nf); i2++)
                 {
                     calc_dist(isize, xx[i2], d2);
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
-                nrms -= nf-i1-1;
+                nrms -= nf - i1 - 1;
                 fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
                 fflush(stderr);
             }
@@ -1793,7 +1792,7 @@ int gmx_cluster(int argc, char *argv[])
     }
     ffprintf_gg(stderr, log, buf, "The RMSD ranges from %g to %g nm\n",
                 rms->minrms, rms->maxrms);
-    ffprintf_g(stderr, log, buf, "Average RMSD is %g\n", 2*rms->sumrms/(nf*(nf-1)));
+    ffprintf_g(stderr, log, buf, "Average RMSD is %g\n", 2 * rms->sumrms / (nf * (nf - 1)));
     ffprintf_d(stderr, log, buf, "Number of structures for matrix %d\n", nf);
     ffprintf_g(stderr, log, buf, "Energy of the matrix is %g.\n", mat_energy(rms));
     if (bUseRmsdCut && (rmsdcut < rms->minrms || rmsdcut > rms->maxrms) )
@@ -1843,8 +1842,8 @@ int gmx_cluster(int argc, char *argv[])
         case m_diagonalize:
             /* Do a diagonalization */
             snew(eigenvalues, nf);
-            snew(eigenvectors, nf*nf);
-            std::memcpy(eigenvectors, rms->mat[0], nf*nf*sizeof(real));
+            snew(eigenvectors, nf * nf);
+            std::memcpy(eigenvectors, rms->mat[0], nf * nf * sizeof(real));
             eigensolver(eigenvectors, nf, 0, nf, eigenvalues, rms->mat[0]);
             sfree(eigenvectors);
 
@@ -1896,7 +1895,7 @@ int gmx_cluster(int argc, char *argv[])
         {
             useatoms.atomname[i]    = top.atoms.atomname[index[i]];
             useatoms.atom[i].resind = top.atoms.atom[index[i]].resind;
-            useatoms.nres           = std::max(useatoms.nres, useatoms.atom[i].resind+1);
+            useatoms.nres           = std::max(useatoms.nres, useatoms.atom[i].resind + 1);
             copy_rvec(xtps[index[i]], usextps[i]);
         }
         useatoms.nr = isize;
@@ -1917,7 +1916,7 @@ int gmx_cluster(int argc, char *argv[])
         /* Make the clustering visible */
         for (i2 = 0; (i2 < nf); i2++)
         {
-            for (i1 = i2+1; (i1 < nf); i1++)
+            for (i1 = i2 + 1; (i1 < nf); i1++)
             {
                 if (rms->mat[i1][i2])
                 {

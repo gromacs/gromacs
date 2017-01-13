@@ -68,10 +68,10 @@ static void log_action(int bMal, const char *what, const char *file, int line,
                        int nelem, int size, void *ptr)
 {
     static int btot = 0;
-    char      *NN   = "NULL";
+    char *     NN   = "NULL";
     int        bytes;
 
-    bytes = size*nelem;
+    bytes = size * nelem;
     if (!bMal)
     {
         bytes = -bytes;
@@ -89,7 +89,7 @@ static void log_action(int bMal, const char *what, const char *file, int line,
     if (debug && (bytes != 0))
     {
         fprintf(debug, "%s:%d kB (%7d kB) [%s, line %d, nelem %d, size %d]\n",
-                what ? what : NN, bytes, btot/1024,
+                what ? what : NN, bytes, btot / 1024,
                 file ? file : NN, line, nelem, size);
     }
     /* Print to stderr for things larger than 1 MB */
@@ -109,7 +109,7 @@ static void log_action(int bMal, const char *what, const char *file, int line,
             }
         }
         printf("%s: %.1f MB [%s, line %d, nelem %d, size %d]\n",
-               what ? what  : NN, bytes/1024.0,
+               what ? what  : NN, bytes / 1024.0,
                file ? fname : NN, line, nelem, size);
     }
     tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
@@ -155,17 +155,17 @@ void *save_calloc(const char *name, const char *file, int line,
     else
     {
 #ifdef PRINT_ALLOC_KB
-        if (nelem*elsize >= PRINT_ALLOC_KB*1024)
+        if (nelem * elsize >= PRINT_ALLOC_KB * 1024)
         {
             int rank = gmx_node_rank();
             printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
-                   nelem*elsize/1048576.0, name, file, line, rank);
+                   nelem * elsize / 1048576.0, name, file, line, rank);
         }
 #endif
 #if GMX_BROKEN_CALLOC
         /* emulate calloc(3) with malloc/memset on machines with
            a broken calloc, e.g. in -lgmalloc on cray xt3. */
-        if ((p = malloc((size_t)nelem*(size_t)elsize)) == NULL)
+        if ((p = malloc((size_t)nelem * (size_t)elsize)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to calloc %" GMX_PRId64
@@ -195,8 +195,8 @@ void *save_calloc(const char *name, const char *file, int line,
 void *save_realloc(const char *name, const char *file, int line, void *ptr,
                    size_t nelem, size_t elsize)
 {
-    void  *p;
-    size_t size = nelem*elsize;
+    void * p;
+    size_t size = nelem * elsize;
 
     p = nullptr;
     if (size == 0)
@@ -206,11 +206,11 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
     else
     {
 #ifdef PRINT_ALLOC_KB
-        if (size >= PRINT_ALLOC_KB*1024)
+        if (size >= PRINT_ALLOC_KB * 1024)
         {
             int rank = gmx_node_rank();
             printf("Reallocating %.1f MB for %s (called from file %s, line %d on %d)\n",
-                   size/1048576.0, name, file, line, rank);
+                   size / 1048576.0, name, file, line, rank);
         }
 #endif
         if (ptr == nullptr)
@@ -277,15 +277,15 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
     else
     {
 #ifdef PRINT_ALLOC_KB
-        if (nelem*elsize >= PRINT_ALLOC_KB*1024)
+        if (nelem * elsize >= PRINT_ALLOC_KB * 1024)
         {
             int rank = gmx_node_rank();
             printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
-                   nelem*elsize/1048576.0, name, file, line, rank);
+                   nelem * elsize / 1048576.0, name, file, line, rank);
         }
 #endif
 
-        p = gmx::internal::alignedMalloc(nelem*elsize);
+        p = gmx::internal::alignedMalloc(nelem * elsize);
 
         if (p == nullptr)
         {
@@ -326,7 +326,7 @@ int over_alloc_dd(int n)
 {
     if (g_bOverAllocDD)
     {
-        return static_cast<int>(OVER_ALLOC_FAC*n + 100);
+        return static_cast<int>(OVER_ALLOC_FAC * n + 100);
     }
     else
     {

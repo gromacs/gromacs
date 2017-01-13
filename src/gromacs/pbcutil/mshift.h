@@ -49,23 +49,25 @@ extern "C" {
 struct t_idef;
 struct t_ilist;
 
-typedef enum {
+typedef enum
+{
     egcolWhite, egcolGrey, egcolBlack, egcolNR
 } egCol;
 
-typedef struct t_graph {
-    int          at0;       /* The first atom the graph was constructed for */
-    int          at1;       /* The last atom the graph was constructed for  */
-    int          nnodes;    /* The number of nodes, nnodes=at_end-at_start  */
-    int          nbound;    /* The number of nodes with edges               */
-    int          at_start;  /* The first connected atom in this graph       */
-    int          at_end;    /* The last+1 connected atom in this graph      */
-    int         *nedge;     /* For each node the number of edges            */
-    int        **edge;      /* For each node, the actual edges (bidirect.)  */
-    gmx_bool     bScrewPBC; /* Screw boundary conditions                    */
-    ivec        *ishift;    /* Shift for each particle                      */
-    int          negc;
-    egCol       *egc;       /* color of each node */
+typedef struct t_graph
+{
+    int      at0;           /* The first atom the graph was constructed for */
+    int      at1;           /* The last atom the graph was constructed for  */
+    int      nnodes;        /* The number of nodes, nnodes=at_end-at_start  */
+    int      nbound;        /* The number of nodes with edges               */
+    int      at_start;      /* The first connected atom in this graph       */
+    int      at_end;        /* The last+1 connected atom in this graph      */
+    int *    nedge;         /* For each node the number of edges            */
+    int **   edge;          /* For each node, the actual edges (bidirect.)  */
+    gmx_bool bScrewPBC;     /* Screw boundary conditions                    */
+    ivec *   ishift;        /* Shift for each particle                      */
+    int      negc;
+    egCol *  egc;           /* color of each node */
 } t_graph;
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])

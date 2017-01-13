@@ -56,7 +56,7 @@ class MDLogger;
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 typedef struct gmx_wallclock_gpu_t gmx_wallclock_gpu_t;
 
-typedef std::array<double, ewcNR+ewcsNR> WallcycleCounts;
+typedef std::array<double, ewcNR + ewcsNR> WallcycleCounts;
 /* Convenience typedef */
 
 WallcycleCounts wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);

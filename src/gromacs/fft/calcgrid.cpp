@@ -74,7 +74,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
         gmx_fatal(FARGS, "invalid fourier grid spacing: %g", gr_sp);
     }
 
-    if (grid_base[g_baseNR-1] % 4 != 0)
+    if (grid_base[g_baseNR - 1] % 4 != 0)
     {
         gmx_incons("the last entry in grid_base is not a multiple of 4");
     }
@@ -96,7 +96,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
         box_size[d] = 0;
         for (i = 0; i < DIM; i++)
         {
-            box_size[d] += box[d][i]*box[d][i];
+            box_size[d] += box[d][i] * box[d][i];
         }
         box_size[d] = std::sqrt(box_size[d]);
     }
@@ -119,13 +119,13 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
     {
         if (n[d] <= 0)
         {
-            nmin = static_cast<int>(box_size[d]/gr_sp + 0.999);
+            nmin = static_cast<int>(box_size[d] / gr_sp + 0.999);
 
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
             {
                 /* Take the smallest possible grid in the list */
-                while (i > 0 && grid_init[i-1] >= nmin)
+                while (i > 0 && grid_init[i - 1] >= nmin)
                 {
                     i--;
                 }
@@ -136,27 +136,26 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
                 /* Determine how many pre-factors of 2 we need */
                 fac2 = 1;
                 i    = g_baseNR - 1;
-                while (fac2*grid_base[i] < nmin)
+                while (fac2 * grid_base[i] < nmin)
                 {
                     fac2 *= 2;
                 }
                 /* Find the smallest grid that is >= nmin */
                 do
                 {
-                    attempt = fac2*grid_base[i];
+                    attempt = fac2 * grid_base[i];
                     /* We demand a factor of 4, avoid 140, allow 90 */
-                    if (((attempt % 4 == 0 && attempt != 140) || attempt == 90) &&
-                        attempt >= nmin)
+                    if (((attempt % 4 == 0 && attempt != 140) || attempt == 90)
+                        && attempt >= nmin)
                     {
                         n[d] = attempt;
                     }
                     i--;
-                }
-                while (i > 0);
+                } while (i > 0);
             }
         }
 
-        spacing[d]  = box_size[d]/n[d];
+        spacing[d]  = box_size[d] / n[d];
         max_spacing = std::max(max_spacing, spacing[d]);
     }
     *nx = n[XX];

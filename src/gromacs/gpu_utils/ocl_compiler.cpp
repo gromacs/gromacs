@@ -90,16 +90,15 @@ static bool useBuildCache = getenv("GMX_OCL_GENCACHE"); // (NULL == getenv("GMX_
  * \param buildFailed         Whether the OpenCL build succeeded
  *
  * \throws std::bad_alloc if out of memory */
-static void
-writeOclBuildLog(FILE              *fplog,
-                 cl_program         program,
-                 cl_device_id       deviceId,
-                 const std::string &kernelFilename,
-                 const std::string &preprocessorOptions,
-                 bool               buildFailed)
+static void writeOclBuildLog(FILE *             fplog,
+                             cl_program         program,
+                             cl_device_id       deviceId,
+                             const std::string &kernelFilename,
+                             const std::string &preprocessorOptions,
+                             bool               buildFailed)
 {
-    bool writeOutput = ((fplog != nullptr) &&
-                        (buildFailed || (getenv("GMX_OCL_DUMP_LOG") != nullptr)));
+    bool writeOutput = ((fplog != nullptr)
+                        && (buildFailed || (getenv("GMX_OCL_DUMP_LOG") != nullptr)));
 
     if (!writeOutput)
     {
@@ -119,7 +118,7 @@ writeOclBuildLog(FILE              *fplog,
         GMX_THROW(InternalError("Could not get OpenCL program build log size, error was " + ocl_get_error_string(cl_error)));
     }
 
-    char             *buildLog = nullptr;
+    char *            buildLog = nullptr;
     unique_cptr<char> buildLogGuard;
     if (buildLogSize != 0)
     {
@@ -164,8 +163,7 @@ writeOclBuildLog(FILE              *fplog,
  *          automatically enable some vendor-specific options
  * \return The string with the compiler options
  */
-static std::string
-selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
+static std::string selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
 {
     std::string compilerOptions;
 
@@ -214,8 +212,7 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
  * \throws std::bad_alloc    if out of memory.
  *         FileIOError  if GMX_OCL_FILE_PATH does not specify a readable path
  */
-static std::string
-getKernelRootPath()
+static std::string getKernelRootPath()
 {
     std::string kernelRootPath;
     /* Use GMX_OCL_FILE_PATH if the user has defined it */
@@ -225,10 +222,10 @@ getKernelRootPath()
     {
         /* Normal way of getting ocl_root_dir. First get the right
            root path from the path to the binary that is running. */
-        InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
-        std::string                 dataPathSuffix = (info.bSourceLayout ?
-                                                      "src/gromacs/mdlib/nbnxn_ocl" :
-                                                      OCL_INSTALL_DIR);
+        InstallationPrefixInfo info           = getProgramContext().installationPrefix();
+        std::string            dataPathSuffix = (info.bSourceLayout
+                                                 ? "src/gromacs/mdlib/nbnxn_ocl"
+                                                 : OCL_INSTALL_DIR);
         kernelRootPath = Path::join(info.path, dataPathSuffix);
     }
     else
@@ -256,8 +253,7 @@ getKernelRootPath()
  *
  * \throws InternalError if an OpenCL error was encountered
  */
-static size_t
-getWarpSize(cl_context context, cl_device_id deviceId)
+static size_t getWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
     const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
@@ -311,8 +307,7 @@ getWarpSize(cl_context context, cl_device_id deviceId)
  *
  * \return The appropriate compilation-line define
  */
-static const char *
-makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
+static const char *makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
 {
     const char *choice;
     switch (vendorId)
@@ -366,11 +361,10 @@ static std::string makeKernelIncludePathOption(const std::string &unescapedKerne
 /*! \brief Builds a string with build options for the OpenCL kernels
  *
  * \throws std::bad_alloc  if out of memory. */
-std::string
-makePreprocessorOptions(const std::string   &kernelRootPath,
-                        size_t               warpSize,
-                        ocl_vendor_id_t      deviceVendorId,
-                        const std::string   &extraDefines)
+std::string makePreprocessorOptions(const std::string &kernelRootPath,
+                                    size_t             warpSize,
+                                    ocl_vendor_id_t    deviceVendorId,
+                                    const std::string &extraDefines)
 {
     std::string preprocessorOptions;
 
@@ -388,13 +382,12 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
     return preprocessorOptions;
 }
 
-cl_program
-compileProgram(FILE              *fplog,
-               const std::string &kernelBaseFilename,
-               const std::string &extraDefines,
-               cl_context         context,
-               cl_device_id       deviceId,
-               ocl_vendor_id_t    deviceVendorId)
+cl_program compileProgram(FILE *             fplog,
+                          const std::string &kernelBaseFilename,
+                          const std::string &extraDefines,
+                          cl_context         context,
+                          cl_device_id       deviceId,
+                          ocl_vendor_id_t    deviceVendorId)
 {
     cl_int      cl_error;
     std::string kernelRootPath = getKernelRootPath();
@@ -411,7 +404,7 @@ compileProgram(FILE              *fplog,
                                                               deviceVendorId,
                                                               extraDefines);
 
-    bool        buildCacheWasRead = false;
+    bool buildCacheWasRead = false;
 
     std::string cacheFilename;
     if (useBuildCache)

@@ -114,7 +114,7 @@ class OptionManagerContainer
         //! Shorthand for the internal container type.
         typedef std::vector<IOptionManager *> ListType;
 
-        ListType  list_;
+        ListType list_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionManagerContainer);
 };

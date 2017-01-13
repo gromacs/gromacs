@@ -95,7 +95,7 @@ namespace gmx
  *
  * \tparam RealType Floating-point type, real by default in GROMACS.
  */
-template<class RealType = real>
+template <class RealType = real>
 class ExponentialDistribution
 {
     public:
@@ -106,7 +106,7 @@ class ExponentialDistribution
         class param_type
         {
             /*! \brief The lambda/decay parameter */
-            result_type  lambda_;
+            result_type lambda_;
 
             public:
                 /*! \brief Reference back to the distribution class */
@@ -126,8 +126,7 @@ class ExponentialDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator==(const param_type &x) const
+                bool operator==(const param_type &x) const
                 {
                     return lambda_ == x.lambda_;
                 }
@@ -136,8 +135,7 @@ class ExponentialDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
+                bool operator!=(const param_type &x) const { return !operator==(x); }
         };
 
     public:
@@ -157,8 +155,7 @@ class ExponentialDistribution
         explicit ExponentialDistribution(const param_type &param) : param_(param) {}
 
         /*! \brief Flush all internal saved values  */
-        void
-        reset() {}
+        void reset() {}
 
         /*! \brief Return values from exponential distribution with internal parameters
          *
@@ -166,9 +163,8 @@ class ExponentialDistribution
          *
          *  \param  g     Random engine
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
+        template <class Rng>
+        result_type operator()(Rng &g) { return (*this)(g, param_); }
 
         /*! \brief Return value from exponential distribution with given parameters
          *
@@ -177,44 +173,38 @@ class ExponentialDistribution
          *  \param  g     Random engine
          *  \param  param Parameters to use
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        template <class Rng>
+        result_type operator()(Rng &g, const param_type &param)
         {
-            return -std::log(result_type(1) -
-                             generateCanonical<result_type,
-                                               std::numeric_limits<result_type>::digits>(g)) / param.lambda();
+            return -std::log(result_type(1)
+                             - generateCanonical<result_type,
+                                                 std::numeric_limits<result_type>::digits>(g)) / param.lambda();
         }
 
         /*! \brief Return the lambda parameter of the exponential distribution */
-        result_type
-        lambda() const { return param_.lambda(); }
+        result_type lambda() const { return param_.lambda(); }
 
         /*! \brief Return the full parameter class of exponential distribution */
         param_type param() const { return param_; }
 
         /*! \brief Smallest value that can be returned from exponential distribution */
-        result_type
-        min() const { return 0; }
+        result_type min() const { return 0; }
 
         /*! \brief Largest value that can be returned from exponential distribution */
-        result_type
-        max() const { return std::numeric_limits<result_type>::infinity(); }
+        result_type max() const { return std::numeric_limits<result_type>::infinity(); }
 
         /*! \brief True if two exponential distributions will produce the same values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator==(const ExponentialDistribution &x) const
+        bool operator==(const ExponentialDistribution &x) const
         { return param_ == x.param_; }
 
         /*! \brief True if two exponential distributions will produce different values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator!=(const ExponentialDistribution &x) const
+        bool operator!=(const ExponentialDistribution &x) const
         { return !operator==(x); }
 
     private:

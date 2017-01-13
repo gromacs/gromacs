@@ -55,7 +55,7 @@ class Simd4Float
         // Internal utility constructor to simplify return statements
         Simd4Float(float32x4_t simd) : simdInternal_(simd) {}
 
-        float32x4_t  simdInternal_;
+        float32x4_t simdInternal_;
 };
 
 class Simd4FBool
@@ -69,11 +69,10 @@ class Simd4FBool
         // Internal utility constructor to simplify return statements
         Simd4FBool(uint32x4_t simd) : simdInternal_(simd) {}
 
-        uint32x4_t  simdInternal_;
+        uint32x4_t simdInternal_;
 };
 
-static inline Simd4Float gmx_simdcall
-load4(const float *m)
+static inline Simd4Float gmx_simdcall load4(const float *m)
 {
     assert(size_t(m) % 16 == 0);
     return {
@@ -81,37 +80,32 @@ load4(const float *m)
     };
 }
 
-static inline void gmx_simdcall
-store4(float *m, Simd4Float a)
+static inline void gmx_simdcall store4(float *m, Simd4Float a)
 {
     assert(size_t(m) % 16 == 0);
     vst1q_f32(m, a.simdInternal_);
 }
 
-static inline Simd4Float gmx_simdcall
-load4U(const float *m)
+static inline Simd4Float gmx_simdcall load4U(const float *m)
 {
     return {
                vld1q_f32(m)
     };
 }
 
-static inline void gmx_simdcall
-store4U(float *m, Simd4Float a)
+static inline void gmx_simdcall store4U(float *m, Simd4Float a)
 {
     vst1q_f32(m, a.simdInternal_);
 }
 
-static inline Simd4Float gmx_simdcall
-simd4SetZeroF()
+static inline Simd4Float gmx_simdcall simd4SetZeroF()
 {
     return {
                vdupq_n_f32(0.0f)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator&(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator&(Simd4Float a, Simd4Float b)
 {
     return {
                vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a.simdInternal_),
@@ -119,8 +113,7 @@ operator&(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-andNot(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall andNot(Simd4Float a, Simd4Float b)
 {
     return {
                vreinterpretq_f32_s32(vbicq_s32(vreinterpretq_s32_f32(b.simdInternal_),
@@ -128,8 +121,7 @@ andNot(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator|(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator|(Simd4Float a, Simd4Float b)
 {
     return {
                vreinterpretq_f32_s32(vorrq_s32(vreinterpretq_s32_f32(a.simdInternal_),
@@ -137,8 +129,7 @@ operator|(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator^(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator^(Simd4Float a, Simd4Float b)
 {
     return {
                vreinterpretq_f32_s32(veorq_s32(vreinterpretq_s32_f32(a.simdInternal_),
@@ -146,32 +137,28 @@ operator^(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator+(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator+(Simd4Float a, Simd4Float b)
 {
     return {
                vaddq_f32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator-(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator-(Simd4Float a, Simd4Float b)
 {
     return {
                vsubq_f32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator-(Simd4Float x)
+static inline Simd4Float gmx_simdcall operator-(Simd4Float x)
 {
     return {
                vnegq_f32(x.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator*(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator*(Simd4Float a, Simd4Float b)
 {
     return {
                vmulq_f32(a.simdInternal_, b.simdInternal_)
@@ -180,8 +167,7 @@ operator*(Simd4Float a, Simd4Float b)
 
 // Override for Neon-Asimd
 #if GMX_SIMD_ARM_NEON
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
 #ifdef __ARM_FEATURE_FMA
@@ -192,8 +178,7 @@ fma(Simd4Float a, Simd4Float b, Simd4Float c)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
 #ifdef __ARM_FEATURE_FMA
@@ -204,8 +189,7 @@ fms(Simd4Float a, Simd4Float b, Simd4Float c)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
 #ifdef __ARM_FEATURE_FMA
@@ -216,8 +200,7 @@ fnma(Simd4Float a, Simd4Float b, Simd4Float c)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
 #ifdef __ARM_FEATURE_FMA
@@ -229,32 +212,28 @@ fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 }
 #endif
 
-static inline Simd4Float gmx_simdcall
-rsqrt(Simd4Float x)
+static inline Simd4Float gmx_simdcall rsqrt(Simd4Float x)
 {
     return {
                vrsqrteq_f32(x.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-abs(Simd4Float x)
+static inline Simd4Float gmx_simdcall abs(Simd4Float x)
 {
     return {
                vabsq_f32( x.simdInternal_ )
     };
 }
 
-static inline Simd4Float gmx_simdcall
-max(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall max(Simd4Float a, Simd4Float b)
 {
     return {
                vmaxq_f32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-min(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall min(Simd4Float a, Simd4Float b)
 {
     return {
                vminq_f32(a.simdInternal_, b.simdInternal_)
@@ -263,15 +242,14 @@ min(Simd4Float a, Simd4Float b)
 
 // Override for Neon-Asimd
 #if GMX_SIMD_ARM_NEON
-static inline Simd4Float gmx_simdcall
-round(Simd4Float x)
+static inline Simd4Float gmx_simdcall round(Simd4Float x)
 {
     // Convert x to nearest integer
     float32x4_t signBitOfX = vreinterpretq_f32_u32(vandq_u32(vdupq_n_u32(0x80000000), vreinterpretq_u32_f32(x.simdInternal_)));
     float32x4_t half       = vdupq_n_f32(0.5f);
     float32x4_t corr       = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(half), vreinterpretq_u32_f32(signBitOfX)));
 
-    int32x4_t   integerX   = vcvtq_s32_f32(vaddq_f32(x.simdInternal_, corr));
+    int32x4_t integerX = vcvtq_s32_f32(vaddq_f32(x.simdInternal_, corr));
 
     // Convert back to float
 
@@ -280,8 +258,7 @@ round(Simd4Float x)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-trunc(Simd4Float x)
+static inline Simd4Float gmx_simdcall trunc(Simd4Float x)
 {
     return {
                vcvtq_f32_s32( vcvtq_s32_f32(x.simdInternal_) )
@@ -289,62 +266,55 @@ trunc(Simd4Float x)
 }
 #endif
 
-static inline void gmx_simdcall
-transpose(Simd4Float * v0, Simd4Float * v1,
-          Simd4Float * v2, Simd4Float * v3)
+static inline void gmx_simdcall transpose(Simd4Float * v0, Simd4Float * v1,
+                                          Simd4Float * v2, Simd4Float * v3)
 {
-    float32x4x2_t  t0 = vuzpq_f32(v0->simdInternal_, v2->simdInternal_);
-    float32x4x2_t  t1 = vuzpq_f32(v1->simdInternal_, v3->simdInternal_);
-    float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
-    float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+    float32x4x2_t t0 = vuzpq_f32(v0->simdInternal_, v2->simdInternal_);
+    float32x4x2_t t1 = vuzpq_f32(v1->simdInternal_, v3->simdInternal_);
+    float32x4x2_t t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+    float32x4x2_t t3 = vtrnq_f32(t0.val[1], t1.val[1]);
     v0->simdInternal_ = t2.val[0];
     v1->simdInternal_ = t3.val[0];
     v2->simdInternal_ = t2.val[1];
     v3->simdInternal_ = t3.val[1];
 }
 
-static inline Simd4FBool gmx_simdcall
-operator==(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator==(Simd4Float a, Simd4Float b)
 {
     return {
                vceqq_f32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator!=(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator!=(Simd4Float a, Simd4Float b)
 {
     return {
                vmvnq_u32(vceqq_f32(a.simdInternal_, b.simdInternal_))
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator<(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator<(Simd4Float a, Simd4Float b)
 {
     return {
                vcltq_f32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator<=(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator<=(Simd4Float a, Simd4Float b)
 {
     return {
                vcleq_f32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator&&(Simd4FBool a, Simd4FBool b)
+static inline Simd4FBool gmx_simdcall operator&&(Simd4FBool a, Simd4FBool b)
 {
     return {
                vandq_u32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator||(Simd4FBool a, Simd4FBool b)
+static inline Simd4FBool gmx_simdcall operator||(Simd4FBool a, Simd4FBool b)
 {
     return {
                vorrq_u32(a.simdInternal_, b.simdInternal_)
@@ -353,8 +323,7 @@ operator||(Simd4FBool a, Simd4FBool b)
 
 // Override for Neon-Asimd
 #if GMX_SIMD_ARM_NEON
-static inline bool gmx_simdcall
-anyTrue(Simd4FBool a)
+static inline bool gmx_simdcall anyTrue(Simd4FBool a)
 {
     uint32x4_t x = a.simdInternal_;
     uint32x4_t y = vextq_u32(x, x, 2);
@@ -366,8 +335,7 @@ anyTrue(Simd4FBool a)
 }
 #endif
 
-static inline Simd4Float gmx_simdcall
-selectByMask(Simd4Float a, Simd4FBool m)
+static inline Simd4Float gmx_simdcall selectByMask(Simd4Float a, Simd4FBool m)
 {
     return {
                vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a.simdInternal_),
@@ -375,8 +343,7 @@ selectByMask(Simd4Float a, Simd4FBool m)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-selectByNotMask(Simd4Float a, Simd4FBool m)
+static inline Simd4Float gmx_simdcall selectByNotMask(Simd4Float a, Simd4FBool m)
 {
     return {
                vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a.simdInternal_),
@@ -384,8 +351,7 @@ selectByNotMask(Simd4Float a, Simd4FBool m)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+static inline Simd4Float gmx_simdcall blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 {
     return {
                vbslq_f32(sel.simdInternal_, b.simdInternal_, a.simdInternal_)
@@ -394,8 +360,7 @@ blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 
 // Override for Neon-Asimd
 #if GMX_SIMD_ARM_NEON
-static inline float gmx_simdcall
-reduce(Simd4Float a)
+static inline float gmx_simdcall reduce(Simd4Float a)
 {
     float32x4_t x = a.simdInternal_;
     float32x4_t y = vextq_f32(x, x, 2);
@@ -406,8 +371,7 @@ reduce(Simd4Float a)
     return vgetq_lane_f32(x, 0);
 }
 
-static inline float gmx_simdcall
-dotProduct(Simd4Float a, Simd4Float b)
+static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
     Simd4Float c;
 

@@ -55,7 +55,8 @@
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-enum {
+enum
+{
     estLAMBDA,
     estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
     estX,   estV,       est_SDX_NOTSUPPORTED,  estCGP,
@@ -90,40 +91,40 @@ typedef struct history_t
  */
 typedef struct ekinstate_t
 {
-    gmx_bool             bUpToDate;
-    int                  ekin_n;
-    tensor              *ekinh;
-    tensor              *ekinf;
-    tensor              *ekinh_old;
-    tensor               ekin_total;
-    std::vector<double>  ekinscalef_nhc;
-    std::vector<double>  ekinscaleh_nhc;
-    std::vector<double>  vscale_nhc;
-    real                 dekindl;
-    real                 mvcos;
+    gmx_bool            bUpToDate;
+    int                 ekin_n;
+    tensor *            ekinh;
+    tensor *            ekinf;
+    tensor *            ekinh_old;
+    tensor              ekin_total;
+    std::vector<double> ekinscalef_nhc;
+    std::vector<double> ekinscaleh_nhc;
+    std::vector<double> vscale_nhc;
+    real                dekindl;
+    real                mvcos;
 } ekinstate_t;
 
 typedef struct df_history_t
 {
-    int      nlambda;        /* total number of lambda states - for history*/
+    int nlambda;             /* total number of lambda states - for history*/
 
     gmx_bool bEquil;         /* Have we reached equilibration */
-    int     *n_at_lam;       /* number of points observed at each lambda */
-    real    *wl_histo;       /* histogram for WL flatness determination */
+    int *    n_at_lam;       /* number of points observed at each lambda */
+    real *   wl_histo;       /* histogram for WL flatness determination */
     real     wl_delta;       /* current wang-landau delta */
 
-    real    *sum_weights;    /* weights of the states */
-    real    *sum_dg;         /* free energies of the states -- not actually used for weighting, but informational */
-    real    *sum_minvar;     /* corrections to weights for minimum variance */
-    real    *sum_variance;   /* variances of the states */
+    real *sum_weights;       /* weights of the states */
+    real *sum_dg;            /* free energies of the states -- not actually used for weighting, but informational */
+    real *sum_minvar;        /* corrections to weights for minimum variance */
+    real *sum_variance;      /* variances of the states */
 
-    real   **accum_p;        /* accumulated bennett weights for n+1 */
-    real   **accum_m;        /* accumulated bennett weights for n-1 */
-    real   **accum_p2;       /* accumulated squared bennett weights for n+1 */
-    real   **accum_m2;       /* accumulated squared bennett weights for n-1 */
+    real **accum_p;          /* accumulated bennett weights for n+1 */
+    real **accum_m;          /* accumulated bennett weights for n-1 */
+    real **accum_p2;         /* accumulated squared bennett weights for n+1 */
+    real **accum_m2;         /* accumulated squared bennett weights for n-1 */
 
-    real   **Tij;            /* transition matrix */
-    real   **Tij_empirical;  /* Empirical transition matrix */
+    real **Tij;              /* transition matrix */
+    real **Tij_empirical;    /* Empirical transition matrix */
 
 } df_history_t;
 
@@ -136,16 +137,16 @@ typedef struct edsamstate_t
      * of the shifts to always get it into that representation.
      * For proper restarts from a checkpoint we store the positions of the
      * reference group at the time of checkpoint writing */
-    gmx_bool      bFromCpt;     /* Did we start from a checkpoint file?       */
-    int           nED;          /* No. of ED/Flooding data sets, if <1 no ED  */
-    int          *nref;         /* No. of atoms in i'th reference structure   */
-    int          *nav;          /* Same for average structure                 */
-    rvec        **old_sref;     /* Positions of the reference atoms
+    gmx_bool bFromCpt;          /* Did we start from a checkpoint file?       */
+    int      nED;               /* No. of ED/Flooding data sets, if <1 no ED  */
+    int *    nref;              /* No. of atoms in i'th reference structure   */
+    int *    nav;               /* Same for average structure                 */
+    rvec **  old_sref;          /* Positions of the reference atoms
                                    at the last time step (with correct PBC
                                    representation)                            */
-    rvec        **old_sref_p;   /* Pointer to these positions                 */
-    rvec        **old_sav;      /* Same for the average positions             */
-    rvec        **old_sav_p;
+    rvec **old_sref_p;          /* Pointer to these positions                 */
+    rvec **old_sav;             /* Same for the average positions             */
+    rvec **old_sav_p;
 }
 edsamstate_t;
 
@@ -161,7 +162,7 @@ typedef struct swapstateIons_t
     /* Channel flux detection, this is counting only and has no influence on whether swaps   */
     /* are performed or not:                                                                 */
     int            fluxfromAtoB[eCompNR];   /* Flux determined from the split cylinders      */
-    int           *fluxfromAtoB_p[eCompNR]; /* Pointer to this data                          */
+    int *          fluxfromAtoB_p[eCompNR]; /* Pointer to this data                          */
     int            nMol;                    /* # of molecules, size of the following arrays  */
     unsigned char *comp_from;               /* Ion came from which compartment?              */
     unsigned char *channel_label;           /* Through which channel did this ion pass?      */
@@ -169,10 +170,10 @@ typedef struct swapstateIons_t
 
 typedef struct swapstate_t
 {
-    int  eSwapCoords;                       /* Swapping along x, y, or z-direction?          */
-    int  nIonTypes;                         /* Number of ion types, this is the size of      */
+    int eSwapCoords;                        /* Swapping along x, y, or z-direction?          */
+    int nIonTypes;                          /* Number of ion types, this is the size of      */
                                             /* the following arrays                          */
-    int  nAverage;                          /* Use average over this many swap attempt       */
+    int nAverage;                           /* Use average over this many swap attempt       */
                                             /* steps when determining the ion counts         */
     int  fluxleak;                          /* Ions not going through any channel (bad!)     */
     int *fluxleak_p;                        /* Pointer to this data                          */
@@ -181,12 +182,12 @@ typedef struct swapstate_t
     /* of the channels in the checkpoint file. If we have no checkpoint file, we assume      */
     /* that the starting configuration has the correct PBC representation after making the   */
     /* individual molecules whole                                                            */
-    gmx_bool         bFromCpt;                 /* Did we start from a checkpoint file?       */
-    int              nat[eChanNR];             /* Size of xc_old_whole, i.e. the number of   */
+    gmx_bool bFromCpt;                         /* Did we start from a checkpoint file?       */
+    int      nat[eChanNR];                     /* Size of xc_old_whole, i.e. the number of   */
                                                /* atoms in each channel                      */
-    rvec            *xc_old_whole[eChanNR];    /* Last known whole positions of the two      */
+    rvec *xc_old_whole[eChanNR];               /* Last known whole positions of the two      */
                                                /* channels (important for multimeric ch.!)   */
-    rvec           **xc_old_whole_p[eChanNR];  /* Pointer to these positions                 */
+    rvec **          xc_old_whole_p[eChanNR];  /* Pointer to these positions                 */
     swapstateIons_t *ionType;
 }
 swapstate_t;
@@ -194,41 +195,41 @@ swapstate_t;
 
 typedef struct t_state
 {
-    int                     natoms;
-    int                     ngtc;
-    int                     nnhpres;
-    int                     nhchainlength;   /* number of nose-hoover chains               */
-    int                     flags;           /* Flags telling which entries are present      */
-    int                     fep_state;       /* indicates which of the alchemical states we are in                 */
-    std::vector<real>       lambda;          /* lambda vector                               */
-    matrix                  box;             /* box vector coordinates                         */
-    matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
-    matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
-    matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
-    matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
-    matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
-    std::vector<double>     nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
-    std::vector<double>     nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
-    std::vector<double>     nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
-    real                    veta;            /* trotter based isotropic P-coupling             */
-    real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    PaddedRVecVector        x;               /* the coordinates (natoms)                     */
-    PaddedRVecVector        v;               /* the velocities (natoms)                      */
-    PaddedRVecVector        cg_p;            /* p vector for conjugate gradient minimization */
+    int                 natoms;
+    int                 ngtc;
+    int                 nnhpres;
+    int                 nhchainlength;       /* number of nose-hoover chains               */
+    int                 flags;               /* Flags telling which entries are present      */
+    int                 fep_state;           /* indicates which of the alchemical states we are in                 */
+    std::vector<real>   lambda;              /* lambda vector                               */
+    matrix              box;                 /* box vector coordinates                         */
+    matrix              box_rel;             /* Relitaive box vectors to preserve shape        */
+    matrix              boxv;                /* box velocitites for Parrinello-Rahman pcoupl */
+    matrix              pres_prev;           /* Pressure of the previous step for pcoupl  */
+    matrix              svir_prev;           /* Shake virial for previous step for pcoupl */
+    matrix              fvir_prev;           /* Force virial of the previous step for pcoupl  */
+    std::vector<double> nosehoover_xi;       /* for Nose-Hoover tcoupl (ngtc)       */
+    std::vector<double> nosehoover_vxi;      /* for N-H tcoupl (ngtc)               */
+    std::vector<double> nhpres_xi;           /* for Nose-Hoover pcoupl for barostat     */
+    std::vector<double> nhpres_vxi;          /* for Nose-Hoover pcoupl for barostat     */
+    std::vector<double> therm_integral;      /* for N-H/V-rescale tcoupl (ngtc)     */
+    real                veta;                /* trotter based isotropic P-coupling             */
+    real                vol0;                /* initial volume,required for computing NPT conserverd quantity */
+    PaddedRVecVector    x;                   /* the coordinates (natoms)                     */
+    PaddedRVecVector    v;                   /* the velocities (natoms)                      */
+    PaddedRVecVector    cg_p;                /* p vector for conjugate gradient minimization */
 
-    ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
+    ekinstate_t ekinstate;                   /* The state of the kinetic energy data      */
 
     /* History for special algorithms, should be moved to a history struct */
-    history_t               hist;            /* Time history for restraints                  */
-    swapstate_t            *swapstate;       /* Position swapping                       */
-    df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
+    history_t     hist;                      /* Time history for restraints                  */
+    swapstate_t * swapstate;                 /* Position swapping                       */
+    df_history_t *dfhist;                    /*Free energy history for free energy analysis  */
+    edsamstate_t *edsamstate;                /* Essential dynamics / flooding history */
 
-    int                     ddp_count;       /* The DD partitioning count for this state  */
-    int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
-    std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
+    int              ddp_count;              /* The DD partitioning count for this state  */
+    int              ddp_count_cg_gl;        /* The DD part. count for index_gl     */
+    std::vector<int> cg_gl;                  /* The global cg number of the local cgs        */
 } t_state;
 
 typedef struct t_extmass

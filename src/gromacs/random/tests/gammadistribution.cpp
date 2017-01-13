@@ -57,12 +57,12 @@ namespace
 
 TEST(GammaDistributionTest, Output)
 {
-    gmx::test::TestReferenceData       data;
-    gmx::test::TestReferenceChecker    checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>               rng(123456, gmx::RandomDomain::Other);
-    gmx::GammaDistribution<real>       dist(2.0, 5.0);
-    std::vector<real>                  result;
+    gmx::ThreeFry2x64<8>         rng(123456, gmx::RandomDomain::Other);
+    gmx::GammaDistribution<real> dist(2.0, 5.0);
+    std::vector<real>            result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -73,11 +73,11 @@ TEST(GammaDistributionTest, Output)
 
 TEST(GammaDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<8>           rng(123456, gmx::RandomDomain::Other);
-    gmx::GammaDistribution<real>   distA(2.0, 5.0);
-    gmx::GammaDistribution<real>   distB(2.0, 5.0);
-    gmx::GammaDistribution<real>   distC(3.0, 5.0);
-    gmx::GammaDistribution<real>   distD(2.0, 4.0);
+    gmx::ThreeFry2x64<8>         rng(123456, gmx::RandomDomain::Other);
+    gmx::GammaDistribution<real> distA(2.0, 5.0);
+    gmx::GammaDistribution<real> distB(2.0, 5.0);
+    gmx::GammaDistribution<real> distC(3.0, 5.0);
+    gmx::GammaDistribution<real> distD(2.0, 4.0);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -87,10 +87,10 @@ TEST(GammaDistributionTest, Logical)
 
 TEST(GammaDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                                rng(123456, gmx::RandomDomain::Other);
-    gmx::GammaDistribution<real>                        distA(2.0, 5.0);
-    gmx::GammaDistribution<real>                        distB(2.0, 5.0);
-    gmx::GammaDistribution<>::result_type               valA, valB;
+    gmx::ThreeFry2x64<8>                  rng(123456, gmx::RandomDomain::Other);
+    gmx::GammaDistribution<real>          distA(2.0, 5.0);
+    gmx::GammaDistribution<real>          distB(2.0, 5.0);
+    gmx::GammaDistribution<>::result_type valA, valB;
 
     valA = distA(rng);
 
@@ -105,11 +105,11 @@ TEST(GammaDistributionTest, Reset)
 
 TEST(GammaDistributionTest, AltParam)
 {
-    gmx::ThreeFry2x64<8>                      rngA(123456, gmx::RandomDomain::Other);
-    gmx::ThreeFry2x64<8>                      rngB(123456, gmx::RandomDomain::Other);
-    gmx::GammaDistribution<real>              distA(2.0, 5.0);
-    gmx::GammaDistribution<real>              distB; // default parameters
-    gmx::GammaDistribution<real>::param_type  paramA(2.0, 5.0);
+    gmx::ThreeFry2x64<8>                     rngA(123456, gmx::RandomDomain::Other);
+    gmx::ThreeFry2x64<8>                     rngB(123456, gmx::RandomDomain::Other);
+    gmx::GammaDistribution<real>             distA(2.0, 5.0);
+    gmx::GammaDistribution<real>             distB;  // default parameters
+    gmx::GammaDistribution<real>::param_type paramA(2.0, 5.0);
 
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();

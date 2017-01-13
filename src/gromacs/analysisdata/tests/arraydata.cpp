@@ -90,7 +90,7 @@ class SimpleInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
@@ -118,7 +118,7 @@ TEST_F(AnalysisArrayDataTest, StorageWorks)
 
 TEST_F(AnalysisArrayDataTest, CanSetXAxis)
 {
-    gmx::AnalysisArrayData       data;
+    gmx::AnalysisArrayData data;
     data.setRowCount(5);
     data.setXAxis(1.0, 1.0);
     EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
@@ -135,7 +135,7 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxis)
 TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
 {
     {
-        gmx::AnalysisArrayData       data;
+        gmx::AnalysisArrayData data;
         data.setXAxis(1.0, 1.0);
         data.setRowCount(5);
         EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
@@ -143,7 +143,7 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
         EXPECT_FLOAT_EQ(5.0, data.xvalue(4));
     }
     {
-        gmx::AnalysisArrayData       data;
+        gmx::AnalysisArrayData data;
         data.setXAxisValue(0, 2.0);
         data.setXAxisValue(1, 3.0);
         data.setXAxisValue(2, 5.0);

@@ -206,8 +206,8 @@ int getDefaultXvgFormat(gmx::ConstArrayRef<const char *> xvgFormats)
     const char *const select = getenv("GMX_VIEW_XVG");
     if (select != nullptr)
     {
-        ConstArrayRef<const char *>::const_iterator i =
-            std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
+        ConstArrayRef<const char *>::const_iterator i
+            = std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
         if (i != xvgFormats.end())
         {
             return std::distance(xvgFormats.begin(), i);
@@ -277,11 +277,11 @@ class OptionsAdapter
             }
 
             //! t_filenm structure to receive the final values.
-            t_filenm                 *fnm;
+            t_filenm *fnm;
             //! Option info object for the created FileNameOption.
-            FileNameOptionInfo       *optionInfo;
+            FileNameOptionInfo *optionInfo;
             //! Value storage for the created FileNameOption.
-            std::vector<std::string>  values;
+            std::vector<std::string> values;
         };
         struct ProgramArgData
         {
@@ -292,24 +292,24 @@ class OptionsAdapter
             }
 
             //! t_pargs structure to receive the final values.
-            t_pargs                 *pa;
+            t_pargs *pa;
             //! Option info object for the created option.
-            OptionInfo              *optionInfo;
+            OptionInfo *optionInfo;
             //! Value storage for a non-enum StringOption (unused for other types).
-            std::string              stringValue;
+            std::string stringValue;
             //! Value storage for an enum option (unused for other types).
-            int                      enumIndex;
+            int enumIndex;
             //! Value storage for a BooleanOption (unused for other types).
-            bool                     boolValue;
+            bool boolValue;
         };
 
-        std::vector<const char *>    argv_;
+        std::vector<const char *> argv_;
         // These are lists instead of vectors to avoid relocating existing
         // objects in case the container is reallocated (the Options object
         // contains pointes to members of the objects, which would get
         // invalidated).
-        std::list<FileNameData>      fileNameOptions_;
-        std::list<ProgramArgData>    programArgs_;
+        std::list<FileNameData>   fileNameOptions_;
+        std::list<ProgramArgData> programArgs_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsAdapter);
 };
@@ -362,7 +362,7 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
     const char *const name    = &pa->option[1];
     const char *const desc    = (bHidden ? &pa->desc[6] : pa->desc);
     programArgs_.emplace_back(pa);
-    ProgramArgData   &data = programArgs_.back();
+    ProgramArgData &data = programArgs_.back();
     switch (pa->type)
     {
         case etINT:
@@ -449,8 +449,8 @@ void OptionsAdapter::copyValues(bool bReadNode)
             {
                 if (arg->pa->bSet)
                 {
-                    std::vector<const char *>::const_iterator pos =
-                        std::find(argv_.begin(), argv_.end(), arg->stringValue);
+                    std::vector<const char *>::const_iterator pos
+                        = std::find(argv_.begin(), argv_.end(), arg->stringValue);
                     GMX_RELEASE_ASSERT(pos != argv_.end(),
                                        "String argument got a value not in argv");
                     *arg->pa->u.c = *pos;
@@ -489,14 +489,14 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        double                          tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
-        bool                            bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
-        bool                            bView         = false;
-        int                             xvgFormat     = 0;
-        gmx::OptionsAdapter             adapter(*argc, argv);
-        gmx::Options                    options;
-        gmx::OptionsBehaviorCollection  behaviors(&options);
-        gmx::FileNameOptionManager      fileOptManager;
+        double                         tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
+        bool                           bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
+        bool                           bView         = false;
+        int                            xvgFormat     = 0;
+        gmx::OptionsAdapter            adapter(*argc, argv);
+        gmx::Options                   options;
+        gmx::OptionsBehaviorCollection behaviors(&options);
+        gmx::FileNameOptionManager     fileOptManager;
 
         fileOptManager.disableInputOptionChecking(
                 FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
@@ -527,7 +527,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                         .store(&tdelta).storeIsSet(&bDtSet).timeValue()
                         .description("Only use frame when t MOD dt = first time (%t)"));
         }
-        gmx::TimeUnit  timeUnit = gmx::TimeUnit_Default;
+        gmx::TimeUnit timeUnit = gmx::TimeUnit_Default;
         if (FF(PCA_TIME_UNIT))
         {
             std::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(
@@ -569,8 +569,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             adapter.pargsToOptions(&options, &pa[i]);
         }
 
-        const gmx::CommandLineHelpContext *context =
-            gmx::GlobalCommandLineHelpContext::get();
+        const gmx::CommandLineHelpContext *context
+            = gmx::GlobalCommandLineHelpContext::get();
         if (context != nullptr)
         {
             GMX_RELEASE_ASSERT(gmx_node_rank() == 0,

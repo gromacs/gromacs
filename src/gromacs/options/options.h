@@ -132,7 +132,7 @@ class Options : public IOptionsContainerWithSections
         virtual IOptionsContainer &addGroup();
 
         //! Returns a handle to the root section.
-        OptionSectionInfo       &rootSection();
+        OptionSectionInfo &rootSection();
         //! Returns a handle to the root section.
         const OptionSectionInfo &rootSection() const;
 

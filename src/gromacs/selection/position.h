@@ -59,25 +59,25 @@ struct gmx_ana_pos_t
     /*! \brief
      * Array of positions.
      */
-    rvec               *x;
+    rvec *x;
     /*! \brief
      * Velocities (can be NULL).
      */
-    rvec               *v;
+    rvec *v;
     /*! \brief
      * Forces (can be NULL).
      */
-    rvec               *f;
+    rvec *f;
     /*! \brief
      * Mapping of the current positions to the original group.
      *
      * \see gmx_ana_indexmap_t
      */
-    gmx_ana_indexmap_t  m;
+    gmx_ana_indexmap_t m;
     /*! \brief
      * Number of elements allocated for \c x.
      */
-    int                 nalloc_x;
+    int nalloc_x;
 };
 
 /** Ensures that enough memory has been allocated to store positions. */

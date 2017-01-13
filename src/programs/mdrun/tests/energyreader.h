@@ -85,7 +85,7 @@ typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
  *
  * This function is intended to have the main responsibility for
  * making EnergyFrameReader objects. */
-EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string              &filename,
+EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string &             filename,
                                                 const std::vector<std::string> &requiredEnergyFieldNames);
 
 class EnergyFrame;
@@ -138,13 +138,13 @@ class EnergyFrameReader
         //! Convert energy field name to its index within a t_enxframe from this file.
         std::map<std::string, int> indicesOfEnergyFields_;
         //! Owning handle of an open energy file ready to read frames.
-        const ener_file_ptr        energyFileGuard_;
+        const ener_file_ptr energyFileGuard_;
         //! Owning handle of contents of .edr file frame after reading.
-        const enxframe_ptr         enxframeGuard_;
+        const enxframe_ptr enxframeGuard_;
         //! Whether the API has been used properly (ie. probe before reading).
-        bool                       haveProbedForNextFrame_;
+        bool haveProbedForNextFrame_;
         //! Whether there has been a probe that found a next frame.
-        bool                       nextFrameExists_;
+        bool nextFrameExists_;
 
         // Multiple owners of these resources isn't very sensible, so prevent it
         GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
@@ -183,7 +183,7 @@ class EnergyFrame
         //! Container for energy values, indexed by name
         std::map<std::string, real> values_;
         //! Step number read from the .edr file frame
-        std::int64_t                step_;
+        std::int64_t step_;
         //! Time read from the .edr file frame
         double time_;
 

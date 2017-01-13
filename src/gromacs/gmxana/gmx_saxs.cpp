@@ -48,16 +48,16 @@
 
 int gmx_saxs(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates SAXS structure factors for given index",
         "groups based on Cromer's method.",
         "Both topology and trajectory files are required."
     };
 
-    static real       start_q = 0.0, end_q = 60.0, energy = 12.0;
-    static int        ngroups = 1;
+    static real start_q = 0.0, end_q = 60.0, energy = 12.0;
+    static int  ngroups = 1;
 
-    t_pargs           pa[] = {
+    t_pargs pa[] = {
         { "-ng",       FALSE, etINT, {&ngroups},
           "Number of groups to compute SAXS" },
         {"-startq", FALSE, etREAL, {&start_q},
@@ -68,10 +68,10 @@ int gmx_saxs(int argc, char *argv[])
          "Energy of the incoming X-ray (keV) "}
     };
 #define NPA asize(pa)
-    const char       *fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
+    const char *      fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",  nullptr,      ffREAD },
         { efTPS, nullptr,  nullptr,      ffREAD },
         { efNDX, nullptr,  nullptr,      ffOPTRD },

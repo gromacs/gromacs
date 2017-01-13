@@ -40,12 +40,13 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
-typedef struct {
+typedef struct
+{
     int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
     int nrex;   /* with nrex lists of neighbours		*/
     /* respectively containing zeroth, first	*/
     /* second etc. neigbours (0 <= nre < nrex)	*/
-    int  **nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
+    int **nrexcl;  /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
     /* per list stored in one 2d array of lists	*/
     int ***a;      /* like this: a[i][nre][nrx]			*/
 } t_nextnb;

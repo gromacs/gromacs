@@ -56,13 +56,13 @@
 typedef struct
 {
     /** Positions to permute. */
-    gmx_ana_pos_t    p;
+    gmx_ana_pos_t p;
     /** Number of elements in the permutation. */
-    int              n;
+    int n;
     /** Array describing the permutation. */
-    int             *perm;
+    int *perm;
     /** Array that has the permutation reversed. */
-    int             *rperm;
+    int *rperm;
 } t_methoddata_permute;
 
 /*! \brief
@@ -156,8 +156,7 @@ gmx_ana_selmethod_t sm_permute = {
      "Permuting selections", asize(help_permute), help_permute},
 };
 
-static void *
-init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
+static void *init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_permute *data = new t_methoddata_permute();
     data->n          = 0;
@@ -167,8 +166,7 @@ init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
     return data;
 }
 
-static void
-init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i;
@@ -200,8 +198,7 @@ init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *p
     }
 }
 
-static void
-init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
+static void init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b;
@@ -225,8 +222,7 @@ init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void 
  *
  * Frees the memory allocated for \c t_methoddata_permute.
  */
-static void
-free_data_permute(void *data)
+static void free_data_permute(void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
 
@@ -234,9 +230,8 @@ free_data_permute(void *data)
     delete d;
 }
 
-static void
-evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
-                 gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
+                             gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b;

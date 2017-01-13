@@ -60,7 +60,7 @@
 
 int gmx_helix(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *    desc[] = {
         "[THISMODULE] computes all kinds of helix properties. First, the peptide",
         "is checked to find the longest helical part, as determined by",
         "hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.",
@@ -90,9 +90,9 @@ int gmx_helix(int argc, char *argv[])
         " * Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).",
         " * Ellipticity at 222 nm according to Hirst and Brooks."
     };
-    static gmx_bool    bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
-    static int         rStart = 0, rEnd = 0, r0 = 1;
-    t_pargs            pa []  = {
+    static gmx_bool bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
+    static int      rStart = 0, rEnd = 0, r0 = 1;
+    t_pargs         pa []  = {
         { "-r0", FALSE, etINT, {&r0},
           "The first residue number in the sequence" },
         { "-q",  FALSE, etBOOL, {&bCheck},
@@ -109,8 +109,9 @@ int gmx_helix(int argc, char *argv[])
           "Last residue in helix" }
     };
 
-    typedef struct {
-        FILE       *fp, *fp2;
+    typedef struct
+    {
+        FILE *      fp, *fp2;
         gmx_bool    bfp2;
         const char *filenm;
         const char *title;
@@ -119,7 +120,7 @@ int gmx_helix(int argc, char *argv[])
         real        val;
     } t_xvgrfile;
 
-    t_xvgrfile        xf[efhNR] = {
+    t_xvgrfile xf[efhNR] = {
         { nullptr, nullptr, TRUE,  "radius",  "Helix radius",               nullptr, "r (nm)", 0.0 },
         { nullptr, nullptr, TRUE,  "twist",   "Twist per residue",          nullptr, "Angle (deg)", 0.0 },
         { nullptr, nullptr, TRUE,  "rise",    "Rise per residue",           nullptr, "Rise (nm)", 0.0 },
@@ -141,14 +142,14 @@ int gmx_helix(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     char              buf[54];
-    t_trxstatus      *status;
+    t_trxstatus *     status;
     int               natoms, nres;
-    t_bb             *bb;
+    t_bb *            bb;
     int               i, j, nall, nbb, nca, teller;
-    int              *bbindex, *caindex, *allindex;
-    t_topology       *top;
+    int *             bbindex, *caindex, *allindex;
+    t_topology *      top;
     int               ePBC;
-    rvec             *x, *xref;
+    rvec *            x, *xref;
     real              t;
     real              rms;
     matrix            box;
@@ -168,8 +169,8 @@ int gmx_helix(int argc, char *argv[])
         return 0;
     }
 
-    bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) &&
-              opt2parg_bSet("-ahxend", asize(pa), pa));
+    bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa)
+              && opt2parg_bSet("-ahxend", asize(pa), pa));
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
@@ -268,8 +269,7 @@ int gmx_helix(int argc, char *argv[])
                      xf[efhHB5].fp, xf[efhHB5].fp2,
                      t, nres, bb);
         }
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     gmx_rmpbc_done(gpbc);
@@ -280,11 +280,11 @@ int gmx_helix(int argc, char *argv[])
     {
         if (bb[i].nrms > 0)
         {
-            fprintf(xf[efhRMSA].fp, "%10d  %10g\n", r0+i, bb[i].rmsa/bb[i].nrms);
+            fprintf(xf[efhRMSA].fp, "%10d  %10g\n", r0 + i, bb[i].rmsa / bb[i].nrms);
         }
-        fprintf(xf[efhAHX].fp, "%10d  %10g\n", r0+i, (bb[i].nhx*100.0)/static_cast<real>(teller));
+        fprintf(xf[efhAHX].fp, "%10d  %10g\n", r0 + i, (bb[i].nhx * 100.0) / static_cast<real>(teller));
         fprintf(xf[efhJCA].fp, "%10d  %10g\n",
-                r0+i, 140.3+(bb[i].jcaha/static_cast<double>(teller)));
+                r0 + i, 140.3 + (bb[i].jcaha / static_cast<double>(teller)));
     }
 
     for (i = 0; (i < efhNR); i++)

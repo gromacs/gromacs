@@ -54,7 +54,7 @@ constexpr int c_pmeMaxUnitcellShift = 2;
  * This affects the size of the lookup table of the modulo operation result,
  * when working with PME local grid indices of the particles.
  */
-constexpr int c_pmeNeighborUnitcellCount = 2*c_pmeMaxUnitcellShift + 1;
+constexpr int c_pmeNeighborUnitcellCount = 2 * c_pmeMaxUnitcellShift + 1;
 
 
 #if GMX_MPI

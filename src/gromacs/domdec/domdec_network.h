@@ -53,7 +53,8 @@
 struct gmx_domdec_t;
 
 /* \brief */
-enum {
+enum
+{
     dddirForward, dddirBackward
 };
 

@@ -49,7 +49,8 @@ struct t_blocka;
 
 #define MAXSLEN 32
 
-typedef struct {
+typedef struct
+{
     gmx_bool bSet;              /* Has this combination been set        */
     real     c[4];              /* The non-bonded parameters            */
 } t_nbparam;
@@ -57,11 +58,12 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-typedef struct {
-    int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
+typedef struct
+{
+    int a[MAXATOMLIST];          /* The atom list (eg. bonds: particle	*/
     /* i = a[0] (ai), j = a[1] (aj))	*/
-    real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
-    char       s[MAXSLEN];       /* A string (instead of parameters),    *
+    real c[MAXFORCEPARAM];       /* Force parameters (eg. b0 = c[0])	*/
+    char s[MAXSLEN];             /* A string (instead of parameters),    *
                                   * read from the .rtp file in pdb2gmx   */
     const int &ai() const { return a[0]; }
     int   &ai() { return a[0]; }
@@ -79,41 +81,45 @@ typedef struct {
     real      &c2() { return c[2]; }
 } t_param;
 
-typedef struct {
-    int          nr;    /* The number of bonds in this record   */
-    int          maxnr; /* The amount of elements in the array  */
-    t_param     *param; /* Array of parameters (dim: nr)	*/
+typedef struct
+{
+    int      nr;        /* The number of bonds in this record   */
+    int      maxnr;     /* The amount of elements in the array  */
+    t_param *param;     /* Array of parameters (dim: nr)	*/
 
     /* CMAP tmp data, there are probably better places for this */
-    int         grid_spacing; /* Cmap grid spacing */
-    int         nc;           /* Number of cmap angles */
+    int grid_spacing;         /* Cmap grid spacing */
+    int nc;                   /* Number of cmap angles */
 
-    real       *cmap;         /* Temporary storage of the raw cmap grid data */
-    int         ncmap;        /* Number of allocated elements in cmap grid*/
+    real *cmap;               /* Temporary storage of the raw cmap grid data */
+    int   ncmap;              /* Number of allocated elements in cmap grid*/
 
-    int        *cmap_types;   /* Store the five atomtypes followed by a number that identifies the type */
-    int         nct;          /* Number of allocated elements in cmap_types */
+    int *cmap_types;          /* Store the five atomtypes followed by a number that identifies the type */
+    int  nct;                 /* Number of allocated elements in cmap_types */
 
 } t_params;
 
-typedef struct {
-    int            nr;      /* The number of exclusions             */
-    int           *e;       /* The excluded atoms                   */
+typedef struct
+{
+    int  nr;                /* The number of exclusions             */
+    int *e;                 /* The excluded atoms                   */
 } t_excls;
 
-typedef struct {
-    char            **name;
-    int               nrexcl;       /* Number of exclusions per atom	*/
-    gmx_bool          excl_set;     /* Have exclusions been generated?	*/
-    gmx_bool          bProcessed;   /* Has the mol been processed           */
-    t_atoms           atoms;        /* Atoms                                */
-    t_block           cgs;          /* Charge groups                        */
-    t_block           mols;         /* Molecules                            */
-    t_blocka          excls;        /* Exclusions                           */
-    t_params          plist[F_NRE]; /* Parameters in old style              */
+typedef struct
+{
+    char **  name;
+    int      nrexcl;                /* Number of exclusions per atom	*/
+    gmx_bool excl_set;              /* Have exclusions been generated?	*/
+    gmx_bool bProcessed;            /* Has the mol been processed           */
+    t_atoms  atoms;                 /* Atoms                                */
+    t_block  cgs;                   /* Charge groups                        */
+    t_block  mols;                  /* Molecules                            */
+    t_blocka excls;                 /* Exclusions                           */
+    t_params plist[F_NRE];          /* Parameters in old style              */
 } t_molinfo;
 
-typedef struct {
+typedef struct
+{
     char *name;
     int   nr;
 } t_mols;
@@ -122,7 +128,8 @@ gmx_bool is_int(double x);
 /* Returns TRUE when x is integer */
 
 /* Must correspond to strings in topdirs.c */
-typedef enum {
+typedef enum
+{
     d_defaults,
     d_atomtypes,
     d_bondtypes,

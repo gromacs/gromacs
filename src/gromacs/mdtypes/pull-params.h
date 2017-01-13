@@ -56,9 +56,10 @@
 /*! \cond INTERNAL */
 
 /*! \brief Struct that defines a pull group */
-typedef struct {
+typedef struct
+{
     int   nat;     /**< Number of atoms in the pull group */
-    int  *ind;     /**< The global atoms numbers */
+    int * ind;     /**< The global atoms numbers */
     int   nweight; /**< The number of weights (0 or nat) */
     real *weight;  /**< Weights (use all 1 when weight==NULL) */
     int   pbcatom; /**< The reference atom for pbc (global number) */
@@ -68,9 +69,10 @@ typedef struct {
 static const int c_pullCoordNgroupMax = 6;
 
 /*! \brief Struct that defines a pull coordinate */
-typedef struct {
+typedef struct
+{
     int      eType;                        /**< The pull type: umbrella, constraint, ... */
-    char    *externalPotentialProvider;    /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
+    char *   externalPotentialProvider;    /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
     int      eGeom;                        /**< The pull geometry */
     int      ngroup;                       /**< The number of groups, depends on eGeom */
     int      group[c_pullCoordNgroupMax];  /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
@@ -85,19 +87,20 @@ typedef struct {
 } t_pull_coord;
 
 /*! \brief Struct containing all pull parameters */
-typedef struct pull_params_t {
-    int            ngroup;         /**< Number of pull groups */
-    int            ncoord;         /**< Number of pull coordinates */
-    real           cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
-    real           constr_tol;     /**< Absolute tolerance for constraints in (nm) */
-    gmx_bool       bPrintCOM;      /**< Print coordinates of COM for each coord */
-    gmx_bool       bPrintRefValue; /**< Print the reference value for each coord */
-    gmx_bool       bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
-    int            nstxout;        /**< Output interval for pull x */
-    int            nstfout;        /**< Output interval for pull f */
+typedef struct pull_params_t
+{
+    int      ngroup;               /**< Number of pull groups */
+    int      ncoord;               /**< Number of pull coordinates */
+    real     cylinder_r;           /**< Radius of cylinder for dynamic COM (nm) */
+    real     constr_tol;           /**< Absolute tolerance for constraints in (nm) */
+    gmx_bool bPrintCOM;            /**< Print coordinates of COM for each coord */
+    gmx_bool bPrintRefValue;       /**< Print the reference value for each coord */
+    gmx_bool bPrintComp;           /**< Print cartesian components for each coord with geometry=distance */
+    int      nstxout;              /**< Output interval for pull x */
+    int      nstfout;              /**< Output interval for pull f */
 
-    t_pull_group  *group;          /**< groups to pull/restrain/etc/ */
-    t_pull_coord  *coord;          /**< the pull coordinates */
+    t_pull_group *group;           /**< groups to pull/restrain/etc/ */
+    t_pull_coord *coord;           /**< the pull coordinates */
 } pull_params_t;
 
 /*! \endcond */

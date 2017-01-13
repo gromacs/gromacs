@@ -66,7 +66,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
     const real *chargeA, *chargeB;
     real        ek, ec, L1, qiA, qiB, qqA, qqB, qqL, v;
     rvec        dx, df;
-    int        *AA;
+    int *       AA;
     ivec        dt;
     int         start = 0;
     int         end   = mdatoms->homenr;
@@ -79,8 +79,8 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
         start = mdatoms->nr - fr->n_tpi;
     }
 
-    ek      = fr->epsfac*fr->k_rf;
-    ec      = fr->epsfac*fr->c_rf;
+    ek      = fr->epsfac * fr->k_rf;
+    ec      = fr->epsfac * fr->c_rf;
     chargeA = mdatoms->chargeA;
     chargeB = mdatoms->chargeB;
     AA      = excl->a;
@@ -105,17 +105,17 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
             qiA = chargeA[i];
             if (i < end)
             {
-                q2sumA += qiA*qiA;
+                q2sumA += qiA * qiA;
             }
             /* Do the exclusions */
-            j1  = excl->index[i];
-            j2  = excl->index[i+1];
+            j1 = excl->index[i];
+            j2 = excl->index[i + 1];
             for (j = j1; j < j2; j++)
             {
                 k = AA[j];
                 if (k > i)
                 {
-                    qqA = qiA*chargeA[k];
+                    qqA = qiA * chargeA[k];
                     if (qqA != 0)
                     {
                         if (g)
@@ -132,8 +132,8 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                         {
                             rvec_sub(x[i], x[k], dx);
                         }
-                        ener += qqA*(ek*norm2(dx) - ec);
-                        svmul(-2*qqA*ek, dx, df);
+                        ener += qqA * (ek * norm2(dx) - ec);
+                        svmul(-2 * qqA * ek, dx, df);
                         rvec_inc(f[i], df);
                         rvec_dec(f[k], df);
                         rvec_inc(fshift[ki], df);
@@ -142,7 +142,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                 }
             }
         }
-        ener += -0.5*ec*q2sumA;
+        ener += -0.5 * ec * q2sumA;
     }
     else
     {
@@ -153,22 +153,22 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
             qiB = chargeB[i];
             if (i < end)
             {
-                q2sumA += qiA*qiA;
-                q2sumB += qiB*qiB;
+                q2sumA += qiA * qiA;
+                q2sumB += qiB * qiB;
             }
             /* Do the exclusions */
-            j1  = excl->index[i];
-            j2  = excl->index[i+1];
+            j1 = excl->index[i];
+            j2 = excl->index[i + 1];
             for (j = j1; j < j2; j++)
             {
                 k = AA[j];
                 if (k > i)
                 {
-                    qqA = qiA*chargeA[k];
-                    qqB = qiB*chargeB[k];
+                    qqA = qiA * chargeA[k];
+                    qqB = qiB * chargeB[k];
                     if (qqA != 0 || qqB != 0)
                     {
-                        qqL = L1*qqA + lambda*qqB;
+                        qqL = L1 * qqA + lambda * qqB;
                         if (g)
                         {
                             rvec_sub(x[i], x[k], dx);
@@ -183,20 +183,20 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                         {
                             rvec_sub(x[i], x[k], dx);
                         }
-                        v     = ek*norm2(dx) - ec;
-                        ener += qqL*v;
-                        svmul(-2*qqL*ek, dx, df);
+                        v     = ek * norm2(dx) - ec;
+                        ener += qqL * v;
+                        svmul(-2 * qqL * ek, dx, df);
                         rvec_inc(f[i], df);
                         rvec_dec(f[k], df);
                         rvec_inc(fshift[ki], df);
                         rvec_dec(fshift[CENTRAL], df);
-                        *dvdlambda += (qqB - qqA)*v;
+                        *dvdlambda += (qqB - qqA) * v;
                     }
                 }
             }
         }
-        ener       += -0.5*ec*(L1*q2sumA + lambda*q2sumB);
-        *dvdlambda += -0.5*ec*(q2sumB - q2sumA);
+        ener       += -0.5 * ec * (L1 * q2sumA + lambda * q2sumB);
+        *dvdlambda += -0.5 * ec * (q2sumB - q2sumA);
     }
 
     if (debug)
@@ -212,11 +212,11 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
                 real *kappa, real *krf, real *crf)
 {
     /* Compute constants for Generalized reaction field */
-    real   k1, k2, I, vol, rmin;
+    real k1, k2, I, vol, rmin;
 
     if (EEL_RF(eel))
     {
-        vol     = det(box);
+        vol = det(box);
         if (eel == eelGRF)
         {
             /* Consistency check */
@@ -226,8 +226,8 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
                           " Generalized Reaction Field\n", Temp);
             }
             /* Ionic strength (only needed for eelGRF */
-            I       = 0.5*zsq/vol;
-            *kappa  = std::sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
+            I      = 0.5 * zsq / vol;
+            *kappa = std::sqrt(2 * I / (EPSILON0 * eps_rf * BOLTZ * Temp));
         }
         else
         {
@@ -238,18 +238,18 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
         /* eps == 0 signals infinite dielectric */
         if (eps_rf == 0)
         {
-            *krf = 1/(2*Rc*Rc*Rc);
+            *krf = 1 / (2 * Rc * Rc * Rc);
         }
         else
         {
-            k1   = 1 + *kappa*Rc;
-            k2   = eps_rf*gmx::square((real)(*kappa*Rc));
+            k1 = 1 + *kappa * Rc;
+            k2 = eps_rf * gmx::square((real)(*kappa * Rc));
 
-            *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
+            *krf = ((eps_rf - eps_r) * k1 + 0.5 * k2) / ((2 * eps_rf + eps_r) * k1 + k2) / (Rc * Rc * Rc);
         }
-        *crf   = 1/Rc + *krf*Rc*Rc;
+        *crf = 1 / Rc + *krf * Rc * Rc;
         // Make sure we don't lose resolution in pow() by casting real arg to double
-        rmin   = gmx::invcbrt(static_cast<double>(*krf*2.0));
+        rmin = gmx::invcbrt(static_cast<double>(*krf * 2.0));
 
         if (fplog)
         {
@@ -260,13 +260,13 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
                         "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
                         "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
                         eel_names[eel], eps_rf, I, vol, *kappa, Rc, *krf, *crf,
-                        ONE_4PI_EPS0/eps_r);
+                        ONE_4PI_EPS0 / eps_r);
             }
             else
             {
                 fprintf(fplog, "%s:\n"
                         "epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
-                        eel_names[eel], eps_rf, Rc, *krf, *crf, ONE_4PI_EPS0/eps_r);
+                        eel_names[eel], eps_rf, Rc, *krf, *crf, ONE_4PI_EPS0 / eps_r);
             }
             fprintf(fplog,
                     "The electrostatics potential has its minimum at r = %g\n",
@@ -282,7 +282,7 @@ void init_generalized_rf(FILE *fplog,
     int                  mb, i, j;
     real                 q, zsq, nrdf, T;
     const gmx_moltype_t *molt;
-    const t_block       *cgs;
+    const t_block *      cgs;
 
     if (ir->efep != efepNO && fplog)
     {
@@ -296,11 +296,11 @@ void init_generalized_rf(FILE *fplog,
         for (i = 0; (i < cgs->nr); i++)
         {
             q = 0;
-            for (j = cgs->index[i]; (j < cgs->index[i+1]); j++)
+            for (j = cgs->index[i]; (j < cgs->index[i + 1]); j++)
             {
                 q += molt->atoms.atom[j].q;
             }
-            zsq += mtop->molblock[mb].nmol*q*q;
+            zsq += mtop->molblock[mb].nmol * q * q;
         }
         fr->zsquare = zsq;
     }
@@ -316,5 +316,5 @@ void init_generalized_rf(FILE *fplog,
     {
         gmx_fatal(FARGS, "No degrees of freedom!");
     }
-    fr->temp   = T/nrdf;
+    fr->temp = T / nrdf;
 }

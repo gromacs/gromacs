@@ -56,25 +56,26 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-struct gmx_mdoutf {
-    t_fileio         *fp_trn;
-    t_fileio         *fp_xtc;
-    tng_trajectory_t  tng;
-    tng_trajectory_t  tng_low_prec;
-    int               x_compression_precision; /* only used by XTC output */
-    ener_file_t       fp_ene;
-    const char       *fn_cpt;
-    gmx_bool          bKeepAndNumCPT;
-    int               eIntegrator;
-    gmx_bool          bExpanded;
-    int               elamstats;
-    int               simulation_part;
-    FILE             *fp_dhdl;
-    int               natoms_global;
-    int               natoms_x_compressed;
-    gmx_groups_t     *groups; /* for compressed position writing */
-    gmx_wallcycle_t   wcycle;
-    rvec             *f_global;
+struct gmx_mdoutf
+{
+    t_fileio *       fp_trn;
+    t_fileio *       fp_xtc;
+    tng_trajectory_t tng;
+    tng_trajectory_t tng_low_prec;
+    int              x_compression_precision;  /* only used by XTC output */
+    ener_file_t      fp_ene;
+    const char *     fn_cpt;
+    gmx_bool         bKeepAndNumCPT;
+    int              eIntegrator;
+    gmx_bool         bExpanded;
+    int              elamstats;
+    int              simulation_part;
+    FILE *           fp_dhdl;
+    int              natoms_global;
+    int              natoms_x_compressed;
+    gmx_groups_t *   groups;  /* for compressed position writing */
+    gmx_wallcycle_t  wcycle;
+    rvec *           f_global;
 };
 
 
@@ -83,10 +84,10 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          const t_inputrec *ir, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
-    gmx_mdoutf_t   of;
-    const char    *appendMode = "a+", *writeMode = "w+", *filemode;
-    gmx_bool       bAppendFiles, bCiteTng = FALSE;
-    int            i;
+    gmx_mdoutf_t of;
+    const char * appendMode = "a+", *writeMode = "w+", *filemode;
+    gmx_bool     bAppendFiles, bCiteTng = FALSE;
+    int          i;
 
     snew(of, 1);
 
@@ -113,15 +114,15 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 
         filemode = bAppendFiles ? appendMode : writeMode;
 
-        if (EI_DYNAMICS(ir->eI) &&
-            ir->nstxout_compressed > 0)
+        if (EI_DYNAMICS(ir->eI)
+            && ir->nstxout_compressed > 0)
         {
             const char *filename;
             filename = ftp2fn(efCOMPRESSED, nfile, fnm);
             switch (fn2ftp(filename))
             {
                 case efXTC:
-                    of->fp_xtc                  = open_xtc(filename, filemode);
+                    of->fp_xtc = open_xtc(filename, filemode);
                     break;
                 case efTNG:
                     gmx_tng_open(filename, filemode[0], &of->tng_low_prec);
@@ -138,10 +139,10 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
 #ifndef GMX_FAHCORE
             &&
-            !(EI_DYNAMICS(ir->eI) &&
-              ir->nstxout == 0 &&
-              ir->nstvout == 0 &&
-              ir->nstfout == 0)
+            !(EI_DYNAMICS(ir->eI)
+              && ir->nstxout == 0
+              && ir->nstvout == 0
+              && ir->nstfout == 0)
 #endif
             )
         {
@@ -154,8 +155,8 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                     /* If there is no uncompressed coordinate output and
                        there is compressed TNG output write forces
                        and/or velocities to the TNG file instead. */
-                    if (ir->nstxout != 0 || ir->nstxout_compressed == 0 ||
-                        !of->tng_low_prec)
+                    if (ir->nstxout != 0 || ir->nstxout_compressed == 0
+                        || !of->tng_low_prec)
                     {
                         of->fp_trn = gmx_trr_open(filename, filemode);
                     }
@@ -178,9 +179,9 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         }
         of->fn_cpt = opt2fn("-cpo", nfile, fnm);
 
-        if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0 &&
-            (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) &&
-            EI_DYNAMICS(ir->eI))
+        if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0
+            && (ir->fepvals->separate_dhdl_file == esepdhdlfileYES )
+            && EI_DYNAMICS(ir->eI))
         {
             if (bAppendFiles)
             {
@@ -279,7 +280,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         /* We have the whole state locally: copy the local state pointer */
         state_global = state_local;
 
-        f_global     = as_rvec_array(f_local->data());
+        f_global = as_rvec_array(f_local->data());
     }
 
     if (MASTER(cr))

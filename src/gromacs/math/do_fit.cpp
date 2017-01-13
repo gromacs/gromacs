@@ -82,11 +82,11 @@ real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
     }
     if (bRho)
     {
-        return 2*std::sqrt(rd/rs);
+        return 2 * std::sqrt(rd / rs);
     }
     else
     {
-        return std::sqrt(rd/tm);
+        return std::sqrt(rd / tm);
     }
 }
 
@@ -114,7 +114,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
 {
     int      c, r, n, j, i, irot, s;
     double **omega, **om;
-    double   d[2*DIM], xnr, xpc;
+    double   d[2 * DIM], xnr, xpc;
     matrix   vh, vk, u;
     real     mn;
     int      index;
@@ -125,18 +125,18 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
         gmx_fatal(FARGS, "calc_fit_R called with ndim=%d instead of 3 or 2", ndim);
     }
 
-    snew(omega, 2*ndim);
-    snew(om, 2*ndim);
-    for (i = 0; i < 2*ndim; i++)
+    snew(omega, 2 * ndim);
+    snew(om, 2 * ndim);
+    for (i = 0; i < 2 * ndim; i++)
     {
-        snew(omega[i], 2*ndim);
-        snew(om[i], 2*ndim);
+        snew(omega[i], 2 * ndim);
+        snew(om[i], 2 * ndim);
     }
 
-    for (i = 0; i < 2*ndim; i++)
+    for (i = 0; i < 2 * ndim; i++)
     {
         d[i] = 0;
-        for (j = 0; j < 2*ndim; j++)
+        for (j = 0; j < 2 * ndim; j++)
         {
             omega[i][j] = 0;
             om[i][j]    = 0;
@@ -155,7 +155,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
                 for (r = 0; (r < ndim); r++)
                 {
                     xnr      = x[n][r];
-                    u[c][r] += mn*xnr*xpc;
+                    u[c][r] += mn * xnr * xpc;
                 }
             }
         }
@@ -163,14 +163,14 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
 
     /*construct omega*/
     /*omega is symmetric -> omega==omega' */
-    for (r = 0; r < 2*ndim; r++)
+    for (r = 0; r < 2 * ndim; r++)
     {
         for (c = 0; c <= r; c++)
         {
             if (r >= ndim && c < ndim)
             {
-                omega[r][c] = u[r-ndim][c];
-                omega[c][r] = u[r-ndim][c];
+                omega[r][c] = u[r - ndim][c];
+                omega[c][r] = u[r - ndim][c];
             }
             else
             {
@@ -181,7 +181,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
     }
 
     /*determine h and k*/
-    jacobi(omega, 2*ndim, d, om, &irot);
+    jacobi(omega, 2 * ndim, d, om, &irot);
     /*real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
      * int     natoms = number of rows and columns
      * real      NULL = d[0]..d[n-1] are the eigenvalues of a[][]
@@ -197,10 +197,10 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
     index = 0; /* For the compiler only */
 
     /* Copy only the first ndim-1 eigenvectors */
-    for (j = 0; j < ndim-1; j++)
+    for (j = 0; j < ndim - 1; j++)
     {
         max_d = -1000;
-        for (i = 0; i < 2*ndim; i++)
+        for (i = 0; i < 2 * ndim; i++)
         {
             if (d[i] > max_d)
             {
@@ -211,8 +211,8 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
         d[index] = -10000;
         for (i = 0; i < ndim; i++)
         {
-            vh[j][i] = M_SQRT2*om[i][index];
-            vk[j][i] = M_SQRT2*om[i+ndim][index];
+            vh[j][i] = M_SQRT2 * om[i][index];
+            vk[j][i] = M_SQRT2 * om[i + ndim][index];
         }
     }
     if (ndim == 3)
@@ -241,7 +241,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
         {
             for (s = 0; s < ndim; s++)
             {
-                R[r][c] += vk[s][r]*vh[s][c];
+                R[r][c] += vk[s][r] * vh[s][c];
             }
         }
     }
@@ -250,7 +250,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
         R[r][r] = 1;
     }
 
-    for (i = 0; i < 2*ndim; i++)
+    for (i = 0; i < 2 * ndim; i++)
     {
         sfree(omega[i]);
         sfree(om[i]);
@@ -280,7 +280,7 @@ void do_fit_ndim(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x)
             x[j][r] = 0;
             for (c = 0; c < DIM; c++)
             {
-                x[j][r] += R[r][c]*x_old[c];
+                x[j][r] += R[r][c] * x_old[c];
             }
         }
     }
@@ -313,7 +313,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
             mm = mass[ai];
             for (m = 0; m < ndim; m++)
             {
-                xcm[m] += mm*x[ai][m];
+                xcm[m] += mm * x[ai][m];
             }
             tm += mm;
         }
@@ -325,7 +325,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
             mm = mass[i];
             for (m = 0; m < ndim; m++)
             {
-                xcm[m] += mm*x[i][m];
+                xcm[m] += mm * x[i][m];
             }
             tm += mm;
         }

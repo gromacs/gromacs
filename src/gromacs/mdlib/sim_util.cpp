@@ -110,11 +110,11 @@
 
 #include "nbnxn_gpu.h"
 
-void print_time(FILE                     *out,
+void print_time(FILE *                    out,
                 gmx_walltime_accounting_t walltime_accounting,
                 gmx_int64_t               step,
-                t_inputrec               *ir,
-                t_commrec gmx_unused     *cr)
+                t_inputrec *              ir,
+                t_commrec gmx_unused *    cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
@@ -134,7 +134,7 @@ void print_time(FILE                     *out,
     {
         double seconds_since_epoch = gmx_gettime();
         elapsed_seconds = seconds_since_epoch - walltime_accounting_get_start_time_stamp(walltime_accounting);
-        time_per_step   = elapsed_seconds/(step - ir->init_step + 1);
+        time_per_step   = elapsed_seconds / (step - ir->init_step + 1);
         dt              = (ir->nsteps + ir->init_step - step) * time_per_step;
 
         if (ir->nsteps >= 0)
@@ -144,7 +144,7 @@ void print_time(FILE                     *out,
                 finish = (time_t) (seconds_since_epoch + dt);
                 gmx_ctime_r(&finish, timebuf, STRLEN);
                 sprintf(buf, "%s", timebuf);
-                buf[strlen(buf)-1] = '\0';
+                buf[strlen(buf) - 1] = '\0';
                 fprintf(out, ", will finish %s", buf);
             }
             else
@@ -155,7 +155,7 @@ void print_time(FILE                     *out,
         else
         {
             fprintf(out, " performance: %.1f ns/day    ",
-                    ir->delta_t/1000*24*60*60/time_per_step);
+                    ir->delta_t / 1000 * 24 * 60 * 60 / time_per_step);
         }
     }
 #if !GMX_THREAD_MPI
@@ -171,7 +171,7 @@ void print_time(FILE                     *out,
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
                          double the_time)
 {
-    char   time_string[STRLEN];
+    char time_string[STRLEN];
 
     if (!fplog)
     {
@@ -224,7 +224,7 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
-    int    i;
+    int i;
 
     /* The short-range virial from surrounding boxes */
     clear_mat(vir_part);
@@ -234,7 +234,7 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
     /* Calculate partial virial, for local atoms only, based on short range.
      * Total virial is computed in global_stat, called from do_md
      */
-    f_calc_vir(start, start+homenr, x, f, vir_part, graph, box);
+    f_calc_vir(start, start + homenr, x, f, vir_part, graph, box);
     inc_nrnb(nrnb, eNR_VIRIAL, homenr);
 
     /* Add position restraint contribution */
@@ -266,8 +266,8 @@ static void pull_potential_wrapper(t_commrec *cr,
                                    double t,
                                    gmx_wallcycle_t wcycle)
 {
-    t_pbc  pbc;
-    real   dvdl;
+    t_pbc pbc;
+    real  dvdl;
 
     /* Calculate the center of mass forces, this requires communication,
      * which is why pull_potential is called close to other communication.
@@ -276,21 +276,21 @@ static void pull_potential_wrapper(t_commrec *cr,
      */
     wallcycle_start(wcycle, ewcPULLPOT);
     set_pbc(&pbc, ir->ePBC, box);
-    dvdl                     = 0;
-    enerd->term[F_COM_PULL] +=
-        pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
+    dvdl = 0;
+    enerd->term[F_COM_PULL]
+        += pull_potential(ir->pull_work, mdatoms, &pbc,
+                          cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
-static void pme_receive_force_ener(t_commrec      *cr,
+static void pme_receive_force_ener(t_commrec *     cr,
                                    gmx_wallcycle_t wcycle,
                                    gmx_enerdata_t *enerd,
-                                   t_forcerec     *fr)
+                                   t_forcerec *    fr)
 {
-    real   e_q, e_lj, dvdl_q, dvdl_lj;
-    float  cycles_ppdpme, cycles_seppme;
+    real  e_q, e_lj, dvdl_q, dvdl_lj;
+    float cycles_ppdpme, cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, ewcPPDURINGPME);
     dd_cycles_add(cr->dd, cycles_ppdpme, ddCyclPPduringPME);
@@ -410,9 +410,9 @@ static void do_nb_verlet(t_forcerec *fr,
                          t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle)
 {
-    int                        enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
-    nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                   bUsingGpuKernels;
+    int                       enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
+    nonbonded_verlet_group_t *nbvg;
+    gmx_bool                  bUsingGpuKernels;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -444,9 +444,9 @@ static void do_nb_verlet(t_forcerec *fr,
                              clearF,
                              fr->fshift[0],
                              enerd->grpp.ener[egCOULSR],
-                             fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
+                             fr->bBHAM
+                             ? enerd->grpp.ener[egBHAMSR]
+                             : enerd->grpp.ener[egLJSR]);
             break;
 
         case nbnxnk4xN_SIMD_4xN:
@@ -458,9 +458,9 @@ static void do_nb_verlet(t_forcerec *fr,
                                   clearF,
                                   fr->fshift[0],
                                   enerd->grpp.ener[egCOULSR],
-                                  fr->bBHAM ?
-                                  enerd->grpp.ener[egBHAMSR] :
-                                  enerd->grpp.ener[egLJSR]);
+                                  fr->bBHAM
+                                  ? enerd->grpp.ener[egBHAMSR]
+                                  : enerd->grpp.ener[egLJSR]);
             break;
         case nbnxnk4xN_SIMD_2xNN:
             nbnxn_kernel_simd_2xnn(&nbvg->nbl_lists,
@@ -471,9 +471,9 @@ static void do_nb_verlet(t_forcerec *fr,
                                    clearF,
                                    fr->fshift[0],
                                    enerd->grpp.ener[egCOULSR],
-                                   fr->bBHAM ?
-                                   enerd->grpp.ener[egBHAMSR] :
-                                   enerd->grpp.ener[egLJSR]);
+                                   fr->bBHAM
+                                   ? enerd->grpp.ener[egBHAMSR]
+                                   : enerd->grpp.ener[egLJSR]);
             break;
 
         case nbnxnk8x8x8_GPU:
@@ -489,9 +489,9 @@ static void do_nb_verlet(t_forcerec *fr,
                                  nbvg->nbat->out[0].f,
                                  fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
-                                 fr->bBHAM ?
-                                 enerd->grpp.ener[egBHAMSR] :
-                                 enerd->grpp.ener[egLJSR]);
+                                 fr->bBHAM
+                                 ? enerd->grpp.ener[egBHAMSR]
+                                 : enerd->grpp.ener[egLJSR]);
             break;
 
         default:
@@ -507,8 +507,8 @@ static void do_nb_verlet(t_forcerec *fr,
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical) ||
-             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(fr->nbv->gpu_nbv)))
+    else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical)
+             || (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(fr->nbv->gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -529,39 +529,39 @@ static void do_nb_verlet(t_forcerec *fr,
     inc_nrnb(nrnb, enr_nbnxn_kernel_lj,
              nbvg->nbl_lists.natpair_lj);
     /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
-    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc-eNR_NBNXN_LJ_RF+eNR_NBNXN_RF,
+    inc_nrnb(nrnb, enr_nbnxn_kernel_ljc - eNR_NBNXN_LJ_RF + eNR_NBNXN_RF,
              nbvg->nbl_lists.natpair_q);
 
     if (ic->vdw_modifier == eintmodFORCESWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW + ((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
     if (ic->vdw_modifier == eintmodPOTSWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW + ((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
     if (ic->vdwtype == evdwPME)
     {
         /* We add up the LJ Ewald cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD+((flags & GMX_FORCE_ENERGY) ? 1 : 0),
+        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD + ((flags & GMX_FORCE_ENERGY) ? 1 : 0),
                  nbvg->nbl_lists.natpair_ljq + nbvg->nbl_lists.natpair_lj);
     }
 }
 
 static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
-                             t_forcerec           *fr,
+                             t_forcerec *          fr,
                              rvec                  x[],
                              rvec                  f[],
-                             t_mdatoms            *mdatoms,
-                             t_lambda             *fepvals,
-                             real                 *lambda,
-                             gmx_enerdata_t       *enerd,
+                             t_mdatoms *           mdatoms,
+                             t_lambda *            fepvals,
+                             real *                lambda,
+                             gmx_enerdata_t *      enerd,
                              int                   flags,
-                             t_nrnb               *nrnb,
+                             t_nrnb *              nrnb,
                              gmx_wallcycle_t       wcycle)
 {
     int              donb_flags;
@@ -599,7 +599,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
     /* reset free energy components */
     for (i = 0; i < efptNR; i++)
     {
-        dvdl_nb[i]  = 0;
+        dvdl_nb[i] = 0;
     }
 
     assert(gmx_omp_nthreads_get(emntNonbonded) == nbl_lists->nnbl);
@@ -642,7 +642,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
         {
             for (j = 0; j < efptNR; j++)
             {
-                lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
+                lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i - 1]);
             }
             reset_foreign_enerdata(enerd);
 #pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
@@ -731,13 +731,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          gmx_bool bBornRadii,
                          int flags)
 {
-    int                 cg1, i, j;
-    double              mu[2*DIM];
-    gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
-    gmx_bool            bDiffKernels = FALSE;
-    rvec                vzero, box_diag;
-    float               cycles_pme, cycles_force, cycles_wait_gpu;
+    int      cg1, i, j;
+    double   mu[2 * DIM];
+    gmx_bool bStateChanged, bNS, bFillGrid, bCalcCGCM;
+    gmx_bool bDoForces, bUseGPU, bUseOrEmulGPU;
+    gmx_bool bDiffKernels = FALSE;
+    rvec     vzero, box_diag;
+    float    cycles_pme, cycles_force, cycles_wait_gpu;
     /* TODO To avoid loss of precision, float can't be used for a
      * cycle count. Build an object that can do this right and perhaps
      * also be used by gmx_wallcycle_t */
@@ -785,7 +785,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              */
             calc_mu(start, homenr,
                     x, mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
-                    mu, mu+DIM);
+                    mu, mu + DIM);
         }
     }
 
@@ -879,8 +879,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        if (nbv->ngrp == 1 ||
-            nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
+        if (nbv->ngrp == 1
+            || nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
         {
             nbnxn_atomdata_set(nbv->grp[eintLocal].nbat, eatAll,
                                nbv->nbs, mdatoms, fr->cginfo);
@@ -957,8 +957,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
        do non-local pair search */
     if (DOMAINDECOMP(cr))
     {
-        bDiffKernels = (nbv->grp[eintNonlocal].kernel_type !=
-                        nbv->grp[eintLocal].kernel_type);
+        bDiffKernels = (nbv->grp[eintNonlocal].kernel_type
+                        != nbv->grp[eintLocal].kernel_type);
 
         if (bDiffKernels)
         {
@@ -1047,14 +1047,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         if (PAR(cr))
         {
-            gmx_sumd(2*DIM, mu, cr);
+            gmx_sumd(2 * DIM, mu, cr);
         }
 
         for (i = 0; i < 2; i++)
         {
             for (j = 0; j < DIM; j++)
             {
-                fr->mu_tot[i][j] = mu[i*DIM + j];
+                fr->mu_tot[i][j] = mu[i * DIM + j];
             }
         }
     }
@@ -1066,9 +1066,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         for (j = 0; j < DIM; j++)
         {
-            mu_tot[j] =
-                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
-                lambda[efptCOUL]*fr->mu_tot[1][j];
+            mu_tot[j]
+                = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j]
+                    + lambda[efptCOUL] * fr->mu_tot[1][j];
         }
     }
 
@@ -1169,8 +1169,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                              enerd, flags, nrnb, wcycle);
         }
 
-        if (DOMAINDECOMP(cr) &&
-            fr->nbv->grp[eintNonlocal].nbl_lists.nbl_fep[0]->nrj > 0)
+        if (DOMAINDECOMP(cr)
+            && fr->nbv->grp[eintNonlocal].nbl_lists.nbl_fep[0]->nrj > 0)
         {
             do_nb_verlet_fep(&fr->nbv->grp[eintNonlocal].nbl_lists,
                              fr, x, f, mdatoms,
@@ -1212,8 +1212,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
-        if ((flags & GMX_FORCE_VIRIAL) &&
-            nbv->grp[aloc].nbl_lists.nnbl > 1)
+        if ((flags & GMX_FORCE_VIRIAL)
+            && nbv->grp[aloc].nbl_lists.nnbl > 1)
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
@@ -1304,7 +1304,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
-            float       cycles_tmp, cycles_wait_est;
+            float cycles_tmp, cycles_wait_est;
             /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
              * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
              * but even with a step of 0.1 ms the difference is less than 1%
@@ -1317,7 +1317,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
-            cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             if (bDoForces && DOMAINDECOMP(cr))
             {
@@ -1373,7 +1373,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         dd_force_flop_stop(cr->dd, nrnb);
         if (wcycle)
         {
-            dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
+            dd_cycles_add(cr->dd, cycles_force - cycles_pme, ddCyclF);
             if (bUseGPU)
             {
                 dd_cycles_add(cr->dd, cycles_wait_gpu, ddCyclWaitGPU);
@@ -1472,14 +1472,14 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         gmx_bool bBornRadii,
                         int flags)
 {
-    int        cg0, cg1, i, j;
-    double     mu[2*DIM];
-    gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool   bDoForces;
-    float      cycles_pme, cycles_force;
+    int      cg0, cg1, i, j;
+    double   mu[2 * DIM];
+    gmx_bool bStateChanged, bNS, bFillGrid, bCalcCGCM;
+    gmx_bool bDoForces;
+    float    cycles_pme, cycles_force;
 
-    const int  start  = 0;
-    const int  homenr = mdatoms->homenr;
+    const int start  = 0;
+    const int homenr = mdatoms->homenr;
 
     clear_mat(vir_force);
 
@@ -1497,12 +1497,12 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         cg1--;
     }
 
-    bStateChanged  = (flags & GMX_FORCE_STATECHANGED);
-    bNS            = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
+    bStateChanged = (flags & GMX_FORCE_STATECHANGED);
+    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
     /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
-    bFillGrid      = (bNS && bStateChanged);
-    bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
-    bDoForces      = (flags & GMX_FORCE_FORCES);
+    bFillGrid = (bNS && bStateChanged);
+    bCalcCGCM = (bFillGrid && !DOMAINDECOMP(cr));
+    bDoForces = (flags & GMX_FORCE_FORCES);
 
     if (bStateChanged)
     {
@@ -1515,7 +1515,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
              */
             calc_mu(start, homenr,
                     x, mdatoms->chargeA, mdatoms->chargeB, mdatoms->nChargePerturbed,
-                    mu, mu+DIM);
+                    mu, mu + DIM);
         }
     }
 
@@ -1534,7 +1534,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, box,
                                      &(top->cgs), x, fr->cg_cm);
             inc_nrnb(nrnb, eNR_CGCM, homenr);
-            inc_nrnb(nrnb, eNR_RESETX, cg1-cg0);
+            inc_nrnb(nrnb, eNR_RESETX, cg1 - cg0);
         }
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
         {
@@ -1596,13 +1596,13 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             if (PAR(cr))
             {
-                gmx_sumd(2*DIM, mu, cr);
+                gmx_sumd(2 * DIM, mu, cr);
             }
             for (i = 0; i < 2; i++)
             {
                 for (j = 0; j < DIM; j++)
                 {
-                    fr->mu_tot[i][j] = mu[i*DIM + j];
+                    fr->mu_tot[i][j] = mu[i * DIM + j];
                 }
             }
         }
@@ -1614,8 +1614,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             for (j = 0; j < DIM; j++)
             {
-                mu_tot[j] =
-                    (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
+                mu_tot[j]
+                    = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j] + lambda[efptCOUL] * fr->mu_tot[1][j];
             }
         }
     }
@@ -1735,7 +1735,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         dd_force_flop_stop(cr->dd, nrnb);
         if (wcycle)
         {
-            dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
+            dd_cycles_add(cr->dd, cycles_force - cycles_pme, ddCyclF);
         }
     }
 
@@ -1759,8 +1759,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
              * When we do not calculate the virial, fr->f_novirsum = f,
              * so we have already communicated these forces.
              */
-            if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
-                (flags & GMX_FORCE_VIRIAL))
+            if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl
+                && (flags & GMX_FORCE_VIRIAL))
             {
                 dd_move_f(cr->dd, as_rvec_array(fr->f_novirsum->data()), nullptr);
             }
@@ -1904,11 +1904,11 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_state *state, t_commrec *cr, t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top)
 {
-    int             i, m, start, end;
-    gmx_int64_t     step;
-    real            dt = ir->delta_t;
-    real            dvdl_dum;
-    rvec           *savex;
+    int         i, m, start, end;
+    gmx_int64_t step;
+    real        dt = ir->delta_t;
+    real        dvdl_dum;
+    rvec *      savex;
 
     /* We need to allocate one element extra, since we might use
      * (unaligned) 4-wide SIMD loads to access rvec entries.
@@ -1961,7 +1961,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                 /* Reverse the velocity */
                 state->v[i][m] = -state->v[i][m];
                 /* Store the position at t-dt in buf */
-                savex[i][m] = state->x[i][m] + dt*state->v[i][m];
+                savex[i][m] = state->x[i][m] + dt * state->v[i][m];
             }
         }
         /* Shake the positions at t=-dt with the positions at t=0
@@ -1994,9 +1994,8 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 }
 
 
-static void
-integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
-                double *enerout, double *virout)
+static void integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
+                            double *enerout, double *virout)
 {
     double enersum, virsum;
     double invscale, invscale2, invscale3;
@@ -2005,9 +2004,9 @@ integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
     int    ri, offset;
     double tabfactor;
 
-    invscale  = 1.0/scale;
-    invscale2 = invscale*invscale;
-    invscale3 = invscale*invscale2;
+    invscale  = 1.0 / scale;
+    invscale2 = invscale * invscale;
+    invscale3 = invscale * invscale2;
 
     /* Following summation derived from cubic spline definition,
      * Numerical Recipies in C, second edition, p. 113-116.  Exact for
@@ -2036,38 +2035,38 @@ integrate_table(real vdwtab[], real scale, int offstart, int rstart, int rend,
     virsum  = 0.0;
     for (ri = rstart; ri < rend; ++ri)
     {
-        r  = ri*invscale;
+        r  = ri * invscale;
         ea = invscale3;
-        eb = 2.0*invscale2*r;
-        ec = invscale*r*r;
+        eb = 2.0 * invscale2 * r;
+        ec = invscale * r * r;
 
         pa = invscale3;
-        pb = 3.0*invscale2*r;
-        pc = 3.0*invscale*r*r;
-        pd = r*r*r;
+        pb = 3.0 * invscale2 * r;
+        pc = 3.0 * invscale * r * r;
+        pd = r * r * r;
 
         /* this "8" is from the packing in the vdwtab array - perhaps
            should be defined? */
 
-        offset = 8*ri + offstart;
+        offset = 8 * ri + offstart;
         y0     = vdwtab[offset];
-        f      = vdwtab[offset+1];
-        g      = vdwtab[offset+2];
-        h      = vdwtab[offset+3];
+        f      = vdwtab[offset + 1];
+        g      = vdwtab[offset + 2];
+        h      = vdwtab[offset + 3];
 
-        enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2) + g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
-        virsum  +=  f*(pa/4 + pb/3 + pc/2 + pd) + 2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
+        enersum += y0 * (ea / 3 + eb / 2 + ec) + f * (ea / 4 + eb / 3 + ec / 2) + g * (ea / 5 + eb / 4 + ec / 3) + h * (ea / 6 + eb / 5 + ec / 4);
+        virsum  +=  f * (pa / 4 + pb / 3 + pc / 2 + pd) + 2 * g * (pa / 5 + pb / 4 + pc / 3 + pd / 2) + 3 * h * (pa / 6 + pb / 5 + pc / 4 + pd / 3);
     }
-    *enerout = 4.0*M_PI*enersum*tabfactor;
-    *virout  = 4.0*M_PI*virsum*tabfactor;
+    *enerout = 4.0 * M_PI * enersum * tabfactor;
+    *virout  = 4.0 * M_PI * virsum * tabfactor;
 }
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 {
-    double   eners[2], virs[2], enersum, virsum;
-    double   r0, rc3, rc9;
-    int      ri0, ri1, i;
-    real     scale, *vdwtab;
+    double eners[2], virs[2], enersum, virsum;
+    double r0, rc3, rc9;
+    int    ri0, ri1, i;
+    real   scale, *vdwtab;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2083,15 +2082,15 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
-            (fr->vdw_modifier == eintmodPOTSWITCH) ||
-            (fr->vdw_modifier == eintmodFORCESWITCH) ||
-            (fr->vdwtype == evdwSHIFT) ||
-            (fr->vdwtype == evdwSWITCH))
+        if ((fr->vdw_modifier == eintmodPOTSHIFT)
+            || (fr->vdw_modifier == eintmodPOTSWITCH)
+            || (fr->vdw_modifier == eintmodFORCESWITCH)
+            || (fr->vdwtype == evdwSHIFT)
+            || (fr->vdwtype == evdwSWITCH))
         {
-            if (((fr->vdw_modifier == eintmodPOTSWITCH) ||
-                 (fr->vdw_modifier == eintmodFORCESWITCH) ||
-                 (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
+            if (((fr->vdw_modifier == eintmodPOTSWITCH)
+                 || (fr->vdw_modifier == eintmodFORCESWITCH)
+                 || (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
@@ -2107,8 +2106,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             vdwtab = fr->dispersionCorrectionTable->data;
 
             /* Round the cut-offs to exact table values for precision */
-            ri0  = static_cast<int>(floor(fr->rvdw_switch*scale));
-            ri1  = static_cast<int>(ceil(fr->rvdw*scale));
+            ri0 = static_cast<int>(floor(fr->rvdw_switch * scale));
+            ri1 = static_cast<int>(ceil(fr->rvdw * scale));
 
             /* The code below has some support for handling force-switching, i.e.
              * when the force (instead of potential) is switched over a limited
@@ -2126,26 +2125,26 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * we need to calculate the constant shift up to the point where we
              * start modifying the potential.
              */
-            ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
+            ri0 = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
 
-            r0   = ri0/scale;
-            rc3  = r0*r0*r0;
-            rc9  = rc3*rc3*rc3;
+            r0  = ri0 / scale;
+            rc3 = r0 * r0 * r0;
+            rc9 = rc3 * rc3 * rc3;
 
-            if ((fr->vdw_modifier == eintmodFORCESWITCH) ||
-                (fr->vdwtype == evdwSHIFT))
+            if ((fr->vdw_modifier == eintmodFORCESWITCH)
+                || (fr->vdwtype == evdwSHIFT))
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate
                  * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
                  */
-                fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
-                fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
+                fr->enershiftsix    = (real)(-1.0 / (rc3 * rc3)) - 6.0 * vdwtab[8 * ri0];
+                fr->enershifttwelve = (real)( 1.0 / (rc9 * rc3)) - 12.0 * vdwtab[8 * ri0 + 4];
             }
             else if (fr->vdw_modifier == eintmodPOTSHIFT)
             {
-                fr->enershiftsix    = (real)(-1.0/(rc3*rc3));
-                fr->enershifttwelve = (real)( 1.0/(rc9*rc3));
+                fr->enershiftsix    = (real)(-1.0 / (rc3 * rc3));
+                fr->enershifttwelve = (real)( 1.0 / (rc9 * rc3));
             }
 
             /* Add the constant part from 0 to rvdw_switch.
@@ -2153,8 +2152,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * of interactions by 1, as it also counts the self interaction.
              * We will correct for this later.
              */
-            eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
-            eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
+            eners[0] += 4.0 * M_PI * fr->enershiftsix * rc3 / 3.0;
+            eners[1] += 4.0 * M_PI * fr->enershifttwelve * rc3 / 3.0;
 
             /* Calculate the contribution in the range [r0,r1] where we
              * modify the potential. For a pure potential-shift modifier we will
@@ -2177,14 +2176,14 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * all the parts we are missing out to infinity from r0 by
              * calculating the analytical dispersion correction.
              */
-            eners[0] += -4.0*M_PI/(3.0*rc3);
-            eners[1] +=  4.0*M_PI/(9.0*rc9);
-            virs[0]  +=  8.0*M_PI/rc3;
-            virs[1]  += -16.0*M_PI/(3.0*rc9);
+            eners[0] += -4.0 * M_PI / (3.0 * rc3);
+            eners[1] +=  4.0 * M_PI / (9.0 * rc9);
+            virs[0]  +=  8.0 * M_PI / rc3;
+            virs[1]  += -16.0 * M_PI / (3.0 * rc9);
         }
-        else if (fr->vdwtype == evdwCUT ||
-                 EVDW_PME(fr->vdwtype) ||
-                 fr->vdwtype == evdwUSER)
+        else if (fr->vdwtype == evdwCUT
+                 || EVDW_PME(fr->vdwtype)
+                 || fr->vdwtype == evdwUSER)
         {
             if (fr->vdwtype == evdwUSER && fplog)
             {
@@ -2199,20 +2198,20 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * can be used here.
              */
 
-            rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
-            rc9  = rc3*rc3*rc3;
+            rc3 = fr->rvdw * fr->rvdw * fr->rvdw;
+            rc9 = rc3 * rc3 * rc3;
             /* Contribution beyond the cut-off */
-            eners[0] += -4.0*M_PI/(3.0*rc3);
-            eners[1] +=  4.0*M_PI/(9.0*rc9);
+            eners[0] += -4.0 * M_PI / (3.0 * rc3);
+            eners[1] +=  4.0 * M_PI / (9.0 * rc9);
             if (fr->vdw_modifier == eintmodPOTSHIFT)
             {
                 /* Contribution within the cut-off */
-                eners[0] += -4.0*M_PI/(3.0*rc3);
-                eners[1] +=  4.0*M_PI/(3.0*rc9);
+                eners[0] += -4.0 * M_PI / (3.0 * rc3);
+                eners[1] +=  4.0 * M_PI / (3.0 * rc9);
             }
             /* Contribution beyond the cut-off */
-            virs[0]  +=  8.0*M_PI/rc3;
-            virs[1]  += -16.0*M_PI/(3.0*rc9);
+            virs[0] +=  8.0 * M_PI / rc3;
+            virs[1] += -16.0 * M_PI / (3.0 * rc9);
         }
         else
         {
@@ -2230,15 +2229,15 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              */
             fr->enershiftsix = gmx::power6(fr->ewaldcoeff_lj) / 6.0;
 
-            eners[0] += -gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj)/3.0;
-            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj);
+            eners[0] += -gmx::power3(std::sqrt(M_PI) * fr->ewaldcoeff_lj) / 3.0;
+            virs[0]  +=  gmx::power3(std::sqrt(M_PI) * fr->ewaldcoeff_lj);
         }
 
         fr->enerdiffsix    = eners[0];
         fr->enerdifftwelve = eners[1];
         /* The 0.5 is due to the Gromacs definition of the virial */
-        fr->virdiffsix     = 0.5*virs[0];
-        fr->virdifftwelve  = 0.5*virs[1];
+        fr->virdiffsix    = 0.5 * virs[0];
+        fr->virdifftwelve = 0.5 * virs[1];
     }
 }
 
@@ -2259,22 +2258,22 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
 
     if (ir->eDispCorr != edispcNO)
     {
-        bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-                     ir->eDispCorr == edispcAllEnerPres);
-        bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-                     ir->eDispCorr == edispcAllEnerPres);
+        bCorrAll = (ir->eDispCorr == edispcAllEner
+                    || ir->eDispCorr == edispcAllEnerPres);
+        bCorrPres = (ir->eDispCorr == edispcEnerPres
+                     || ir->eDispCorr == edispcAllEnerPres);
 
-        invvol = 1/det(box);
+        invvol = 1 / det(box);
         if (fr->n_tpi)
         {
             /* Only correct for the interactions with the inserted molecule */
-            dens   = (fr->numAtomsForDispersionCorrection - fr->n_tpi)*invvol;
+            dens   = (fr->numAtomsForDispersionCorrection - fr->n_tpi) * invvol;
             ninter = fr->n_tpi;
         }
         else
         {
-            dens   = fr->numAtomsForDispersionCorrection*invvol;
-            ninter = 0.5*fr->numAtomsForDispersionCorrection;
+            dens   = fr->numAtomsForDispersionCorrection * invvol;
+            ninter = 0.5 * fr->numAtomsForDispersionCorrection;
         }
 
         if (ir->efep == efepNO)
@@ -2284,36 +2283,36 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
         }
         else
         {
-            avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
-            avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
+            avcsix    = (1 - lambda) * fr->avcsix[0]    + lambda * fr->avcsix[1];
+            avctwelve = (1 - lambda) * fr->avctwelve[0] + lambda * fr->avctwelve[1];
         }
 
-        enerdiff   = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        *enercorr += avcsix*enerdiff;
+        enerdiff   = ninter * (dens * fr->enerdiffsix - fr->enershiftsix);
+        *enercorr += avcsix * enerdiff;
         dvdlambda  = 0.0;
         if (ir->efep != efepNO)
         {
-            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+            dvdlambda += (fr->avcsix[1] - fr->avcsix[0]) * enerdiff;
         }
         if (bCorrAll)
         {
-            enerdiff   = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            *enercorr += avctwelve*enerdiff;
+            enerdiff   = ninter * (dens * fr->enerdifftwelve - fr->enershifttwelve);
+            *enercorr += avctwelve * enerdiff;
             if (fr->efep != efepNO)
             {
-                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0]) * enerdiff;
             }
         }
 
         if (bCorrPres)
         {
-            svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
+            svir = ninter * dens * avcsix * fr->virdiffsix / 3.0;
             if (ir->eDispCorr == edispcAllEnerPres)
             {
-                svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
+                svir += ninter * dens * avctwelve * fr->virdifftwelve / 3.0;
             }
             /* The factor 2 is because of the Gromacs virial definition */
-            spres = -2.0*invvol*svir*PRESFAC;
+            spres = -2.0 * invvol * svir * PRESFAC;
 
             for (m = 0; m < DIM; m++)
             {
@@ -2387,7 +2386,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
                             const gmx_mtop_t *mtop, rvec x[],
                             gmx_bool bFirst)
 {
-    t_graph        *graph;
+    t_graph *       graph;
     int             mb, as, mol;
     gmx_molblock_t *molb;
 
@@ -2401,11 +2400,11 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
-        if (molb->natoms_mol == 1 ||
-            (!bFirst && mtop->moltype[molb->type].cgs.nr == 1))
+        if (molb->natoms_mol == 1
+            || (!bFirst && mtop->moltype[molb->type].cgs.nr == 1))
         {
             /* Just one atom or charge group in the molecule, no PBC required */
-            as += molb->nmol*molb->natoms_mol;
+            as += molb->nmol * molb->natoms_mol;
         }
         else
         {
@@ -2415,9 +2414,9 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 
             for (mol = 0; mol < molb->nmol; mol++)
             {
-                mk_mshift(fplog, graph, ePBC, box, x+as);
+                mk_mshift(fplog, graph, ePBC, box, x + as);
 
-                shift_self(graph, box, x+as);
+                shift_self(graph, box, x + as);
                 /* The molecule is whole now.
                  * We don't need the second mk_mshift call as in do_pbc_first,
                  * since we no longer need this graph.
@@ -2455,8 +2454,8 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
         {
             int offset, len;
 
-            offset = (natoms*t    )/nth;
-            len    = (natoms*(t + 1))/nth - offset;
+            offset = (natoms * t    ) / nth;
+            len    = (natoms * (t + 1)) / nth - offset;
             put_atoms_in_box(ePBC, box, len, x + offset);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -2578,7 +2577,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, std:
     }
 
     t_lambda *fep = ir->fepvals;
-    *fep_state    = fep->init_fep_state; /* this might overwrite the checkpoint
+    *fep_state = fep->init_fep_state;    /* this might overwrite the checkpoint
                                             if checkpoint is set -- a kludge is in for now
                                             to prevent this.*/
 
@@ -2642,7 +2641,7 @@ void init_md(FILE *fplog,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
              gmx_wallcycle_t wcycle)
 {
-    int  i;
+    int i;
 
     /* Initial values */
     *t = *t0       = ir->init_t;

@@ -61,7 +61,7 @@ static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
                                 rvec av, rvec stddev,
                                 t_commrec *cr_sum)
 {
-    int   *cgindex;
+    int *  cgindex;
     dvec   s1, s2;
     double buf[7];
     int    cg, d, k0, k1, k, nrcg;
@@ -74,16 +74,16 @@ static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
     cgindex = cgs->index;
     for (cg = 0; cg < n; cg++)
     {
-        k0      = cgindex[cg];
-        k1      = cgindex[cg+1];
-        nrcg    = k1 - k0;
+        k0   = cgindex[cg];
+        k1   = cgindex[cg + 1];
+        nrcg = k1 - k0;
         if (nrcg == 1)
         {
             copy_rvec(x[k0], cg_cm);
         }
         else
         {
-            inv_ncg = 1.0/nrcg;
+            inv_ncg = 1.0 / nrcg;
 
             clear_rvec(cg_cm);
             for (k = k0; (k < k1); k++)
@@ -98,7 +98,7 @@ static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
         for (d = 0; d < DIM; d++)
         {
             s1[d] += cg_cm[d];
-            s2[d] += cg_cm[d]*cg_cm[d];
+            s2[d] += cg_cm[d] * cg_cm[d];
         }
     }
 
@@ -106,26 +106,26 @@ static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
     {
         for (d = 0; d < DIM; d++)
         {
-            buf[d]     = s1[d];
-            buf[DIM+d] = s2[d];
+            buf[d]       = s1[d];
+            buf[DIM + d] = s2[d];
         }
         buf[6] = n;
         gmx_sumd(7, buf, cr_sum);
         for (d = 0; d < DIM; d++)
         {
             s1[d] = buf[d];
-            s2[d] = buf[DIM+d];
+            s2[d] = buf[DIM + d];
         }
         n = (int)(buf[6] + 0.5);
     }
 
-    dsvmul(1.0/n, s1, s1);
-    dsvmul(1.0/n, s2, s2);
+    dsvmul(1.0 / n, s1, s1);
+    dsvmul(1.0 / n, s2, s2);
 
     for (d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d] * s1[d]);
     }
 }
 
@@ -141,7 +141,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
     for (d = 0; d < DIM; d++)
     {
         ddbox->tric_dir[d] = 0;
-        for (j = d+1; j < npbcdim; j++)
+        for (j = d + 1; j < npbcdim; j++)
         {
             if (box[j][d] != 0)
             {
@@ -150,7 +150,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
                 {
                     gmx_fatal(FARGS, "Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
                               (*dd_nc)[XX], (*dd_nc)[YY], (*dd_nc)[ZZ],
-                              j+1, box[j][XX], box[j][YY], box[j][ZZ]);
+                              j + 1, box[j][XX], box[j][YY], box[j][ZZ]);
                 }
             }
         }
@@ -168,53 +168,53 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
             if (d == XX || d == YY)
             {
                 /* Normalize such that the "diagonal" is 1 */
-                svmul(1/box[d+1][d+1], box[d+1], v[d+1]);
+                svmul(1 / box[d + 1][d + 1], box[d + 1], v[d + 1]);
                 for (i = 0; i < d; i++)
                 {
-                    v[d+1][i] = 0;
+                    v[d + 1][i] = 0;
                 }
-                inv_skew_fac2 += gmx::square(v[d+1][d]);
+                inv_skew_fac2 += gmx::square(v[d + 1][d]);
                 if (d == XX)
                 {
                     /* Normalize such that the "diagonal" is 1 */
-                    svmul(1/box[d+2][d+2], box[d+2], v[d+2]);
+                    svmul(1 / box[d + 2][d + 2], box[d + 2], v[d + 2]);
                     for (i = 0; i < d; i++)
                     {
-                        v[d+2][i] = 0;
+                        v[d + 2][i] = 0;
                     }
                     /* Make vector [d+2] perpendicular to vector [d+1],
                      * this does not affect the normalization.
                      */
-                    dep = iprod(v[d+1], v[d+2])/norm2(v[d+1]);
+                    dep = iprod(v[d + 1], v[d + 2]) / norm2(v[d + 1]);
                     for (i = 0; i < DIM; i++)
                     {
-                        v[d+2][i] -= dep*v[d+1][i];
+                        v[d + 2][i] -= dep * v[d + 1][i];
                     }
-                    inv_skew_fac2 += gmx::square(v[d+2][d]);
+                    inv_skew_fac2 += gmx::square(v[d + 2][d]);
 
-                    cprod(v[d+1], v[d+2], normal[d]);
+                    cprod(v[d + 1], v[d + 2], normal[d]);
                 }
                 else
                 {
                     /* cross product with (1,0,0) */
                     normal[d][XX] =  0;
-                    normal[d][YY] =  v[d+1][ZZ];
-                    normal[d][ZZ] = -v[d+1][YY];
+                    normal[d][YY] =  v[d + 1][ZZ];
+                    normal[d][ZZ] = -v[d + 1][YY];
                 }
                 if (debug)
                 {
                     fprintf(debug, "box[%d]  %.3f %.3f %.3f\n",
                             d, box[d][XX], box[d][YY], box[d][ZZ]);
-                    for (i = d+1; i < DIM; i++)
+                    for (i = d + 1; i < DIM; i++)
                     {
                         fprintf(debug, "  v[%d]  %.3f %.3f %.3f\n",
                                 i, v[i][XX], v[i][YY], v[i][ZZ]);
                     }
                 }
             }
-            ddbox->skew_fac[d] = 1.0/std::sqrt(inv_skew_fac2);
+            ddbox->skew_fac[d] = 1.0 / std::sqrt(inv_skew_fac2);
             /* Set the normal vector length to skew_fac */
-            dep = ddbox->skew_fac[d]/norm(normal[d]);
+            dep = ddbox->skew_fac[d] / norm(normal[d]);
             svmul(dep, normal[d], normal[d]);
 
             if (debug)
@@ -268,8 +268,8 @@ static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix 
          */
         for (d = ddbox->nboundeddim; d < DIM; d++)
         {
-            b0 = av[d] - GRID_STDDEV_FAC*stddev[d];
-            b1 = av[d] + GRID_STDDEV_FAC*stddev[d];
+            b0 = av[d] - GRID_STDDEV_FAC * stddev[d];
+            b1 = av[d] + GRID_STDDEV_FAC * stddev[d];
             if (debug)
             {
                 fprintf(debug, "Setting global DD grid boundaries to %f - %f\n",

@@ -86,9 +86,9 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
     private:
         virtual std::string helpText() const;
 
-        const char             *name_;
-        const char             *title_;
-        const char             *text_;
+        const char *name_;
+        const char *title_;
+        const char *text_;
 };
 
 } // namespace test

@@ -70,8 +70,8 @@ void pr_ivec_block(FILE *fp, int indent, const char *title, const int vec[], int
         i      = 0;
         while (i < n)
         {
-            j = i+1;
-            while (j < n && vec[j] == vec[j-1]+1)
+            j = i + 1;
+            while (j < n && vec[j] == vec[j - 1] + 1)
             {
                 j++;
             }
@@ -92,8 +92,8 @@ void pr_ivec_block(FILE *fp, int indent, const char *title, const int vec[], int
                 fprintf(fp, "%s[%d,...,%d] = {%d,...,%d}\n",
                         title,
                         bShowNumbers ? i : -1,
-                        bShowNumbers ? j-1 : -1,
-                        vec[i], vec[j-1]);
+                        bShowNumbers ? j - 1 : -1,
+                        vec[i], vec[j - 1]);
                 i = j;
             }
         }

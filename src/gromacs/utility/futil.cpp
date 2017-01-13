@@ -74,14 +74,15 @@
    compressed or .gzipped files. This way we can distinguish between them
    without having to change the semantics of reading from/writing to files)
  */
-typedef struct t_pstack {
-    FILE            *fp;
+typedef struct t_pstack
+{
+    FILE *           fp;
     struct t_pstack *prev;
 } t_pstack;
 
-static t_pstack    *pstack           = nullptr;
-static bool         bUnbuffered      = false;
-static int          s_maxBackupCount = 0;
+static t_pstack *pstack           = nullptr;
+static bool      bUnbuffered      = false;
+static int       s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
@@ -94,7 +95,7 @@ namespace
 //! Global library file finder; stores the object set with setLibraryFileFinder().
 const DataFileFinder *g_libFileFinder;
 //! Default library file finder if nothing is set.
-const DataFileFinder  g_defaultLibFileFinder;
+const DataFileFinder g_defaultLibFileFinder;
 }   // namespace
 
 const DataFileFinder &getLibraryFileFinder()
@@ -370,13 +371,13 @@ gmx_bool gmx_fexist(const char *fname)
 
 static char *backup_fn(const char *file)
 {
-    int          i, count = 1;
-    char        *directory, *fn;
-    char        *buf;
+    int   i, count = 1;
+    char *directory, *fn;
+    char *buf;
 
     smalloc(buf, GMX_PATH_MAX);
 
-    for (i = strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
+    for (i = strlen(file) - 1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--)
     {
         ;
     }
@@ -388,19 +389,18 @@ static char *backup_fn(const char *file)
     {
         directory    = gmx_strdup(file);
         directory[i] = '\0';
-        fn           = gmx_strdup(file+i+1);
+        fn           = gmx_strdup(file + i + 1);
     }
     else
     {
-        directory    = gmx_strdup(".");
-        fn           = gmx_strdup(file);
+        directory = gmx_strdup(".");
+        fn        = gmx_strdup(file);
     }
     do
     {
         sprintf(buf, "%s/#%s.%d#", directory, fn, count);
         count++;
-    }
-    while ((count <= s_maxBackupCount) && gmx_fexist(buf));
+    } while ((count <= s_maxBackupCount) && gmx_fexist(buf));
 
     /* Arbitrarily bail out */
     if (count > s_maxBackupCount)
@@ -445,7 +445,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #ifdef SKIP_FFOPS
     return fopen(file, mode);
 #else
-    FILE    *ff = nullptr;
+    FILE *   ff = nullptr;
     char     buf[256], *bufsize = nullptr, *ptr;
     gmx_bool bRead;
     int      bs;
@@ -490,7 +490,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
             }
             else
             {
-                snew(ptr, bs+8);
+                snew(ptr, bs + 8);
                 if (setvbuf(ff, ptr, _IOFBF, bs) != 0)
                 {
                     gmx_file("Buffering File");
@@ -529,10 +529,10 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
     try
     {
         const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
-        std::string                result =
-            finder.findFile(gmx::DataFileOptions(file)
-                                .includeCurrentDir(bAddCWD)
-                                .throwIfNotFound(bFatal));
+        std::string                result
+            = finder.findFile(gmx::DataFileOptions(file)
+                                  .includeCurrentDir(bAddCWD)
+                                  .throwIfNotFound(bFatal));
         if (!result.empty())
         {
             return gmx_strdup(result.c_str());
@@ -547,10 +547,10 @@ FILE *low_libopen(const char *file, gmx_bool bFatal)
     try
     {
         const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
-        FILE *fp =
-            finder.openFile(gmx::DataFileOptions(file)
-                                .includeCurrentDir(true)
-                                .throwIfNotFound(bFatal));
+        FILE *                     fp
+            = finder.openFile(gmx::DataFileOptions(file)
+                                  .includeCurrentDir(true)
+                                  .throwIfNotFound(bFatal));
         return fp;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -575,7 +575,7 @@ void gmx_tmpnam(char *buf)
     {
         gmx_fatal(FARGS, "Buf passed to gmx_tmpnam must be at least 7 bytes long");
     }
-    for (i = len-6; (i < len); i++)
+    for (i = len - 6; (i < len); i++)
     {
         buf[i] = 'X';
     }
@@ -616,7 +616,7 @@ FILE *gmx_fopen_temporary(char *buf)
     {
         gmx_fatal(FARGS, "Buf passed to gmx_fopentmp must be at least 7 bytes long");
     }
-    for (i = len-6; (i < len); i++)
+    for (i = len - 6; (i < len); i++)
     {
         buf[i] = 'X';
     }
@@ -659,7 +659,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
     return rename(oldname, newname);
 #else
     if (MoveFileEx(oldname, newname,
-                   MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
+                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
     {
         return 0;
     }
@@ -673,7 +673,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty)
 {
 /* the full copy buffer size: */
-#define FILECOPY_BUFSIZE (1<<16)
+#define FILECOPY_BUFSIZE (1 << 16)
     FILE *in  = nullptr;
     FILE *out = nullptr;
     char *buf;

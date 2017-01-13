@@ -70,7 +70,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-enum {
+enum
+{
     euSel, euRect, euTric, euCompact, euNR
 };
 
@@ -83,12 +84,12 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     real      fac, min_dist2;
     rvec      dx, xtest, box_center;
     int       nmol, imol_center;
-    int      *molind;
+    int *     molind;
     gmx_bool *bMol, *bTmp;
-    rvec     *m_com, *m_shift;
+    rvec *    m_com, *m_shift;
     t_pbc     pbc;
-    int      *cluster;
-    int      *added;
+    int *     cluster;
+    int *     added;
     int       ncluster, nadded;
     real      tmp_r2;
 
@@ -115,10 +116,10 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
         bTmp[ai] = TRUE;
         /* Binary search assuming the molecules are sorted */
         j0 = 0;
-        j1 = nmol-1;
+        j1 = nmol - 1;
         while (j0 < j1)
         {
-            if (ai < molind[j0+1])
+            if (ai < molind[j0 + 1])
             {
                 j1 = j0;
             }
@@ -128,8 +129,8 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
             }
             else
             {
-                jj = (j0+j1)/2;
-                if (ai < molind[jj+1])
+                jj = (j0 + j1) / 2;
+                if (ai < molind[jj + 1])
                 {
                     j1 = jj;
                 }
@@ -144,28 +145,28 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     /* Double check whether all atoms in all molecules that are marked are part
      * of the cluster. Simultaneously compute the center of geometry.
      */
-    min_dist2   = 10*gmx::square(trace(box));
+    min_dist2   = 10 * gmx::square(trace(box));
     imol_center = -1;
     ncluster    = 0;
     for (i = 0; i < nmol; i++)
     {
-        for (j = molind[i]; j < molind[i+1]; j++)
+        for (j = molind[i]; j < molind[i + 1]; j++)
         {
             if (bMol[i] && !bTmp[j])
             {
-                gmx_fatal(FARGS, "Molecule %d marked for clustering but not atom %d in it - check your index!", i+1, j+1);
+                gmx_fatal(FARGS, "Molecule %d marked for clustering but not atom %d in it - check your index!", i + 1, j + 1);
             }
             else if (!bMol[i] && bTmp[j])
             {
-                gmx_fatal(FARGS, "Atom %d marked for clustering but not molecule %d - this is an internal error...", j+1, i+1);
+                gmx_fatal(FARGS, "Atom %d marked for clustering but not molecule %d - this is an internal error...", j + 1, i + 1);
             }
             else if (bMol[i])
             {
                 /* Make molecule whole, move 2nd and higher atom to same periodicity as 1st atom in molecule */
                 if (j > molind[i])
                 {
-                    pbc_dx(&pbc, x[j], x[j-1], dx);
-                    rvec_add(x[j-1], dx, x[j]);
+                    pbc_dx(&pbc, x[j], x[j - 1], dx);
+                    rvec_add(x[j - 1], dx, x[j]);
                 }
                 /* Compute center of geometry of molecule - m_com[i] was zeroed when we did snew() on it! */
                 rvec_inc(m_com[i], x[j]);
@@ -174,7 +175,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
         if (bMol[i])
         {
             /* Normalize center of geometry */
-            fac = 1.0/(molind[i+1]-molind[i]);
+            fac = 1.0 / (molind[i + 1] - molind[i]);
             for (m = 0; (m < DIM); m++)
             {
                 m_com[i][m] *= fac;
@@ -211,9 +212,9 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     while (nadded < ncluster)
     {
         /* Find min distance between cluster molecules and those remaining to be added */
-        min_dist2   = 10*gmx::square(trace(box));
-        imin        = -1;
-        jmin        = -1;
+        min_dist2 = 10 * gmx::square(trace(box));
+        imin      = -1;
+        jmin      = -1;
         /* Loop over added mols */
         for (i = 0; i < nadded; i++)
         {
@@ -229,24 +230,24 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
                     tmp_r2 = iprod(dx, dx);
                     if (tmp_r2 < min_dist2)
                     {
-                        min_dist2   = tmp_r2;
-                        imin        = ai;
-                        jmin        = aj;
+                        min_dist2 = tmp_r2;
+                        imin      = ai;
+                        jmin      = aj;
                     }
                 }
             }
         }
 
         /* Add the best molecule */
-        added[nadded++]   = jmin;
-        bMol[jmin]        = FALSE;
+        added[nadded++] = jmin;
+        bMol[jmin]      = FALSE;
         /* Calculate the shift from the ai molecule */
         pbc_dx(&pbc, m_com[jmin], m_com[imin], dx);
         rvec_add(m_com[imin], dx, xtest);
         rvec_sub(xtest, m_com[jmin], m_shift[jmin]);
         rvec_inc(m_com[jmin], m_shift[jmin]);
 
-        for (j = molind[jmin]; j < molind[jmin+1]; j++)
+        for (j = molind[jmin]; j < molind[jmin + 1]; j++)
         {
             rvec_inc(x[j], m_shift[jmin]);
         }
@@ -268,12 +269,12 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
                                     int natoms, t_atom atom[],
                                     int ePBC, matrix box, rvec x[])
 {
-    int     i, j;
-    int     d;
-    rvec    com, new_com, shift, box_center;
-    real    m;
-    double  mtot;
-    t_pbc   pbc;
+    int    i, j;
+    int    d;
+    rvec   com, new_com, shift, box_center;
+    real   m;
+    double mtot;
+    t_pbc  pbc;
 
     calc_box_center(ecenter, box, box_center);
     set_pbc(&pbc, ePBC, box);
@@ -286,17 +287,17 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         /* calc COM */
         clear_rvec(com);
         mtot = 0;
-        for (j = mols->index[i]; (j < mols->index[i+1] && j < natoms); j++)
+        for (j = mols->index[i]; (j < mols->index[i + 1] && j < natoms); j++)
         {
             m = atom[j].m;
             for (d = 0; d < DIM; d++)
             {
-                com[d] += m*x[j][d];
+                com[d] += m * x[j][d];
             }
             mtot += m;
         }
         /* calculate final COM */
-        svmul(1.0/mtot, com, com);
+        svmul(1.0 / mtot, com, com);
 
         /* check if COM is outside box */
         copy_rvec(com, new_com);
@@ -318,10 +319,10 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
             if (debug)
             {
                 fprintf(debug, "\nShifting position of molecule %d "
-                        "by %8.3f  %8.3f  %8.3f\n", i+1,
+                        "by %8.3f  %8.3f  %8.3f\n", i + 1,
                         shift[XX], shift[YY], shift[ZZ]);
             }
-            for (j = mols->index[i]; (j < mols->index[i+1] && j < natoms); j++)
+            for (j = mols->index[i]; (j < mols->index[i + 1] && j < natoms); j++)
             {
                 rvec_inc(x[j], shift);
             }
@@ -345,13 +346,13 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     res_start = 0;
     clear_rvec(com);
     mtot = 0;
-    for (i = 0; i < natoms+1; i++)
+    for (i = 0; i < natoms + 1; i++)
     {
         if (i == natoms || (presnr != atom[i].resind && presnr != NOTSET))
         {
             /* calculate final COM */
             res_end = i;
-            svmul(1.0/mtot, com, com);
+            svmul(1.0 / mtot, com, com);
 
             /* check if COM is outside box */
             copy_rvec(com, new_com);
@@ -373,8 +374,8 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
                 if (debug)
                 {
                     fprintf(debug, "\nShifting position of residue %d (atoms %d-%d) "
-                            "by %g,%g,%g\n", atom[res_start].resind+1,
-                            res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
+                            "by %g,%g,%g\n", atom[res_start].resind + 1,
+                            res_start + 1, res_end + 1, shift[XX], shift[YY], shift[ZZ]);
                 }
                 for (j = res_start; j < res_end; j++)
                 {
@@ -393,7 +394,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             m = atom[i].m;
             for (d = 0; d < DIM; d++)
             {
-                com[d] += m*x[i][d];
+                com[d] += m * x[i][d];
             }
             mtot += m;
 
@@ -429,7 +430,7 @@ static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, int ci[])
         calc_box_center(ecenter, box, box_center);
         for (m = 0; m < DIM; m++)
         {
-            dx[m] = box_center[m]-(cmin[m]+cmax[m])*0.5;
+            dx[m] = box_center[m] - (cmin[m] + cmax[m]) * 0.5;
         }
 
         for (i = 0; i < n; i++)
@@ -451,12 +452,11 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
     {
         fnr /= 10;
         nd++;
-    }
-    while (fnr > 0);
+    } while (fnr > 0);
 
     if (nd < ndigit)
     {
-        std::strncat(out_file, "00000000000", ndigit-nd);
+        std::strncat(out_file, "00000000000", ndigit - nd);
     }
     sprintf(nbuf, "%d.", file_nr);
     std::strcat(out_file, nbuf);
@@ -473,8 +473,8 @@ void check_trr(const char *fn)
 
 void do_trunc(const char *fn, real t0)
 {
-    t_fileio        *in;
-    FILE            *fp;
+    t_fileio *       in;
+    FILE *           fp;
     gmx_bool         bStop, bOK;
     gmx_trr_header_t sh;
     gmx_off_t        fpos;
@@ -490,8 +490,8 @@ void do_trunc(const char *fn, real t0)
     /* Check whether this is a .trr file */
     check_trr(fn);
 
-    in   = gmx_trr_open(fn, "r");
-    fp   = gmx_fio_getfp(in);
+    in = gmx_trr_open(fn, "r");
+    fp = gmx_fio_getfp(in);
     if (fp == nullptr)
     {
         fprintf(stderr, "Sorry, can not trunc %s, truncation of this filetype is not supported\n", fn);
@@ -570,9 +570,9 @@ static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
 {
     gmx_mtop_t *mtop = nullptr;
 
-    if (fn2bTPX(tps_file) &&
-        efTNG != fn2ftp(input_file) &&
-        efTNG == fn2ftp(output_file))
+    if (fn2bTPX(tps_file)
+        && efTNG != fn2ftp(input_file)
+        && efTNG == fn2ftp(output_file))
     {
         int temp_natoms = -1;
         snew(mtop, 1);
@@ -727,7 +727,7 @@ int gmx_trjconv(int argc, char *argv[])
         "will not be written."
     };
 
-    int         pbc_enum;
+    int pbc_enum;
     enum
     {
         epSel,
@@ -747,18 +747,18 @@ int gmx_trjconv(int argc, char *argv[])
     };
 
     int         unitcell_enum;
-    const char *unitcell_opt[euNR+1] =
+    const char *unitcell_opt[euNR + 1] =
     { nullptr, "rect", "tric", "compact", nullptr };
 
     enum
     {
         ecSel, ecTric, ecRect, ecZero, ecNR
     };
-    const char *center_opt[ecNR+1] =
+    const char *center_opt[ecNR + 1] =
     { nullptr, "tric", "rect", "zero", nullptr };
-    int         ecenter;
+    int ecenter;
 
-    int         fit_enum;
+    int fit_enum;
     enum
     {
         efSel, efNone, efFit, efFitXY, efReset, efResetXY, efPFit, efNR
@@ -769,14 +769,14 @@ int gmx_trjconv(int argc, char *argv[])
         "progressive", nullptr
     };
 
-    static gmx_bool  bSeparate     = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
-    static gmx_bool  bCenter       = FALSE;
-    static int       skip_nr       = 1, ndec = 3, nzero = 0;
-    static real      tzero         = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
-    static rvec      newbox        = {0, 0, 0}, shift = {0, 0, 0}, trans = {0, 0, 0};
-    static char     *exec_command  = nullptr;
-    static real      dropunder     = 0, dropover = 0;
-    static gmx_bool  bRound        = FALSE;
+    static gmx_bool bSeparate    = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
+    static gmx_bool bCenter      = FALSE;
+    static int      skip_nr      = 1, ndec = 3, nzero = 0;
+    static real     tzero        = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
+    static rvec     newbox       = {0, 0, 0}, shift = {0, 0, 0}, trans = {0, 0, 0};
+    static char *   exec_command = nullptr;
+    static real     dropunder    = 0, dropover = 0;
+    static gmx_bool bRound       = FALSE;
 
     t_pargs
         pa[] =
@@ -858,37 +858,37 @@ int gmx_trjconv(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE             *out    = nullptr;
-    t_trxstatus      *trxout = nullptr;
-    t_trxstatus      *trxin;
-    int               file_nr;
-    t_trxframe        fr, frout;
-    int               flags;
-    rvec             *xmem  = nullptr, *vmem = nullptr, *fmem = nullptr;
-    rvec             *xp    = nullptr, x_shift, hbox;
-    real             *w_rls = nullptr;
-    int               m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
+    FILE *       out    = nullptr;
+    t_trxstatus *trxout = nullptr;
+    t_trxstatus *trxin;
+    int          file_nr;
+    t_trxframe   fr, frout;
+    int          flags;
+    rvec *       xmem  = nullptr, *vmem = nullptr, *fmem = nullptr;
+    rvec *       xp    = nullptr, x_shift, hbox;
+    real *       w_rls = nullptr;
+    int          m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
     t_topology        top;
-    gmx_mtop_t       *mtop  = nullptr;
+    gmx_mtop_t *      mtop  = nullptr;
     gmx_conect        gc    = nullptr;
     int               ePBC  = -1;
-    t_atoms          *atoms = nullptr, useatoms;
+    t_atoms *         atoms = nullptr, useatoms;
     matrix            top_box;
-    int              *index, *cindex;
-    char             *grpnm;
-    int              *frindex, nrfri;
-    char             *frname;
+    int *             index, *cindex;
+    char *            grpnm;
+    int *             frindex, nrfri;
+    char *            frname;
     int               ifit, my_clust = -1;
-    int              *ind_fit;
-    char             *gn_fit;
-    t_cluster_ndx    *clust           = nullptr;
-    t_trxstatus     **clust_status    = nullptr;
-    int              *clust_status_id = nullptr;
+    int *             ind_fit;
+    char *            gn_fit;
+    t_cluster_ndx *   clust           = nullptr;
+    t_trxstatus **    clust_status    = nullptr;
+    int *             clust_status_id = nullptr;
     int               ntrxopen        = 0;
-    int              *nfwritten       = nullptr;
+    int *             nfwritten       = nullptr;
     int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
-    double          **dropval;
+    double **         dropval;
     real              tshift = 0, t0 = -1, dt = 0.001, prec;
     gmx_bool          bFit, bPFit, bReset;
     int               nfitdim;
@@ -899,14 +899,14 @@ int gmx_trjconv(int argc, char *argv[])
     gmx_bool          bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
     gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
     gmx_bool          bWriteFrame, bSplitHere;
-    const char       *top_file, *in_file, *out_file = nullptr;
+    const char *      top_file, *in_file, *out_file = nullptr;
     char              out_file2[256], *charpt;
-    char             *outf_base = nullptr;
-    const char       *outf_ext  = nullptr;
+    char *            outf_base = nullptr;
+    const char *      outf_ext  = nullptr;
     char              top_title[256], title[256], filemode[5];
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",   nullptr,      ffREAD  },
         { efTRO, "-o",   nullptr,      ffWRITE },
         { efTPS, nullptr,   nullptr,      ffOPTRD },
@@ -918,8 +918,8 @@ int gmx_trjconv(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW |
-                           PCA_TIME_UNIT,
+                           PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW
+                           | PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc,
                            0, nullptr, &oenv))
     {
@@ -1015,17 +1015,17 @@ int gmx_trjconv(int argc, char *argv[])
 
         /* Determine output type */
         out_file = opt2fn("-o", NFILE, fnm);
-        int ftp  = fn2ftp(out_file);
+        int ftp = fn2ftp(out_file);
         fprintf(stderr, "Will write %s: %s\n", ftp2ext(ftp), ftp2desc(ftp));
         bNeedPrec = (ftp == efXTC || ftp == efGRO);
         int ftpin = fn2ftp(in_file);
         if (bVels)
         {
             /* check if velocities are possible in input and output files */
-            bVels = (ftp == efTRR || ftp == efGRO ||
-                     ftp == efG96 || ftp == efTNG)
-                && (ftpin == efTRR || ftpin == efGRO ||
-                    ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
+            bVels = (ftp == efTRR || ftp == efGRO
+                     || ftp == efG96 || ftp == efTNG)
+                && (ftpin == efTRR || ftpin == efGRO
+                    || ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
@@ -1034,7 +1034,7 @@ int gmx_trjconv(int argc, char *argv[])
             {
                 gmx_fatal(FARGS, "Output file name '%s' does not contain a '.'", out_file);
             }
-            outf_base = gmx_strdup(out_file);
+            outf_base                      = gmx_strdup(out_file);
             outf_base[outf_ext - out_file] = '\0';
         }
 
@@ -1053,12 +1053,12 @@ int gmx_trjconv(int argc, char *argv[])
             /* Check for number of files disabled, as FOPEN_MAX is not the correct
              * number to check for. In my linux box it is only 16.
              */
-            if (0 && (clust->clust->nr > FOPEN_MAX-4))
+            if (0 && (clust->clust->nr > FOPEN_MAX - 4))
             {
                 gmx_fatal(FARGS, "Can not open enough (%d) files to write all the"
                           " trajectories.\ntry splitting the index file in %d parts.\n"
                           "FOPEN_MAX = %d",
-                          clust->clust->nr, 1+clust->clust->nr/FOPEN_MAX, FOPEN_MAX);
+                          clust->clust->nr, 1 + clust->clust->nr / FOPEN_MAX, FOPEN_MAX);
             }
             gmx_warning("The -sub option could require as many open output files as there are\n"
                         "index groups in the file (%d). If you get I/O errors opening new files,\n"
@@ -1084,9 +1084,9 @@ int gmx_trjconv(int argc, char *argv[])
         mtop = read_mtop_for_tng(top_file, in_file, out_file);
 
         /* Determine whether to read a topology */
-        bTPS = (ftp2bSet(efTPS, NFILE, fnm) ||
-                bRmPBC || bReset || bPBCcomMol || bCluster ||
-                (ftp == efGRO) || (ftp == efPDB) || bCONECT);
+        bTPS = (ftp2bSet(efTPS, NFILE, fnm)
+                || bRmPBC || bReset || bPBCcomMol || bCluster
+                || (ftp == efGRO) || (ftp == efPDB) || bCONECT);
 
         /* Determine if when can read index groups */
         bIndex = (bIndex || bTPS);
@@ -1253,9 +1253,9 @@ int gmx_trjconv(int argc, char *argv[])
                 useatoms.atom[i]     = atoms->atom[index[i]];
                 if (atoms->havePdbInfo)
                 {
-                    useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
+                    useatoms.pdbinfo[i] = atoms->pdbinfo[index[i]];
                 }
-                useatoms.nres        = std::max(useatoms.nres, useatoms.atom[i].resind+1);
+                useatoms.nres = std::max(useatoms.nres, useatoms.atom[i].resind + 1);
             }
             useatoms.nr = nout;
         }
@@ -1281,17 +1281,17 @@ int gmx_trjconv(int argc, char *argv[])
         bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
         if (fr.bPrec)
         {
-            fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1/fr.prec);
+            fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1 / fr.prec);
         }
         if (bNeedPrec)
         {
             if (bSetPrec || !fr.bPrec)
             {
-                fprintf(stderr, "\nSetting output precision to %g (nm)\n", 1/prec);
+                fprintf(stderr, "\nSetting output precision to %g (nm)\n", 1 / prec);
             }
             else
             {
-                fprintf(stderr, "Using output precision of %g (nm)\n", 1/prec);
+                fprintf(stderr, "Using output precision of %g (nm)\n", 1 / prec);
             }
         }
 
@@ -1303,7 +1303,7 @@ int gmx_trjconv(int argc, char *argv[])
 
             if (bSetTime)
             {
-                tshift = tzero-fr.time;
+                tshift = tzero - fr.time;
             }
             else
             {
@@ -1321,7 +1321,7 @@ int gmx_trjconv(int argc, char *argv[])
                         gmx_fatal(FARGS,
                                   "Index[%d] %d is larger than the number of atoms in the\n"
                                   "trajectory file (%d). There is a mismatch in the contents\n"
-                                  "of your -f, -s and/or -n files.", i, index[i]+1, natoms);
+                                  "of your -f, -s and/or -n files.", i, index[i] + 1, natoms);
                     }
                     bCopy = bCopy || (i != index[i]);
                 }
@@ -1403,8 +1403,8 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         my_clust = clust->inv_clust[frame];
                     }
-                    if ((my_clust < 0) || (my_clust >= clust->clust->nr) ||
-                        (my_clust == -1))
+                    if ((my_clust < 0) || (my_clust >= clust->clust->nr)
+                        || (my_clust == -1))
                     {
                         my_clust = -1;
                     }
@@ -1452,13 +1452,13 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         if (!bDTset)
                         {
-                            dt     = fr.time-t0;
+                            dt     = fr.time - t0;
                             bDTset = TRUE;
                         }
                     }
                     /* This is not very elegant, as one can not dump a frame after
                      * a timestep with is more than twice as small as the first one. */
-                    bDumpFrame = (fr.time > tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
+                    bDumpFrame = (fr.time > tdump - 0.5 * dt) && (fr.time <= tdump + 0.5 * dt);
                 }
                 else
                 {
@@ -1470,7 +1470,7 @@ int gmx_trjconv(int argc, char *argv[])
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        hbox[d] = 0.5*fr.box[d][d];
+                        hbox[d] = 0.5 * fr.box[d][d];
                     }
                     for (i = 0; i < natoms; i++)
                     {
@@ -1478,18 +1478,18 @@ int gmx_trjconv(int argc, char *argv[])
                         {
                             rvec_dec(fr.x[i], x_shift);
                         }
-                        for (m = DIM-1; m >= 0; m--)
+                        for (m = DIM - 1; m >= 0; m--)
                         {
                             if (hbox[m] > 0)
                             {
-                                while (fr.x[i][m]-xp[i][m] <= -hbox[m])
+                                while (fr.x[i][m] - xp[i][m] <= -hbox[m])
                                 {
                                     for (d = 0; d <= m; d++)
                                     {
                                         fr.x[i][d] += fr.box[m][d];
                                     }
                                 }
-                                while (fr.x[i][m]-xp[i][m] > hbox[m])
+                                while (fr.x[i][m] - xp[i][m] > hbox[m])
                                 {
                                     for (d = 0; d <= m; d++)
                                     {
@@ -1545,12 +1545,12 @@ int gmx_trjconv(int argc, char *argv[])
                     fprintf(debug, "dumping %d\n", frame);
                 }
 
-                bWriteFrame =
-                    ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
+                bWriteFrame
+                    = ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
 
                 if (bWriteFrame && (bDropUnder || bDropOver))
                 {
-                    while (dropval[0][drop1] < fr.time && drop1+1 < ndrop)
+                    while (dropval[0][drop1] < fr.time && drop1 + 1 < ndrop)
                     {
                         drop0 = drop1;
                         drop1++;
@@ -1564,8 +1564,8 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         dropuse = drop1;
                     }
-                    if ((bDropUnder && dropval[1][dropuse] < dropunder) ||
-                        (bDropOver && dropval[1][dropuse] > dropover))
+                    if ((bDropUnder && dropval[1][dropuse] < dropunder)
+                        || (bDropOver && dropval[1][dropuse] > dropover))
                     {
                         bWriteFrame = FALSE;
                     }
@@ -1584,7 +1584,7 @@ int gmx_trjconv(int argc, char *argv[])
                     /* calc new time */
                     if (bTimeStep)
                     {
-                        frout_time = tzero + frame*timestep;
+                        frout_time = tzero + frame * timestep;
                     }
                     else
                     if (bSetTime)
@@ -1609,8 +1609,8 @@ int gmx_trjconv(int argc, char *argv[])
                         else
                         {
                             /* round() is not C89 compatible, so we do this:  */
-                            bDoIt = bRmod(std::floor(frout_time+0.5), std::floor(tzero+0.5),
-                                          std::floor(delta_t+0.5));
+                            bDoIt = bRmod(std::floor(frout_time + 0.5), std::floor(tzero + 0.5),
+                                          std::floor(delta_t + 0.5));
                         }
                     }
 
@@ -1725,7 +1725,7 @@ int gmx_trjconv(int argc, char *argv[])
                             {
                                 for (d = 0; d < DIM; d++)
                                 {
-                                    frout.x[i][d] += outframe*shift[d];
+                                    frout.x[i][d] += outframe * shift[d];
                                 }
                             }
                         }
@@ -1737,9 +1737,9 @@ int gmx_trjconv(int argc, char *argv[])
                         else
                         {
                             /* round() is not C89 compatible, so we do this: */
-                            bSplitHere = bSplit && bRmod(std::floor(frout.time+0.5),
-                                                         std::floor(tzero+0.5),
-                                                         std::floor(split_t+0.5));
+                            bSplitHere = bSplit && bRmod(std::floor(frout.time + 0.5),
+                                                         std::floor(tzero + 0.5),
+                                                         std::floor(split_t + 0.5));
                         }
                         if (bSeparate || bSplitHere)
                         {
@@ -1782,9 +1782,9 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         write_trxframe(clust_status[my_clust], &frout, gc);
                                         nfwritten[my_clust]++;
-                                        if (nfwritten[my_clust] ==
-                                            (clust->clust->index[my_clust+1]-
-                                             clust->clust->index[my_clust]))
+                                        if (nfwritten[my_clust]
+                                            == (clust->clust->index[my_clust + 1]
+                                                - clust->clust->index[my_clust]))
                                         {
                                             close_trx(clust_status[my_clust]);
                                             clust_status[my_clust]    = nullptr;
@@ -1843,9 +1843,9 @@ int gmx_trjconv(int argc, char *argv[])
                                             {
                                                 frout.bAtoms = TRUE;
                                             }
-                                            frout.atoms  = &useatoms;
-                                            frout.bStep  = FALSE;
-                                            frout.bTime  = FALSE;
+                                            frout.atoms = &useatoms;
+                                            frout.bStep = FALSE;
+                                            frout.bTime = FALSE;
                                         }
                                         else
                                         {
@@ -1874,7 +1874,7 @@ int gmx_trjconv(int argc, char *argv[])
                         if (bExec)
                         {
                             char c[255];
-                            sprintf(c, "%s  %d", exec_command, file_nr-1);
+                            sprintf(c, "%s  %d", exec_command, file_nr - 1);
                             /*fprintf(stderr,"Executing '%s'\n",c);*/
                             if (0 != system(c))
                             {
@@ -1886,8 +1886,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
                 frame++;
                 bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
-            }
-            while (!(bTDump && bDumpFrame) && bHaveNextFrame);
+            } while (!(bTDump && bDumpFrame) && bHaveNextFrame);
         }
 
         if (!bHaveFirstFrame || (bTDump && !bDumpFrame))

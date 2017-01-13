@@ -99,10 +99,10 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
  * \param[in]     pbc       Information structure about periodicity.
  * \param[out]    value     The value of the pull coordinate.
  */
-void get_pull_coord_value(struct pull_t      *pull,
+void get_pull_coord_value(struct pull_t *     pull,
                           int                 coord_ind,
                           const struct t_pbc *pbc,
-                          double             *value);
+                          double *            value);
 
 
 /*! \brief Registers the provider of an external potential for a coordinate.
@@ -128,7 +128,7 @@ void get_pull_coord_value(struct pull_t      *pull,
  */
 void register_external_pull_potential(struct pull_t *pull,
                                       int            coord_index,
-                                      const char    *provider);
+                                      const char *   provider);
 
 
 /*! \brief Apply forces of an external potential to a pull coordinate.
@@ -148,11 +148,11 @@ void register_external_pull_potential(struct pull_t *pull,
  * \param[in,out] force          The force buffer.
  * \param[in,out] virial         The virial, can be NULL.
  */
-void apply_external_pull_coord_force(struct pull_t   *pull,
+void apply_external_pull_coord_force(struct pull_t *  pull,
                                      int              coord_index,
                                      double           coord_force,
                                      const t_mdatoms *mdatoms,
-                                     rvec            *force,
+                                     rvec *           force,
                                      tensor           virial);
 
 
@@ -228,13 +228,13 @@ void dd_make_local_pull_groups(t_commrec *cr,
  * \param Flags       Flags passed over from main, used to determine
  *                    whether or not we are appending.
  */
-struct pull_t *init_pull(FILE                   *fplog,
-                         const pull_params_t    *pull_params,
-                         const t_inputrec       *ir,
+struct pull_t *init_pull(FILE *                  fplog,
+                         const pull_params_t *   pull_params,
+                         const t_inputrec *      ir,
                          int                     nfile,
                          const t_filenm          fnm[],
-                         const gmx_mtop_t       *mtop,
-                         t_commrec             * cr,
+                         const gmx_mtop_t *      mtop,
+                         t_commrec *             cr,
                          const gmx_output_env_t *oenv,
                          real                    lambda,
                          gmx_bool                bOutFile,
@@ -268,13 +268,13 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(t_commrec        *cr,
-                    struct pull_t    *pull,
-                    t_mdatoms        *md,
-                    struct t_pbc     *pbc,
-                    double            t,
-                    rvec              x[],
-                    rvec             *xp);
+void pull_calc_coms(t_commrec *    cr,
+                    struct pull_t *pull,
+                    t_mdatoms *    md,
+                    struct t_pbc * pbc,
+                    double         t,
+                    rvec           x[],
+                    rvec *         xp);
 
 
 /*! \brief Returns if we have pull coordinates with potential pulling.
@@ -302,7 +302,7 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
  * \returns The maximume distance
  */
 real max_pull_distance2(const pull_coord_work_t *pcrd,
-                        const t_pbc             *pbc);
+                        const t_pbc *            pbc);
 
 #ifdef __cplusplus
 }

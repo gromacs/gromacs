@@ -65,16 +65,16 @@
 static void calc_dist(int nind, int index[], const rvec x[], int ePBC, matrix box,
                       real **d)
 {
-    int      i, j;
-    rvec     dx;
-    real     temp2;
-    t_pbc    pbc;
+    int   i, j;
+    rvec  dx;
+    real  temp2;
+    t_pbc pbc;
 
     set_pbc(&pbc, ePBC, box);
-    for (i = 0; (i < nind-1); i++)
+    for (i = 0; (i < nind - 1); i++)
     {
         const real *xi = x[index[i]];
-        for (j = i+1; (j < nind); j++)
+        for (j = i + 1; (j < nind); j++)
         {
             pbc_dx(&pbc, xi, x[index[j]], dx);
             temp2   = norm2(dx);
@@ -88,17 +88,17 @@ static void calc_dist_tot(int nind, int index[], rvec x[],
                           real **d, real **dtot, real **dtot2,
                           gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
 {
-    int      i, j;
-    real    *xi;
-    real     temp, temp2, temp1_3;
-    rvec     dx;
-    t_pbc    pbc;
+    int   i, j;
+    real *xi;
+    real  temp, temp2, temp1_3;
+    rvec  dx;
+    t_pbc pbc;
 
     set_pbc(&pbc, ePBC, box);
-    for (i = 0; (i < nind-1); i++)
+    for (i = 0; (i < nind - 1); i++)
     {
         xi = x[index[i]];
-        for (j = i+1; (j < nind); j++)
+        for (j = i + 1; (j < nind); j++)
         {
             pbc_dx(&pbc, xi, x[index[j]], dx);
             temp2        = norm2(dx);
@@ -108,9 +108,9 @@ static void calc_dist_tot(int nind, int index[], rvec x[],
             dtot2[i][j] += temp2;
             if (bNMR)
             {
-                temp1_3        = 1.0/(temp*temp2);
+                temp1_3        = 1.0 / (temp * temp2);
                 dtot1_3[i][j] += temp1_3;
-                dtot1_6[i][j] += temp1_3*temp1_3;
+                dtot1_6[i][j] += temp1_3 * temp1_3;
             }
         }
     }
@@ -119,15 +119,15 @@ static void calc_dist_tot(int nind, int index[], rvec x[],
 static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
                      real *max1_3, real *max1_6)
 {
-    int     i, j;
-    real    temp1_3, temp1_6;
+    int  i, j;
+    real temp1_3, temp1_6;
 
-    for (i = 0; (i < nind-1); i++)
+    for (i = 0; (i < nind - 1); i++)
     {
-        for (j = i+1; (j < nind); j++)
+        for (j = i + 1; (j < nind); j++)
         {
-            temp1_3 = gmx::invcbrt(dtot1_3[i][j]/nframes);
-            temp1_6 = gmx::invsixthroot(dtot1_6[i][j]/nframes);
+            temp1_3 = gmx::invcbrt(dtot1_3[i][j] / nframes);
+            temp1_6 = gmx::invsixthroot(dtot1_6[i][j] / nframes);
             if (temp1_3 > *max1_3)
             {
                 *max1_3 = temp1_3;
@@ -146,7 +146,8 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
 
 static char Hnum[] = "123";
 
-typedef struct {
+typedef struct
+{
     int  nr;
     real r_3;
     real r_6;
@@ -154,7 +155,8 @@ typedef struct {
     real i_6;
 } t_noe;
 
-typedef struct {
+typedef struct
+{
     int   anr;
     int   ianr;
     int   rnr;
@@ -162,7 +164,8 @@ typedef struct {
     char *rname;
 } t_noe_gr;
 
-typedef struct {
+typedef struct
+{
     bool  set;
     int   rnr;
     char *nname;
@@ -172,7 +175,7 @@ typedef struct {
 
 static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
 {
-    FILE     *fp;
+    FILE *    fp;
     char      line[STRLEN], resname[10], atomname[10], *lp;
     int       neq, na, n, resnr;
     t_equiv **equiv;
@@ -184,7 +187,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
     {
         lp = line;
         /* this is not efficient, but I'm lazy */
-        srenew(equiv, neq+1);
+        srenew(equiv, neq + 1);
         equiv[neq] = nullptr;
         na         = 0;
         if (sscanf(lp, "%s %n", atomname, &n) == 1)
@@ -195,9 +198,9 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
             while (sscanf(lp, "%d %s %s %n", &resnr, resname, atomname, &n) == 3)
             {
                 /* this is not efficient, but I'm lazy (again) */
-                srenew(equiv[neq], na+1);
+                srenew(equiv[neq], na + 1);
                 equiv[neq][na].set   = true;
-                equiv[neq][na].rnr   = resnr-1;
+                equiv[neq][na].rnr   = resnr - 1;
                 equiv[neq][na].rname = gmx_strdup(resname);
                 equiv[neq][na].aname = gmx_strdup(atomname);
                 if (na > 0)
@@ -209,7 +212,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
             }
         }
         /* make empty element as flag for end of array */
-        srenew(equiv[neq], na+1);
+        srenew(equiv[neq], na + 1);
         equiv[neq][na].set   = false;
         equiv[neq][na].rnr   = 0;
         equiv[neq][na].rname = nullptr;
@@ -256,9 +259,9 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
         /* find first atom */
         for (j = 0; equiv[i][j].set && !bFound; j++)
         {
-            bFound = ( equiv[i][j].rnr == rnr1 &&
-                       std::strcmp(equiv[i][j].rname, rname1) == 0 &&
-                       std::strcmp(equiv[i][j].aname, aname1) == 0 );
+            bFound = ( equiv[i][j].rnr == rnr1
+                       && std::strcmp(equiv[i][j].rname, rname1) == 0
+                       && std::strcmp(equiv[i][j].aname, aname1) == 0 );
         }
         if (bFound)
         {
@@ -266,15 +269,15 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
             bFound = FALSE;
             for (j = 0; equiv[i][j].set && !bFound; j++)
             {
-                bFound = ( equiv[i][j].rnr == rnr2 &&
-                           std::strcmp(equiv[i][j].rname, rname2) == 0 &&
-                           std::strcmp(equiv[i][j].aname, aname2) == 0 );
+                bFound = ( equiv[i][j].rnr == rnr2
+                           && std::strcmp(equiv[i][j].rname, rname2) == 0
+                           && std::strcmp(equiv[i][j].aname, aname2) == 0 );
             }
         }
     }
     if (bFound)
     {
-        *nname = gmx_strdup(equiv[i-1][0].nname);
+        *nname = gmx_strdup(equiv[i - 1][0].nname);
     }
 
     return bFound;
@@ -286,7 +289,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                                   int *noe_index, t_noe_gr *noe_gr)
 {
     int       i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
-    char     *anmi, *anmj, **nnm;
+    char *    anmi, *anmj, **nnm;
     gmx_bool  bMatch, bEquiv;
     t_equiv **equiv;
 
@@ -310,18 +313,18 @@ static int analyze_noe_equivalent(const char *eq_fn,
         groupnr = 0;
         for (i = 0; i < isize; i++)
         {
-            if (equiv && i < isize-1)
+            if (equiv && i < isize - 1)
             {
                 /* check explicit list of equivalent atoms */
                 do
                 {
-                    j      = i+1;
-                    rnri   = atoms->atom[index[i]].resind;
-                    rnrj   = atoms->atom[index[j]].resind;
-                    bEquiv =
-                        is_equiv(neq, equiv, &nnm[i],
-                                 rnri, *atoms->resinfo[rnri].name, *atoms->atomname[index[i]],
-                                 rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
+                    j    = i + 1;
+                    rnri = atoms->atom[index[i]].resind;
+                    rnrj = atoms->atom[index[j]].resind;
+                    bEquiv
+                        = is_equiv(neq, equiv, &nnm[i],
+                                   rnri, *atoms->resinfo[rnri].name, *atoms->atomname[index[i]],
+                                   rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
                     if (nnm[i] && bEquiv)
                     {
                         nnm[j] = gmx_strdup(nnm[i]);
@@ -333,8 +336,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                         /* skip matching atom */
                         i = j;
                     }
-                }
-                while (bEquiv && i < isize-1);
+                } while (bEquiv && i < isize - 1);
             }
             else
             {
@@ -347,15 +349,15 @@ static int analyze_noe_equivalent(const char *eq_fn,
                    This is supposed to cover all CH3 groups and the like */
                 anmi   = *atoms->atomname[index[i]];
                 anmil  = std::strlen(anmi);
-                bMatch = i <= isize-3 && anmi[anmil-1] == '1';
+                bMatch = i <= isize - 3 && anmi[anmil - 1] == '1';
                 if (bMatch)
                 {
                     for (j = 1; j < 3; j++)
                     {
-                        anmj   = *atoms->atomname[index[i+j]];
+                        anmj   = *atoms->atomname[index[i + j]];
                         anmjl  = std::strlen(anmj);
-                        bMatch = bMatch && ( anmil == anmjl && anmj[anmjl-1] == Hnum[j] &&
-                                             std::strncmp(anmi, anmj, anmil-1) == 0 );
+                        bMatch = bMatch && ( anmil == anmjl && anmj[anmjl - 1] == Hnum[j]
+                                             && std::strncmp(anmi, anmj, anmil - 1) == 0 );
                     }
                 }
                 /* set index for this atom */
@@ -365,7 +367,7 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     /* set index for next two matching atoms */
                     for (j = 1; j < 3; j++)
                     {
-                        noe_index[i+j] = groupnr;
+                        noe_index[i + j] = groupnr;
                     }
                     /* skip matching atoms */
                     i += 2;
@@ -410,9 +412,9 @@ static int analyze_noe_equivalent(const char *eq_fn,
             else
             {
                 noe_gr[gi].aname = gmx_strdup(*atoms->atomname[index[i]]);
-                if (noe_index[i] == noe_index[i+1])
+                if (noe_index[i] == noe_index[i + 1])
                 {
-                    noe_gr[gi].aname[std::strlen(noe_gr[gi].aname)-1] = '*';
+                    noe_gr[gi].aname[std::strlen(noe_gr[gi].aname) - 1] = '*';
                 }
             }
             noe_gr[gi].rnr   = atoms->atom[index[i]].resind;
@@ -444,13 +446,13 @@ static int analyze_noe_equivalent(const char *eq_fn,
 static char *noe2scale(real r3, real r6, real rmax)
 {
     int         i, s3, s6;
-    static char buf[NSCALE+1];
+    static char buf[NSCALE + 1];
 
     /* r goes from 0 to rmax
        NSCALE*r/rmax goes from 0 to NSCALE
        NSCALE - NSCALE*r/rmax goes from NSCALE to 0 */
-    s3 = NSCALE - std::min(NSCALE, static_cast<int>(NSCALE*r3/rmax));
-    s6 = NSCALE - std::min(NSCALE, static_cast<int>(NSCALE*r6/rmax));
+    s3 = NSCALE - std::min(NSCALE, static_cast<int>(NSCALE * r3 / rmax));
+    s6 = NSCALE - std::min(NSCALE, static_cast<int>(NSCALE * r6 / rmax));
 
     for (i = 0; i < s3; i++)
     {
@@ -478,18 +480,18 @@ static void calc_noe(int isize, int *noe_index,
         {
             gj = noe_index[j];
             noe[gi][gj].nr++;
-            noe[gi][gj].i_3 += 1.0/gmx::power3(dtot1_3[i][j]);
-            noe[gi][gj].i_6 += 1.0/gmx::power6(dtot1_6[i][j]);
+            noe[gi][gj].i_3 += 1.0 / gmx::power3(dtot1_3[i][j]);
+            noe[gi][gj].i_6 += 1.0 / gmx::power6(dtot1_6[i][j]);
         }
     }
 
     /* make averages */
     for (i = 0; i < gnr; i++)
     {
-        for (j = i+1; j < gnr; j++)
+        for (j = i + 1; j < gnr; j++)
         {
-            noe[i][j].r_3 = gmx::invcbrt(noe[i][j].i_3/noe[i][j].nr);
-            noe[i][j].r_6 = gmx::invsixthroot(noe[i][j].i_6/noe[i][j].nr);
+            noe[i][j].r_3 = gmx::invcbrt(noe[i][j].i_3 / noe[i][j].nr);
+            noe[i][j].r_6 = gmx::invsixthroot(noe[i][j].i_6 / noe[i][j].nr);
             noe[j][i]     = noe[i][j];
         }
     }
@@ -510,7 +512,7 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
     for (i = 0; i < gnr; i++)
     {
         gri = noe_gr[i];
-        for (j = i+1; j < gnr; j++)
+        for (j = i + 1; j < gnr; j++)
         {
             grj  = noe_gr[j];
             r3   = noe[i][j].r_3;
@@ -521,7 +523,7 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
             {
                 if (grj.rnr == gri.rnr)
                 {
-                    sprintf(buf, "%2d", grj.anr-gri.anr);
+                    sprintf(buf, "%2d", grj.anr - gri.anr);
                 }
                 else
                 {
@@ -545,9 +547,9 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
                 }
                 fprintf(fp,
                         "%4d %4d %4s %4s%3d %4d %4d %4s %4s%3d %5s %5s %8d %2d %2s %s\n",
-                        gri.ianr+1, gri.anr+1, gri.aname, gri.rname, gri.rnr+1,
-                        grj.ianr+1, grj.anr+1, grj.aname, grj.rname, grj.rnr+1,
-                        b3, b6, static_cast<int>(noe[i][j].i_6+0.5), grj.rnr-gri.rnr, buf,
+                        gri.ianr + 1, gri.anr + 1, gri.aname, gri.rname, gri.rnr + 1,
+                        grj.ianr + 1, grj.anr + 1, grj.aname, grj.rname, grj.rnr + 1,
+                        b3, b6, static_cast<int>(noe[i][j].i_6 + 0.5), grj.rnr - gri.rnr, buf,
                         noe2scale(r3, r6, rmax));
             }
         }
@@ -574,8 +576,8 @@ static void calc_rms(int nind, int nframes,
                      real **rmscmat, real *rmscmax,
                      real **meanmat, real *meanmax)
 {
-    int     i, j;
-    real    mean, mean2, rms, rmsc;
+    int  i, j;
+    real mean, mean2, rms, rmsc;
 /* N.B. dtot and dtot2 contain the total distance and the total squared
  * distance respectively, BUT they return RMS and the scaled RMS resp.
  */
@@ -584,14 +586,14 @@ static void calc_rms(int nind, int nframes,
     *rmscmax = -1000;
     *meanmax = -1000;
 
-    for (i = 0; (i < nind-1); i++)
+    for (i = 0; (i < nind - 1); i++)
     {
-        for (j = i+1; (j < nind); j++)
+        for (j = i + 1; (j < nind); j++)
         {
-            mean  = dtot[i][j]/nframes;
-            mean2 = dtot2[i][j]/nframes;
-            rms   = std::sqrt(std::max(static_cast<real>(0.0), mean2-mean*mean));
-            rmsc  = rms/mean;
+            mean  = dtot[i][j] / nframes;
+            mean2 = dtot2[i][j] / nframes;
+            rms   = std::sqrt(std::max(static_cast<real>(0.0), mean2 - mean * mean));
+            rmsc  = rms / mean;
             if (mean > *meanmax)
             {
                 *meanmax = mean;
@@ -617,22 +619,22 @@ real rms_diff(int natom, real **d, real **d_r)
     real r, r2;
 
     r2 = 0.0;
-    for (i = 0; (i < natom-1); i++)
+    for (i = 0; (i < natom - 1); i++)
     {
-        for (j = i+1; (j < natom); j++)
+        for (j = i + 1; (j < natom); j++)
         {
-            r   = d[i][j]-d_r[i][j];
-            r2 += r*r;
+            r   = d[i][j] - d_r[i][j];
+            r2 += r * r;
         }
     }
-    r2 /= (natom*(natom-1))/2;
+    r2 /= (natom * (natom - 1)) / 2;
 
     return std::sqrt(r2);
 }
 
 int gmx_rmsdist(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the root mean square deviation of atom distances,",
         "which has the advantage that no fit is needed like in standard RMS",
         "deviation as computed by [gmx-rms].",
@@ -656,28 +658,28 @@ int gmx_rmsdist(int argc, char *argv[])
 
     };
 
-    int               i, teller;
-    real              t;
+    int  i, teller;
+    real t;
 
-    t_topology        top;
-    int               ePBC;
-    t_atoms          *atoms;
-    matrix            box;
-    rvec             *x;
-    FILE             *fp;
+    t_topology top;
+    int        ePBC;
+    t_atoms *  atoms;
+    matrix     box;
+    rvec *     x;
+    FILE *     fp;
 
-    t_trxstatus      *status;
-    int               isize, gnr = 0;
-    int              *index, *noe_index;
-    char             *grpname;
-    real            **d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
-    real            **dtot1_3 = nullptr, **dtot1_6 = nullptr;
-    real              rmsnow, meanmax, rmsmax, rmscmax;
-    real              max1_3, max1_6;
-    t_noe_gr         *noe_gr = nullptr;
-    t_noe           **noe    = nullptr;
-    t_rgb             rlo, rhi;
-    gmx_bool          bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
+    t_trxstatus *status;
+    int          isize, gnr = 0;
+    int *        index, *noe_index;
+    char *       grpname;
+    real **      d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
+    real **      dtot1_3 = nullptr, **dtot1_6 = nullptr;
+    real         rmsnow, meanmax, rmsmax, rmscmax;
+    real         max1_3, max1_6;
+    t_noe_gr *   noe_gr = nullptr;
+    t_noe **     noe    = nullptr;
+    t_rgb        rlo, rhi;
+    gmx_bool     bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
 
     static int        nlevels  = 40;
     static real       scalemax = -1.0;
@@ -685,7 +687,7 @@ int gmx_rmsdist(int argc, char *argv[])
     static gmx_bool   bPBC     = TRUE;
     gmx_output_env_t *oenv;
 
-    t_pargs           pa[] = {
+    t_pargs  pa[] = {
         { "-nlevels",   FALSE, etINT,  {&nlevels},
           "Discretize RMS in this number of levels" },
         { "-max",   FALSE, etREAL, {&scalemax},
@@ -695,7 +697,7 @@ int gmx_rmsdist(int argc, char *argv[])
         { "-pbc",   FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions when computing distances" }
     };
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",   nullptr,       ffREAD },
         { efTPS, nullptr,   nullptr,       ffREAD },
         { efNDX, nullptr,   nullptr,       ffOPTRD },
@@ -774,7 +776,7 @@ int gmx_rmsdist(int argc, char *argv[])
         snew(rms[i], isize);
         snew(rmsc[i], isize);
         snew(d_r[i], isize);
-        resnr[i] = i+1;
+        resnr[i] = i + 1;
     }
 
     /*set box type*/
@@ -800,8 +802,7 @@ int gmx_rmsdist(int argc, char *argv[])
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);
         teller++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     xvgrclose(fp);
@@ -828,7 +829,7 @@ int gmx_rmsdist(int argc, char *argv[])
     if (bNOE)
     {
         /* make list of noe atom groups */
-        snew(noe_index, isize+1);
+        snew(noe_index, isize + 1);
         snew(noe_gr, isize);
         gnr = analyze_noe_equivalent(opt2fn_null("-equiv", NFILE, fnm),
                                      atoms, isize, index, bSumH, noe_index, noe_gr);

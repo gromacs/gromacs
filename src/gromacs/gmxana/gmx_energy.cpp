@@ -70,16 +70,18 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;
-static const int  NOTSET   = -23451;
+static real      minthird = -1.0 / 3.0, minsixth = -1.0 / 6.0;
+static const int NOTSET   = -23451;
 
-typedef struct {
+typedef struct
+{
     real sum;
     real sum2;
 } exactsum_t;
 
-typedef struct {
-    real       *ener;
+typedef struct
+{
+    real *      ener;
     exactsum_t *es;
     gmx_bool    bExactStat;
     double      av;
@@ -88,15 +90,16 @@ typedef struct {
     double      slope;
 } enerdat_t;
 
-typedef struct {
-    gmx_int64_t      nsteps;
-    gmx_int64_t      npoints;
-    int              nframes;
-    int             *step;
-    int             *steps;
-    int             *points;
-    enerdat_t       *s;
-    gmx_bool         bHaveSums;
+typedef struct
+{
+    gmx_int64_t nsteps;
+    gmx_int64_t npoints;
+    int         nframes;
+    int *       step;
+    int *       steps;
+    int *       points;
+    enerdat_t * s;
+    gmx_bool    bHaveSums;
 } enerdata_t;
 
 static double mypow(double x, double y)
@@ -115,7 +118,7 @@ static int *select_it(int nre, char *nm[], int *nset)
 {
     gmx_bool *bE;
     int       n, k, j, i;
-    int      *set;
+    int *     set;
     gmx_bool  bVerbose = TRUE;
 
     if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
@@ -132,7 +135,7 @@ static int *select_it(int nre, char *nm[], int *nset)
         {
             for (j = 0; (j < 4) && (k < nre); j++, k++)
             {
-                fprintf(stderr, " %3d=%14s", k+1, nm[k]);
+                fprintf(stderr, " %3d=%14s", k + 1, nm[k]);
             }
             fprintf(stderr, "\n");
         }
@@ -147,10 +150,9 @@ static int *select_it(int nre, char *nm[], int *nset)
         }
         if ((n > 0) && (n <= nre))
         {
-            bE[n-1] = TRUE;
+            bE[n - 1] = TRUE;
         }
-    }
-    while (n != 0);
+    } while (n != 0);
 
     snew(set, nre);
     for (i = (*nset) = 0; (i < nre); i++)
@@ -170,23 +172,23 @@ static void chomp(char *buf)
 {
     int len = std::strlen(buf);
 
-    while ((len > 0) && (buf[len-1] == '\n'))
+    while ((len > 0) && (buf[len - 1] == '\n'))
     {
-        buf[len-1] = '\0';
+        buf[len - 1] = '\0';
         len--;
     }
 }
 
 static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
 {
-    gmx_bool   *bE;
+    gmx_bool *  bE;
     int         k, kk, j, i, nmatch, nind, nss;
-    int        *set;
+    int *       set;
     gmx_bool    bEOF, bVerbose = TRUE, bLong = FALSE;
-    char       *ptr, buf[STRLEN];
+    char *      ptr, buf[STRLEN];
     const char *fm4   = "%3d  %-14s";
     const char *fm2   = "%3d  %-34s";
-    char      **newnm = nullptr;
+    char **     newnm = nullptr;
 
     if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
@@ -218,7 +220,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
                     fprintf(stderr, "\n");
                 }
                 bLong = FALSE;
-                for (kk = k; kk < k+4; kk++)
+                for (kk = k; kk < k + 4; kk++)
                 {
                     if (kk < nre && std::strlen(nm[kk].name) > 14)
                     {
@@ -232,7 +234,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
             }
             if (!bLong)
             {
-                fprintf(stderr, fm4, k+1, newnm[k]);
+                fprintf(stderr, fm4, k + 1, newnm[k]);
                 j++;
                 if (j == 4)
                 {
@@ -241,7 +243,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
             }
             else
             {
-                fprintf(stderr, fm2, k+1, newnm[k]);
+                fprintf(stderr, fm2, k + 1, newnm[k]);
                 j++;
                 if (j == 2)
                 {
@@ -258,7 +260,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     snew(bE, nre);
 
     bEOF = FALSE;
-    while (!bEOF && (fgets2(buf, STRLEN-1, stdin)))
+    while (!bEOF && (fgets2(buf, STRLEN - 1, stdin)))
     {
         /* Remove newlines */
         chomp(buf);
@@ -276,7 +278,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
                 if (!bEOF)
                 {
                     /* First try to read an integer */
-                    nss   = sscanf(ptr, "%d", &nind);
+                    nss = sscanf(ptr, "%d", &nind);
                     if (nss == 1)
                     {
                         /* Zero means end of input */
@@ -286,7 +288,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
                         }
                         else if ((1 <= nind) && (nind <= nre))
                         {
-                            bE[nind-1] = TRUE;
+                            bE[nind - 1] = TRUE;
                         }
                         else
                         {
@@ -329,8 +331,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
                 {
                     trim(ptr);
                 }
-            }
-            while (!bEOF && (ptr && (std::strlen(ptr) > 0)));
+            } while (!bEOF && (ptr && (std::strlen(ptr) > 0)));
         }
     }
 
@@ -361,9 +362,9 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
 
 static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
 {
-    gmx_mtop_t  mtop;
-    int         natoms;
-    matrix      box;
+    gmx_mtop_t mtop;
+    int        natoms;
+    matrix     box;
 
     /* all we need is the ir to be able to write the label */
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
@@ -374,17 +375,17 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
 {
     gmx_mtop_t      mtop;
     gmx_localtop_t *top;
-    t_iparams      *ip;
+    t_iparams *     ip;
     int             natoms, i;
-    t_iatom        *iatom;
+    t_iatom *       iatom;
     int             nb;
     matrix          box;
 
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
     top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
 
-    ip       = top->idef.iparams;
-    iatom    = top->idef.il[F_ORIRES].iatoms;
+    ip    = top->idef.iparams;
+    iatom = top->idef.il[F_ORIRES].iatoms;
 
     /* Count how many distance restraint there are... */
     nb = top->idef.il[F_ORIRES].nr;
@@ -393,17 +394,17 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
         gmx_fatal(FARGS, "No orientation restraints in topology!\n");
     }
 
-    *nor = nb/3;
+    *nor = nb / 3;
     *nex = 0;
     snew(*label, *nor);
     snew(*obs, *nor);
     for (i = 0; i < nb; i += 3)
     {
-        (*label)[i/3] = ip[iatom[i]].orires.label;
-        (*obs)[i/3]   = ip[iatom[i]].orires.obs;
+        (*label)[i / 3] = ip[iatom[i]].orires.label;
+        (*obs)[i / 3]   = ip[iatom[i]].orires.obs;
         if (ip[iatom[i]].orires.ex >= *nex)
         {
-            *nex = ip[iatom[i]].orires.ex+1;
+            *nex = ip[iatom[i]].orires.ex + 1;
         }
     }
     fprintf(stderr, "Found %d orientation restraints with %d experiments",
@@ -415,13 +416,13 @@ static int get_bounds(const char *topnm,
                       gmx_mtop_t *mtop, gmx_localtop_t **ltop, t_inputrec *ir)
 {
     gmx_localtop_t *top;
-    t_functype     *functype;
-    t_iparams      *ip;
+    t_functype *    functype;
+    t_iparams *     ip;
     int             natoms, i, j, k, type, ftype, natom;
-    t_ilist        *disres;
-    t_iatom        *iatom;
-    real           *b;
-    int            *ind, *pair;
+    t_ilist *       disres;
+    t_iatom *       iatom;
+    real *          b;
+    int *           ind, *pair;
     int             nb, label1;
     matrix          box;
 
@@ -443,7 +444,7 @@ static int get_bounds(const char *topnm,
     /* Allocate memory */
     snew(b, nb);
     snew(ind, nb);
-    snew(pair, nb+1);
+    snew(pair, nb + 1);
 
     /* Fill the bound array */
     nb = 0;
@@ -462,14 +463,14 @@ static int get_bounds(const char *topnm,
     *bounds = b;
 
     /* Fill the index array */
-    label1  = -1;
-    disres  = &(top->idef.il[F_DISRES]);
-    iatom   = disres->iatoms;
+    label1 = -1;
+    disres = &(top->idef.il[F_DISRES]);
+    iatom  = disres->iatoms;
     for (i = j = k = 0; (i < disres->nr); )
     {
         type  = iatom[i];
         ftype = top->idef.functype[type];
-        natom = interaction_function[ftype].nratoms+1;
+        natom = interaction_function[ftype].nratoms + 1;
         if (label1 != top->idef.iparams[type].disres.label)
         {
             pair[j] = k;
@@ -479,8 +480,8 @@ static int get_bounds(const char *topnm,
         k++;
         i += natom;
     }
-    pair[j]  = k;
-    *npairs  = k;
+    pair[j] = k;
+    *npairs = k;
     if (j != nb)
     {
         gmx_incons("get_bounds for distance restraints");
@@ -495,7 +496,7 @@ static int get_bounds(const char *topnm,
 static void calc_violations(real rt[], real rav3[], int nb, int index[],
                             real bounds[], real *viol, double *st, double *sa)
 {
-    const   real sixth = 1.0/6.0;
+    const   real sixth = 1.0 / 6.0;
     int          i, j;
     double       rsum, rav, sumaver, sumt;
 
@@ -505,17 +506,17 @@ static void calc_violations(real rt[], real rav3[], int nb, int index[],
     {
         rsum = 0.0;
         rav  = 0.0;
-        for (j = index[i]; (j < index[i+1]); j++)
+        for (j = index[i]; (j < index[i + 1]); j++)
         {
             if (viol)
             {
                 viol[j] += mypow(rt[j], -3.0);
             }
-            rav     += gmx::square(rav3[j]);
-            rsum    += mypow(rt[j], -6);
+            rav  += gmx::square(rav3[j]);
+            rsum += mypow(rt[j], -6);
         }
-        rsum    = std::max(0.0, mypow(rsum, -sixth)-bounds[i]);
-        rav     = std::max(0.0, mypow(rav, -sixth)-bounds[i]);
+        rsum = std::max(0.0, mypow(rsum, -sixth) - bounds[i]);
+        rav  = std::max(0.0, mypow(rav, -sixth) - bounds[i]);
 
         sumt    += rsum;
         sumaver += rav;
@@ -529,9 +530,9 @@ static void analyse_disre(const char *voutfn,    int nframes,
                           int pair[],      int nbounds,
                           const gmx_output_env_t *oenv)
 {
-    FILE   *vout;
-    double  sum, sumt, sumaver;
-    int     i, j;
+    FILE * vout;
+    double sum, sumt, sumaver;
+    int    i, j;
 
     /* Subtract bounds from distances, to calculate violations */
     calc_violations(violaver, violaver,
@@ -551,20 +552,20 @@ static void analyse_disre(const char *voutfn,    int nframes,
     {
         /* Do ensemble averaging */
         sumaver = 0;
-        for (j = pair[i]; (j < pair[i+1]); j++)
+        for (j = pair[i]; (j < pair[i + 1]); j++)
         {
-            sumaver += gmx::square(violaver[j]/nframes);
+            sumaver += gmx::square(violaver[j] / nframes);
         }
-        sumaver = std::max(0.0, mypow(sumaver, minsixth)-bounds[i]);
+        sumaver = std::max(0.0, mypow(sumaver, minsixth) - bounds[i]);
 
-        sumt   += sumaver;
-        sum     = std::max(sum, sumaver);
+        sumt += sumaver;
+        sum   = std::max(sum, sumaver);
         fprintf(vout, "%10d  %10.5e\n", index[i], sumaver);
     }
 #ifdef DEBUG
     for (j = 0; (j < dr.ndr); j++)
     {
-        fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j]/nframes, minthird));
+        fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j] / nframes, minthird));
     }
 #endif
     xvgrclose(vout);
@@ -581,12 +582,12 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
                            real V, real T, double dt,
                            const gmx_output_env_t *oenv)
 {
-    FILE  *fp0, *fp1;
+    FILE * fp0, *fp1;
     double av[4], avold[4];
     double fac, di;
     int    i, j, m, nf4;
 
-    nf4 = nint/4 + 1;
+    nf4 = nint / 4 + 1;
 
     for (i = 0; i <= nsets; i++)
     {
@@ -606,25 +607,25 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         {
             for (m = 0; m < nsets; m++)
             {
-                di   = gmx::square(eneint[m][j+i] - eneint[m][j]);
+                di = gmx::square(eneint[m][j + i] - eneint[m][j]);
 
                 av[m]     += di;
-                av[nsets] += di/nsets;
+                av[nsets] += di / nsets;
             }
         }
         /* Convert to SI for the viscosity */
-        fac = (V*NANO*NANO*NANO*PICO*1e10)/(2*BOLTZMANN*T)/(nint - i);
-        fprintf(fp0, "%10g", i*dt);
+        fac = (V * NANO * NANO * NANO * PICO * 1e10) / (2 * BOLTZMANN * T) / (nint - i);
+        fprintf(fp0, "%10g", i * dt);
         for (m = 0; (m <= nsets); m++)
         {
-            av[m] = fac*av[m];
+            av[m] = fac * av[m];
             fprintf(fp0, "  %10g", av[m]);
         }
         fprintf(fp0, "\n");
-        fprintf(fp1, "%10g", (i + 0.5)*dt);
+        fprintf(fp1, "%10g", (i + 0.5) * dt);
         for (m = 0; (m <= nsets); m++)
         {
-            fprintf(fp1, "  %10g", (av[m]-avold[m])/dt);
+            fprintf(fp1, "  %10g", (av[m] - avold[m]) / dt);
             avold[m] = av[m];
         }
         fprintf(fp1, "\n");
@@ -633,18 +634,20 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
     xvgrclose(fp1);
 }
 
-typedef struct {
-    gmx_int64_t     np;
-    double          sum;
-    double          sav;
-    double          sav2;
+typedef struct
+{
+    gmx_int64_t np;
+    double      sum;
+    double      sav;
+    double      sav2;
 } ee_sum_t;
 
-typedef struct {
-    int             b;
-    ee_sum_t        sum;
-    gmx_int64_t     nst;
-    gmx_int64_t     nst_min;
+typedef struct
+{
+    int         b;
+    ee_sum_t    sum;
+    gmx_int64_t nst;
+    gmx_int64_t nst_min;
 } ener_ee_t;
 
 static void clear_ee_sum(ee_sum_t *ees)
@@ -665,16 +668,16 @@ static void add_ee_av(ee_sum_t *ees)
 {
     double av;
 
-    av         = ees->sum/ees->np;
+    av         = ees->sum / ees->np;
     ees->sav  += av;
-    ees->sav2 += av*av;
+    ees->sav2 += av * av;
     ees->np    = 0;
     ees->sum   = 0;
 }
 
 static double calc_ee2(int nb, ee_sum_t *ees)
 {
-    return (ees->sav2/nb - gmx::square(ees->sav/nb))/(nb - 1);
+    return (ees->sav2 / nb - gmx::square(ees->sav / nb)) / (nb - 1);
 }
 
 static void set_ee_av(ener_ee_t *eee)
@@ -696,14 +699,14 @@ static void set_ee_av(ener_ee_t *eee)
 
 static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
 {
-    int             nb, i, f, nee;
-    double          sum, sum2, sump, see2;
-    gmx_int64_t     np, p, bound_nb;
-    enerdat_t      *ed;
-    exactsum_t     *es;
-    gmx_bool        bAllZero;
-    double          x, sx, sy, sxx, sxy;
-    ener_ee_t      *eee;
+    int         nb, i, f, nee;
+    double      sum, sum2, sump, see2;
+    gmx_int64_t np, p, bound_nb;
+    enerdat_t * ed;
+    exactsum_t *es;
+    gmx_bool    bAllZero;
+    double      x, sx, sy, sxx, sxy;
+    ener_ee_t * eee;
 
     /* Check if we have exact statistics over all points */
     for (i = 0; i < nset; i++)
@@ -731,7 +734,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
         }
     }
 
-    snew(eee, nbmax+1);
+    snew(eee, nbmax + 1);
     for (i = 0; i < nset; i++)
     {
         ed = &edat->s[i];
@@ -745,7 +748,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
         sxy  = 0;
         for (nb = nbmin; nb <= nbmax; nb++)
         {
-            eee[nb].b     = 0;
+            eee[nb].b = 0;
             clear_ee_sum(&eee[nb].sum);
             eee[nb].nst     = 0;
             eee[nb].nst_min = 0;
@@ -762,8 +765,8 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
                 sum2 += es->sum2;
                 if (np > 0)
                 {
-                    sum2 += gmx::square(sum/np - (sum + es->sum)/(np + p))
-                        *np*(np + p)/p;
+                    sum2 += gmx::square(sum / np - (sum + es->sum) / (np + p))
+                        * np * (np + p) / p;
                 }
             }
             else
@@ -781,20 +784,20 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
             /* For the linear regression use variance 1/p.
              * Note that sump is the sum, not the average, so we don't need p*.
              */
-            x    = edat->step[f] - 0.5*(edat->steps[f] - 1);
-            sx  += p*x;
+            x    = edat->step[f] - 0.5 * (edat->steps[f] - 1);
+            sx  += p * x;
             sy  += sump;
-            sxx += p*x*x;
-            sxy += x*sump;
+            sxx += p * x * x;
+            sxy += x * sump;
 
             for (nb = nbmin; nb <= nbmax; nb++)
             {
                 /* Check if the current end step is closer to the desired
                  * block boundary than the next end step.
                  */
-                bound_nb = (edat->step[0]-1)*nb + edat->nsteps*(eee[nb].b+1);
-                if (eee[nb].nst > 0 &&
-                    bound_nb - edat->step[f-1]*nb < edat->step[f]*nb - bound_nb)
+                bound_nb = (edat->step[0] - 1) * nb + edat->nsteps * (eee[nb].b + 1);
+                if (eee[nb].nst > 0
+                    && bound_nb - edat->step[f - 1] * nb < edat->step[f] * nb - bound_nb)
                 {
                     set_ee_av(&eee[nb]);
                 }
@@ -804,7 +807,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
                 }
                 else
                 {
-                    eee[nb].nst += edat->step[f] - edat->step[f-1];
+                    eee[nb].nst += edat->step[f] - edat->step[f - 1];
                 }
                 if (ed->bExactStat)
                 {
@@ -814,27 +817,27 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
                 {
                     add_ee_sum(&eee[nb].sum, edat->s[i].ener[f], 1);
                 }
-                bound_nb = (edat->step[0]-1)*nb + edat->nsteps*(eee[nb].b+1);
-                if (edat->step[f]*nb >= bound_nb)
+                bound_nb = (edat->step[0] - 1) * nb + edat->nsteps * (eee[nb].b + 1);
+                if (edat->step[f] * nb >= bound_nb)
                 {
                     set_ee_av(&eee[nb]);
                 }
             }
         }
 
-        edat->s[i].av = sum/np;
+        edat->s[i].av = sum / np;
         if (ed->bExactStat)
         {
-            edat->s[i].rmsd = std::sqrt(sum2/np);
+            edat->s[i].rmsd = std::sqrt(sum2 / np);
         }
         else
         {
-            edat->s[i].rmsd = std::sqrt(sum2/np - gmx::square(edat->s[i].av));
+            edat->s[i].rmsd = std::sqrt(sum2 / np - gmx::square(edat->s[i].av));
         }
 
         if (edat->nframes > 1)
         {
-            edat->s[i].slope = (np*sxy - sx*sy)/(np*sxx - sx*sx);
+            edat->s[i].slope = (np * sxy - sx * sy) / (np * sxx - sx * sx);
         }
         else
         {
@@ -856,7 +859,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
                         gmx_step_str(eee[nb].nst_min, buf1),
                         gmx_step_str(edat->nsteps, buf2));
             }
-            if (eee[nb].b == nb && 5*nb*eee[nb].nst_min >= 4*edat->nsteps)
+            if (eee[nb].b == nb && 5 * nb * eee[nb].nst_min >= 4 * edat->nsteps)
             {
                 see2 += calc_ee2(nb, &eee[nb].sum);
                 nee++;
@@ -864,7 +867,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
         }
         if (nee > 0)
         {
-            edat->s[i].ee = std::sqrt(see2/nee);
+            edat->s[i].ee = std::sqrt(see2 / nee);
         }
         else
         {
@@ -877,7 +880,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
 static enerdata_t *calc_sum(int nset, enerdata_t *edat, int nbmin, int nbmax)
 {
     enerdata_t *esum;
-    enerdat_t  *s;
+    enerdat_t * s;
     int         f, i;
     double      sum;
 
@@ -955,7 +958,7 @@ static void remove_drift(int nset, int nbmin, int nbmax, real dt, enerdata_t *ed
     {
         for (i = 0; (i < nset); i++)
         {
-            delta = edat->s[i].slope*dt;
+            delta = edat->s[i].slope * dt;
 
             if (nullptr != debug)
             {
@@ -964,7 +967,7 @@ static void remove_drift(int nset, int nbmin, int nbmax, real dt, enerdata_t *ed
 
             for (j = 0; (j < edat->nframes); j++)
             {
-                edat->s[i].ener[j]   -= j*delta;
+                edat->s[i].ener[j]   -= j * delta;
                 edat->s[i].es[j].sum  = 0;
                 edat->s[i].es[j].sum2 = 0;
             }
@@ -982,13 +985,14 @@ static void calc_fluctuation_props(FILE *fp,
     int    i, j;
     double vv, v, h, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, varet;
     double NANO3;
-    enum {
+    enum
+    {
         eVol, eEnth, eTemp, eEtot, eNR
     };
     const char *my_ener[] = { "Volume", "Enthalpy", "Temperature", "Total Energy" };
     int         ii[eNR];
 
-    NANO3 = NANO*NANO*NANO;
+    NANO3 = NANO * NANO * NANO;
     if (!bDriftCorr)
     {
         fprintf(fp, "\nYou may want to use the -driftcorr flag in order to correct\n"
@@ -1001,8 +1005,8 @@ static void calc_fluctuation_props(FILE *fp,
     }
     for (i = 0; (i < eNR); i++)
     {
-        for (ii[i] = 0; (ii[i] < nset &&
-                         (gmx_strcasecmp(leg[ii[i]], my_ener[i]) != 0)); ii[i]++)
+        for (ii[i] = 0; (ii[i] < nset
+                         && (gmx_strcasecmp(leg[ii[i]], my_ener[i]) != 0)); ii[i]++)
         {
             ;
         }
@@ -1016,23 +1020,23 @@ static void calc_fluctuation_props(FILE *fp,
     tt = NOTSET;
     if (ii[eTemp] < nset)
     {
-        tt    = edat->s[ii[eTemp]].av;
+        tt = edat->s[ii[eTemp]].av;
     }
     /* Volume */
     vv = varv = NOTSET;
     if ((ii[eVol] < nset) && (ii[eTemp] < nset))
     {
-        vv    = edat->s[ii[eVol]].av*NANO3;
-        varv  = gmx::square(edat->s[ii[eVol]].rmsd*NANO3);
-        kappa = (varv/vv)/(BOLTZMANN*tt);
+        vv    = edat->s[ii[eVol]].av * NANO3;
+        varv  = gmx::square(edat->s[ii[eVol]].rmsd * NANO3);
+        kappa = (varv / vv) / (BOLTZMANN * tt);
     }
     /* Enthalpy */
     hh = varh = NOTSET;
     if ((ii[eEnth] < nset) && (ii[eTemp] < nset))
     {
-        hh    = KILO*edat->s[ii[eEnth]].av/AVOGADRO;
-        varh  = gmx::square(KILO*edat->s[ii[eEnth]].rmsd/AVOGADRO);
-        cp    = AVOGADRO*((varh/nmol)/(BOLTZMANN*tt*tt));
+        hh   = KILO * edat->s[ii[eEnth]].av / AVOGADRO;
+        varh = gmx::square(KILO * edat->s[ii[eEnth]].rmsd / AVOGADRO);
+        cp   = AVOGADRO * ((varh / nmol) / (BOLTZMANN * tt * tt));
     }
     /* Total energy */
     if ((ii[eEtot] < nset) && (hh == NOTSET) && (tt != NOTSET))
@@ -1041,7 +1045,7 @@ static void calc_fluctuation_props(FILE *fp,
            by checking whether the enthalpy was computed.
          */
         varet = gmx::square(edat->s[ii[eEtot]].rmsd);
-        cv    = KILO*((varet/nmol)/(BOLTZ*tt*tt));
+        cv    = KILO * ((varet / nmol) / (BOLTZ * tt * tt));
     }
     /* Alpha, dcp */
     if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
@@ -1050,17 +1054,17 @@ static void calc_fluctuation_props(FILE *fp,
         vh_sum = v_sum = h_sum = 0;
         for (j = 0; (j < edat->nframes); j++)
         {
-            v       = edat->s[ii[eVol]].ener[j]*NANO3;
-            h       = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
+            v       = edat->s[ii[eVol]].ener[j] * NANO3;
+            h       = KILO * edat->s[ii[eEnth]].ener[j] / AVOGADRO;
             v_sum  += v;
             h_sum  += h;
-            vh_sum += (v*h);
+            vh_sum += (v * h);
         }
         vh_aver = vh_sum / edat->nframes;
         v_aver  = v_sum  / edat->nframes;
         h_aver  = h_sum  / edat->nframes;
-        alpha   = (vh_aver-v_aver*h_aver)/(v_aver*BOLTZMANN*tt*tt);
-        dcp     = (v_aver*AVOGADRO/nmol)*tt*gmx::square(alpha)/(kappa);
+        alpha   = (vh_aver - v_aver * h_aver) / (v_aver * BOLTZMANN * tt * tt);
+        dcp     = (v_aver * AVOGADRO / nmol) * tt * gmx::square(alpha) / (kappa);
     }
 
     if (tt != NOTSET)
@@ -1081,18 +1085,18 @@ static void calc_fluctuation_props(FILE *fp,
         {
             if (varv != NOTSET)
             {
-                fprintf(fp, "varv  =  %10g (m^6)\n", varv*AVOGADRO/nmol);
+                fprintf(fp, "varv  =  %10g (m^6)\n", varv * AVOGADRO / nmol);
             }
         }
         if (vv != NOTSET)
         {
             fprintf(fp, "Volume                                   = %10g m^3/mol\n",
-                    vv*AVOGADRO/nmol);
+                    vv * AVOGADRO / nmol);
         }
         if (varh != NOTSET)
         {
             fprintf(fp, "Enthalpy                                 = %10g kJ/mol\n",
-                    hh*AVOGADRO/(KILO*nmol));
+                    hh * AVOGADRO / (KILO * nmol));
         }
         if (alpha != NOTSET)
         {
@@ -1104,7 +1108,7 @@ static void calc_fluctuation_props(FILE *fp,
             fprintf(fp, "Isothermal Compressibility Kappa         = %10g (m^3/J)\n",
                     kappa);
             fprintf(fp, "Adiabatic bulk modulus                   = %10g (J/m^3)\n",
-                    1.0/kappa);
+                    1.0 / kappa);
         }
         if (cp != NOTSET)
         {
@@ -1142,19 +1146,19 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                          int nbmin, int nbmax,
                          const gmx_output_env_t *oenv)
 {
-    FILE           *fp;
+    FILE *fp;
     /* Check out the printed manual for equations! */
-    double          Dt, aver, stddev, errest, delta_t, totaldrift;
-    enerdata_t     *esum = nullptr;
-    real            integral, intBulk, Temp = 0, Pres = 0;
-    real            pr_aver, pr_stddev, pr_errest;
-    double          beta = 0, expE, expEtot, *fee = nullptr;
-    gmx_int64_t     nsteps;
-    int             nexact, nnotexact;
-    int             i, j, nout;
-    char            buf[256], eebuf[100];
+    double      Dt, aver, stddev, errest, delta_t, totaldrift;
+    enerdata_t *esum = nullptr;
+    real        integral, intBulk, Temp = 0, Pres = 0;
+    real        pr_aver, pr_stddev, pr_errest;
+    double      beta = 0, expE, expEtot, *fee = nullptr;
+    gmx_int64_t nsteps;
+    int         nexact, nnotexact;
+    int         i, j, nout;
+    char        buf[256], eebuf[100];
 
-    nsteps  = step - start_step + 1;
+    nsteps = step - start_step + 1;
     if (nsteps < 1)
     {
         fprintf(stdout, "Not enough steps (%s) for statistics\n",
@@ -1240,7 +1244,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
         expEtot = 0;
         if (bFee)
         {
-            beta = 1.0/(BOLTZ*reftemp);
+            beta = 1.0 / (BOLTZ * reftemp);
             snew(fee, nset);
         }
         for (i = 0; (i < nset); i++)
@@ -1254,14 +1258,14 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 expE = 0;
                 for (j = 0; (j < edat->nframes); j++)
                 {
-                    expE += std::exp(beta*(edat->s[i].ener[j] - aver)/nmol);
+                    expE += std::exp(beta * (edat->s[i].ener[j] - aver) / nmol);
                 }
                 if (bSum)
                 {
-                    expEtot += expE/edat->nframes;
+                    expEtot += expE / edat->nframes;
                 }
 
-                fee[i] = std::log(expE/edat->nframes)/beta + aver/nmol;
+                fee[i] = std::log(expE / edat->nframes) / beta + aver / nmol;
             }
             if (std::strstr(leg[i], "empera") != nullptr)
             {
@@ -1277,9 +1281,9 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             }
             if (bIsEner[i])
             {
-                pr_aver   = aver/nmol-ezero;
-                pr_stddev = stddev/nmol;
-                pr_errest = errest/nmol;
+                pr_aver   = aver / nmol - ezero;
+                pr_stddev = stddev / nmol;
+                pr_errest = errest / nmol;
             }
             else
             {
@@ -1289,7 +1293,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             }
 
             /* Multiply the slope in steps with the number of steps taken */
-            totaldrift = (edat->nsteps - 1)*edat->s[i].slope;
+            totaldrift = (edat->nsteps - 1) * edat->s[i].slope;
             if (bIsEner[i])
             {
                 totaldrift /= nmol;
@@ -1314,15 +1318,15 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
         }
         if (bSum)
         {
-            totaldrift = (edat->nsteps - 1)*esum->s[0].slope;
+            totaldrift = (edat->nsteps - 1) * esum->s[0].slope;
             fprintf(stdout, "%-24s %10g %10s %10s %10g  (%s)",
-                    "Total", esum->s[0].av/nmol, ee_pr(esum->s[0].ee/nmol, eebuf),
-                    "--", totaldrift/nmol, enm[set[0]].unit);
+                    "Total", esum->s[0].av / nmol, ee_pr(esum->s[0].ee / nmol, eebuf),
+                    "--", totaldrift / nmol, enm[set[0]].unit);
             /* pr_aver,pr_stddev,a,totaldrift */
             if (bFee)
             {
                 fprintf(stdout, "  %10g  %10g\n",
-                        std::log(expEtot)/beta + esum->s[0].av/nmol, std::log(expEtot)/beta);
+                        std::log(expEtot) / beta + esum->s[0].av / nmol, std::log(expEtot) / beta);
             }
             else
             {
@@ -1333,7 +1337,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
         /* Do correlation function */
         if (edat->nframes > 1)
         {
-            Dt = delta_t/(edat->nframes - 1);
+            Dt = delta_t / (edat->nframes - 1);
         }
         else
         {
@@ -1343,8 +1347,8 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
         {
             const char* leg[] = { "Shear", "Bulk" };
             real        factor;
-            real      **eneset;
-            real      **eneint;
+            real **     eneset;
+            real **     eneint;
 
             /* Assume pressure tensor is in Pxx Pxy Pxz Pyx Pyy Pyz Pzx Pzy Pzz */
 
@@ -1358,9 +1362,9 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             }
             for (i = 0; (i < edat->nframes); i++)
             {
-                eneset[0][i] = 0.5*(edat->s[1].ener[i]+edat->s[3].ener[i]);
-                eneset[1][i] = 0.5*(edat->s[2].ener[i]+edat->s[6].ener[i]);
-                eneset[2][i] = 0.5*(edat->s[5].ener[i]+edat->s[7].ener[i]);
+                eneset[0][i] = 0.5 * (edat->s[1].ener[i] + edat->s[3].ener[i]);
+                eneset[1][i] = 0.5 * (edat->s[2].ener[i] + edat->s[6].ener[i]);
+                eneset[2][i] = 0.5 * (edat->s[5].ener[i] + edat->s[7].ener[i]);
                 for (j = 3; j <= 11; j++)
                 {
                     eneset[j][i] = edat->s[j].ener[i];
@@ -1379,13 +1383,13 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             eneint[2][0] = 0;
             for (i = 0; i < edat->nframes; i++)
             {
-                eneint[0][i+1] = eneint[0][i] + 0.5*(edat->s[1].es[i].sum + edat->s[3].es[i].sum)*Dt/edat->points[i];
-                eneint[1][i+1] = eneint[1][i] + 0.5*(edat->s[2].es[i].sum + edat->s[6].es[i].sum)*Dt/edat->points[i];
-                eneint[2][i+1] = eneint[2][i] + 0.5*(edat->s[5].es[i].sum + edat->s[7].es[i].sum)*Dt/edat->points[i];
+                eneint[0][i + 1] = eneint[0][i] + 0.5 * (edat->s[1].es[i].sum + edat->s[3].es[i].sum) * Dt / edat->points[i];
+                eneint[1][i + 1] = eneint[1][i] + 0.5 * (edat->s[2].es[i].sum + edat->s[6].es[i].sum) * Dt / edat->points[i];
+                eneint[2][i + 1] = eneint[2][i] + 0.5 * (edat->s[5].es[i].sum + edat->s[7].es[i].sum) * Dt / edat->points[i];
             }
 
             einstein_visco("evisco.xvg", "eviscoi.xvg",
-                           3, edat->nframes+1, eneint, Vaver, Temp, Dt, oenv);
+                           3, edat->nframes + 1, eneint, Vaver, Temp, Dt, oenv);
 
             for (i = 0; i < 3; i++)
             {
@@ -1397,16 +1401,16 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             /* Do it for shear viscosity */
             std::strcpy(buf, "Shear Viscosity");
             low_do_autocorr(corrfn, oenv, buf, edat->nframes, 3,
-                            (edat->nframes+1)/2, eneset, Dt,
+                            (edat->nframes + 1) / 2, eneset, Dt,
                             eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0);
 
             /* Now for bulk viscosity */
             std::strcpy(buf, "Bulk Viscosity");
             low_do_autocorr(corrfn, oenv, buf, edat->nframes, 1,
-                            (edat->nframes+1)/2, &(eneset[11]), Dt,
+                            (edat->nframes + 1) / 2, &(eneset[11]), Dt,
                             eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0);
 
-            factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
+            factor = (Vaver * 1e-26 / (BOLTZMANN * Temp)) * Dt;
             fp     = xvgropen(visfn, buf, "Time (ps)", "\\8h\\4 (cp)", oenv);
             xvgr_legend(fp, asize(leg), leg, oenv);
 
@@ -1414,15 +1418,15 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             integral = 0;
             intBulk  = 0;
             nout     = get_acfnout();
-            if ((nout < 2) || (nout >= edat->nframes/2))
+            if ((nout < 2) || (nout >= edat->nframes / 2))
             {
-                nout = edat->nframes/2;
+                nout = edat->nframes / 2;
             }
             for (i = 1; (i < nout); i++)
             {
-                integral += 0.5*(eneset[0][i-1]  + eneset[0][i])*factor;
-                intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
-                fprintf(fp, "%10g  %10g  %10g\n", (i*Dt), integral, intBulk);
+                integral += 0.5 * (eneset[0][i - 1]  + eneset[0][i]) * factor;
+                intBulk  += 0.5 * (eneset[11][i - 1] + eneset[11][i]) * factor;
+                fprintf(fp, "%10g  %10g  %10g\n", (i * Dt), integral, intBulk);
             }
             xvgrclose(fp);
 
@@ -1445,8 +1449,8 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
 #if 0
             do_autocorr(corrfn, oenv, buf, edat->nframes,
                         bSum ? 1                 : nset,
-                        bSum ? &edat->s[nset-1].ener : eneset,
-                        (delta_t/edat->nframes), eacNormal, FALSE);
+                        bSum ? &edat->s[nset - 1].ener : eneset,
+                        (delta_t / edat->nframes), eacNormal, FALSE);
 #endif
         }
     }
@@ -1478,16 +1482,16 @@ static void fec(const char *ene2fn, const char *runavgfn,
         "\\8D\\4E = E\\sB\\N-E\\sA\\N",
         "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N"
     };
-    FILE        *fp;
+    FILE *       fp;
     ener_file_t  enx;
     int          timecheck, nenergy, nenergy2, maxenergy;
     int          i, j;
     gmx_bool     bCont;
     real         aver, beta;
-    real       **eneset2;
+    real **      eneset2;
     double       dE, sum;
     gmx_enxnm_t *enm = nullptr;
-    t_enxframe  *fr;
+    t_enxframe * fr;
     char         buf[22];
 
     /* read second energy file */
@@ -1496,7 +1500,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     enx = open_enx(ene2fn, "r");
     do_enxnms(enx, &(fr->nre), &enm);
 
-    snew(eneset2, nset+1);
+    snew(eneset2, nset + 1);
     nenergy2  = 0;
     maxenergy = 0;
     timecheck = 0;
@@ -1514,8 +1518,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
                 timecheck = check_times(fr->t);
             }
 
-        }
-        while (bCont && (timecheck < 0));
+        } while (bCont && (timecheck < 0));
 
         /* Store energies for analysis afterwards... */
         if ((timecheck == 0) && bCont)
@@ -1544,8 +1547,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
                 nenergy2++;
             }
         }
-    }
-    while (bCont && (timecheck == 0));
+    } while (bCont && (timecheck == 0));
 
     /* check */
     if (edat->nframes != nenergy2)
@@ -1566,7 +1568,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     fprintf(stdout, "\n%-24s %10s\n",
             "Energy", "dF = -kT ln < exp(-(EB-EA)/kT) >A");
     sum  = 0;
-    beta = 1.0/(BOLTZ*reftemp);
+    beta = 1.0 / (BOLTZ * reftemp);
     for (i = 0; i < nset; i++)
     {
         if (gmx_strcasecmp(leg[i], enm[set[i]].name) != 0)
@@ -1577,14 +1579,14 @@ static void fec(const char *ene2fn, const char *runavgfn,
         for (j = 0; j < nenergy; j++)
         {
             dE   = eneset2[i][j] - edat->s[i].ener[j];
-            sum += std::exp(-dE*beta);
+            sum += std::exp(-dE * beta);
             if (fp)
             {
                 fprintf(fp, "%10g %10g %10g\n",
-                        time[j], dE, -BOLTZ*reftemp*std::log(sum/(j+1)) );
+                        time[j], dE, -BOLTZ * reftemp * std::log(sum / (j + 1)) );
             }
         }
-        aver = -BOLTZ*reftemp*std::log(sum/nenergy);
+        aver = -BOLTZ*reftemp*std::log(sum / nenergy);
         fprintf(stdout, "%-24s %10g\n", leg[i], aver);
     }
     if (fp)
@@ -1600,15 +1602,15 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
                     int *blocks, int *hists, int *samples, int *nlambdas,
                     const gmx_output_env_t *oenv)
 {
-    const char  *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
-    char         title[STRLEN], label_x[STRLEN], label_y[STRLEN], legend[STRLEN];
-    char         buf[STRLEN];
-    int          nblock_hist = 0, nblock_dh = 0, nblock_dhcoll = 0;
-    int          i, j, k;
+    const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
+    char        title[STRLEN], label_x[STRLEN], label_y[STRLEN], legend[STRLEN];
+    char        buf[STRLEN];
+    int         nblock_hist = 0, nblock_dh = 0, nblock_dhcoll = 0;
+    int         i, j, k;
     /* coll data */
     double       temp              = 0, start_time = 0, delta_time = 0, start_lambda = 0;
     static int   setnr             = 0;
-    double      *native_lambda_vec = nullptr;
+    double *     native_lambda_vec = nullptr;
     const char **lambda_components = nullptr;
     int          n_lambda_vec      = 0;
     bool         firstPass         = true;
@@ -1627,18 +1629,18 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
         else if (fr->block[i].id == enxDHCOLL)
         {
             nblock_dhcoll++;
-            if ( (fr->block[i].nsub < 1) ||
-                 (fr->block[i].sub[0].type != xdr_datatype_double) ||
-                 (fr->block[i].sub[0].nr < 5))
+            if ( (fr->block[i].nsub < 1)
+                 || (fr->block[i].sub[0].type != xdr_datatype_double)
+                 || (fr->block[i].sub[0].nr < 5))
             {
                 gmx_fatal(FARGS, "Unexpected block data");
             }
 
             /* read the data from the DHCOLL block */
-            temp            = fr->block[i].sub[0].dval[0];
-            start_time      = fr->block[i].sub[0].dval[1];
-            delta_time      = fr->block[i].sub[0].dval[2];
-            start_lambda    = fr->block[i].sub[0].dval[3];
+            temp         = fr->block[i].sub[0].dval[0];
+            start_time   = fr->block[i].sub[0].dval[1];
+            delta_time   = fr->block[i].sub[0].dval[2];
+            start_lambda = fr->block[i].sub[0].dval[3];
             if (fr->block[i].nsub > 1)
             {
                 if (firstPass)
@@ -1658,9 +1660,9 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
                 }
                 for (j = 0; j < n_lambda_vec; j++)
                 {
-                    native_lambda_vec[j] = fr->block[i].sub[0].dval[5+j];
-                    lambda_components[j] =
-                        efpt_singular_names[fr->block[i].sub[1].ival[2+j]];
+                    native_lambda_vec[j] = fr->block[i].sub[0].dval[5 + j];
+                    lambda_components[j]
+                        = efpt_singular_names[fr->block[i].sub[1].ival[2 + j]];
                 }
             }
         }
@@ -1700,7 +1702,7 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
 
     (*hists)   += nblock_hist;
     (*blocks)  += nblock_dh;
-    (*nlambdas) = nblock_hist+nblock_dh;
+    (*nlambdas) = nblock_hist + nblock_dh;
 
     /* write the data */
     if (nblock_hist > 0)
@@ -1712,16 +1714,16 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
             t_enxblock *blk = &(fr->block[i]);
             if (blk->id == enxDHHIST)
             {
-                double          foreign_lambda, dx;
-                gmx_int64_t     x0;
-                int             nhist, derivative;
+                double      foreign_lambda, dx;
+                gmx_int64_t x0;
+                int         nhist, derivative;
 
                 /* check the block types etc. */
-                if ( (blk->nsub < 2) ||
-                     (blk->sub[0].type != xdr_datatype_double) ||
-                     (blk->sub[1].type != xdr_datatype_int64) ||
-                     (blk->sub[0].nr < 2)  ||
-                     (blk->sub[1].nr < 2) )
+                if ( (blk->nsub < 2)
+                     || (blk->sub[0].type != xdr_datatype_double)
+                     || (blk->sub[1].type != xdr_datatype_int64)
+                     || (blk->sub[0].nr < 2)
+                     || (blk->sub[1].nr < 2) )
                 {
                     gmx_fatal(FARGS, "Unexpected block data in file");
                 }
@@ -1732,7 +1734,7 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
                 for (j = 0; j < nhist; j++)
                 {
                     const char *lg[1];
-                    x0 = blk->sub[1].lval[2+j];
+                    x0 = blk->sub[1].lval[2 + j];
 
                     if (!derivative)
                     {
@@ -1749,14 +1751,14 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
                     lg[0] = legend;
                     xvgr_new_dataset(*fp_dhdl, setnr, 1, lg, oenv);
                     setnr++;
-                    for (k = 0; k < blk->sub[j+2].nr; k++)
+                    for (k = 0; k < blk->sub[j + 2].nr; k++)
                     {
                         int    hist;
                         double xmin, xmax;
 
-                        hist = blk->sub[j+2].ival[k];
-                        xmin = (x0+k)*dx;
-                        xmax = (x0+k+1)*dx;
+                        hist = blk->sub[j + 2].ival[k];
+                        xmin = (x0 + k) * dx;
+                        xmax = (x0 + k + 1) * dx;
                         fprintf(*fp_dhdl, "%g %d\n%g %d\n", xmin, hist,
                                 xmax, hist);
                         sum += hist;
@@ -1769,12 +1771,12 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
                 }
             }
         }
-        (*samples) += static_cast<int>(sum/nblock_hist);
+        (*samples) += static_cast<int>(sum / nblock_hist);
     }
     else
     {
         /* raw dh */
-        int    len      = 0;
+        int len = 0;
 
         for (i = 0; i < fr->nblock; i++)
         {
@@ -1798,7 +1800,7 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
 
         for (i = 0; i < len; i++)
         {
-            double time = start_time + delta_time*i;
+            double time = start_time + delta_time * i;
 
             fprintf(*fp_dhdl, "%.4f ", time);
 
@@ -1843,7 +1845,7 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
 
 int gmx_energy(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] extracts energy components or distance restraint",
         "data from an energy file. The user is prompted to interactively",
         "select the desired energy terms.[PAR]",
@@ -1977,7 +1979,7 @@ int gmx_energy(int argc, char *argv[])
         { "-ovec", FALSE, etBOOL, {&bOvec},
           "Also plot the eigenvectors with [TT]-oten[tt]" }
     };
-    const char       * drleg[] = {
+    const char *       drleg[] = {
         "Running average",
         "Instantaneous"
     };
@@ -1987,44 +1989,44 @@ int gmx_energy(int argc, char *argv[])
         "Volume",  "Pressure"
     };
 
-    FILE              *out     = nullptr, *fp_pairs = nullptr, *fort = nullptr, *fodt = nullptr, *foten = nullptr;
-    FILE              *fp_dhdl = nullptr;
-    ener_file_t        fp;
-    int                timecheck = 0;
-    gmx_mtop_t         mtop;
-    gmx_localtop_t    *top = nullptr;
-    enerdata_t         edat;
-    gmx_enxnm_t       *enm = nullptr;
-    t_enxframe        *frame, *fr = nullptr;
-    int                cur = 0;
-#define NEXT (1-cur)
-    int                nre, teller, teller_disre, nfr;
-    gmx_int64_t        start_step;
-    int                nor = 0, nex = 0, norfr = 0, enx_i = 0;
-    real               start_t;
-    real              *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
-    int               *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
-    int                nbounds = 0, npairs;
-    gmx_bool           bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN, bDHDL;
-    gmx_bool           bFoundStart, bCont, bVisco;
-    double             sum, sumaver, sumt, dbl;
-    double            *time = nullptr;
-    real               Vaver;
-    int               *set     = nullptr, i, j, k, nset, sss;
-    gmx_bool          *bIsEner = nullptr;
-    char             **pairleg, **odtleg, **otenleg;
-    char             **leg = nullptr;
-    const char        *anm_j, *anm_k, *resnm_j, *resnm_k;
-    int                resnr_j, resnr_k;
-    const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
-    char               buf[256];
-    gmx_output_env_t  *oenv;
-    t_enxblock        *blk       = nullptr;
-    t_enxblock        *blk_disre = nullptr;
-    int                ndisre    = 0;
-    int                dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
+    FILE *          out     = nullptr, *fp_pairs = nullptr, *fort = nullptr, *fodt = nullptr, *foten = nullptr;
+    FILE *          fp_dhdl = nullptr;
+    ener_file_t     fp;
+    int             timecheck = 0;
+    gmx_mtop_t      mtop;
+    gmx_localtop_t *top = nullptr;
+    enerdata_t      edat;
+    gmx_enxnm_t *   enm = nullptr;
+    t_enxframe *    frame, *fr = nullptr;
+    int             cur = 0;
+#define NEXT (1 - cur)
+    int               nre, teller, teller_disre, nfr;
+    gmx_int64_t       start_step;
+    int               nor = 0, nex = 0, norfr = 0, enx_i = 0;
+    real              start_t;
+    real *            bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
+    int *             index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
+    int               nbounds = 0, npairs;
+    gmx_bool          bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN, bDHDL;
+    gmx_bool          bFoundStart, bCont, bVisco;
+    double            sum, sumaver, sumt, dbl;
+    double *          time = nullptr;
+    real              Vaver;
+    int *             set     = nullptr, i, j, k, nset, sss;
+    gmx_bool *        bIsEner = nullptr;
+    char **           pairleg, **odtleg, **otenleg;
+    char **           leg = nullptr;
+    const char *      anm_j, *anm_k, *resnm_j, *resnm_k;
+    int               resnr_j, resnr_k;
+    const char *      orinst_sub = "@ subtitle \"instantaneous\"\n";
+    char              buf[256];
+    gmx_output_env_t *oenv;
+    t_enxblock *      blk       = nullptr;
+    t_enxblock *      blk_disre = nullptr;
+    int               ndisre    = 0;
+    int               dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
 
-    t_filenm           fnm[] = {
+    t_filenm fnm[] = {
         { efEDR, "-f",    nullptr,      ffREAD  },
         { efEDR, "-f2",   nullptr,      ffOPTRD },
         { efTPR, "-s",    nullptr,      ffOPTRD },
@@ -2043,8 +2045,8 @@ int gmx_energy(int argc, char *argv[])
         { efXVG, "-odh",  "dhdl", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int                npargs;
-    t_pargs           *ppa;
+    int      npargs;
+    t_pargs *ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
@@ -2077,8 +2079,8 @@ int gmx_energy(int argc, char *argv[])
 
     bVisco = opt2bSet("-vis", NFILE, fnm);
 
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    gmx::MDModules mdModules;
+    t_inputrec *   ir = mdModules.inputrec();
 
     if ((!bDisRe) && (!bDHDL))
     {
@@ -2141,7 +2143,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-o", NFILE, fnm), "GROMACS Energies", "Time (ps)", buf,
                        oenv);
 
-        snew(leg, nset+1);
+        snew(leg, nset + 1);
         for (i = 0; (i < nset); i++)
         {
             leg[i] = enm[set[i]].name;
@@ -2149,7 +2151,7 @@ int gmx_energy(int argc, char *argv[])
         if (bSum)
         {
             leg[nset] = gmx_strdup("Sum");
-            xvgr_legend(out, nset+1, (const char**)leg, oenv);
+            xvgr_legend(out, nset + 1, (const char**)leg, oenv);
         }
         else
         {
@@ -2162,8 +2164,8 @@ int gmx_energy(int argc, char *argv[])
             bIsEner[i] = FALSE;
             for (j = 0; (j <= F_ETOT); j++)
             {
-                bIsEner[i] = bIsEner[i] ||
-                    (gmx_strcasecmp(interaction_function[j].longname, leg[i]) == 0);
+                bIsEner[i] = bIsEner[i]
+                    || (gmx_strcasecmp(interaction_function[j].longname, leg[i]) == 0);
             }
         }
 
@@ -2208,13 +2210,12 @@ int gmx_energy(int argc, char *argv[])
                 do
                 {
                     j++;
-                    srenew(orsel, j+1);
+                    srenew(orsel, j + 1);
                     if (1 != scanf("%d", &(orsel[j])))
                     {
                         gmx_fatal(FARGS, "Error reading user input");
                     }
-                }
-                while (orsel[j] > 0);
+                } while (orsel[j] > 0);
                 if (orsel[0] == -1)
                 {
                     fprintf(stderr, "Selecting all %d orientation restraints\n", nor);
@@ -2280,24 +2281,24 @@ int gmx_energy(int argc, char *argv[])
         {
             foten = xvgropen(opt2fn("-oten", NFILE, fnm),
                              "Order tensor", "Time (ps)", "", oenv);
-            snew(otenleg, bOvec ? nex*12 : nex*3);
+            snew(otenleg, bOvec ? nex * 12 : nex*3);
             for (i = 0; i < nex; i++)
             {
                 for (j = 0; j < 3; j++)
                 {
-                    sprintf(buf, "eig%d", j+1);
-                    otenleg[(bOvec ? 12 : 3)*i+j] = gmx_strdup(buf);
+                    sprintf(buf, "eig%d", j + 1);
+                    otenleg[(bOvec ? 12 : 3) * i + j] = gmx_strdup(buf);
                 }
                 if (bOvec)
                 {
                     for (j = 0; j < 9; j++)
                     {
-                        sprintf(buf, "vec%d%s", j/3+1, j%3 == 0 ? "x" : (j%3 == 1 ? "y" : "z"));
-                        otenleg[12*i+3+j] = gmx_strdup(buf);
+                        sprintf(buf, "vec%d%s", j / 3 + 1, j % 3 == 0 ? "x" : (j % 3 == 1 ? "y" : "z"));
+                        otenleg[12 * i + 3 + j] = gmx_strdup(buf);
                     }
                 }
             }
-            xvgr_legend(foten, bOvec ? nex*12 : nex*3, (const char**)otenleg, oenv);
+            xvgr_legend(foten, bOvec ? nex * 12 : nex*3, (const char**)otenleg, oenv);
         }
     }
     else if (bDisRe)
@@ -2352,8 +2353,7 @@ int gmx_energy(int argc, char *argv[])
             {
                 timecheck = check_times(frame[NEXT].t);
             }
-        }
-        while (bCont && (timecheck < 0));
+        } while (bCont && (timecheck < 0));
 
         if ((timecheck == 0) && bCont)
         {
@@ -2363,25 +2363,25 @@ int gmx_energy(int argc, char *argv[])
             if (fr->nre > 0)
             {
                 /* The frame contains energies, so update cur */
-                cur  = NEXT;
+                cur = NEXT;
 
                 if (edat.nframes % 1000 == 0)
                 {
-                    srenew(edat.step, edat.nframes+1000);
-                    std::memset(&(edat.step[edat.nframes]), 0, 1000*sizeof(edat.step[0]));
-                    srenew(edat.steps, edat.nframes+1000);
-                    std::memset(&(edat.steps[edat.nframes]), 0, 1000*sizeof(edat.steps[0]));
-                    srenew(edat.points, edat.nframes+1000);
-                    std::memset(&(edat.points[edat.nframes]), 0, 1000*sizeof(edat.points[0]));
+                    srenew(edat.step, edat.nframes + 1000);
+                    std::memset(&(edat.step[edat.nframes]), 0, 1000 * sizeof(edat.step[0]));
+                    srenew(edat.steps, edat.nframes + 1000);
+                    std::memset(&(edat.steps[edat.nframes]), 0, 1000 * sizeof(edat.steps[0]));
+                    srenew(edat.points, edat.nframes + 1000);
+                    std::memset(&(edat.points[edat.nframes]), 0, 1000 * sizeof(edat.points[0]));
 
                     for (i = 0; i < nset; i++)
                     {
-                        srenew(edat.s[i].ener, edat.nframes+1000);
+                        srenew(edat.s[i].ener, edat.nframes + 1000);
                         std::memset(&(edat.s[i].ener[edat.nframes]), 0,
-                                    1000*sizeof(edat.s[i].ener[0]));
-                        srenew(edat.s[i].es, edat.nframes+1000);
+                                    1000 * sizeof(edat.s[i].ener[0]));
+                        srenew(edat.s[i].es, edat.nframes + 1000);
                         std::memset(&(edat.s[i].es[edat.nframes]), 0,
-                                    1000*sizeof(edat.s[i].es[0]));
+                                    1000 * sizeof(edat.s[i].es[0]));
                     }
                 }
 
@@ -2459,46 +2459,46 @@ int gmx_energy(int argc, char *argv[])
             blk_disre = find_block_id_enxframe(fr, enxDISRE, nullptr);
             if (bDisRe && bDRAll && !leg && blk_disre)
             {
-                t_iatom   *fa;
+                t_iatom *  fa;
                 t_iparams *ip;
 
                 fa = top->idef.il[F_DISRES].iatoms;
                 ip = top->idef.iparams;
-                if (blk_disre->nsub != 2 ||
-                    (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
+                if (blk_disre->nsub != 2
+                    || (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
                 {
                     gmx_incons("Number of disre sub-blocks not equal to 2");
                 }
 
                 ndisre = blk_disre->sub[0].nr;
-                if (ndisre != top->idef.il[F_DISRES].nr/3)
+                if (ndisre != top->idef.il[F_DISRES].nr / 3)
                 {
                     gmx_fatal(FARGS, "Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-                              ndisre, top->idef.il[F_DISRES].nr/3);
+                              ndisre, top->idef.il[F_DISRES].nr / 3);
                 }
                 snew(pairleg, ndisre);
                 int molb = 0;
                 for (i = 0; i < ndisre; i++)
                 {
                     snew(pairleg[i], 30);
-                    j = fa[3*i+1];
-                    k = fa[3*i+2];
+                    j = fa[3 * i + 1];
+                    k = fa[3 * i + 2];
                     mtopGetAtomAndResidueName(&mtop, j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
                     mtopGetAtomAndResidueName(&mtop, k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
                     sprintf(pairleg[i], "%d %s %d %s (%d)",
                             resnr_j, anm_j, resnr_k, anm_k,
-                            ip[fa[3*i]].disres.label);
+                            ip[fa[3 * i]].disres.label);
                 }
                 set = select_it(ndisre, pairleg, &nset);
-                snew(leg, 2*nset);
+                snew(leg, 2 * nset);
                 for (i = 0; (i < nset); i++)
                 {
-                    snew(leg[2*i], 32);
-                    sprintf(leg[2*i],  "a %s", pairleg[set[i]]);
-                    snew(leg[2*i+1], 32);
-                    sprintf(leg[2*i+1], "i %s", pairleg[set[i]]);
+                    snew(leg[2 * i], 32);
+                    sprintf(leg[2 * i],  "a %s", pairleg[set[i]]);
+                    snew(leg[2 * i + 1], 32);
+                    sprintf(leg[2 * i + 1], "i %s", pairleg[set[i]]);
                 }
-                xvgr_legend(fp_pairs, 2*nset, (const char**)leg, oenv);
+                xvgr_legend(fp_pairs, 2 * nset, (const char**)leg, oenv);
             }
 
             /*
@@ -2508,7 +2508,7 @@ int gmx_energy(int argc, char *argv[])
             {
                 if (edat.nframes % 1000 == 0)
                 {
-                    srenew(time, edat.nframes+1000);
+                    srenew(time, edat.nframes + 1000);
                 }
                 time[edat.nframes] = fr->t;
                 edat.nframes++;
@@ -2527,8 +2527,8 @@ int gmx_energy(int argc, char *argv[])
                     {
                         GMX_RELEASE_ASSERT(blk_disre != nullptr, "Trying to dereference NULL blk_disre pointer");
  #if !GMX_DOUBLE
-                        float  *disre_rt     =     blk_disre->sub[0].fval;
-                        float  *disre_rm3tav = blk_disre->sub[1].fval;
+                        float *disre_rt     =     blk_disre->sub[0].fval;
+                        float *disre_rm3tav = blk_disre->sub[1].fval;
  #else
                         double *disre_rt     =     blk_disre->sub[0].dval;
                         double *disre_rm3tav = blk_disre->sub[1].dval;
@@ -2580,8 +2580,8 @@ int gmx_energy(int argc, char *argv[])
                             {
                                 print_time(out, fr->t);
                                 print1(out, bDp, fr->ener[set[0]].e);
-                                print1(out, bDp, fr->ener[set[0]].esum/fr->nsum);
-                                print1(out, bDp, std::sqrt(fr->ener[set[0]].eav/fr->nsum));
+                                print1(out, bDp, fr->ener[set[0]].esum / fr->nsum);
+                                print1(out, bDp, std::sqrt(fr->ener[set[0]].eav / fr->nsum));
                                 fprintf(out, "\n");
                             }
                         }
@@ -2595,7 +2595,7 @@ int gmx_energy(int argc, char *argv[])
                                 {
                                     sum += fr->ener[set[i]].e;
                                 }
-                                print1(out, bDp, sum/nmol-ezero);
+                                print1(out, bDp, sum / nmol - ezero);
                             }
                             else
                             {
@@ -2603,7 +2603,7 @@ int gmx_energy(int argc, char *argv[])
                                 {
                                     if (bIsEner[i])
                                     {
-                                        print1(out, bDp, (fr->ener[set[i]].e)/nmol-ezero);
+                                        print1(out, bDp, (fr->ener[set[i]].e) / nmol - ezero);
                                     }
                                     else
                                     {
@@ -2622,7 +2622,7 @@ int gmx_energy(int argc, char *argv[])
 #else
                         xdr_datatype dt = xdr_datatype_double;
 #endif
-                        real        *vals;
+                        real *vals;
 
                         if ( (blk->nsub != 1) || (blk->sub[0].type != dt) )
                         {
@@ -2649,7 +2649,7 @@ int gmx_energy(int argc, char *argv[])
                         {
                             for (i = 0; i < nor; i++)
                             {
-                                odrms[i] += gmx::square(vals[i]-oobs[i]);
+                                odrms[i] += gmx::square(vals[i] - oobs[i]);
                             }
                         }
                         if (bORT)
@@ -2666,7 +2666,7 @@ int gmx_energy(int argc, char *argv[])
                             fprintf(fodt, "  %10f", fr->t);
                             for (i = 0; i < norsel; i++)
                             {
-                                fprintf(fodt, " %g", vals[orsel[i]]-oobs[orsel[i]]);
+                                fprintf(fodt, " %g", vals[orsel[i]] - oobs[orsel[i]]);
                             }
                             fprintf(fodt, "\n");
                         }
@@ -2680,7 +2680,7 @@ int gmx_energy(int argc, char *argv[])
 #else
                         xdr_datatype dt = xdr_datatype_double;
 #endif
-                        real        *vals;
+                        real *vals;
 
                         if ( (blk->nsub != 1) || (blk->sub[0].type != dt) )
                         {
@@ -2692,17 +2692,17 @@ int gmx_energy(int argc, char *argv[])
                         vals = blk->sub[0].dval;
 #endif
 
-                        if (blk->sub[0].nr != nex*12)
+                        if (blk->sub[0].nr != nex * 12)
                         {
                             gmx_fatal(FARGS, "Number of orientation experiments in energy file (%g) does not match with the topology (%d)",
-                                      blk->sub[0].nr/12, nex);
+                                      blk->sub[0].nr / 12, nex);
                         }
                         fprintf(foten, "  %10f", fr->t);
                         for (i = 0; i < nex; i++)
                         {
                             for (j = 0; j < (bOvec ? 12 : 3); j++)
                             {
-                                fprintf(foten, " %g", vals[i*12+j]);
+                                fprintf(foten, " %g", vals[i * 12 + j]);
                             }
                         }
                         fprintf(foten, "\n");
@@ -2711,8 +2711,7 @@ int gmx_energy(int argc, char *argv[])
             }
             teller++;
         }
-    }
-    while (bCont && (timecheck == 0));
+    } while (bCont && (timecheck == 0));
 
     fprintf(stderr, "\n");
     close_enx(fp);
@@ -2745,7 +2744,7 @@ int gmx_energy(int argc, char *argv[])
         }
         for (i = 0; i < nor; i++)
         {
-            fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr);
+            fprintf(out, "%5d  %g\n", or_label[i], orient[i] / norfr);
         }
         xvgrclose(out);
     }
@@ -2760,7 +2759,7 @@ int gmx_energy(int argc, char *argv[])
         }
         for (i = 0; i < nor; i++)
         {
-            fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr-oobs[i]);
+            fprintf(out, "%5d  %g\n", or_label[i], orient[i] / norfr - oobs[i]);
         }
         xvgrclose(out);
     }
@@ -2775,7 +2774,7 @@ int gmx_energy(int argc, char *argv[])
         }
         for (i = 0; i < nor; i++)
         {
-            fprintf(out, "%5d  %g\n", or_label[i], std::sqrt(odrms[i]/norfr));
+            fprintf(out, "%5d  %g\n", or_label[i], std::sqrt(odrms[i] / norfr));
         }
         xvgrclose(out);
     }
@@ -2815,7 +2814,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else
     {
-        double dt = (frame[cur].t-start_t)/(edat.nframes-1);
+        double dt = (frame[cur].t - start_t) / (edat.nframes - 1);
         analyse_ener(opt2bSet("-corr", NFILE, fnm), opt2fn("-corr", NFILE, fnm),
                      bFee, bSum, bFluct,
                      bVisco, opt2fn("-vis", NFILE, fnm),

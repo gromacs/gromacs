@@ -86,7 +86,7 @@ class AnalysisDataProxy : public AbstractAnalysisData,
 
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual bool parallelDataStarted(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &frame);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
@@ -98,10 +98,10 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        AbstractAnalysisData   &source_;
-        int                     firstColumn_;
-        int                     columnSpan_;
-        bool                    bParallel_;
+        AbstractAnalysisData &source_;
+        int                   firstColumn_;
+        int                   columnSpan_;
+        bool                  bParallel_;
 
         // Copy and assign disallowed by base.
 };

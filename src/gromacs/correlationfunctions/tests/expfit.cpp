@@ -85,7 +85,7 @@ class ExpfitTest : public ::testing::Test
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            double                ** tempValues = nullptr;
+            double **                tempValues = nullptr;
             std::vector<std::string> fileName;
             fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP.xvg"));
             fileName.push_back(test::TestFileManager::getInputFilePath("testPRES.xvg"));
@@ -100,7 +100,7 @@ class ExpfitTest : public ::testing::Test
                 ed.nrLines_   = read_xvg(name, &tempValues, &nrColumns);
                 ed.dt_        = tempValues[0][1] - tempValues[0][0];
                 ed.startTime_ = tempValues[0][0];
-                ed.endTime_   = tempValues[0][ed.nrLines_-1];
+                ed.endTime_   = tempValues[0][ed.nrLines_ - 1];
                 for (int j = 0; j  < ed.nrLines_; j++)
                 {
                     ed.x_.push_back((real)tempValues[0][j]);
@@ -153,12 +153,12 @@ class ExpfitTest : public ::testing::Test
 std::vector<ExpfitData> ExpfitTest::data_;
 
 TEST_F (ExpfitTest, EffnEXP1) {
-    double  param[] = {25};
+    double param[] = {25};
     test(effnEXP1, param, 1e-5, 0);
 }
 
 TEST_F (ExpfitTest, EffnEXP2) {
-    double  param[] = {35, 0.5};
+    double param[] = {35, 0.5};
     test(effnEXP2, param, 3e-5, 0);
 }
 
@@ -168,27 +168,27 @@ TEST_F (ExpfitTest, EffnEXPEXP) {
 }
 
 TEST_F (ExpfitTest, EffnEXP5) {
-    double  param[] = {0.5, 5, 0.5, 50, 0.002};
+    double param[] = {0.5, 5, 0.5, 50, 0.002};
     test(effnEXP5, param, 1e-2, 2);
 }
 
 TEST_F (ExpfitTest, EffnEXP7) {
-    double  param[] = {0.1, 2, 0.5, 30, 0.3, 50, -0.002};
+    double param[] = {0.1, 2, 0.5, 30, 0.3, 50, -0.002};
     test(effnEXP7, param, 1e-2, 2);
 }
 
 TEST_F (ExpfitTest, EffnEXP9) {
-    double  param[] = {0.4, 5, 0.2, 30, 0.1, 70, 0.2, 200, -0.05};
+    double param[] = {0.4, 5, 0.2, 30, 0.1, 70, 0.2, 200, -0.05};
     test(effnEXP9, param, 4e-2, 2);
 }
 
 TEST_F (ExpfitTest, EffnERF) {
-    double  param[] = {80, 120, 180, 5};
+    double param[] = {80, 120, 180, 5};
     test(effnERF, param, 1e-1, 3);
 }
 
 TEST_F (ExpfitTest, EffnERREST) {
-    double  param[] = {1, 0.9, 100};
+    double param[] = {1, 0.9, 100};
     test(effnERREST, param, 5e-3, 4);
 }
 

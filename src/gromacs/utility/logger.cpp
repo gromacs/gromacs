@@ -47,7 +47,7 @@ namespace
 {
 
 //! Helper method for reading logging targets from an array.
-ILogTarget *getTarget(ILogTarget        *targets[MDLogger::LogLevelCount],
+ILogTarget *getTarget(ILogTarget *       targets[MDLogger::LogLevelCount],
                       MDLogger::LogLevel level)
 {
     return targets[static_cast<int>(level)];

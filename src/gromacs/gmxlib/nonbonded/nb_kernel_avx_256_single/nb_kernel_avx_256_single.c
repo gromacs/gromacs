@@ -523,4 +523,4 @@ nb_kernel_info_t
 };
 
 int
-    kernellist_avx_256_single_size = sizeof(kernellist_avx_256_single)/sizeof(kernellist_avx_256_single[0]);
+    kernellist_avx_256_single_size = sizeof(kernellist_avx_256_single) / sizeof(kernellist_avx_256_single[0]);

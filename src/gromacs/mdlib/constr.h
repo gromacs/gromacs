@@ -87,21 +87,21 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount);
 gmx_shakedata_t shake_init();
 /* Initializes and return the SHAKE data structure */
 
-gmx_bool bshakef(FILE           *log,          /* Log file			*/
+gmx_bool bshakef(FILE *          log,          /* Log file			*/
                  gmx_shakedata_t shaked,       /* Total number of atoms	*/
                  real            invmass[],    /* Atomic masses		*/
                  int             nblocks,      /* The number of shake blocks	*/
                  int             sblock[],     /* The shake blocks             */
-                 t_idef         *idef,         /* The interaction def		*/
-                 t_inputrec     *ir,           /* Input record		        */
+                 t_idef *        idef,         /* The interaction def		*/
+                 t_inputrec *    ir,           /* Input record		        */
                  rvec            x_s[],        /* Coords before update		*/
                  rvec            prime[],      /* Output coords		*/
-                 t_nrnb         *nrnb,         /* Performance measure          */
-                 real           *lagr,         /* The Lagrange multipliers     */
+                 t_nrnb *        nrnb,         /* Performance measure          */
+                 real *          lagr,         /* The Lagrange multipliers     */
                  real            lambda,       /* FEP lambda                   */
-                 real           *dvdlambda,    /* FEP force                    */
+                 real *          dvdlambda,    /* FEP force                    */
                  real            invdt,        /* 1/delta_t                    */
-                 rvec           *v,            /* Also constrain v if v!=NULL  */
+                 rvec *          v,            /* Also constrain v if v!=NULL  */
                  gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
                  tensor          vir_r_m_dr,   /* sum r x m delta_r            */
                  gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
@@ -120,9 +120,9 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
 
 void settle_free(gmx_settledata_t settled);
 
-void settle_set_constraints(gmx_settledata_t  settled,
-                            const t_ilist    *il_settle,
-                            const t_mdatoms  *mdatoms);
+void settle_set_constraints(gmx_settledata_t settled,
+                            const t_ilist *  il_settle,
+                            const t_mdatoms *mdatoms);
 /* Set up the indices for the settle constraints */
 
 void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
@@ -132,10 +132,10 @@ void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
              const real          x[],              /* Reference coordinates */
              real                xprime[],         /* New coords, to be settled */
              real                invdt,            /* 1/delta_t */
-             real               *v,                /* Also constrain v if v!=NULL */
+             real *              v,                /* Also constrain v if v!=NULL */
              bool                bCalcVirial,      /* Calculate the virial contribution */
              tensor              vir_r_m_dr,       /* sum r x m delta_r */
-             bool               *bErrorHasOccurred /* True if a settle error occurred */
+             bool *              bErrorHasOccurred /* True if a settle error occurred */
              );
 /* Constrain coordinates using SETTLE.
  * Can be called on any number of threads.
@@ -210,11 +210,11 @@ gmx_constr_t init_constraints(FILE *log,
                               struct t_commrec *cr);
 /* Initialize constraints stuff */
 
-void set_constraints(gmx_constr_t             constr,
-                     gmx_localtop_t          *top,
-                     const t_inputrec        *ir,
-                     const t_mdatoms         *md,
-                     struct t_commrec        *cr);
+void set_constraints(gmx_constr_t      constr,
+                     gmx_localtop_t *  top,
+                     const t_inputrec *ir,
+                     const t_mdatoms * md,
+                     struct t_commrec *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
@@ -234,7 +234,7 @@ const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 const int **atom2settle_moltype(gmx_constr_t constr);
 /* Returns the an array of atom to settle for the moltypes */
 
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
+#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr) + (con) * 3 : (iatom_constrnc) + (con - nconstr) * 3)
 /* Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated.

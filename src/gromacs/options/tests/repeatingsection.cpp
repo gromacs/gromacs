@@ -244,7 +244,7 @@ TEST(RepeatingOptionSectionTest, HandlesNestedSections)
     auto                           sec = options.addSection(
                 RepeatingOptionSection<NestedSectionData>("section")
                     .storeVector(&values));
-    auto                           subsec = sec.addSection(
+    auto subsec = sec.addSection(
                 RepeatingOptionSection<SectionData>("subsec")
                     .storeVector(&sec.bind().subsec));
     using gmx::IntegerOption;

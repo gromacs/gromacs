@@ -79,9 +79,9 @@ class CommandLineHelpModule : public ICommandLineModule
          * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        CommandLineHelpModule(const IProgramContext            &programContext,
-                              const std::string                &binaryName,
-                              const CommandLineModuleMap       &modules,
+        CommandLineHelpModule(const IProgramContext &           programContext,
+                              const std::string &               binaryName,
+                              const CommandLineModuleMap &      modules,
                               const CommandLineModuleGroupList &groups);
         ~CommandLineHelpModule();
 

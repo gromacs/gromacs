@@ -71,8 +71,8 @@ namespace
 class DefaultInputRedirector : public IFileInputRedirector
 {
     public:
-        virtual bool fileExists(const char            *filename,
-                                File::NotFoundHandler  onNotFound) const
+        virtual bool fileExists(const char *          filename,
+                                File::NotFoundHandler onNotFound) const
         {
             return File::exists(filename, onNotFound);
         }

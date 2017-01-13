@@ -58,7 +58,8 @@ extern "C"
 /* Canonical values of the helix phi/psi angles */
 
 
-typedef struct {
+typedef struct
+{
     real     phi, psi, pprms2;
     real     jcaha;
     real     d3, d4, d5, rmsa;
@@ -69,7 +70,8 @@ typedef struct {
     char     label[32];
 } t_bb;
 
-enum {
+enum
+{
     efhRAD,  efhTWIST, efhRISE, efhLEN,
     efhDIP,  efhRMS,   efhRMSA, efhCD222,
     efhPPRMS, efhCPHI,  efhPHI,  efhPSI,

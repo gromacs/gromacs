@@ -138,9 +138,9 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
 
     // turn off internal pinning if KMP_AFFINITY is set but does not contain
     // the settings 'disabled' or 'none'.
-    if (bKmpAffinitySet &&
-        (strstr(kmp_env, "disabled") == NULL) &&
-        (strstr(kmp_env, "none") == NULL))
+    if (bKmpAffinitySet
+        && (strstr(kmp_env, "disabled") == NULL)
+        && (strstr(kmp_env, "none") == NULL))
     {
         try
         {

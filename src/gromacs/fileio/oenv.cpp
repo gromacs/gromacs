@@ -51,16 +51,16 @@ struct gmx_output_env_t
           xvg_format(exvgNONE),
           verbosity(0) {}
 
-    const gmx::IProgramContext  &programContext;
+    const gmx::IProgramContext &programContext;
 
     /* the time unit, enum defined in oenv.h */
-    time_unit_t                          time_unit;
+    time_unit_t time_unit;
     /* view of file requested */
-    gmx_bool                             view;
+    gmx_bool view;
     /* xvg output format, enum defined in oenv.h */
-    xvg_format_t                         xvg_format;
+    xvg_format_t xvg_format;
     /* The level of verbosity for this program */
-    int                                  verbosity;
+    int verbosity;
 };
 
 /* The source code in this file should be thread-safe.
@@ -96,11 +96,11 @@ void output_env_init(gmx_output_env_t **oenvp,
     try
     {
         gmx_output_env_t *oenv = new gmx_output_env_t(context);
-        *oenvp            = oenv;
-        oenv->time_unit   = tmu;
-        oenv->view        = view;
-        oenv->xvg_format  = xvg_format;
-        oenv->verbosity   = verbosity;
+        *oenvp           = oenv;
+        oenv->time_unit  = tmu;
+        oenv->view       = view;
+        oenv->xvg_format = xvg_format;
+        oenv->verbosity  = verbosity;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -136,8 +136,8 @@ const char *output_env_get_time_label(const gmx_output_env_t *oenv)
     char *label;
     snew(label, 20);
 
-    sprintf(label, "Time (%s)", time_units_str[oenv->time_unit] ?
-            time_units_str[oenv->time_unit] : "ps");
+    sprintf(label, "Time (%s)", time_units_str[oenv->time_unit]
+            ? time_units_str[oenv->time_unit] : "ps");
 
     return label;
 }
@@ -147,8 +147,8 @@ const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
     char *label;
     snew(label, 20);
 
-    sprintf(label, "Time (%s)", time_units_xvgr[oenv->time_unit] ?
-            time_units_xvgr[oenv->time_unit] : "ps");
+    sprintf(label, "Time (%s)", time_units_xvgr[oenv->time_unit]
+            ? time_units_xvgr[oenv->time_unit] : "ps");
 
     return label;
 }
@@ -165,7 +165,7 @@ real output_env_get_time_invfactor(const gmx_output_env_t *oenv)
 
 real output_env_conv_time(const gmx_output_env_t *oenv, real time)
 {
-    return time*timefactors[oenv->time_unit];
+    return time * timefactors[oenv->time_unit];
 }
 
 void output_env_conv_times(const gmx_output_env_t *oenv, int n, real *time)
@@ -205,8 +205,7 @@ const char *output_env_get_program_display_name(const gmx_output_env_t *oenv)
     return displayName;
 }
 
-const gmx::IProgramContext &
-output_env_get_program_context(const gmx_output_env_t *oenv)
+const gmx::IProgramContext &output_env_get_program_context(const gmx_output_env_t *oenv)
 {
     return oenv->programContext;
 }

@@ -50,13 +50,14 @@
 #define OFFS_X          4
 #define OFFS_Y          4
 
-typedef struct {
-    Window         self, Parent;
-    unsigned long  color;
-    char          *text;
-    bool           bFocus;
-    int            x, y, width, height, bwidth;
-    Cursor         cursor;
+typedef struct
+{
+    Window        self, Parent;
+    unsigned long color;
+    char *        text;
+    bool          bFocus;
+    int           x, y, width, height, bwidth;
+    Cursor        cursor;
 } t_windata;
 
 extern int CheckWin(Window win, const char *file, int line);

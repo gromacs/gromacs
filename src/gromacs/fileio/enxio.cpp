@@ -64,7 +64,7 @@
 /* This number should be increased whenever the file format changes! */
 static const int enx_version = 5;
 
-const char      *enx_block_id_name[] = {
+const char *enx_block_id_name[] = {
     "Averaged orientation restraints",
     "Instantaneous orientation restraints",
     "Orientation restraint order tensor(s)",
@@ -76,19 +76,20 @@ const char      *enx_block_id_name[] = {
 
 
 /* Stuff for reading pre 4.1 energy files */
-typedef struct {
-    gmx_bool     bOldFileOpen;   /* Is this an open old file? */
-    gmx_bool     bReadFirstStep; /* Did we read the first step? */
-    int          first_step;     /* First step in the energy file */
-    int          step_prev;      /* Previous step */
-    int          nsum_prev;      /* Previous step sum length */
-    t_energy    *ener_prev;      /* Previous energy sums */
+typedef struct
+{
+    gmx_bool  bOldFileOpen;      /* Is this an open old file? */
+    gmx_bool  bReadFirstStep;    /* Did we read the first step? */
+    int       first_step;        /* First step in the energy file */
+    int       step_prev;         /* Previous step */
+    int       nsum_prev;         /* Previous step sum length */
+    t_energy *ener_prev;         /* Previous energy sums */
 } ener_old_t;
 
 struct ener_file
 {
     ener_old_t eo;
-    t_fileio  *fio;
+    t_fileio * fio;
     int        framenr;
     real       frametime;
 };
@@ -387,7 +388,7 @@ static void edr_strings(XDR *xdr, gmx_bool bRead, int file_version,
 void do_enxnms(ener_file_t ef, int *nre, gmx_enxnm_t **nms)
 {
     int      magic = -55555;
-    XDR     *xdr;
+    XDR *    xdr;
     gmx_bool bRead = gmx_fio_getread(ef->fio);
     int      file_version;
 
@@ -439,12 +440,12 @@ void do_enxnms(ener_file_t ef, int *nre, gmx_enxnm_t **nms)
 static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
                            int nre_test, gmx_bool *bWrongPrecision, gmx_bool *bOK)
 {
-    int          magic = -7777777;
-    real         first_real_to_check;
-    int          b, zero = 0, dum = 0;
-    gmx_bool     bRead      = gmx_fio_getread(ef->fio);
-    int          ndisre     = 0;
-    int          startb     = 0;
+    int      magic = -7777777;
+    real     first_real_to_check;
+    int      b, zero = 0, dum = 0;
+    gmx_bool bRead  = gmx_fio_getread(ef->fio);
+    int      ndisre = 0;
+    int      startb = 0;
 #if !GMX_DOUBLE
     xdr_datatype dtreal = xdr_datatype_float;
 #else
@@ -595,9 +596,9 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
 
 
     /* Frames could have nre=0, so we can not rely only on the fr->nre check */
-    if (bRead && nre_test >= 0 &&
-        ((fr->nre > 0 && fr->nre != nre_test) ||
-         fr->nre < 0 || ndisre < 0 || fr->nblock < 0))
+    if (bRead && nre_test >= 0
+        && ((fr->nre > 0 && fr->nre != nre_test)
+            || fr->nre < 0 || ndisre < 0 || fr->nblock < 0))
     {
         if (bWrongPrecision)
         {
@@ -773,10 +774,9 @@ void done_ener_file(ener_file_t ef)
  *
  * \return TRUE if file could be open but is empty, otherwise FALSE.
  */
-static gmx_bool
-empty_file(const char *fn)
+static gmx_bool empty_file(const char *fn)
 {
-    FILE    *fp;
+    FILE *   fp;
     char     dum;
     int      ret;
     gmx_bool bEmpty;
@@ -795,9 +795,9 @@ empty_file(const char *fn)
 ener_file_t open_enx(const char *fn, const char *mode)
 {
     int               nre;
-    gmx_enxnm_t      *nms          = nullptr;
+    gmx_enxnm_t *     nms          = nullptr;
     int               file_version = -1;
-    t_enxframe       *fr;
+    t_enxframe *      fr;
     gmx_bool          bWrongPrecision, bOK = TRUE;
     struct ener_file *ef;
 
@@ -816,9 +816,9 @@ ener_file_t open_enx(const char *fn, const char *mode)
         }
 
         /* Now check whether this file is in single precision */
-        if (!bWrongPrecision &&
-            ((fr->e_size && (fr->nre == nre) &&
-              (nre*4*(long int)sizeof(float) == fr->e_size)) ) )
+        if (!bWrongPrecision
+            && ((fr->e_size && (fr->nre == nre)
+                 && (nre * 4 * (long int)sizeof(float) == fr->e_size)) ) )
         {
             fprintf(stderr, "Opened %s as single precision energy file\n", fn);
             free_enxnms(nre, nms);
@@ -834,8 +834,8 @@ ener_file_t open_enx(const char *fn, const char *mode)
                 gmx_file("Cannot write energy file header; maybe you are out of disk space?");
             }
 
-            if (((fr->e_size && (fr->nre == nre) &&
-                  (nre*4*(long int)sizeof(double) == fr->e_size)) ))
+            if (((fr->e_size && (fr->nre == nre)
+                  && (nre * 4 * (long int)sizeof(double) == fr->e_size)) ))
             {
                 fprintf(stderr, "Opened %s as double precision energy file\n",
                         fn);
@@ -913,9 +913,9 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
             eav_all          = fr->ener[i].eav;
             fr->ener[i].esum = esum_all - ener_old->ener_prev[i].esum;
             fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
-                - gmx::square(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
-                              - esum_all/nstep_all)*
-                (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
+                - gmx::square(ener_old->ener_prev[i].esum / (nstep_all - fr->nsum)
+                              - esum_all / nstep_all)
+                * (nstep_all - fr->nsum) * nstep_all / (double)fr->nsum;
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;
         }
@@ -945,17 +945,17 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
 
 gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
 {
-    int           file_version = -1;
-    int           i, b;
-    gmx_bool      bRead, bOK, bOK1, bSane;
-    real          tmp1, tmp2, rdum;
+    int      file_version = -1;
+    int      i, b;
+    gmx_bool bRead, bOK, bOK1, bSane;
+    real     tmp1, tmp2, rdum;
     /*int       d_size;*/
 
     bOK   = TRUE;
     bRead = gmx_fio_getread(ef->fio);
     if (!bRead)
     {
-        fr->e_size = fr->nre*sizeof(fr->ener[0].e)*4;
+        fr->e_size = fr->nre * sizeof(fr->ener[0].e) * 4;
         /*d_size = fr->ndisre*(sizeof(real)*2);*/
     }
 
@@ -964,7 +964,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         if (bRead)
         {
             fprintf(stderr, "\rLast energy frame read %d time %8.3f         ",
-                    ef->framenr-1, ef->frametime);
+                    ef->framenr - 1, ef->frametime);
             fflush(stderr);
 
             if (!bOK)
@@ -982,9 +982,9 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     }
     if (bRead)
     {
-        if ((ef->framenr <   20 || ef->framenr %   10 == 0) &&
-            (ef->framenr <  200 || ef->framenr %  100 == 0) &&
-            (ef->framenr < 2000 || ef->framenr % 1000 == 0))
+        if ((ef->framenr <   20 || ef->framenr %   10 == 0)
+            && (ef->framenr <  200 || ef->framenr %  100 == 0)
+            && (ef->framenr < 2000 || ef->framenr % 1000 == 0))
         {
             fprintf(stderr, "\rReading energy frame %6d time %8.3f         ",
                     ef->framenr, fr->t);
@@ -1024,8 +1024,8 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         /* Do not store sums of length 1,
          * since this does not add information.
          */
-        if (file_version == 1 ||
-            (bRead && fr->nsum > 0) || fr->nsum > 1)
+        if (file_version == 1
+            || (bRead && fr->nsum > 0) || fr->nsum > 1)
         {
             tmp1 = fr->ener[i].eav;
             bOK  = bOK && gmx_fio_do_real(ef->fio, tmp1);
@@ -1116,7 +1116,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         if (bRead)
         {
             fprintf(stderr, "\nLast energy frame read %d",
-                    ef->framenr-1);
+                    ef->framenr - 1);
             fprintf(stderr, "\nWARNING: Incomplete energy frame: nr %d time %8.3f\n",
                     ef->framenr, fr->t);
         }
@@ -1167,9 +1167,9 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
     int          ind1[] = { XX, YY, ZZ, XX, XX, YY };
     int          nre, nfr, i, j, ni, npcoupl;
     char         buf[STRLEN];
-    const char  *bufi;
+    const char * bufi;
     gmx_enxnm_t *enm = nullptr;
-    t_enxframe  *fr;
+    t_enxframe * fr;
     ener_file_t  in;
 
     in = open_enx(fn, "r");
@@ -1194,8 +1194,8 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
         clear_mat(state->boxv);
         for (i = 0; i < npcoupl; i++)
         {
-            state->boxv[ind0[i]][ind1[i]] =
-                find_energy(boxvel_nm[i], nre, enm, fr);
+            state->boxv[ind0[i]][ind1[i]]
+                = find_energy(boxvel_nm[i], nre, enm, fr);
         }
         fprintf(stderr, "\nREAD %d BOX VELOCITIES FROM %s\n\n", npcoupl, fn);
     }
@@ -1258,8 +1258,8 @@ static real ener_tensor_diag(int n, int *ind1, int *ind2,
     int    nfound;
     size_t len;
 
-    d1 = tensi[i]/DIM;
-    d2 = tensi[i] - d1*DIM;
+    d1 = tensi[i] / DIM;
+    d2 = tensi[i] - d1 * DIM;
 
     /* Find the diagonal elements d1 and d2 */
     len    = std::strlen(enm1[ind1[i]].name);
@@ -1268,10 +1268,10 @@ static real ener_tensor_diag(int n, int *ind1, int *ind2,
     nfound = 0;
     for (j = 0; j < n; j++)
     {
-        if (tensi[j] >= 0 &&
-            std::strlen(enm1[ind1[j]].name) == len &&
-            std::strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len-2) == 0 &&
-            (tensi[j] == d1*DIM+d1 || tensi[j] == d2*DIM+d2))
+        if (tensi[j] >= 0
+            && std::strlen(enm1[ind1[j]].name) == len
+            && std::strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len - 2) == 0
+            && (tensi[j] == d1 * DIM + d1 || tensi[j] == d2 * DIM + d2))
         {
             prod1 *= fabs(e1[ind1[j]].e);
             prod2 *= fabs(e2[ind2[j]].e);
@@ -1281,7 +1281,7 @@ static real ener_tensor_diag(int n, int *ind1, int *ind2,
 
     if (nfound == 2)
     {
-        return 0.5*(std::sqrt(prod1) + std::sqrt(prod2));
+        return 0.5 * (std::sqrt(prod1) + std::sqrt(prod2));
     }
     else
     {
@@ -1297,11 +1297,11 @@ static gmx_bool enernm_equal(const char *nm1, const char *nm2)
     len2 = std::strlen(nm2);
 
     /* Remove " (bar)" at the end of a name */
-    if (len1 > 6 && std::strcmp(nm1+len1-6, " (bar)") == 0)
+    if (len1 > 6 && std::strcmp(nm1 + len1 - 6, " (bar)") == 0)
     {
         len1 -= 6;
     }
-    if (len2 > 6 && std::strcmp(nm2+len2-6, " (bar)") == 0)
+    if (len2 > 6 && std::strcmp(nm2 + len2 - 6, " (bar)") == 0)
     {
         len2 -= 6;
     }
@@ -1315,9 +1315,9 @@ static void cmp_energies(FILE *fp, int step1, int step2,
                          real ftol, real abstol,
                          int nre, int *ind1, int *ind2, int maxener)
 {
-    int   i, ii;
-    int  *tensi, len, d1, d2;
-    real  ftol_i, abstol_i;
+    int  i, ii;
+    int *tensi, len, d1, d2;
+    real ftol_i, abstol_i;
 
     snew(tensi, maxener);
     /* Check for tensor elements ending on "-XX", "-XY", ... , "-ZZ" */
@@ -1326,14 +1326,14 @@ static void cmp_energies(FILE *fp, int step1, int step2,
         ii       = ind1[i];
         tensi[i] = -1;
         len      = std::strlen(enm1[ii].name);
-        if (len > 3 && enm1[ii].name[len-3] == '-')
+        if (len > 3 && enm1[ii].name[len - 3] == '-')
         {
-            d1 = enm1[ii].name[len-2] - 'X';
-            d2 = enm1[ii].name[len-1] - 'X';
-            if (d1 >= 0 && d1 < DIM &&
-                d2 >= 0 && d2 < DIM)
+            d1 = enm1[ii].name[len - 2] - 'X';
+            d2 = enm1[ii].name[len - 1] - 'X';
+            if (d1 >= 0 && d1 < DIM
+                && d2 >= 0 && d2 < DIM)
             {
-                tensi[i] = d1*DIM + d2;
+                tensi[i] = d1 * DIM + d2;
             }
         }
     }
@@ -1348,11 +1348,11 @@ static void cmp_energies(FILE *fp, int step1, int step2,
             /* Do the relative tolerance through an absolute tolerance times
              * the size of diagonal components of the tensor.
              */
-            abstol_i = ftol*ener_tensor_diag(nre, ind1, ind2, enm1, tensi, i, e1, e2);
+            abstol_i = ftol * ener_tensor_diag(nre, ind1, ind2, enm1, tensi, i, e1, e2);
             if (debug)
             {
                 fprintf(debug, "tensor '%s' val %f diag %f\n",
-                        enm1[i].name, e1[i].e, abstol_i/ftol);
+                        enm1[i].name, e1[i].e, abstol_i / ftol);
             }
             if (abstol_i > 0)
             {
@@ -1493,12 +1493,12 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
 
 void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const char *lastener)
 {
-    int            nre, nre1, nre2;
-    ener_file_t    in1, in2;
-    int            i, j, maxener, *ind1, *ind2, *have;
-    gmx_enxnm_t   *enm1 = nullptr, *enm2 = nullptr;
-    t_enxframe    *fr1, *fr2;
-    gmx_bool       b1, b2;
+    int          nre, nre1, nre2;
+    ener_file_t  in1, in2;
+    int          i, j, maxener, *ind1, *ind2, *have;
+    gmx_enxnm_t *enm1 = nullptr, *enm2 = nullptr;
+    t_enxframe * fr1, *fr2;
+    gmx_bool     b1, b2;
 
     fprintf(stdout, "comparing energy file %s and %s\n\n", fn1, fn2);
 
@@ -1533,7 +1533,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
                 break;
             }
         }
-        if (nre == 0 || ind1[nre-1] != i)
+        if (nre == 0 || ind1[nre - 1] != i)
         {
             cmp_str(stdout, "enm", i, enm1[i].name, "-");
         }
@@ -1551,7 +1551,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
     {
         if ((lastener != nullptr) && (std::strstr(enm1[i].name, lastener) != nullptr))
         {
-            maxener = i+1;
+            maxener = i + 1;
             break;
         }
     }
@@ -1596,8 +1596,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
             /*cmp_disres(fr1,fr2,ftol,abstol);*/
             cmp_eblocks(fr1, fr2, ftol, abstol);
         }
-    }
-    while (b1 && b2);
+    } while (b1 && b2);
 
     close_enx(in1);
     close_enx(in2);

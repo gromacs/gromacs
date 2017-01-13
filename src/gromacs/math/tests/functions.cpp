@@ -56,9 +56,9 @@ namespace
 
 TEST(FunctionTest, StaticLog2)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<int>                 result(11);
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<int>                result(11);
 
     // This needs to be expanded manually since it is evaluated at compile time,
     // and the compiler chokes if we put it as formal arguments to push_back
@@ -79,9 +79,9 @@ TEST(FunctionTest, StaticLog2)
 
 TEST(FunctionTest, Log2I32Bit)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<int>                 result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<int>                result;
 
     for (std::uint32_t i = 1; i <= 0xF; i++)
     {
@@ -90,16 +90,16 @@ TEST(FunctionTest, Log2I32Bit)
 
     for (std::uint32_t i = 0; i <= 0xF; i++)
     {
-        result.push_back(gmx::log2I(static_cast<std::uint32_t>(0xFFFFFFF0+i)));
+        result.push_back(gmx::log2I(static_cast<std::uint32_t>(0xFFFFFFF0 + i)));
     }
     checker.checkSequence(result.begin(), result.end(), "Log2I32Bit");
 }
 
 TEST(FunctionTest, Log2I64Bit)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<int>                 result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<int>                result;
 
     for (std::uint64_t i = 1; i <= 0xF; i++)
     {
@@ -108,12 +108,12 @@ TEST(FunctionTest, Log2I64Bit)
 
     for (std::uint64_t i = 0; i <= 0x1F; i++)
     {
-        result.push_back(gmx::log2I(static_cast<std::uint64_t>(0xFFFFFFF0ULL+i)));
+        result.push_back(gmx::log2I(static_cast<std::uint64_t>(0xFFFFFFF0ULL + i)));
     }
 
     for (std::uint64_t i = 0; i <= 0xF; i++)
     {
-        result.push_back(gmx::log2I(static_cast<std::uint64_t>(0xFFFFFFFFFFFFFFF0ULL+i)));
+        result.push_back(gmx::log2I(static_cast<std::uint64_t>(0xFFFFFFFFFFFFFFF0ULL + i)));
     }
     checker.checkSequence(result.begin(), result.end(), "Log2I64Bit");
 }
@@ -127,9 +127,9 @@ TEST(FunctionTest, GreatestCommonDivisor)
 
 TEST(FunctionTest, InvsqrtFloat)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<float>               result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<float>              result;
 
     for (float f = 1.0; f < 10.0; f += 1.0)
     {
@@ -140,9 +140,9 @@ TEST(FunctionTest, InvsqrtFloat)
 
 TEST(FunctionTest, InvsqrtDouble)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (double f = 1.0; f < 10.0; f += 1.0)
     {
@@ -153,9 +153,9 @@ TEST(FunctionTest, InvsqrtDouble)
 
 TEST(FunctionTest, InvsqrtInteger)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (int i = 1; i < 10; i++)
     {
@@ -166,9 +166,9 @@ TEST(FunctionTest, InvsqrtInteger)
 
 TEST(FunctionTest, InvcbrtFloat)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<float>               result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<float>              result;
 
     for (float f : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
     {
@@ -179,9 +179,9 @@ TEST(FunctionTest, InvcbrtFloat)
 
 TEST(FunctionTest, InvcbrtDouble)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (double d : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
     {
@@ -192,9 +192,9 @@ TEST(FunctionTest, InvcbrtDouble)
 
 TEST(FunctionTest, InvcbrtInteger)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (int i : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
     {
@@ -206,9 +206,9 @@ TEST(FunctionTest, InvcbrtInteger)
 
 TEST(FunctionTest, SixthrootFloat)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<float>               result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<float>              result;
 
     for (float f = 0; f < 10.0; f += 1.0)
     {
@@ -219,9 +219,9 @@ TEST(FunctionTest, SixthrootFloat)
 
 TEST(FunctionTest, SixthrootDouble)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (double d = 0; d < 10.0; d += 1.0)
     {
@@ -232,9 +232,9 @@ TEST(FunctionTest, SixthrootDouble)
 
 TEST(FunctionTest, SixthrootInteger)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -245,9 +245,9 @@ TEST(FunctionTest, SixthrootInteger)
 
 TEST(FunctionTest, InvsixthrootFloat)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<float>               result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<float>              result;
 
     for (float f = 1.0; f < 10.0; f += 1.0)
     {
@@ -258,9 +258,9 @@ TEST(FunctionTest, InvsixthrootFloat)
 
 TEST(FunctionTest, InvsixthrootDouble)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (double d = 1.0; d < 10.0; d += 1.0)
     {
@@ -271,9 +271,9 @@ TEST(FunctionTest, InvsixthrootDouble)
 
 TEST(FunctionTest, InvsixthrootInteger)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
 
     for (int i = 1; i < 10; i++)
     {
@@ -303,14 +303,14 @@ TEST(FunctionTest, Powers)
 
 TEST(FunctionTest, ErfInvFloat)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<float>               result;
-    int                              npoints = 10;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<float>              result;
+    int                             npoints = 10;
 
     for (int i = 0; i < npoints; i++)
     {
-        float r = float(2*i - npoints + 1) / npoints;
+        float r = float(2 * i - npoints + 1) / npoints;
 
         result.push_back(gmx::erfinv(r));
     }
@@ -319,14 +319,14 @@ TEST(FunctionTest, ErfInvFloat)
 
 TEST(FunctionTest, ErfInvDouble)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
-    std::vector<double>              result;
-    int                              npoints = 10;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    std::vector<double>             result;
+    int                             npoints = 10;
 
     for (int i = 0; i < npoints; i++)
     {
-        double r = double(2*i - npoints + 1) / npoints;
+        double r = double(2 * i - npoints + 1) / npoints;
 
         result.push_back(gmx::erfinv(r));
     }
@@ -339,7 +339,7 @@ TEST(FunctionTest, ErfAndErfInvAreInversesFloat)
 
     for (int i = 0; i < npoints; i++)
     {
-        float r = float(2*i - npoints + 1) / npoints;
+        float r = float(2 * i - npoints + 1) / npoints;
         EXPECT_FLOAT_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }
@@ -350,7 +350,7 @@ TEST(FunctionTest, ErfAndErfInvAreInversesDouble)
 
     for (int i = 0; i < npoints; i++)
     {
-        double r = double(2*i - npoints + 1) / npoints;
+        double r = double(2 * i - npoints + 1) / npoints;
         EXPECT_DOUBLE_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }

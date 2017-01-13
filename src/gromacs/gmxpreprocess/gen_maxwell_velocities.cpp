@@ -53,14 +53,14 @@
 static void low_mspeed(real tempi,
                        gmx_mtop_t *mtop, rvec v[], gmx::ThreeFry2x64<> * rng)
 {
-    int                                     i, m, nrdf;
-    real                                    boltz, sd;
-    real                                    ekin, temp, mass, scal;
-    gmx_mtop_atomloop_all_t                 aloop;
-    const t_atom                           *atom;
-    gmx::TabulatedNormalDistribution<real>  normalDist;
+    int                                    i, m, nrdf;
+    real                                   boltz, sd;
+    real                                   ekin, temp, mass, scal;
+    gmx_mtop_atomloop_all_t                aloop;
+    const t_atom *                         atom;
+    gmx::TabulatedNormalDistribution<real> normalDist;
 
-    boltz = BOLTZ*tempi;
+    boltz = BOLTZ * tempi;
     ekin  = 0.0;
     nrdf  = 0;
     aloop = gmx_mtop_atomloop_all_init(mtop);
@@ -70,19 +70,19 @@ static void low_mspeed(real tempi,
         if (mass > 0)
         {
             rng->restart(i, 0);
-            sd = std::sqrt(boltz/mass);
+            sd = std::sqrt(boltz / mass);
             for (m = 0; (m < DIM); m++)
             {
-                v[i][m] = sd*normalDist(*rng);
-                ekin   += 0.5*mass*v[i][m]*v[i][m];
+                v[i][m] = sd * normalDist(*rng);
+                ekin   += 0.5 * mass * v[i][m] * v[i][m];
             }
             nrdf += DIM;
         }
     }
-    temp = (2.0*ekin)/(nrdf*BOLTZ);
+    temp = (2.0 * ekin) / (nrdf * BOLTZ);
     if (temp > 0)
     {
-        scal = std::sqrt(tempi/temp);
+        scal = std::sqrt(tempi / temp);
         for (i = 0; (i < mtop->natoms); i++)
         {
             for (m = 0; (m < DIM); m++)
@@ -110,7 +110,7 @@ void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
         seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Using random seed %u for generating velocities\n", seed);
     }
-    gmx::ThreeFry2x64<>  rng(seed, gmx::RandomDomain::MaxwellVelocities);
+    gmx::ThreeFry2x64<> rng(seed, gmx::RandomDomain::MaxwellVelocities);
 
     low_mspeed(tempi, mtop, v, &rng);
 }
@@ -133,9 +133,9 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
         cprod(x[i], v[i], a0);
         for (m = 0; (m < DIM); m++)
         {
-            xcm[m] += m0*x[i][m]; /* c.o.m. position */
-            vcm[m] += m0*v[i][m]; /* c.o.m. velocity */
-            acm[m] += m0*a0[m];   /* rotational velocity around c.o.m. */
+            xcm[m] += m0 * x[i][m]; /* c.o.m. position */
+            vcm[m] += m0 * v[i][m]; /* c.o.m. velocity */
+            acm[m] += m0 * a0[m];   /* rotational velocity around c.o.m. */
         }
     }
     cprod(xcm, vcm, a0);
@@ -143,7 +143,7 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
     {
         xcm[m] /= tm;
         vcm[m] /= tm;
-        acm[m] -= a0[m]/tm;
+        acm[m] -= a0[m] / tm;
     }
 
 #define PVEC(str, v) fprintf(log, \
@@ -161,14 +161,14 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
         m0 = mass[i];
         for (m = 0; (m < DIM); m++)
         {
-            dx[m] = x[i][m]-xcm[m];
+            dx[m] = x[i][m] - xcm[m];
         }
-        L[XX][XX] += dx[XX]*dx[XX]*m0;
-        L[XX][YY] += dx[XX]*dx[YY]*m0;
-        L[XX][ZZ] += dx[XX]*dx[ZZ]*m0;
-        L[YY][YY] += dx[YY]*dx[YY]*m0;
-        L[YY][ZZ] += dx[YY]*dx[ZZ]*m0;
-        L[ZZ][ZZ] += dx[ZZ]*dx[ZZ]*m0;
+        L[XX][XX] += dx[XX] * dx[XX] * m0;
+        L[XX][YY] += dx[XX] * dx[YY] * m0;
+        L[XX][ZZ] += dx[XX] * dx[ZZ] * m0;
+        L[YY][YY] += dx[YY] * dx[YY] * m0;
+        L[YY][ZZ] += dx[YY] * dx[ZZ] * m0;
+        L[ZZ][ZZ] += dx[ZZ] * dx[ZZ] * m0;
     }
 #ifdef DEBUG
     PVEC("L-x", L[XX]);

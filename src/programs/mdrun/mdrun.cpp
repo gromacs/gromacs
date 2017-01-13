@@ -88,7 +88,7 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
-    const char   *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
         "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -227,8 +227,8 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
-    t_commrec    *cr;
-    t_filenm      fnm[] = {
+    t_commrec * cr;
+    t_filenm    fnm[] = {
         { efTPR, nullptr,      nullptr,       ffREAD },
         { efTRN, "-o",      nullptr,       ffWRITE },
         { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
@@ -263,43 +263,43 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-if",     "imdforces", ffOPTWR },
         { efXVG, "-swap",   "swapions", ffOPTWR }
     };
-    const int     NFILE = asize(fnm);
+    const int   NFILE = asize(fnm);
 
     /* Command line options ! */
-    gmx_bool          bDDBondCheck  = TRUE;
-    gmx_bool          bDDBondComm   = TRUE;
-    gmx_bool          bTunePME      = TRUE;
-    gmx_bool          bVerbose      = FALSE;
-    gmx_bool          bRerunVSite   = FALSE;
-    gmx_bool          bConfout      = TRUE;
-    gmx_bool          bReproducible = FALSE;
-    gmx_bool          bIMDwait      = FALSE;
-    gmx_bool          bIMDterm      = FALSE;
-    gmx_bool          bIMDpull      = FALSE;
+    gmx_bool bDDBondCheck  = TRUE;
+    gmx_bool bDDBondComm   = TRUE;
+    gmx_bool bTunePME      = TRUE;
+    gmx_bool bVerbose      = FALSE;
+    gmx_bool bRerunVSite   = FALSE;
+    gmx_bool bConfout      = TRUE;
+    gmx_bool bReproducible = FALSE;
+    gmx_bool bIMDwait      = FALSE;
+    gmx_bool bIMDterm      = FALSE;
+    gmx_bool bIMDpull      = FALSE;
 
-    int               npme          = -1;
-    int               nstlist       = 0;
-    int               nmultisim     = 0;
-    int               nstglobalcomm = -1;
-    int               repl_ex_nst   = 0;
-    int               repl_ex_seed  = -1;
-    int               repl_ex_nex   = 0;
-    int               nstepout      = 100;
-    int               resetstep     = -1;
-    gmx_int64_t       nsteps        = -2;   /* the value -2 means that the mdp option will be used */
-    int               imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
+    int         npme          = -1;
+    int         nstlist       = 0;
+    int         nmultisim     = 0;
+    int         nstglobalcomm = -1;
+    int         repl_ex_nst   = 0;
+    int         repl_ex_seed  = -1;
+    int         repl_ex_nex   = 0;
+    int         nstepout      = 100;
+    int         resetstep     = -1;
+    gmx_int64_t nsteps        = -2;         /* the value -2 means that the mdp option will be used */
+    int         imdport       = 8888;       /* can be almost anything, 8888 is easy to remember */
 
-    rvec              realddxyz                   = {0, 0, 0};
-    const char       *ddrank_opt[ddrankorderNR+1] =
+    rvec        realddxyz                     = {0, 0, 0};
+    const char *ddrank_opt[ddrankorderNR + 1] =
     { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
-    const char       *dddlb_opt[] =
+    const char *dddlb_opt[] =
     { nullptr, "auto", "no", "yes", nullptr };
-    const char       *thread_aff_opt[threadaffNR+1] =
+    const char *thread_aff_opt[threadaffNR + 1] =
     { nullptr, "auto", "on", "off", nullptr };
-    const char       *nbpu_opt[] =
+    const char *nbpu_opt[] =
     { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
+    char *            ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
     real              cpt_period            = 15.0, max_hours = -1;
     gmx_bool          bTryToAppendFiles     = TRUE;
     gmx_bool          bKeepAndNumCPT        = FALSE;
@@ -310,12 +310,12 @@ int gmx_mdrun(int argc, char *argv[])
      * But unfortunately we are not allowed to call a function here,
      * since declarations follow below.
      */
-    gmx_hw_opt_t    hw_opt = {
+    gmx_hw_opt_t hw_opt = {
         0, 0, 0, 0, threadaffSEL, 0, 0,
         { nullptr, FALSE, 0, nullptr }
     };
 
-    t_pargs         pa[] = {
+    t_pargs       pa[] = {
 
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
@@ -415,13 +415,13 @@ int gmx_mdrun(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long   Flags;
-    ivec            ddxyz;
-    int             dd_rank_order;
-    gmx_bool        bDoAppendFiles, bStartFromCpt;
-    FILE           *fplog;
-    int             rc;
-    char          **multidir = nullptr;
+    unsigned long Flags;
+    ivec          ddxyz;
+    int           dd_rank_order;
+    gmx_bool      bDoAppendFiles, bStartFromCpt;
+    FILE *        fplog;
+    int           rc;
+    char **       multidir = nullptr;
 
     cr = init_commrec();
 

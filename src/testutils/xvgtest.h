@@ -65,8 +65,8 @@ struct XvgMatchSettings
     {
     }
 
-    FloatingPointTolerance  tolerance;
-    bool                    testData;
+    FloatingPointTolerance tolerance;
+    bool                   testData;
 };
 
 /*! \brief
@@ -84,8 +84,8 @@ struct XvgMatchSettings
  *
  * \see XvgMatch
  */
-void checkXvgFile(TextInputStream        *input,
-                  TestReferenceChecker   *checker,
+void checkXvgFile(TextInputStream *       input,
+                  TestReferenceChecker *  checker,
                   const XvgMatchSettings &settings);
 
 /*! \libinternal \brief
@@ -120,7 +120,7 @@ class XvgMatch : public ITextBlockMatcherSettings
         virtual TextBlockMatcherPointer createMatcher() const;
 
     private:
-        XvgMatchSettings  settings_;
+        XvgMatchSettings settings_;
 };
 
 } // namespace test

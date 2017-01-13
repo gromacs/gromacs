@@ -98,8 +98,7 @@ namespace gmx
  * \param y Values used to set sign
  * \return  Magnitude of x, sign of y
  */
-static inline SimdFloat gmx_simdcall
-copysign(SimdFloat x, SimdFloat y)
+static inline SimdFloat gmx_simdcall copysign(SimdFloat x, SimdFloat y)
 {
 #if GMX_SIMD_HAVE_LOGICAL
     return abs(x) | ( SimdFloat(GMX_FLOAT_NEGZERO) & y );
@@ -119,13 +118,12 @@ copysign(SimdFloat x, SimdFloat y)
  *  \param x  The reference (starting) value x for which we want 1/sqrt(x).
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static inline SimdFloat gmx_simdcall
-rsqrtIter(SimdFloat lu, SimdFloat x)
+static inline SimdFloat gmx_simdcall rsqrtIter(SimdFloat lu, SimdFloat x)
 {
-    SimdFloat tmp1 = x*lu;
-    SimdFloat tmp2 = SimdFloat(-0.5f)*lu;
+    SimdFloat tmp1 = x * lu;
+    SimdFloat tmp2 = SimdFloat(-0.5f) * lu;
     tmp1 = fma(tmp1, lu, SimdFloat(-3.0f));
-    return tmp1*tmp2;
+    return tmp1 * tmp2;
 }
 #endif
 
@@ -134,17 +132,16 @@ rsqrtIter(SimdFloat lu, SimdFloat x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline SimdFloat gmx_simdcall
-invsqrt(SimdFloat x)
+static inline SimdFloat gmx_simdcall invsqrt(SimdFloat x)
 {
     SimdFloat lu = rsqrt(x);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -160,9 +157,8 @@ invsqrt(SimdFloat x)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall
-invsqrtPair(SimdFloat x0,    SimdFloat x1,
-            SimdFloat *out0, SimdFloat *out1)
+static inline void gmx_simdcall invsqrtPair(SimdFloat x0,    SimdFloat x1,
+                                            SimdFloat *out0, SimdFloat *out1)
 {
     *out0 = invsqrt(x0);
     *out1 = invsqrt(x1);
@@ -178,10 +174,9 @@ invsqrtPair(SimdFloat x0,    SimdFloat x1,
  *  \param x  The reference (starting) value x for which we want 1/x.
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static inline SimdFloat gmx_simdcall
-rcpIter(SimdFloat lu, SimdFloat x)
+static inline SimdFloat gmx_simdcall rcpIter(SimdFloat lu, SimdFloat x)
 {
-    return lu*fnma(lu, x, SimdFloat(2.0f));
+    return lu * fnma(lu, x, SimdFloat(2.0f));
 }
 #endif
 
@@ -190,17 +185,16 @@ rcpIter(SimdFloat lu, SimdFloat x)
  *  \param x Argument that must be nonzero. This routine does not check arguments.
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
-static inline SimdFloat gmx_simdcall
-inv(SimdFloat x)
+static inline SimdFloat gmx_simdcall inv(SimdFloat x)
 {
     SimdFloat lu = rcp(x);
 #if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
     return lu;
@@ -216,10 +210,9 @@ inv(SimdFloat x)
  * \note This function does not use any masking to avoid problems with
  *       zero values in the denominator.
  */
-static inline SimdFloat gmx_simdcall
-operator/(SimdFloat nom, SimdFloat denom)
+static inline SimdFloat gmx_simdcall operator/(SimdFloat nom, SimdFloat denom)
 {
-    return nom*inv(denom);
+    return nom * inv(denom);
 }
 
 /*! \brief Calculate 1/sqrt(x) for masked entries of SIMD float.
@@ -233,17 +226,16 @@ operator/(SimdFloat nom, SimdFloat denom)
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
  */
-static inline SimdFloat
-maskzInvsqrt(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzInvsqrt(SimdFloat x, SimdFBool m)
 {
     SimdFloat lu = maskzRsqrt(x, m);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -255,17 +247,16 @@ maskzInvsqrt(SimdFloat x, SimdFBool m)
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static inline SimdFloat gmx_simdcall
-maskzInv(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzInv(SimdFloat x, SimdFBool m)
 {
     SimdFloat lu = maskzRcp(x, m);
 #if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
     return lu;
@@ -277,11 +268,10 @@ maskzInv(SimdFloat x, SimdFBool m)
  *  \return sqrt(x). If x=0, the result will correctly be set to 0.
  *          The result is undefined if the input value is negative.
  */
-static inline SimdFloat gmx_simdcall
-sqrt(SimdFloat x)
+static inline SimdFloat gmx_simdcall sqrt(SimdFloat x)
 {
-    SimdFloat  res = maskzInvsqrt(x, setZero() < x);
-    return res*x;
+    SimdFloat res = maskzInvsqrt(x, setZero() < x);
+    return res * x;
 }
 
 #if !GMX_SIMD_HAVE_NATIVE_LOG_FLOAT
@@ -290,38 +280,37 @@ sqrt(SimdFloat x)
  * \param x Argument, should be >0.
  * \result The natural logarithm of x. Undefined if argument is invalid.
  */
-static inline SimdFloat gmx_simdcall
-log(SimdFloat x)
+static inline SimdFloat gmx_simdcall log(SimdFloat x)
 {
-    const SimdFloat  one(1.0f);
-    const SimdFloat  two(2.0f);
-    const SimdFloat  invsqrt2(1.0f/std::sqrt(2.0f));
-    const SimdFloat  corr(0.693147180559945286226764f);
-    const SimdFloat  CL9(0.2371599674224853515625f);
-    const SimdFloat  CL7(0.285279005765914916992188f);
-    const SimdFloat  CL5(0.400005519390106201171875f);
-    const SimdFloat  CL3(0.666666567325592041015625f);
-    const SimdFloat  CL1(2.0f);
-    SimdFloat        fExp, x2, p;
-    SimdFBool        m;
-    SimdFInt32       iExp;
+    const SimdFloat one(1.0f);
+    const SimdFloat two(2.0f);
+    const SimdFloat invsqrt2(1.0f / std::sqrt(2.0f));
+    const SimdFloat corr(0.693147180559945286226764f);
+    const SimdFloat CL9(0.2371599674224853515625f);
+    const SimdFloat CL7(0.285279005765914916992188f);
+    const SimdFloat CL5(0.400005519390106201171875f);
+    const SimdFloat CL3(0.666666567325592041015625f);
+    const SimdFloat CL1(2.0f);
+    SimdFloat       fExp, x2, p;
+    SimdFBool       m;
+    SimdFInt32      iExp;
 
-    x     = frexp(x, &iExp);
-    fExp  = cvtI2R(iExp);
+    x    = frexp(x, &iExp);
+    fExp = cvtI2R(iExp);
 
-    m     = x < invsqrt2;
+    m = x < invsqrt2;
     // Adjust to non-IEEE format for x<1/sqrt(2): exponent -= 1, mantissa *= 2.0
-    fExp  = fExp - selectByMask(one, m);
-    x     = x * blend(one, two, m);
+    fExp = fExp - selectByMask(one, m);
+    x    = x * blend(one, two, m);
 
-    x     = (x-one) * inv( x+one );
-    x2    = x * x;
+    x  = (x - one) * inv( x + one );
+    x2 = x * x;
 
-    p     = fma(CL9, x2, CL7);
-    p     = fma(p, x2, CL5);
-    p     = fma(p, x2, CL3);
-    p     = fma(p, x2, CL1);
-    p     = fma(p, x, corr*fExp);
+    p = fma(CL9, x2, CL7);
+    p = fma(p, x2, CL5);
+    p = fma(p, x2, CL3);
+    p = fma(p, x2, CL1);
+    p = fma(p, x, corr * fExp);
 
     return p;
 }
@@ -333,37 +322,36 @@ log(SimdFloat x)
  * \param x Argument.
  * \result 2^x. Undefined if input argument caused overflow.
  */
-static inline SimdFloat gmx_simdcall
-exp2(SimdFloat x)
+static inline SimdFloat gmx_simdcall exp2(SimdFloat x)
 {
     // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
-    const SimdFloat  CC6(0.0001534581200287996416911311f);
-    const SimdFloat  CC5(0.001339993121934088894618990f);
-    const SimdFloat  CC4(0.009618488957115180159497841f);
-    const SimdFloat  CC3(0.05550328776964726865751735f);
-    const SimdFloat  CC2(0.2402264689063408646490722f);
-    const SimdFloat  CC1(0.6931472057372680777553816f);
-    const SimdFloat  one(1.0f);
+    const SimdFloat arglimit(126.0f);
+    const SimdFloat CC6(0.0001534581200287996416911311f);
+    const SimdFloat CC5(0.001339993121934088894618990f);
+    const SimdFloat CC4(0.009618488957115180159497841f);
+    const SimdFloat CC3(0.05550328776964726865751735f);
+    const SimdFloat CC2(0.2402264689063408646490722f);
+    const SimdFloat CC1(0.6931472057372680777553816f);
+    const SimdFloat one(1.0f);
 
-    SimdFloat        intpart;
-    SimdFloat        fexppart;
-    SimdFloat        p;
-    SimdFBool        m;
+    SimdFloat intpart;
+    SimdFloat fexppart;
+    SimdFloat p;
+    SimdFBool m;
 
-    fexppart  = ldexp(one, cvtR2I(x));
-    intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
-    x         = x - intpart;
+    fexppart = ldexp(one, cvtR2I(x));
+    intpart  = round(x);
+    m        = abs(x) <= arglimit;
+    fexppart = selectByMask(fexppart, m);
+    x        = x - intpart;
 
-    p         = fma(CC6, x, CC5);
-    p         = fma(p, x, CC4);
-    p         = fma(p, x, CC3);
-    p         = fma(p, x, CC2);
-    p         = fma(p, x, CC1);
-    p         = fma(p, x, one);
-    x         = p * fexppart;
+    p = fma(CC6, x, CC5);
+    p = fma(p, x, CC4);
+    p = fma(p, x, CC3);
+    p = fma(p, x, CC2);
+    p = fma(p, x, CC1);
+    p = fma(p, x, one);
+    x = p * fexppart;
     return x;
 }
 #endif
@@ -378,41 +366,40 @@ exp2(SimdFloat x)
  * \result exp(x). Undefined if input argument caused overflow,
  * which can happen if abs(x) \> 7e13.
  */
-static inline SimdFloat gmx_simdcall
-exp(SimdFloat x)
+static inline SimdFloat gmx_simdcall exp(SimdFloat x)
 {
-    const SimdFloat  argscale(1.44269504088896341f);
+    const SimdFloat argscale(1.44269504088896341f);
     // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
-    const SimdFloat  invargscale0(-0.693145751953125f);
-    const SimdFloat  invargscale1(-1.428606765330187045e-06f);
-    const SimdFloat  CC4(0.00136324646882712841033936f);
-    const SimdFloat  CC3(0.00836596917361021041870117f);
-    const SimdFloat  CC2(0.0416710823774337768554688f);
-    const SimdFloat  CC1(0.166665524244308471679688f);
-    const SimdFloat  CC0(0.499999850988388061523438f);
-    const SimdFloat  one(1.0f);
-    SimdFloat        fexppart;
-    SimdFloat        intpart;
-    SimdFloat        y, p;
-    SimdFBool        m;
+    const SimdFloat arglimit(126.0f);
+    const SimdFloat invargscale0(-0.693145751953125f);
+    const SimdFloat invargscale1(-1.428606765330187045e-06f);
+    const SimdFloat CC4(0.00136324646882712841033936f);
+    const SimdFloat CC3(0.00836596917361021041870117f);
+    const SimdFloat CC2(0.0416710823774337768554688f);
+    const SimdFloat CC1(0.166665524244308471679688f);
+    const SimdFloat CC0(0.499999850988388061523438f);
+    const SimdFloat one(1.0f);
+    SimdFloat       fexppart;
+    SimdFloat       intpart;
+    SimdFloat       y, p;
+    SimdFBool       m;
 
-    y         = x * argscale;
-    fexppart  = ldexp(one, cvtR2I(y));
-    intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
+    y        = x * argscale;
+    fexppart = ldexp(one, cvtR2I(y));
+    intpart  = round(y);
+    m        = (abs(y) <= arglimit);
+    fexppart = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
-    x         = fma(invargscale0, intpart, x);
-    x         = fma(invargscale1, intpart, x);
+    x = fma(invargscale0, intpart, x);
+    x = fma(invargscale1, intpart, x);
 
-    p         = fma(CC4, x, CC3);
-    p         = fma(p, x, CC2);
-    p         = fma(p, x, CC1);
-    p         = fma(p, x, CC0);
-    p         = fma(x*x, p, x);
-    x         = fma(p, fexppart, fexppart);
+    p = fma(CC4, x, CC3);
+    p = fma(p, x, CC2);
+    p = fma(p, x, CC1);
+    p = fma(p, x, CC0);
+    p = fma(x * x, p, x);
+    x = fma(p, fexppart, fexppart);
     return x;
 }
 #endif
@@ -425,99 +412,98 @@ exp(SimdFloat x)
  * This routine achieves very close to full precision, but we do not care about
  * the last bit or the subnormal result range.
  */
-static inline SimdFloat gmx_simdcall
-erf(SimdFloat x)
+static inline SimdFloat gmx_simdcall erf(SimdFloat x)
 {
     // Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1]
-    const SimdFloat  CA6(7.853861353153693e-5f);
-    const SimdFloat  CA5(-8.010193625184903e-4f);
-    const SimdFloat  CA4(5.188327685732524e-3f);
-    const SimdFloat  CA3(-2.685381193529856e-2f);
-    const SimdFloat  CA2(1.128358514861418e-1f);
-    const SimdFloat  CA1(-3.761262582423300e-1f);
-    const SimdFloat  CA0(1.128379165726710f);
+    const SimdFloat CA6(7.853861353153693e-5f);
+    const SimdFloat CA5(-8.010193625184903e-4f);
+    const SimdFloat CA4(5.188327685732524e-3f);
+    const SimdFloat CA3(-2.685381193529856e-2f);
+    const SimdFloat CA2(1.128358514861418e-1f);
+    const SimdFloat CA1(-3.761262582423300e-1f);
+    const SimdFloat CA0(1.128379165726710f);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2]
-    const SimdFloat  CB9(-0.0018629930017603923f);
-    const SimdFloat  CB8(0.003909821287598495f);
-    const SimdFloat  CB7(-0.0052094582210355615f);
-    const SimdFloat  CB6(0.005685614362160572f);
-    const SimdFloat  CB5(-0.0025367682853477272f);
-    const SimdFloat  CB4(-0.010199799682318782f);
-    const SimdFloat  CB3(0.04369575504816542f);
-    const SimdFloat  CB2(-0.11884063474674492f);
-    const SimdFloat  CB1(0.2732120154030589f);
-    const SimdFloat  CB0(0.42758357702025784f);
+    const SimdFloat CB9(-0.0018629930017603923f);
+    const SimdFloat CB8(0.003909821287598495f);
+    const SimdFloat CB7(-0.0052094582210355615f);
+    const SimdFloat CB6(0.005685614362160572f);
+    const SimdFloat CB5(-0.0025367682853477272f);
+    const SimdFloat CB4(-0.010199799682318782f);
+    const SimdFloat CB3(0.04369575504816542f);
+    const SimdFloat CB2(-0.11884063474674492f);
+    const SimdFloat CB1(0.2732120154030589f);
+    const SimdFloat CB0(0.42758357702025784f);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19]
-    const SimdFloat  CC10(-0.0445555913112064f);
-    const SimdFloat  CC9(0.21376355144663348f);
-    const SimdFloat  CC8(-0.3473187200259257f);
-    const SimdFloat  CC7(0.016690861551248114f);
-    const SimdFloat  CC6(0.7560973182491192f);
-    const SimdFloat  CC5(-1.2137903600145787f);
-    const SimdFloat  CC4(0.8411872321232948f);
-    const SimdFloat  CC3(-0.08670413896296343f);
-    const SimdFloat  CC2(-0.27124782687240334f);
-    const SimdFloat  CC1(-0.0007502488047806069f);
-    const SimdFloat  CC0(0.5642114853803148f);
-    const SimdFloat  one(1.0f);
-    const SimdFloat  two(2.0f);
+    const SimdFloat CC10(-0.0445555913112064f);
+    const SimdFloat CC9(0.21376355144663348f);
+    const SimdFloat CC8(-0.3473187200259257f);
+    const SimdFloat CC7(0.016690861551248114f);
+    const SimdFloat CC6(0.7560973182491192f);
+    const SimdFloat CC5(-1.2137903600145787f);
+    const SimdFloat CC4(0.8411872321232948f);
+    const SimdFloat CC3(-0.08670413896296343f);
+    const SimdFloat CC2(-0.27124782687240334f);
+    const SimdFloat CC1(-0.0007502488047806069f);
+    const SimdFloat CC0(0.5642114853803148f);
+    const SimdFloat one(1.0f);
+    const SimdFloat two(2.0f);
 
-    SimdFloat        x2, x4, y;
-    SimdFloat        t, t2, w, w2;
-    SimdFloat        pA0, pA1, pB0, pB1, pC0, pC1;
-    SimdFloat        expmx2;
-    SimdFloat        res_erf, res_erfc, res;
-    SimdFBool        m, maskErf;
+    SimdFloat x2, x4, y;
+    SimdFloat t, t2, w, w2;
+    SimdFloat pA0, pA1, pB0, pB1, pC0, pC1;
+    SimdFloat expmx2;
+    SimdFloat res_erf, res_erfc, res;
+    SimdFBool m, maskErf;
 
     // Calculate erf()
-    x2   = x * x;
-    x4   = x2 * x2;
+    x2 = x * x;
+    x4 = x2 * x2;
 
-    pA0  = fma(CA6, x4, CA4);
-    pA1  = fma(CA5, x4, CA3);
-    pA0  = fma(pA0, x4, CA2);
-    pA1  = fma(pA1, x4, CA1);
-    pA0  = pA0*x4;
-    pA0  = fma(pA1, x2, pA0);
+    pA0 = fma(CA6, x4, CA4);
+    pA1 = fma(CA5, x4, CA3);
+    pA0 = fma(pA0, x4, CA2);
+    pA1 = fma(pA1, x4, CA1);
+    pA0 = pA0 * x4;
+    pA0 = fma(pA1, x2, pA0);
     // Constant term must come last for precision reasons
-    pA0  = pA0+CA0;
+    pA0 = pA0 + CA0;
 
-    res_erf = x*pA0;
+    res_erf = x * pA0;
 
     // Calculate erfc
     y       = abs(x);
     maskErf = SimdFloat(0.75f) <= y;
     t       = maskzInv(y, maskErf);
-    w       = t-one;
-    t2      = t*t;
-    w2      = w*w;
+    w       = t - one;
+    t2      = t * t;
+    w2      = w * w;
 
     // No need for a floating-point sieve here (as in erfc), since erf()
     // will never return values that are extremely small for large args.
-    expmx2  = exp( -y*y );
+    expmx2 = exp( -y * y );
 
-    pB1  = fma(CB9, w2, CB7);
-    pB0  = fma(CB8, w2, CB6);
-    pB1  = fma(pB1, w2, CB5);
-    pB0  = fma(pB0, w2, CB4);
-    pB1  = fma(pB1, w2, CB3);
-    pB0  = fma(pB0, w2, CB2);
-    pB1  = fma(pB1, w2, CB1);
-    pB0  = fma(pB0, w2, CB0);
-    pB0  = fma(pB1, w, pB0);
+    pB1 = fma(CB9, w2, CB7);
+    pB0 = fma(CB8, w2, CB6);
+    pB1 = fma(pB1, w2, CB5);
+    pB0 = fma(pB0, w2, CB4);
+    pB1 = fma(pB1, w2, CB3);
+    pB0 = fma(pB0, w2, CB2);
+    pB1 = fma(pB1, w2, CB1);
+    pB0 = fma(pB0, w2, CB0);
+    pB0 = fma(pB1, w, pB0);
 
-    pC0  = fma(CC10, t2, CC8);
-    pC1  = fma(CC9, t2, CC7);
-    pC0  = fma(pC0, t2, CC6);
-    pC1  = fma(pC1, t2, CC5);
-    pC0  = fma(pC0, t2, CC4);
-    pC1  = fma(pC1, t2, CC3);
-    pC0  = fma(pC0, t2, CC2);
-    pC1  = fma(pC1, t2, CC1);
+    pC0 = fma(CC10, t2, CC8);
+    pC1 = fma(CC9, t2, CC7);
+    pC0 = fma(pC0, t2, CC6);
+    pC1 = fma(pC1, t2, CC5);
+    pC0 = fma(pC0, t2, CC4);
+    pC1 = fma(pC1, t2, CC3);
+    pC0 = fma(pC0, t2, CC2);
+    pC1 = fma(pC1, t2, CC1);
 
-    pC0  = fma(pC0, t2, CC0);
-    pC0  = fma(pC1, t, pC0);
-    pC0  = pC0*t;
+    pC0 = fma(pC0, t2, CC0);
+    pC0 = fma(pC1, t, pC0);
+    pC0 = pC0 * t;
 
     // Select pB0 or pC0 for erfc()
     m        = two < y;
@@ -526,10 +512,10 @@ erf(SimdFloat x)
 
     // erfc(x<0) = 2-erfc(|x|)
     m        = x < setZero();
-    res_erfc = blend(res_erfc, two-res_erfc, m);
+    res_erfc = blend(res_erfc, two - res_erfc, m);
 
     // Select erf() or erfc()
-    res  = blend(res_erf, one-res_erfc, maskErf);
+    res = blend(res_erf, one - res_erfc, maskErf);
 
     return res;
 }
@@ -545,47 +531,46 @@ erf(SimdFloat x)
  * (think results that are in the ballpark of 10^-30 for single precision)
  * since that is not relevant for MD.
  */
-static inline SimdFloat gmx_simdcall
-erfc(SimdFloat x)
+static inline SimdFloat gmx_simdcall erfc(SimdFloat x)
 {
     // Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1]
-    const SimdFloat  CA6(7.853861353153693e-5f);
-    const SimdFloat  CA5(-8.010193625184903e-4f);
-    const SimdFloat  CA4(5.188327685732524e-3f);
-    const SimdFloat  CA3(-2.685381193529856e-2f);
-    const SimdFloat  CA2(1.128358514861418e-1f);
-    const SimdFloat  CA1(-3.761262582423300e-1f);
-    const SimdFloat  CA0(1.128379165726710f);
+    const SimdFloat CA6(7.853861353153693e-5f);
+    const SimdFloat CA5(-8.010193625184903e-4f);
+    const SimdFloat CA4(5.188327685732524e-3f);
+    const SimdFloat CA3(-2.685381193529856e-2f);
+    const SimdFloat CA2(1.128358514861418e-1f);
+    const SimdFloat CA1(-3.761262582423300e-1f);
+    const SimdFloat CA0(1.128379165726710f);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2]
-    const SimdFloat  CB9(-0.0018629930017603923f);
-    const SimdFloat  CB8(0.003909821287598495f);
-    const SimdFloat  CB7(-0.0052094582210355615f);
-    const SimdFloat  CB6(0.005685614362160572f);
-    const SimdFloat  CB5(-0.0025367682853477272f);
-    const SimdFloat  CB4(-0.010199799682318782f);
-    const SimdFloat  CB3(0.04369575504816542f);
-    const SimdFloat  CB2(-0.11884063474674492f);
-    const SimdFloat  CB1(0.2732120154030589f);
-    const SimdFloat  CB0(0.42758357702025784f);
+    const SimdFloat CB9(-0.0018629930017603923f);
+    const SimdFloat CB8(0.003909821287598495f);
+    const SimdFloat CB7(-0.0052094582210355615f);
+    const SimdFloat CB6(0.005685614362160572f);
+    const SimdFloat CB5(-0.0025367682853477272f);
+    const SimdFloat CB4(-0.010199799682318782f);
+    const SimdFloat CB3(0.04369575504816542f);
+    const SimdFloat CB2(-0.11884063474674492f);
+    const SimdFloat CB1(0.2732120154030589f);
+    const SimdFloat CB0(0.42758357702025784f);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19]
-    const SimdFloat  CC10(-0.0445555913112064f);
-    const SimdFloat  CC9(0.21376355144663348f);
-    const SimdFloat  CC8(-0.3473187200259257f);
-    const SimdFloat  CC7(0.016690861551248114f);
-    const SimdFloat  CC6(0.7560973182491192f);
-    const SimdFloat  CC5(-1.2137903600145787f);
-    const SimdFloat  CC4(0.8411872321232948f);
-    const SimdFloat  CC3(-0.08670413896296343f);
-    const SimdFloat  CC2(-0.27124782687240334f);
-    const SimdFloat  CC1(-0.0007502488047806069f);
-    const SimdFloat  CC0(0.5642114853803148f);
+    const SimdFloat CC10(-0.0445555913112064f);
+    const SimdFloat CC9(0.21376355144663348f);
+    const SimdFloat CC8(-0.3473187200259257f);
+    const SimdFloat CC7(0.016690861551248114f);
+    const SimdFloat CC6(0.7560973182491192f);
+    const SimdFloat CC5(-1.2137903600145787f);
+    const SimdFloat CC4(0.8411872321232948f);
+    const SimdFloat CC3(-0.08670413896296343f);
+    const SimdFloat CC2(-0.27124782687240334f);
+    const SimdFloat CC1(-0.0007502488047806069f);
+    const SimdFloat CC0(0.5642114853803148f);
     // Coefficients for expansion of exp(x) in [0,0.1]
     // CD0 and CD1 are both 1.0, so no need to declare them separately
-    const SimdFloat  CD2(0.5000066608081202f);
-    const SimdFloat  CD3(0.1664795422874624f);
-    const SimdFloat  CD4(0.04379839977652482f);
-    const SimdFloat  one(1.0f);
-    const SimdFloat  two(2.0f);
+    const SimdFloat CD2(0.5000066608081202f);
+    const SimdFloat CD3(0.1664795422874624f);
+    const SimdFloat CD4(0.04379839977652482f);
+    const SimdFloat one(1.0f);
+    const SimdFloat two(2.0f);
 
     /* We need to use a small trick here, since we cannot assume all SIMD
      * architectures support integers, and the flag we want (0xfffff000) would
@@ -595,36 +580,37 @@ erfc(SimdFloat x)
      * we can at least hope it is evaluated at compile-time.
      */
 #if GMX_SIMD_HAVE_LOGICAL
-    const SimdFloat         sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
+    const SimdFloat sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
 #else
-    const int               isieve   = 0xFFFFF000;
+    const int isieve = 0xFFFFF000;
     GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  mem[GMX_SIMD_FLOAT_WIDTH];
 
-    union {
+    union
+    {
         float f; int i;
     } conv;
-    int                     i;
+    int i;
 #endif
 
-    SimdFloat        x2, x4, y;
-    SimdFloat        q, z, t, t2, w, w2;
-    SimdFloat        pA0, pA1, pB0, pB1, pC0, pC1;
-    SimdFloat        expmx2, corr;
-    SimdFloat        res_erf, res_erfc, res;
-    SimdFBool        m, msk_erf;
+    SimdFloat x2, x4, y;
+    SimdFloat q, z, t, t2, w, w2;
+    SimdFloat pA0, pA1, pB0, pB1, pC0, pC1;
+    SimdFloat expmx2, corr;
+    SimdFloat res_erf, res_erfc, res;
+    SimdFBool m, msk_erf;
 
     // Calculate erf()
-    x2     = x * x;
-    x4     = x2 * x2;
+    x2 = x * x;
+    x4 = x2 * x2;
 
-    pA0  = fma(CA6, x4, CA4);
-    pA1  = fma(CA5, x4, CA3);
-    pA0  = fma(pA0, x4, CA2);
-    pA1  = fma(pA1, x4, CA1);
-    pA1  = pA1 * x2;
-    pA0  = fma(pA0, x4, pA1);
+    pA0 = fma(CA6, x4, CA4);
+    pA1 = fma(CA5, x4, CA3);
+    pA0 = fma(pA0, x4, CA2);
+    pA1 = fma(pA1, x4, CA1);
+    pA1 = pA1 * x2;
+    pA0 = fma(pA0, x4, pA1);
     // Constant term must come last for precision reasons
-    pA0  = pA0 + CA0;
+    pA0 = pA0 + CA0;
 
     res_erf = x * pA0;
 
@@ -653,48 +639,48 @@ erfc(SimdFloat x)
      * and this case is rare enough that we go directly there...
      */
 #if GMX_SIMD_HAVE_LOGICAL
-    z       = y & sieve;
+    z = y & sieve;
 #else
     store(mem, y);
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        conv.f  = mem[i];
-        conv.i  = conv.i & isieve;
-        mem[i]  = conv.f;
+        conv.f = mem[i];
+        conv.i = conv.i & isieve;
+        mem[i] = conv.f;
     }
     z = load(mem);
 #endif
-    q       = (z-y) * (z+y);
-    corr    = fma(CD4, q, CD3);
-    corr    = fma(corr, q, CD2);
-    corr    = fma(corr, q, one);
-    corr    = fma(corr, q, one);
+    q    = (z - y) * (z + y);
+    corr = fma(CD4, q, CD3);
+    corr = fma(corr, q, CD2);
+    corr = fma(corr, q, one);
+    corr = fma(corr, q, one);
 
-    expmx2  = exp( -z*z );
-    expmx2  = expmx2 * corr;
+    expmx2 = exp( -z * z );
+    expmx2 = expmx2 * corr;
 
-    pB1  = fma(CB9, w2, CB7);
-    pB0  = fma(CB8, w2, CB6);
-    pB1  = fma(pB1, w2, CB5);
-    pB0  = fma(pB0, w2, CB4);
-    pB1  = fma(pB1, w2, CB3);
-    pB0  = fma(pB0, w2, CB2);
-    pB1  = fma(pB1, w2, CB1);
-    pB0  = fma(pB0, w2, CB0);
-    pB0  = fma(pB1, w, pB0);
+    pB1 = fma(CB9, w2, CB7);
+    pB0 = fma(CB8, w2, CB6);
+    pB1 = fma(pB1, w2, CB5);
+    pB0 = fma(pB0, w2, CB4);
+    pB1 = fma(pB1, w2, CB3);
+    pB0 = fma(pB0, w2, CB2);
+    pB1 = fma(pB1, w2, CB1);
+    pB0 = fma(pB0, w2, CB0);
+    pB0 = fma(pB1, w, pB0);
 
-    pC0  = fma(CC10, t2, CC8);
-    pC1  = fma(CC9, t2, CC7);
-    pC0  = fma(pC0, t2, CC6);
-    pC1  = fma(pC1, t2, CC5);
-    pC0  = fma(pC0, t2, CC4);
-    pC1  = fma(pC1, t2, CC3);
-    pC0  = fma(pC0, t2, CC2);
-    pC1  = fma(pC1, t2, CC1);
+    pC0 = fma(CC10, t2, CC8);
+    pC1 = fma(CC9, t2, CC7);
+    pC0 = fma(pC0, t2, CC6);
+    pC1 = fma(pC1, t2, CC5);
+    pC0 = fma(pC0, t2, CC4);
+    pC1 = fma(pC1, t2, CC3);
+    pC0 = fma(pC0, t2, CC2);
+    pC1 = fma(pC1, t2, CC1);
 
-    pC0  = fma(pC0, t2, CC0);
-    pC0  = fma(pC1, t, pC0);
-    pC0  = pC0 * t;
+    pC0 = fma(pC0, t2, CC0);
+    pC0 = fma(pC1, t, pC0);
+    pC0 = pC0 * t;
 
     // Select pB0 or pC0 for erfc()
     m        = two < y;
@@ -703,10 +689,10 @@ erfc(SimdFloat x)
 
     // erfc(x<0) = 2-erfc(|x|)
     m        = x < setZero();
-    res_erfc = blend(res_erfc, two-res_erfc, m);
+    res_erfc = blend(res_erfc, two - res_erfc, m);
 
     // Select erf() or erfc()
-    res  = blend(one-res_erf, res_erfc, msk_erf);
+    res = blend(one - res_erf, res_erfc, msk_erf);
 
     return res;
 }
@@ -721,44 +707,43 @@ erfc(SimdFloat x)
  * magnitudes of the argument we inherently begin to lose accuracy due to the
  * argument reduction, despite using extended precision arithmetics internally.
  */
-static inline void gmx_simdcall
-sincos(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
+static inline void gmx_simdcall sincos(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
 {
     // Constants to subtract Pi/4*x from y while minimizing precision loss
-    const SimdFloat  argred0(-1.5703125);
-    const SimdFloat  argred1(-4.83751296997070312500e-04f);
-    const SimdFloat  argred2(-7.54953362047672271729e-08f);
-    const SimdFloat  argred3(-2.56334406825708960298e-12f);
-    const SimdFloat  two_over_pi(static_cast<float>(2.0f/M_PI));
-    const SimdFloat  const_sin2(-1.9515295891e-4f);
-    const SimdFloat  const_sin1( 8.3321608736e-3f);
-    const SimdFloat  const_sin0(-1.6666654611e-1f);
-    const SimdFloat  const_cos2( 2.443315711809948e-5f);
-    const SimdFloat  const_cos1(-1.388731625493765e-3f);
-    const SimdFloat  const_cos0( 4.166664568298827e-2f);
-    const SimdFloat  half(0.5f);
-    const SimdFloat  one(1.0f);
-    SimdFloat        ssign, csign;
-    SimdFloat        x2, y, z, psin, pcos, sss, ccc;
-    SimdFBool        m;
+    const SimdFloat argred0(-1.5703125);
+    const SimdFloat argred1(-4.83751296997070312500e-04f);
+    const SimdFloat argred2(-7.54953362047672271729e-08f);
+    const SimdFloat argred3(-2.56334406825708960298e-12f);
+    const SimdFloat two_over_pi(static_cast<float>(2.0f / M_PI));
+    const SimdFloat const_sin2(-1.9515295891e-4f);
+    const SimdFloat const_sin1( 8.3321608736e-3f);
+    const SimdFloat const_sin0(-1.6666654611e-1f);
+    const SimdFloat const_cos2( 2.443315711809948e-5f);
+    const SimdFloat const_cos1(-1.388731625493765e-3f);
+    const SimdFloat const_cos0( 4.166664568298827e-2f);
+    const SimdFloat half(0.5f);
+    const SimdFloat one(1.0f);
+    SimdFloat       ssign, csign;
+    SimdFloat       x2, y, z, psin, pcos, sss, ccc;
+    SimdFBool       m;
 
 #if GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const SimdFInt32 ione(1);
     const SimdFInt32 itwo(2);
     SimdFInt32       iy;
 
-    z       = x * two_over_pi;
-    iy      = cvtR2I(z);
-    y       = round(z);
+    z  = x * two_over_pi;
+    iy = cvtR2I(z);
+    y  = round(z);
 
-    m       = cvtIB2B((iy & ione) == SimdFInt32(0));
-    ssign   = selectByMask(SimdFloat(GMX_FLOAT_NEGZERO), cvtIB2B((iy & itwo) == itwo));
-    csign   = selectByMask(SimdFloat(GMX_FLOAT_NEGZERO), cvtIB2B(((iy+ione) & itwo) == itwo));
+    m     = cvtIB2B((iy & ione) == SimdFInt32(0));
+    ssign = selectByMask(SimdFloat(GMX_FLOAT_NEGZERO), cvtIB2B((iy & itwo) == itwo));
+    csign = selectByMask(SimdFloat(GMX_FLOAT_NEGZERO), cvtIB2B(((iy + ione) & itwo) == itwo));
 #else
-    const SimdFloat  quarter(0.25f);
-    const SimdFloat  minusquarter(-0.25f);
-    SimdFloat        q;
-    SimdFBool        m1, m2, m3;
+    const SimdFloat quarter(0.25f);
+    const SimdFloat minusquarter(-0.25f);
+    SimdFloat       q;
+    SimdFBool       m1, m2, m3;
 
     /* The most obvious way to find the arguments quadrant in the unit circle
      * to calculate the sign is to use integer arithmetic, but that is not
@@ -769,19 +754,19 @@ sincos(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
      * slightly slower (~10%) due to the longer latencies of floating-point, so
      * we only use it when integer SIMD arithmetic is not present.
      */
-    ssign   = x;
-    x       = abs(x);
+    ssign = x;
+    x     = abs(x);
     // It is critical that half-way cases are rounded down
-    z       = fma(x, two_over_pi, half);
-    y       = trunc(z);
-    q       = z * quarter;
-    q       = q - trunc(q);
+    z = fma(x, two_over_pi, half);
+    y = trunc(z);
+    q = z * quarter;
+    q = q - trunc(q);
     /* z now starts at 0.0 for x=-pi/4 (although neg. values cannot occur), and
      * then increased by 1.0 as x increases by 2*Pi, when it resets to 0.0.
      * This removes the 2*Pi periodicity without using any integer arithmetic.
      * First check if y had the value 2 or 3, set csign if true.
      */
-    q       = q - half;
+    q = q - half;
     /* If we have logical operations we can work directly on the signbit, which
      * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
      * Thus, if you are altering defines to debug alternative code paths, the
@@ -789,40 +774,40 @@ sincos(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
      * active or inactive - you will get errors if only one is used.
      */
 #    if GMX_SIMD_HAVE_LOGICAL
-    ssign   = ssign & SimdFloat(GMX_FLOAT_NEGZERO);
-    csign   = andNot(q, SimdFloat(GMX_FLOAT_NEGZERO));
-    ssign   = ssign ^ csign;
+    ssign = ssign & SimdFloat(GMX_FLOAT_NEGZERO);
+    csign = andNot(q, SimdFloat(GMX_FLOAT_NEGZERO));
+    ssign = ssign ^ csign;
 #    else
-    ssign   = copysign(SimdFloat(1.0f), ssign);
-    csign   = copysign(SimdFloat(1.0f), q);
-    csign   = -csign;
-    ssign   = ssign * csign;    // swap ssign if csign was set.
+    ssign = copysign(SimdFloat(1.0f), ssign);
+    csign = copysign(SimdFloat(1.0f), q);
+    csign = -csign;
+    ssign = ssign * csign;      // swap ssign if csign was set.
 #    endif
     // Check if y had value 1 or 3 (remember we subtracted 0.5 from q)
-    m1      = (q < minusquarter);
-    m2      = (setZero() <= q);
-    m3      = (q < quarter);
-    m2      = m2 && m3;
-    m       = m1 || m2;
+    m1 = (q < minusquarter);
+    m2 = (setZero() <= q);
+    m3 = (q < quarter);
+    m2 = m2 && m3;
+    m  = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdFloat(-1.0f), one, m);
+    csign = csign * blend(SimdFloat(-1.0f), one, m);
 #endif
-    x       = fma(y, argred0, x);
-    x       = fma(y, argred1, x);
-    x       = fma(y, argred2, x);
-    x       = fma(y, argred3, x);
-    x2      = x * x;
+    x  = fma(y, argred0, x);
+    x  = fma(y, argred1, x);
+    x  = fma(y, argred2, x);
+    x  = fma(y, argred3, x);
+    x2 = x * x;
 
-    psin    = fma(const_sin2, x2, const_sin1);
-    psin    = fma(psin, x2, const_sin0);
-    psin    = fma(psin, x * x2, x);
-    pcos    = fma(const_cos2, x2, const_cos1);
-    pcos    = fma(pcos, x2, const_cos0);
-    pcos    = fms(pcos, x2, half);
-    pcos    = fma(pcos, x2, one);
+    psin = fma(const_sin2, x2, const_sin1);
+    psin = fma(psin, x2, const_sin0);
+    psin = fma(psin, x * x2, x);
+    pcos = fma(const_cos2, x2, const_cos1);
+    pcos = fma(pcos, x2, const_cos0);
+    pcos = fms(pcos, x2, half);
+    pcos = fma(pcos, x2, one);
 
-    sss     = blend(pcos, psin, m);
-    ccc     = blend(psin, pcos, m);
+    sss = blend(pcos, psin, m);
+    ccc = blend(psin, pcos, m);
     // See comment for GMX_SIMD_HAVE_LOGICAL section above.
 #if GMX_SIMD_HAVE_LOGICAL
     *sinval = sss ^ ssign;
@@ -841,8 +826,7 @@ sincos(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdFloat gmx_simdcall
-sin(SimdFloat x)
+static inline SimdFloat gmx_simdcall sin(SimdFloat x)
 {
     SimdFloat s, c;
     sincos(x, &s, &c);
@@ -857,8 +841,7 @@ sin(SimdFloat x)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdFloat gmx_simdcall
-cos(SimdFloat x)
+static inline SimdFloat gmx_simdcall cos(SimdFloat x)
 {
     SimdFloat s, c;
     sincos(x, &s, &c);
@@ -870,71 +853,70 @@ cos(SimdFloat x)
  * \param x The argument to evaluate tan for
  * \result Tan(x)
  */
-static inline SimdFloat gmx_simdcall
-tan(SimdFloat x)
+static inline SimdFloat gmx_simdcall tan(SimdFloat x)
 {
-    const SimdFloat  argred0(-1.5703125);
-    const SimdFloat  argred1(-4.83751296997070312500e-04f);
-    const SimdFloat  argred2(-7.54953362047672271729e-08f);
-    const SimdFloat  argred3(-2.56334406825708960298e-12f);
-    const SimdFloat  two_over_pi(static_cast<float>(2.0f/M_PI));
-    const SimdFloat  CT6(0.009498288995810566122993911);
-    const SimdFloat  CT5(0.002895755790837379295226923);
-    const SimdFloat  CT4(0.02460087336161924491836265);
-    const SimdFloat  CT3(0.05334912882656359828045988);
-    const SimdFloat  CT2(0.1333989091464957704418495);
-    const SimdFloat  CT1(0.3333307599244198227797507);
+    const SimdFloat argred0(-1.5703125);
+    const SimdFloat argred1(-4.83751296997070312500e-04f);
+    const SimdFloat argred2(-7.54953362047672271729e-08f);
+    const SimdFloat argred3(-2.56334406825708960298e-12f);
+    const SimdFloat two_over_pi(static_cast<float>(2.0f / M_PI));
+    const SimdFloat CT6(0.009498288995810566122993911);
+    const SimdFloat CT5(0.002895755790837379295226923);
+    const SimdFloat CT4(0.02460087336161924491836265);
+    const SimdFloat CT3(0.05334912882656359828045988);
+    const SimdFloat CT2(0.1333989091464957704418495);
+    const SimdFloat CT1(0.3333307599244198227797507);
 
-    SimdFloat        x2, p, y, z;
-    SimdFBool        m;
+    SimdFloat x2, p, y, z;
+    SimdFBool m;
 
 #if GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
-    SimdFInt32  iy;
-    SimdFInt32  ione(1);
+    SimdFInt32 iy;
+    SimdFInt32 ione(1);
 
-    z       = x * two_over_pi;
-    iy      = cvtR2I(z);
-    y       = round(z);
-    m       = cvtIB2B((iy & ione) == ione);
+    z  = x * two_over_pi;
+    iy = cvtR2I(z);
+    y  = round(z);
+    m  = cvtIB2B((iy & ione) == ione);
 
-    x       = fma(y, argred0, x);
-    x       = fma(y, argred1, x);
-    x       = fma(y, argred2, x);
-    x       = fma(y, argred3, x);
-    x       = selectByMask(SimdFloat(GMX_FLOAT_NEGZERO), m) ^ x;
+    x = fma(y, argred0, x);
+    x = fma(y, argred1, x);
+    x = fma(y, argred2, x);
+    x = fma(y, argred3, x);
+    x = selectByMask(SimdFloat(GMX_FLOAT_NEGZERO), m) ^ x;
 #else
-    const SimdFloat  quarter(0.25f);
-    const SimdFloat  half(0.5f);
-    const SimdFloat  threequarter(0.75f);
-    SimdFloat        w, q;
-    SimdFBool        m1, m2, m3;
+    const SimdFloat quarter(0.25f);
+    const SimdFloat half(0.5f);
+    const SimdFloat threequarter(0.75f);
+    SimdFloat       w, q;
+    SimdFBool       m1, m2, m3;
 
-    w       = abs(x);
-    z       = fma(w, two_over_pi, half);
-    y       = trunc(z);
-    q       = z * quarter;
-    q       = q - trunc(q);
-    m1      = quarter <= q;
-    m2      = q < half;
-    m3      = threequarter <= q;
-    m1      = m1 && m2;
-    m       = m1 || m3;
-    w       = fma(y, argred0, w);
-    w       = fma(y, argred1, w);
-    w       = fma(y, argred2, w);
-    w       = fma(y, argred3, w);
-    w       = blend(w, -w, m);
-    x       = w * copysign( SimdFloat(1.0), x );
+    w  = abs(x);
+    z  = fma(w, two_over_pi, half);
+    y  = trunc(z);
+    q  = z * quarter;
+    q  = q - trunc(q);
+    m1 = quarter <= q;
+    m2 = q < half;
+    m3 = threequarter <= q;
+    m1 = m1 && m2;
+    m  = m1 || m3;
+    w  = fma(y, argred0, w);
+    w  = fma(y, argred1, w);
+    w  = fma(y, argred2, w);
+    w  = fma(y, argred3, w);
+    w  = blend(w, -w, m);
+    x  = w * copysign( SimdFloat(1.0), x );
 #endif
-    x2      = x * x;
-    p       = fma(CT6, x2, CT5);
-    p       = fma(p, x2, CT4);
-    p       = fma(p, x2, CT3);
-    p       = fma(p, x2, CT2);
-    p       = fma(p, x2, CT1);
-    p       = fma(x2 * p, x, x);
+    x2 = x * x;
+    p  = fma(CT6, x2, CT5);
+    p  = fma(p, x2, CT4);
+    p  = fma(p, x2, CT3);
+    p  = fma(p, x2, CT2);
+    p  = fma(p, x2, CT1);
+    p  = fma(x2 * p, x, x);
 
-    p       = blend( p, maskzInv(p, m), m);
+    p = blend( p, maskzInv(p, m), m);
     return p;
 }
 
@@ -943,13 +925,12 @@ tan(SimdFloat x)
  * \param x The argument to evaluate asin for
  * \result Asin(x)
  */
-static inline SimdFloat gmx_simdcall
-asin(SimdFloat x)
+static inline SimdFloat gmx_simdcall asin(SimdFloat x)
 {
     const SimdFloat limitlow(1e-4f);
     const SimdFloat half(0.5f);
     const SimdFloat one(1.0f);
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0f));
+    const SimdFloat halfpi(static_cast<float>(M_PI / 2.0f));
     const SimdFloat CC5(4.2163199048E-2f);
     const SimdFloat CC4(2.4181311049E-2f);
     const SimdFloat CC3(4.5470025998E-2f);
@@ -960,30 +941,30 @@ asin(SimdFloat x)
     SimdFloat       pA, pB;
     SimdFBool       m, m2;
 
-    xabs  = abs(x);
-    m     = half < xabs;
-    z1    = half * (one-xabs);
-    m2    = xabs < one;
-    q1    = z1 * maskzInvsqrt(z1, m2);
-    q2    = xabs;
-    z2    = q2 * q2;
-    z     = blend(z2, z1, m);
-    q     = blend(q2, q1, m);
+    xabs = abs(x);
+    m    = half < xabs;
+    z1   = half * (one - xabs);
+    m2   = xabs < one;
+    q1   = z1 * maskzInvsqrt(z1, m2);
+    q2   = xabs;
+    z2   = q2 * q2;
+    z    = blend(z2, z1, m);
+    q    = blend(q2, q1, m);
 
-    z2    = z * z;
-    pA    = fma(CC5, z2, CC3);
-    pB    = fma(CC4, z2, CC2);
-    pA    = fma(pA, z2, CC1);
-    pA    = pA * z;
-    z     = fma(pB, z2, pA);
-    z     = fma(z, q, q);
-    q2    = halfpi - z;
-    q2    = q2 - z;
-    z     = blend(z, q2, m);
+    z2 = z * z;
+    pA = fma(CC5, z2, CC3);
+    pB = fma(CC4, z2, CC2);
+    pA = fma(pA, z2, CC1);
+    pA = pA * z;
+    z  = fma(pB, z2, pA);
+    z  = fma(z, q, q);
+    q2 = halfpi - z;
+    q2 = q2 - z;
+    z  = blend(z, q2, m);
 
-    m     = limitlow < xabs;
-    z     = blend( xabs, z, m );
-    z     = copysign(z, x);
+    m = limitlow < xabs;
+    z = blend( xabs, z, m );
+    z = copysign(z, x);
 
     return z;
 }
@@ -993,32 +974,31 @@ asin(SimdFloat x)
  * \param x The argument to evaluate acos for
  * \result Acos(x)
  */
-static inline SimdFloat gmx_simdcall
-acos(SimdFloat x)
+static inline SimdFloat gmx_simdcall acos(SimdFloat x)
 {
     const SimdFloat one(1.0f);
     const SimdFloat half(0.5f);
     const SimdFloat pi(static_cast<float>(M_PI));
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0f));
+    const SimdFloat halfpi(static_cast<float>(M_PI / 2.0f));
     SimdFloat       xabs;
     SimdFloat       z, z1, z2, z3;
     SimdFBool       m1, m2, m3;
 
-    xabs  = abs(x);
-    m1    = half < xabs;
-    m2    = setZero() < x;
+    xabs = abs(x);
+    m1   = half < xabs;
+    m2   = setZero() < x;
 
-    z     = fnma(half, xabs, half);
-    m3    = xabs <  one;
-    z     = z * maskzInvsqrt(z, m3);
-    z     = blend(x, z, m1);
-    z     = asin(z);
+    z  = fnma(half, xabs, half);
+    m3 = xabs <  one;
+    z  = z * maskzInvsqrt(z, m3);
+    z  = blend(x, z, m1);
+    z  = asin(z);
 
-    z2    = z + z;
-    z1    = pi - z2;
-    z3    = halfpi - z;
-    z     = blend(z1, z2, m2);
-    z     = blend(z3, z, m1);
+    z2 = z + z;
+    z1 = pi - z2;
+    z3 = halfpi - z;
+    z  = blend(z1, z2, m2);
+    z  = blend(z3, z, m1);
 
     return z;
 }
@@ -1028,10 +1008,9 @@ acos(SimdFloat x)
  * \param x The argument to evaluate atan for
  * \result Atan(x), same argument/value range as standard math library.
  */
-static inline SimdFloat gmx_simdcall
-atan(SimdFloat x)
+static inline SimdFloat gmx_simdcall atan(SimdFloat x)
 {
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0f));
+    const SimdFloat halfpi(static_cast<float>(M_PI / 2.0f));
     const SimdFloat CA17(0.002823638962581753730774f);
     const SimdFloat CA15(-0.01595690287649631500244f);
     const SimdFloat CA13(0.04250498861074447631836f);
@@ -1044,25 +1023,25 @@ atan(SimdFloat x)
     SimdFloat       x2, x3, x4, pA, pB;
     SimdFBool       m, m2;
 
-    m     = x < setZero();
-    x     = abs(x);
-    m2    = one < x;
-    x     = blend(x, maskzInv(x, m2), m2);
+    m  = x < setZero();
+    x  = abs(x);
+    m2 = one < x;
+    x  = blend(x, maskzInv(x, m2), m2);
 
-    x2    = x * x;
-    x3    = x2 * x;
-    x4    = x2 * x2;
-    pA    = fma(CA17, x4, CA13);
-    pB    = fma(CA15, x4, CA11);
-    pA    = fma(pA, x4, CA9);
-    pB    = fma(pB, x4, CA7);
-    pA    = fma(pA, x4, CA5);
-    pB    = fma(pB, x4, CA3);
-    pA    = fma(pA, x2, pB);
-    pA    = fma(pA, x3, x);
+    x2 = x * x;
+    x3 = x2 * x;
+    x4 = x2 * x2;
+    pA = fma(CA17, x4, CA13);
+    pB = fma(CA15, x4, CA11);
+    pA = fma(pA, x4, CA9);
+    pB = fma(pB, x4, CA7);
+    pA = fma(pA, x4, CA5);
+    pB = fma(pB, x4, CA3);
+    pA = fma(pA, x2, pB);
+    pA = fma(pA, x3, x);
 
-    pA    = blend(pA, halfpi-pA, m2);
-    pA    = blend(pA, -pA, m);
+    pA = blend(pA, halfpi - pA, m2);
+    pA = blend(pA, -pA, m);
 
     return pA;
 }
@@ -1080,11 +1059,10 @@ atan(SimdFloat x)
  * of any concern in Gromacs, and in particular it will not affect calculations
  * of angles from vectors.
  */
-static inline SimdFloat gmx_simdcall
-atan2(SimdFloat y, SimdFloat x)
+static inline SimdFloat gmx_simdcall atan2(SimdFloat y, SimdFloat x)
 {
     const SimdFloat pi(static_cast<float>(M_PI));
-    const SimdFloat halfpi(static_cast<float>(M_PI/2.0));
+    const SimdFloat halfpi(static_cast<float>(M_PI / 2.0));
     SimdFloat       xinv, p, aoffset;
     SimdFBool       mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
@@ -1093,16 +1071,16 @@ atan2(SimdFloat y, SimdFloat x)
     mask_xlt0 = x < setZero();
     mask_ylt0 = y < setZero();
 
-    aoffset   = selectByNotMask(halfpi, mask_xnz);
-    aoffset   = selectByMask(aoffset, mask_ynz);
+    aoffset = selectByNotMask(halfpi, mask_xnz);
+    aoffset = selectByMask(aoffset, mask_ynz);
 
-    aoffset   = blend(aoffset, pi, mask_xlt0);
-    aoffset   = blend(aoffset, -aoffset, mask_ylt0);
+    aoffset = blend(aoffset, pi, mask_xlt0);
+    aoffset = blend(aoffset, -aoffset, mask_ylt0);
 
-    xinv      = maskzInv(x, mask_xnz);
-    p         = y * xinv;
-    p         = atan(p);
-    p         = p + aoffset;
+    xinv = maskzInv(x, mask_xnz);
+    p    = y * xinv;
+    p    = atan(p);
+    p    = p + aoffset;
 
     return p;
 }
@@ -1186,41 +1164,40 @@ atan2(SimdFloat y, SimdFloat x)
  * For \f$\beta r \geq 7206\f$ the return value can be inf or NaN.
  *
  */
-static inline SimdFloat gmx_simdcall
-pmeForceCorrection(SimdFloat z2)
+static inline SimdFloat gmx_simdcall pmeForceCorrection(SimdFloat z2)
 {
-    const SimdFloat  FN6(-1.7357322914161492954e-8f);
-    const SimdFloat  FN5(1.4703624142580877519e-6f);
-    const SimdFloat  FN4(-0.000053401640219807709149f);
-    const SimdFloat  FN3(0.0010054721316683106153f);
-    const SimdFloat  FN2(-0.019278317264888380590f);
-    const SimdFloat  FN1(0.069670166153766424023f);
-    const SimdFloat  FN0(-0.75225204789749321333f);
+    const SimdFloat FN6(-1.7357322914161492954e-8f);
+    const SimdFloat FN5(1.4703624142580877519e-6f);
+    const SimdFloat FN4(-0.000053401640219807709149f);
+    const SimdFloat FN3(0.0010054721316683106153f);
+    const SimdFloat FN2(-0.019278317264888380590f);
+    const SimdFloat FN1(0.069670166153766424023f);
+    const SimdFloat FN0(-0.75225204789749321333f);
 
-    const SimdFloat  FD4(0.0011193462567257629232f);
-    const SimdFloat  FD3(0.014866955030185295499f);
-    const SimdFloat  FD2(0.11583842382862377919f);
-    const SimdFloat  FD1(0.50736591960530292870f);
-    const SimdFloat  FD0(1.0f);
+    const SimdFloat FD4(0.0011193462567257629232f);
+    const SimdFloat FD3(0.014866955030185295499f);
+    const SimdFloat FD2(0.11583842382862377919f);
+    const SimdFloat FD1(0.50736591960530292870f);
+    const SimdFloat FD0(1.0f);
 
-    SimdFloat        z4;
-    SimdFloat        polyFN0, polyFN1, polyFD0, polyFD1;
+    SimdFloat z4;
+    SimdFloat polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD1        = fma(FD3, z4, FD1);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = fma(polyFD1, z2, polyFD0);
+    polyFD0 = fma(FD4, z4, FD2);
+    polyFD1 = fma(FD3, z4, FD1);
+    polyFD0 = fma(polyFD0, z4, FD0);
+    polyFD0 = fma(polyFD1, z2, polyFD0);
 
-    polyFD0        = inv(polyFD0);
+    polyFD0 = inv(polyFD0);
 
-    polyFN0        = fma(FN6, z4, FN4);
-    polyFN1        = fma(FN5, z4, FN3);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN0        = fma(polyFN1, z2, polyFN0);
+    polyFN0 = fma(FN6, z4, FN4);
+    polyFN1 = fma(FN5, z4, FN3);
+    polyFN0 = fma(polyFN0, z4, FN2);
+    polyFN1 = fma(polyFN1, z4, FN1);
+    polyFN0 = fma(polyFN0, z4, FN0);
+    polyFN0 = fma(polyFN1, z2, polyFN0);
 
     return polyFN0 * polyFD0;
 }
@@ -1264,39 +1241,38 @@ pmeForceCorrection(SimdFloat z2)
  * when added to \f$1/r\f$ the error will be insignificant.
  * For \f$\beta r \geq 7142\f$ the return value can be inf or NaN.
  */
-static inline SimdFloat gmx_simdcall
-pmePotentialCorrection(SimdFloat z2)
+static inline SimdFloat gmx_simdcall pmePotentialCorrection(SimdFloat z2)
 {
-    const SimdFloat  VN6(1.9296833005951166339e-8f);
-    const SimdFloat  VN5(-1.4213390571557850962e-6f);
-    const SimdFloat  VN4(0.000041603292906656984871f);
-    const SimdFloat  VN3(-0.00013134036773265025626f);
-    const SimdFloat  VN2(0.038657983986041781264f);
-    const SimdFloat  VN1(0.11285044772717598220f);
-    const SimdFloat  VN0(1.1283802385263030286f);
+    const SimdFloat VN6(1.9296833005951166339e-8f);
+    const SimdFloat VN5(-1.4213390571557850962e-6f);
+    const SimdFloat VN4(0.000041603292906656984871f);
+    const SimdFloat VN3(-0.00013134036773265025626f);
+    const SimdFloat VN2(0.038657983986041781264f);
+    const SimdFloat VN1(0.11285044772717598220f);
+    const SimdFloat VN0(1.1283802385263030286f);
 
-    const SimdFloat  VD3(0.0066752224023576045451f);
-    const SimdFloat  VD2(0.078647795836373922256f);
-    const SimdFloat  VD1(0.43336185284710920150f);
-    const SimdFloat  VD0(1.0f);
+    const SimdFloat VD3(0.0066752224023576045451f);
+    const SimdFloat VD2(0.078647795836373922256f);
+    const SimdFloat VD1(0.43336185284710920150f);
+    const SimdFloat VD0(1.0f);
 
-    SimdFloat        z4;
-    SimdFloat        polyVN0, polyVN1, polyVD0, polyVD1;
+    SimdFloat z4;
+    SimdFloat polyVN0, polyVN1, polyVD0, polyVD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyVD1        = fma(VD3, z4, VD1);
-    polyVD0        = fma(VD2, z4, VD0);
-    polyVD0        = fma(polyVD1, z2, polyVD0);
+    polyVD1 = fma(VD3, z4, VD1);
+    polyVD0 = fma(VD2, z4, VD0);
+    polyVD0 = fma(polyVD1, z2, polyVD0);
 
-    polyVD0        = inv(polyVD0);
+    polyVD0 = inv(polyVD0);
 
-    polyVN0        = fma(VN6, z4, VN4);
-    polyVN1        = fma(VN5, z4, VN3);
-    polyVN0        = fma(polyVN0, z4, VN2);
-    polyVN1        = fma(polyVN1, z4, VN1);
-    polyVN0        = fma(polyVN0, z4, VN0);
-    polyVN0        = fma(polyVN1, z2, polyVN0);
+    polyVN0 = fma(VN6, z4, VN4);
+    polyVN1 = fma(VN5, z4, VN3);
+    polyVN0 = fma(polyVN0, z4, VN2);
+    polyVN1 = fma(polyVN1, z4, VN1);
+    polyVN0 = fma(polyVN0, z4, VN0);
+    polyVN0 = fma(polyVN1, z2, polyVN0);
 
     return polyVN0 * polyVD0;
 }
@@ -1324,8 +1300,7 @@ pmePotentialCorrection(SimdFloat z2)
  * \param y Values used to set sign
  * \return  Magnitude of x, sign of y
  */
-static inline SimdDouble gmx_simdcall
-copysign(SimdDouble x, SimdDouble y)
+static inline SimdDouble gmx_simdcall copysign(SimdDouble x, SimdDouble y)
 {
 #if GMX_SIMD_HAVE_LOGICAL
     return abs(x) | (SimdDouble(GMX_DOUBLE_NEGZERO) & y);
@@ -1345,13 +1320,12 @@ copysign(SimdDouble x, SimdDouble y)
  *  \param x  The reference (starting) value x for which we want 1/sqrt(x).
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static inline SimdDouble gmx_simdcall
-rsqrtIter(SimdDouble lu, SimdDouble x)
+static inline SimdDouble gmx_simdcall rsqrtIter(SimdDouble lu, SimdDouble x)
 {
-    SimdDouble tmp1 = x*lu;
-    SimdDouble tmp2 = SimdDouble(-0.5)*lu;
+    SimdDouble tmp1 = x * lu;
+    SimdDouble tmp2 = SimdDouble(-0.5) * lu;
     tmp1 = fma(tmp1, lu, SimdDouble(-3.0));
-    return tmp1*tmp2;
+    return tmp1 * tmp2;
 }
 #endif
 
@@ -1360,20 +1334,19 @@ rsqrtIter(SimdDouble lu, SimdDouble x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline SimdDouble gmx_simdcall
-invsqrt(SimdDouble x)
+static inline SimdDouble gmx_simdcall invsqrt(SimdDouble x)
 {
     SimdDouble lu = rsqrt(x);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -1389,11 +1362,10 @@ invsqrt(SimdDouble x)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall
-invsqrtPair(SimdDouble x0,    SimdDouble x1,
-            SimdDouble *out0, SimdDouble *out1)
+static inline void gmx_simdcall invsqrtPair(SimdDouble x0,    SimdDouble x1,
+                                            SimdDouble *out0, SimdDouble *out1)
 {
-#if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
+#if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
     SimdFloat  xf  = cvtDD2F(x0, x1);
     SimdFloat  luf = rsqrt(xf);
     SimdDouble lu0, lu1;
@@ -1401,10 +1373,10 @@ invsqrtPair(SimdDouble x0,    SimdDouble x1,
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
     cvtF2DD(luf, &lu0, &lu1);
@@ -1413,7 +1385,7 @@ invsqrtPair(SimdDouble x0,    SimdDouble x1,
     lu0 = rsqrtIter(lu0, x0);
     lu1 = rsqrtIter(lu1, x1);
 #endif
-#if (GMX_SIMD_ACCURACY_BITS_SINGLE*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_ACCURACY_BITS_SINGLE * 2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = rsqrtIter(lu0, x0);
     lu1 = rsqrtIter(lu1, x1);
 #endif
@@ -1435,10 +1407,9 @@ invsqrtPair(SimdDouble x0,    SimdDouble x1,
  *  \param x  The reference (starting) value x for which we want 1/x.
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static inline SimdDouble gmx_simdcall
-rcpIter(SimdDouble lu, SimdDouble x)
+static inline SimdDouble gmx_simdcall rcpIter(SimdDouble lu, SimdDouble x)
 {
-    return lu*fnma(lu, x, SimdDouble(2.0));
+    return lu * fnma(lu, x, SimdDouble(2.0));
 }
 #endif
 
@@ -1447,20 +1418,19 @@ rcpIter(SimdDouble lu, SimdDouble x)
  *  \param x Argument that must be nonzero. This routine does not check arguments.
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
-static inline SimdDouble gmx_simdcall
-inv(SimdDouble x)
+static inline SimdDouble gmx_simdcall inv(SimdDouble x)
 {
     SimdDouble lu = rcp(x);
 #if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RCP_BITS * 2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RCP_BITS * 4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RCP_BITS * 8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
     return lu;
@@ -1476,10 +1446,9 @@ inv(SimdDouble x)
  * \note This function does not use any masking to avoid problems with
  *       zero values in the denominator.
  */
-static inline SimdDouble gmx_simdcall
-operator/(SimdDouble nom, SimdDouble denom)
+static inline SimdDouble gmx_simdcall operator/(SimdDouble nom, SimdDouble denom)
 {
-    return nom*inv(denom);
+    return nom * inv(denom);
 }
 
 
@@ -1494,20 +1463,19 @@ operator/(SimdDouble nom, SimdDouble denom)
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
  */
-static inline SimdDouble
-maskzInvsqrt(SimdDouble x, SimdDBool m)
+static inline SimdDouble maskzInvsqrt(SimdDouble x, SimdDBool m)
 {
     SimdDouble lu = maskzRsqrt(x, m);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -1519,20 +1487,19 @@ maskzInvsqrt(SimdDouble x, SimdDBool m)
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static inline SimdDouble gmx_simdcall
-maskzInv(SimdDouble x, SimdDBool m)
+static inline SimdDouble gmx_simdcall maskzInv(SimdDouble x, SimdDBool m)
 {
     SimdDouble lu = maskzRcp(x, m);
 #if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RCP_BITS * 2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RCP_BITS * 4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RCP_BITS * 8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rcpIter(lu, x);
 #endif
     return lu;
@@ -1545,8 +1512,7 @@ maskzInv(SimdDouble x, SimdDBool m)
  *  \return sqrt(x). If x=0, the result will correctly be set to 0.
  *          The result is undefined if the input value is negative.
  */
-static inline SimdDouble gmx_simdcall
-sqrt(SimdDouble x)
+static inline SimdDouble gmx_simdcall sqrt(SimdDouble x)
 {
     return x * maskzInvsqrt(x, setZero() < x);
 }
@@ -1557,44 +1523,43 @@ sqrt(SimdDouble x)
  * \param x Argument, should be >0.
  * \result The natural logarithm of x. Undefined if argument is invalid.
  */
-static inline SimdDouble gmx_simdcall
-log(SimdDouble x)
+static inline SimdDouble gmx_simdcall log(SimdDouble x)
 {
-    const SimdDouble  one(1.0);
-    const SimdDouble  two(2.0);
-    const SimdDouble  invsqrt2(1.0/std::sqrt(2.0));
-    const SimdDouble  corr(0.693147180559945286226764);
-    const SimdDouble  CL15(0.148197055177935105296783);
-    const SimdDouble  CL13(0.153108178020442575739679);
-    const SimdDouble  CL11(0.181837339521549679055568);
-    const SimdDouble  CL9(0.22222194152736701733275);
-    const SimdDouble  CL7(0.285714288030134544449368);
-    const SimdDouble  CL5(0.399999999989941956712869);
-    const SimdDouble  CL3(0.666666666666685503450651);
-    const SimdDouble  CL1(2.0);
-    SimdDouble        fExp, x2, p;
-    SimdDBool         m;
-    SimdDInt32        iExp;
+    const SimdDouble one(1.0);
+    const SimdDouble two(2.0);
+    const SimdDouble invsqrt2(1.0 / std::sqrt(2.0));
+    const SimdDouble corr(0.693147180559945286226764);
+    const SimdDouble CL15(0.148197055177935105296783);
+    const SimdDouble CL13(0.153108178020442575739679);
+    const SimdDouble CL11(0.181837339521549679055568);
+    const SimdDouble CL9(0.22222194152736701733275);
+    const SimdDouble CL7(0.285714288030134544449368);
+    const SimdDouble CL5(0.399999999989941956712869);
+    const SimdDouble CL3(0.666666666666685503450651);
+    const SimdDouble CL1(2.0);
+    SimdDouble       fExp, x2, p;
+    SimdDBool        m;
+    SimdDInt32       iExp;
 
-    x     = frexp(x, &iExp);
-    fExp  = cvtI2R(iExp);
+    x    = frexp(x, &iExp);
+    fExp = cvtI2R(iExp);
 
-    m     = x < invsqrt2;
+    m = x < invsqrt2;
     // Adjust to non-IEEE format for x<1/sqrt(2): exponent -= 1, mantissa *= 2.0
-    fExp  = fExp - selectByMask(one, m);
-    x     = x * blend(one, two, m);
+    fExp = fExp - selectByMask(one, m);
+    x    = x * blend(one, two, m);
 
-    x     = (x-one) * inv( x+one );
-    x2    = x * x;
+    x  = (x - one) * inv( x + one );
+    x2 = x * x;
 
-    p     = fma(CL15, x2, CL13);
-    p     = fma(p, x2, CL11);
-    p     = fma(p, x2, CL9);
-    p     = fma(p, x2, CL7);
-    p     = fma(p, x2, CL5);
-    p     = fma(p, x2, CL3);
-    p     = fma(p, x2, CL1);
-    p     = fma(p, x, corr * fExp);
+    p = fma(CL15, x2, CL13);
+    p = fma(p, x2, CL11);
+    p = fma(p, x2, CL9);
+    p = fma(p, x2, CL7);
+    p = fma(p, x2, CL5);
+    p = fma(p, x2, CL3);
+    p = fma(p, x2, CL1);
+    p = fma(p, x, corr * fExp);
 
     return p;
 }
@@ -1606,46 +1571,45 @@ log(SimdDouble x)
  * \param x Argument.
  * \result 2^x. Undefined if input argument caused overflow.
  */
-static inline SimdDouble gmx_simdcall
-exp2(SimdDouble x)
+static inline SimdDouble gmx_simdcall exp2(SimdDouble x)
 {
-    const SimdDouble  arglimit(1022.0);
-    const SimdDouble  CE11(4.435280790452730022081181e-10);
-    const SimdDouble  CE10(7.074105630863314448024247e-09);
-    const SimdDouble  CE9(1.017819803432096698472621e-07);
-    const SimdDouble  CE8(1.321543308956718799557863e-06);
-    const SimdDouble  CE7(0.00001525273348995851746990884);
-    const SimdDouble  CE6(0.0001540353046251466849082632);
-    const SimdDouble  CE5(0.001333355814678995257307880);
-    const SimdDouble  CE4(0.009618129107588335039176502);
-    const SimdDouble  CE3(0.05550410866481992147457793);
-    const SimdDouble  CE2(0.2402265069591015620470894);
-    const SimdDouble  CE1(0.6931471805599453304615075);
-    const SimdDouble  one(1.0);
+    const SimdDouble arglimit(1022.0);
+    const SimdDouble CE11(4.435280790452730022081181e-10);
+    const SimdDouble CE10(7.074105630863314448024247e-09);
+    const SimdDouble CE9(1.017819803432096698472621e-07);
+    const SimdDouble CE8(1.321543308956718799557863e-06);
+    const SimdDouble CE7(0.00001525273348995851746990884);
+    const SimdDouble CE6(0.0001540353046251466849082632);
+    const SimdDouble CE5(0.001333355814678995257307880);
+    const SimdDouble CE4(0.009618129107588335039176502);
+    const SimdDouble CE3(0.05550410866481992147457793);
+    const SimdDouble CE2(0.2402265069591015620470894);
+    const SimdDouble CE1(0.6931471805599453304615075);
+    const SimdDouble one(1.0);
 
-    SimdDouble        intpart;
-    SimdDouble        fexppart;
-    SimdDouble        p;
-    SimdDBool         m;
+    SimdDouble intpart;
+    SimdDouble fexppart;
+    SimdDouble p;
+    SimdDBool  m;
 
-    fexppart  = ldexp(one, cvtR2I(x));
-    intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
-    x         = x - intpart;
+    fexppart = ldexp(one, cvtR2I(x));
+    intpart  = round(x);
+    m        = abs(x) <= arglimit;
+    fexppart = selectByMask(fexppart, m);
+    x        = x - intpart;
 
-    p         = fma(CE11, x, CE10);
-    p         = fma(p, x, CE9);
-    p         = fma(p, x, CE8);
-    p         = fma(p, x, CE7);
-    p         = fma(p, x, CE6);
-    p         = fma(p, x, CE5);
-    p         = fma(p, x, CE4);
-    p         = fma(p, x, CE3);
-    p         = fma(p, x, CE2);
-    p         = fma(p, x, CE1);
-    p         = fma(p, x, one);
-    x         = p * fexppart;
+    p = fma(CE11, x, CE10);
+    p = fma(p, x, CE9);
+    p = fma(p, x, CE8);
+    p = fma(p, x, CE7);
+    p = fma(p, x, CE6);
+    p = fma(p, x, CE5);
+    p = fma(p, x, CE4);
+    p = fma(p, x, CE3);
+    p = fma(p, x, CE2);
+    p = fma(p, x, CE1);
+    p = fma(p, x, one);
+    x = p * fexppart;
     return x;
 }
 #endif
@@ -1660,52 +1624,51 @@ exp2(SimdDouble x)
  * \result exp(x). Undefined if input argument caused overflow,
  * which can happen if abs(x) \> 7e13.
  */
-static inline SimdDouble gmx_simdcall
-exp(SimdDouble x)
+static inline SimdDouble gmx_simdcall exp(SimdDouble x)
 {
-    const SimdDouble  argscale(1.44269504088896340735992468100);
-    const SimdDouble  arglimit(1022.0);
-    const SimdDouble  invargscale0(-0.69314718055966295651160180568695068359375);
-    const SimdDouble  invargscale1(-2.8235290563031577122588448175013436025525412068e-13);
-    const SimdDouble  CE12(2.078375306791423699350304e-09);
-    const SimdDouble  CE11(2.518173854179933105218635e-08);
-    const SimdDouble  CE10(2.755842049600488770111608e-07);
-    const SimdDouble  CE9(2.755691815216689746619849e-06);
-    const SimdDouble  CE8(2.480158383706245033920920e-05);
-    const SimdDouble  CE7(0.0001984127043518048611841321);
-    const SimdDouble  CE6(0.001388888889360258341755930);
-    const SimdDouble  CE5(0.008333333332907368102819109);
-    const SimdDouble  CE4(0.04166666666663836745814631);
-    const SimdDouble  CE3(0.1666666666666796929434570);
-    const SimdDouble  CE2(0.5);
-    const SimdDouble  one(1.0);
-    SimdDouble        fexppart;
-    SimdDouble        intpart;
-    SimdDouble        y, p;
-    SimdDBool         m;
+    const SimdDouble argscale(1.44269504088896340735992468100);
+    const SimdDouble arglimit(1022.0);
+    const SimdDouble invargscale0(-0.69314718055966295651160180568695068359375);
+    const SimdDouble invargscale1(-2.8235290563031577122588448175013436025525412068e-13);
+    const SimdDouble CE12(2.078375306791423699350304e-09);
+    const SimdDouble CE11(2.518173854179933105218635e-08);
+    const SimdDouble CE10(2.755842049600488770111608e-07);
+    const SimdDouble CE9(2.755691815216689746619849e-06);
+    const SimdDouble CE8(2.480158383706245033920920e-05);
+    const SimdDouble CE7(0.0001984127043518048611841321);
+    const SimdDouble CE6(0.001388888889360258341755930);
+    const SimdDouble CE5(0.008333333332907368102819109);
+    const SimdDouble CE4(0.04166666666663836745814631);
+    const SimdDouble CE3(0.1666666666666796929434570);
+    const SimdDouble CE2(0.5);
+    const SimdDouble one(1.0);
+    SimdDouble       fexppart;
+    SimdDouble       intpart;
+    SimdDouble       y, p;
+    SimdDBool        m;
 
-    y         = x * argscale;
-    fexppart  = ldexp(one, cvtR2I(y));
-    intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
+    y        = x * argscale;
+    fexppart = ldexp(one, cvtR2I(y));
+    intpart  = round(y);
+    m        = (abs(y) <= arglimit);
+    fexppart = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
-    x         = fma(invargscale0, intpart, x);
-    x         = fma(invargscale1, intpart, x);
+    x = fma(invargscale0, intpart, x);
+    x = fma(invargscale1, intpart, x);
 
-    p         = fma(CE12, x, CE11);
-    p         = fma(p, x, CE10);
-    p         = fma(p, x, CE9);
-    p         = fma(p, x, CE8);
-    p         = fma(p, x, CE7);
-    p         = fma(p, x, CE6);
-    p         = fma(p, x, CE5);
-    p         = fma(p, x, CE4);
-    p         = fma(p, x, CE3);
-    p         = fma(p, x, CE2);
-    p         = fma(p, x * x, x);
-    x         = fma(p, fexppart, fexppart);
+    p = fma(CE12, x, CE11);
+    p = fma(p, x, CE10);
+    p = fma(p, x, CE9);
+    p = fma(p, x, CE8);
+    p = fma(p, x, CE7);
+    p = fma(p, x, CE6);
+    p = fma(p, x, CE5);
+    p = fma(p, x, CE4);
+    p = fma(p, x, CE3);
+    p = fma(p, x, CE2);
+    p = fma(p, x * x, x);
+    x = fma(p, fexppart, fexppart);
 
     return x;
 }
@@ -1719,8 +1682,7 @@ exp(SimdDouble x)
  * This routine achieves very close to full precision, but we do not care about
  * the last bit or the subnormal result range.
  */
-static inline SimdDouble gmx_simdcall
-erf(SimdDouble x)
+static inline SimdDouble gmx_simdcall erf(SimdDouble x)
 {
     // Coefficients for minimax approximation of erf(x)=x*(CAoffset + P(x^2)/Q(x^2)) in range [-0.75,0.75]
     const SimdDouble CAP4(-0.431780540597889301512e-4);
@@ -1775,13 +1737,13 @@ erf(SimdDouble x)
     const SimdDouble one(1.0);
     const SimdDouble two(2.0);
 
-    SimdDouble       xabs, x2, x4, t, t2, w, w2;
-    SimdDouble       PolyAP0, PolyAP1, PolyAQ0, PolyAQ1;
-    SimdDouble       PolyBP0, PolyBP1, PolyBQ0, PolyBQ1;
-    SimdDouble       PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
-    SimdDouble       res_erf, res_erfcB, res_erfcC, res_erfc, res;
-    SimdDouble       expmx2;
-    SimdDBool        mask, mask_erf, notmask_erf;
+    SimdDouble xabs, x2, x4, t, t2, w, w2;
+    SimdDouble PolyAP0, PolyAP1, PolyAQ0, PolyAQ1;
+    SimdDouble PolyBP0, PolyBP1, PolyBQ0, PolyBQ1;
+    SimdDouble PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
+    SimdDouble res_erf, res_erfcB, res_erfcC, res_erfc, res;
+    SimdDouble expmx2;
+    SimdDBool  mask, mask_erf, notmask_erf;
 
     // Calculate erf()
     xabs        = abs(x);
@@ -1790,31 +1752,31 @@ erf(SimdDouble x)
     x2          = x * x;
     x4          = x2 * x2;
 
-    PolyAP0  = fma(CAP4, x4, CAP2);
-    PolyAP1  = fma(CAP3, x4, CAP1);
-    PolyAP0  = fma(PolyAP0, x4, CAP0);
-    PolyAP0  = fma(PolyAP1, x2, PolyAP0);
+    PolyAP0 = fma(CAP4, x4, CAP2);
+    PolyAP1 = fma(CAP3, x4, CAP1);
+    PolyAP0 = fma(PolyAP0, x4, CAP0);
+    PolyAP0 = fma(PolyAP1, x2, PolyAP0);
 
-    PolyAQ1  = fma(CAQ5, x4, CAQ3);
-    PolyAQ0  = fma(CAQ4, x4, CAQ2);
-    PolyAQ1  = fma(PolyAQ1, x4, CAQ1);
-    PolyAQ0  = fma(PolyAQ0, x4, one);
-    PolyAQ0  = fma(PolyAQ1, x2, PolyAQ0);
+    PolyAQ1 = fma(CAQ5, x4, CAQ3);
+    PolyAQ0 = fma(CAQ4, x4, CAQ2);
+    PolyAQ1 = fma(PolyAQ1, x4, CAQ1);
+    PolyAQ0 = fma(PolyAQ0, x4, one);
+    PolyAQ0 = fma(PolyAQ1, x2, PolyAQ0);
 
-    res_erf  = PolyAP0 * maskzInv(PolyAQ0, mask_erf);
-    res_erf  = CAoffset + res_erf;
-    res_erf  = x * res_erf;
+    res_erf = PolyAP0 * maskzInv(PolyAQ0, mask_erf);
+    res_erf = CAoffset + res_erf;
+    res_erf = x * res_erf;
 
     // Calculate erfc() in range [1,4.5]
-    t       = xabs - one;
-    t2      = t * t;
+    t  = xabs - one;
+    t2 = t * t;
 
-    PolyBP0  = fma(CBP6, t2, CBP4);
-    PolyBP1  = fma(CBP5, t2, CBP3);
-    PolyBP0  = fma(PolyBP0, t2, CBP2);
-    PolyBP1  = fma(PolyBP1, t2, CBP1);
-    PolyBP0  = fma(PolyBP0, t2, CBP0);
-    PolyBP0  = fma(PolyBP1, t, PolyBP0);
+    PolyBP0 = fma(CBP6, t2, CBP4);
+    PolyBP1 = fma(CBP5, t2, CBP3);
+    PolyBP0 = fma(PolyBP0, t2, CBP2);
+    PolyBP1 = fma(PolyBP1, t2, CBP1);
+    PolyBP0 = fma(PolyBP0, t2, CBP0);
+    PolyBP0 = fma(PolyBP1, t, PolyBP0);
 
     PolyBQ1 = fma(CBQ7, t2, CBQ5);
     PolyBQ0 = fma(CBQ6, t2, CBQ4);
@@ -1830,24 +1792,24 @@ erf(SimdDouble x)
     res_erfcB = res_erfcB * xabs;
 
     // Calculate erfc() in range [4.5,inf]
-    w       = maskzInv(xabs, notmask_erf);
-    w2      = w * w;
+    w  = maskzInv(xabs, notmask_erf);
+    w2 = w * w;
 
-    PolyCP0  = fma(CCP6, w2, CCP4);
-    PolyCP1  = fma(CCP5, w2, CCP3);
-    PolyCP0  = fma(PolyCP0, w2, CCP2);
-    PolyCP1  = fma(PolyCP1, w2, CCP1);
-    PolyCP0  = fma(PolyCP0, w2, CCP0);
-    PolyCP0  = fma(PolyCP1, w, PolyCP0);
+    PolyCP0 = fma(CCP6, w2, CCP4);
+    PolyCP1 = fma(CCP5, w2, CCP3);
+    PolyCP0 = fma(PolyCP0, w2, CCP2);
+    PolyCP1 = fma(PolyCP1, w2, CCP1);
+    PolyCP0 = fma(PolyCP0, w2, CCP0);
+    PolyCP0 = fma(PolyCP1, w, PolyCP0);
 
-    PolyCQ0  = fma(CCQ6, w2, CCQ4);
-    PolyCQ1  = fma(CCQ5, w2, CCQ3);
-    PolyCQ0  = fma(PolyCQ0, w2, CCQ2);
-    PolyCQ1  = fma(PolyCQ1, w2, CCQ1);
-    PolyCQ0  = fma(PolyCQ0, w2, one);
-    PolyCQ0  = fma(PolyCQ1, w, PolyCQ0);
+    PolyCQ0 = fma(CCQ6, w2, CCQ4);
+    PolyCQ1 = fma(CCQ5, w2, CCQ3);
+    PolyCQ0 = fma(PolyCQ0, w2, CCQ2);
+    PolyCQ1 = fma(PolyCQ1, w2, CCQ1);
+    PolyCQ0 = fma(PolyCQ0, w2, one);
+    PolyCQ0 = fma(PolyCQ1, w, PolyCQ0);
 
-    expmx2   = exp( -x2 );
+    expmx2 = exp( -x2 );
 
     // The denominator polynomial can be zero outside the range
     res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf);
@@ -1864,7 +1826,7 @@ erf(SimdDouble x)
     res_erfc = blend(res_erfc, two - res_erfc, mask);
 
     // Select erf() or erfc()
-    res  = blend(one - res_erfc, res_erf, mask_erf);
+    res = blend(one - res_erfc, res_erf, mask_erf);
 
     return res;
 }
@@ -1880,8 +1842,7 @@ erf(SimdDouble x)
  * (think results that are in the ballpark of 10^-200 for double)
  * since that is not relevant for MD.
  */
-static inline SimdDouble gmx_simdcall
-erfc(SimdDouble x)
+static inline SimdDouble gmx_simdcall erfc(SimdDouble x)
 {
     // Coefficients for minimax approximation of erf(x)=x*(CAoffset + P(x^2)/Q(x^2)) in range [-0.75,0.75]
     const SimdDouble CAP4(-0.431780540597889301512e-4);
@@ -1936,13 +1897,13 @@ erfc(SimdDouble x)
     const SimdDouble one(1.0);
     const SimdDouble two(2.0);
 
-    SimdDouble       xabs, x2, x4, t, t2, w, w2;
-    SimdDouble       PolyAP0, PolyAP1, PolyAQ0, PolyAQ1;
-    SimdDouble       PolyBP0, PolyBP1, PolyBQ0, PolyBQ1;
-    SimdDouble       PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
-    SimdDouble       res_erf, res_erfcB, res_erfcC, res_erfc, res;
-    SimdDouble       expmx2;
-    SimdDBool        mask, mask_erf, notmask_erf;
+    SimdDouble xabs, x2, x4, t, t2, w, w2;
+    SimdDouble PolyAP0, PolyAP1, PolyAQ0, PolyAQ1;
+    SimdDouble PolyBP0, PolyBP1, PolyBQ0, PolyBQ1;
+    SimdDouble PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
+    SimdDouble res_erf, res_erfcB, res_erfcC, res_erfc, res;
+    SimdDouble expmx2;
+    SimdDBool  mask, mask_erf, notmask_erf;
 
     // Calculate erf()
     xabs        = abs(x);
@@ -1951,30 +1912,30 @@ erfc(SimdDouble x)
     x2          = x * x;
     x4          = x2 * x2;
 
-    PolyAP0  = fma(CAP4, x4, CAP2);
-    PolyAP1  = fma(CAP3, x4, CAP1);
-    PolyAP0  = fma(PolyAP0, x4, CAP0);
-    PolyAP0  = fma(PolyAP1, x2, PolyAP0);
-    PolyAQ1  = fma(CAQ5, x4, CAQ3);
-    PolyAQ0  = fma(CAQ4, x4, CAQ2);
-    PolyAQ1  = fma(PolyAQ1, x4, CAQ1);
-    PolyAQ0  = fma(PolyAQ0, x4, one);
-    PolyAQ0  = fma(PolyAQ1, x2, PolyAQ0);
+    PolyAP0 = fma(CAP4, x4, CAP2);
+    PolyAP1 = fma(CAP3, x4, CAP1);
+    PolyAP0 = fma(PolyAP0, x4, CAP0);
+    PolyAP0 = fma(PolyAP1, x2, PolyAP0);
+    PolyAQ1 = fma(CAQ5, x4, CAQ3);
+    PolyAQ0 = fma(CAQ4, x4, CAQ2);
+    PolyAQ1 = fma(PolyAQ1, x4, CAQ1);
+    PolyAQ0 = fma(PolyAQ0, x4, one);
+    PolyAQ0 = fma(PolyAQ1, x2, PolyAQ0);
 
-    res_erf  = PolyAP0 * maskzInv(PolyAQ0, mask_erf);
-    res_erf  = CAoffset + res_erf;
-    res_erf  = x * res_erf;
+    res_erf = PolyAP0 * maskzInv(PolyAQ0, mask_erf);
+    res_erf = CAoffset + res_erf;
+    res_erf = x * res_erf;
 
     // Calculate erfc() in range [1,4.5]
-    t       = xabs - one;
-    t2      = t * t;
+    t  = xabs - one;
+    t2 = t * t;
 
-    PolyBP0  = fma(CBP6, t2, CBP4);
-    PolyBP1  = fma(CBP5, t2, CBP3);
-    PolyBP0  = fma(PolyBP0, t2, CBP2);
-    PolyBP1  = fma(PolyBP1, t2, CBP1);
-    PolyBP0  = fma(PolyBP0, t2, CBP0);
-    PolyBP0  = fma(PolyBP1, t, PolyBP0);
+    PolyBP0 = fma(CBP6, t2, CBP4);
+    PolyBP1 = fma(CBP5, t2, CBP3);
+    PolyBP0 = fma(PolyBP0, t2, CBP2);
+    PolyBP1 = fma(PolyBP1, t2, CBP1);
+    PolyBP0 = fma(PolyBP0, t2, CBP0);
+    PolyBP0 = fma(PolyBP1, t, PolyBP0);
 
     PolyBQ1 = fma(CBQ7, t2, CBQ5);
     PolyBQ0 = fma(CBQ6, t2, CBQ4);
@@ -1990,24 +1951,24 @@ erfc(SimdDouble x)
     res_erfcB = res_erfcB * xabs;
 
     // Calculate erfc() in range [4.5,inf]
-    w       = maskzInv(xabs, xabs != setZero());
-    w2      = w * w;
+    w  = maskzInv(xabs, xabs != setZero());
+    w2 = w * w;
 
-    PolyCP0  = fma(CCP6, w2, CCP4);
-    PolyCP1  = fma(CCP5, w2, CCP3);
-    PolyCP0  = fma(PolyCP0, w2, CCP2);
-    PolyCP1  = fma(PolyCP1, w2, CCP1);
-    PolyCP0  = fma(PolyCP0, w2, CCP0);
-    PolyCP0  = fma(PolyCP1, w, PolyCP0);
+    PolyCP0 = fma(CCP6, w2, CCP4);
+    PolyCP1 = fma(CCP5, w2, CCP3);
+    PolyCP0 = fma(PolyCP0, w2, CCP2);
+    PolyCP1 = fma(PolyCP1, w2, CCP1);
+    PolyCP0 = fma(PolyCP0, w2, CCP0);
+    PolyCP0 = fma(PolyCP1, w, PolyCP0);
 
-    PolyCQ0  = fma(CCQ6, w2, CCQ4);
-    PolyCQ1  = fma(CCQ5, w2, CCQ3);
-    PolyCQ0  = fma(PolyCQ0, w2, CCQ2);
-    PolyCQ1  = fma(PolyCQ1, w2, CCQ1);
-    PolyCQ0  = fma(PolyCQ0, w2, one);
-    PolyCQ0  = fma(PolyCQ1, w, PolyCQ0);
+    PolyCQ0 = fma(CCQ6, w2, CCQ4);
+    PolyCQ1 = fma(CCQ5, w2, CCQ3);
+    PolyCQ0 = fma(PolyCQ0, w2, CCQ2);
+    PolyCQ1 = fma(PolyCQ1, w2, CCQ1);
+    PolyCQ0 = fma(PolyCQ0, w2, one);
+    PolyCQ0 = fma(PolyCQ1, w, PolyCQ0);
 
-    expmx2   = exp( -x2 );
+    expmx2 = exp( -x2 );
 
     // The denominator polynomial can be zero outside the range
     res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf);
@@ -2024,7 +1985,7 @@ erfc(SimdDouble x)
     res_erfc = blend(res_erfc, two - res_erfc, mask);
 
     // Select erf() or erfc()
-    res  = blend(res_erfc, one - res_erf, mask_erf);
+    res = blend(res_erfc, one - res_erf, mask_erf);
 
     return res;
 }
@@ -2039,50 +2000,49 @@ erfc(SimdDouble x)
  * magnitudes of the argument we inherently begin to lose accuracy due to the
  * argument reduction, despite using extended precision arithmetics internally.
  */
-static inline void gmx_simdcall
-sincos(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
+static inline void gmx_simdcall sincos(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
 {
     // Constants to subtract Pi/4*x from y while minimizing precision loss
-    const SimdDouble  argred0(-2*0.78539816290140151978);
-    const SimdDouble  argred1(-2*4.9604678871439933374e-10);
-    const SimdDouble  argred2(-2*1.1258708853173288931e-18);
-    const SimdDouble  argred3(-2*1.7607799325916000908e-27);
-    const SimdDouble  two_over_pi(2.0/M_PI);
-    const SimdDouble  const_sin5( 1.58938307283228937328511e-10);
-    const SimdDouble  const_sin4(-2.50506943502539773349318e-08);
-    const SimdDouble  const_sin3( 2.75573131776846360512547e-06);
-    const SimdDouble  const_sin2(-0.000198412698278911770864914);
-    const SimdDouble  const_sin1( 0.0083333333333191845961746);
-    const SimdDouble  const_sin0(-0.166666666666666130709393);
+    const SimdDouble argred0(-2 * 0.78539816290140151978);
+    const SimdDouble argred1(-2 * 4.9604678871439933374e-10);
+    const SimdDouble argred2(-2 * 1.1258708853173288931e-18);
+    const SimdDouble argred3(-2 * 1.7607799325916000908e-27);
+    const SimdDouble two_over_pi(2.0 / M_PI);
+    const SimdDouble const_sin5( 1.58938307283228937328511e-10);
+    const SimdDouble const_sin4(-2.50506943502539773349318e-08);
+    const SimdDouble const_sin3( 2.75573131776846360512547e-06);
+    const SimdDouble const_sin2(-0.000198412698278911770864914);
+    const SimdDouble const_sin1( 0.0083333333333191845961746);
+    const SimdDouble const_sin0(-0.166666666666666130709393);
 
-    const SimdDouble  const_cos7(-1.13615350239097429531523e-11);
-    const SimdDouble  const_cos6( 2.08757471207040055479366e-09);
-    const SimdDouble  const_cos5(-2.75573144028847567498567e-07);
-    const SimdDouble  const_cos4( 2.48015872890001867311915e-05);
-    const SimdDouble  const_cos3(-0.00138888888888714019282329);
-    const SimdDouble  const_cos2( 0.0416666666666665519592062);
-    const SimdDouble  half(0.5);
-    const SimdDouble  one(1.0);
-    SimdDouble        ssign, csign;
-    SimdDouble        x2, y, z, psin, pcos, sss, ccc;
-    SimdDBool         mask;
+    const SimdDouble const_cos7(-1.13615350239097429531523e-11);
+    const SimdDouble const_cos6( 2.08757471207040055479366e-09);
+    const SimdDouble const_cos5(-2.75573144028847567498567e-07);
+    const SimdDouble const_cos4( 2.48015872890001867311915e-05);
+    const SimdDouble const_cos3(-0.00138888888888714019282329);
+    const SimdDouble const_cos2( 0.0416666666666665519592062);
+    const SimdDouble half(0.5);
+    const SimdDouble one(1.0);
+    SimdDouble       ssign, csign;
+    SimdDouble       x2, y, z, psin, pcos, sss, ccc;
+    SimdDBool        mask;
 #if GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
-    const SimdDInt32  ione(1);
-    const SimdDInt32  itwo(2);
-    SimdDInt32        iy;
+    const SimdDInt32 ione(1);
+    const SimdDInt32 itwo(2);
+    SimdDInt32       iy;
 
-    z       = x * two_over_pi;
-    iy      = cvtR2I(z);
-    y       = round(z);
+    z  = x * two_over_pi;
+    iy = cvtR2I(z);
+    y  = round(z);
 
-    mask    = cvtIB2B((iy & ione) == setZero());
-    ssign   = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B((iy & itwo) == itwo));
-    csign   = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B(((iy + ione) & itwo) == itwo));
+    mask  = cvtIB2B((iy & ione) == setZero());
+    ssign = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B((iy & itwo) == itwo));
+    csign = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B(((iy + ione) & itwo) == itwo));
 #else
-    const SimdDouble  quarter(0.25);
-    const SimdDouble  minusquarter(-0.25);
-    SimdDouble        q;
-    SimdDBool         m1, m2, m3;
+    const SimdDouble quarter(0.25);
+    const SimdDouble minusquarter(-0.25);
+    SimdDouble       q;
+    SimdDBool        m1, m2, m3;
 
     /* The most obvious way to find the arguments quadrant in the unit circle
      * to calculate the sign is to use integer arithmetic, but that is not
@@ -2093,19 +2053,19 @@ sincos(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
      * slightly slower (~10%) due to the longer latencies of floating-point, so
      * we only use it when integer SIMD arithmetic is not present.
      */
-    ssign   = x;
-    x       = abs(x);
+    ssign = x;
+    x     = abs(x);
     // It is critical that half-way cases are rounded down
-    z       = fma(x, two_over_pi, half);
-    y       = trunc(z);
-    q       = z * quarter;
-    q       = q - trunc(q);
+    z = fma(x, two_over_pi, half);
+    y = trunc(z);
+    q = z * quarter;
+    q = q - trunc(q);
     /* z now starts at 0.0 for x=-pi/4 (although neg. values cannot occur), and
      * then increased by 1.0 as x increases by 2*Pi, when it resets to 0.0.
      * This removes the 2*Pi periodicity without using any integer arithmetic.
      * First check if y had the value 2 or 3, set csign if true.
      */
-    q       = q - half;
+    q = q - half;
     /* If we have logical operations we can work directly on the signbit, which
      * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
      * Thus, if you are altering defines to debug alternative code paths, the
@@ -2113,47 +2073,47 @@ sincos(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
      * active or inactive - you will get errors if only one is used.
      */
 #    if GMX_SIMD_HAVE_LOGICAL
-    ssign   = ssign & SimdDouble(GMX_DOUBLE_NEGZERO);
-    csign   = andNot(q, SimdDouble(GMX_DOUBLE_NEGZERO));
-    ssign   = ssign ^ csign;
+    ssign = ssign & SimdDouble(GMX_DOUBLE_NEGZERO);
+    csign = andNot(q, SimdDouble(GMX_DOUBLE_NEGZERO));
+    ssign = ssign ^ csign;
 #    else
-    ssign   = copysign(SimdDouble(1.0), ssign);
-    csign   = copysign(SimdDouble(1.0), q);
-    csign   = -csign;
-    ssign   = ssign * csign;    // swap ssign if csign was set.
+    ssign = copysign(SimdDouble(1.0), ssign);
+    csign = copysign(SimdDouble(1.0), q);
+    csign = -csign;
+    ssign = ssign * csign;      // swap ssign if csign was set.
 #    endif
     // Check if y had value 1 or 3 (remember we subtracted 0.5 from q)
-    m1      = (q < minusquarter);
-    m2      = (setZero() <= q);
-    m3      = (q < quarter);
-    m2      = m2 && m3;
-    mask    = m1 || m2;
+    m1   = (q < minusquarter);
+    m2   = (setZero() <= q);
+    m3   = (q < quarter);
+    m2   = m2 && m3;
+    mask = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdDouble(-1.0), one, mask);
+    csign = csign * blend(SimdDouble(-1.0), one, mask);
 #endif
-    x       = fma(y, argred0, x);
-    x       = fma(y, argred1, x);
-    x       = fma(y, argred2, x);
-    x       = fma(y, argred3, x);
-    x2      = x * x;
+    x  = fma(y, argred0, x);
+    x  = fma(y, argred1, x);
+    x  = fma(y, argred2, x);
+    x  = fma(y, argred3, x);
+    x2 = x * x;
 
-    psin    = fma(const_sin5, x2, const_sin4);
-    psin    = fma(psin, x2, const_sin3);
-    psin    = fma(psin, x2, const_sin2);
-    psin    = fma(psin, x2, const_sin1);
-    psin    = fma(psin, x2, const_sin0);
-    psin    = fma(psin, x2 * x, x);
+    psin = fma(const_sin5, x2, const_sin4);
+    psin = fma(psin, x2, const_sin3);
+    psin = fma(psin, x2, const_sin2);
+    psin = fma(psin, x2, const_sin1);
+    psin = fma(psin, x2, const_sin0);
+    psin = fma(psin, x2 * x, x);
 
-    pcos    = fma(const_cos7, x2, const_cos6);
-    pcos    = fma(pcos, x2, const_cos5);
-    pcos    = fma(pcos, x2, const_cos4);
-    pcos    = fma(pcos, x2, const_cos3);
-    pcos    = fma(pcos, x2, const_cos2);
-    pcos    = fms(pcos, x2, half);
-    pcos    = fma(pcos, x2, one);
+    pcos = fma(const_cos7, x2, const_cos6);
+    pcos = fma(pcos, x2, const_cos5);
+    pcos = fma(pcos, x2, const_cos4);
+    pcos = fma(pcos, x2, const_cos3);
+    pcos = fma(pcos, x2, const_cos2);
+    pcos = fms(pcos, x2, half);
+    pcos = fma(pcos, x2, one);
 
-    sss     = blend(pcos, psin, mask);
-    ccc     = blend(psin, pcos, mask);
+    sss = blend(pcos, psin, mask);
+    ccc = blend(psin, pcos, mask);
     // See comment for GMX_SIMD_HAVE_LOGICAL section above.
 #if GMX_SIMD_HAVE_LOGICAL
     *sinval = sss ^ ssign;
@@ -2172,8 +2132,7 @@ sincos(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdDouble gmx_simdcall
-sin(SimdDouble x)
+static inline SimdDouble gmx_simdcall sin(SimdDouble x)
 {
     SimdDouble s, c;
     sincos(x, &s, &c);
@@ -2188,8 +2147,7 @@ sin(SimdDouble x)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdDouble gmx_simdcall
-cos(SimdDouble x)
+static inline SimdDouble gmx_simdcall cos(SimdDouble x)
 {
     SimdDouble s, c;
     sincos(x, &s, &c);
@@ -2201,90 +2159,89 @@ cos(SimdDouble x)
  * \param x The argument to evaluate tan for
  * \result Tan(x)
  */
-static inline SimdDouble gmx_simdcall
-tan(SimdDouble x)
+static inline SimdDouble gmx_simdcall tan(SimdDouble x)
 {
-    const SimdDouble  argred0(-2*0.78539816290140151978);
-    const SimdDouble  argred1(-2*4.9604678871439933374e-10);
-    const SimdDouble  argred2(-2*1.1258708853173288931e-18);
-    const SimdDouble  argred3(-2*1.7607799325916000908e-27);
-    const SimdDouble  two_over_pi(2.0/M_PI);
-    const SimdDouble  CT15(1.01419718511083373224408e-05);
-    const SimdDouble  CT14(-2.59519791585924697698614e-05);
-    const SimdDouble  CT13(5.23388081915899855325186e-05);
-    const SimdDouble  CT12(-3.05033014433946488225616e-05);
-    const SimdDouble  CT11(7.14707504084242744267497e-05);
-    const SimdDouble  CT10(8.09674518280159187045078e-05);
-    const SimdDouble  CT9(0.000244884931879331847054404);
-    const SimdDouble  CT8(0.000588505168743587154904506);
-    const SimdDouble  CT7(0.00145612788922812427978848);
-    const SimdDouble  CT6(0.00359208743836906619142924);
-    const SimdDouble  CT5(0.00886323944362401618113356);
-    const SimdDouble  CT4(0.0218694882853846389592078);
-    const SimdDouble  CT3(0.0539682539781298417636002);
-    const SimdDouble  CT2(0.133333333333125941821962);
-    const SimdDouble  CT1(0.333333333333334980164153);
+    const SimdDouble argred0(-2 * 0.78539816290140151978);
+    const SimdDouble argred1(-2 * 4.9604678871439933374e-10);
+    const SimdDouble argred2(-2 * 1.1258708853173288931e-18);
+    const SimdDouble argred3(-2 * 1.7607799325916000908e-27);
+    const SimdDouble two_over_pi(2.0 / M_PI);
+    const SimdDouble CT15(1.01419718511083373224408e-05);
+    const SimdDouble CT14(-2.59519791585924697698614e-05);
+    const SimdDouble CT13(5.23388081915899855325186e-05);
+    const SimdDouble CT12(-3.05033014433946488225616e-05);
+    const SimdDouble CT11(7.14707504084242744267497e-05);
+    const SimdDouble CT10(8.09674518280159187045078e-05);
+    const SimdDouble CT9(0.000244884931879331847054404);
+    const SimdDouble CT8(0.000588505168743587154904506);
+    const SimdDouble CT7(0.00145612788922812427978848);
+    const SimdDouble CT6(0.00359208743836906619142924);
+    const SimdDouble CT5(0.00886323944362401618113356);
+    const SimdDouble CT4(0.0218694882853846389592078);
+    const SimdDouble CT3(0.0539682539781298417636002);
+    const SimdDouble CT2(0.133333333333125941821962);
+    const SimdDouble CT1(0.333333333333334980164153);
 
-    SimdDouble        x2, p, y, z;
-    SimdDBool         m;
+    SimdDouble x2, p, y, z;
+    SimdDBool  m;
 
 #if GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
-    SimdDInt32  iy;
-    SimdDInt32  ione(1);
+    SimdDInt32 iy;
+    SimdDInt32 ione(1);
 
-    z       = x * two_over_pi;
-    iy      = cvtR2I(z);
-    y       = round(z);
-    m       = cvtIB2B((iy & ione) == ione);
+    z  = x * two_over_pi;
+    iy = cvtR2I(z);
+    y  = round(z);
+    m  = cvtIB2B((iy & ione) == ione);
 
-    x       = fma(y, argred0, x);
-    x       = fma(y, argred1, x);
-    x       = fma(y, argred2, x);
-    x       = fma(y, argred3, x);
-    x       = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), m) ^ x;
+    x = fma(y, argred0, x);
+    x = fma(y, argred1, x);
+    x = fma(y, argred2, x);
+    x = fma(y, argred3, x);
+    x = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), m) ^ x;
 #else
-    const SimdDouble  quarter(0.25);
-    const SimdDouble  half(0.5);
-    const SimdDouble  threequarter(0.75);
-    SimdDouble        w, q;
-    SimdDBool         m1, m2, m3;
+    const SimdDouble quarter(0.25);
+    const SimdDouble half(0.5);
+    const SimdDouble threequarter(0.75);
+    SimdDouble       w, q;
+    SimdDBool        m1, m2, m3;
 
-    w       = abs(x);
-    z       = fma(w, two_over_pi, half);
-    y       = trunc(z);
-    q       = z * quarter;
-    q       = q - trunc(q);
-    m1      = (quarter <= q);
-    m2      = (q < half);
-    m3      = (threequarter <= q);
-    m1      = m1 && m2;
-    m       = m1 || m3;
-    w       = fma(y, argred0, w);
-    w       = fma(y, argred1, w);
-    w       = fma(y, argred2, w);
-    w       = fma(y, argred3, w);
+    w  = abs(x);
+    z  = fma(w, two_over_pi, half);
+    y  = trunc(z);
+    q  = z * quarter;
+    q  = q - trunc(q);
+    m1 = (quarter <= q);
+    m2 = (q < half);
+    m3 = (threequarter <= q);
+    m1 = m1 && m2;
+    m  = m1 || m3;
+    w  = fma(y, argred0, w);
+    w  = fma(y, argred1, w);
+    w  = fma(y, argred2, w);
+    w  = fma(y, argred3, w);
 
-    w       = blend(w, -w, m);
-    x       = w * copysign( SimdDouble(1.0), x );
+    w = blend(w, -w, m);
+    x = w * copysign( SimdDouble(1.0), x );
 #endif
-    x2      = x * x;
-    p       = fma(CT15, x2, CT14);
-    p       = fma(p, x2, CT13);
-    p       = fma(p, x2, CT12);
-    p       = fma(p, x2, CT11);
-    p       = fma(p, x2, CT10);
-    p       = fma(p, x2, CT9);
-    p       = fma(p, x2, CT8);
-    p       = fma(p, x2, CT7);
-    p       = fma(p, x2, CT6);
-    p       = fma(p, x2, CT5);
-    p       = fma(p, x2, CT4);
-    p       = fma(p, x2, CT3);
-    p       = fma(p, x2, CT2);
-    p       = fma(p, x2, CT1);
-    p       = fma(x2, p * x, x);
+    x2 = x * x;
+    p  = fma(CT15, x2, CT14);
+    p  = fma(p, x2, CT13);
+    p  = fma(p, x2, CT12);
+    p  = fma(p, x2, CT11);
+    p  = fma(p, x2, CT10);
+    p  = fma(p, x2, CT9);
+    p  = fma(p, x2, CT8);
+    p  = fma(p, x2, CT7);
+    p  = fma(p, x2, CT6);
+    p  = fma(p, x2, CT5);
+    p  = fma(p, x2, CT4);
+    p  = fma(p, x2, CT3);
+    p  = fma(p, x2, CT2);
+    p  = fma(p, x2, CT1);
+    p  = fma(x2, p * x, x);
 
-    p       = blend( p, maskzInv(p, m), m);
+    p = blend( p, maskzInv(p, m), m);
     return p;
 }
 
@@ -2293,14 +2250,13 @@ tan(SimdDouble x)
  * \param x The argument to evaluate asin for
  * \result Asin(x)
  */
-static inline SimdDouble gmx_simdcall
-asin(SimdDouble x)
+static inline SimdDouble gmx_simdcall asin(SimdDouble x)
 {
     // Same algorithm as cephes library
     const SimdDouble limit1(0.625);
     const SimdDouble limit2(1e-8);
     const SimdDouble one(1.0);
-    const SimdDouble quarterpi(M_PI/4.0);
+    const SimdDouble quarterpi(M_PI / 4.0);
     const SimdDouble morebits(6.123233995736765886130e-17);
 
     const SimdDouble P5(4.253011369004428248960e-3);
@@ -2327,52 +2283,52 @@ asin(SimdDouble x)
     const SimdDouble S1(-3.838770957603691357202e2);
     const SimdDouble S0(3.424398657913078477438e2);
 
-    SimdDouble       xabs;
-    SimdDouble       zz, ww, z, q, w, zz2, ww2;
-    SimdDouble       PA, PB;
-    SimdDouble       QA, QB;
-    SimdDouble       RA, RB;
-    SimdDouble       SA, SB;
-    SimdDouble       nom, denom;
-    SimdDBool        mask, mask2;
+    SimdDouble xabs;
+    SimdDouble zz, ww, z, q, w, zz2, ww2;
+    SimdDouble PA, PB;
+    SimdDouble QA, QB;
+    SimdDouble RA, RB;
+    SimdDouble SA, SB;
+    SimdDouble nom, denom;
+    SimdDBool  mask, mask2;
 
-    xabs  = abs(x);
+    xabs = abs(x);
 
-    mask  = (limit1 < xabs);
+    mask = (limit1 < xabs);
 
-    zz    = one - xabs;
-    ww    = xabs * xabs;
-    zz2   = zz * zz;
-    ww2   = ww * ww;
+    zz  = one - xabs;
+    ww  = xabs * xabs;
+    zz2 = zz * zz;
+    ww2 = ww * ww;
 
     // R
-    RA    = fma(R4, zz2, R2);
-    RB    = fma(R3, zz2, R1);
-    RA    = fma(RA, zz2, R0);
-    RA    = fma(RB, zz, RA);
+    RA = fma(R4, zz2, R2);
+    RB = fma(R3, zz2, R1);
+    RA = fma(RA, zz2, R0);
+    RA = fma(RB, zz, RA);
 
     // S, SA = zz2
-    SB    = fma(S3, zz2, S1);
-    SA    = zz2 +  S2;
-    SA    = fma(SA, zz2, S0);
-    SA    = fma(SB, zz, SA);
+    SB = fma(S3, zz2, S1);
+    SA = zz2 +  S2;
+    SA = fma(SA, zz2, S0);
+    SA = fma(SB, zz, SA);
 
     // P
-    PA    = fma(P5, ww2, P3);
-    PB    = fma(P4, ww2, P2);
-    PA    = fma(PA, ww2, P1);
-    PB    = fma(PB, ww2, P0);
-    PA    = fma(PA, ww, PB);
+    PA = fma(P5, ww2, P3);
+    PB = fma(P4, ww2, P2);
+    PA = fma(PA, ww2, P1);
+    PB = fma(PB, ww2, P0);
+    PA = fma(PA, ww, PB);
 
     // Q, QA = ww2
-    QB    = fma(Q4, ww2, Q2);
-    QA    = ww2 + Q3;
-    QA    = fma(QA, ww2, Q1);
-    QB    = fma(QB, ww2, Q0);
-    QA    = fma(QA, ww, QB);
+    QB = fma(Q4, ww2, Q2);
+    QA = ww2 + Q3;
+    QA = fma(QA, ww2, Q1);
+    QB = fma(QB, ww2, Q0);
+    QA = fma(QA, ww, QB);
 
-    RA    = RA * zz;
-    PA    = PA * ww;
+    RA = RA * zz;
+    PA = PA * ww;
 
     nom   = blend( PA, RA, mask );
     denom = blend( QA, SA, mask );
@@ -2380,19 +2336,19 @@ asin(SimdDouble x)
     mask2 = (limit2 < xabs);
     q     = nom * maskzInv(denom, mask2);
 
-    zz    = zz + zz;
-    zz    = sqrt(zz);
-    z     = quarterpi - zz;
-    zz    = fms(zz, q, morebits);
-    z     = z - zz;
-    z     = z + quarterpi;
+    zz = zz + zz;
+    zz = sqrt(zz);
+    z  = quarterpi - zz;
+    zz = fms(zz, q, morebits);
+    z  = z - zz;
+    z  = z + quarterpi;
 
-    w     = xabs * q;
-    w     = w + xabs;
+    w = xabs * q;
+    w = w + xabs;
 
-    z     = blend( w, z, mask );
+    z = blend( w, z, mask );
 
-    z     = blend( xabs, z, mask2 );
+    z = blend( xabs, z, mask2 );
 
     z = copysign(z, x);
 
@@ -2404,31 +2360,30 @@ asin(SimdDouble x)
  * \param x The argument to evaluate acos for
  * \result Acos(x)
  */
-static inline SimdDouble gmx_simdcall
-acos(SimdDouble x)
+static inline SimdDouble gmx_simdcall acos(SimdDouble x)
 {
     const SimdDouble one(1.0);
     const SimdDouble half(0.5);
     const SimdDouble quarterpi0(7.85398163397448309616e-1);
     const SimdDouble quarterpi1(6.123233995736765886130e-17);
 
-    SimdDBool        mask1;
-    SimdDouble       z, z1, z2;
+    SimdDBool  mask1;
+    SimdDouble z, z1, z2;
 
     mask1 = (half < x);
     z1    = half * (one - x);
     z1    = sqrt(z1);
     z     = blend( x, z1, mask1 );
 
-    z     = asin(z);
+    z = asin(z);
 
-    z1    = z + z;
+    z1 = z + z;
 
-    z2    = quarterpi0 - z;
-    z2    = z2 + quarterpi1;
-    z2    = z2 + quarterpi0;
+    z2 = quarterpi0 - z;
+    z2 = z2 + quarterpi1;
+    z2 = z2 + quarterpi0;
 
-    z     = blend(z2, z1, mask1);
+    z = blend(z2, z1, mask1);
 
     return z;
 }
@@ -2438,16 +2393,15 @@ acos(SimdDouble x)
  * \param x The argument to evaluate atan for
  * \result Atan(x), same argument/value range as standard math library.
  */
-static inline SimdDouble gmx_simdcall
-atan(SimdDouble x)
+static inline SimdDouble gmx_simdcall atan(SimdDouble x)
 {
     // Same algorithm as cephes library
     const SimdDouble limit1(0.66);
     const SimdDouble limit2(2.41421356237309504880);
-    const SimdDouble quarterpi(M_PI/4.0);
-    const SimdDouble halfpi(M_PI/2.0);
+    const SimdDouble quarterpi(M_PI / 4.0);
+    const SimdDouble halfpi(M_PI / 2.0);
     const SimdDouble mone(-1.0);
-    const SimdDouble morebits1(0.5*6.123233995736765886130E-17);
+    const SimdDouble morebits1(0.5 * 6.123233995736765886130E-17);
     const SimdDouble morebits2(6.123233995736765886130E-17);
 
     const SimdDouble P4(-8.750608600031904122785E-1);
@@ -2462,50 +2416,50 @@ atan(SimdDouble x)
     const SimdDouble Q1(4.853903996359136964868E2);
     const SimdDouble Q0(1.945506571482613964425E2);
 
-    SimdDouble       y, xabs, t1, t2;
-    SimdDouble       z, z2;
-    SimdDouble       P_A, P_B, Q_A, Q_B;
-    SimdDBool        mask1, mask2;
+    SimdDouble y, xabs, t1, t2;
+    SimdDouble z, z2;
+    SimdDouble P_A, P_B, Q_A, Q_B;
+    SimdDBool  mask1, mask2;
 
-    xabs   = abs(x);
+    xabs = abs(x);
 
-    mask1  = (limit1 < xabs);
-    mask2  = (limit2 < xabs);
+    mask1 = (limit1 < xabs);
+    mask2 = (limit2 < xabs);
 
-    t1     = (xabs + mone) * maskzInv(xabs - mone, mask1);
-    t2     = mone * maskzInv(xabs, mask2);
+    t1 = (xabs + mone) * maskzInv(xabs - mone, mask1);
+    t2 = mone * maskzInv(xabs, mask2);
 
-    y      = selectByMask(quarterpi, mask1);
-    y      = blend(y, halfpi, mask2);
-    xabs   = blend(xabs, t1, mask1);
-    xabs   = blend(xabs, t2, mask2);
+    y    = selectByMask(quarterpi, mask1);
+    y    = blend(y, halfpi, mask2);
+    xabs = blend(xabs, t1, mask1);
+    xabs = blend(xabs, t2, mask2);
 
-    z      = xabs * xabs;
-    z2     = z * z;
+    z  = xabs * xabs;
+    z2 = z * z;
 
-    P_A    = fma(P4, z2, P2);
-    P_B    = fma(P3, z2, P1);
-    P_A    = fma(P_A, z2, P0);
-    P_A    = fma(P_B, z, P_A);
+    P_A = fma(P4, z2, P2);
+    P_B = fma(P3, z2, P1);
+    P_A = fma(P_A, z2, P0);
+    P_A = fma(P_B, z, P_A);
 
     // Q_A = z2
-    Q_B    = fma(Q4, z2, Q2);
-    Q_A    = z2 + Q3;
-    Q_A    = fma(Q_A, z2, Q1);
-    Q_B    = fma(Q_B, z2, Q0);
-    Q_A    = fma(Q_A, z, Q_B);
+    Q_B = fma(Q4, z2, Q2);
+    Q_A = z2 + Q3;
+    Q_A = fma(Q_A, z2, Q1);
+    Q_B = fma(Q_B, z2, Q0);
+    Q_A = fma(Q_A, z, Q_B);
 
-    z      = z * P_A;
-    z      = z * inv(Q_A);
-    z      = fma(z, xabs, xabs);
+    z = z * P_A;
+    z = z * inv(Q_A);
+    z = fma(z, xabs, xabs);
 
-    t1     = selectByMask(morebits1, mask1);
-    t1     = blend(t1, morebits2, mask2);
+    t1 = selectByMask(morebits1, mask1);
+    t1 = blend(t1, morebits2, mask2);
 
-    z      = z + t1;
-    y      = y + z;
+    z = z + t1;
+    y = y + z;
 
-    y      = copysign(y, x);
+    y = copysign(y, x);
 
     return y;
 }
@@ -2523,11 +2477,10 @@ atan(SimdDouble x)
  * of any concern in Gromacs, and in particular it will not affect calculations
  * of angles from vectors.
  */
-static inline SimdDouble gmx_simdcall
-atan2(SimdDouble y, SimdDouble x)
+static inline SimdDouble gmx_simdcall atan2(SimdDouble y, SimdDouble x)
 {
     const SimdDouble pi(M_PI);
-    const SimdDouble halfpi(M_PI/2.0);
+    const SimdDouble halfpi(M_PI / 2.0);
     SimdDouble       xinv, p, aoffset;
     SimdDBool        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
@@ -2536,16 +2489,16 @@ atan2(SimdDouble y, SimdDouble x)
     mask_xlt0 = (x < setZero());
     mask_ylt0 = (y < setZero());
 
-    aoffset   = selectByNotMask(halfpi, mask_xnz);
-    aoffset   = selectByMask(aoffset, mask_ynz);
+    aoffset = selectByNotMask(halfpi, mask_xnz);
+    aoffset = selectByMask(aoffset, mask_ynz);
 
-    aoffset   = blend(aoffset, pi, mask_xlt0);
-    aoffset   = blend(aoffset, -aoffset, mask_ylt0);
+    aoffset = blend(aoffset, pi, mask_xlt0);
+    aoffset = blend(aoffset, -aoffset, mask_ylt0);
 
-    xinv      = maskzInv(x, mask_xnz);
-    p         = y * xinv;
-    p         = atan(p);
-    p         = p + aoffset;
+    xinv = maskzInv(x, mask_xnz);
+    p    = y * xinv;
+    p    = atan(p);
+    p    = p + aoffset;
 
     return p;
 }
@@ -2561,52 +2514,51 @@ atan2(SimdDouble y, SimdDouble x)
  * direct-space PME electrostatic force to avoid tables. For details, see the
  * single precision function.
  */
-static inline SimdDouble gmx_simdcall
-pmeForceCorrection(SimdDouble z2)
+static inline SimdDouble gmx_simdcall pmeForceCorrection(SimdDouble z2)
 {
-    const SimdDouble  FN10(-8.0072854618360083154e-14);
-    const SimdDouble  FN9(1.1859116242260148027e-11);
-    const SimdDouble  FN8(-8.1490406329798423616e-10);
-    const SimdDouble  FN7(3.4404793543907847655e-8);
-    const SimdDouble  FN6(-9.9471420832602741006e-7);
-    const SimdDouble  FN5(0.000020740315999115847456);
-    const SimdDouble  FN4(-0.00031991745139313364005);
-    const SimdDouble  FN3(0.0035074449373659008203);
-    const SimdDouble  FN2(-0.031750380176100813405);
-    const SimdDouble  FN1(0.13884101728898463426);
-    const SimdDouble  FN0(-0.75225277815249618847);
+    const SimdDouble FN10(-8.0072854618360083154e-14);
+    const SimdDouble FN9(1.1859116242260148027e-11);
+    const SimdDouble FN8(-8.1490406329798423616e-10);
+    const SimdDouble FN7(3.4404793543907847655e-8);
+    const SimdDouble FN6(-9.9471420832602741006e-7);
+    const SimdDouble FN5(0.000020740315999115847456);
+    const SimdDouble FN4(-0.00031991745139313364005);
+    const SimdDouble FN3(0.0035074449373659008203);
+    const SimdDouble FN2(-0.031750380176100813405);
+    const SimdDouble FN1(0.13884101728898463426);
+    const SimdDouble FN0(-0.75225277815249618847);
 
-    const SimdDouble  FD5(0.000016009278224355026701);
-    const SimdDouble  FD4(0.00051055686934806966046);
-    const SimdDouble  FD3(0.0081803507497974289008);
-    const SimdDouble  FD2(0.077181146026670287235);
-    const SimdDouble  FD1(0.41543303143712535988);
-    const SimdDouble  FD0(1.0);
+    const SimdDouble FD5(0.000016009278224355026701);
+    const SimdDouble FD4(0.00051055686934806966046);
+    const SimdDouble FD3(0.0081803507497974289008);
+    const SimdDouble FD2(0.077181146026670287235);
+    const SimdDouble FD1(0.41543303143712535988);
+    const SimdDouble FD0(1.0);
 
-    SimdDouble        z4;
-    SimdDouble        polyFN0, polyFN1, polyFD0, polyFD1;
+    SimdDouble z4;
+    SimdDouble polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyFD1        = fma(FD5, z4, FD3);
-    polyFD1        = fma(polyFD1, z4, FD1);
-    polyFD1        = polyFD1 * z2;
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = polyFD0 + polyFD1;
+    polyFD1 = fma(FD5, z4, FD3);
+    polyFD1 = fma(polyFD1, z4, FD1);
+    polyFD1 = polyFD1 * z2;
+    polyFD0 = fma(FD4, z4, FD2);
+    polyFD0 = fma(polyFD0, z4, FD0);
+    polyFD0 = polyFD0 + polyFD1;
 
-    polyFD0        = inv(polyFD0);
+    polyFD0 = inv(polyFD0);
 
-    polyFN0        = fma(FN10, z4, FN8);
-    polyFN0        = fma(polyFN0, z4, FN6);
-    polyFN0        = fma(polyFN0, z4, FN4);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN1        = fma(FN9, z4, FN7);
-    polyFN1        = fma(polyFN1, z4, FN5);
-    polyFN1        = fma(polyFN1, z4, FN3);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN1, z2, polyFN0);
+    polyFN0 = fma(FN10, z4, FN8);
+    polyFN0 = fma(polyFN0, z4, FN6);
+    polyFN0 = fma(polyFN0, z4, FN4);
+    polyFN0 = fma(polyFN0, z4, FN2);
+    polyFN0 = fma(polyFN0, z4, FN0);
+    polyFN1 = fma(FN9, z4, FN7);
+    polyFN1 = fma(polyFN1, z4, FN5);
+    polyFN1 = fma(polyFN1, z4, FN3);
+    polyFN1 = fma(polyFN1, z4, FN1);
+    polyFN0 = fma(polyFN1, z2, polyFN0);
 
 
     return polyFN0 * polyFD0;
@@ -2624,49 +2576,48 @@ pmeForceCorrection(SimdDouble z2)
  * direct-space PME electrostatic potential to avoid tables. For details, see the
  * single precision function.
  */
-static inline SimdDouble gmx_simdcall
-pmePotentialCorrection(SimdDouble z2)
+static inline SimdDouble gmx_simdcall pmePotentialCorrection(SimdDouble z2)
 {
-    const SimdDouble  VN9(-9.3723776169321855475e-13);
-    const SimdDouble  VN8(1.2280156762674215741e-10);
-    const SimdDouble  VN7(-7.3562157912251309487e-9);
-    const SimdDouble  VN6(2.6215886208032517509e-7);
-    const SimdDouble  VN5(-4.9532491651265819499e-6);
-    const SimdDouble  VN4(0.00025907400778966060389);
-    const SimdDouble  VN3(0.0010585044856156469792);
-    const SimdDouble  VN2(0.045247661136833092885);
-    const SimdDouble  VN1(0.11643931522926034421);
-    const SimdDouble  VN0(1.1283791671726767970);
+    const SimdDouble VN9(-9.3723776169321855475e-13);
+    const SimdDouble VN8(1.2280156762674215741e-10);
+    const SimdDouble VN7(-7.3562157912251309487e-9);
+    const SimdDouble VN6(2.6215886208032517509e-7);
+    const SimdDouble VN5(-4.9532491651265819499e-6);
+    const SimdDouble VN4(0.00025907400778966060389);
+    const SimdDouble VN3(0.0010585044856156469792);
+    const SimdDouble VN2(0.045247661136833092885);
+    const SimdDouble VN1(0.11643931522926034421);
+    const SimdDouble VN0(1.1283791671726767970);
 
-    const SimdDouble  VD5(0.000021784709867336150342);
-    const SimdDouble  VD4(0.00064293662010911388448);
-    const SimdDouble  VD3(0.0096311444822588683504);
-    const SimdDouble  VD2(0.085608012351550627051);
-    const SimdDouble  VD1(0.43652499166614811084);
-    const SimdDouble  VD0(1.0);
+    const SimdDouble VD5(0.000021784709867336150342);
+    const SimdDouble VD4(0.00064293662010911388448);
+    const SimdDouble VD3(0.0096311444822588683504);
+    const SimdDouble VD2(0.085608012351550627051);
+    const SimdDouble VD1(0.43652499166614811084);
+    const SimdDouble VD0(1.0);
 
-    SimdDouble        z4;
-    SimdDouble        polyVN0, polyVN1, polyVD0, polyVD1;
+    SimdDouble z4;
+    SimdDouble polyVN0, polyVN1, polyVD0, polyVD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyVD1        = fma(VD5, z4, VD3);
-    polyVD0        = fma(VD4, z4, VD2);
-    polyVD1        = fma(polyVD1, z4, VD1);
-    polyVD0        = fma(polyVD0, z4, VD0);
-    polyVD0        = fma(polyVD1, z2, polyVD0);
+    polyVD1 = fma(VD5, z4, VD3);
+    polyVD0 = fma(VD4, z4, VD2);
+    polyVD1 = fma(polyVD1, z4, VD1);
+    polyVD0 = fma(polyVD0, z4, VD0);
+    polyVD0 = fma(polyVD1, z2, polyVD0);
 
-    polyVD0        = inv(polyVD0);
+    polyVD0 = inv(polyVD0);
 
-    polyVN1        = fma(VN9, z4, VN7);
-    polyVN0        = fma(VN8, z4, VN6);
-    polyVN1        = fma(polyVN1, z4, VN5);
-    polyVN0        = fma(polyVN0, z4, VN4);
-    polyVN1        = fma(polyVN1, z4, VN3);
-    polyVN0        = fma(polyVN0, z4, VN2);
-    polyVN1        = fma(polyVN1, z4, VN1);
-    polyVN0        = fma(polyVN0, z4, VN0);
-    polyVN0        = fma(polyVN1, z2, polyVN0);
+    polyVN1 = fma(VN9, z4, VN7);
+    polyVN0 = fma(VN8, z4, VN6);
+    polyVN1 = fma(polyVN1, z4, VN5);
+    polyVN0 = fma(polyVN0, z4, VN4);
+    polyVN1 = fma(polyVN1, z4, VN3);
+    polyVN0 = fma(polyVN0, z4, VN2);
+    polyVN1 = fma(polyVN1, z4, VN1);
+    polyVN0 = fma(polyVN0, z4, VN0);
+    polyVN0 = fma(polyVN1, z2, polyVN0);
 
     return polyVN0 * polyVD0;
 }
@@ -2698,17 +2649,16 @@ pmePotentialCorrection(SimdDouble z2)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline SimdDouble gmx_simdcall
-invsqrtSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall invsqrtSingleAccuracy(SimdDouble x)
 {
     SimdDouble lu = rsqrt(x);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -2725,17 +2675,16 @@ invsqrtSingleAccuracy(SimdDouble x)
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
  */
-static inline SimdDouble
-maskzInvsqrtSingleAccuracy(SimdDouble x, SimdDBool m)
+static inline SimdDouble maskzInvsqrtSingleAccuracy(SimdDouble x, SimdDBool m)
 {
     SimdDouble lu = maskzRsqrt(x, m);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -2751,11 +2700,10 @@ maskzInvsqrtSingleAccuracy(SimdDouble x, SimdDBool m)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall
-invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
-                          SimdDouble *out0, SimdDouble *out1)
+static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
+                                                          SimdDouble *out0, SimdDouble *out1)
 {
-#if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
+#if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
     SimdFloat  xf  = cvtDD2F(x0, x1);
     SimdFloat  luf = rsqrt(xf);
     SimdDouble lu0, lu1;
@@ -2763,10 +2711,10 @@ invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
     cvtF2DD(luf, &lu0, &lu1);
@@ -2784,17 +2732,16 @@ invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
  *  \param x Argument that must be nonzero. This routine does not check arguments.
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
-static inline SimdDouble gmx_simdcall
-invSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall invSingleAccuracy(SimdDouble x)
 {
     SimdDouble lu = rcp(x);
 #if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
     return lu;
@@ -2806,17 +2753,16 @@ invSingleAccuracy(SimdDouble x)
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static inline SimdDouble gmx_simdcall
-maskzInvSingleAccuracy(SimdDouble x, SimdDBool m)
+static inline SimdDouble gmx_simdcall maskzInvSingleAccuracy(SimdDouble x, SimdDBool m)
 {
     SimdDouble lu = maskzRcp(x, m);
 #if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
-#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RCP_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rcpIter(lu, x);
 #endif
     return lu;
@@ -2829,8 +2775,7 @@ maskzInvSingleAccuracy(SimdDouble x, SimdDBool m)
  *  \return sqrt(x). If x=0, the result will correctly be set to 0.
  *          The result is undefined if the input value is negative.
  */
-static inline SimdDouble gmx_simdcall
-sqrtSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall sqrtSingleAccuracy(SimdDouble x)
 {
     return x * maskzInvsqrtSingleAccuracy(x, setZero() < x);
 }
@@ -2840,38 +2785,37 @@ sqrtSingleAccuracy(SimdDouble x)
  * \param x Argument, should be >0.
  * \result The natural logarithm of x. Undefined if argument is invalid.
  */
-static inline SimdDouble gmx_simdcall
-logSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall logSingleAccuracy(SimdDouble x)
 {
-    const SimdDouble  one(1.0);
-    const SimdDouble  two(2.0);
-    const SimdDouble  sqrt2(std::sqrt(2.0));
-    const SimdDouble  corr(0.693147180559945286226764);
-    const SimdDouble  CL9(0.2371599674224853515625);
-    const SimdDouble  CL7(0.285279005765914916992188);
-    const SimdDouble  CL5(0.400005519390106201171875);
-    const SimdDouble  CL3(0.666666567325592041015625);
-    const SimdDouble  CL1(2.0);
-    SimdDouble        fexp, x2, p;
-    SimdDInt32        iexp;
-    SimdDBool         mask;
+    const SimdDouble one(1.0);
+    const SimdDouble two(2.0);
+    const SimdDouble sqrt2(std::sqrt(2.0));
+    const SimdDouble corr(0.693147180559945286226764);
+    const SimdDouble CL9(0.2371599674224853515625);
+    const SimdDouble CL7(0.285279005765914916992188);
+    const SimdDouble CL5(0.400005519390106201171875);
+    const SimdDouble CL3(0.666666567325592041015625);
+    const SimdDouble CL1(2.0);
+    SimdDouble       fexp, x2, p;
+    SimdDInt32       iexp;
+    SimdDBool        mask;
 
-    x     = frexp(x, &iexp);
-    fexp  = cvtI2R(iexp);
+    x    = frexp(x, &iexp);
+    fexp = cvtI2R(iexp);
 
-    mask  = (x < sqrt2);
+    mask = (x < sqrt2);
     // Adjust to non-IEEE format for x<sqrt(2): exponent -= 1, mantissa *= 2.0
-    fexp  = fexp - selectByMask(one, mask);
-    x     = x * blend(one, two, mask);
+    fexp = fexp - selectByMask(one, mask);
+    x    = x * blend(one, two, mask);
 
-    x     = (x - one) * invSingleAccuracy( x + one );
-    x2    = x * x;
+    x  = (x - one) * invSingleAccuracy( x + one );
+    x2 = x * x;
 
-    p     = fma(CL9, x2, CL7);
-    p     = fma(p, x2, CL5);
-    p     = fma(p, x2, CL3);
-    p     = fma(p, x2, CL1);
-    p     = fma(p, x, corr * fexp);
+    p = fma(CL9, x2, CL7);
+    p = fma(p, x2, CL5);
+    p = fma(p, x2, CL3);
+    p = fma(p, x2, CL1);
+    p = fma(p, x, corr * fexp);
 
     return p;
 }
@@ -2881,37 +2825,36 @@ logSingleAccuracy(SimdDouble x)
  * \param x Argument.
  * \result 2^x. Undefined if input argument caused overflow.
  */
-static inline SimdDouble gmx_simdcall
-exp2SingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall exp2SingleAccuracy(SimdDouble x)
 {
     // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdDouble  arglimit = SimdDouble(126.0);
-    const SimdDouble  CC6(0.0001534581200287996416911311);
-    const SimdDouble  CC5(0.001339993121934088894618990);
-    const SimdDouble  CC4(0.009618488957115180159497841);
-    const SimdDouble  CC3(0.05550328776964726865751735);
-    const SimdDouble  CC2(0.2402264689063408646490722);
-    const SimdDouble  CC1(0.6931472057372680777553816);
-    const SimdDouble  one(1.0);
+    const SimdDouble arglimit = SimdDouble(126.0);
+    const SimdDouble CC6(0.0001534581200287996416911311);
+    const SimdDouble CC5(0.001339993121934088894618990);
+    const SimdDouble CC4(0.009618488957115180159497841);
+    const SimdDouble CC3(0.05550328776964726865751735);
+    const SimdDouble CC2(0.2402264689063408646490722);
+    const SimdDouble CC1(0.6931472057372680777553816);
+    const SimdDouble one(1.0);
 
-    SimdDouble        intpart;
-    SimdDouble        p;
-    SimdDBool         valuemask;
-    SimdDInt32        ix;
+    SimdDouble intpart;
+    SimdDouble p;
+    SimdDBool  valuemask;
+    SimdDInt32 ix;
 
     ix        = cvtR2I(x);
     intpart   = round(x);
     valuemask = (abs(x) <= arglimit);
     x         = x - intpart;
 
-    p         = fma(CC6, x, CC5);
-    p         = fma(p, x, CC4);
-    p         = fma(p, x, CC3);
-    p         = fma(p, x, CC2);
-    p         = fma(p, x, CC1);
-    p         = fma(p, x, one);
-    x         = ldexp(p, ix);
-    x         = selectByMask(x, valuemask);
+    p = fma(CC6, x, CC5);
+    p = fma(p, x, CC4);
+    p = fma(p, x, CC3);
+    p = fma(p, x, CC2);
+    p = fma(p, x, CC1);
+    p = fma(p, x, one);
+    x = ldexp(p, ix);
+    x = selectByMask(x, valuemask);
 
     return x;
 }
@@ -2921,23 +2864,22 @@ exp2SingleAccuracy(SimdDouble x)
  * \param x Argument.
  * \result exp(x). Undefined if input argument caused overflow.
  */
-static inline SimdDouble gmx_simdcall
-expSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall expSingleAccuracy(SimdDouble x)
 {
-    const SimdDouble  argscale(1.44269504088896341);
+    const SimdDouble argscale(1.44269504088896341);
     // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127
-    const SimdDouble  arglimit(126.0);
-    const SimdDouble  invargscale(-0.69314718055994528623);
-    const SimdDouble  CC4(0.00136324646882712841033936);
-    const SimdDouble  CC3(0.00836596917361021041870117);
-    const SimdDouble  CC2(0.0416710823774337768554688);
-    const SimdDouble  CC1(0.166665524244308471679688);
-    const SimdDouble  CC0(0.499999850988388061523438);
-    const SimdDouble  one(1.0);
-    SimdDouble        intpart;
-    SimdDouble        y, p;
-    SimdDBool         valuemask;
-    SimdDInt32        iy;
+    const SimdDouble arglimit(126.0);
+    const SimdDouble invargscale(-0.69314718055994528623);
+    const SimdDouble CC4(0.00136324646882712841033936);
+    const SimdDouble CC3(0.00836596917361021041870117);
+    const SimdDouble CC2(0.0416710823774337768554688);
+    const SimdDouble CC1(0.166665524244308471679688);
+    const SimdDouble CC0(0.499999850988388061523438);
+    const SimdDouble one(1.0);
+    SimdDouble       intpart;
+    SimdDouble       y, p;
+    SimdDBool        valuemask;
+    SimdDInt32       iy;
 
     y         = x * argscale;
     iy        = cvtR2I(y);
@@ -2946,16 +2888,16 @@ expSingleAccuracy(SimdDouble x)
 
     // Extended precision arithmetics not needed since
     // we have double precision and only need single accuracy.
-    x         = fma(invargscale, intpart, x);
+    x = fma(invargscale, intpart, x);
 
-    p         = fma(CC4, x, CC3);
-    p         = fma(p, x, CC2);
-    p         = fma(p, x, CC1);
-    p         = fma(p, x, CC0);
-    p         = fma(x*x, p, x);
-    p         = p + one;
-    x         = ldexp(p, iy);
-    x         = selectByMask(x, valuemask);
+    p = fma(CC4, x, CC3);
+    p = fma(p, x, CC2);
+    p = fma(p, x, CC1);
+    p = fma(p, x, CC0);
+    p = fma(x * x, p, x);
+    p = p + one;
+    x = ldexp(p, iy);
+    x = selectByMask(x, valuemask);
     return x;
 }
 
@@ -2967,62 +2909,61 @@ expSingleAccuracy(SimdDouble x)
  * This routine achieves very close to single precision, but we do not care about
  * the last bit or the subnormal result range.
  */
-static inline SimdDouble gmx_simdcall
-erfSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall erfSingleAccuracy(SimdDouble x)
 {
     // Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1]
-    const SimdDouble  CA6(7.853861353153693e-5);
-    const SimdDouble  CA5(-8.010193625184903e-4);
-    const SimdDouble  CA4(5.188327685732524e-3);
-    const SimdDouble  CA3(-2.685381193529856e-2);
-    const SimdDouble  CA2(1.128358514861418e-1);
-    const SimdDouble  CA1(-3.761262582423300e-1);
-    const SimdDouble  CA0(1.128379165726710);
+    const SimdDouble CA6(7.853861353153693e-5);
+    const SimdDouble CA5(-8.010193625184903e-4);
+    const SimdDouble CA4(5.188327685732524e-3);
+    const SimdDouble CA3(-2.685381193529856e-2);
+    const SimdDouble CA2(1.128358514861418e-1);
+    const SimdDouble CA1(-3.761262582423300e-1);
+    const SimdDouble CA0(1.128379165726710);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2]
-    const SimdDouble  CB9(-0.0018629930017603923);
-    const SimdDouble  CB8(0.003909821287598495);
-    const SimdDouble  CB7(-0.0052094582210355615);
-    const SimdDouble  CB6(0.005685614362160572);
-    const SimdDouble  CB5(-0.0025367682853477272);
-    const SimdDouble  CB4(-0.010199799682318782);
-    const SimdDouble  CB3(0.04369575504816542);
-    const SimdDouble  CB2(-0.11884063474674492);
-    const SimdDouble  CB1(0.2732120154030589);
-    const SimdDouble  CB0(0.42758357702025784);
+    const SimdDouble CB9(-0.0018629930017603923);
+    const SimdDouble CB8(0.003909821287598495);
+    const SimdDouble CB7(-0.0052094582210355615);
+    const SimdDouble CB6(0.005685614362160572);
+    const SimdDouble CB5(-0.0025367682853477272);
+    const SimdDouble CB4(-0.010199799682318782);
+    const SimdDouble CB3(0.04369575504816542);
+    const SimdDouble CB2(-0.11884063474674492);
+    const SimdDouble CB1(0.2732120154030589);
+    const SimdDouble CB0(0.42758357702025784);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19]
-    const SimdDouble  CC10(-0.0445555913112064);
-    const SimdDouble  CC9(0.21376355144663348);
-    const SimdDouble  CC8(-0.3473187200259257);
-    const SimdDouble  CC7(0.016690861551248114);
-    const SimdDouble  CC6(0.7560973182491192);
-    const SimdDouble  CC5(-1.2137903600145787);
-    const SimdDouble  CC4(0.8411872321232948);
-    const SimdDouble  CC3(-0.08670413896296343);
-    const SimdDouble  CC2(-0.27124782687240334);
-    const SimdDouble  CC1(-0.0007502488047806069);
-    const SimdDouble  CC0(0.5642114853803148);
-    const SimdDouble  one(1.0);
-    const SimdDouble  two(2.0);
+    const SimdDouble CC10(-0.0445555913112064);
+    const SimdDouble CC9(0.21376355144663348);
+    const SimdDouble CC8(-0.3473187200259257);
+    const SimdDouble CC7(0.016690861551248114);
+    const SimdDouble CC6(0.7560973182491192);
+    const SimdDouble CC5(-1.2137903600145787);
+    const SimdDouble CC4(0.8411872321232948);
+    const SimdDouble CC3(-0.08670413896296343);
+    const SimdDouble CC2(-0.27124782687240334);
+    const SimdDouble CC1(-0.0007502488047806069);
+    const SimdDouble CC0(0.5642114853803148);
+    const SimdDouble one(1.0);
+    const SimdDouble two(2.0);
 
-    SimdDouble        x2, x4, y;
-    SimdDouble        t, t2, w, w2;
-    SimdDouble        pA0, pA1, pB0, pB1, pC0, pC1;
-    SimdDouble        expmx2;
-    SimdDouble        res_erf, res_erfc, res;
-    SimdDBool         mask, msk_erf;
+    SimdDouble x2, x4, y;
+    SimdDouble t, t2, w, w2;
+    SimdDouble pA0, pA1, pB0, pB1, pC0, pC1;
+    SimdDouble expmx2;
+    SimdDouble res_erf, res_erfc, res;
+    SimdDBool  mask, msk_erf;
 
     // Calculate erf()
-    x2   = x * x;
-    x4   = x2 * x2;
+    x2 = x * x;
+    x4 = x2 * x2;
 
-    pA0  = fma(CA6, x4, CA4);
-    pA1  = fma(CA5, x4, CA3);
-    pA0  = fma(pA0, x4, CA2);
-    pA1  = fma(pA1, x4, CA1);
-    pA0  = pA0 * x4;
-    pA0  = fma(pA1, x2, pA0);
+    pA0 = fma(CA6, x4, CA4);
+    pA1 = fma(CA5, x4, CA3);
+    pA0 = fma(pA0, x4, CA2);
+    pA1 = fma(pA1, x4, CA1);
+    pA0 = pA0 * x4;
+    pA0 = fma(pA1, x2, pA0);
     // Constant term must come last for precision reasons
-    pA0  = pA0 + CA0;
+    pA0 = pA0 + CA0;
 
     res_erf = x * pA0;
 
@@ -3034,30 +2975,30 @@ erfSingleAccuracy(SimdDouble x)
     t2      = t * t;
     w2      = w * w;
 
-    expmx2  = expSingleAccuracy( -y*y );
+    expmx2 = expSingleAccuracy( -y * y );
 
-    pB1  = fma(CB9, w2, CB7);
-    pB0  = fma(CB8, w2, CB6);
-    pB1  = fma(pB1, w2, CB5);
-    pB0  = fma(pB0, w2, CB4);
-    pB1  = fma(pB1, w2, CB3);
-    pB0  = fma(pB0, w2, CB2);
-    pB1  = fma(pB1, w2, CB1);
-    pB0  = fma(pB0, w2, CB0);
-    pB0  = fma(pB1, w, pB0);
+    pB1 = fma(CB9, w2, CB7);
+    pB0 = fma(CB8, w2, CB6);
+    pB1 = fma(pB1, w2, CB5);
+    pB0 = fma(pB0, w2, CB4);
+    pB1 = fma(pB1, w2, CB3);
+    pB0 = fma(pB0, w2, CB2);
+    pB1 = fma(pB1, w2, CB1);
+    pB0 = fma(pB0, w2, CB0);
+    pB0 = fma(pB1, w, pB0);
 
-    pC0  = fma(CC10, t2, CC8);
-    pC1  = fma(CC9, t2, CC7);
-    pC0  = fma(pC0, t2, CC6);
-    pC1  = fma(pC1, t2, CC5);
-    pC0  = fma(pC0, t2, CC4);
-    pC1  = fma(pC1, t2, CC3);
-    pC0  = fma(pC0, t2, CC2);
-    pC1  = fma(pC1, t2, CC1);
+    pC0 = fma(CC10, t2, CC8);
+    pC1 = fma(CC9, t2, CC7);
+    pC0 = fma(pC0, t2, CC6);
+    pC1 = fma(pC1, t2, CC5);
+    pC0 = fma(pC0, t2, CC4);
+    pC1 = fma(pC1, t2, CC3);
+    pC0 = fma(pC0, t2, CC2);
+    pC1 = fma(pC1, t2, CC1);
 
-    pC0  = fma(pC0, t2, CC0);
-    pC0  = fma(pC1, t, pC0);
-    pC0  = pC0 * t;
+    pC0 = fma(pC0, t2, CC0);
+    pC0 = fma(pC1, t, pC0);
+    pC0 = pC0 * t;
 
     // Select pB0 or pC0 for erfc()
     mask     = (two < y);
@@ -3086,62 +3027,61 @@ erfSingleAccuracy(SimdDouble x)
  * (think results that are in the ballpark of 10^-30) since that is not
  * relevant for MD.
  */
-static inline SimdDouble gmx_simdcall
-erfcSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall erfcSingleAccuracy(SimdDouble x)
 {
     // Coefficients for minimax approximation of erf(x)=x*P(x^2) in range [-1,1]
-    const SimdDouble  CA6(7.853861353153693e-5);
-    const SimdDouble  CA5(-8.010193625184903e-4);
-    const SimdDouble  CA4(5.188327685732524e-3);
-    const SimdDouble  CA3(-2.685381193529856e-2);
-    const SimdDouble  CA2(1.128358514861418e-1);
-    const SimdDouble  CA1(-3.761262582423300e-1);
-    const SimdDouble  CA0(1.128379165726710);
+    const SimdDouble CA6(7.853861353153693e-5);
+    const SimdDouble CA5(-8.010193625184903e-4);
+    const SimdDouble CA4(5.188327685732524e-3);
+    const SimdDouble CA3(-2.685381193529856e-2);
+    const SimdDouble CA2(1.128358514861418e-1);
+    const SimdDouble CA1(-3.761262582423300e-1);
+    const SimdDouble CA0(1.128379165726710);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*P((1/(x-1))^2) in range [0.67,2]
-    const SimdDouble  CB9(-0.0018629930017603923);
-    const SimdDouble  CB8(0.003909821287598495);
-    const SimdDouble  CB7(-0.0052094582210355615);
-    const SimdDouble  CB6(0.005685614362160572);
-    const SimdDouble  CB5(-0.0025367682853477272);
-    const SimdDouble  CB4(-0.010199799682318782);
-    const SimdDouble  CB3(0.04369575504816542);
-    const SimdDouble  CB2(-0.11884063474674492);
-    const SimdDouble  CB1(0.2732120154030589);
-    const SimdDouble  CB0(0.42758357702025784);
+    const SimdDouble CB9(-0.0018629930017603923);
+    const SimdDouble CB8(0.003909821287598495);
+    const SimdDouble CB7(-0.0052094582210355615);
+    const SimdDouble CB6(0.005685614362160572);
+    const SimdDouble CB5(-0.0025367682853477272);
+    const SimdDouble CB4(-0.010199799682318782);
+    const SimdDouble CB3(0.04369575504816542);
+    const SimdDouble CB2(-0.11884063474674492);
+    const SimdDouble CB1(0.2732120154030589);
+    const SimdDouble CB0(0.42758357702025784);
     // Coefficients for minimax approximation of erfc(x)=Exp(-x^2)*(1/x)*P((1/x)^2) in range [2,9.19]
-    const SimdDouble  CC10(-0.0445555913112064);
-    const SimdDouble  CC9(0.21376355144663348);
-    const SimdDouble  CC8(-0.3473187200259257);
-    const SimdDouble  CC7(0.016690861551248114);
-    const SimdDouble  CC6(0.7560973182491192);
-    const SimdDouble  CC5(-1.2137903600145787);
-    const SimdDouble  CC4(0.8411872321232948);
-    const SimdDouble  CC3(-0.08670413896296343);
-    const SimdDouble  CC2(-0.27124782687240334);
-    const SimdDouble  CC1(-0.0007502488047806069);
-    const SimdDouble  CC0(0.5642114853803148);
-    const SimdDouble  one(1.0);
-    const SimdDouble  two(2.0);
+    const SimdDouble CC10(-0.0445555913112064);
+    const SimdDouble CC9(0.21376355144663348);
+    const SimdDouble CC8(-0.3473187200259257);
+    const SimdDouble CC7(0.016690861551248114);
+    const SimdDouble CC6(0.7560973182491192);
+    const SimdDouble CC5(-1.2137903600145787);
+    const SimdDouble CC4(0.8411872321232948);
+    const SimdDouble CC3(-0.08670413896296343);
+    const SimdDouble CC2(-0.27124782687240334);
+    const SimdDouble CC1(-0.0007502488047806069);
+    const SimdDouble CC0(0.5642114853803148);
+    const SimdDouble one(1.0);
+    const SimdDouble two(2.0);
 
-    SimdDouble        x2, x4, y;
-    SimdDouble        t, t2, w, w2;
-    SimdDouble        pA0, pA1, pB0, pB1, pC0, pC1;
-    SimdDouble        expmx2;
-    SimdDouble        res_erf, res_erfc, res;
-    SimdDBool         mask, msk_erf;
+    SimdDouble x2, x4, y;
+    SimdDouble t, t2, w, w2;
+    SimdDouble pA0, pA1, pB0, pB1, pC0, pC1;
+    SimdDouble expmx2;
+    SimdDouble res_erf, res_erfc, res;
+    SimdDBool  mask, msk_erf;
 
     // Calculate erf()
-    x2     = x * x;
-    x4     = x2 * x2;
+    x2 = x * x;
+    x4 = x2 * x2;
 
-    pA0  = fma(CA6, x4, CA4);
-    pA1  = fma(CA5, x4, CA3);
-    pA0  = fma(pA0, x4, CA2);
-    pA1  = fma(pA1, x4, CA1);
-    pA1  = pA1 * x2;
-    pA0  = fma(pA0, x4, pA1);
+    pA0 = fma(CA6, x4, CA4);
+    pA1 = fma(CA5, x4, CA3);
+    pA0 = fma(pA0, x4, CA2);
+    pA1 = fma(pA1, x4, CA1);
+    pA1 = pA1 * x2;
+    pA0 = fma(pA0, x4, pA1);
     // Constant term must come last for precision reasons
-    pA0  = pA0 + CA0;
+    pA0 = pA0 + CA0;
 
     res_erf = x * pA0;
 
@@ -3153,30 +3093,30 @@ erfcSingleAccuracy(SimdDouble x)
     t2      = t * t;
     w2      = w * w;
 
-    expmx2  = expSingleAccuracy( -y*y );
+    expmx2 = expSingleAccuracy( -y * y );
 
-    pB1  = fma(CB9, w2, CB7);
-    pB0  = fma(CB8, w2, CB6);
-    pB1  = fma(pB1, w2, CB5);
-    pB0  = fma(pB0, w2, CB4);
-    pB1  = fma(pB1, w2, CB3);
-    pB0  = fma(pB0, w2, CB2);
-    pB1  = fma(pB1, w2, CB1);
-    pB0  = fma(pB0, w2, CB0);
-    pB0  = fma(pB1, w, pB0);
+    pB1 = fma(CB9, w2, CB7);
+    pB0 = fma(CB8, w2, CB6);
+    pB1 = fma(pB1, w2, CB5);
+    pB0 = fma(pB0, w2, CB4);
+    pB1 = fma(pB1, w2, CB3);
+    pB0 = fma(pB0, w2, CB2);
+    pB1 = fma(pB1, w2, CB1);
+    pB0 = fma(pB0, w2, CB0);
+    pB0 = fma(pB1, w, pB0);
 
-    pC0  = fma(CC10, t2, CC8);
-    pC1  = fma(CC9, t2, CC7);
-    pC0  = fma(pC0, t2, CC6);
-    pC1  = fma(pC1, t2, CC5);
-    pC0  = fma(pC0, t2, CC4);
-    pC1  = fma(pC1, t2, CC3);
-    pC0  = fma(pC0, t2, CC2);
-    pC1  = fma(pC1, t2, CC1);
+    pC0 = fma(CC10, t2, CC8);
+    pC1 = fma(CC9, t2, CC7);
+    pC0 = fma(pC0, t2, CC6);
+    pC1 = fma(pC1, t2, CC5);
+    pC0 = fma(pC0, t2, CC4);
+    pC1 = fma(pC1, t2, CC3);
+    pC0 = fma(pC0, t2, CC2);
+    pC1 = fma(pC1, t2, CC1);
 
-    pC0  = fma(pC0, t2, CC0);
-    pC0  = fma(pC1, t, pC0);
-    pC0  = pC0 * t;
+    pC0 = fma(pC0, t2, CC0);
+    pC0 = fma(pC1, t, pC0);
+    pC0 = pC0 * t;
 
     // Select pB0 or pC0 for erfc()
     mask     = (two < y);
@@ -3200,44 +3140,43 @@ erfcSingleAccuracy(SimdDouble x)
  * \param[out] sinval Sin(x)
  * \param[out] cosval Cos(x)
  */
-static inline void gmx_simdcall
-sinCosSingleAccuracy(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
+static inline void gmx_simdcall sinCosSingleAccuracy(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
 {
     // Constants to subtract Pi/4*x from y while minimizing precision loss
-    const SimdDouble  argred0(2*0.78539816290140151978);
-    const SimdDouble  argred1(2*4.9604678871439933374e-10);
-    const SimdDouble  argred2(2*1.1258708853173288931e-18);
-    const SimdDouble  two_over_pi(2.0/M_PI);
-    const SimdDouble  const_sin2(-1.9515295891e-4);
-    const SimdDouble  const_sin1( 8.3321608736e-3);
-    const SimdDouble  const_sin0(-1.6666654611e-1);
-    const SimdDouble  const_cos2( 2.443315711809948e-5);
-    const SimdDouble  const_cos1(-1.388731625493765e-3);
-    const SimdDouble  const_cos0( 4.166664568298827e-2);
+    const SimdDouble argred0(2 * 0.78539816290140151978);
+    const SimdDouble argred1(2 * 4.9604678871439933374e-10);
+    const SimdDouble argred2(2 * 1.1258708853173288931e-18);
+    const SimdDouble two_over_pi(2.0 / M_PI);
+    const SimdDouble const_sin2(-1.9515295891e-4);
+    const SimdDouble const_sin1( 8.3321608736e-3);
+    const SimdDouble const_sin0(-1.6666654611e-1);
+    const SimdDouble const_cos2( 2.443315711809948e-5);
+    const SimdDouble const_cos1(-1.388731625493765e-3);
+    const SimdDouble const_cos0( 4.166664568298827e-2);
 
-    const SimdDouble  half(0.5);
-    const SimdDouble  one(1.0);
-    SimdDouble        ssign, csign;
-    SimdDouble        x2, y, z, psin, pcos, sss, ccc;
-    SimdDBool         mask;
+    const SimdDouble half(0.5);
+    const SimdDouble one(1.0);
+    SimdDouble       ssign, csign;
+    SimdDouble       x2, y, z, psin, pcos, sss, ccc;
+    SimdDBool        mask;
 
 #if GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
-    const SimdDInt32  ione(1);
-    const SimdDInt32  itwo(2);
-    SimdDInt32        iy;
+    const SimdDInt32 ione(1);
+    const SimdDInt32 itwo(2);
+    SimdDInt32       iy;
 
-    z       = x * two_over_pi;
-    iy      = cvtR2I(z);
-    y       = round(z);
+    z  = x * two_over_pi;
+    iy = cvtR2I(z);
+    y  = round(z);
 
-    mask    = cvtIB2B((iy & ione) == setZero());
-    ssign   = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B((iy & itwo) == itwo));
-    csign   = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B(((iy + ione) & itwo) == itwo));
+    mask  = cvtIB2B((iy & ione) == setZero());
+    ssign = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B((iy & itwo) == itwo));
+    csign = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), cvtIB2B(((iy + ione) & itwo) == itwo));
 #else
-    const SimdDouble  quarter(0.25);
-    const SimdDouble  minusquarter(-0.25);
-    SimdDouble        q;
-    SimdDBool         m1, m2, m3;
+    const SimdDouble quarter(0.25);
+    const SimdDouble minusquarter(-0.25);
+    SimdDouble       q;
+    SimdDBool        m1, m2, m3;
 
     /* The most obvious way to find the arguments quadrant in the unit circle
      * to calculate the sign is to use integer arithmetic, but that is not
@@ -3248,19 +3187,19 @@ sinCosSingleAccuracy(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
      * slightly slower (~10%) due to the longer latencies of floating-point, so
      * we only use it when integer SIMD arithmetic is not present.
      */
-    ssign   = x;
-    x       = abs(x);
+    ssign = x;
+    x     = abs(x);
     // It is critical that half-way cases are rounded down
-    z       = fma(x, two_over_pi, half);
-    y       = trunc(z);
-    q       = z * quarter;
-    q       = q - trunc(q);
+    z = fma(x, two_over_pi, half);
+    y = trunc(z);
+    q = z * quarter;
+    q = q - trunc(q);
     /* z now starts at 0.0 for x=-pi/4 (although neg. values cannot occur), and
      * then increased by 1.0 as x increases by 2*Pi, when it resets to 0.0.
      * This removes the 2*Pi periodicity without using any integer arithmetic.
      * First check if y had the value 2 or 3, set csign if true.
      */
-    q       = q - half;
+    q = q - half;
     /* If we have logical operations we can work directly on the signbit, which
      * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
      * Thus, if you are altering defines to debug alternative code paths, the
@@ -3268,39 +3207,39 @@ sinCosSingleAccuracy(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
      * active or inactive - you will get errors if only one is used.
      */
 #    if GMX_SIMD_HAVE_LOGICAL
-    ssign   = ssign & SimdDouble(GMX_DOUBLE_NEGZERO);
-    csign   = andNot(q, SimdDouble(GMX_DOUBLE_NEGZERO));
-    ssign   = ssign ^ csign;
+    ssign = ssign & SimdDouble(GMX_DOUBLE_NEGZERO);
+    csign = andNot(q, SimdDouble(GMX_DOUBLE_NEGZERO));
+    ssign = ssign ^ csign;
 #    else
-    ssign   = copysign(SimdDouble(1.0), ssign);
-    csign   = copysign(SimdDouble(1.0), q);
-    csign   = -csign;
-    ssign   = ssign * csign;    // swap ssign if csign was set.
+    ssign = copysign(SimdDouble(1.0), ssign);
+    csign = copysign(SimdDouble(1.0), q);
+    csign = -csign;
+    ssign = ssign * csign;      // swap ssign if csign was set.
 #    endif
     // Check if y had value 1 or 3 (remember we subtracted 0.5 from q)
-    m1      = (q < minusquarter);
-    m2      = (setZero() <= q);
-    m3      = (q < quarter);
-    m2      = m2 && m3;
-    mask    = m1 || m2;
+    m1   = (q < minusquarter);
+    m2   = (setZero() <= q);
+    m3   = (q < quarter);
+    m2   = m2 && m3;
+    mask = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdDouble(-1.0), one, mask);
+    csign = csign * blend(SimdDouble(-1.0), one, mask);
 #endif
-    x       = fnma(y, argred0, x);
-    x       = fnma(y, argred1, x);
-    x       = fnma(y, argred2, x);
-    x2      = x * x;
+    x  = fnma(y, argred0, x);
+    x  = fnma(y, argred1, x);
+    x  = fnma(y, argred2, x);
+    x2 = x * x;
 
-    psin    = fma(const_sin2, x2, const_sin1);
-    psin    = fma(psin, x2, const_sin0);
-    psin    = fma(psin, x * x2, x);
-    pcos    = fma(const_cos2, x2, const_cos1);
-    pcos    = fma(pcos, x2, const_cos0);
-    pcos    = fms(pcos, x2, half);
-    pcos    = fma(pcos, x2, one);
+    psin = fma(const_sin2, x2, const_sin1);
+    psin = fma(psin, x2, const_sin0);
+    psin = fma(psin, x * x2, x);
+    pcos = fma(const_cos2, x2, const_cos1);
+    pcos = fma(pcos, x2, const_cos0);
+    pcos = fms(pcos, x2, half);
+    pcos = fma(pcos, x2, one);
 
-    sss     = blend(pcos, psin, mask);
-    ccc     = blend(psin, pcos, mask);
+    sss = blend(pcos, psin, mask);
+    ccc = blend(psin, pcos, mask);
     // See comment for GMX_SIMD_HAVE_LOGICAL section above.
 #if GMX_SIMD_HAVE_LOGICAL
     *sinval = sss ^ ssign;
@@ -3319,8 +3258,7 @@ sinCosSingleAccuracy(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdDouble gmx_simdcall
-sinSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall sinSingleAccuracy(SimdDouble x)
 {
     SimdDouble s, c;
     sinCosSingleAccuracy(x, &s, &c);
@@ -3335,8 +3273,7 @@ sinSingleAccuracy(SimdDouble x)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdDouble gmx_simdcall
-cosSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall cosSingleAccuracy(SimdDouble x)
 {
     SimdDouble s, c;
     sinCosSingleAccuracy(x, &s, &c);
@@ -3348,69 +3285,68 @@ cosSingleAccuracy(SimdDouble x)
  * \param x The argument to evaluate tan for
  * \result Tan(x)
  */
-static inline SimdDouble gmx_simdcall
-tanSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall tanSingleAccuracy(SimdDouble x)
 {
-    const SimdDouble  argred0(2*0.78539816290140151978);
-    const SimdDouble  argred1(2*4.9604678871439933374e-10);
-    const SimdDouble  argred2(2*1.1258708853173288931e-18);
-    const SimdDouble  two_over_pi(2.0/M_PI);
-    const SimdDouble  CT6(0.009498288995810566122993911);
-    const SimdDouble  CT5(0.002895755790837379295226923);
-    const SimdDouble  CT4(0.02460087336161924491836265);
-    const SimdDouble  CT3(0.05334912882656359828045988);
-    const SimdDouble  CT2(0.1333989091464957704418495);
-    const SimdDouble  CT1(0.3333307599244198227797507);
+    const SimdDouble argred0(2 * 0.78539816290140151978);
+    const SimdDouble argred1(2 * 4.9604678871439933374e-10);
+    const SimdDouble argred2(2 * 1.1258708853173288931e-18);
+    const SimdDouble two_over_pi(2.0 / M_PI);
+    const SimdDouble CT6(0.009498288995810566122993911);
+    const SimdDouble CT5(0.002895755790837379295226923);
+    const SimdDouble CT4(0.02460087336161924491836265);
+    const SimdDouble CT3(0.05334912882656359828045988);
+    const SimdDouble CT2(0.1333989091464957704418495);
+    const SimdDouble CT1(0.3333307599244198227797507);
 
-    SimdDouble        x2, p, y, z;
-    SimdDBool         mask;
+    SimdDouble x2, p, y, z;
+    SimdDBool  mask;
 
 #if GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
-    SimdDInt32  iy;
-    SimdDInt32  ione(1);
+    SimdDInt32 iy;
+    SimdDInt32 ione(1);
 
-    z       = x * two_over_pi;
-    iy      = cvtR2I(z);
-    y       = round(z);
-    mask    = cvtIB2B((iy & ione) == ione);
+    z    = x * two_over_pi;
+    iy   = cvtR2I(z);
+    y    = round(z);
+    mask = cvtIB2B((iy & ione) == ione);
 
-    x       = fnma(y, argred0, x);
-    x       = fnma(y, argred1, x);
-    x       = fnma(y, argred2, x);
-    x       = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), mask) ^ x;
+    x = fnma(y, argred0, x);
+    x = fnma(y, argred1, x);
+    x = fnma(y, argred2, x);
+    x = selectByMask(SimdDouble(GMX_DOUBLE_NEGZERO), mask) ^ x;
 #else
-    const SimdDouble  quarter(0.25);
-    const SimdDouble  half(0.5);
-    const SimdDouble  threequarter(0.75);
-    SimdDouble        w, q;
-    SimdDBool         m1, m2, m3;
+    const SimdDouble quarter(0.25);
+    const SimdDouble half(0.5);
+    const SimdDouble threequarter(0.75);
+    SimdDouble       w, q;
+    SimdDBool        m1, m2, m3;
 
-    w       = abs(x);
-    z       = fma(w, two_over_pi, half);
-    y       = trunc(z);
-    q       = z * quarter;
-    q       = q - trunc(q);
-    m1      = (quarter <= q);
-    m2      = (q < half);
-    m3      = (threequarter <= q);
-    m1      = m1 && m2;
-    mask    = m1 || m3;
-    w       = fnma(y, argred0, w);
-    w       = fnma(y, argred1, w);
-    w       = fnma(y, argred2, w);
+    w    = abs(x);
+    z    = fma(w, two_over_pi, half);
+    y    = trunc(z);
+    q    = z * quarter;
+    q    = q - trunc(q);
+    m1   = (quarter <= q);
+    m2   = (q < half);
+    m3   = (threequarter <= q);
+    m1   = m1 && m2;
+    mask = m1 || m3;
+    w    = fnma(y, argred0, w);
+    w    = fnma(y, argred1, w);
+    w    = fnma(y, argred2, w);
 
-    w       = blend(w, -w, mask);
-    x       = w * copysign( SimdDouble(1.0), x );
+    w = blend(w, -w, mask);
+    x = w * copysign( SimdDouble(1.0), x );
 #endif
-    x2      = x * x;
-    p       = fma(CT6, x2, CT5);
-    p       = fma(p, x2, CT4);
-    p       = fma(p, x2, CT3);
-    p       = fma(p, x2, CT2);
-    p       = fma(p, x2, CT1);
-    p       = fma(x2, p * x, x);
+    x2 = x * x;
+    p  = fma(CT6, x2, CT5);
+    p  = fma(p, x2, CT4);
+    p  = fma(p, x2, CT3);
+    p  = fma(p, x2, CT2);
+    p  = fma(p, x2, CT1);
+    p  = fma(x2, p * x, x);
 
-    p       = blend( p, maskzInvSingleAccuracy(p, mask), mask);
+    p = blend( p, maskzInvSingleAccuracy(p, mask), mask);
     return p;
 }
 
@@ -3419,13 +3355,12 @@ tanSingleAccuracy(SimdDouble x)
  * \param x The argument to evaluate asin for
  * \result Asin(x)
  */
-static inline SimdDouble gmx_simdcall
-asinSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall asinSingleAccuracy(SimdDouble x)
 {
     const SimdDouble limitlow(1e-4);
     const SimdDouble half(0.5);
     const SimdDouble one(1.0);
-    const SimdDouble halfpi(M_PI/2.0);
+    const SimdDouble halfpi(M_PI / 2.0);
     const SimdDouble CC5(4.2163199048E-2);
     const SimdDouble CC4(2.4181311049E-2);
     const SimdDouble CC3(4.5470025998E-2);
@@ -3446,20 +3381,20 @@ asinSingleAccuracy(SimdDouble x)
     z     = blend(z2, z1, mask);
     q     = blend(q2, q1, mask);
 
-    z2    = z * z;
-    pA    = fma(CC5, z2, CC3);
-    pB    = fma(CC4, z2, CC2);
-    pA    = fma(pA, z2, CC1);
-    pA    = pA * z;
-    z     = fma(pB, z2, pA);
-    z     = fma(z, q, q);
-    q2    = halfpi - z;
-    q2    = q2 - z;
-    z     = blend(z, q2, mask);
+    z2 = z * z;
+    pA = fma(CC5, z2, CC3);
+    pB = fma(CC4, z2, CC2);
+    pA = fma(pA, z2, CC1);
+    pA = pA * z;
+    z  = fma(pB, z2, pA);
+    z  = fma(z, q, q);
+    q2 = halfpi - z;
+    q2 = q2 - z;
+    z  = blend(z, q2, mask);
 
-    mask  = (limitlow < xabs);
-    z     = blend( xabs, z, mask );
-    z     = copysign(z, x);
+    mask = (limitlow < xabs);
+    z    = blend( xabs, z, mask );
+    z    = copysign(z, x);
 
     return z;
 }
@@ -3469,13 +3404,12 @@ asinSingleAccuracy(SimdDouble x)
  * \param x The argument to evaluate acos for
  * \result Acos(x)
  */
-static inline SimdDouble gmx_simdcall
-acosSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall acosSingleAccuracy(SimdDouble x)
 {
     const SimdDouble one(1.0);
     const SimdDouble half(0.5);
     const SimdDouble pi(M_PI);
-    const SimdDouble halfpi(M_PI/2.0);
+    const SimdDouble halfpi(M_PI / 2.0);
     SimdDouble       xabs;
     SimdDouble       z, z1, z2, z3;
     SimdDBool        mask1, mask2, mask3;
@@ -3490,11 +3424,11 @@ acosSingleAccuracy(SimdDouble x)
     z     = blend(x, z, mask1);
     z     = asinSingleAccuracy(z);
 
-    z2    = z + z;
-    z1    = pi - z2;
-    z3    = halfpi - z;
-    z     = blend(z1, z2, mask2);
-    z     = blend(z3, z, mask1);
+    z2 = z + z;
+    z1 = pi - z2;
+    z3 = halfpi - z;
+    z  = blend(z1, z2, mask2);
+    z  = blend(z3, z, mask1);
 
     return z;
 }
@@ -3504,10 +3438,9 @@ acosSingleAccuracy(SimdDouble x)
  * \param x The argument to evaluate atan for
  * \result Atan(x), same argument/value range as standard math library.
  */
-static inline SimdDouble gmx_simdcall
-atanSingleAccuracy(SimdDouble x)
+static inline SimdDouble gmx_simdcall atanSingleAccuracy(SimdDouble x)
 {
-    const SimdDouble halfpi(M_PI/2);
+    const SimdDouble halfpi(M_PI / 2);
     const SimdDouble CA17(0.002823638962581753730774);
     const SimdDouble CA15(-0.01595690287649631500244);
     const SimdDouble CA13(0.04250498861074447631836);
@@ -3524,20 +3457,20 @@ atanSingleAccuracy(SimdDouble x)
     mask2 = (SimdDouble(1.0) < x);
     x     = blend(x, maskzInvSingleAccuracy(x, mask2), mask2);
 
-    x2    = x * x;
-    x3    = x2 * x;
-    x4    = x2 * x2;
-    pA    = fma(CA17, x4, CA13);
-    pB    = fma(CA15, x4, CA11);
-    pA    = fma(pA, x4, CA9);
-    pB    = fma(pB, x4, CA7);
-    pA    = fma(pA, x4, CA5);
-    pB    = fma(pB, x4, CA3);
-    pA    = fma(pA, x2, pB);
-    pA    = fma(pA, x3, x);
+    x2 = x * x;
+    x3 = x2 * x;
+    x4 = x2 * x2;
+    pA = fma(CA17, x4, CA13);
+    pB = fma(CA15, x4, CA11);
+    pA = fma(pA, x4, CA9);
+    pB = fma(pB, x4, CA7);
+    pA = fma(pA, x4, CA5);
+    pB = fma(pB, x4, CA3);
+    pA = fma(pA, x2, pB);
+    pA = fma(pA, x3, x);
 
-    pA    = blend(pA, halfpi - pA, mask2);
-    pA    = blend(pA, -pA, mask);
+    pA = blend(pA, halfpi - pA, mask2);
+    pA = blend(pA, -pA, mask);
 
     return pA;
 }
@@ -3555,11 +3488,10 @@ atanSingleAccuracy(SimdDouble x)
  * of any concern in Gromacs, and in particular it will not affect calculations
  * of angles from vectors.
  */
-static inline SimdDouble gmx_simdcall
-atan2SingleAccuracy(SimdDouble y, SimdDouble x)
+static inline SimdDouble gmx_simdcall atan2SingleAccuracy(SimdDouble y, SimdDouble x)
 {
     const SimdDouble pi(M_PI);
-    const SimdDouble halfpi(M_PI/2.0);
+    const SimdDouble halfpi(M_PI / 2.0);
     SimdDouble       xinv, p, aoffset;
     SimdDBool        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
@@ -3568,16 +3500,16 @@ atan2SingleAccuracy(SimdDouble y, SimdDouble x)
     mask_xlt0 = (x < setZero());
     mask_ylt0 = (y < setZero());
 
-    aoffset   = selectByNotMask(halfpi, mask_xnz);
-    aoffset   = selectByMask(aoffset, mask_ynz);
+    aoffset = selectByNotMask(halfpi, mask_xnz);
+    aoffset = selectByMask(aoffset, mask_ynz);
 
-    aoffset   = blend(aoffset, pi, mask_xlt0);
-    aoffset   = blend(aoffset, -aoffset, mask_ylt0);
+    aoffset = blend(aoffset, pi, mask_xlt0);
+    aoffset = blend(aoffset, -aoffset, mask_ylt0);
 
-    xinv      = maskzInvSingleAccuracy(x, mask_xnz);
-    p         = y * xinv;
-    p         = atanSingleAccuracy(p);
-    p         = p + aoffset;
+    xinv = maskzInvSingleAccuracy(x, mask_xnz);
+    p    = y * xinv;
+    p    = atanSingleAccuracy(p);
+    p    = p + aoffset;
 
     return p;
 }
@@ -3658,41 +3590,40 @@ atan2SingleAccuracy(SimdDouble y, SimdDouble x)
  * added to \f$1/r\f$ the error will be insignificant.
  *
  */
-static SimdDouble gmx_simdcall
-pmeForceCorrectionSingleAccuracy(SimdDouble z2)
+static SimdDouble gmx_simdcall pmeForceCorrectionSingleAccuracy(SimdDouble z2)
 {
-    const SimdDouble  FN6(-1.7357322914161492954e-8);
-    const SimdDouble  FN5(1.4703624142580877519e-6);
-    const SimdDouble  FN4(-0.000053401640219807709149);
-    const SimdDouble  FN3(0.0010054721316683106153);
-    const SimdDouble  FN2(-0.019278317264888380590);
-    const SimdDouble  FN1(0.069670166153766424023);
-    const SimdDouble  FN0(-0.75225204789749321333);
+    const SimdDouble FN6(-1.7357322914161492954e-8);
+    const SimdDouble FN5(1.4703624142580877519e-6);
+    const SimdDouble FN4(-0.000053401640219807709149);
+    const SimdDouble FN3(0.0010054721316683106153);
+    const SimdDouble FN2(-0.019278317264888380590);
+    const SimdDouble FN1(0.069670166153766424023);
+    const SimdDouble FN0(-0.75225204789749321333);
 
-    const SimdDouble  FD4(0.0011193462567257629232);
-    const SimdDouble  FD3(0.014866955030185295499);
-    const SimdDouble  FD2(0.11583842382862377919);
-    const SimdDouble  FD1(0.50736591960530292870);
-    const SimdDouble  FD0(1.0);
+    const SimdDouble FD4(0.0011193462567257629232);
+    const SimdDouble FD3(0.014866955030185295499);
+    const SimdDouble FD2(0.11583842382862377919);
+    const SimdDouble FD1(0.50736591960530292870);
+    const SimdDouble FD0(1.0);
 
-    SimdDouble        z4;
-    SimdDouble        polyFN0, polyFN1, polyFD0, polyFD1;
+    SimdDouble z4;
+    SimdDouble polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD1        = fma(FD3, z4, FD1);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = fma(polyFD1, z2, polyFD0);
+    polyFD0 = fma(FD4, z4, FD2);
+    polyFD1 = fma(FD3, z4, FD1);
+    polyFD0 = fma(polyFD0, z4, FD0);
+    polyFD0 = fma(polyFD1, z2, polyFD0);
 
-    polyFD0        = invSingleAccuracy(polyFD0);
+    polyFD0 = invSingleAccuracy(polyFD0);
 
-    polyFN0        = fma(FN6, z4, FN4);
-    polyFN1        = fma(FN5, z4, FN3);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN0        = fma(polyFN1, z2, polyFN0);
+    polyFN0 = fma(FN6, z4, FN4);
+    polyFN1 = fma(FN5, z4, FN3);
+    polyFN0 = fma(polyFN0, z4, FN2);
+    polyFN1 = fma(polyFN1, z4, FN1);
+    polyFN0 = fma(polyFN0, z4, FN0);
+    polyFN0 = fma(polyFN1, z2, polyFN0);
 
     return polyFN0 * polyFD0;
 }
@@ -3730,39 +3661,38 @@ pmeForceCorrectionSingleAccuracy(SimdDouble z2)
  * This approximation achieves an accuracy slightly lower than 1e-6; when
  * added to \f$1/r\f$ the error will be insignificant.
  */
-static SimdDouble gmx_simdcall
-pmePotentialCorrectionSingleAccuracy(SimdDouble z2)
+static SimdDouble gmx_simdcall pmePotentialCorrectionSingleAccuracy(SimdDouble z2)
 {
-    const SimdDouble  VN6(1.9296833005951166339e-8);
-    const SimdDouble  VN5(-1.4213390571557850962e-6);
-    const SimdDouble  VN4(0.000041603292906656984871);
-    const SimdDouble  VN3(-0.00013134036773265025626);
-    const SimdDouble  VN2(0.038657983986041781264);
-    const SimdDouble  VN1(0.11285044772717598220);
-    const SimdDouble  VN0(1.1283802385263030286);
+    const SimdDouble VN6(1.9296833005951166339e-8);
+    const SimdDouble VN5(-1.4213390571557850962e-6);
+    const SimdDouble VN4(0.000041603292906656984871);
+    const SimdDouble VN3(-0.00013134036773265025626);
+    const SimdDouble VN2(0.038657983986041781264);
+    const SimdDouble VN1(0.11285044772717598220);
+    const SimdDouble VN0(1.1283802385263030286);
 
-    const SimdDouble  VD3(0.0066752224023576045451);
-    const SimdDouble  VD2(0.078647795836373922256);
-    const SimdDouble  VD1(0.43336185284710920150);
-    const SimdDouble  VD0(1.0);
+    const SimdDouble VD3(0.0066752224023576045451);
+    const SimdDouble VD2(0.078647795836373922256);
+    const SimdDouble VD1(0.43336185284710920150);
+    const SimdDouble VD0(1.0);
 
-    SimdDouble        z4;
-    SimdDouble        polyVN0, polyVN1, polyVD0, polyVD1;
+    SimdDouble z4;
+    SimdDouble polyVN0, polyVN1, polyVD0, polyVD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyVD1        = fma(VD3, z4, VD1);
-    polyVD0        = fma(VD2, z4, VD0);
-    polyVD0        = fma(polyVD1, z2, polyVD0);
+    polyVD1 = fma(VD3, z4, VD1);
+    polyVD0 = fma(VD2, z4, VD0);
+    polyVD0 = fma(polyVD1, z2, polyVD0);
 
-    polyVD0        = invSingleAccuracy(polyVD0);
+    polyVD0 = invSingleAccuracy(polyVD0);
 
-    polyVN0        = fma(VN6, z4, VN4);
-    polyVN1        = fma(VN5, z4, VN3);
-    polyVN0        = fma(polyVN0, z4, VN2);
-    polyVN1        = fma(polyVN1, z4, VN1);
-    polyVN0        = fma(polyVN0, z4, VN0);
-    polyVN0        = fma(polyVN1, z2, polyVN0);
+    polyVN0 = fma(VN6, z4, VN4);
+    polyVN1 = fma(VN5, z4, VN3);
+    polyVN0 = fma(polyVN0, z4, VN2);
+    polyVN1 = fma(polyVN1, z4, VN1);
+    polyVN0 = fma(polyVN0, z4, VN0);
+    polyVN0 = fma(polyVN1, z2, polyVN0);
 
     return polyVN0 * polyVD0;
 }
@@ -3792,13 +3722,12 @@ pmePotentialCorrectionSingleAccuracy(SimdDouble z2)
  *  \param x  The reference (starting) value x for which we want 1/sqrt(x).
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static inline Simd4Float gmx_simdcall
-rsqrtIter(Simd4Float lu, Simd4Float x)
+static inline Simd4Float gmx_simdcall rsqrtIter(Simd4Float lu, Simd4Float x)
 {
-    Simd4Float tmp1 = x*lu;
-    Simd4Float tmp2 = Simd4Float(-0.5f)*lu;
+    Simd4Float tmp1 = x * lu;
+    Simd4Float tmp2 = Simd4Float(-0.5f) * lu;
     tmp1 = fma(tmp1, lu, Simd4Float(-3.0f));
-    return tmp1*tmp2;
+    return tmp1 * tmp2;
 }
 
 /*! \brief Calculate 1/sqrt(x) for SIMD4 float.
@@ -3806,17 +3735,16 @@ rsqrtIter(Simd4Float lu, Simd4Float x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline Simd4Float gmx_simdcall
-invsqrt(Simd4Float x)
+static inline Simd4Float gmx_simdcall invsqrt(Simd4Float x)
 {
     Simd4Float lu = rsqrt(x);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -3841,13 +3769,12 @@ invsqrt(Simd4Float x)
  *  \param x  The reference (starting) value x for which we want 1/sqrt(x).
  *  \return   An improved approximation with roughly twice as many bits of accuracy.
  */
-static inline Simd4Double gmx_simdcall
-rsqrtIter(Simd4Double lu, Simd4Double x)
+static inline Simd4Double gmx_simdcall rsqrtIter(Simd4Double lu, Simd4Double x)
 {
-    Simd4Double tmp1 = x*lu;
-    Simd4Double tmp2 = Simd4Double(-0.5f)*lu;
-    tmp1             = fma(tmp1, lu, Simd4Double(-3.0f));
-    return tmp1*tmp2;
+    Simd4Double tmp1 = x * lu;
+    Simd4Double tmp2 = Simd4Double(-0.5f) * lu;
+    tmp1 = fma(tmp1, lu, Simd4Double(-3.0f));
+    return tmp1 * tmp2;
 }
 
 /*! \brief Calculate 1/sqrt(x) for SIMD4 double.
@@ -3855,20 +3782,19 @@ rsqrtIter(Simd4Double lu, Simd4Double x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline Simd4Double gmx_simdcall
-invsqrt(Simd4Double x)
+static inline Simd4Double gmx_simdcall invsqrt(Simd4Double x)
 {
     Simd4Double lu = rsqrt(x);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_RSQRT_BITS * 8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -3884,17 +3810,16 @@ invsqrt(Simd4Double x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline Simd4Double gmx_simdcall
-invsqrtSingleAccuracy(Simd4Double x)
+static inline Simd4Double gmx_simdcall invsqrtSingleAccuracy(Simd4Double x)
 {
     Simd4Double lu = rsqrt(x);
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
-#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+#if (GMX_SIMD_RSQRT_BITS * 4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
     lu = rsqrtIter(lu, x);
 #endif
     return lu;
@@ -3912,8 +3837,7 @@ invsqrtSingleAccuracy(Simd4Double x)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline SimdFloat gmx_simdcall
-invsqrtSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall invsqrtSingleAccuracy(SimdFloat x)
 {
     return invsqrt(x);
 }
@@ -3929,8 +3853,7 @@ invsqrtSingleAccuracy(SimdFloat x)
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
  *          entry was not masked, and 0.0 for masked-out entries.
  */
-static inline SimdFloat
-maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
 {
     return maskzInvsqrt(x, m);
 }
@@ -3945,9 +3868,8 @@ maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall
-invsqrtPairSingleAccuracy(SimdFloat x0,    SimdFloat x1,
-                          SimdFloat *out0, SimdFloat *out1)
+static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdFloat x0,    SimdFloat x1,
+                                                          SimdFloat *out0, SimdFloat *out1)
 {
     return invsqrtPair(x0, x1, out0, out1);
 }
@@ -3957,8 +3879,7 @@ invsqrtPairSingleAccuracy(SimdFloat x0,    SimdFloat x1,
  *  \param x Argument that must be nonzero. This routine does not check arguments.
  *  \return 1/x. Result is undefined if your argument was invalid.
  */
-static inline SimdFloat gmx_simdcall
-invSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall invSingleAccuracy(SimdFloat x)
 {
     return inv(x);
 }
@@ -3970,8 +3891,7 @@ invSingleAccuracy(SimdFloat x)
  *  \param m Mask
  *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static inline SimdFloat
-maskzInvSingleAccuracy(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzInvSingleAccuracy(SimdFloat x, SimdFBool m)
 {
     return maskzInv(x, m);
 }
@@ -3982,8 +3902,7 @@ maskzInvSingleAccuracy(SimdFloat x, SimdFBool m)
  *  \return sqrt(x). If x=0, the result will correctly be set to 0.
  *          The result is undefined if the input value is negative.
  */
-static inline SimdFloat gmx_simdcall
-sqrtSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall sqrtSingleAccuracy(SimdFloat x)
 {
     return sqrt(x);
 }
@@ -3993,8 +3912,7 @@ sqrtSingleAccuracy(SimdFloat x)
  * \param x Argument, should be >0.
  * \result The natural logarithm of x. Undefined if argument is invalid.
  */
-static inline SimdFloat gmx_simdcall
-logSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall logSingleAccuracy(SimdFloat x)
 {
     return log(x);
 }
@@ -4004,8 +3922,7 @@ logSingleAccuracy(SimdFloat x)
  * \param x Argument.
  * \result 2^x. Undefined if input argument caused overflow.
  */
-static inline SimdFloat gmx_simdcall
-exp2SingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall exp2SingleAccuracy(SimdFloat x)
 {
     return exp2(x);
 }
@@ -4015,8 +3932,7 @@ exp2SingleAccuracy(SimdFloat x)
  * \param x Argument.
  * \result exp(x). Undefined if input argument caused overflow.
  */
-static inline SimdFloat gmx_simdcall
-expSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall expSingleAccuracy(SimdFloat x)
 {
     return exp(x);
 }
@@ -4029,8 +3945,7 @@ expSingleAccuracy(SimdFloat x)
  * This routine achieves very close to single precision, but we do not care about
  * the last bit or the subnormal result range.
  */
-static inline SimdFloat gmx_simdcall
-erfSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall erfSingleAccuracy(SimdFloat x)
 {
     return erf(x);
 }
@@ -4046,8 +3961,7 @@ erfSingleAccuracy(SimdFloat x)
  * (think results that are in the ballpark of 10^-30) since that is not
  * relevant for MD.
  */
-static inline SimdFloat gmx_simdcall
-erfcSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall erfcSingleAccuracy(SimdFloat x)
 {
     return erfc(x);
 }
@@ -4058,8 +3972,7 @@ erfcSingleAccuracy(SimdFloat x)
  * \param[out] sinval Sin(x)
  * \param[out] cosval Cos(x)
  */
-static inline void gmx_simdcall
-sinCosSingleAccuracy(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
+static inline void gmx_simdcall sinCosSingleAccuracy(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
 {
     sincos(x, sinval, cosval);
 }
@@ -4072,8 +3985,7 @@ sinCosSingleAccuracy(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdFloat gmx_simdcall
-sinSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall sinSingleAccuracy(SimdFloat x)
 {
     return sin(x);
 }
@@ -4086,8 +3998,7 @@ sinSingleAccuracy(SimdFloat x)
  * \attention Do NOT call both sin & cos if you need both results, since each of them
  * will then call \ref sincos and waste a factor 2 in performance.
  */
-static inline SimdFloat gmx_simdcall
-cosSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall cosSingleAccuracy(SimdFloat x)
 {
     return cos(x);
 }
@@ -4097,8 +4008,7 @@ cosSingleAccuracy(SimdFloat x)
  * \param x The argument to evaluate tan for
  * \result Tan(x)
  */
-static inline SimdFloat gmx_simdcall
-tanSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall tanSingleAccuracy(SimdFloat x)
 {
     return tan(x);
 }
@@ -4108,8 +4018,7 @@ tanSingleAccuracy(SimdFloat x)
  * \param x The argument to evaluate asin for
  * \result Asin(x)
  */
-static inline SimdFloat gmx_simdcall
-asinSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall asinSingleAccuracy(SimdFloat x)
 {
     return asin(x);
 }
@@ -4119,8 +4028,7 @@ asinSingleAccuracy(SimdFloat x)
  * \param x The argument to evaluate acos for
  * \result Acos(x)
  */
-static inline SimdFloat gmx_simdcall
-acosSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall acosSingleAccuracy(SimdFloat x)
 {
     return acos(x);
 }
@@ -4130,8 +4038,7 @@ acosSingleAccuracy(SimdFloat x)
  * \param x The argument to evaluate atan for
  * \result Atan(x), same argument/value range as standard math library.
  */
-static inline SimdFloat gmx_simdcall
-atanSingleAccuracy(SimdFloat x)
+static inline SimdFloat gmx_simdcall atanSingleAccuracy(SimdFloat x)
 {
     return atan(x);
 }
@@ -4149,8 +4056,7 @@ atanSingleAccuracy(SimdFloat x)
  * of any concern in Gromacs, and in particular it will not affect calculations
  * of angles from vectors.
  */
-static inline SimdFloat gmx_simdcall
-atan2SingleAccuracy(SimdFloat y, SimdFloat x)
+static inline SimdFloat gmx_simdcall atan2SingleAccuracy(SimdFloat y, SimdFloat x)
 {
     return atan2(y, x);
 }
@@ -4160,8 +4066,7 @@ atan2SingleAccuracy(SimdFloat y, SimdFloat x)
  * \param z2 \f$(r \beta)^2\f$ - see default single precision version for details.
  * \result Correction factor to coulomb force.
  */
-static inline SimdFloat gmx_simdcall
-pmeForceCorrectionSingleAccuracy(SimdFloat z2)
+static inline SimdFloat gmx_simdcall pmeForceCorrectionSingleAccuracy(SimdFloat z2)
 {
     return pmeForceCorrection(z2);
 }
@@ -4171,8 +4076,7 @@ pmeForceCorrectionSingleAccuracy(SimdFloat z2)
  * \param z2 \f$(r \beta)^2\f$ - see default single precision version for details.
  * \result Correction factor to coulomb force.
  */
-static inline SimdFloat gmx_simdcall
-pmePotentialCorrectionSingleAccuracy(SimdFloat z2)
+static inline SimdFloat gmx_simdcall pmePotentialCorrectionSingleAccuracy(SimdFloat z2)
 {
     return pmePotentialCorrection(z2);
 }
@@ -4184,8 +4088,7 @@ pmePotentialCorrectionSingleAccuracy(SimdFloat z2)
  *  \param x Argument that must be >0. This routine does not check arguments.
  *  \return 1/sqrt(x). Result is undefined if your argument was invalid.
  */
-static inline Simd4Float gmx_simdcall
-invsqrtSingleAccuracy(Simd4Float x)
+static inline Simd4Float gmx_simdcall invsqrtSingleAccuracy(Simd4Float x)
 {
     return invsqrt(x);
 }

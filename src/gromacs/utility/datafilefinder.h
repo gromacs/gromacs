@@ -155,7 +155,7 @@ struct DataFileInfo
      * Consider replacing with an enum that identifies the source (current dir,
      * GMXLIB, default).
      */
-    bool        bFromDefaultDir;
+    bool bFromDefaultDir;
 };
 
 /*! \brief

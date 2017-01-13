@@ -72,18 +72,18 @@ int add_binr(t_bin *b, int nr, real r[])
     int     i, rest, index;
     double *rbuf;
 
-    if (b->nreal+nr > b->maxreal)
+    if (b->nreal + nr > b->maxreal)
     {
-        b->maxreal = b->nreal+nr;
+        b->maxreal = b->nreal + nr;
         rest       = b->maxreal % MULT;
         if (rest != 0)
         {
-            b->maxreal += MULT-rest;
+            b->maxreal += MULT - rest;
         }
         srenew(b->rbuf, b->maxreal);
     }
     /* Copy pointer */
-    rbuf = b->rbuf+b->nreal;
+    rbuf = b->rbuf + b->nreal;
 
 #if (defined __ICC && __ICC >= 1500 || defined __ICL && __ICL >= 1500) && defined __MIC__
 #pragma novector /* Work-around for incorrect vectorization */
@@ -105,18 +105,18 @@ int add_bind(t_bin *b, int nr, double r[])
     int     i, rest, index;
     double *rbuf;
 
-    if (b->nreal+nr > b->maxreal)
+    if (b->nreal + nr > b->maxreal)
     {
-        b->maxreal = b->nreal+nr;
+        b->maxreal = b->nreal + nr;
         rest       = b->maxreal % MULT;
         if (rest != 0)
         {
-            b->maxreal += MULT-rest;
+            b->maxreal += MULT - rest;
         }
         srenew(b->rbuf, b->maxreal);
     }
     /* Copy pointer */
-    rbuf = b->rbuf+b->nreal;
+    rbuf = b->rbuf + b->nreal;
     for (i = 0; (i < nr); i++)
     {
         rbuf[i] = r[i];
@@ -144,7 +144,7 @@ void extract_binr(t_bin *b, int index, int nr, real r[])
     int     i;
     double *rbuf;
 
-    rbuf = b->rbuf+index;
+    rbuf = b->rbuf + index;
     for (i = 0; (i < nr); i++)
     {
         r[i] = rbuf[i];
@@ -156,7 +156,7 @@ void extract_bind(t_bin *b, int index, int nr, double r[])
     int     i;
     double *rbuf;
 
-    rbuf = b->rbuf+index;
+    rbuf = b->rbuf + index;
     for (i = 0; (i < nr); i++)
     {
         r[i] = rbuf[i];
@@ -167,9 +167,9 @@ void extract_bind(t_bin *b, int index, int nr, double r[])
 int main(int argc, char *argv[])
 {
     t_commrec *cr;
-    t_bin     *rb;
-    double    *r;
-    rvec      *v;
+    t_bin *    rb;
+    double *   r;
+    rvec *     v;
     int        k, i, ni, mi, n, m;
 
     cr = init_par(&argc, argv);
@@ -187,22 +187,22 @@ int main(int argc, char *argv[])
 
         for (i = 0; (i < n); i++)
         {
-            r[i] = i+k;
+            r[i] = i + k;
         }
         for (i = 0; (i < m); i++)
         {
-            v[i][XX] = 4*i+k;
-            v[i][YY] = 4*i+k+1;
-            v[i][ZZ] = 4*i+k+2;
+            v[i][XX] = 4 * i + k;
+            v[i][YY] = 4 * i + k + 1;
+            v[i][ZZ] = 4 * i + k + 2;
         }
 
         ni = add_bind(stdlog, rb, n, r);
-        mi = add_binr(stdlog, rb, DIM*m, v[0]);
+        mi = add_binr(stdlog, rb, DIM * m, v[0]);
 
         sum_bin(rb, cr);
 
         extract_bind(rb, ni, n, r);
-        extract_binr(rb, mi, DIM*m, v[0]);
+        extract_binr(rb, mi, DIM * m, v[0]);
 
         for (i = 0; (i < n); i++)
         {

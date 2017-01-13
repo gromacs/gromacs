@@ -122,7 +122,7 @@ class TimeUnitManager
 
     private:
         //! Currently set time unit for this manager.
-        TimeUnit                timeUnit_;
+        TimeUnit timeUnit_;
 };
 
 /*! \brief
@@ -188,8 +188,8 @@ class TimeUnitBehavior : public IOptionsBehavior
         virtual void optionsFinished() {}
 
     private:
-        TimeUnit         timeUnit_;
-        TimeUnit        *timeUnitStore_;
+        TimeUnit  timeUnit_;
+        TimeUnit *timeUnitStore_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TimeUnitBehavior);
 };

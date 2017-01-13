@@ -42,7 +42,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
+typedef struct
+{
     real re, im;
 } t_complex;
 
@@ -52,8 +53,8 @@ static t_complex rcmul(real r, t_complex c)
 {
     t_complex d;
 
-    d.re = r*c.re;
-    d.im = r*c.im;
+    d.re = r * c.re;
+    d.im = r * c.im;
 
     return d;
 }
@@ -73,8 +74,8 @@ static t_complex cadd(t_complex a, t_complex b)
 {
     t_complex c;
 
-    c.re = a.re+b.re;
-    c.im = a.im+b.im;
+    c.re = a.re + b.re;
+    c.im = a.im + b.im;
 
     return c;
 }
@@ -83,8 +84,8 @@ static t_complex csub(t_complex a, t_complex b)
 {
     t_complex c;
 
-    c.re = a.re-b.re;
-    c.im = a.im-b.im;
+    c.re = a.re - b.re;
+    c.im = a.im - b.im;
 
     return c;
 }
@@ -93,8 +94,8 @@ static t_complex cmul(t_complex a, t_complex b)
 {
     t_complex c;
 
-    c.re = a.re*b.re - a.im*b.im;
-    c.im = a.re*b.im + a.im*b.re;
+    c.re = a.re * b.re - a.im * b.im;
+    c.im = a.re * b.im + a.im * b.re;
 
     return c;
 }
@@ -112,7 +113,7 @@ static t_complex conjugate(t_complex c)
 static real cabs2(t_complex c)
 {
     real abs2;
-    abs2 = (c.re*c.re)+(c.im*c.im);
+    abs2 = (c.re * c.re) + (c.im * c.im);
 
     return abs2;
 }
@@ -126,6 +127,6 @@ static t_complex cdiv(t_complex teller, t_complex noemer)
     anoemer = cmul(conjugate(noemer), noemer);
     res     = cmul(teller, conjugate(noemer));
 
-    return rcmul(1.0/anoemer.re, res);
+    return rcmul(1.0 / anoemer.re, res);
 }
 #endif

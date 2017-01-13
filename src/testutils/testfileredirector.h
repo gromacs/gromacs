@@ -81,8 +81,8 @@ class TestFileInputRedirector : public IFileInputRedirector
         void addExistingFile(const char *filename);
 
         // From IFileInputRedirector
-        virtual bool fileExists(const char            *filename,
-                                File::NotFoundHandler  onNotFound) const;
+        virtual bool fileExists(const char *          filename,
+                                File::NotFoundHandler onNotFound) const;
 
     private:
         std::set<std::string> existingFiles_;

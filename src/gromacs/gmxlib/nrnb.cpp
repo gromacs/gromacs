@@ -48,7 +48,8 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     const char *name;
     int         flop;
 } t_nrnb_data;
@@ -206,15 +207,15 @@ static void pr_two(FILE *out, int c, int i)
 
 static void pr_difftime(FILE *out, double dt)
 {
-    int        ndays, nhours, nmins, nsecs;
-    gmx_bool   bPrint, bPrinted;
+    int      ndays, nhours, nmins, nsecs;
+    gmx_bool bPrint, bPrinted;
 
-    ndays    = static_cast<int>(dt/(24*3600));
-    dt       = dt-24*3600*ndays;
-    nhours   = static_cast<int>(dt/3600);
-    dt       = dt-3600*nhours;
-    nmins    = static_cast<int>(dt/60);
-    dt       = dt-nmins*60;
+    ndays    = static_cast<int>(dt / (24 * 3600));
+    dt       = dt - 24 * 3600 * ndays;
+    nhours   = static_cast<int>(dt / 3600);
+    dt       = dt - 3600 * nhours;
+    nmins    = static_cast<int>(dt / 60);
+    dt       = dt - nmins * 60;
     nsecs    = static_cast<int>(dt);
     bPrint   = (ndays > 0);
     bPrinted = bPrint;
@@ -285,7 +286,7 @@ void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2)
 
     for (i = 0; (i < eNRNB); i++)
     {
-        dest->n[i] = s1->n[i]+s2->n[i];
+        dest->n[i] = s1->n[i] + s2->n[i];
     }
 }
 
@@ -325,38 +326,38 @@ static gmx_bool nrnb_is_nbnxn_kernel_addition(int enr)
 
 void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
 {
-    int           i, j;
-    double        mni, frac, tfrac, tflop;
-    const char   *myline = "-----------------------------------------------------------------------------";
+    int         i, j;
+    double      mni, frac, tfrac, tflop;
+    const char *myline = "-----------------------------------------------------------------------------";
 
     *nbfs = 0.0;
     for (i = 0; (i < eNR_NBKERNEL_ALLVSALLGB); i++)
     {
         if (std::strstr(nbdata[i].name, "W3-W3") != nullptr)
         {
-            *nbfs += 9e-6*nrnb->n[i];
+            *nbfs += 9e-6 * nrnb->n[i];
         }
         else if (std::strstr(nbdata[i].name, "W3") != nullptr)
         {
-            *nbfs += 3e-6*nrnb->n[i];
+            *nbfs += 3e-6 * nrnb->n[i];
         }
         else if (std::strstr(nbdata[i].name, "W4-W4") != nullptr)
         {
-            *nbfs += 10e-6*nrnb->n[i];
+            *nbfs += 10e-6 * nrnb->n[i];
         }
         else if (std::strstr(nbdata[i].name, "W4") != nullptr)
         {
-            *nbfs += 4e-6*nrnb->n[i];
+            *nbfs += 4e-6 * nrnb->n[i];
         }
         else
         {
-            *nbfs += 1e-6*nrnb->n[i];
+            *nbfs += 1e-6 * nrnb->n[i];
         }
     }
     tflop = 0;
     for (i = 0; (i < eNRNB); i++)
     {
-        tflop += 1e-6*nrnb->n[i]*nbdata[i].flop;
+        tflop += 1e-6 * nrnb->n[i] * nbdata[i].flop;
     }
 
     if (tflop == 0)
@@ -384,7 +385,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     tfrac  = 0.0;
     for (i = 0; (i < eNRNB); i++)
     {
-        mni     = 1e-6*nrnb->n[i];
+        mni = 1e-6 * nrnb->n[i];
         /* Skip empty entries and nbnxn additional flops,
          * which have been added to the kernel entry.
          */
@@ -392,7 +393,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
         {
             int flop;
 
-            flop    = nbdata[i].flop;
+            flop = nbdata[i].flop;
             if (nrnb_is_nbnxn_vdw_kernel(i))
             {
                 /* Possibly add the cost of an LJ switch/Ewald function */
@@ -409,13 +410,13 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
                     }
                 }
             }
-            *mflop += mni*flop;
-            frac    = 100.0*mni*flop/tflop;
+            *mflop += mni * flop;
+            frac    = 100.0 * mni * flop / tflop;
             tfrac  += frac;
             if (out != nullptr)
             {
                 fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
-                        nbdata[i].name, mni, mni*flop, frac);
+                        nbdata[i].name, mni, mni * flop, frac);
             }
         }
     }
@@ -449,24 +450,24 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
     {
         fprintf(out, "%12s %12s %12s %10s\n", "", "Core t (s)", "Wall t (s)", "(%)");
         fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:",
-                time_per_thread, time_per_node, 100.0*time_per_thread/time_per_node);
+                time_per_thread, time_per_node, 100.0 * time_per_thread / time_per_node);
         /* only print day-hour-sec format if time_per_node is more than 30 min */
-        if (time_per_node > 30*60)
+        if (time_per_node > 30 * 60)
         {
             fprintf(out, "%12s %12s", "", "");
             pr_difftime(out, time_per_node);
         }
         if (delta_t > 0)
         {
-            mflop         = mflop/time_per_node;
-            wallclocktime = nsteps*delta_t;
+            mflop         = mflop / time_per_node;
+            wallclocktime = nsteps * delta_t;
 
             if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
                 fprintf(out, "%12s %12s %12s\n",
                         "", "(ns/day)", "(hour/ns)");
                 fprintf(out, "%12s %12.3f %12.3f\n", "Performance:",
-                        wallclocktime*24*3.6/time_per_node, 1000*time_per_node/(3600*wallclocktime));
+                        wallclocktime * 24 * 3.6 / time_per_node, 1000 * time_per_node / (3600 * wallclocktime));
             }
             else
             {
@@ -474,8 +475,8 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
                         "", "(Mnbf/s)", (mflop > 1000) ? "(GFlops)" : "(MFlops)",
                         "(ns/day)", "(hour/ns)");
                 fprintf(out, "%12s %12.3f %12.3f %12.3f %12.3f\n", "Performance:",
-                        nbfs/time_per_node, (mflop > 1000) ? (mflop/1000) : mflop,
-                        wallclocktime*24*3.6/time_per_node, 1000*time_per_node/(3600*wallclocktime));
+                        nbfs / time_per_node, (mflop > 1000) ? (mflop / 1000) : mflop,
+                        wallclocktime * 24 * 3.6 / time_per_node, 1000 * time_per_node / (3600 * wallclocktime));
             }
         }
         else
@@ -485,7 +486,7 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
                 fprintf(out, "%12s %14s\n",
                         "", "(steps/hour)");
                 fprintf(out, "%12s %14.1f\n", "Performance:",
-                        nsteps*3600.0/time_per_node);
+                        nsteps * 3600.0 / time_per_node);
             }
             else
             {
@@ -493,8 +494,8 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
                         "", "(Mnbf/s)", (mflop > 1000) ? "(GFlops)" : "(MFlops)",
                         "(steps/hour)");
                 fprintf(out, "%12s %12.3f %12.3f %14.1f\n", "Performance:",
-                        nbfs/time_per_node, (mflop > 1000) ? (mflop/1000) : mflop,
-                        nsteps*3600.0/time_per_node);
+                        nbfs / time_per_node, (mflop > 1000) ? (mflop / 1000) : mflop,
+                        nsteps * 3600.0 / time_per_node);
             }
         }
     }
@@ -510,14 +511,14 @@ const char *nrnb_str(int enr)
     return nbdata[enr].name;
 }
 
-static const int    force_index[] = {
+static const int force_index[] = {
     eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER,
     eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
     eNR_FBPOSRES, eNR_NS,
 };
 #define NFORCE_INDEX asize(force_index)
 
-static const int    constr_index[] = {
+static const int constr_index[] = {
     eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
     eNR_CONSTR_VIR, eNR_CONSTR_V
 };
@@ -536,14 +537,14 @@ static double pr_av(FILE *log, t_commrec *cr,
         fprintf(log, "\n %-26s", title);
         for (i = 0; (i < cr->nnodes); i++)
         {
-            dperc = (100.0*ftot[i])/fav;
+            dperc = (100.0 * ftot[i]) / fav;
             unb   = std::max(unb, dperc);
             perc  = static_cast<int>(dperc);
             fprintf(log, "%3d ", perc);
         }
         if (unb > 0)
         {
-            perc = static_cast<int>(10000.0/unb);
+            perc = static_cast<int>(10000.0 / unb);
             fprintf(log, "%6d%%\n\n", perc);
         }
         else
@@ -572,21 +573,21 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
         /* Cost due to forces */
         for (j = 0; (j < eNR_NBKERNEL_ALLVSALLGB); j++)
         {
-            ftot[i] += nrnb[i].n[j]*cost_nrnb(j);
+            ftot[i] += nrnb[i].n[j] * cost_nrnb(j);
         }
         for (j = 0; (j < NFORCE_INDEX); j++)
         {
-            ftot[i] += nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
+            ftot[i] += nrnb[i].n[force_index[j]] * cost_nrnb(force_index[j]);
         }
         /* Due to shake */
         for (j = 0; (j < NCONSTR_INDEX); j++)
         {
-            stot[i] += nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
+            stot[i] += nrnb[i].n[constr_index[j]] * cost_nrnb(constr_index[j]);
         }
     }
     for (j = 0; (j < eNRNB); j++)
     {
-        av->n[j] = av->n[j]/static_cast<double>(cr->nnodes - cr->npmenodes);
+        av->n[j] = av->n[j] / static_cast<double>(cr->nnodes - cr->npmenodes);
     }
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
@@ -612,14 +613,14 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
             fprintf(log, " %-26s", nrnb_str(j));
             for (i = 0; (i < cr->nnodes); i++)
             {
-                dperc = (100.0*nrnb[i].n[j])/av->n[j];
+                dperc = (100.0 * nrnb[i].n[j]) / av->n[j];
                 unb   = std::max(unb, dperc);
                 perc  = static_cast<int>(dperc);
                 fprintf(log, "%3d ", perc);
             }
             if (unb > 0)
             {
-                perc = static_cast<int>(10000.0/unb);
+                perc = static_cast<int>(10000.0 / unb);
                 fprintf(log, "%6d%%\n", perc);
             }
             else
@@ -637,10 +638,10 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
     uf = pr_av(log, cr, fav, ftot, "Total Force");
     us = pr_av(log, cr, sav, stot, "Total Constr.");
 
-    unb = (uf*fav+us*sav)/(fav+sav);
+    unb = (uf * fav + us * sav) / (fav + sav);
     if (unb > 0)
     {
-        unb = 10000.0/unb;
+        unb = 10000.0 / unb;
         fprintf(log, "\nTotal Scaling: %.0f%% of max performance\n\n", unb);
     }
 }

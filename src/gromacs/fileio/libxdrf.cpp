@@ -69,10 +69,10 @@ const char *xdr_datatype_names[] =
  | with some routines to assist in this task (those are marked
  | static and cannot be called from user programs)
  */
-#define MAXABS INT_MAX-2
+#define MAXABS INT_MAX - 2
 
 #ifndef SQR
-#define SQR(x) ((x)*(x))
+#define SQR(x) ((x) * (x))
 #endif
 static const int magicints[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -114,7 +114,7 @@ static void sendbits(int buf[], int num_of_bits, int num)
     lastbyte = static_cast<unsigned int>(buf[2]);
     while (num_of_bits >= 8)
     {
-        lastbyte     = (lastbyte << 8) | ((num >> (num_of_bits -8)) /* & 0xff*/);
+        lastbyte     = (lastbyte << 8) | ((num >> (num_of_bits - 8)) /* & 0xff*/);
         cbuf[cnt++]  = lastbyte >> lastbits;
         num_of_bits -= 8;
     }
@@ -233,8 +233,7 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
     {
         bytes[num_of_bytes++] = tmp & 0xff;
         tmp                 >>= 8;
-    }
-    while (tmp != 0);
+    } while (tmp != 0);
 
     for (i = 1; i < num_of_ints; i++)
     {
@@ -269,11 +268,11 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
     }
     else
     {
-        for (i = 0; i < num_of_bytes-1; i++)
+        for (i = 0; i < num_of_bytes - 1; i++)
         {
             sendbits(buf, 8, bytes[i]);
         }
-        sendbits(buf, num_of_bits- (num_of_bytes -1) * 8, bytes[i]);
+        sendbits(buf, num_of_bits - (num_of_bytes - 1) * 8, bytes[i]);
     }
 }
 
@@ -293,7 +292,7 @@ static int receivebits(int buf[], int num_of_bits)
     int             cnt, num, lastbits;
     unsigned int    lastbyte;
     unsigned char * cbuf;
-    int             mask = (1 << num_of_bits) -1;
+    int             mask = (1 << num_of_bits) - 1;
 
     cbuf     = reinterpret_cast<unsigned char *>(buf) + 3 * sizeof(*buf);
     cnt      = buf[0];
@@ -315,7 +314,7 @@ static int receivebits(int buf[], int num_of_bits)
             lastbyte  = (lastbyte << 8) | cbuf[cnt++];
         }
         lastbits -= num_of_bits;
-        num      |= (lastbyte >> lastbits) & ((1 << num_of_bits) -1);
+        num      |= (lastbyte >> lastbits) & ((1 << num_of_bits) - 1);
     }
     num   &= mask;
     buf[0] = cnt;
@@ -352,10 +351,10 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
     {
         bytes[num_of_bytes++] = receivebits(buf, num_of_bits);
     }
-    for (i = num_of_ints-1; i > 0; i--)
+    for (i = num_of_ints - 1; i > 0; i--)
     {
         num = 0;
-        for (j = num_of_bytes-1; j >= 0; j--)
+        for (j = num_of_bytes - 1; j >= 0; j--)
         {
             num      = (num << 8) | bytes[j];
             p        = num / sizes[i];
@@ -396,15 +395,15 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
 
 int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 {
-    int     *ip  = nullptr;
-    int     *buf = nullptr;
+    int *    ip  = nullptr;
+    int *    buf = nullptr;
     gmx_bool bRead;
 
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
-    unsigned     prealloc_size = 3*16;
-    int          prealloc_ip[3*16], prealloc_buf[3*20];
-    int          we_should_free = 0;
+    unsigned prealloc_size = 3 * 16;
+    int      prealloc_ip[3 * 16], prealloc_buf[3 * 20];
+    int      we_should_free = 0;
 
     int          minint[3], maxint[3], mindiff, *lip, diff;
     int          lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
@@ -412,7 +411,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
     unsigned     sizeint[3], sizesmall[3], bitsizeint[3], size3, *luip;
     int          flag, k;
     int          smallnum, smaller, larger, i, is_small, is_smaller, run, prevrun;
-    float       *lfp, lf;
+    float *      lfp, lf;
     int          tmp, *thiscoord,  prevcoord[3];
     unsigned int tmpcoord[30];
 
@@ -558,7 +557,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             *lip++ = lint3;
             lfp++;
-            diff = std::abs(oldlint1-lint1)+std::abs(oldlint2-lint2)+std::abs(oldlint3-lint3);
+            diff = std::abs(oldlint1 - lint1) + std::abs(oldlint2 - lint2) + std::abs(oldlint3 - lint3);
             if (diff < mindiff && lfp > fp + 3)
             {
                 mindiff = diff;
@@ -567,12 +566,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             oldlint2 = lint2;
             oldlint3 = lint3;
         }
-        if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
-             (xdr_int(xdrs, &(minint[1])) == 0) ||
-             (xdr_int(xdrs, &(minint[2])) == 0) ||
-             (xdr_int(xdrs, &(maxint[0])) == 0) ||
-             (xdr_int(xdrs, &(maxint[1])) == 0) ||
-             (xdr_int(xdrs, &(maxint[2])) == 0))
+        if ( (xdr_int(xdrs, &(minint[0])) == 0)
+             || (xdr_int(xdrs, &(minint[1])) == 0)
+             || (xdr_int(xdrs, &(minint[2])) == 0)
+             || (xdr_int(xdrs, &(maxint[0])) == 0)
+             || (xdr_int(xdrs, &(maxint[1])) == 0)
+             || (xdr_int(xdrs, &(maxint[2])) == 0))
         {
             if (we_should_free)
             {
@@ -582,18 +581,18 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        if ((float)maxint[0] - (float)minint[0] >= MAXABS ||
-            (float)maxint[1] - (float)minint[1] >= MAXABS ||
-            (float)maxint[2] - (float)minint[2] >= MAXABS)
+        if ((float)maxint[0] - (float)minint[0] >= MAXABS
+            || (float)maxint[1] - (float)minint[1] >= MAXABS
+            || (float)maxint[2] - (float)minint[2] >= MAXABS)
         {
             /* turning value in unsigned by subtracting minint
              * would cause overflow
              */
             errval = 0;
         }
-        sizeint[0] = maxint[0] - minint[0]+1;
-        sizeint[1] = maxint[1] - minint[1]+1;
-        sizeint[2] = maxint[2] - minint[2]+1;
+        sizeint[0] = maxint[0] - minint[0] + 1;
+        sizeint[1] = maxint[1] - minint[1] + 1;
+        sizeint[2] = maxint[2] - minint[2] + 1;
 
         /* check if one of the sizes is to big to be multiplied */
         if ((sizeint[0] | sizeint[1] | sizeint[2] ) > 0xffffff)
@@ -625,7 +624,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 
         maxidx       = std::min(LASTIDX, smallidx + 8);
         minidx       = maxidx - 8; /* often this equal smallidx */
-        smaller      = magicints[std::max(FIRSTIDX, smallidx-1)] / 2;
+        smaller      = magicints[std::max(FIRSTIDX, smallidx - 1)] / 2;
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
         larger       = magicints[maxidx] / 2;
@@ -634,10 +633,10 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             is_small  = 0;
             thiscoord = reinterpret_cast<int *>(luip) + i * 3;
-            if (smallidx < maxidx && i >= 1 &&
-                std::abs(thiscoord[0] - prevcoord[0]) < larger &&
-                std::abs(thiscoord[1] - prevcoord[1]) < larger &&
-                std::abs(thiscoord[2] - prevcoord[2]) < larger)
+            if (smallidx < maxidx && i >= 1
+                && std::abs(thiscoord[0] - prevcoord[0]) < larger
+                && std::abs(thiscoord[1] - prevcoord[1]) < larger
+                && std::abs(thiscoord[2] - prevcoord[2]) < larger)
             {
                 is_smaller = 1;
             }
@@ -651,9 +650,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             if (i + 1 < *size)
             {
-                if (std::abs(thiscoord[0] - thiscoord[3]) < smallnum &&
-                    std::abs(thiscoord[1] - thiscoord[4]) < smallnum &&
-                    std::abs(thiscoord[2] - thiscoord[5]) < smallnum)
+                if (std::abs(thiscoord[0] - thiscoord[3]) < smallnum
+                    && std::abs(thiscoord[1] - thiscoord[4]) < smallnum
+                    && std::abs(thiscoord[2] - thiscoord[5]) < smallnum)
                 {
                     /* interchange first with second atom for better
                      * compression of water molecules
@@ -692,12 +691,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 is_smaller = 0;
             }
-            while (is_small && run < 8*3)
+            while (is_small && run < 8 * 3)
             {
                 if (is_smaller == -1 && (
-                        SQR(thiscoord[0] - prevcoord[0]) +
-                        SQR(thiscoord[1] - prevcoord[1]) +
-                        SQR(thiscoord[2] - prevcoord[2]) >= smaller * smaller))
+                        SQR(thiscoord[0] - prevcoord[0])
+                        + SQR(thiscoord[1] - prevcoord[1])
+                        + SQR(thiscoord[2] - prevcoord[2]) >= smaller * smaller))
                 {
                     is_smaller = 0;
                 }
@@ -713,10 +712,10 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 i++;
                 thiscoord = thiscoord + 3;
                 is_small  = 0;
-                if (i < *size &&
-                    abs(thiscoord[0] - prevcoord[0]) < smallnum &&
-                    abs(thiscoord[1] - prevcoord[1]) < smallnum &&
-                    abs(thiscoord[2] - prevcoord[2]) < smallnum)
+                if (i < *size
+                    && abs(thiscoord[0] - prevcoord[0]) < smallnum
+                    && abs(thiscoord[1] - prevcoord[1]) < smallnum
+                    && abs(thiscoord[2] - prevcoord[2]) < smallnum)
                 {
                     is_small = 1;
                 }
@@ -725,7 +724,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 prevrun = run;
                 sendbits(buf, 1, 1); /* flag the change in run-length */
-                sendbits(buf, 5, run+is_smaller+1);
+                sendbits(buf, 5, run + is_smaller + 1);
             }
             else
             {
@@ -741,7 +740,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 if (is_smaller < 0)
                 {
                     smallnum = smaller;
-                    smaller  = magicints[smallidx-1] / 2;
+                    smaller  = magicints[smallidx - 1] / 2;
                 }
                 else
                 {
@@ -823,12 +822,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 
         buf[0] = buf[1] = buf[2] = 0;
 
-        if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
-             (xdr_int(xdrs, &(minint[1])) == 0) ||
-             (xdr_int(xdrs, &(minint[2])) == 0) ||
-             (xdr_int(xdrs, &(maxint[0])) == 0) ||
-             (xdr_int(xdrs, &(maxint[1])) == 0) ||
-             (xdr_int(xdrs, &(maxint[2])) == 0))
+        if ( (xdr_int(xdrs, &(minint[0])) == 0)
+             || (xdr_int(xdrs, &(minint[1])) == 0)
+             || (xdr_int(xdrs, &(minint[2])) == 0)
+             || (xdr_int(xdrs, &(maxint[0])) == 0)
+             || (xdr_int(xdrs, &(maxint[1])) == 0)
+             || (xdr_int(xdrs, &(maxint[2])) == 0))
         {
             if (we_should_free)
             {
@@ -838,9 +837,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        sizeint[0] = maxint[0] - minint[0]+1;
-        sizeint[1] = maxint[1] - minint[1]+1;
-        sizeint[2] = maxint[2] - minint[2]+1;
+        sizeint[0] = maxint[0] - minint[0] + 1;
+        sizeint[1] = maxint[1] - minint[1] + 1;
+        sizeint[2] = maxint[2] - minint[2] + 1;
 
         /* check if one of the sizes is to big to be multiplied */
         if ((sizeint[0] | sizeint[1] | sizeint[2] ) > 0xffffff)
@@ -865,7 +864,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        smaller      = magicints[std::max(FIRSTIDX, smallidx-1)] / 2;
+        smaller      = magicints[std::max(FIRSTIDX, smallidx - 1)] / 2;
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 
@@ -983,7 +982,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 smallnum = smaller;
                 if (smallidx > FIRSTIDX)
                 {
-                    smaller = magicints[smallidx - 1] /2;
+                    smaller = magicints[smallidx - 1] / 2;
                 }
                 else
                 {
@@ -1050,14 +1049,14 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
     {
         if (!xdr_int(xdrs, &(i_inp[i])))
         {
-            gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET);
+            gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET);
             return -1;
         }
     }
     /* quick return */
     if (i_inp[0] != XTC_MAGIC)
     {
-        if (gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET))
+        if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
         {
             return -1;
         }
@@ -1068,7 +1067,7 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
     {
         if (!xdr_float(xdrs, &(f_inp[i])))
         {
-            gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET);
+            gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET);
             return -1;
         }
     }
@@ -1077,11 +1076,11 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
     /* This check makes use of the fact that the box matrix has 3 zeroes on the upper
        right triangle and that the first element must be nonzero unless the entire matrix is zero
      */
-    if (i_inp[1] == natoms &&
-        ((f_inp[1] != 0 && f_inp[6] == 0) ||
-         (f_inp[1] == 0 && f_inp[5] == 0 && f_inp[9] == 0)))
+    if (i_inp[1] == natoms
+        && ((f_inp[1] != 0 && f_inp[6] == 0)
+            || (f_inp[1] == 0 && f_inp[5] == 0 && f_inp[9] == 0)))
     {
-        if (gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET))
+        if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
         {
             return -1;
         }
@@ -1089,15 +1088,14 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
         *timestep = i_inp[2];
         return 1;
     }
-    if (gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET))
+    if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
     {
         return -1;
     }
     return 0;
 }
 
-static int
-xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
+static int xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 {
     gmx_off_t off;
     int       step;
@@ -1173,8 +1171,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
 }
 
 
-static float
-xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+static float xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int       step;
@@ -1211,7 +1208,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         else if (ret == 0)
         {
             /*Go back.*/
-            if (gmx_fseek(fp, -2*XDR_INT_SIZE, SEEK_CUR))
+            if (gmx_fseek(fp, -2 * XDR_INT_SIZE, SEEK_CUR))
             {
                 return -1;
             }
@@ -1220,8 +1217,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 }
 
 /* Currently not used, just for completeness */
-static int
-xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+static int xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int       ret;
@@ -1260,7 +1256,7 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         else if (ret == 0)
         {
             /*Go back.*/
-            if (gmx_fseek(fp, -2*XDR_INT_SIZE, SEEK_CUR))
+            if (gmx_fseek(fp, -2 * XDR_INT_SIZE, SEEK_CUR))
             {
                 return -1;
             }
@@ -1301,8 +1297,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 
 
 static
-float
-xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     float     res;
     float     tinit;
@@ -1337,16 +1332,15 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     return res;
 }
 
-int
-xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 {
     gmx_off_t low = 0;
     gmx_off_t high, pos;
 
 
     /* round to 4 bytes */
-    int        fr;
-    gmx_off_t  offset;
+    int       fr;
+    gmx_off_t offset;
     if (gmx_fseek(fp, 0, SEEK_END))
     {
         return -1;
@@ -1360,7 +1354,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
     /* round to 4 bytes  */
     high  /= XDR_INT_SIZE;
     high  *= XDR_INT_SIZE;
-    offset = ((high/2)/XDR_INT_SIZE)*XDR_INT_SIZE;
+    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp, offset, SEEK_SET))
     {
@@ -1374,7 +1368,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         {
             return -1;
         }
-        if (fr != frame && llabs(low-high) > header_size)
+        if (fr != frame && llabs(low - high) > header_size)
         {
             if (fr < frame)
             {
@@ -1385,7 +1379,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
                 high = offset;
             }
             /* round to 4 bytes */
-            offset = (((high+low)/2)/4)*4;
+            offset = (((high + low) / 2) / 4) * 4;
 
             if (gmx_fseek(fp, offset, SEEK_SET))
             {
@@ -1434,7 +1428,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
 
     if (bSeekForwardOnly)
     {
-        low = gmx_ftell(fp)-header_size;
+        low = gmx_ftell(fp) - header_size;
     }
     if (gmx_fseek(fp, 0, SEEK_END))
     {
@@ -1448,7 +1442,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
     /* round to int  */
     high  /= XDR_INT_SIZE;
     high  *= XDR_INT_SIZE;
-    offset = (((high-low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+    offset = (((high - low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp, offset, SEEK_SET))
     {
@@ -1507,9 +1501,9 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
            the current time and the target time is bigger than dt and above all the distance between high
            and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
            if we reached the solution */
-        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) ||
-             ((t - time) >= dt && dt_sign >= 0) || ((time - t) >= -dt && dt_sign < 0)) &&
-            (llabs(low - high) > header_size))
+        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1))
+             || ((t - time) >= dt && dt_sign >= 0) || ((time - t) >= -dt && dt_sign < 0))
+            && (llabs(low - high) > header_size))
         {
             if (dt >= 0 && dt_sign != -1)
             {
@@ -1585,11 +1579,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
     return 0;
 }
 
-float
-xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
-    float      time;
-    gmx_off_t  off;
+    float     time;
+    gmx_off_t off;
     *bOK = 1;
     off  = gmx_ftell(fp);
     if (off < 0)
@@ -1598,7 +1591,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         return -1;
     }
 
-    if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END) != 0)
+    if (gmx_fseek(fp, -3 * XDR_INT_SIZE, SEEK_END) != 0)
     {
         *bOK = 0;
         return -1;
@@ -1619,11 +1612,10 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 }
 
 
-int
-xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
-    int        frame;
-    gmx_off_t  off;
+    int       frame;
+    gmx_off_t off;
     *bOK = 1;
 
     if ((off = gmx_ftell(fp)) < 0)
@@ -1633,7 +1625,7 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
 
 
-    if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END))
+    if (gmx_fseek(fp, -3 * XDR_INT_SIZE, SEEK_END))
     {
         *bOK = 0;
         return -1;

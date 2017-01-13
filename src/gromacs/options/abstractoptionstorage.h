@@ -311,19 +311,19 @@ class AbstractOptionStorage
         virtual void processAll() = 0;
 
     private:
-        std::string             name_;
-        std::string             descr_;
+        std::string name_;
+        std::string descr_;
         //! Flags for the option.
-        OptionFlags             flags_;
-        bool                   *storeIsSet_;
+        OptionFlags flags_;
+        bool *      storeIsSet_;
         //! Minimum number of values required (in one set).
-        int                     minValueCount_;
+        int minValueCount_;
         //! Maximum allowed number of values (in one set), or -1 if no limit.
-        int                     maxValueCount_;
+        int maxValueCount_;
         //! Whether we are currently assigning values to a set.
-        bool                    bInSet_;
+        bool bInSet_;
         //! Whether there were errors in set values.
-        bool                    bSetValuesHadErrors_;
+        bool bSetValuesHadErrors_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };

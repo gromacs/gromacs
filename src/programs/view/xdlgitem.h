@@ -42,61 +42,72 @@
 #include "x11.h"
 #include "xutil.h"
 
-typedef enum {
+typedef enum
+{
     edlgBN, edlgRB, edlgGB, edlgCB, edlgPM, edlgST, edlgET, edlgNR
 } edlgitem;
 #define XCARET  2
 
-enum {
+enum
+{
     ITEMOK, RBPRESSED, BNPRESSED, CBPRESSED, ETCHANGED, HELPPRESSED, ENTERPRESSED
 };
 
 typedef int t_id;
 
-typedef struct {
+typedef struct
+{
     bool bDefault;  /* This is the default button */
 } t_button;
 
-typedef struct {
+typedef struct
+{
     bool bSelect;   /* Is this rb selected ? */
 } t_radiobutton;
 
-typedef struct {
+typedef struct
+{
     bool bChecked;  /* Is this cb checked ? */
 } t_checkbox;
 
-typedef struct {
+typedef struct
+{
     Pixmap pm;      /* The pixmap bits */
 } t_pixmap;
 
-typedef struct {
+typedef struct
+{
     int    nlines;
     char **lines;
 } t_statictext;
 
-typedef struct {
-    int  buflen, strbegin; /* Length of the screen buf and begin of string  */
-    int  pos;              /* Current length of the string and pos of caret */
+typedef struct
+{
+    int buflen, strbegin;  /* Length of the screen buf and begin of string  */
+    int pos;               /* Current length of the string and pos of caret */
     /* Pos is relative to strbegin, and is the pos   */
     /* in the window.                                */
-    bool     bChanged;
-    char    *buf;
+    bool  bChanged;
+    char *buf;
 } t_edittext;
 
-typedef struct {
+typedef struct
+{
     int   nitems;
     t_id *item;
 } t_groupbox;
 
 
-typedef struct t_dlgitem {
-    t_windata         win;
-    t_id              ID, GroupID;
-    bool              bUseMon;
-    char             *set, *get, *help;
-    edlgitem          type;
+typedef struct t_dlgitem
+{
+    t_windata win;
+    t_id      ID, GroupID;
+    bool      bUseMon;
+    char *    set, *get, *help;
+    edlgitem  type;
     int       (*WndProc)(t_x11 *x11, struct t_dlgitem *dlgitem, XEvent *event);
-    union {
+    union
+    {
         t_button      button;
         t_radiobutton radiobutton;
         t_groupbox    groupbox;

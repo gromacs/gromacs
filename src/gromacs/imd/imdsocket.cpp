@@ -210,7 +210,7 @@ extern int imd_sock_listen(IMDSocket *sock)
 
 extern IMDSocket* imdsock_accept(IMDSocket *sock)
 {
-    int       ret;
+    int ret;
 
 #ifdef GMX_IMD
     socklen_t length;
@@ -225,8 +225,8 @@ extern IMDSocket* imdsock_accept(IMDSocket *sock)
         IMDSocket *newsock;
 
         snew(newsock, 1);
-        newsock->address    = sock->address;
-        newsock->sockfd     = ret;
+        newsock->address = sock->address;
+        newsock->sockfd  = ret;
 
         return newsock;
     }
@@ -242,9 +242,9 @@ extern IMDSocket* imdsock_accept(IMDSocket *sock)
 
 extern int imdsock_getport(IMDSocket *sock, int *port)
 {
-    int                ret;
+    int ret;
 #ifdef GMX_IMD
-    socklen_t          len;
+    socklen_t len;
 
 
     len = sizeof(struct sockaddr_in);
@@ -354,11 +354,11 @@ extern int imdsock_destroy(IMDSocket *sock)
 
 extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
 {
-    int             ret = -1;
+    int ret = -1;
 
 
 #ifdef GMX_IMD
-    fd_set          readfds;
+    fd_set readfds;
     /* Create new time structure with sec and usec. */
     struct timeval *tval;
 
@@ -378,8 +378,7 @@ extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
         /* check the set for read readiness. */
         ret = select(sock->sockfd + 1, &readfds, nullptr, nullptr, tval);
         /* redo on system interrupt */
-    }
-    while (ret < 0 && errno == EINTR);
+    } while (ret < 0 && errno == EINTR);
 
     sfree(tval);
 #endif

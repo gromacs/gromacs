@@ -46,40 +46,35 @@
 namespace gmx
 {
 
-static inline float gmx_simdcall
-reduce(SimdFloat a)
+static inline float gmx_simdcall reduce(SimdFloat a)
 {
     a.simdInternal_ = _mm_add_ps(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
     a.simdInternal_ = _mm_add_ss(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(0, 3, 2, 1)));
     return *reinterpret_cast<float *>(&a);
 }
 
-static inline SimdFloat gmx_simdcall
-fma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)

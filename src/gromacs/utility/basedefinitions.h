@@ -258,7 +258,7 @@ typedef uint64_t gmx_uint64_t;
 // We rely on C++11. This will for instance work for MSVC2015 and later.
 // If you get an error here, find out what attribute to use to get your compiler to align
 // data properly and add it as a case.
-#define GMX_ALIGNED(type, alignment) alignas(alignment*sizeof(type)) type
+#define GMX_ALIGNED(type, alignment) alignas(alignment * sizeof(type)) type
 
 /*! \brief
  * Macro to explicitly ignore an unused value.

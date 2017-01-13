@@ -53,7 +53,7 @@ typedef struct gmx_hw_info_t
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
 
-    int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
+    int nthreads_hw_avail;                         /* Number of hardware threads available; this number
                                                       is based on the number of CPUs reported as available
                                                       by the OS at the time of detection. */
 
@@ -61,38 +61,40 @@ typedef struct gmx_hw_info_t
     const gmx::HardwareTopology *hardwareTopology; /* Information about hardware topology */
 
     /* Data reduced through MPI over all physical nodes */
-    int                 nphysicalnode;       /* Number of physical nodes */
-    int                 ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
-    int                 ncore_min;           /* Min #cores over all nodes */
-    int                 ncore_max;           /* Max #cores over all nodes */
-    int                 nhwthread_tot;       /* Sum of #hwthreads over all nodes */
-    int                 nhwthread_min;       /* Min #hwthreads over all nodes */
-    int                 nhwthread_max;       /* Max #hwthreads over all nodes */
-    int                 ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
-    int                 ngpu_compatible_min; /* Min #GPUs over all nodes */
-    int                 ngpu_compatible_max; /* Max #GPUs over all nodes */
+    int nphysicalnode;                       /* Number of physical nodes */
+    int ncore_tot;                           /* Sum of #cores over all nodes, can be 0 */
+    int ncore_min;                           /* Min #cores over all nodes */
+    int ncore_max;                           /* Max #cores over all nodes */
+    int nhwthread_tot;                       /* Sum of #hwthreads over all nodes */
+    int nhwthread_min;                       /* Min #hwthreads over all nodes */
+    int nhwthread_max;                       /* Max #hwthreads over all nodes */
+    int ngpu_compatible_tot;                 /* Sum of #GPUs over all nodes */
+    int ngpu_compatible_min;                 /* Min #GPUs over all nodes */
+    int ngpu_compatible_max;                 /* Max #GPUs over all nodes */
 
-    int                 simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
-    int                 simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
+    int simd_suggest_min;                    /* Highest SIMD instruction set supported by all ranks */
+    int simd_suggest_max;                    /* Highest SIMD instruction set supported by at least one rank */
 
-    gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
+    gmx_bool bIdenticalGPUs;                 /* TRUE if all ranks have the same type(s) and order of GPUs */
 } gmx_hw_info_t;
 
 
 /* The options for the thread affinity setting, default: auto */
-enum {
+enum
+{
     threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
 };
 
 /* Threading and GPU options, can be set automatically or by the user */
-typedef struct gmx_hw_opt_t {
-    int           nthreads_tot;        /* Total number of threads requested (TMPI) */
-    int           nthreads_tmpi;       /* Number of TMPI threads requested         */
-    int           nthreads_omp;        /* Number of OpenMP threads requested       */
-    int           nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    int           thread_affinity;     /* Thread affinity switch, see enum above   */
-    int           core_pinning_stride; /* Logical core pinning stride              */
-    int           core_pinning_offset; /* Logical core pinning offset              */
+typedef struct gmx_hw_opt_t
+{
+    int nthreads_tot;                  /* Total number of threads requested (TMPI) */
+    int nthreads_tmpi;                 /* Number of TMPI threads requested         */
+    int nthreads_omp;                  /* Number of OpenMP threads requested       */
+    int nthreads_omp_pme;              /* As nthreads_omp, but for PME only nodes  */
+    int thread_affinity;               /* Thread affinity switch, see enum above   */
+    int core_pinning_stride;           /* Logical core pinning stride              */
+    int core_pinning_offset;           /* Logical core pinning offset              */
 
     gmx_gpu_opt_t gpu_opt;             /* The GPU options                          */
 } gmx_hw_opt_t;

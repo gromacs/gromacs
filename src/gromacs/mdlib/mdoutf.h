@@ -56,13 +56,13 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
+gmx_mdoutf_t init_mdoutf(FILE *                  fplog,
                          int                     nfile,
                          const t_filenm          fnm[],
                          int                     mdrun_flags,
-                         const t_commrec        *cr,
-                         const t_inputrec       *ir,
-                         gmx_mtop_t             *mtop,
+                         const t_commrec *       cr,
+                         const t_inputrec *      ir,
+                         gmx_mtop_t *            mtop,
                          const gmx_output_env_t *oenv,
                          gmx_wallcycle_t         wcycle);
 
@@ -101,11 +101,11 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       energyhistory_t *energyHistory,
                                       PaddedRVecVector *f_local);
 
-#define MDOF_X            (1<<0)
-#define MDOF_V            (1<<1)
-#define MDOF_F            (1<<2)
-#define MDOF_X_COMPRESSED (1<<3)
-#define MDOF_CPT          (1<<4)
-#define MDOF_IMD          (1<<5)
+#define MDOF_X            (1 << 0)
+#define MDOF_V            (1 << 1)
+#define MDOF_F            (1 << 2)
+#define MDOF_X_COMPRESSED (1 << 3)
+#define MDOF_CPT          (1 << 4)
+#define MDOF_IMD          (1 << 5)
 
 #endif

@@ -95,13 +95,13 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
 
 int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 {
-    gmx_domdec_specat_comm_t   *spac;
-    ind_req_t                  *ireq;
-    gmx_hash_t                 *ga2la_specat;
-    int  ftype, nral, i, j, a;
-    t_ilist                    *lilf;
-    t_iatom                    *iatoms;
-    int  at_end;
+    gmx_domdec_specat_comm_t *spac;
+    ind_req_t *               ireq;
+    gmx_hash_t *              ga2la_specat;
+    int                       ftype, nral, i, j, a;
+    t_ilist *                 lilf;
+    t_iatom *                 iatoms;
+    int                       at_end;
 
     spac         = dd->vsite_comm;
     ireq         = &spac->ireq[0];
@@ -115,11 +115,11 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
         {
             nral = NRAL(ftype);
             lilf = &lil[ftype];
-            for (i = 0; i < lilf->nr; i += 1+nral)
+            for (i = 0; i < lilf->nr; i += 1 + nral)
             {
                 iatoms = lilf->iatoms + i;
                 /* Check if we have the other atoms */
-                for (j = 1; j < 1+nral; j++)
+                for (j = 1; j < 1 + nral; j++)
                 {
                     if (iatoms[j] < 0)
                     {
@@ -131,9 +131,9 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                         if (gmx_hash_get_minone(dd->ga2la_vsite, a) == -1)
                         {
                             /* Add this non-home atom to the list */
-                            if (ireq->n+1 > ireq->nalloc)
+                            if (ireq->n + 1 > ireq->nalloc)
                             {
-                                ireq->nalloc = over_alloc_large(ireq->n+1);
+                                ireq->nalloc = over_alloc_large(ireq->n + 1);
                                 srenew(ireq->ind, ireq->nalloc);
                             }
                             ireq->ind[ireq->n++] = a;
@@ -158,14 +158,14 @@ int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
         {
             nral = NRAL(ftype);
             lilf = &lil[ftype];
-            for (i = 0; i < lilf->nr; i += 1+nral)
+            for (i = 0; i < lilf->nr; i += 1 + nral)
             {
                 iatoms = lilf->iatoms + i;
-                for (j = 1; j < 1+nral; j++)
+                for (j = 1; j < 1 + nral; j++)
                 {
                     if (iatoms[j] < 0)
                     {
-                        iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
+                        iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j] - 1);
                     }
                 }
             }
@@ -185,8 +185,8 @@ void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite)
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    dd->ga2la_vsite = gmx_hash_init(std::min(n_intercg_vsite/20,
-                                             n_intercg_vsite/(2*dd->nnodes)));
+    dd->ga2la_vsite = gmx_hash_init(std::min(n_intercg_vsite / 20,
+                                             n_intercg_vsite / (2 * dd->nnodes)));
 
     dd->vsite_comm = specat_comm_init(1);
 }

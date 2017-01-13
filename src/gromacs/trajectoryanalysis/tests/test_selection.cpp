@@ -59,10 +59,10 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual void initOptions(IOptionsContainer          *options,
+        virtual void initOptions(IOptionsContainer *         options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+                                  const TopologyInformation &       top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -73,8 +73,8 @@ class SelectionTester : public TrajectoryAnalysisModule
     private:
         void printSelections();
 
-        SelectionList            selections_;
-        int                      nmaxind_;
+        SelectionList selections_;
+        int           nmaxind_;
 };
 
 SelectionTester::SelectionTester()
@@ -86,8 +86,7 @@ SelectionTester::~SelectionTester()
 {
 }
 
-void
-SelectionTester::printSelections()
+void SelectionTester::printSelections()
 {
     fprintf(stderr, "\nSelections:\n");
     for (size_t g = 0; g < selections_.size(); ++g)
@@ -97,9 +96,8 @@ SelectionTester::printSelections()
     fprintf(stderr, "\n");
 }
 
-void
-SelectionTester::initOptions(IOptionsContainer          *options,
-                             TrajectoryAnalysisSettings *settings)
+void SelectionTester::initOptions(IOptionsContainer *         options,
+                                  TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "This is a test program for selections."
@@ -114,16 +112,14 @@ SelectionTester::initOptions(IOptionsContainer          *options,
                            .description("Maximum number of indices to print in lists (-1 = print all)"));
 }
 
-void
-SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
-                              const TopologyInformation        & /*top*/)
+void SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
+                                   const TopologyInformation        & /*top*/)
 {
     printSelections();
 }
 
-void
-SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/,
-                              TrajectoryAnalysisModuleData * /*pdata*/)
+void SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/,
+                                   TrajectoryAnalysisModuleData * /*pdata*/)
 {
     fprintf(stderr, "\n");
     for (size_t g = 0; g < selections_.size(); ++g)
@@ -140,7 +136,7 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /
         ConstArrayRef<int> atoms = sel.atomIndices();
         for (int i = 0; i < n; ++i)
         {
-            fprintf(stderr, " %d", atoms[i]+1);
+            fprintf(stderr, " %d", atoms[i] + 1);
         }
         if (n < sel.atomCount())
         {
@@ -169,14 +165,12 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /
     fprintf(stderr, "\n");
 }
 
-void
-SelectionTester::finishAnalysis(int /*nframes*/)
+void SelectionTester::finishAnalysis(int /*nframes*/)
 {
     printSelections();
 }
 
-void
-SelectionTester::writeOutput()
+void SelectionTester::writeOutput()
 {
 }
 
@@ -185,8 +179,7 @@ SelectionTester::writeOutput()
 /*! \internal \brief
  * The main function for the selection testing tool.
  */
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     return gmx::TrajectoryAnalysisCommandLineRunner::runAsMain<gmx::SelectionTester>(argc, argv);
 }

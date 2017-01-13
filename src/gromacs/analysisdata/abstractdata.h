@@ -428,7 +428,7 @@ class AbstractAnalysisData
         virtual bool requestStorageInternal(int nframes) = 0;
 
         //! Returns the module manager to use for calling notification methods.
-        AnalysisDataModuleManager       &moduleManager();
+        AnalysisDataModuleManager &moduleManager();
         //! Returns the module manager to use for calling notification methods.
         const AnalysisDataModuleManager &moduleManager() const;
         //! \endcond

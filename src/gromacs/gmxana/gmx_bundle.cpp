@@ -58,7 +58,8 @@
 
 #define MAX_ENDS 3
 
-typedef struct {
+typedef struct
+{
     int   n;
     int   nend;
     rvec *end[MAX_ENDS];
@@ -78,13 +79,13 @@ static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
         for (i = 0; i < bun->n; i++)
         {
             copy_rvec(bun->end[end][i], tmp);
-            bun->end[end][i][c0] = ax[c1]*tmp[c0] - ax[c0]*tmp[c1];
-            bun->end[end][i][c1] = ax[c0]*tmp[c0] + ax[c1]*tmp[c1];
+            bun->end[end][i][c0] = ax[c1] * tmp[c0] - ax[c0] * tmp[c1];
+            bun->end[end][i][c1] = ax[c0] * tmp[c0] + ax[c1] * tmp[c1];
         }
     }
     copy_rvec(axis, tmp);
-    axis[c0] = ax[c1]*tmp[c0] - ax[c0]*tmp[c1];
-    axis[c1] = ax[c0]*tmp[c0] + ax[c1]*tmp[c1];
+    axis[c0] = ax[c1] * tmp[c0] - ax[c0] * tmp[c1];
+    axis[c1] = ax[c0] * tmp[c0] + ax[c1] * tmp[c1];
 }
 
 static void calc_axes(rvec x[], t_atom atom[], int gnx[], int *index[],
@@ -106,23 +107,23 @@ static void calc_axes(rvec x[], t_atom atom[], int gnx[], int *index[],
             clear_rvec(bun->end[end][i]);
             mtot[i] = 0;
         }
-        div = gnx[end]/bun->n;
+        div = gnx[end] / bun->n;
         for (i = 0; i < gnx[end]; i++)
         {
             m = atom[index[end][i]].m;
             for (d = 0; d < DIM; d++)
             {
-                bun->end[end][i/div][d] += m*x[index[end][i]][d];
+                bun->end[end][i / div][d] += m * x[index[end][i]][d];
             }
-            mtot[i/div] += m;
+            mtot[i / div] += m;
         }
         clear_rvec(axis[end]);
         for (i = 0; i < bun->n; i++)
         {
-            svmul(1.0/mtot[i], bun->end[end][i], bun->end[end][i]);
+            svmul(1.0 / mtot[i], bun->end[end][i], bun->end[end][i]);
             rvec_inc(axis[end], bun->end[end][i]);
         }
-        svmul(1.0/bun->n, axis[end], axis[end]);
+        svmul(1.0 / bun->n, axis[end], axis[end]);
     }
     sfree(mtot);
 
@@ -167,16 +168,16 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
 
     for (i = 0; i < bun->n; i++)
     {
-        copy_rvec(bun->end[0][i], xout[3*i]);
+        copy_rvec(bun->end[0][i], xout[3 * i]);
         if (bun->nend >= 3)
         {
-            copy_rvec(bun->end[2][i], xout[3*i+1]);
+            copy_rvec(bun->end[2][i], xout[3 * i + 1]);
         }
         else
         {
-            copy_rvec(bun->mid[i], xout[3*i+1]);
+            copy_rvec(bun->mid[i], xout[3 * i + 1]);
         }
-        copy_rvec(bun->end[1][i], xout[3*i+2]);
+        copy_rvec(bun->end[1][i], xout[3 * i + 2]);
     }
     frout        = *fr;
     frout.bV     = FALSE;
@@ -191,7 +192,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
 
 int gmx_bundle(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *    desc[] = {
         "[THISMODULE] analyzes bundles of axes. The axes can be for instance",
         "helix axes. The program reads two index groups and divides both",
         "of them in [TT]-na[tt] parts. The centers of mass of these parts",
@@ -214,30 +215,30 @@ int gmx_bundle(int argc, char *argv[])
         "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
         "display the reference axis."
     };
-    static int        n    = 0;
-    static gmx_bool   bZ   = FALSE;
-    t_pargs           pa[] = {
+    static int      n    = 0;
+    static gmx_bool bZ   = FALSE;
+    t_pargs         pa[] = {
         { "-na", FALSE, etINT, {&n},
           "Number of axes" },
         { "-z", FALSE, etBOOL, {&bZ},
           "Use the [IT]z[it]-axis as reference instead of the average axis" }
     };
-    FILE             *flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
-    FILE             *fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
-    t_trxstatus      *status;
-    t_trxstatus      *fpdb;
-    t_topology        top;
-    int               ePBC;
-    rvec             *xtop;
-    matrix            box;
-    t_trxframe        fr;
-    t_atoms           outatoms;
-    real              t, comp;
-    char             *grpname[MAX_ENDS];
+    FILE *          flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
+    FILE *          fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
+    t_trxstatus *   status;
+    t_trxstatus *   fpdb;
+    t_topology      top;
+    int             ePBC;
+    rvec *          xtop;
+    matrix          box;
+    t_trxframe      fr;
+    t_atoms         outatoms;
+    real            t, comp;
+    char *          grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
-    char             *anm = (char *)"CA", *rnm = (char *)"GLY";
+    char *            anm = (char *)"CA", *rnm = (char *)"GLY";
     int               i, gnx[MAX_ENDS];
-    int              *index[MAX_ENDS];
+    int *             index[MAX_ENDS];
     t_bundle          bun;
     gmx_bool          bKink;
     rvec              va, vb, vc, vr, vl;
@@ -306,14 +307,14 @@ int gmx_bundle(int argc, char *argv[])
     snew(bun.dir, n);
     snew(bun.len, n);
 
-    flen   = xvgropen(opt2fn("-ol", NFILE, fnm), "Axis lengths",
-                      output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-    fdist  = xvgropen(opt2fn("-od", NFILE, fnm), "Distance of axis centers",
-                      output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-    fz     = xvgropen(opt2fn("-oz", NFILE, fnm), "Z-shift of axis centers",
-                      output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-    ftilt  = xvgropen(opt2fn("-ot", NFILE, fnm), "Axis tilts",
-                      output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
+    flen = xvgropen(opt2fn("-ol", NFILE, fnm), "Axis lengths",
+                    output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
+    fdist = xvgropen(opt2fn("-od", NFILE, fnm), "Distance of axis centers",
+                     output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
+    fz = xvgropen(opt2fn("-oz", NFILE, fnm), "Z-shift of axis centers",
+                  output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
+    ftilt = xvgropen(opt2fn("-ot", NFILE, fnm), "Axis tilts",
+                     output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
     ftiltr = xvgropen(opt2fn("-otr", NFILE, fnm), "Radial axis tilts",
                       output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
     ftiltl = xvgropen(opt2fn("-otl", NFILE, fnm), "Lateral axis tilts",
@@ -321,8 +322,8 @@ int gmx_bundle(int argc, char *argv[])
 
     if (bKink)
     {
-        fkink  = xvgropen(opt2fn("-ok", NFILE, fnm), "Kink angles",
-                          output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
+        fkink = xvgropen(opt2fn("-ok", NFILE, fnm), "Kink angles",
+                         output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
         fkinkr = xvgropen(opt2fn("-okr", NFILE, fnm), "Radial kink angles",
                           output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
@@ -335,15 +336,15 @@ int gmx_bundle(int argc, char *argv[])
 
     if (opt2bSet("-oa", NFILE, fnm))
     {
-        init_t_atoms(&outatoms, 3*n, FALSE);
-        outatoms.nr = 3*n;
-        for (i = 0; i < 3*n; i++)
+        init_t_atoms(&outatoms, 3 * n, FALSE);
+        outatoms.nr = 3 * n;
+        for (i = 0; i < 3 * n; i++)
         {
-            outatoms.atomname[i]       = &anm;
-            outatoms.atom[i].resind    = i/3;
-            outatoms.resinfo[i/3].name = &rnm;
-            outatoms.resinfo[i/3].nr   = i/3 + 1;
-            outatoms.resinfo[i/3].ic   = ' ';
+            outatoms.atomname[i]         = &anm;
+            outatoms.atom[i].resind      = i / 3;
+            outatoms.resinfo[i / 3].name = &rnm;
+            outatoms.resinfo[i / 3].nr   = i / 3 + 1;
+            outatoms.resinfo[i / 3].ic   = ' ';
         }
         fpdb = open_trx(opt2fn("-oa", NFILE, fnm), "w");
     }
@@ -378,29 +379,29 @@ int gmx_bundle(int argc, char *argv[])
             fprintf(flen, " %6g", bun.len[i]);
             fprintf(fdist, " %6g", norm(bun.mid[i]));
             fprintf(fz, " %6g", bun.mid[i][ZZ]);
-            fprintf(ftilt, " %6g", RAD2DEG*acos(bun.dir[i][ZZ]));
-            comp = bun.mid[i][XX]*bun.dir[i][XX]+bun.mid[i][YY]*bun.dir[i][YY];
-            fprintf(ftiltr, " %6g", RAD2DEG*
-                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
-            comp = bun.mid[i][YY]*bun.dir[i][XX]-bun.mid[i][XX]*bun.dir[i][YY];
-            fprintf(ftiltl, " %6g", RAD2DEG*
-                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
+            fprintf(ftilt, " %6g", RAD2DEG * acos(bun.dir[i][ZZ]));
+            comp = bun.mid[i][XX] * bun.dir[i][XX] + bun.mid[i][YY] * bun.dir[i][YY];
+            fprintf(ftiltr, " %6g", RAD2DEG
+                    * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
+            comp = bun.mid[i][YY] * bun.dir[i][XX] - bun.mid[i][XX] * bun.dir[i][YY];
+            fprintf(ftiltl, " %6g", RAD2DEG
+                    * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
             if (bKink)
             {
                 rvec_sub(bun.end[0][i], bun.end[2][i], va);
                 rvec_sub(bun.end[2][i], bun.end[1][i], vb);
                 unitv(va, va);
                 unitv(vb, vb);
-                fprintf(fkink, " %6g", RAD2DEG*acos(iprod(va, vb)));
+                fprintf(fkink, " %6g", RAD2DEG * acos(iprod(va, vb)));
                 cprod(va, vb, vc);
                 copy_rvec(bun.mid[i], vr);
                 vr[ZZ] = 0;
                 unitv(vr, vr);
-                fprintf(fkinkr, " %6g", RAD2DEG*std::asin(iprod(vc, vr)));
+                fprintf(fkinkr, " %6g", RAD2DEG * std::asin(iprod(vc, vr)));
                 vl[XX] = vr[YY];
                 vl[YY] = -vr[XX];
                 vl[ZZ] = 0;
-                fprintf(fkinkl, " %6g", RAD2DEG*std::asin(iprod(vc, vl)));
+                fprintf(fkinkl, " %6g", RAD2DEG * std::asin(iprod(vc, vl)));
             }
         }
         fprintf(flen, "\n");
@@ -419,8 +420,7 @@ int gmx_bundle(int argc, char *argv[])
         {
             dump_axes(fpdb, &fr, &outatoms, &bun);
         }
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
     gmx_rmpbc_done(gpbc);
 
     close_trx(status);

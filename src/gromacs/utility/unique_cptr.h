@@ -58,22 +58,23 @@ inline void sfree_wrapper(T *p)
 }
 
 //! \internal \brief wrap function into functor to be used as deleter
-template<class T, void D(T *)>
-struct functor_wrapper {
+template <class T, void D(T *)>
+struct functor_wrapper
+{
     //! call wrapped function
     void operator()(T* t) { D(t); }
 };
 
 //! unique_ptr which takes function pointer (has to return void) as template argument
-template<typename T, void D(T *) = sfree_wrapper>
-using unique_cptr                = std::unique_ptr<T, functor_wrapper<T, D> >;
+template <typename T, void D(T *) = sfree_wrapper>
+using unique_cptr                 = std::unique_ptr<T, functor_wrapper<T, D> >;
 
 //! Simple guard which calls sfree. See unique_cptr for details.
 typedef unique_cptr<void> sfree_guard;
 
 
 //! Create unique_ptr with any deleter function or lambda
-template<typename T, typename D>
+template <typename T, typename D>
 std::unique_ptr<T, D> create_unique_with_deleter(T *t, D d) { return std::unique_ptr<T, D>(t, d); }
 
 }      // namespace gmx

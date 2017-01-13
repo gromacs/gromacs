@@ -76,7 +76,7 @@ class ReadTest : public ::testing::Test
         }
 
         int                                            numInputs_;
-        t_inpfile                                     *inputField_;
+        t_inpfile *                                    inputField_;
         gmx::unique_cptr<t_inpfile>                    inpGuard_;
         warninp_t                                      wi_;
         gmx::unique_cptr<struct warninp, free_warning> wiGuard_;

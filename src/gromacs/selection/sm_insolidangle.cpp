@@ -147,9 +147,9 @@ using std::max;
 typedef struct
 {
     /** Left edge of the partition. */
-    real                left;
+    real left;
     /** Bin index corresponding to this partition. */
-    int                 bin;
+    int bin;
 } t_partition_item;
 
 /*! \internal
@@ -165,9 +165,9 @@ typedef struct
 typedef struct
 {
     /** Number of partition items (\p p contains \p n+1 items). */
-    int                 n;
+    int n;
     /** Array of partition edges and corresponding bins. */
-    t_partition_item   *p;
+    t_partition_item *p;
 } t_partition;
 
 /*! \internal
@@ -183,9 +183,9 @@ typedef struct
 typedef struct
 {
     /** Number of points in the array \p x, -1 if whole bin covered. */
-    int   n;
+    int n;
     /** Number of elements allocated for \p x. */
-    int   n_alloc;
+    int n_alloc;
     /** Array of points that partially cover the bin. */
     rvec *x;
 } t_spheresurfacebin;
@@ -201,29 +201,29 @@ typedef struct
 typedef struct
 {
     /** Center of the solid angle. */
-    gmx_ana_pos_t       center;
+    gmx_ana_pos_t center;
     /** Positions that span the solid angle. */
-    gmx_ana_pos_t       span;
+    gmx_ana_pos_t span;
     /** Cutoff angle. */
-    real                angcut;
+    real angcut;
     /** Estimate of the covered fraction. */
-    real                cfrac;
+    real cfrac;
 
     /** Cutoff for the cosine (equals cos(angcut)). */
-    real                distccut;
+    real distccut;
     /** Bin size to be used as the target bin size when constructing the bins. */
-    real                targetbinsize;
+    real targetbinsize;
 
     /** Number of bins in the \p tbin array. */
-    int                 ntbins;
+    int ntbins;
     /** Size of one bin in the zenith angle direction. */
-    real                tbinsize;
+    real tbinsize;
     /** Array of zenith angle slices. */
-    t_partition        *tbin;
+    t_partition *tbin;
     /** Number of elements allocated for the \p bin array. */
-    int                 maxbins;
+    int maxbins;
     /** Number of elements used in the \p bin array. */
-    int                 nbins;
+    int nbins;
     /** Array of individual bins. */
     t_spheresurfacebin *bin;
 } t_methoddata_insolidangle;
@@ -368,32 +368,31 @@ gmx_ana_selmethod_t sm_insolidangle = {
      asize(help_insolidangle), help_insolidangle},
 };
 
-static void *
-init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
+static void *init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
     // cppcheck-suppress uninitdata
-    data->angcut        = 5.0;
+    data->angcut = 5.0;
     // cppcheck-suppress uninitdata
-    data->cfrac         = 0.0;
+    data->cfrac = 0.0;
 
     // cppcheck-suppress uninitdata
-    data->distccut      = 0.0;
+    data->distccut = 0.0;
     // cppcheck-suppress uninitdata
     data->targetbinsize = 0.0;
 
     // cppcheck-suppress uninitdata
-    data->ntbins        = 0;
+    data->ntbins = 0;
     // cppcheck-suppress uninitdata
-    data->tbinsize      = 0.0;
+    data->tbinsize = 0.0;
     // cppcheck-suppress uninitdata
-    data->tbin          = nullptr;
+    data->tbin = nullptr;
     // cppcheck-suppress uninitdata
-    data->maxbins       = 0;
+    data->maxbins = 0;
     // cppcheck-suppress uninitdata
-    data->nbins         = 0;
+    data->nbins = 0;
     // cppcheck-suppress uninitdata
-    data->bin           = nullptr;
+    data->bin = nullptr;
 
     param[0].val.u.p = &data->center;
     param[1].val.u.p = &data->span;
@@ -401,8 +400,7 @@ init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
     return data;
 }
 
-static void
-init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
+static void init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_insolidangle *surf = (t_methoddata_insolidangle *)data;
     int                        i, c;
@@ -417,16 +415,16 @@ init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam
     surf->distccut      = -std::cos(surf->angcut);
     surf->targetbinsize = surf->angcut / 2;
     surf->ntbins        = static_cast<int>(M_PI / surf->targetbinsize);
-    surf->tbinsize      = (180.0 / surf->ntbins)*DEG2RAD;
+    surf->tbinsize      = (180.0 / surf->ntbins) * DEG2RAD;
 
     snew(surf->tbin, static_cast<int>(M_PI / surf->tbinsize) + 1);
     surf->maxbins = 0;
     for (i = 0; i < surf->ntbins; ++i)
     {
-        c = static_cast<int>(std::max(std::sin(surf->tbinsize*i),
-                                      std::sin(surf->tbinsize*(i+1)))
+        c = static_cast<int>(std::max(std::sin(surf->tbinsize * i),
+                                      std::sin(surf->tbinsize * (i + 1)))
                              * M_2PI / surf->targetbinsize) + 1;
-        snew(surf->tbin[i].p, c+1);
+        snew(surf->tbin[i].p, c + 1);
         surf->maxbins += c;
     }
     surf->nbins = 0;
@@ -440,8 +438,7 @@ init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam
  * \c t_methoddata_insolidangle::span, as well as the memory for the internal
  * bin structure.
  */
-static void
-free_data_insolidangle(void *data)
+static void free_data_insolidangle(void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     int                        i;
@@ -459,8 +456,7 @@ free_data_insolidangle(void *data)
     delete d;
 }
 
-static void
-init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
+static void init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     rvec                       dx;
@@ -491,8 +487,7 @@ init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
  * \param[in] data Pointer to a \c t_methoddata_insolidangle data structure.
  * \returns   true if \p x is within the solid angle, false otherwise.
  */
-static bool
-accept_insolidangle(rvec x, const t_pbc *pbc, void *data)
+static bool accept_insolidangle(rvec x, const t_pbc *pbc, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     rvec                       dx;
@@ -517,9 +512,8 @@ accept_insolidangle(rvec x, const t_pbc *pbc, void *data)
  * \c t_methoddata_insolidangle::span and centered at
  * \c t_methoddata_insolidangle::center, and stores the result in \p out->u.g.
  */
-static void
-evaluate_insolidangle(const gmx::SelMethodEvalContext &context,
-                      gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_insolidangle(const gmx::SelMethodEvalContext &context,
+                                  gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     out->u.g->isize = 0;
     for (int b = 0; b < pos->count(); ++b)
@@ -536,16 +530,15 @@ evaluate_insolidangle(const gmx::SelMethodEvalContext &context,
  * \returns   true if the covered fraction can be estimated for \p sel with
  *   _gmx_selelem_estimate_coverfrac(), false otherwise.
  */
-bool
-_gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel)
+bool _gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel)
 {
     if (sel.type == SEL_BOOLEAN && sel.u.boolt == BOOL_OR)
     {
         return false;
     }
-    bool bFound    = false;
-    bool bDynFound = false;
-    gmx::SelectionTreeElementPointer child = sel.child;
+    bool                             bFound    = false;
+    bool                             bDynFound = false;
+    gmx::SelectionTreeElementPointer child     = sel.child;
     while (child)
     {
         if (child->type == SEL_EXPRESSION)
@@ -586,10 +579,9 @@ _gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel)
  * Should be called after gmx_ana_evaluate_selections() has been called for the
  * frame.
  */
-real
-_gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
+real _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
 {
-    real         cfrac;
+    real cfrac;
 
     if (sel.type == SEL_EXPRESSION && sel.u.expr.method->name == sm_insolidangle.name)
     {
@@ -635,8 +627,7 @@ _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel)
  * for efficiency, and the minus is there to make it behave like a normal
  * distance (larger values mean longer distances).
  */
-static real
-sph_distc(rvec x1, rvec x2)
+static real sph_distc(rvec x1, rvec x2)
 {
     return -iprod(x1, x2);
 }
@@ -650,8 +641,7 @@ sph_distc(rvec x1, rvec x2)
  * Otherwise, the return value \c i satisfies \c p->p[i].left<=value and
  * \c p->p[i+1].left>value
  */
-static int
-find_partition_bin(t_partition *p, real value)
+static int find_partition_bin(t_partition *p, real value)
 {
     int pmin, pmax, pbin;
 
@@ -680,8 +670,7 @@ find_partition_bin(t_partition *p, real value)
  *
  * The return value is an index to the \p surf->bin array.
  */
-static int
-find_surface_bin(t_methoddata_insolidangle *surf, rvec x)
+static int find_surface_bin(t_methoddata_insolidangle *surf, rvec x)
 {
     real theta, phi;
     int  tbin, pbin;
@@ -703,16 +692,15 @@ find_surface_bin(t_methoddata_insolidangle *surf, rvec x)
  * Clears the reference points from the bins and (re)initializes the edges
  * of the azimuthal bins.
  */
-static void
-clear_surface_points(t_methoddata_insolidangle *surf)
+static void clear_surface_points(t_methoddata_insolidangle *surf)
 {
     int i, j, c;
 
     surf->nbins = 0;
     for (i = 0; i < surf->ntbins; ++i)
     {
-        c = static_cast<int>(std::min(std::sin(surf->tbinsize*i),
-                                      std::sin(surf->tbinsize*(i+1)))
+        c = static_cast<int>(std::min(std::sin(surf->tbinsize * i),
+                                      std::sin(surf->tbinsize * (i + 1)))
                              * M_2PI / surf->targetbinsize) + 1;
         if (c <= 0)
         {
@@ -721,7 +709,7 @@ clear_surface_points(t_methoddata_insolidangle *surf)
         surf->tbin[i].n = c;
         for (j = 0; j < c; ++j)
         {
-            surf->tbin[i].p[j].left  = -M_PI + j*M_2PI/c - 0.0001;
+            surf->tbin[i].p[j].left  = -M_PI + j * M_2PI / c - 0.0001;
             surf->tbin[i].p[j].bin   = surf->nbins;
             surf->bin[surf->nbins].n = 0;
             surf->nbins++;
@@ -734,8 +722,7 @@ clear_surface_points(t_methoddata_insolidangle *surf)
 /*!
  * \param[in,out] surf Surface data structure.
  */
-static void
-free_surface_points(t_methoddata_insolidangle *surf)
+static void free_surface_points(t_methoddata_insolidangle *surf)
 {
     int i;
 
@@ -756,8 +743,7 @@ free_surface_points(t_methoddata_insolidangle *surf)
  * \param[in]     pbin Bin number in the azimuthal angle direction.
  * \param[in]     x    Point to store.
  */
-static void
-add_surface_point(t_methoddata_insolidangle *surf, int tbin, int pbin, rvec x)
+static void add_surface_point(t_methoddata_insolidangle *surf, int tbin, int pbin, rvec x)
 {
     int bin;
 
@@ -783,8 +769,7 @@ add_surface_point(t_methoddata_insolidangle *surf, int tbin, int pbin, rvec x)
  * \param[in]     tbin Bin number in the zenith angle direction.
  * \param[in]     pbin Bin number in the azimuthal angle direction.
  */
-static void
-mark_surface_covered(t_methoddata_insolidangle *surf, int tbin, int pbin)
+static void mark_surface_covered(t_methoddata_insolidangle *surf, int tbin, int pbin)
 {
     int bin;
 
@@ -801,10 +786,9 @@ mark_surface_covered(t_methoddata_insolidangle *surf, int tbin, int pbin)
  * \param[in]     pdeltamax Max. width of the cone inside \p tbin.
  * \param[in]     x         Point to store (should have unit length).
  */
-static void
-update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
-                   real phi, real pdelta1, real pdelta2, real pdeltamax,
-                   rvec x)
+static void update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
+                               real phi, real pdelta1, real pdelta2, real pdeltamax,
+                               rvec x)
 {
     real pdelta, phi1, phi2;
     int  pbin1, pbin2, pbiniter, pbin;
@@ -857,7 +841,7 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
         }
         /* Check if bin is completely covered and update */
         if (surf->tbin[tbin].p[pbin].left >= phi1
-            && surf->tbin[tbin].p[pbin+1].left <= phi2)
+            && surf->tbin[tbin].p[pbin + 1].left <= phi2)
         {
             mark_surface_covered(surf, tbin, pbin);
         }
@@ -875,8 +859,7 @@ update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
  * Finds all the bins covered by the cone centered at \p x and calls
  * update_surface_bin() to update them.
  */
-static void
-store_surface_point(t_methoddata_insolidangle *surf, rvec x)
+static void store_surface_point(t_methoddata_insolidangle *surf, rvec x)
 {
     real theta, phi;
     real pdeltamax, tmax;
@@ -917,7 +900,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
            && tbin < surf->ntbins)
     {
         /* Calculate the next boundaries */
-        theta2 = (tbin+1) * surf->tbinsize;
+        theta2 = (tbin + 1) * surf->tbinsize;
         if (theta2 > theta + surf->angcut)
         {
             /* The circle is completely outside the cone */
@@ -938,9 +921,9 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
              * much, but it would be nicer to adjust the theta bin boundaries
              * such that the case above catches this instead of falling through
              * here. */
-            pdelta2 = 2*asin(std::sqrt(
-                                     (gmx::square(sin(surf->angcut/2)) - gmx::square(sin((theta2-theta)/2))) /
-                                     (sin(theta) * sin(theta2))));
+            pdelta2 = 2 * asin(std::sqrt(
+                                       (gmx::square(sin(surf->angcut / 2)) - gmx::square(sin((theta2 - theta) / 2)))
+                                       / (sin(theta) * sin(theta2))));
         }
         /* Update the bin */
         if (tmax >= theta1 && tmax <= theta2)
@@ -958,8 +941,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
     }
 }
 
-static void
-optimize_surface_points(t_methoddata_insolidangle * /* surf */)
+static void optimize_surface_points(t_methoddata_insolidangle * /* surf */)
 {
     /* TODO: Implement */
 }
@@ -968,8 +950,7 @@ optimize_surface_points(t_methoddata_insolidangle * /* surf */)
  * \param[in] surf Surface data structure.
  * \returns   An estimate for the area covered by the reference points.
  */
-static real
-estimate_covered_fraction(t_methoddata_insolidangle *surf)
+static real estimate_covered_fraction(t_methoddata_insolidangle *surf)
 {
     int  t, p, n;
     real cfrac, tfrac, pfrac;
@@ -977,10 +958,10 @@ estimate_covered_fraction(t_methoddata_insolidangle *surf)
     cfrac = 0.0;
     for (t = 0; t < surf->ntbins; ++t)
     {
-        tfrac = cos(t * surf->tbinsize) - cos((t+1) * surf->tbinsize);
+        tfrac = cos(t * surf->tbinsize) - cos((t + 1) * surf->tbinsize);
         for (p = 0; p < surf->tbin[t].n; ++p)
         {
-            pfrac = surf->tbin[t].p[p+1].left - surf->tbin[t].p[p].left;
+            pfrac = surf->tbin[t].p[p + 1].left - surf->tbin[t].p[p].left;
             n     = surf->bin[surf->tbin[t].p[p].bin].n;
             if (n == -1) /* Bin completely covered */
             {
@@ -992,7 +973,7 @@ estimate_covered_fraction(t_methoddata_insolidangle *surf)
             }
         }
     }
-    return cfrac / (4*M_PI);
+    return cfrac / (4 * M_PI);
 }
 
 /*!
@@ -1000,10 +981,9 @@ estimate_covered_fraction(t_methoddata_insolidangle *surf)
  * \param[in] x     Unit vector to check.
  * \returns   true if \p x is within the solid angle, false otherwise.
  */
-static bool
-is_surface_covered(t_methoddata_insolidangle *surf, rvec x)
+static bool is_surface_covered(t_methoddata_insolidangle *surf, rvec x)
 {
-    int  bin, i;
+    int bin, i;
 
     bin = find_surface_bin(surf, x);
     /* Check for completely covered bin */

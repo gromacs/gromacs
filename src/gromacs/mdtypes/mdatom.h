@@ -47,87 +47,88 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct t_mdatoms {
+typedef struct t_mdatoms
+{
     //! Total mass in state A
-    real                   tmassA;
+    real tmassA;
     //! Total mass in state B
-    real                   tmassB;
+    real tmassB;
     //! Total mass
-    real                   tmass;
+    real tmass;
     //! Number of atoms in arrays
-    int                    nr;
+    int nr;
     //! Number of elements in arrays
-    int                    nalloc;
+    int nalloc;
     //! Number of energy groups
-    int                    nenergrp;
+    int nenergrp;
     //! Do we have multiple center of mass motion removal groups
-    gmx_bool               bVCMgrps;
+    gmx_bool bVCMgrps;
     //! Number of perturbed atoms
-    int                    nPerturbed;
+    int nPerturbed;
     //! Number of atoms for which the mass is perturbed
-    int                    nMassPerturbed;
+    int nMassPerturbed;
     //! Number of atoms for which the charge is perturbed
-    int                    nChargePerturbed;
+    int nChargePerturbed;
     //! Number of atoms for which the type is perturbed
-    int                    nTypePerturbed;
+    int nTypePerturbed;
     //! Do we have orientation restraints
-    gmx_bool               bOrires;
+    gmx_bool bOrires;
     //! Atomic mass in A state
-    real                  *massA;
+    real *massA;
     //! Atomic mass in B state
-    real                  *massB;
+    real *massB;
     //! Atomic mass in present state
-    real                  *massT;
+    real *massT;
     //! Inverse atomic mass per atom, 0 for vsites and shells
-    real                  *invmass;
+    real *invmass;
     //! Inverse atomic mass per atom and dimension, 0 for vsites, shells and frozen dimensions
-    rvec                  *invMassPerDim;
+    rvec *invMassPerDim;
     //! Atomic charge in A state
-    real                  *chargeA;
+    real *chargeA;
     //! Atomic charge in B state
-    real                  *chargeB;
+    real *chargeB;
     //! Dispersion constant C6 in A state
-    real                  *sqrt_c6A;
+    real *sqrt_c6A;
     //! Dispersion constant C6 in A state
-    real                  *sqrt_c6B;
+    real *sqrt_c6B;
     //! Van der Waals radius sigma in the A state
-    real                  *sigmaA;
+    real *sigmaA;
     //! Van der Waals radius sigma in the B state
-    real                  *sigmaB;
+    real *sigmaB;
     //! Van der Waals radius sigma^3 in the A state
-    real                  *sigma3A;
+    real *sigma3A;
     //! Van der Waals radius sigma^3 in the B state
-    real                  *sigma3B;
+    real *sigma3B;
     //! Is this atom perturbed
-    gmx_bool              *bPerturbed;
+    gmx_bool *bPerturbed;
     //! Type of atom in the A state
-    int                   *typeA;
+    int *typeA;
     //! Type of atom in the B state
-    int                   *typeB;
+    int *typeB;
     //! Particle type
-    unsigned short        *ptype;
+    unsigned short *ptype;
     //! Group index for temperature coupling
-    unsigned short        *cTC;
+    unsigned short *cTC;
     //! Group index for energy matrix
-    unsigned short        *cENER;
+    unsigned short *cENER;
     //! Group index for acceleration
-    unsigned short        *cACC;
+    unsigned short *cACC;
     //! Group index for freezing
-    unsigned short        *cFREEZE;
+    unsigned short *cFREEZE;
     //! Group index for center of mass motion removal
-    unsigned short        *cVCM;
+    unsigned short *cVCM;
     //! Group index for user 1
-    unsigned short        *cU1;
+    unsigned short *cU1;
     //! Group index for user 2
-    unsigned short        *cU2;
+    unsigned short *cU2;
     //! Group index for orientation restraints
-    unsigned short        *cORF;
+    unsigned short *cORF;
     //! QMMM atoms
-    gmx_bool              *bQM;
+    gmx_bool *bQM;
     //! Number of atoms on this processor. TODO is this still used?
-    int                    homenr;
+    int homenr;
     //! The lambda value used to create the contents of the struct
-    real                   lambda;
+    real lambda;
 } t_mdatoms;
 
 #endif

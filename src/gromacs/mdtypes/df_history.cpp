@@ -104,12 +104,12 @@ void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
     {
         for (j = 0; j < df_dest->nlambda; j++)
         {
-            df_dest->accum_p[i][j]        = df_source->accum_p[i][j];
-            df_dest->accum_m[i][j]        = df_source->accum_m[i][j];
-            df_dest->accum_p2[i][j]       = df_source->accum_p2[i][j];
-            df_dest->accum_m2[i][j]       = df_source->accum_m2[i][j];
-            df_dest->Tij[i][j]            = df_source->Tij[i][j];
-            df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
+            df_dest->accum_p[i][j]       = df_source->accum_p[i][j];
+            df_dest->accum_m[i][j]       = df_source->accum_m[i][j];
+            df_dest->accum_p2[i][j]      = df_source->accum_p2[i][j];
+            df_dest->accum_m2[i][j]      = df_source->accum_m2[i][j];
+            df_dest->Tij[i][j]           = df_source->Tij[i][j];
+            df_dest->Tij_empirical[i][j] = df_source->Tij_empirical[i][j];
         }
     }
 }

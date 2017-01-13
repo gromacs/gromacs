@@ -58,10 +58,9 @@ namespace test
  */
 
 // static
-MockHelpTopic &
-MockHelpTopic::addSubTopic(gmx::AbstractCompositeHelpTopic *parent,
-                           const char *name, const char *title,
-                           const char *text)
+MockHelpTopic &MockHelpTopic::addSubTopic(gmx::AbstractCompositeHelpTopic *parent,
+                                          const char *name, const char *title,
+                                          const char *text)
 {
     MockHelpTopic *topic = new MockHelpTopic(name, title, text);
     parent->addSubTopic(gmx::HelpTopicPointer(topic));
@@ -99,9 +98,8 @@ std::string MockHelpTopic::helpText() const
     return text_;
 }
 
-MockHelpTopic &
-MockHelpTopic::addSubTopic(const char *name, const char *title,
-                           const char *text)
+MockHelpTopic &MockHelpTopic::addSubTopic(const char *name, const char *title,
+                                          const char *text)
 {
     return addSubTopic(this, name, title, text);
 }

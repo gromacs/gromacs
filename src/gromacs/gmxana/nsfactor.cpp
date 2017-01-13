@@ -68,7 +68,7 @@ void check_mcover(real mcover)
     {
         gmx_fatal(FARGS, "mcover should be -1 or (0,1]");
     }
-    else if ((mcover < 0)&(mcover != -1))
+    else if ((mcover < 0) & (mcover != -1))
     {
         gmx_fatal(FARGS, "mcover should be -1 or (0,1]");
     }
@@ -95,14 +95,14 @@ void normalize_probability(int n, double *a)
 gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn)
 {
     /* read nsfactor.dat */
-    FILE    *fp;
-    char     line[STRLEN];
-    int      nralloc = 10;
-    int      n, p;
-    int      i, line_no;
-    char     atomnm[8];
-    double   slength;
-    gmx_neutron_atomic_structurefactors_t   *gnsf;
+    FILE *                                 fp;
+    char                                   line[STRLEN];
+    int                                    nralloc = 10;
+    int                                    n, p;
+    int                                    i, line_no;
+    char                                   atomnm[8];
+    double                                 slength;
+    gmx_neutron_atomic_structurefactors_t *gnsf;
 
     fp      = libopen(datfn);
     line_no = 0;
@@ -153,8 +153,8 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
 
 gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf)
 {
-    gmx_sans_t    *gsans = nullptr;
-    int            i, j;
+    gmx_sans_t *gsans = nullptr;
+    int         i, j;
     /* Try to assing scattering length from nsfactor.dat */
     snew(gsans, 1);
     snew(gsans->slength, top->atoms.nr);
@@ -190,10 +190,10 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
 }
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
-        gmx_sans_t  *gsans,
-        rvec        *x,
+        gmx_sans_t * gsans,
+        rvec *       x,
         matrix       box,
-        int         *index,
+        int *        index,
         int          isize,
         double       binwidth,
         gmx_bool     bMC,
@@ -201,18 +201,18 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         real         mcover,
         unsigned int seed)
 {
-    gmx_radial_distribution_histogram_t    *pr = nullptr;
-    rvec                                    dist;
-    double                                  rmax;
-    int                                     i, j;
+    gmx_radial_distribution_histogram_t *pr = nullptr;
+    rvec                                 dist;
+    double                               rmax;
+    int                                  i, j;
 #if GMX_OPENMP
-    double                                **tgr;
-    int                                     tid;
-    int                                     nthreads;
-    gmx::DefaultRandomEngine               *trng = nullptr;
+    double **                 tgr;
+    int                       tid;
+    int                       nthreads;
+    gmx::DefaultRandomEngine *trng = nullptr;
 #endif
-    gmx_int64_t                             mc  = 0, mc_max;
-    gmx::DefaultRandomEngine                rng(seed);
+    gmx_int64_t              mc = 0, mc_max;
+    gmx::DefaultRandomEngine rng(seed);
 
     /* allocate memory for pr */
     snew(pr, 1);
@@ -228,7 +228,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
 
     rmax = norm(dist);
 
-    pr->grn = static_cast<int>(std::floor(rmax/pr->binwidth)+1);
+    pr->grn = static_cast<int>(std::floor(rmax / pr->binwidth) + 1);
 
     snew(pr->gr, pr->grn);
 
@@ -237,11 +237,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         /* Special case for setting automaticaly number of mc iterations to 1% of total number of direct iterations */
         if (mcover == -1)
         {
-            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*0.01*isize*(isize-1)));
+            mc_max = static_cast<gmx_int64_t>(std::floor(0.5 * 0.01 * isize * (isize - 1)));
         }
         else
         {
-            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
+            mc_max = static_cast<gmx_int64_t>(std::floor(0.5 * mcover * isize * (isize - 1)));
         }
 #if GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();
@@ -254,7 +254,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         }
         #pragma omp parallel shared(tgr,trng,mc) private(tid,i,j)
         {
-            gmx::UniformIntDistribution<int> tdist(0, isize-1);
+            gmx::UniformIntDistribution<int> tdist(0, isize - 1);
             tid = gmx_omp_get_thread_num();
             /* now starting parallel threads */
             #pragma omp for
@@ -266,7 +266,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
                     j = tdist(trng[tid]); // [0,isize-1]
                     if (i != j)
                     {
-                        tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                        tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]])) / binwidth))] += gsans->slength[index[i]] * gsans->slength[index[j]];
                     }
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -288,14 +288,14 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         sfree(tgr);
         delete[] trng;
 #else
-        gmx::UniformIntDistribution<int> dist(0, isize-1);
+        gmx::UniformIntDistribution<int> dist(0, isize - 1);
         for (mc = 0; mc < mc_max; mc++)
         {
             i = dist(rng); // [0,isize-1]
             j = dist(rng); // [0,isize-1]
             if (i != j)
             {
-                pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]])) / binwidth))] += gsans->slength[index[i]] * gsans->slength[index[j]];
             }
         }
 #endif
@@ -321,7 +321,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
                 {
                     for (j = 0; j < i; j++)
                     {
-                        tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                        tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]])) / binwidth))] += gsans->slength[index[i]] * gsans->slength[index[j]];
                     }
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -346,7 +346,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         {
             for (j = 0; j < i; j++)
             {
-                pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]])) / binwidth))] += gsans->slength[index[i]] * gsans->slength[index[j]];
             }
         }
 #endif
@@ -361,7 +361,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     snew(pr->r, pr->grn);
     for (i = 0; i < pr->grn; i++)
     {
-        pr->r[i] = (pr->binwidth*i+pr->binwidth*0.5);
+        pr->r[i] = (pr->binwidth * i + pr->binwidth * 0.5);
     }
 
     return pr;
@@ -369,16 +369,16 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
 
 gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step)
 {
-    gmx_static_structurefactor_t    *sq = nullptr;
-    int         i, j;
+    gmx_static_structurefactor_t *sq = nullptr;
+    int                           i, j;
     /* init data */
     snew(sq, 1);
-    sq->qn = static_cast<int>(std::floor((end_q-start_q)/q_step));
+    sq->qn = static_cast<int>(std::floor((end_q - start_q) / q_step));
     snew(sq->q, sq->qn);
     snew(sq->s, sq->qn);
     for (i = 0; i < sq->qn; i++)
     {
-        sq->q[i] = start_q+i*q_step;
+        sq->q[i] = start_q + i * q_step;
     }
 
     if (start_q == 0.0)
@@ -388,7 +388,7 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
         {
             for (j = 0; j < pr->grn; j++)
             {
-                sq->s[i] += (pr->gr[j]/pr->r[j])*std::sin(sq->q[i]*pr->r[j]);
+                sq->s[i] += (pr->gr[j] / pr->r[j]) * std::sin(sq->q[i] * pr->r[j]);
             }
             sq->s[i] /= sq->q[i];
         }
@@ -399,7 +399,7 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
         {
             for (j = 0; j < pr->grn; j++)
             {
-                sq->s[i] += (pr->gr[j]/pr->r[j])*std::sin(sq->q[i]*pr->r[j]);
+                sq->s[i] += (pr->gr[j] / pr->r[j]) * std::sin(sq->q[i] * pr->r[j]);
             }
             sq->s[i] /= sq->q[i];
         }

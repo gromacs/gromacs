@@ -64,7 +64,7 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
     float  fprec;
     int    i, ret, isize;
 
-    isize = *size*DIM;
+    isize = *size * DIM;
     if (isize <= 0)
     {
         gmx_fatal(FARGS, "Don't know what to malloc for ffp, isize = %d", isize);
@@ -102,7 +102,7 @@ int xdr_int64(XDR *xdrs, gmx_int64_t *i)
     static const gmx_int64_t two_p32_m1 = 0xFFFFFFFF;
     gmx_int64_t              imaj64, imin64;
 
-    imaj64 = ((*i)>>32) & two_p32_m1;
+    imaj64 = ((*i) >> 32) & two_p32_m1;
     imin64 = (*i) & two_p32_m1;
     imaj   = static_cast<int>(imaj64);
     imin   = static_cast<int>(imin64);

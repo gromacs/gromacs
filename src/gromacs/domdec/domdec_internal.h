@@ -58,14 +58,14 @@ typedef struct
      * that requires communication, the last entry contains the total
      * number of atoms that needs to be communicated.
      */
-    int  nsend[DD_MAXIZONE+2];
-    int  nrecv[DD_MAXIZONE+2];
+    int nsend[DD_MAXIZONE + 2];
+    int nrecv[DD_MAXIZONE + 2];
     /* The charge groups to send */
     int *index;
     int  nalloc;
     /* The atom range for non-in-place communication */
-    int  cell2at0[DD_MAXIZONE];
-    int  cell2at1[DD_MAXIZONE];
+    int cell2at0[DD_MAXIZONE];
+    int cell2at1[DD_MAXIZONE];
 } gmx_domdec_ind_t;
 
 typedef struct
@@ -81,14 +81,14 @@ typedef struct
 typedef struct
 {
     gmx_bool *bCellMin;    /**< Temp. var.: is this cell size at the limit    */
-    real     *cell_f;      /**< State var.: cell boundaries, box relative     */
-    real     *old_cell_f;  /**< Temp. var.: old cell size                     */
-    real     *cell_f_max0; /**< State var.: max lower bound., incl. neighbors */
-    real     *cell_f_min1; /**< State var.: min upper bound., incl. neighbors */
-    real     *bound_min;   /**< Temp. var.: lower limit for cell boundary     */
-    real     *bound_max;   /**< Temp. var.: upper limit for cell boundary     */
+    real *    cell_f;      /**< State var.: cell boundaries, box relative     */
+    real *    old_cell_f;  /**< Temp. var.: old cell size                     */
+    real *    cell_f_max0; /**< State var.: max lower bound., incl. neighbors */
+    real *    cell_f_min1; /**< State var.: min upper bound., incl. neighbors */
+    real *    bound_min;   /**< Temp. var.: lower limit for cell boundary     */
+    real *    bound_max;   /**< Temp. var.: upper limit for cell boundary     */
     gmx_bool  bLimited;    /**< State var.: is DLB limited in this row        */
-    real     *buf_ncd;     /**< Temp. var.                                    */
+    real *    buf_ncd;     /**< Temp. var.                                    */
 } domdec_root_t;
 
 /*! \brief Struct for compute load commuication
@@ -111,9 +111,9 @@ typedef struct
 
 typedef struct
 {
-    int  nsc;     /**< Neighborsearch grid cell index */
-    int  ind_gl;  /**< Global atom/charge group index */
-    int  ind;     /**< Local atom/charge group index */
+    int nsc;      /**< Neighborsearch grid cell index */
+    int ind_gl;   /**< Global atom/charge group index */
+    int ind;      /**< Local atom/charge group index */
 } gmx_cgsort_t;
 
 typedef struct
@@ -123,7 +123,7 @@ typedef struct
     int           sort_nalloc;      /**< Number of elements in both arrays of indices */
     gmx_cgsort_t *sort_new;         /**< Array of moved atom/charge group indices */
     int           sort_new_nalloc;  /**< Number of elements in array of moved atom/charge group indices */
-    int          *ibuf;             /**< Integer buffer used for sorting */
+    int *         ibuf;             /**< Integer buffer used for sorting */
     int           ibuf_nalloc;      /**< Number of elements allocated in the buffer */
 } gmx_domdec_sort_t;
 
@@ -140,12 +140,14 @@ typedef struct
  * ddnatHOME and ddnatZONE should be first and second,
  * the others can be ordered as wanted.
  */
-enum {
+enum
+{
     ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR
 };
 
 /*! \brief Enum of dynamic load balancing states */
-enum {
+enum
+{
     edlbsOffForever,           /**< DLB is off and will never be turned on */
     edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
     edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
@@ -168,9 +170,9 @@ typedef struct
     int      dim;       /**< The dimension */
     gmx_bool dim_match; /**< Tells if DD and PME dims match */
     int      nslab;     /**< The number of PME ranks/domains in this dimension */
-    real    *slb_dim_f; /**< Cell sizes for determining the PME comm. with SLB */
-    int     *pp_min;    /**< The minimum pp node location, size nslab */
-    int     *pp_max;    /**< The maximum pp node location, size nslab */
+    real *   slb_dim_f; /**< Cell sizes for determining the PME comm. with SLB */
+    int *    pp_min;    /**< The minimum pp node location, size nslab */
+    int *    pp_max;    /**< The maximum pp node location, size nslab */
     int      maxshift;  /**< The maximum shift for coordinate redistribution in PME */
 } gmx_ddpme_t;
 
@@ -188,7 +190,7 @@ typedef struct
 typedef struct
 {
     gmx_domdec_ind_t ind;
-    int             *ibuf;
+    int *            ibuf;
     int              ibuf_nalloc;
     vec_rvec_t       vbuf;
     int              nsend;
@@ -216,13 +218,13 @@ struct gmx_domdec_comm_t
     gmx_bool    bCartesianPP_PME;  /**< Use Cartesian communication between PP and PME ranks */
     ivec        ntot;              /**< Cartesian grid for combinted PP+PME ranks */
     int         cartpmedim;        /**< The number of dimensions for the PME setup that are Cartesian */
-    int        *pmenodes;          /**< The PME ranks, size npmenodes */
-    int        *ddindex2simnodeid; /**< The Cartesian index to sim rank conversion, used with bCartesianPP_PME */
+    int *       pmenodes;          /**< The PME ranks, size npmenodes */
+    int *       ddindex2simnodeid; /**< The Cartesian index to sim rank conversion, used with bCartesianPP_PME */
     gmx_ddpme_t ddpme[2];          /**< The 1D or 2D PME domain decomposition setup */
 
     /* The DD particle-particle nodes only */
     gmx_bool bCartesianPP;        /**< Use a Cartesian communicator for PP */
-    int     *ddindex2ddnodeid;    /**< The Cartesian index to DD rank conversion, used with bCartesianPP */
+    int *    ddindex2ddnodeid;    /**< The Cartesian index to DD rank conversion, used with bCartesianPP */
 
     /* The DLB state, used for reloading old states, during e.g. EM */
     t_block cgs_gl;               /**< The global charge groups, this defined the DD state (except for the DLB state) */
@@ -239,14 +241,14 @@ struct gmx_domdec_comm_t
     /* Data for the optional bonded interaction atom communication range */
     gmx_bool  bBondComm;          /**< Only communicate atoms beyond the non-bonded cut-off when they are involved in bonded interactions with non-local atoms */
     t_blocka *cglink;             /**< Links between cg's through bonded interactions */
-    char     *bLocalCG;           /**< Local cg availability, TODO: remove when group scheme is removed */
+    char *    bLocalCG;           /**< Local cg availability, TODO: remove when group scheme is removed */
 
     /* The DLB state, possible values are defined above */
-    int      dlbState;
+    int dlbState;
     /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
     gmx_bool bCheckWhetherToTurnDlbOn;
     /* The first DD count since we are running without DLB */
-    int      ddPartioningCountFirstDlbOff;
+    int ddPartioningCountFirstDlbOff;
 
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
@@ -289,7 +291,7 @@ struct gmx_domdec_comm_t
     /** The coordinate/force communication setup and indices */
     gmx_domdec_comm_dim_t cd[DIM];
     /** The maximum number of cells to communicate with in one dimension */
-    int                   maxpulse;
+    int maxpulse;
 
     /** Which cg distribution is stored on the master node,
      *  stored as DD partitioning call count.
@@ -297,18 +299,18 @@ struct gmx_domdec_comm_t
     gmx_int64_t master_cg_ddp_count;
 
     /** The number of cg's received from the direct neighbors */
-    int  zone_ncg1[DD_MAXZONE];
+    int zone_ncg1[DD_MAXZONE];
 
     /** The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
-    int  nat[ddnatNR];
+    int nat[ddnatNR];
 
     /** Array for signalling if atoms have moved to another domain */
-    int  *moved;
-    int   moved_nalloc;                /**< Allocation size for \p moved */
+    int *moved;
+    int  moved_nalloc;                 /**< Allocation size for \p moved */
 
     /** Communication int buffer for general use */
-    int  *buf_int;
-    int   nalloc_int;                  /**< Allocation size for \p buf_int */
+    int *buf_int;
+    int  nalloc_int;                   /**< Allocation size for \p buf_int */
 
     /** Communication rvec buffer for general use */
     vec_rvec_t vbuf;
@@ -318,48 +320,48 @@ struct gmx_domdec_comm_t
     dd_comm_setup_work_t *dth;         /**< Thread-local work data */
 
     /* Communication buffers only used with multiple grid pulses */
-    int       *buf_int2;               /**< Another integer comm. buffer */
+    int *      buf_int2;               /**< Another integer comm. buffer */
     int        nalloc_int2;            /**< Allocation size of \p buf_int2 */
     vec_rvec_t vbuf2;                  /**< Another rvec comm. buffer */
 
     /* Communication buffers for local redistribution */
-    int  **cggl_flag;                  /**< Charge group flag comm. buffers */
-    int    cggl_flag_nalloc[DIM*2];    /**< Allocation sizes of \p *cggl_flag */
+    int ** cggl_flag;                  /**< Charge group flag comm. buffers */
+    int    cggl_flag_nalloc[DIM * 2];  /**< Allocation sizes of \p *cggl_flag */
     rvec **cgcm_state;                 /**< Charge group center comm. buffers */
-    int    cgcm_state_nalloc[DIM*2];   /**< Allocation sizes of \p *ccgm_state */
+    int    cgcm_state_nalloc[DIM * 2]; /**< Allocation sizes of \p *ccgm_state */
 
     /* Cell sizes for dynamic load balancing */
     domdec_root_t **root;              /**< Cell row root struct pointer, per dd DIM */
-    real           *cell_f_row;        /**< The cell sizes, in fractions, along a row */
+    real *          cell_f_row;        /**< The cell sizes, in fractions, along a row */
     real            cell_f0[DIM];      /**< The lower corner, in fractions, in triclinic space */
     real            cell_f1[DIM];      /**< The upper corner, in fractions, in triclinic space */
     real            cell_f_max0[DIM];  /**< The maximum lower corner among all our neighbors */
     real            cell_f_min1[DIM];  /**< The minimum upper corner among all our neighbors */
 
     /* Stuff for load communication */
-    gmx_bool        bRecordLoad;         /**< Should we record the load */
-    domdec_load_t  *load;                /**< The recorded load data */
-    int             nrank_gpu_shared;    /**< The number of MPI ranks sharing the GPU our rank is using */
+    gmx_bool       bRecordLoad;          /**< Should we record the load */
+    domdec_load_t *load;                 /**< The recorded load data */
+    int            nrank_gpu_shared;     /**< The number of MPI ranks sharing the GPU our rank is using */
 #if GMX_MPI
-    MPI_Comm       *mpi_comm_load;       /**< The MPI load communicator */
-    MPI_Comm        mpi_comm_gpu_shared; /**< The MPI load communicator for ranks sharing a GPU */
+    MPI_Comm *mpi_comm_load;             /**< The MPI load communicator */
+    MPI_Comm  mpi_comm_gpu_shared;       /**< The MPI load communicator for ranks sharing a GPU */
 #endif
 
     /** Maximum DLB scaling per load balancing step in percent */
     int dlb_scale_lim;
 
     /* Cycle counters */
-    float  cycl[ddCyclNr];             /**< Total cycles counted */
-    int    cycl_n[ddCyclNr];           /**< The number of cycle recordings */
-    float  cycl_max[ddCyclNr];         /**< The maximum cycle count */
+    float cycl[ddCyclNr];              /**< Total cycles counted */
+    int   cycl_n[ddCyclNr];            /**< The number of cycle recordings */
+    float cycl_max[ddCyclNr];          /**< The maximum cycle count */
     /** Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
     int    eFlop;
     double flop;                       /**< Total flops counted */
     int    flop_n;                     /**< The number of flop recordings */
     /** How many times did we have load measurements */
-    int    n_load_have;
+    int n_load_have;
     /** How many times have we collected the load measurements */
-    int    n_load_collect;
+    int n_load_collect;
 
     /* Cycle count history for DLB checks */
     float       cyclesPerStepBeforeDLB;     /**< The averaged cycles per step over the last nstlist step before turning on DLB */
@@ -368,23 +370,23 @@ struct gmx_domdec_comm_t
     gmx_int64_t dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
 
     /* Statistics */
-    double sum_nat[ddnatNR-ddnatZONE]; /**< The atoms per zone, summed over the steps */
-    int    ndecomp;                    /**< The number of partioning calls */
-    int    nload;                      /**< The number of load recordings */
-    double load_step;                  /**< Total MD step time */
-    double load_sum;                   /**< Total PP force time */
-    double load_max;                   /**< Max \p load_sum over the ranks */
-    ivec   load_lim;                   /**< Was load balancing limited, per DD dim */
-    double load_mdf;                   /**< Total time on PP done during PME overlap time */
-    double load_pme;                   /**< Total time on our PME-only rank */
+    double sum_nat[ddnatNR - ddnatZONE]; /**< The atoms per zone, summed over the steps */
+    int    ndecomp;                      /**< The number of partioning calls */
+    int    nload;                        /**< The number of load recordings */
+    double load_step;                    /**< Total MD step time */
+    double load_sum;                     /**< Total PP force time */
+    double load_max;                     /**< Max \p load_sum over the ranks */
+    ivec   load_lim;                     /**< Was load balancing limited, per DD dim */
+    double load_mdf;                     /**< Total time on PP done during PME overlap time */
+    double load_pme;                     /**< Total time on our PME-only rank */
 
     /** The last partition step */
     gmx_int64_t partition_step;
 
     /* Debugging */
-    int  nstDDDump;                    /**< Step interval for dumping the local+non-local atoms to pdb */
-    int  nstDDDumpGrid;                /**< Step interval for duming the DD grid to pdb */
-    int  DD_debug;                     /**< DD debug print level: 0, 1, 2 */
+    int nstDDDump;                     /**< Step interval for dumping the local+non-local atoms to pdb */
+    int nstDDDumpGrid;                 /**< Step interval for duming the DD grid to pdb */
+    int DD_debug;                      /**< DD debug print level: 0, 1, 2 */
 };
 
 /*! \brief DD zone permutation

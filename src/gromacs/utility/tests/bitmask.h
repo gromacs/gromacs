@@ -111,7 +111,7 @@ BITMASK_TEST_P(Union)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
-    int           j = (i + BITMASK_SIZE/2)%BITMASK_SIZE;
+    int           j = (i + BITMASK_SIZE / 2) % BITMASK_SIZE;
     bitmask_init_bit(&m1, i);
     bitmask_init_bit(&m2, j);
     bitmask_union(&m1, m2);

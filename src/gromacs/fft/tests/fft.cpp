@@ -175,38 +175,38 @@ class FFFTest3D : public BaseFFTTest
 TEST_P(FFTTest1D, Complex)
 {
     const int nx = GetParam();
-    ASSERT_LE(nx*2, static_cast<int>(sizeof(inputdata)/sizeof(inputdata[0])));
+    ASSERT_LE(nx * 2, static_cast<int>(sizeof(inputdata) / sizeof(inputdata[0])));
 
-    in_  = std::vector<real>(nx*2);
-    std::copy(inputdata, inputdata+nx*2, in_.begin());
-    out_ = std::vector<real>(nx*2);
+    in_ = std::vector<real>(nx * 2);
+    std::copy(inputdata, inputdata + nx * 2, in_.begin());
+    out_ = std::vector<real>(nx * 2);
     real* in  = &in_[0];
     real* out = &out_[0];
 
     gmx_fft_init_1d(&fft_, nx, flags_);
 
     gmx_fft_1d(fft_, GMX_FFT_FORWARD, in, out);
-    checker_.checkSequenceArray(nx*2, out, "forward");
+    checker_.checkSequenceArray(nx * 2, out, "forward");
     gmx_fft_1d(fft_, GMX_FFT_BACKWARD, in, out);
-    checker_.checkSequenceArray(nx*2, out, "backward");
+    checker_.checkSequenceArray(nx * 2, out, "backward");
 }
 
 TEST_P(FFTTest1D, Real)
 {
     const int rx = GetParam();
-    const int cx = (rx/2+1);
-    ASSERT_LE(cx*2, static_cast<int>(sizeof(inputdata)/sizeof(inputdata[0])));
+    const int cx = (rx / 2 + 1);
+    ASSERT_LE(cx * 2, static_cast<int>(sizeof(inputdata) / sizeof(inputdata[0])));
 
-    in_  = std::vector<real>(cx*2);
-    std::copy(inputdata, inputdata+cx*2, in_.begin());
-    out_ = std::vector<real>(cx*2);
+    in_ = std::vector<real>(cx * 2);
+    std::copy(inputdata, inputdata + cx * 2, in_.begin());
+    out_ = std::vector<real>(cx * 2);
     real* in  = &in_[0];
     real* out = &out_[0];
 
     gmx_fft_init_1d_real(&fft_, rx, flags_);
 
     gmx_fft_1d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
-    checker_.checkSequenceArray(cx*2, out, "forward");
+    checker_.checkSequenceArray(cx * 2, out, "forward");
     gmx_fft_1d_real(fft_, GMX_FFT_COMPLEX_TO_REAL, in, out);
     checker_.checkSequenceArray(rx, out, "backward");
 }
@@ -220,56 +220,56 @@ TEST_F(ManyFFTTest, Complex1DLength48Multi5Test)
     const int nx = 48;
     const int N  = 5;
 
-    in_  = std::vector<real>(nx*2*N);
-    std::copy(inputdata, inputdata+nx*2*N, in_.begin());
-    out_ = std::vector<real>(nx*2*N);
+    in_ = std::vector<real>(nx * 2 * N);
+    std::copy(inputdata, inputdata + nx * 2 * N, in_.begin());
+    out_ = std::vector<real>(nx * 2 * N);
     real* in  = &in_[0];
     real* out = &out_[0];
 
     gmx_fft_init_many_1d(&fft_, nx, N, flags_);
 
     gmx_fft_many_1d(fft_, GMX_FFT_FORWARD, in, out);
-    checker_.checkSequenceArray(nx*2*N, out, "forward");
+    checker_.checkSequenceArray(nx * 2 * N, out, "forward");
     gmx_fft_many_1d(fft_, GMX_FFT_BACKWARD, in, out);
-    checker_.checkSequenceArray(nx*2*N, out, "backward");
+    checker_.checkSequenceArray(nx * 2 * N, out, "backward");
 }
 
 TEST_F(ManyFFTTest, Real1DLength48Multi5Test)
 {
     const int rx = 48;
-    const int cx = (rx/2+1);
+    const int cx = (rx / 2 + 1);
     const int N  = 5;
 
-    in_  = std::vector<real>(cx*2*N);
-    std::copy(inputdata, inputdata+cx*2*N, in_.begin());
-    out_ = std::vector<real>(cx*2*N);
+    in_ = std::vector<real>(cx * 2 * N);
+    std::copy(inputdata, inputdata + cx * 2 * N, in_.begin());
+    out_ = std::vector<real>(cx * 2 * N);
     real* in  = &in_[0];
     real* out = &out_[0];
 
     gmx_fft_init_many_1d_real(&fft_, rx, N, flags_);
 
     gmx_fft_many_1d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
-    checker_.checkSequenceArray(cx*2*N, out, "forward");
+    checker_.checkSequenceArray(cx * 2 * N, out, "forward");
     gmx_fft_many_1d_real(fft_, GMX_FFT_COMPLEX_TO_REAL, in, out);
-    checker_.checkSequenceArray(rx*N, out, "backward");
+    checker_.checkSequenceArray(rx * N, out, "backward");
 }
 
 TEST_F(FFTTest, Real2DLength18_15Test)
 {
     const int rx = 18;
-    const int cx = (rx/2+1);
+    const int cx = (rx / 2 + 1);
     const int ny = 15;
 
-    in_  = std::vector<real>(cx*2*ny);
-    std::copy(inputdata, inputdata+cx*2*ny, in_.begin());
-    out_ = std::vector<real>(cx*2*ny);
+    in_ = std::vector<real>(cx * 2 * ny);
+    std::copy(inputdata, inputdata + cx * 2 * ny, in_.begin());
+    out_ = std::vector<real>(cx * 2 * ny);
     real* in  = &in_[0];
     real* out = &out_[0];
 
     gmx_fft_init_2d_real(&fft_, rx, ny, flags_);
 
     gmx_fft_2d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
-    checker_.checkSequenceArray(cx*2*ny, out, "forward");
+    checker_.checkSequenceArray(cx * 2 * ny, out, "forward");
 //    known to be wrong for gmx_fft_mkl. And not used.
 //    gmx_fft_2d_real(_fft,GMX_FFT_COMPLEX_TO_REAL,in,out);
 //    _checker.checkSequenceArray(rx*ny, out, "backward");
@@ -280,7 +280,7 @@ TEST_F(FFFTest3D, Real5_6_9)
 {
     int        ndata[] = {5, 6, 9};
     MPI_Comm   comm[]  = {MPI_COMM_NULL, MPI_COMM_NULL};
-    real     * rdata;
+    real *     rdata;
     t_complex* cdata;
     ivec       local_ndata, offset, rsize, csize, complex_order;
 
@@ -292,28 +292,28 @@ TEST_F(FFFTest3D, Real5_6_9)
                                       local_ndata, offset, csize);
     checker_.checkVector(rsize, "rsize");
     checker_.checkVector(csize, "csize");
-    int size        = csize[0]*csize[1]*csize[2];
-    int sizeInBytes = size*sizeof(t_complex);
-    int sizeInReals = sizeInBytes/sizeof(real);
+    int size        = csize[0] * csize[1] * csize[2];
+    int sizeInBytes = size * sizeof(t_complex);
+    int sizeInReals = sizeInBytes / sizeof(real);
 
-    in_  = std::vector<real>(sizeInReals);
+    in_ = std::vector<real>(sizeInReals);
     // Use std::copy to convert from double to real easily
-    std::copy(inputdata, inputdata+sizeInReals, in_.begin());
+    std::copy(inputdata, inputdata + sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(rdata, in_.data(), sizeInBytes);
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);
     //TODO use std::complex and add checkComplex for it
-    checker_.checkSequenceArray(size*2,
+    checker_.checkSequenceArray(size * 2,
                                 reinterpret_cast<real*>(cdata), "forward");
 
     // Use std::copy to convert from double to real easily
-    std::copy(inputdata, inputdata+sizeInReals, in_.begin());
+    std::copy(inputdata, inputdata + sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(cdata, in_.data(), sizeInBytes);
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, nullptr);
-    for (int i = 0; i < ndata[0]*ndata[1]; i++) //check sequence but skip unused data
+    for (int i = 0; i < ndata[0] * ndata[1]; i++) //check sequence but skip unused data
     {
-        checker_.checkSequenceArray(ndata[2], rdata+i*rsize[2],
+        checker_.checkSequenceArray(ndata[2], rdata + i * rsize[2],
                                     gmx::formatString("backward %d", i).c_str());
     }
 }

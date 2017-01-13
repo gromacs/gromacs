@@ -90,8 +90,8 @@ real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
                rvec maxval, gmx_bool bDiam)
 {
-    real  diam2, d;
-    int   ii, i, j;
+    real diam2, d;
+    int  ii, i, j;
 
     clear_rvec(geom_center);
     diam2 = 0;
@@ -338,8 +338,8 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
 void visualize_images(const char *fn, int ePBC, matrix box)
 {
     t_atoms atoms;
-    rvec   *img;
-    char   *c, *ala;
+    rvec *  img;
+    char *  c, *ala;
     int     nat, i;
 
     nat = NTRICIMG + 1;
@@ -367,7 +367,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
 
 void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
 {
-    int  *edge;
+    int * edge;
     rvec *vert, shift;
     int   nx, ny, nz, nbox, nat;
     int   i, j, x, y, z;
@@ -413,7 +413,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
         for (i = 0; i < nat; i++)
         {
             gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i / NCUCVERT, r0 + i, ' ',
-                                     10*vert[i][XX], 10*vert[i][YY], 10*vert[i][ZZ], 1.0, 0.0, "");
+                                     10 * vert[i][XX], 10 * vert[i][YY], 10 * vert[i][ZZ], 1.0, 0.0, "");
         }
 
         edge = compact_unitcell_edges();
@@ -437,7 +437,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
             {
                 for (x = 0; x <= 1; x++)
                 {
-                    gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i/8, r0+i, ' ',
+                    gmx_fprintf_pdb_atomline(out, epdbATOM, a0 + i, "C", ' ', "BOX", 'K' + i / 8, r0 + i, ' ',
                                              x * 10 * box[XX][XX], y * 10 * box[YY][YY], z * 10 * box[ZZ][ZZ], 1.0, 0.0, "");
                     i++;
                 }
@@ -456,7 +456,7 @@ void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
     real ux, uy, uz, costheta, sintheta;
 
     costheta = cos_angle(principal_axis, targetvec);
-    sintheta = std::sqrt(1.0-costheta*costheta); /* sign is always positive since 0<theta<pi */
+    sintheta = std::sqrt(1.0 - costheta * costheta); /* sign is always positive since 0<theta<pi */
 
     /* Determine rotation from cross product with target vector */
     cprod(principal_axis, targetvec, rotvec);
@@ -468,15 +468,15 @@ void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
     ux              = rotvec[XX];
     uy              = rotvec[YY];
     uz              = rotvec[ZZ];
-    rotmatrix[0][0] = ux*ux + (1.0-ux*ux)*costheta;
-    rotmatrix[0][1] = ux*uy*(1-costheta)-uz*sintheta;
-    rotmatrix[0][2] = ux*uz*(1-costheta)+uy*sintheta;
-    rotmatrix[1][0] = ux*uy*(1-costheta)+uz*sintheta;
-    rotmatrix[1][1] = uy*uy + (1.0-uy*uy)*costheta;
-    rotmatrix[1][2] = uy*uz*(1-costheta)-ux*sintheta;
-    rotmatrix[2][0] = ux*uz*(1-costheta)-uy*sintheta;
-    rotmatrix[2][1] = uy*uz*(1-costheta)+ux*sintheta;
-    rotmatrix[2][2] = uz*uz + (1.0-uz*uz)*costheta;
+    rotmatrix[0][0] = ux * ux + (1.0 - ux * ux) * costheta;
+    rotmatrix[0][1] = ux * uy * (1 - costheta) - uz * sintheta;
+    rotmatrix[0][2] = ux * uz * (1 - costheta) + uy * sintheta;
+    rotmatrix[1][0] = ux * uy * (1 - costheta) + uz * sintheta;
+    rotmatrix[1][1] = uy * uy + (1.0 - uy * uy) * costheta;
+    rotmatrix[1][2] = uy * uz * (1 - costheta) - ux * sintheta;
+    rotmatrix[2][0] = ux * uz * (1 - costheta) - uy * sintheta;
+    rotmatrix[2][1] = uy * uz * (1 - costheta) + ux * sintheta;
+    rotmatrix[2][2] = uz * uz + (1.0 - uz * uz) * costheta;
 
     printf("Rotation matrix: \n%g %g %g\n%g %g %g\n%g %g %g\n",
            rotmatrix[0][0], rotmatrix[0][1], rotmatrix[0][2],
@@ -504,7 +504,7 @@ static void renum_resnr(t_atoms *atoms, int isize, const int *index,
 
 int gmx_editconf(int argc, char *argv[])
 {
-    const char     *desc[] =
+    const char *desc[] =
     {
         "[THISMODULE] converts generic structure format to [REF].gro[ref], [TT].g96[tt]",
         "or [REF].pdb[ref].",
@@ -594,19 +594,19 @@ int gmx_editconf(int argc, char *argv[])
         "",
         "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2."
     };
-    const char     *bugs[] =
+    const char *bugs[] =
     {
         "For complex molecules, the periodicity removal routine may break down, "
         "in that case you can use [gmx-trjconv]."
     };
-    static real     dist    = 0.0;
-    static gmx_bool bNDEF   = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
-        FALSE, bCONECT      = FALSE;
-    static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead =
-        FALSE, bGrasp       = FALSE, bSig56 = FALSE;
-    static rvec     scale   =
-    { 1, 1, 1 }, newbox     =
-    { 0, 0, 0 }, newang     =
+    static real     dist  = 0.0;
+    static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW
+        = FALSE, bCONECT      = FALSE;
+    static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead
+        = FALSE, bGrasp       = FALSE, bSig56 = FALSE;
+    static rvec scale   =
+    { 1, 1, 1 }, newbox =
+    { 0, 0, 0 }, newang =
     { 90, 90, 90 };
     static real rho          = 1000.0, rvdw = 0.12;
     static rvec center       =
@@ -620,9 +620,9 @@ int gmx_editconf(int argc, char *argv[])
     *label             = "A";
     static rvec visbox =
     { 0, 0, 0 };
-    static int  resnr_start = -1;
+    static int resnr_start = -1;
     t_pargs
-                pa[] =
+        pa[] =
     {
         { "-ndef", FALSE, etBOOL,
           { &bNDEF }, "Choose output from default index groups" },
@@ -696,16 +696,16 @@ int gmx_editconf(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE             *out;
-    const char       *infile, *outfile;
+    FILE *            out;
+    const char *      infile, *outfile;
     int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
-    double           *bfac    = nullptr, c6, c12;
-    int              *bfac_nr = nullptr;
-    t_topology       *top     = nullptr;
-    char             *grpname, *sgrpname, *agrpname;
+    double *          bfac    = nullptr, c6, c12;
+    int *             bfac_nr = nullptr;
+    t_topology *      top     = nullptr;
+    char *            grpname, *sgrpname, *agrpname;
     int               isize, ssize, asize;
-    int              *index, *sindex, *aindex;
-    rvec             *x, *v, gc, rmin, rmax, size;
+    int *             index, *sindex, *aindex;
+    rvec *            x, *v, gc, rmin, rmax, size;
     int               ePBC;
     matrix            box, rotmatrix, trans;
     rvec              princd, tmpvec;
@@ -791,7 +791,7 @@ int gmx_editconf(int argc, char *argv[])
     t_topology *top_tmp;
     snew(top_tmp, 1);
     read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
-    t_atoms  &atoms = top_tmp->atoms;
+    t_atoms &atoms = top_tmp->atoms;
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -815,7 +815,7 @@ int gmx_editconf(int argc, char *argv[])
     {
         real vol = det(box);
         printf("Volume: %g nm^3, corresponds to roughly %d electrons\n",
-               vol, 100*(static_cast<int>(vol*4.5)));
+               vol, 100 * (static_cast<int>(vol * 4.5)));
     }
 
     if (bMead || bGrasp || bCONECT)
@@ -846,20 +846,20 @@ int gmx_editconf(int argc, char *argv[])
             else
             {
                 itype = top->atoms.atom[i].type;
-                c12   = top->idef.iparams[itype*ntype+itype].lj.c12;
-                c6    = top->idef.iparams[itype*ntype+itype].lj.c6;
+                c12   = top->idef.iparams[itype * ntype + itype].lj.c12;
+                c6    = top->idef.iparams[itype * ntype + itype].lj.c6;
                 if ((c6 != 0) && (c12 != 0))
                 {
                     real sig6;
                     if (bSig56)
                     {
-                        sig6 = 2*c12/c6;
+                        sig6 = 2 * c12 / c6;
                     }
                     else
                     {
-                        sig6 = c12/c6;
+                        sig6 = c12 / c6;
                     }
-                    vdw   = 0.5*gmx::sixthroot(sig6);
+                    vdw = 0.5 * gmx::sixthroot(sig6);
                 }
                 else
                 {
@@ -938,12 +938,12 @@ int gmx_editconf(int argc, char *argv[])
         printf("    box vectors :%7.3f%7.3f%7.3f (nm)\n",
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
-               norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*gmx_angle(box[YY], box[ZZ]),
-               norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*gmx_angle(box[XX], box[ZZ]),
-               norm2(box[YY]) == 0 ? 0 :
-               RAD2DEG*gmx_angle(box[XX], box[YY]));
+               norm2(box[ZZ]) == 0 ? 0
+               : RAD2DEG*gmx_angle(box[YY], box[ZZ]),
+               norm2(box[ZZ]) == 0 ? 0
+               : RAD2DEG * gmx_angle(box[XX], box[ZZ]),
+               norm2(box[YY]) == 0 ? 0
+               : RAD2DEG * gmx_angle(box[XX], box[YY]));
         printf("    box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -954,8 +954,8 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bOrient)
     {
-        int     *index;
-        char    *grpnames;
+        int * index;
+        char *grpnames;
 
         /* Get a group for principal component analysis */
         fprintf(stderr, "\nSelect group for the determining the orientation\n");
@@ -976,7 +976,7 @@ int gmx_editconf(int argc, char *argv[])
             real vol, dens;
 
             vol  = det(box);
-            dens = (mass*AMU)/(vol*NANO*NANO*NANO);
+            dens = (mass * AMU) / (vol * NANO * NANO * NANO);
             fprintf(stderr, "Volume  of input %g (nm^3)\n", vol);
             fprintf(stderr, "Mass    of input %g (a.m.u.)\n", mass);
             fprintf(stderr, "Density of input %g (g/l)\n", dens);
@@ -986,7 +986,7 @@ int gmx_editconf(int argc, char *argv[])
                           "zero mass (%g) or volume (%g)\n", mass, vol);
             }
 
-            scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens/rho);
+            scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens / rho);
             fprintf(stderr, "Scaling all box vectors by %g\n", scale[XX]);
         }
         scale_conf(atoms.nr, x, box, scale);
@@ -1116,7 +1116,7 @@ int gmx_editconf(int argc, char *argv[])
                 {
                     for (i = 0; i < DIM; i++)
                     {
-                        newbox[i] = size[i]+2*dist;
+                        newbox[i] = size[i] + 2 * dist;
                     }
                 }
                 if (!bSetAng)
@@ -1139,7 +1139,7 @@ int gmx_editconf(int argc, char *argv[])
                 }
                 else
                 {
-                    d = diam+2*dist;
+                    d = diam + 2 * dist;
                 }
                 if (btype[0][0] == 'c')
                 {
@@ -1152,18 +1152,18 @@ int gmx_editconf(int argc, char *argv[])
                 {
                     box[XX][XX] = d;
                     box[YY][YY] = d;
-                    box[ZZ][XX] = d/2;
-                    box[ZZ][YY] = d/2;
-                    box[ZZ][ZZ] = d*std::sqrt(2.0)/2.0;
+                    box[ZZ][XX] = d / 2;
+                    box[ZZ][YY] = d / 2;
+                    box[ZZ][ZZ] = d * std::sqrt(2.0) / 2.0;
                 }
                 else
                 {
                     box[XX][XX] = d;
-                    box[YY][XX] = d/3;
-                    box[YY][YY] = d*std::sqrt(2.0)*2.0/3.0;
-                    box[ZZ][XX] = -d/3;
-                    box[ZZ][YY] = d*std::sqrt(2.0)/3.0;
-                    box[ZZ][ZZ] = d*std::sqrt(6.0)/3.0;
+                    box[YY][XX] = d / 3;
+                    box[YY][YY] = d * std::sqrt(2.0) * 2.0 / 3.0;
+                    box[ZZ][XX] = -d / 3;
+                    box[ZZ][YY] = d * std::sqrt(2.0) / 3.0;
+                    box[ZZ][ZZ] = d * std::sqrt(6.0) / 3.0;
                 }
                 break;
         }
@@ -1192,12 +1192,12 @@ int gmx_editconf(int argc, char *argv[])
         printf("new box vectors :%7.3f%7.3f%7.3f (nm)\n",
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
-               norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*gmx_angle(box[YY], box[ZZ]),
-               norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*gmx_angle(box[XX], box[ZZ]),
-               norm2(box[YY]) == 0 ? 0 :
-               RAD2DEG*gmx_angle(box[XX], box[YY]));
+               norm2(box[ZZ]) == 0 ? 0
+               : RAD2DEG*gmx_angle(box[YY], box[ZZ]),
+               norm2(box[ZZ]) == 0 ? 0
+               : RAD2DEG * gmx_angle(box[XX], box[ZZ]),
+               norm2(box[YY]) == 0 ? 0
+               : RAD2DEG * gmx_angle(box[XX], box[YY]));
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -1314,7 +1314,7 @@ int gmx_editconf(int argc, char *argv[])
             }
             if (visbox[0] > 0)
             {
-                visualize_box(out, bLegend ? atoms.nr+12 : atoms.nr,
+                visualize_box(out, bLegend ? atoms.nr + 12 : atoms.nr,
                               bLegend ? atoms.nres = 12 : atoms.nres, box, visbox);
             }
             gmx_ffclose(out);

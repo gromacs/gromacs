@@ -52,22 +52,22 @@
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {
-    return cn*pow(x, -npow)-c6/gmx::power6(x)+qq*ONE_4PI_EPS0/x;
+    return cn * pow(x, -npow) - c6 / gmx::power6(x) + qq * ONE_4PI_EPS0 / x;
 }
 
 real bhpot(real x, real A, real B, real C)
 {
-    return A*std::exp(-B*x) - C/gmx::power6(x);
+    return A * std::exp(-B * x) - C / gmx::power6(x);
 }
 
 real dpot(real x, real qq, real c6, real cn, int npow)
 {
-    return -(npow*cn*std::pow(x, -npow-1)-6*c6/(x*gmx::power6(x))+qq*ONE_4PI_EPS0/gmx::square(x));
+    return -(npow * cn * std::pow(x, -npow - 1) - 6 * c6 / (x * gmx::power6(x)) + qq * ONE_4PI_EPS0 / gmx::square(x));
 }
 
 int gmx_sigeps(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] is a simple utility that converts C6/C12 or C6/Cn combinations",
         "to [GRK]sigma[grk] and [GRK]epsilon[grk], or vice versa. It can also plot the potential",
         "in  file. In addition, it makes an approximation of a Buckingham potential",
@@ -94,13 +94,13 @@ int gmx_sigeps(int argc, char *argv[])
     };
     gmx_output_env_t *oenv;
 #define NFILE asize(fnm)
-    const char       *legend[] = { "Lennard-Jones", "Buckingham" };
-    FILE             *fp;
-    int               i;
-    gmx_bool          bBham;
-    real              qq, x, oldx, minimum, mval, dp[2];
-    int               cur = 0;
-#define next (1-cur)
+    const char *legend[] = { "Lennard-Jones", "Buckingham" };
+    FILE *      fp;
+    int         i;
+    gmx_bool    bBham;
+    real        qq, x, oldx, minimum, mval, dp[2];
+    int         cur = 0;
+#define next (1 - cur)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc),
@@ -109,31 +109,31 @@ int gmx_sigeps(int argc, char *argv[])
         return 0;
     }
 
-    bBham = (opt2parg_bSet("-A", asize(pa), pa) ||
-             opt2parg_bSet("-B", asize(pa), pa) ||
-             opt2parg_bSet("-C", asize(pa), pa));
+    bBham = (opt2parg_bSet("-A", asize(pa), pa)
+             || opt2parg_bSet("-B", asize(pa), pa)
+             || opt2parg_bSet("-C", asize(pa), pa));
 
     if (bBham)
     {
         c6  = Cbh;
-        sig = std::pow((6.0/npow)*std::pow(npow/Bbh, npow-6), 1.0/(npow-6));
-        eps = c6/(4*gmx::power6(sig));
+        sig = std::pow((6.0 / npow) * std::pow(npow / Bbh, npow - 6), 1.0 / (npow - 6));
+        eps = c6 / (4 * gmx::power6(sig));
         cn  = 4*eps*std::pow(sig, npow);
     }
     else
     {
-        if (opt2parg_bSet("-sig", asize(pa), pa) ||
-            opt2parg_bSet("-eps", asize(pa), pa))
+        if (opt2parg_bSet("-sig", asize(pa), pa)
+            || opt2parg_bSet("-eps", asize(pa), pa))
         {
-            c6  = 4*eps*gmx::power6(sig);
-            cn  = 4*eps*std::pow(sig, npow);
+            c6 = 4*eps*gmx::power6(sig);
+            cn = 4*eps*std::pow(sig, npow);
         }
-        else if (opt2parg_bSet("-c6", asize(pa), pa) ||
-                 opt2parg_bSet("-cn", asize(pa), pa) ||
-                 opt2parg_bSet("-pow", asize(pa), pa))
+        else if (opt2parg_bSet("-c6", asize(pa), pa)
+                 || opt2parg_bSet("-cn", asize(pa), pa)
+                 || opt2parg_bSet("-pow", asize(pa), pa))
         {
-            sig = std::pow(cn/c6, static_cast<real>(1.0/(npow-6)));
-            eps = 0.25*c6/gmx::power6(sig);
+            sig = std::pow(cn / c6, static_cast<real>(1.0 / (npow - 6)));
+            eps = 0.25 * c6 / gmx::power6(sig);
         }
         else
         {
@@ -142,16 +142,16 @@ int gmx_sigeps(int argc, char *argv[])
         printf("c6    = %12.5e, c%d    = %12.5e\n", c6, npow, cn);
         printf("sigma = %12.5f, epsilon = %12.5f\n", sig, eps);
 
-        minimum = std::pow(npow/6.0*std::pow(sig, npow-6), 1.0/(npow-6));
+        minimum = std::pow(npow / 6.0 * std::pow(sig, npow - 6), 1.0 / (npow - 6));
         printf("Van der Waals minimum at %g, V = %g\n\n",
                minimum, pot(minimum, 0, c6, cn, npow));
         printf("Fit of Lennard Jones (%d-6) to Buckingham:\n", npow);
-        Bbh = npow/minimum;
+        Bbh = npow / minimum;
         Cbh = c6;
-        Abh = 4*eps*std::pow(sig/minimum, static_cast<real>(npow))*std::exp(static_cast<real>(npow));
+        Abh = 4*eps*std::pow(sig / minimum, static_cast<real>(npow)) * std::exp(static_cast<real>(npow));
         printf("A = %g, B = %g, C = %g\n", Abh, Bbh, Cbh);
     }
-    qq = qi*qj;
+    qq = qi * qj;
 
     fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Potential", "r (nm)", "E (kJ/mol)",
                   oenv);
@@ -161,18 +161,18 @@ int gmx_sigeps(int argc, char *argv[])
     {
         sig = 0.25;
     }
-    oldx    = 0;
+    oldx = 0;
     for (i = 0; (i < 100); i++)
     {
-        x        = sigfac*sig+sig*i*0.02;
+        x        = sigfac * sig + sig * i * 0.02;
         dp[next] = dpot(x, qq, c6, cn, npow);
         fprintf(fp, "%10g  %10g  %10g\n", x, pot(x, qq, c6, cn, npow),
                 bhpot(x, Abh, Bbh, Cbh));
         if (qq != 0)
         {
-            if ((i > 0) && (dp[cur]*dp[next] < 0))
+            if ((i > 0) && (dp[cur] * dp[next] < 0))
             {
-                minimum = oldx + dp[cur]*(x-oldx)/(dp[cur]-dp[next]);
+                minimum = oldx + dp[cur] * (x - oldx) / (dp[cur] - dp[next]);
                 mval    = pot(minimum, qq, c6, cn, npow);
                 printf("Van der Waals + Coulomb minimum at r = %g (nm). Value = %g (kJ/mol)\n",
                        minimum, mval);

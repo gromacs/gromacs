@@ -81,9 +81,9 @@ class CommandLineParser::Impl
         const char *toOptionName(const char *arg) const;
 
         //! Helper object for assigning the options.
-        OptionsAssigner         assigner_;
+        OptionsAssigner assigner_;
         //! Whether to allow and skip unknown options.
-        bool                    bSkipUnknown_;
+        bool bSkipUnknown_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
@@ -169,8 +169,8 @@ void CommandLineParser::parse(int *argc, char *argv[])
                     currentContext.clear();
                     if (!impl_->bSkipUnknown_)
                     {
-                        std::string message =
-                            "Unknown command-line option " + std::string(arg);
+                        std::string message
+                            = "Unknown command-line option " + std::string(arg);
                         GMX_THROW(InvalidInputError(message));
                     }
                 }

@@ -50,7 +50,7 @@ static int div_nsteps(int nsteps, int nst)
 {
     if (nst > 0)
     {
-        return (1 + nsteps + nst - 1)/nst;
+        return (1 + nsteps + nst - 1) / nst;
     }
     else
     {
@@ -83,14 +83,14 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
     }
     nstlog = div_nsteps(nsteps, ir->nstlog);
     /* We add 2 for the header */
-    nste   = div_nsteps(2+nsteps, ir->nstenergy);
+    nste = div_nsteps(2 + nsteps, ir->nstenergy);
 
-    cio  = 80*natoms;
-    cio += (nstx+nstf+nstv)*sizeof(real)*(3.0*natoms);
-    cio += nstxtc*(14*4 + nxtcatoms*5.0); /* roughly 5 bytes per atom */
-    cio += nstlog*(nrener*16*2.0);        /* 16 bytes per energy term plus header */
+    cio  = 80 * natoms;
+    cio += (nstx + nstf + nstv) * sizeof(real) * (3.0 * natoms);
+    cio += nstxtc * (14 * 4 + nxtcatoms * 5.0); /* roughly 5 bytes per atom */
+    cio += nstlog * (nrener * 16 * 2.0);        /* 16 bytes per energy term plus header */
     /* t_energy contains doubles, but real is written to edr */
-    cio += (1.0*nste)*nrener*3*sizeof(real);
+    cio += (1.0 * nste) * nrener * 3 * sizeof(real);
 
     if ((ir->efep != efepNO || ir->bSimTemp) && (ir->fepvals->nstdhdl > 0))
     {
@@ -108,7 +108,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
 
         if (ir->fepvals->separate_dhdl_file == esepdhdlfileYES)
         {
-            nchars = 8 + ndhdl*8 + ndh*10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
+            nchars = 8 + ndhdl * 8 + ndh * 10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
             if (ir->expandedvals->elmcmove > elmcmoveNO)
             {
                 nchars += 5;   /* alchemical state */
@@ -118,14 +118,14 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
             {
                 nchars += 12; /* energy for dhdl */
             }
-            cio += div_nsteps(nsteps, ir->fepvals->nstdhdl)*nchars;
+            cio += div_nsteps(nsteps, ir->fepvals->nstdhdl) * nchars;
         }
         else
         {
             /* dH output to ener.edr: */
             if (ir->fepvals->dh_hist_size <= 0)
             {
-                int ndh_tot = ndh+ndhdl;
+                int ndh_tot = ndh + ndhdl;
                 if (ir->expandedvals->elmcmove > elmcmoveNO)
                 {
                     ndh_tot += 1;
@@ -135,21 +135,21 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                     ndh_tot += 1;
                 }
                 /* as data blocks: 1 real per dH point */
-                cio += div_nsteps(nsteps, ir->fepvals->nstdhdl)*ndh_tot*sizeof(real);
+                cio += div_nsteps(nsteps, ir->fepvals->nstdhdl) * ndh_tot * sizeof(real);
             }
             else
             {
                 /* as histograms: dh_hist_size ints per histogram */
-                cio += div_nsteps(nsteps, ir->nstenergy)*
-                    sizeof(int)*ir->fepvals->dh_hist_size*ndh;
+                cio += div_nsteps(nsteps, ir->nstenergy)
+                    * sizeof(int) * ir->fepvals->dh_hist_size * ndh;
             }
         }
     }
     if (ir->pull != nullptr)
     {
-        cio += div_nsteps(nsteps, ir->pull->nstxout)*20; /* roughly 20 chars per line */
-        cio += div_nsteps(nsteps, ir->pull->nstfout)*20; /* roughly 20 chars per line */
+        cio += div_nsteps(nsteps, ir->pull->nstxout) * 20; /* roughly 20 chars per line */
+        cio += div_nsteps(nsteps, ir->pull->nstfout) * 20; /* roughly 20 chars per line */
     }
 
-    return cio*nrepl/(1024*1024);
+    return cio * nrepl / (1024 * 1024);
 }

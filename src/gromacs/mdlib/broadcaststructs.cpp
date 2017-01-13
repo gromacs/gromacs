@@ -97,8 +97,8 @@ static void bc_string(const t_commrec *cr, t_symtab *symtab, char ***s)
 
 static void bc_strings(const t_commrec *cr, t_symtab *symtab, int nr, char ****nm)
 {
-    int     i;
-    int    *handle;
+    int  i;
+    int *handle;
 
     snew(handle, nr);
     if (MASTER(cr))
@@ -124,8 +124,8 @@ static void bc_strings(const t_commrec *cr, t_symtab *symtab, int nr, char ****n
 static void bc_strings_resinfo(const t_commrec *cr, t_symtab *symtab,
                                int nr, t_resinfo *resinfo)
 {
-    int   i;
-    int  *handle;
+    int  i;
+    int *handle;
 
     snew(handle, nr);
     if (MASTER(cr))
@@ -173,15 +173,15 @@ static void bc_symtab(const t_commrec *cr, t_symtab *symtab)
 static void bc_block(const t_commrec *cr, t_block *block)
 {
     block_bc(cr, block->nr);
-    snew_bc(cr, block->index, block->nr+1);
-    nblock_bc(cr, block->nr+1, block->index);
+    snew_bc(cr, block->index, block->nr + 1);
+    nblock_bc(cr, block->nr + 1, block->index);
 }
 
 static void bc_blocka(const t_commrec *cr, t_blocka *block)
 {
     block_bc(cr, block->nr);
-    snew_bc(cr, block->index, block->nr+1);
-    nblock_bc(cr, block->nr+1, block->index);
+    snew_bc(cr, block->index, block->nr + 1);
+    nblock_bc(cr, block->nr + 1, block->index);
     block_bc(cr, block->nra);
     if (block->nra)
     {
@@ -263,7 +263,7 @@ static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsi
 
 void bcast_state(const t_commrec *cr, t_state *state)
 {
-    int      i, nnht, nnhtp;
+    int i, nnht, nnhtp;
 
     if (!PAR(cr) || (cr->nnodes - cr->npmenodes <= 1))
     {
@@ -287,12 +287,12 @@ void bcast_state(const t_commrec *cr, t_state *state)
     /* The code below is reachable only by TPI and NM, so it is not
        tested by anything. */
 
-    nnht  = (state->ngtc)*(state->nhchainlength);
-    nnhtp = (state->nnhpres)*(state->nhchainlength);
+    nnht  = (state->ngtc) * (state->nhchainlength);
+    nnhtp = (state->nnhpres) * (state->nhchainlength);
 
     for (i = 0; i < estNR; i++)
     {
-        if (state->flags & (1<<i))
+        if (state->flags & (1 << i))
         {
             switch (i)
             {
@@ -367,8 +367,7 @@ static void bc_ilists(const t_commrec *cr, t_ilist *ilist)
                 snew_bc(cr, ilist[ftype].iatoms, ilist[ftype].nr);
                 nblock_bc(cr, ilist[ftype].nr, ilist[ftype].iatoms);
             }
-        }
-        while (ftype >= 0);
+        } while (ftype >= 0);
     }
 
     if (debug)
@@ -393,8 +392,8 @@ static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 
         for (i = 0; i < ngrid; i++)
         {
-            snew_bc(cr, cmap_grid->cmapdata[i].cmap, 4*nelem);
-            nblock_bc(cr, 4*nelem, cmap_grid->cmapdata[i].cmap);
+            snew_bc(cr, cmap_grid->cmapdata[i].cmap, 4 * nelem);
+            nblock_bc(cr, 4 * nelem, cmap_grid->cmapdata[i].cmap);
         }
     }
 }
@@ -425,14 +424,14 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
     snew_bc(cr, g->ref_t, g->ngtc);
     snew_bc(cr, g->acc, g->ngacc);
     snew_bc(cr, g->nFreeze, g->ngfrz);
-    snew_bc(cr, g->egp_flags, g->ngener*g->ngener);
+    snew_bc(cr, g->egp_flags, g->ngener * g->ngener);
 
     nblock_bc(cr, g->ngtc, g->nrdf);
     nblock_bc(cr, g->ngtc, g->tau_t);
     nblock_bc(cr, g->ngtc, g->ref_t);
     nblock_bc(cr, g->ngacc, g->acc);
     nblock_bc(cr, g->ngfrz, g->nFreeze);
-    nblock_bc(cr, g->ngener*g->ngener, g->egp_flags);
+    nblock_bc(cr, g->ngener * g->ngener, g->egp_flags);
     snew_bc(cr, g->annealing, g->ngtc);
     snew_bc(cr, g->anneal_npoints, g->ngtc);
     snew_bc(cr, g->anneal_time, g->ngtc);
@@ -553,7 +552,7 @@ static void bc_imd(const t_commrec *cr, t_IMD *imd)
 
 static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
 {
-    int      i;
+    int i;
 
     block_bc(cr, fep->nstdhdl);
     block_bc(cr, fep->init_lambda);
@@ -735,12 +734,12 @@ static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
     if (molb->nposres_xA > 0)
     {
         snew_bc(cr, molb->posres_xA, molb->nposres_xA);
-        nblock_bc(cr, molb->nposres_xA*DIM, molb->posres_xA[0]);
+        nblock_bc(cr, molb->nposres_xA * DIM, molb->posres_xA[0]);
     }
     if (molb->nposres_xB > 0)
     {
         snew_bc(cr, molb->posres_xB, molb->nposres_xB);
-        nblock_bc(cr, molb->nposres_xB*DIM, molb->posres_xB[0]);
+        nblock_bc(cr, molb->nposres_xB * DIM, molb->posres_xB[0]);
     }
     if (debug)
     {

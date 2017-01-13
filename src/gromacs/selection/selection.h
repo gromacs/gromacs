@@ -189,28 +189,28 @@ class SelectionData
 
     private:
         //! Name of the selection.
-        std::string               name_;
+        std::string name_;
         //! The actual selection string.
-        std::string               selectionText_;
+        std::string selectionText_;
         //! Low-level representation of selected positions.
-        gmx_ana_pos_t             rawPositions_;
+        gmx_ana_pos_t rawPositions_;
         //! Total masses for the current positions.
-        std::vector<real>         posMass_;
+        std::vector<real> posMass_;
         //! Total charges for the current positions.
-        std::vector<real>         posCharge_;
-        SelectionFlags            flags_;
+        std::vector<real> posCharge_;
+        SelectionFlags    flags_;
         //! Root of the selection evaluation tree.
-        SelectionTreeElement     &rootElement_;
+        SelectionTreeElement &rootElement_;
         //! Type of the covered fraction.
-        e_coverfrac_t             coveredFractionType_;
+        e_coverfrac_t coveredFractionType_;
         //! Covered fraction of the selection for the current frame.
-        real                      coveredFraction_;
+        real coveredFraction_;
         //! The average covered fraction (over the trajectory).
-        real                      averageCoveredFraction_;
+        real averageCoveredFraction_;
         //! true if the value can change as a function of time.
-        bool                      bDynamic_;
+        bool bDynamic_;
         //! true if the covered fraction depends on the frame.
-        bool                      bDynamicCoveredFraction_;
+        bool bDynamicCoveredFraction_;
 
         /*! \brief
          * Needed to wrap access to information.
@@ -772,13 +772,12 @@ class SelectionPosition
         operator AnalysisNeighborhoodPositions() const;
 
     private:
-        const internal::SelectionData  *sel_;
-        int                             i_;
+        const internal::SelectionData *sel_;
+        int                            i_;
 };
 
 
-inline SelectionPosition
-Selection::position(int i) const
+inline SelectionPosition Selection::position(int i) const
 {
     return SelectionPosition(data(), i);
 }

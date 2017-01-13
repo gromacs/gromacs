@@ -76,15 +76,15 @@ int gmx_gethostname(char *buf, size_t len)
 {
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
 #if GMX_NATIVE_WINDOWS
-    DWORD  dlen = len;
+    DWORD dlen = len;
     if (GetComputerName(buf, &dlen))
     {
         return 0;
     }
 #elif defined(HAVE_UNISTD_H) && !defined(__native_client__)
-    if (gethostname(buf, len-1) == 0)
+    if (gethostname(buf, len - 1) == 0)
     {
-        buf[len-1] = '\0';
+        buf[len - 1] = '\0';
         return 0;
     }
 #endif
@@ -116,7 +116,7 @@ int gmx_getusername(char *buf, size_t len)
     // TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
     // here.  If not, get rid of HAVE_PWD_H completely.
 #if GMX_NATIVE_WINDOWS
-    DWORD  dlen = len;
+    DWORD dlen = len;
     if (GetUserName(buf, &dlen))
     {
         return 0;
@@ -124,7 +124,7 @@ int gmx_getusername(char *buf, size_t len)
 #elif defined(HAVE_UNISTD_H) && !__has_feature(memory_sanitizer) //MSAN Issue 83
     if (!getlogin_r(buf, len))
     {
-        buf[len-1] = '\0';
+        buf[len - 1] = '\0';
         return 0;
     }
 #endif
@@ -132,24 +132,23 @@ int gmx_getusername(char *buf, size_t len)
     return -1;
 }
 
-char *
-gmx_ctime_r(const time_t *clock, char *buf, size_t len)
+char *gmx_ctime_r(const time_t *clock, char *buf, size_t len)
 {
 #ifdef _MSC_VER
     /* Windows */
     ctime_s(buf, len, clock);
 #elif GMX_NATIVE_WINDOWS
     char *tmpbuf = ctime(clock);
-    strncpy(buf, tmpbuf, len-1);
-    buf[len-1] = '\0';
+    strncpy(buf, tmpbuf, len - 1);
+    buf[len - 1] = '\0';
 #elif (defined(__sun))
     /*Solaris*/
     ctime_r(clock, buf, len);
 #else
     char tmpbuf[30];
     ctime_r(clock, tmpbuf);
-    strncpy(buf, tmpbuf, len-1);
-    buf[len-1] = '\0';
+    strncpy(buf, tmpbuf, len - 1);
+    buf[len - 1] = '\0';
 #endif
     return buf;
 }

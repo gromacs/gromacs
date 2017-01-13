@@ -52,18 +52,19 @@ extern unsigned long LIGHTBLUE, LIGHTGREY, LIGHTGREEN, LIGHTCYAN,
 #define CBARGS (struct t_x11 *x11, XEvent *event, Window w, void *data)
 /* Callback function. Return false to continue, true to exit */
 
-typedef struct t_x11 {
-    Display            *disp;
-    XFontStruct        *font;
-    GC                  gc;
-    Window              root;
-    char               *dispname;
-    FILE               *console;
-    int                 screen, depth;
-    Colormap            cmap;
-    unsigned long       fg, bg;
-    char               *title;
-    struct t_wlist     *wlist;
+typedef struct t_x11
+{
+    Display *       disp;
+    XFontStruct *   font;
+    GC              gc;
+    Window          root;
+    char *          dispname;
+    FILE *          console;
+    int             screen, depth;
+    Colormap        cmap;
+    unsigned long   fg, bg;
+    char *          title;
+    struct t_wlist *wlist;
     void        (*GetNamedColor)(struct t_x11 *x11, const char *name, unsigned long *col);
     void        (*MainLoop)(struct t_x11 *x11);
     void        (*RegisterCallback)(struct t_x11 *x11, Window w, Window Parent,
@@ -77,13 +78,14 @@ typedef struct t_x11 {
 
 typedef bool CallBack CBARGS;
 
-typedef struct t_wlist {
-    Window                 w;      /* The window itself			*/
-    Window                 Parent; /* It's parent window			*/
-    CallBack              *cb;     /* Call back function			*/
-    unsigned long          mask;   /* Input mask				*/
-    void                  *data;   /* User data struct			*/
-    struct t_wlist        *next;
+typedef struct t_wlist
+{
+    Window          w;             /* The window itself			*/
+    Window          Parent;        /* It's parent window			*/
+    CallBack *      cb;            /* Call back function			*/
+    unsigned long   mask;          /* Input mask				*/
+    void *          data;          /* User data struct			*/
+    struct t_wlist *next;
 } t_wlist;
 
 t_x11 *GetX11(int *argc, char *argv[]);

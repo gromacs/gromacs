@@ -160,8 +160,7 @@ static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
             buf[1] = '\0';
             return;
         }
-    }
-    while (c != '"');
+    } while (c != '"');
 
     /* Read until second quote */
     while ((c = std::fgetc(in)) != '"')
@@ -203,7 +202,7 @@ static t_fsimple *NewFSimple(void)
 static void AddFItemName(t_fitem *fitem, char *name)
 {
     srenew(fitem->name, ++fitem->nname);
-    fitem->name[fitem->nname-1] = gmx_strdup(name);
+    fitem->name[fitem->nname - 1] = gmx_strdup(name);
 }
 
 static t_fgroup *NewFGroup(void)
@@ -221,21 +220,21 @@ static t_fgroup *NewFGroup(void)
 static void AddFGroupFItem(t_fgroup *fgroup, t_fitem *fitem)
 {
     srenew(fgroup->fitem, ++fgroup->nfitem);
-    fgroup->fitem[fgroup->nfitem-1] = fitem;
+    fgroup->fitem[fgroup->nfitem - 1] = fitem;
 }
 
 static t_fgroup *AddFGridFGroup(t_fgrid *fgrid)
 {
     srenew(fgrid->fgroup, ++fgrid->nfgroup);
-    fgrid->fgroup[fgrid->nfgroup-1] = NewFGroup();
-    return fgrid->fgroup[fgrid->nfgroup-1];
+    fgrid->fgroup[fgrid->nfgroup - 1] = NewFGroup();
+    return fgrid->fgroup[fgrid->nfgroup - 1];
 }
 
 static t_fsimple *AddFGridFSimple(t_fgrid *fgrid)
 {
     srenew(fgrid->fsimple, ++fgrid->nfsimple);
-    fgrid->fsimple[fgrid->nfsimple-1] = NewFSimple();
-    return fgrid->fsimple[fgrid->nfsimple-1];
+    fgrid->fsimple[fgrid->nfsimple - 1] = NewFSimple();
+    return fgrid->fsimple[fgrid->nfsimple - 1];
 }
 
 static t_fgrid *NewFGrid(void)
@@ -310,7 +309,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 
     fitem = NewFItem();
 
-    for (edlg = 0; (edlg < edlgNR+1); edlg++)
+    for (edlg = 0; (edlg < edlgNR + 1); edlg++)
     {
         if (std::strcmp(buf, type[edlg]) == 0)
         {
@@ -323,7 +322,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
         edlg        = edlgBN;
         fitem->bDef = true;
     }
-    if (edlg == edlgNR+1)
+    if (edlg == edlgNR + 1)
     {
         ReadDlgErr(infile, eITEMEXP, buf);
     }
@@ -368,12 +367,12 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 
 t_fgrid *FGridFromFile(const char *infile)
 {
-    FILE      *in;
-    char       buf[STRLEN];
-    int        result;
+    FILE *in;
+    char  buf[STRLEN];
+    int   result;
 
-    t_fgrid   *fgrid;
-    t_fgroup  *fgroup;
+    t_fgrid *  fgrid;
+    t_fgroup * fgroup;
     t_fsimple *fsimple;
     int        gridx, gridy;
 
@@ -403,11 +402,11 @@ t_fgrid *FGridFromFile(const char *infile)
             {
                 ReadDlgErr(infile, eNOVALS, "group x,y,w,h");
             }
-            if (fgroup->x+fgroup->w > gridx)
+            if (fgroup->x + fgroup->w > gridx)
             {
                 ReadDlgErr(infile, eTOOWIDE, buf);
             }
-            if (fgroup->y+fgroup->h > gridy)
+            if (fgroup->y + fgroup->h > gridy)
             {
                 ReadDlgErr(infile, eTOOHIGH, buf);
             }
@@ -426,11 +425,11 @@ t_fgrid *FGridFromFile(const char *infile)
             {
                 ReadDlgErr(infile, eNOVALS, "simple x,y,w,h");
             }
-            if (fsimple->x+fsimple->w > gridx)
+            if (fsimple->x + fsimple->w > gridx)
             {
                 ReadDlgErr(infile, eTOOWIDE, "simple");
             }
-            if (fsimple->y+fsimple->h > gridy)
+            if (fsimple->y + fsimple->h > gridy)
             {
                 ReadDlgErr(infile, eTOOHIGH, "simple");
             }

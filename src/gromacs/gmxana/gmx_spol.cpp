@@ -77,11 +77,11 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
         mass = top->atoms.atom[ai].m;
         for (j = 0; (j < DIM); j++)
         {
-            xref[j] += mass*x[ai][j];
+            xref[j] += mass * x[ai][j];
         }
         mtot += mass;
     }
-    svmul(1/mtot, xref, xref);
+    svmul(1 / mtot, xref, xref);
     /* Now check if any atom is more than half the box from the COM */
     if (ePBC != epbcNONE)
     {
@@ -92,15 +92,15 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
             for (m = 0; (m < nrefat); m++)
             {
                 ai   = index[m];
-                mass = top->atoms.atom[ai].m/mtot;
+                mass = top->atoms.atom[ai].m / mtot;
                 pbc_dx(pbc, x[ai], xref, dx);
                 rvec_add(xref, dx, xtest);
                 for (j = 0; (j < DIM); j++)
                 {
-                    if (std::abs(xtest[j]-x[ai][j]) > tol)
+                    if (std::abs(xtest[j] - x[ai][j]) > tol)
                     {
                         /* Here we have used the wrong image for contributing to the COM */
-                        xref[j] += mass*(xtest[j]-x[ai][j]);
+                        xref[j] += mass * (xtest[j] - x[ai][j]);
                         x[ai][j] = xtest[j];
                         bChanged = TRUE;
                     }
@@ -111,8 +111,7 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
                 printf("COM: %8.3f  %8.3f  %8.3f  iter = %d\n", xref[XX], xref[YY], xref[ZZ], iter);
             }
             iter++;
-        }
-        while (bChanged);
+        } while (bChanged);
     }
 }
 
@@ -131,9 +130,9 @@ void spol_atom2molindex(int *n, int *index, const t_block *mols)
         }
         if (m == mols->nr)
         {
-            gmx_fatal(FARGS, "index[%d]=%d does not correspond to the first atom of a molecule", i+1, index[i]+1);
+            gmx_fatal(FARGS, "index[%d]=%d does not correspond to the first atom of a molecule", i + 1, index[i] + 1);
         }
-        for (j = mols->index[m]; j < mols->index[m+1]; j++)
+        for (j = mols->index[m]; j < mols->index[m + 1]; j++)
         {
             if (i >= *n || index[i] != j)
             {
@@ -151,28 +150,28 @@ void spol_atom2molindex(int *n, int *index, const t_block *mols)
 
 int gmx_spol(int argc, char *argv[])
 {
-    t_topology  *top;
-    t_inputrec  *ir;
-    t_atom      *atom;
+    t_topology * top;
+    t_inputrec * ir;
+    t_atom *     atom;
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
     real         t;
-    rvec        *x, xref, trial, dx = {0}, dip, dir;
+    rvec *       x, xref, trial, dx = {0}, dip, dir;
     matrix       box;
 
-    FILE        *fp;
-    int         *isize, nrefgrp;
-    int        **index, *molindex;
-    char       **grpname;
-    real         rmin2, rmax2, rcut, rcut2, rdx2 = 0, rtry2, qav, q, dip2, invbw;
-    int          nbin, i, m, mol, a0, a1, a, d;
-    double       sdip, sdip2, sinp, sdinp, nmol;
-    int         *hist;
-    t_pbc        pbc;
-    gmx_rmpbc_t  gpbc = nullptr;
+    FILE *      fp;
+    int *       isize, nrefgrp;
+    int **      index, *molindex;
+    char **     grpname;
+    real        rmin2, rmax2, rcut, rcut2, rdx2 = 0, rtry2, qav, q, dip2, invbw;
+    int         nbin, i, m, mol, a0, a1, a, d;
+    double      sdip, sdip2, sinp, sdinp, nmol;
+    int *       hist;
+    t_pbc       pbc;
+    gmx_rmpbc_t gpbc = nullptr;
 
 
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] analyzes dipoles around a solute; it is especially useful",
         "for polarizable water. A group of reference atoms, or a center",
         "of mass reference (option [TT]-com[tt]) and a group of solvent",
@@ -208,7 +207,7 @@ int gmx_spol(int argc, char *argv[])
         { "-bw",    FALSE, etREAL, {&bw}, "The bin width" }
     };
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, nullptr,  nullptr,  ffREAD },
         { efTPR, nullptr,  nullptr,  ffREAD },
         { efNDX, nullptr,  nullptr,  ffOPTRD },
@@ -253,14 +252,14 @@ int gmx_spol(int argc, char *argv[])
     /* initialize reading trajectory:                         */
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    rcut  = 0.99*std::sqrt(max_cutoff2(ir->ePBC, box));
+    rcut = 0.99 * std::sqrt(max_cutoff2(ir->ePBC, box));
     if (rcut == 0)
     {
-        rcut = 10*rmax;
+        rcut = 10 * rmax;
     }
     rcut2 = gmx::square(rcut);
-    invbw = 1/bw;
-    nbin  = static_cast<int>(rcut*invbw)+2;
+    invbw = 1 / bw;
+    nbin  = static_cast<int>(rcut * invbw) + 2;
     snew(hist, nbin);
 
     rmin2 = gmx::square(rmin);
@@ -294,10 +293,10 @@ int gmx_spol(int argc, char *argv[])
         {
             mol = index[1][m];
             a0  = molindex[mol];
-            a1  = molindex[mol+1];
+            a1  = molindex[mol + 1];
             for (i = 0; i < nrefgrp; i++)
             {
-                pbc_dx(&pbc, x[a0+srefat], bCom ? xref : x[index[0][i]], trial);
+                pbc_dx(&pbc, x[a0 + srefat], bCom ? xref : x[index[0][i]], trial);
                 rtry2 = norm2(trial);
                 if (i == 0 || rtry2 < rdx2)
                 {
@@ -307,7 +306,7 @@ int gmx_spol(int argc, char *argv[])
             }
             if (rdx2 < rcut2)
             {
-                hist[static_cast<int>(std::sqrt(rdx2)*invbw)+1]++;
+                hist[static_cast<int>(std::sqrt(rdx2) * invbw) + 1]++;
             }
             if (rdx2 >= rmin2 && rdx2 < rmax2)
             {
@@ -324,18 +323,18 @@ int gmx_spol(int argc, char *argv[])
                     q = atom[a].q - qav;
                     for (d = 0; d < DIM; d++)
                     {
-                        dip[d] += q*x[a][d];
+                        dip[d] += q * x[a][d];
                     }
                 }
                 for (d = 0; d < DIM; d++)
                 {
                     dir[d] = -x[a0][d];
                 }
-                for (a = a0+1; a < a0+3; a++)
+                for (a = a0 + 1; a < a0 + 3; a++)
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        dir[d] += 0.5*x[a][d];
+                        dir[d] += 0.5 * x[a][d];
                     }
                 }
                 unitv(dir, dir);
@@ -346,8 +345,8 @@ int gmx_spol(int argc, char *argv[])
                 sdip2 += dip2;
                 for (d = 0; d < DIM; d++)
                 {
-                    sinp  += dx[d]*dip[d];
-                    sdinp += dx[d]*(dip[d] - refdip*dir[d]);
+                    sinp  += dx[d] * dip[d];
+                    sdinp += dx[d] * (dip[d] - refdip * dir[d]);
                 }
 
                 ntot++;
@@ -355,8 +354,7 @@ int gmx_spol(int argc, char *argv[])
         }
         nf++;
 
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -365,7 +363,7 @@ int gmx_spol(int argc, char *argv[])
     close_trj(status);
 
     fprintf(stderr, "Average number of molecules within %g nm is %.1f\n",
-            rmax, static_cast<real>(ntot)/nf);
+            rmax, static_cast<real>(ntot) / nf);
     if (ntot > 0)
     {
         sdip  /= ntot;
@@ -373,7 +371,7 @@ int gmx_spol(int argc, char *argv[])
         sinp  /= ntot;
         sdinp /= ntot;
         fprintf(stderr, "Average dipole:                               %f (D), std.dev. %f\n",
-                sdip, std::sqrt(sdip2-gmx::square(sdip)));
+                sdip, std::sqrt(sdip2 - gmx::square(sdip)));
         fprintf(stderr, "Average radial component of the dipole:       %f (D)\n",
                 sinp);
         fprintf(stderr, "Average radial component of the polarization: %f (D)\n",
@@ -386,7 +384,7 @@ int gmx_spol(int argc, char *argv[])
     for (i = 0; i <= nbin; i++)
     {
         nmol += hist[i];
-        fprintf(fp, "%g %g\n", i*bw, nmol/nf);
+        fprintf(fp, "%g %g\n", i * bw, nmol / nf);
     }
     xvgrclose(fp);
 

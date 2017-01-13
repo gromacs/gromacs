@@ -86,8 +86,8 @@ class TestOptionsRegistry
 
         typedef std::list<TestOptionsProvider *> ProviderList;
 
-        Mutex                   listMutex_;
-        ProviderList            providerList_;
+        Mutex        listMutex_;
+        ProviderList providerList_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
 };
@@ -96,8 +96,8 @@ void TestOptionsRegistry::initOptions(IOptionsContainer *options)
 {
     // TODO: Have some deterministic order for the options; now it depends on
     // the order in which the global initializers are run.
-    lock_guard<Mutex>             lock(listMutex_);
-    ProviderList::const_iterator  i;
+    lock_guard<Mutex>            lock(listMutex_);
+    ProviderList::const_iterator i;
     for (i = providerList_.begin(); i != providerList_.end(); ++i)
     {
         (*i)->initOptions(options);

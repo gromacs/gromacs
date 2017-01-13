@@ -61,12 +61,12 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
 {
     int          natoms, nfr_all, nfr, i, j, a, r, c, min_fr;
     t_trxstatus *status;
-    real        *ti, min_t;
+    real *       ti, min_t;
     double       tot_mass, msd, *srmsd, min_srmsd, srmsd_tot;
-    rvec        *x, **xi;
+    rvec *       x, **xi;
     real         xf;
     matrix       box, R;
-    real        *w_rls;
+    real *       w_rls;
     gmx_rmpbc_t  gpbc = nullptr;
 
 
@@ -82,7 +82,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     {
         if (index[a] >= natoms)
         {
-            gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[a]+1, natoms);
+            gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[a] + 1, natoms);
         }
         w_rls[a]  = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
@@ -103,13 +103,12 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
             nfr++;
             if (nfr % 100 == 0)
             {
-                srenew(ti, nfr+100);
-                srenew(xi, nfr+100);
+                srenew(ti, nfr + 100);
+                srenew(xi, nfr + 100);
             }
         }
         nfr_all++;
-    }
-    while (read_next_x(oenv, status, &ti[nfr], x, box));
+    } while (read_next_x(oenv, status, &ti[nfr], x, box));
     close_trj(status);
     sfree(x);
 
@@ -120,7 +119,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     {
         fprintf(stdout, "\rProcessing frame %d of %d", i, nfr);
         fflush(stdout);
-        for (j = i+1; j < nfr; j++)
+        for (j = i + 1; j < nfr; j++)
         {
             calc_fit_R(nfitdim, gnx, w_rls, xi[i], xi[j], R);
 
@@ -132,9 +131,9 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
                     xf = 0;
                     for (c = 0; c < DIM; c++)
                     {
-                        xf += R[r][c]*xi[j][a][c];
+                        xf += R[r][c] * xi[j][a][c];
                     }
-                    msd += w_rls[a]*gmx::square(xi[i][a][r] - xf);
+                    msd += w_rls[a] * gmx::square(xi[i][a][r] - xf);
                 }
             }
             msd      /= tot_mass;
@@ -163,7 +162,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     }
     sfree(srmsd);
 
-    printf("Average RMSD between all structures: %.3f\n", srmsd_tot/nfr);
+    printf("Average RMSD between all structures: %.3f\n", srmsd_tot / nfr);
     printf("Structure with lowest RMSD to all others: time %g, av. RMSD %.3f\n",
            min_t, min_srmsd);
 
@@ -177,7 +176,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
 
 int gmx_rotmat(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
@@ -203,7 +202,7 @@ int gmx_rotmat(int argc, char *argv[])
         "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
-    const char       *reffit[] =
+    const char *reffit[] =
     { nullptr, "none", "xyz", "xy", nullptr };
     static int        skip   = 1;
     static gmx_bool   bFitXY = FALSE, bMW = TRUE;
@@ -217,23 +216,23 @@ int gmx_rotmat(int argc, char *argv[])
         { "-mw", FALSE, etBOOL, {&bMW},
           "Use mass weighted fitting" }
     };
-    FILE             *out;
-    t_trxstatus      *status;
+    FILE *            out;
+    t_trxstatus *     status;
     t_topology        top;
     int               ePBC;
-    rvec             *x_ref, *x;
+    rvec *            x_ref, *x;
     matrix            box, R;
     real              t;
     int               natoms, i;
-    char             *grpname;
+    char *            grpname;
     int               gnx;
     gmx_rmpbc_t       gpbc = nullptr;
-    int              *index;
+    int *             index;
     gmx_output_env_t *oenv;
-    real             *w_rls;
-    const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
+    real *            w_rls;
+    const char *      leg[] = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f",   nullptr,       ffREAD },
         { efTPS, nullptr,   nullptr,       ffREAD },
         { efNDX, nullptr,   nullptr,       ffOPTRD },
@@ -269,7 +268,7 @@ int gmx_rotmat(int argc, char *argv[])
     {
         if (index[i] >= natoms)
         {
-            gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[i]+1, natoms);
+            gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[i] + 1, natoms);
         }
         w_rls[index[i]] = (bMW ? top.atoms.atom[index[i]].m : 1.0);
     }
@@ -302,8 +301,7 @@ int gmx_rotmat(int argc, char *argv[])
                 R[XX][XX], R[XX][YY], R[XX][ZZ],
                 R[YY][XX], R[YY][YY], R[YY][ZZ],
                 R[ZZ][XX], R[ZZ][YY], R[ZZ][ZZ]);
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

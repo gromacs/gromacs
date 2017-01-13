@@ -116,7 +116,7 @@ void gmx_omp_nthreads_set(int mod, int nthreads);
 /*! \brief
  * Read the OMP_NUM_THREADS env. var. and check against the value set on the
  * command line. */
-void gmx_omp_nthreads_read_env(int     *nthreads_omp,
+void gmx_omp_nthreads_read_env(int *    nthreads_omp,
                                gmx_bool bIsSimMaster);
 
 #endif

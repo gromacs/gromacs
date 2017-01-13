@@ -45,10 +45,10 @@
 
 int *make_invblock(const t_block *block, int nr)
 {
-    int      i, j;
-    int     *invblock;
+    int  i, j;
+    int *invblock;
 
-    snew(invblock, nr+1);
+    snew(invblock, nr + 1);
     /* Mark unused numbers */
     for (i = 0; i <= nr; i++)
     {
@@ -56,7 +56,7 @@ int *make_invblock(const t_block *block, int nr)
     }
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (invblock[j] == -1)
             {
@@ -75,10 +75,10 @@ int *make_invblock(const t_block *block, int nr)
 
 int *make_invblocka(const t_blocka *block, int nr)
 {
-    int      i, j;
-    int     *invblock;
+    int  i, j;
+    int *invblock;
 
-    snew(invblock, nr+1);
+    snew(invblock, nr + 1);
     /* Mark unused numbers */
     for (i = 0; i <= nr; i++)
     {
@@ -86,7 +86,7 @@ int *make_invblocka(const t_blocka *block, int nr)
     }
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (invblock[block->a[j]] == -1)
             {

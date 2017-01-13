@@ -46,13 +46,12 @@
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 
-static void
-F77_FUNC(dstqrb, DSTQRB) (int *      n,
-                          double *   d__,
-                          double *   e,
-                          double *   z__,
-                          double *   work,
-                          int *      info)
+static void F77_FUNC(dstqrb, DSTQRB) (int *      n,
+                                      double *   d__,
+                                      double *   e,
+                                      double *   z__,
+                                      double *   work,
+                                      int *      info)
 {
     int    i__1, i__2;
     double d__1, d__2;
@@ -136,7 +135,7 @@ L10:
             {
                 goto L30;
             }
-            if (tst <= std::sqrt(std::abs(d__[m])) * std::sqrt(std::abs(d__[m+1])) * eps)
+            if (tst <= std::sqrt(std::abs(d__[m])) * std::sqrt(std::abs(d__[m + 1])) * eps)
             {
                 e[m] = 0.;
                 goto L30;
@@ -323,7 +322,7 @@ L90:
             {
                 d__2 = std::abs(e[m - 1]);
                 tst  = d__2 * d__2;
-                if (tst <= eps2 * std::abs(d__[m]) * std::abs(d__[m- 1]) + safmin)
+                if (tst <= eps2 * std::abs(d__[m]) * std::abs(d__[m - 1]) + safmin)
                 {
                     goto L110;
                 }
@@ -509,21 +508,20 @@ L190:
 
 }
 
-static void
-F77_FUNC(dgetv0, DGETV0) (int *     ido,
-                          const char *    bmat,
-                          int gmx_unused *     itry,
-                          int *     initv,
-                          int *     n,
-                          int *     j,
-                          double *  v,
-                          int *     ldv,
-                          double *  resid,
-                          double *  rnorm,
-                          int *     ipntr,
-                          double *  workd,
-                          int *     iwork,
-                          int *     ierr)
+static void F77_FUNC(dgetv0, DGETV0) (int *     ido,
+                                      const char *    bmat,
+                                      int gmx_unused *     itry,
+                                      int *     initv,
+                                      int *     n,
+                                      int *     j,
+                                      double *  v,
+                                      int *     ldv,
+                                      double *  resid,
+                                      double *  rnorm,
+                                      int *     ipntr,
+                                      double *  workd,
+                                      int *     iwork,
+                                      int *     ierr)
 {
     int    c__1  = 1;
     double c_b22 = 1.;
@@ -531,8 +529,8 @@ F77_FUNC(dgetv0, DGETV0) (int *     ido,
     double c_b27 = -1.;
     int    v_dim1, v_offset, i__1;
 
-    int    jj;
-    int    idist;
+    int jj;
+    int idist;
 
     --workd;
     --resid;
@@ -680,19 +678,18 @@ L9000:
 
 
 
-static void
-F77_FUNC(dsapps, DSAPPS) (int *     n,
-                          int *     kev,
-                          int *     np,
-                          double *  shift,
-                          double *  v,
-                          int *     ldv,
-                          double *  h__,
-                          int *     ldh,
-                          double *  resid,
-                          double *  q,
-                          int *     ldq,
-                          double *  workd)
+static void F77_FUNC(dsapps, DSAPPS) (int *     n,
+                                      int *     kev,
+                                      int *     np,
+                                      double *  shift,
+                                      double *  v,
+                                      int *     ldv,
+                                      double *  h__,
+                                      int *     ldh,
+                                      double *  resid,
+                                      double *  q,
+                                      int *     ldq,
+                                      double *  workd)
 {
     double c_b4  = 0.;
     double c_b5  = 1.;
@@ -746,7 +743,7 @@ L20:
         i__2 = kplusp - 1;
         for (i__ = istart; i__ <= i__2; ++i__)
         {
-            big = std::abs(h__[i__ + (h_dim1*2)]) + std::abs(h__[i__ + 1 + (h_dim1*2)]);
+            big = std::abs(h__[i__ + (h_dim1 * 2)]) + std::abs(h__[i__ + 1 + (h_dim1 * 2)]);
             if (h__[i__ + 1 + h_dim1] <= epsmch * big)
             {
                 h__[i__ + 1 + h_dim1] = 0.;
@@ -764,14 +761,14 @@ L40:
             g = h__[istart + 1 + h_dim1];
             F77_FUNC(dlartg, DLARTG) (&f, &g, &c__, &s, &r__);
 
-            a1 = c__ * h__[istart + (h_dim1 << 1)] + s * h__[istart + 1 +
-                                                             h_dim1];
+            a1 = c__ * h__[istart + (h_dim1 << 1)] + s * h__[istart + 1
+                                                             + h_dim1];
             a2 = c__ * h__[istart + 1 + h_dim1] + s * h__[istart + 1 + (
                                                               h_dim1 << 1)];
-            a4 = c__ * h__[istart + 1 + (h_dim1 << 1)] - s * h__[istart + 1 +
-                                                                 h_dim1];
-            a3 = c__ * h__[istart + 1 + h_dim1] - s * h__[istart + (h_dim1 <<
-                                                                    1)];
+            a4 = c__ * h__[istart + 1 + (h_dim1 << 1)] - s * h__[istart + 1
+                                                                 + h_dim1];
+            a3 = c__ * h__[istart + 1 + h_dim1] - s * h__[istart + (h_dim1
+                                                                    << 1)];
             h__[istart + (h_dim1 << 1)]     = c__ * a1 + s * a2;
             h__[istart + 1 + (h_dim1 << 1)] = c__ * a4 - s * a3;
             h__[istart + 1 + h_dim1]        = c__ * a3 + s * a4;
@@ -780,10 +777,10 @@ L40:
             i__2 = (i__3 < kplusp) ? i__3 : kplusp;
             for (j = 1; j <= i__2; ++j)
             {
-                a1 = c__ * q[j + istart * q_dim1] + s * q[j + (istart + 1) *
-                                                          q_dim1];
-                q[j + (istart + 1) * q_dim1] = -s * q[j + istart * q_dim1] +
-                    c__ * q[j + (istart + 1) * q_dim1];
+                a1 = c__ * q[j + istart * q_dim1] + s * q[j + (istart + 1)
+                                                          * q_dim1];
+                q[j + (istart + 1) * q_dim1] = -s * q[j + istart * q_dim1]
+                    + c__ * q[j + (istart + 1) * q_dim1];
                 q[j + istart * q_dim1] = a1;
 
             }
@@ -807,14 +804,14 @@ L40:
 
                 h__[i__ + h_dim1] = r__;
 
-                a1 = c__ * h__[i__ + (h_dim1 << 1)] + s * h__[i__ + 1 +
-                                                              h_dim1];
+                a1 = c__ * h__[i__ + (h_dim1 << 1)] + s * h__[i__ + 1
+                                                              + h_dim1];
                 a2 = c__ * h__[i__ + 1 + h_dim1] + s * h__[i__ + 1 + (h_dim1
                                                                       << 1)];
                 a3 = c__ * h__[i__ + 1 + h_dim1] - s * h__[i__ + (h_dim1 << 1)
                     ];
-                a4 = c__ * h__[i__ + 1 + (h_dim1 << 1)] - s * h__[i__ + 1 +
-                                                                  h_dim1];
+                a4 = c__ * h__[i__ + 1 + (h_dim1 << 1)] - s * h__[i__ + 1
+                                                                  + h_dim1];
 
                 h__[i__ + (h_dim1 << 1)]     = c__ * a1 + s * a2;
                 h__[i__ + 1 + (h_dim1 << 1)] = c__ * a4 - s * a3;
@@ -824,10 +821,10 @@ L40:
                 i__3 = (i__4 < kplusp) ? i__4 : kplusp;
                 for (j = 1; j <= i__3; ++j)
                 {
-                    a1 = c__ * q[j + i__ * q_dim1] + s * q[j + (i__ + 1) *
-                                                           q_dim1];
-                    q[j + (i__ + 1) * q_dim1] = -s * q[j + i__ * q_dim1] +
-                        c__ * q[j + (i__ + 1) * q_dim1];
+                    a1 = c__ * q[j + i__ * q_dim1] + s * q[j + (i__ + 1)
+                                                           * q_dim1];
+                    q[j + (i__ + 1) * q_dim1] = -s * q[j + i__ * q_dim1]
+                        + c__ * q[j + (i__ + 1) * q_dim1];
                     q[j + i__ * q_dim1] = a1;
                 }
 
@@ -865,7 +862,7 @@ L90:
     i__1 = kplusp - 1;
     for (i__ = itop; i__ <= i__1; ++i__)
     {
-        big = std::abs(h__[i__ + (h_dim1*2)]) + std::abs(h__[i__+ 1 + (h_dim1*2)]);
+        big = std::abs(h__[i__ + (h_dim1 * 2)]) + std::abs(h__[i__ + 1 + (h_dim1 * 2)]);
         if (h__[i__ + 1 + h_dim1] <= epsmch * big)
         {
             h__[i__ + 1 + h_dim1] = 0.;
@@ -875,16 +872,16 @@ L90:
 
     if (h__[*kev + 1 + h_dim1] > 0.)
     {
-        F77_FUNC(dgemv, DGEMV) ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1) *
-                                                                              q_dim1 + 1], &c__1, &c_b4, &workd[*n + 1], &c__1);
+        F77_FUNC(dgemv, DGEMV) ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1)
+                                                                              * q_dim1 + 1], &c__1, &c_b4, &workd[*n + 1], &c__1);
     }
 
     i__1 = *kev;
     for (i__ = 1; i__ <= i__1; ++i__)
     {
         i__2 = kplusp - i__ + 1;
-        F77_FUNC(dgemv, DGEMV) ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1) *
-                                                                            q_dim1 + 1], &c__1, &c_b4, &workd[1], &c__1);
+        F77_FUNC(dgemv, DGEMV) ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1)
+                                                                            * q_dim1 + 1], &c__1, &c_b4, &workd[1], &c__1);
         F77_FUNC(dcopy, DCOPY) (n, &workd[1], &c__1, &v[(kplusp - i__ + 1) * v_dim1 + 1], &
                                 c__1);
 
@@ -913,14 +910,13 @@ L9000:
 
 
 
-static void
-F77_FUNC(dsortr, DSORTR) (const char *    which,
-                          int *     apply,
-                          int *     n,
-                          double *  x1,
-                          double *  x2)
+static void F77_FUNC(dsortr, DSORTR) (const char *    which,
+                                      int *     apply,
+                                      int *     n,
+                                      double *  x1,
+                                      double *  x2)
 {
-    int    i__1;
+    int i__1;
 
     int    i__, j, igap;
     double temp;
@@ -1114,17 +1110,16 @@ L9000:
 
 
 
-static void
-F77_FUNC(dsesrt, DSESRT) (const char *    which,
-                          int *     apply,
-                          int *     n,
-                          double *  x,
-                          int *     na,
-                          double *  a,
-                          int *     lda)
+static void F77_FUNC(dsesrt, DSESRT) (const char *    which,
+                                      int *     apply,
+                                      int *     n,
+                                      double *  x,
+                                      int *     na,
+                                      double *  a,
+                                      int *     lda)
 {
-    int    a_dim1, a_offset, i__1;
-    int    c__1 = 1;
+    int a_dim1, a_offset, i__1;
+    int c__1 = 1;
 
     int    i__, j, igap;
     double temp;
@@ -1161,8 +1156,8 @@ L20:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -1204,8 +1199,8 @@ L50:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -1247,8 +1242,8 @@ L80:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -1290,8 +1285,8 @@ L110:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(dswap, DSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -1315,14 +1310,13 @@ L9000:
 
 
 
-static void
-F77_FUNC(dsgets, DSGETS) (int *     ishift,
-                          const char *    which,
-                          int *     kev,
-                          int *     np,
-                          double *  ritz,
-                          double *  bounds,
-                          double *  shifts)
+static void F77_FUNC(dsgets, DSGETS) (int *     ishift,
+                                      const char *    which,
+                                      int *     kev,
+                                      int *     np,
+                                      double *  ritz,
+                                      double *  bounds,
+                                      double *  shifts)
 {
     int c__1 = 1;
     int i__1, i__2;
@@ -1369,14 +1363,13 @@ F77_FUNC(dsgets, DSGETS) (int *     ishift,
 
 
 
-static void
-F77_FUNC(dsconv, DSCONV) (int *     n,
-                          double *  ritz,
-                          double *  bounds,
-                          double *  tol,
-                          int *     nconv)
+static void F77_FUNC(dsconv, DSCONV) (int *     n,
+                                      double *  ritz,
+                                      double *  bounds,
+                                      double *  tol,
+                                      int *     nconv)
 {
-    double c_b3 = 2/3;
+    double c_b3 = 2 / 3;
     int    i__1;
     double d__2, d__3;
 
@@ -1407,15 +1400,14 @@ F77_FUNC(dsconv, DSCONV) (int *     n,
 }
 
 
-static void
-F77_FUNC(dseigt, DSEIGT) (double *  rnorm,
-                          int *     n,
-                          double *  h__,
-                          int *     ldh,
-                          double *  eig,
-                          double *  bounds,
-                          double *  workl,
-                          int *     ierr)
+static void F77_FUNC(dseigt, DSEIGT) (double *  rnorm,
+                                      int *     n,
+                                      double *  h__,
+                                      int *     ldh,
+                                      double *  eig,
+                                      double *  bounds,
+                                      double *  workl,
+                                      int *     ierr)
 {
     int c__1 = 1;
     int h_dim1, h_offset, i__1;
@@ -1454,23 +1446,22 @@ L9000:
 
 
 
-static void
-F77_FUNC(dsaitr, DSAITR) (int *     ido,
-                          const char *    bmat,
-                          int *     n,
-                          int *     k,
-                          int *     np,
-                          int *     mode,
-                          double *  resid,
-                          double *  rnorm,
-                          double *  v,
-                          int *     ldv,
-                          double *  h__,
-                          int *     ldh,
-                          int *     ipntr,
-                          double *  workd,
-                          int *     iwork,
-                          int *     info)
+static void F77_FUNC(dsaitr, DSAITR) (int *     ido,
+                                      const char *    bmat,
+                                      int *     n,
+                                      int *     k,
+                                      int *     np,
+                                      int *     mode,
+                                      double *  resid,
+                                      double *  rnorm,
+                                      double *  v,
+                                      int *     ldv,
+                                      double *  h__,
+                                      int *     ldh,
+                                      int *     ipntr,
+                                      double *  workd,
+                                      int *     iwork,
+                                      int *     info)
 {
 
     int    c__0  = 0;
@@ -1581,8 +1572,8 @@ L40:
     else
     {
 
-        F77_FUNC(dlascl, DLASCL) ("General", &i__, &i__, rnorm, &c_b18, n, &c__1, &v[iwork[12] *
-                                                                                     v_dim1 + 1], n, &infol);
+        F77_FUNC(dlascl, DLASCL) ("General", &i__, &i__, rnorm, &c_b18, n, &c__1, &v[iwork[12]
+                                                                                     * v_dim1 + 1], n, &infol);
         F77_FUNC(dlascl, DLASCL) ("General", &i__, &i__, rnorm, &c_b18, n, &c__1, &workd[iwork[
                                                                                              8]], n, &infol);
     }
@@ -1806,39 +1797,38 @@ L9000:
 
 
 
-static void
-F77_FUNC(dsaup2, DSAUP2) (int *     ido,
-                          const char *    bmat,
-                          int *     n,
-                          const char *    which,
-                          int *     nev,
-                          int *     np,
-                          double *  tol,
-                          double *  resid,
-                          int *     mode,
-                          int gmx_unused *     iupd,
-                          int *     ishift,
-                          int *     mxiter,
-                          double *  v,
-                          int *     ldv,
-                          double *  h__,
-                          int *     ldh,
-                          double *  ritz,
-                          double *  bounds,
-                          double *  q,
-                          int *     ldq,
-                          double *  workl,
-                          int *     ipntr,
-                          double *  workd,
-                          int *     iwork,
-                          int *     info)
+static void F77_FUNC(dsaup2, DSAUP2) (int *     ido,
+                                      const char *    bmat,
+                                      int *     n,
+                                      const char *    which,
+                                      int *     nev,
+                                      int *     np,
+                                      double *  tol,
+                                      double *  resid,
+                                      int *     mode,
+                                      int gmx_unused *     iupd,
+                                      int *     ishift,
+                                      int *     mxiter,
+                                      double *  v,
+                                      int *     ldv,
+                                      double *  h__,
+                                      int *     ldh,
+                                      double *  ritz,
+                                      double *  bounds,
+                                      double *  q,
+                                      int *     ldq,
+                                      double *  workl,
+                                      int *     ipntr,
+                                      double *  workd,
+                                      int *     iwork,
+                                      int *     info)
 {
-    double c_b3 = 2/3;
+    double c_b3 = 2 / 3;
     int    c__1 = 1;
     int    c__0 = 0;
 
-    int    h_dim1, h_offset, q_dim1, q_offset, v_dim1, v_offset, i__1, i__2,
-           i__3;
+    int h_dim1, h_offset, q_dim1, q_offset, v_dim1, v_offset, i__1, i__2,
+        i__3;
     double d__2, d__3;
     int    j;
     double eps23;
@@ -1937,8 +1927,8 @@ F77_FUNC(dsaup2, DSAUP2) (int *     ido,
         goto L100;
     }
 
-    F77_FUNC(dsaitr, DSAITR) (ido, bmat, n, &c__0, &iwork[9], mode, &resid[1], &workd[*n * 3 +
-                                                                                      1], &v[v_offset], ldv, &h__[h_offset], ldh, &ipntr[1], &workd[1],
+    F77_FUNC(dsaitr, DSAITR) (ido, bmat, n, &c__0, &iwork[9], mode, &resid[1], &workd[*n * 3
+                                                                                      + 1], &v[v_offset], ldv, &h__[h_offset], ldh, &ipntr[1], &workd[1],
                               &iwork[21], info);
 
     if (*ido != 99)
@@ -2201,24 +2191,23 @@ L9000:
 
 
 
-void
-F77_FUNC(dsaupd, DSAUPD) (int *     ido,
-                          const char *    bmat,
-                          int *     n,
-                          const char *      which,
-                          int *     nev,
-                          double *  tol,
-                          double *  resid,
-                          int *     ncv,
-                          double *  v,
-                          int *     ldv,
-                          int *     iparam,
-                          int *     ipntr,
-                          double *  workd,
-                          int *     iwork,
-                          double *  workl,
-                          int *     lworkl,
-                          int *     info)
+void F77_FUNC(dsaupd, DSAUPD) (int *     ido,
+                               const char *    bmat,
+                               int *     n,
+                               const char *      which,
+                               int *     nev,
+                               double *  tol,
+                               double *  resid,
+                               int *     ncv,
+                               double *  v,
+                               int *     ldv,
+                               int *     iparam,
+                               int *     ipntr,
+                               double *  workd,
+                               int *     iwork,
+                               double *  workl,
+                               int *     lworkl,
+                               int *     info)
 {
     int v_dim1, v_offset, i__1, i__2;
     int j;
@@ -2266,9 +2255,9 @@ F77_FUNC(dsaupd, DSAUPD) (int *     ido,
         {
             iwork[2] = -4;
         }
-        if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2) &&
-            std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2) &&
-            std::strncmp(which, "BE", 2))
+        if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2)
+            && std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2)
+            && std::strncmp(which, "BE", 2))
         {
             iwork[2] = -5;
         }
@@ -2376,31 +2365,30 @@ L9000:
 
 
 
-void
-F77_FUNC(dseupd, DSEUPD) (int *     rvec,
-                          const char *    howmny,
-                          int *     select,
-                          double *  d__,
-                          double *  z__,
-                          int *     ldz,
-                          double *  sigma,
-                          const char *    bmat,
-                          int *     n,
-                          const char *    which,
-                          int *     nev,
-                          double *  tol,
-                          double *  resid,
-                          int *     ncv,
-                          double *  v,
-                          int *     ldv,
-                          int *     iparam,
-                          int *     ipntr,
-                          double *  workd,
-                          double *  workl,
-                          int *     lworkl,
-                          int *     info)
+void F77_FUNC(dseupd, DSEUPD) (int *     rvec,
+                               const char *    howmny,
+                               int *     select,
+                               double *  d__,
+                               double *  z__,
+                               int *     ldz,
+                               double *  sigma,
+                               const char *    bmat,
+                               int *     n,
+                               const char *    which,
+                               int *     nev,
+                               double *  tol,
+                               double *  resid,
+                               int *     ncv,
+                               double *  v,
+                               int *     ldv,
+                               int *     iparam,
+                               int *     ipntr,
+                               double *  workd,
+                               double *  workl,
+                               int *     lworkl,
+                               int *     info)
 {
-    double c_b21  = 2/3;
+    double c_b21  = 2 / 3;
     int    c__1   = 1;
     double c_b102 = 1.;
     int    v_dim1, v_offset, z_dim1, z_offset, i__1;
@@ -2465,9 +2453,9 @@ F77_FUNC(dseupd, DSEUPD) (int *     rvec,
     {
         ierr = -3;
     }
-    if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2) &&
-        std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2) &&
-        std::strncmp(which, "BE", 2))
+    if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2)
+        && std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2)
+        && std::strncmp(which, "BE", 2))
     {
         ierr = -5;
     }
@@ -2475,8 +2463,8 @@ F77_FUNC(dseupd, DSEUPD) (int *     rvec,
     {
         ierr = -6;
     }
-    if (*howmny != 'A' && *howmny != 'P' &&
-        *howmny != 'S' && *rvec)
+    if (*howmny != 'A' && *howmny != 'P'
+        && *howmny != 'S' && *rvec)
     {
         ierr = -15;
     }
@@ -2560,8 +2548,8 @@ F77_FUNC(dseupd, DSEUPD) (int *     rvec,
     if (*rvec)
     {
 
-        if (!std::strncmp(which, "LM", 2) || !std::strncmp(which, "SM", 2) ||
-            !std::strncmp(which, "LA", 2) || !std::strncmp(which, "SA", 2))
+        if (!std::strncmp(which, "LM", 2) || !std::strncmp(which, "SM", 2)
+            || !std::strncmp(which, "LA", 2) || !std::strncmp(which, "SA", 2))
         {
 
         }
@@ -2707,8 +2695,8 @@ L20:
                                             iw], &c__1);
                 F77_FUNC(dcopy, DCOPY) (ncv, &workl[iq + *ncv * (rghtptr - 1)], &c__1, &workl[
                                             iq + *ncv * (leftptr - 1)], &c__1);
-                F77_FUNC(dcopy, DCOPY) (ncv, &workl[iw], &c__1, &workl[iq + *ncv * (rghtptr -
-                                                                                    1)], &c__1);
+                F77_FUNC(dcopy, DCOPY) (ncv, &workl[iw], &c__1, &workl[iq + *ncv * (rghtptr
+                                                                                    - 1)], &c__1);
                 ++leftptr;
                 --rghtptr;
 
@@ -2839,7 +2827,7 @@ L30:
             for (k = 1; k <= i__1; ++k)
             {
                 d__2               = workl[iw + k - 1];
-                workl[ihb + k - 1] = std::abs(workl[ihb + k - 1])/(d__2 * d__2);
+                workl[ihb + k - 1] = std::abs(workl[ihb + k - 1]) / (d__2 * d__2);
             }
 
         }
@@ -2850,7 +2838,7 @@ L30:
             for (k = 1; k <= i__1; ++k)
             {
                 d__2               = workl[iw + k - 1] - 1.;
-                workl[ihb + k - 1] = *sigma * std::abs(workl[ihb + k - 1])/(d__2 * d__2);
+                workl[ihb + k - 1] = *sigma * std::abs(workl[ihb + k - 1]) / (d__2 * d__2);
             }
 
         }
@@ -2884,8 +2872,8 @@ L30:
         i__1 = nconv - 1;
         for (k = 0; k <= i__1; ++k)
         {
-            workl[iw + k] = workl[iq + k * ldq + *ncv - 1] / (workl[iw + k] -
-                                                              1.);
+            workl[iw + k] = workl[iq + k * ldq + *ncv - 1] / (workl[iw + k]
+                                                              - 1.);
         }
 
     }
@@ -2909,13 +2897,12 @@ L9000:
 /* Selected single precision arpack routines */
 
 
-static void
-F77_FUNC(sstqrb, SSTQRB) (int *      n,
-                          float *   d__,
-                          float *   e,
-                          float *   z__,
-                          float *   work,
-                          int *      info)
+static void F77_FUNC(sstqrb, SSTQRB) (int *      n,
+                                      float *   d__,
+                                      float *   e,
+                                      float *   z__,
+                                      float *   work,
+                                      int *      info)
 {
     int   i__1, i__2;
     float d__1, d__2;
@@ -2999,7 +2986,7 @@ L10:
             {
                 goto L30;
             }
-            if (tst <= std::sqrt(std::abs(d__[m])) * std::sqrt(std::abs(d__[m+1])) * eps)
+            if (tst <= std::sqrt(std::abs(d__[m])) * std::sqrt(std::abs(d__[m + 1])) * eps)
             {
                 e[m] = 0.;
                 goto L30;
@@ -3186,7 +3173,7 @@ L90:
             {
                 d__2 = std::abs(e[m - 1]);
                 tst  = d__2 * d__2;
-                if (tst <= eps2 * std::abs(d__[m]) * std::abs(d__[m- 1]) + safmin)
+                if (tst <= eps2 * std::abs(d__[m]) * std::abs(d__[m - 1]) + safmin)
                 {
                     goto L110;
                 }
@@ -3372,21 +3359,20 @@ L190:
 
 }
 
-static void
-F77_FUNC(sgetv0, SGETV0) (int *     ido,
-                          const char *    bmat,
-                          int gmx_unused *     itry,
-                          int *     initv,
-                          int *     n,
-                          int *     j,
-                          float *  v,
-                          int *     ldv,
-                          float *  resid,
-                          float *  rnorm,
-                          int *     ipntr,
-                          float *  workd,
-                          int *     iwork,
-                          int *     ierr)
+static void F77_FUNC(sgetv0, SGETV0) (int *     ido,
+                                      const char *    bmat,
+                                      int gmx_unused *     itry,
+                                      int *     initv,
+                                      int *     n,
+                                      int *     j,
+                                      float *  v,
+                                      int *     ldv,
+                                      float *  resid,
+                                      float *  rnorm,
+                                      int *     ipntr,
+                                      float *  workd,
+                                      int *     iwork,
+                                      int *     ierr)
 {
     int   c__1  = 1;
     float c_b22 = 1.;
@@ -3394,8 +3380,8 @@ F77_FUNC(sgetv0, SGETV0) (int *     ido,
     float c_b27 = -1.;
     int   v_dim1, v_offset, i__1;
 
-    int   jj;
-    int   idist;
+    int jj;
+    int idist;
 
     --workd;
     --resid;
@@ -3543,19 +3529,18 @@ L9000:
 
 
 
-static void
-F77_FUNC(ssapps, SSAPPS) (int *     n,
-                          int *     kev,
-                          int *     np,
-                          float *  shift,
-                          float *  v,
-                          int *     ldv,
-                          float *  h__,
-                          int *     ldh,
-                          float *  resid,
-                          float *  q,
-                          int *     ldq,
-                          float *  workd)
+static void F77_FUNC(ssapps, SSAPPS) (int *     n,
+                                      int *     kev,
+                                      int *     np,
+                                      float *  shift,
+                                      float *  v,
+                                      int *     ldv,
+                                      float *  h__,
+                                      int *     ldh,
+                                      float *  resid,
+                                      float *  q,
+                                      int *     ldq,
+                                      float *  workd)
 {
     float c_b4  = 0.;
     float c_b5  = 1.;
@@ -3609,7 +3594,7 @@ L20:
         i__2 = kplusp - 1;
         for (i__ = istart; i__ <= i__2; ++i__)
         {
-            big = std::abs(h__[i__ + (h_dim1*2)]) + std::abs(h__[i__ + 1 + (h_dim1*2)]);
+            big = std::abs(h__[i__ + (h_dim1 * 2)]) + std::abs(h__[i__ + 1 + (h_dim1 * 2)]);
             if (h__[i__ + 1 + h_dim1] <= epsmch * big)
             {
                 h__[i__ + 1 + h_dim1] = 0.;
@@ -3627,14 +3612,14 @@ L40:
             g = h__[istart + 1 + h_dim1];
             F77_FUNC(slartg, SLARTG) (&f, &g, &c__, &s, &r__);
 
-            a1 = c__ * h__[istart + (h_dim1 << 1)] + s * h__[istart + 1 +
-                                                             h_dim1];
+            a1 = c__ * h__[istart + (h_dim1 << 1)] + s * h__[istart + 1
+                                                             + h_dim1];
             a2 = c__ * h__[istart + 1 + h_dim1] + s * h__[istart + 1 + (
                                                               h_dim1 << 1)];
-            a4 = c__ * h__[istart + 1 + (h_dim1 << 1)] - s * h__[istart + 1 +
-                                                                 h_dim1];
-            a3 = c__ * h__[istart + 1 + h_dim1] - s * h__[istart + (h_dim1 <<
-                                                                    1)];
+            a4 = c__ * h__[istart + 1 + (h_dim1 << 1)] - s * h__[istart + 1
+                                                                 + h_dim1];
+            a3 = c__ * h__[istart + 1 + h_dim1] - s * h__[istart + (h_dim1
+                                                                    << 1)];
             h__[istart + (h_dim1 << 1)]     = c__ * a1 + s * a2;
             h__[istart + 1 + (h_dim1 << 1)] = c__ * a4 - s * a3;
             h__[istart + 1 + h_dim1]        = c__ * a3 + s * a4;
@@ -3643,10 +3628,10 @@ L40:
             i__2 = (i__3 < kplusp) ? i__3 : kplusp;
             for (j = 1; j <= i__2; ++j)
             {
-                a1 = c__ * q[j + istart * q_dim1] + s * q[j + (istart + 1) *
-                                                          q_dim1];
-                q[j + (istart + 1) * q_dim1] = -s * q[j + istart * q_dim1] +
-                    c__ * q[j + (istart + 1) * q_dim1];
+                a1 = c__ * q[j + istart * q_dim1] + s * q[j + (istart + 1)
+                                                          * q_dim1];
+                q[j + (istart + 1) * q_dim1] = -s * q[j + istart * q_dim1]
+                    + c__ * q[j + (istart + 1) * q_dim1];
                 q[j + istart * q_dim1] = a1;
 
             }
@@ -3670,14 +3655,14 @@ L40:
 
                 h__[i__ + h_dim1] = r__;
 
-                a1 = c__ * h__[i__ + (h_dim1 << 1)] + s * h__[i__ + 1 +
-                                                              h_dim1];
+                a1 = c__ * h__[i__ + (h_dim1 << 1)] + s * h__[i__ + 1
+                                                              + h_dim1];
                 a2 = c__ * h__[i__ + 1 + h_dim1] + s * h__[i__ + 1 + (h_dim1
                                                                       << 1)];
                 a3 = c__ * h__[i__ + 1 + h_dim1] - s * h__[i__ + (h_dim1 << 1)
                     ];
-                a4 = c__ * h__[i__ + 1 + (h_dim1 << 1)] - s * h__[i__ + 1 +
-                                                                  h_dim1];
+                a4 = c__ * h__[i__ + 1 + (h_dim1 << 1)] - s * h__[i__ + 1
+                                                                  + h_dim1];
 
                 h__[i__ + (h_dim1 << 1)]     = c__ * a1 + s * a2;
                 h__[i__ + 1 + (h_dim1 << 1)] = c__ * a4 - s * a3;
@@ -3687,10 +3672,10 @@ L40:
                 i__3 = (i__4 < kplusp) ? i__4 : kplusp;
                 for (j = 1; j <= i__3; ++j)
                 {
-                    a1 = c__ * q[j + i__ * q_dim1] + s * q[j + (i__ + 1) *
-                                                           q_dim1];
-                    q[j + (i__ + 1) * q_dim1] = -s * q[j + i__ * q_dim1] +
-                        c__ * q[j + (i__ + 1) * q_dim1];
+                    a1 = c__ * q[j + i__ * q_dim1] + s * q[j + (i__ + 1)
+                                                           * q_dim1];
+                    q[j + (i__ + 1) * q_dim1] = -s * q[j + i__ * q_dim1]
+                        + c__ * q[j + (i__ + 1) * q_dim1];
                     q[j + i__ * q_dim1] = a1;
                 }
 
@@ -3728,7 +3713,7 @@ L90:
     i__1 = kplusp - 1;
     for (i__ = itop; i__ <= i__1; ++i__)
     {
-        big = std::abs(h__[i__ + (h_dim1*2)]) + std::abs(h__[i__+ 1 + (h_dim1*2)]);
+        big = std::abs(h__[i__ + (h_dim1 * 2)]) + std::abs(h__[i__ + 1 + (h_dim1 * 2)]);
         if (h__[i__ + 1 + h_dim1] <= epsmch * big)
         {
             h__[i__ + 1 + h_dim1] = 0.;
@@ -3738,16 +3723,16 @@ L90:
 
     if (h__[*kev + 1 + h_dim1] > 0.)
     {
-        F77_FUNC(sgemv, SGEMV) ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1) *
-                                                                              q_dim1 + 1], &c__1, &c_b4, &workd[*n + 1], &c__1);
+        F77_FUNC(sgemv, SGEMV) ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1)
+                                                                              * q_dim1 + 1], &c__1, &c_b4, &workd[*n + 1], &c__1);
     }
 
     i__1 = *kev;
     for (i__ = 1; i__ <= i__1; ++i__)
     {
         i__2 = kplusp - i__ + 1;
-        F77_FUNC(sgemv, SGEMV) ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1) *
-                                                                            q_dim1 + 1], &c__1, &c_b4, &workd[1], &c__1);
+        F77_FUNC(sgemv, SGEMV) ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1)
+                                                                            * q_dim1 + 1], &c__1, &c_b4, &workd[1], &c__1);
         F77_FUNC(scopy, SCOPY) (n, &workd[1], &c__1, &v[(kplusp - i__ + 1) * v_dim1 + 1], &
                                 c__1);
 
@@ -3776,14 +3761,13 @@ L9000:
 
 
 
-static void
-F77_FUNC(ssortr, SSORTR) (const char *    which,
-                          int *     apply,
-                          int *     n,
-                          float *  x1,
-                          float *  x2)
+static void F77_FUNC(ssortr, SSORTR) (const char *    which,
+                                      int *     apply,
+                                      int *     n,
+                                      float *  x1,
+                                      float *  x2)
 {
-    int   i__1;
+    int i__1;
 
     int   i__, j, igap;
     float temp;
@@ -3977,17 +3961,16 @@ L9000:
 
 
 
-static void
-F77_FUNC(ssesrt, SSESRT) (const char *    which,
-                          int *     apply,
-                          int *     n,
-                          float *  x,
-                          int *     na,
-                          float *  a,
-                          int *     lda)
+static void F77_FUNC(ssesrt, SSESRT) (const char *    which,
+                                      int *     apply,
+                                      int *     n,
+                                      float *  x,
+                                      int *     na,
+                                      float *  a,
+                                      int *     lda)
 {
-    int   a_dim1, a_offset, i__1;
-    int   c__1 = 1;
+    int a_dim1, a_offset, i__1;
+    int c__1 = 1;
 
     int   i__, j, igap;
     float temp;
@@ -4024,8 +4007,8 @@ L20:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -4067,8 +4050,8 @@ L50:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -4110,8 +4093,8 @@ L80:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -4153,8 +4136,8 @@ L110:
                 x[j + igap] = temp;
                 if (*apply)
                 {
-                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap) *
-                                                                              a_dim1 + 1], &c__1);
+                    F77_FUNC(sswap, SSWAP) (na, &a[j * a_dim1 + 1], &c__1, &a[(j + igap)
+                                                                              * a_dim1 + 1], &c__1);
                 }
             }
             else
@@ -4178,14 +4161,13 @@ L9000:
 
 
 
-static void
-F77_FUNC(ssgets, SSGETS) (int *     ishift,
-                          const char *    which,
-                          int *     kev,
-                          int *     np,
-                          float *  ritz,
-                          float *  bounds,
-                          float *  shifts)
+static void F77_FUNC(ssgets, SSGETS) (int *     ishift,
+                                      const char *    which,
+                                      int *     kev,
+                                      int *     np,
+                                      float *  ritz,
+                                      float *  bounds,
+                                      float *  shifts)
 {
     int c__1 = 1;
     int i__1, i__2;
@@ -4232,14 +4214,13 @@ F77_FUNC(ssgets, SSGETS) (int *     ishift,
 
 
 
-static void
-F77_FUNC(ssconv, SSCONV) (int *     n,
-                          float *  ritz,
-                          float *  bounds,
-                          float *  tol,
-                          int *     nconv)
+static void F77_FUNC(ssconv, SSCONV) (int *     n,
+                                      float *  ritz,
+                                      float *  bounds,
+                                      float *  tol,
+                                      int *     nconv)
 {
-    float c_b3 = 2/3;
+    float c_b3 = 2 / 3;
     int   i__1;
     float d__2, d__3;
 
@@ -4270,15 +4251,14 @@ F77_FUNC(ssconv, SSCONV) (int *     n,
 }
 
 
-static void
-F77_FUNC(sseigt, SSEIGT) (float *  rnorm,
-                          int *     n,
-                          float *  h__,
-                          int *     ldh,
-                          float *  eig,
-                          float *  bounds,
-                          float *  workl,
-                          int *     ierr)
+static void F77_FUNC(sseigt, SSEIGT) (float *  rnorm,
+                                      int *     n,
+                                      float *  h__,
+                                      int *     ldh,
+                                      float *  eig,
+                                      float *  bounds,
+                                      float *  workl,
+                                      int *     ierr)
 {
     int c__1 = 1;
     int h_dim1, h_offset, i__1;
@@ -4317,23 +4297,22 @@ L9000:
 
 
 
-static void
-F77_FUNC(ssaitr, SSAITR) (int *     ido,
-                          const char *    bmat,
-                          int *     n,
-                          int *     k,
-                          int *     np,
-                          int *     mode,
-                          float *  resid,
-                          float *  rnorm,
-                          float *  v,
-                          int *     ldv,
-                          float *  h__,
-                          int *     ldh,
-                          int *     ipntr,
-                          float *  workd,
-                          int *     iwork,
-                          int *     info)
+static void F77_FUNC(ssaitr, SSAITR) (int *     ido,
+                                      const char *    bmat,
+                                      int *     n,
+                                      int *     k,
+                                      int *     np,
+                                      int *     mode,
+                                      float *  resid,
+                                      float *  rnorm,
+                                      float *  v,
+                                      int *     ldv,
+                                      float *  h__,
+                                      int *     ldh,
+                                      int *     ipntr,
+                                      float *  workd,
+                                      int *     iwork,
+                                      int *     info)
 {
 
     int   c__0  = 0;
@@ -4444,8 +4423,8 @@ L40:
     else
     {
 
-        F77_FUNC(slascl, SLASCL) ("General", &i__, &i__, rnorm, &c_b18, n, &c__1, &v[iwork[12] *
-                                                                                     v_dim1 + 1], n, &infol);
+        F77_FUNC(slascl, SLASCL) ("General", &i__, &i__, rnorm, &c_b18, n, &c__1, &v[iwork[12]
+                                                                                     * v_dim1 + 1], n, &infol);
         F77_FUNC(slascl, SLASCL) ("General", &i__, &i__, rnorm, &c_b18, n, &c__1, &workd[iwork[
                                                                                              8]], n, &infol);
     }
@@ -4669,39 +4648,38 @@ L9000:
 
 
 
-static void
-F77_FUNC(ssaup2, SSAUP2) (int *     ido,
-                          const char *    bmat,
-                          int *     n,
-                          const char *    which,
-                          int *     nev,
-                          int *     np,
-                          float *  tol,
-                          float *  resid,
-                          int *     mode,
-                          int gmx_unused *     iupd,
-                          int *     ishift,
-                          int *     mxiter,
-                          float *  v,
-                          int *     ldv,
-                          float *  h__,
-                          int *     ldh,
-                          float *  ritz,
-                          float *  bounds,
-                          float *  q,
-                          int *     ldq,
-                          float *  workl,
-                          int *     ipntr,
-                          float *  workd,
-                          int *     iwork,
-                          int *     info)
+static void F77_FUNC(ssaup2, SSAUP2) (int *     ido,
+                                      const char *    bmat,
+                                      int *     n,
+                                      const char *    which,
+                                      int *     nev,
+                                      int *     np,
+                                      float *  tol,
+                                      float *  resid,
+                                      int *     mode,
+                                      int gmx_unused *     iupd,
+                                      int *     ishift,
+                                      int *     mxiter,
+                                      float *  v,
+                                      int *     ldv,
+                                      float *  h__,
+                                      int *     ldh,
+                                      float *  ritz,
+                                      float *  bounds,
+                                      float *  q,
+                                      int *     ldq,
+                                      float *  workl,
+                                      int *     ipntr,
+                                      float *  workd,
+                                      int *     iwork,
+                                      int *     info)
 {
-    float c_b3 = 2/3;
+    float c_b3 = 2 / 3;
     int   c__1 = 1;
     int   c__0 = 0;
 
-    int   h_dim1, h_offset, q_dim1, q_offset, v_dim1, v_offset, i__1, i__2,
-          i__3;
+    int h_dim1, h_offset, q_dim1, q_offset, v_dim1, v_offset, i__1, i__2,
+        i__3;
     float d__2, d__3;
     int   j;
     float eps23;
@@ -4800,8 +4778,8 @@ F77_FUNC(ssaup2, SSAUP2) (int *     ido,
         goto L100;
     }
 
-    F77_FUNC(ssaitr, SSAITR) (ido, bmat, n, &c__0, &iwork[9], mode, &resid[1], &workd[*n * 3 +
-                                                                                      1], &v[v_offset], ldv, &h__[h_offset], ldh, &ipntr[1], &workd[1],
+    F77_FUNC(ssaitr, SSAITR) (ido, bmat, n, &c__0, &iwork[9], mode, &resid[1], &workd[*n * 3
+                                                                                      + 1], &v[v_offset], ldv, &h__[h_offset], ldh, &ipntr[1], &workd[1],
                               &iwork[21], info);
 
     if (*ido != 99)
@@ -5065,24 +5043,23 @@ L9000:
 
 
 
-void
-F77_FUNC(ssaupd, SSAUPD) (int *     ido,
-                          const char *    bmat,
-                          int *     n,
-                          const char *      which,
-                          int *     nev,
-                          float *  tol,
-                          float *  resid,
-                          int *     ncv,
-                          float *  v,
-                          int *     ldv,
-                          int *     iparam,
-                          int *     ipntr,
-                          float *  workd,
-                          int *     iwork,
-                          float *  workl,
-                          int *     lworkl,
-                          int *     info)
+void F77_FUNC(ssaupd, SSAUPD) (int *     ido,
+                               const char *    bmat,
+                               int *     n,
+                               const char *      which,
+                               int *     nev,
+                               float *  tol,
+                               float *  resid,
+                               int *     ncv,
+                               float *  v,
+                               int *     ldv,
+                               int *     iparam,
+                               int *     ipntr,
+                               float *  workd,
+                               int *     iwork,
+                               float *  workl,
+                               int *     lworkl,
+                               int *     info)
 {
     int v_dim1, v_offset, i__1, i__2;
     int j;
@@ -5130,9 +5107,9 @@ F77_FUNC(ssaupd, SSAUPD) (int *     ido,
         {
             iwork[2] = -4;
         }
-        if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2) &&
-            std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2) &&
-            std::strncmp(which, "BE", 2))
+        if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2)
+            && std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2)
+            && std::strncmp(which, "BE", 2))
         {
             iwork[2] = -5;
         }
@@ -5240,31 +5217,30 @@ L9000:
 
 
 
-void
-F77_FUNC(sseupd, SSEUPD) (int *     rvec,
-                          const char *    howmny,
-                          int *     select,
-                          float *  d__,
-                          float *  z__,
-                          int *     ldz,
-                          float *  sigma,
-                          const char *    bmat,
-                          int *     n,
-                          const char *    which,
-                          int *     nev,
-                          float *  tol,
-                          float *  resid,
-                          int *     ncv,
-                          float *  v,
-                          int *     ldv,
-                          int *     iparam,
-                          int *     ipntr,
-                          float *  workd,
-                          float *  workl,
-                          int *     lworkl,
-                          int *     info)
+void F77_FUNC(sseupd, SSEUPD) (int *     rvec,
+                               const char *    howmny,
+                               int *     select,
+                               float *  d__,
+                               float *  z__,
+                               int *     ldz,
+                               float *  sigma,
+                               const char *    bmat,
+                               int *     n,
+                               const char *    which,
+                               int *     nev,
+                               float *  tol,
+                               float *  resid,
+                               int *     ncv,
+                               float *  v,
+                               int *     ldv,
+                               int *     iparam,
+                               int *     ipntr,
+                               float *  workd,
+                               float *  workl,
+                               int *     lworkl,
+                               int *     info)
 {
-    float c_b21  = 2/3;
+    float c_b21  = 2 / 3;
     int   c__1   = 1;
     float c_b102 = 1.;
     int   v_dim1, v_offset, z_dim1, z_offset, i__1;
@@ -5329,9 +5305,9 @@ F77_FUNC(sseupd, SSEUPD) (int *     rvec,
     {
         ierr = -3;
     }
-    if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2) &&
-        std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2) &&
-        std::strncmp(which, "BE", 2))
+    if (std::strncmp(which, "LM", 2) && std::strncmp(which, "SM", 2)
+        && std::strncmp(which, "LA", 2) && std::strncmp(which, "SA", 2)
+        && std::strncmp(which, "BE", 2))
     {
         ierr = -5;
     }
@@ -5339,8 +5315,8 @@ F77_FUNC(sseupd, SSEUPD) (int *     rvec,
     {
         ierr = -6;
     }
-    if (*howmny != 'A' && *howmny != 'P' &&
-        *howmny != 'S' && *rvec)
+    if (*howmny != 'A' && *howmny != 'P'
+        && *howmny != 'S' && *rvec)
     {
         ierr = -15;
     }
@@ -5424,8 +5400,8 @@ F77_FUNC(sseupd, SSEUPD) (int *     rvec,
     if (*rvec)
     {
 
-        if (!std::strncmp(which, "LM", 2) || !std::strncmp(which, "SM", 2) ||
-            !std::strncmp(which, "LA", 2) || !std::strncmp(which, "SA", 2))
+        if (!std::strncmp(which, "LM", 2) || !std::strncmp(which, "SM", 2)
+            || !std::strncmp(which, "LA", 2) || !std::strncmp(which, "SA", 2))
         {
 
         }
@@ -5571,8 +5547,8 @@ L20:
                                             iw], &c__1);
                 F77_FUNC(scopy, SCOPY) (ncv, &workl[iq + *ncv * (rghtptr - 1)], &c__1, &workl[
                                             iq + *ncv * (leftptr - 1)], &c__1);
-                F77_FUNC(scopy, SCOPY) (ncv, &workl[iw], &c__1, &workl[iq + *ncv * (rghtptr -
-                                                                                    1)], &c__1);
+                F77_FUNC(scopy, SCOPY) (ncv, &workl[iw], &c__1, &workl[iq + *ncv * (rghtptr
+                                                                                    - 1)], &c__1);
                 ++leftptr;
                 --rghtptr;
 
@@ -5703,7 +5679,7 @@ L30:
             for (k = 1; k <= i__1; ++k)
             {
                 d__2               = workl[iw + k - 1];
-                workl[ihb + k - 1] = std::abs(workl[ihb + k - 1])/(d__2 * d__2);
+                workl[ihb + k - 1] = std::abs(workl[ihb + k - 1]) / (d__2 * d__2);
             }
 
         }
@@ -5714,7 +5690,7 @@ L30:
             for (k = 1; k <= i__1; ++k)
             {
                 d__2               = workl[iw + k - 1] - 1.;
-                workl[ihb + k - 1] = *sigma * std::abs(workl[ihb + k - 1])/(d__2 * d__2);
+                workl[ihb + k - 1] = *sigma * std::abs(workl[ihb + k - 1]) / (d__2 * d__2);
             }
 
         }
@@ -5748,8 +5724,8 @@ L30:
         i__1 = nconv - 1;
         for (k = 0; k <= i__1; ++k)
         {
-            workl[iw + k] = workl[iq + k * ldq + *ncv - 1] / (workl[iw + k] -
-                                                              1.);
+            workl[iw + k] = workl[iq + k * ldq + *ncv - 1] / (workl[iw + k]
+                                                              - 1.);
         }
 
     }

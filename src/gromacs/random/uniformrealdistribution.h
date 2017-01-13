@@ -100,9 +100,8 @@ namespace gmx
  * to the C++ standard being unclear) where 1.0 can be returned occasionally.
  *
  */
-template<class RealType = real, unsigned int Bits, class Rng>
-RealType
-generateCanonical(Rng &g)
+template <class RealType = real, unsigned int Bits, class Rng>
+RealType generateCanonical(Rng &g)
 {
     // No point in using more bits than fit in RealType
     const gmx_uint64_t digits   = std::numeric_limits<RealType>::digits;
@@ -117,7 +116,7 @@ generateCanonical(Rng &g)
 
     for (gmx_uint64_t i = 1; i < k; ++i)
     {
-        s    += RealType(g()-Rng::min()) * base;
+        s    += RealType(g() - Rng::min()) * base;
         base *= r;
     }
     result = s / base;
@@ -157,7 +156,7 @@ generateCanonical(Rng &g)
  *
  * \tparam RealType Floating-point type, real by default in GROMACS.
  */
-template<class RealType = real>
+template <class RealType = real>
 class UniformRealDistribution
 {
     public:
@@ -168,9 +167,9 @@ class UniformRealDistribution
         class param_type
         {
             /*! \brief Lower end of range (inclusive) */
-            result_type  a_;
+            result_type a_;
             /*! \brief Upper end of range (exclusive) */
-            result_type  b_;
+            result_type b_;
 
             public:
                 /*! \brief Reference back to the distribution class */
@@ -196,8 +195,7 @@ class UniformRealDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator==(const param_type &x) const
+                bool operator==(const param_type &x) const
                 {
                     return a_ == x.a_ && b_ == x.b_;
                 }
@@ -206,8 +204,7 @@ class UniformRealDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
+                bool operator!=(const param_type &x) const { return !operator==(x); }
         };
 
     public:
@@ -227,8 +224,7 @@ class UniformRealDistribution
         explicit UniformRealDistribution(const param_type &param) : param_(param) {}
 
         /*! \brief Flush all internal saved values  */
-        void
-        reset() { }
+        void reset() { }
 
         /*! \brief Return values from uniform real distribution with internal parameters
          *
@@ -236,9 +232,8 @@ class UniformRealDistribution
          *
          * \param  g    Random engine
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
+        template <class Rng>
+        result_type operator()(Rng &g) { return (*this)(g, param_); }
 
         /*! \brief Return value from uniform real distribution with given parameters
          *
@@ -247,47 +242,40 @@ class UniformRealDistribution
          * \param  g     Random engine
          * \param  param Parameters to use
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        template <class Rng>
+        result_type operator()(Rng &g, const param_type &param)
         {
             result_type r = generateCanonical<RealType, std::numeric_limits<RealType>::digits>(g);
             return ( param.b() - param.a() ) * r + param.a();
         }
 
         /*! \brief Return the lower range uniform real distribution */
-        result_type
-        a() const { return param_.a(); }
+        result_type a() const { return param_.a(); }
 
         /*! \brief Return the upper range of the uniform real distribution */
-        result_type
-        b() const { return param_.b(); }
+        result_type b() const { return param_.b(); }
 
         /*! \brief Return the full parameter class of the uniform real distribution */
         param_type param() const { return param_; }
 
         /*! \brief Smallest value that can be returned from uniform real distribution */
-        result_type
-        min() const { return a(); }
+        result_type min() const { return a(); }
 
         /*! \brief Largest value that can be returned from uniform real distribution */
-        result_type
-        max() const { return b(); }
+        result_type max() const { return b(); }
 
         /*! \brief True if two uniform real distributions will produce the same values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator==(const UniformRealDistribution &x) const
+        bool operator==(const UniformRealDistribution &x) const
         { return param_ == x.param_; }
 
         /*! \brief True if two uniform real distributions will produce different values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator!=(const UniformRealDistribution &x) const
+        bool operator!=(const UniformRealDistribution &x) const
         { return !operator==(x); }
 
     private:

@@ -52,7 +52,7 @@
 
 static int calc_ntype(int nft, int *ft, const t_idef *idef)
 {
-    int  i, f, nf = 0;
+    int i, f, nf = 0;
 
     for (i = 0; (i < idef->ntypes); i++)
     {
@@ -148,8 +148,8 @@ static void fill_ang(int nft, int *ft, int fac,
     int           f, ftype, i, j, indg, nr_fac;
     gmx_bool      bUse;
     const t_idef *idef;
-    t_atom       *atom;
-    t_iatom      *ia;
+    t_atom *      atom;
+    t_iatom *     ia;
 
 
     idef = &top->idef;
@@ -171,7 +171,7 @@ static void fill_ang(int nft, int *ft, int fac,
             {
                 for (j = 0; j < fac; j++)
                 {
-                    if (atom[ia[1+j]].m < 1.5)
+                    if (atom[ia[1 + j]].m < 1.5)
                     {
                         bUse = FALSE;
                     }
@@ -181,7 +181,7 @@ static void fill_ang(int nft, int *ft, int fac,
             {
                 for (j = 0; j < fac; j++)
                 {
-                    if (atom[ia[1+j]].m < 1.5 && std::abs(atom[ia[1+j]].q) < hq)
+                    if (atom[ia[1 + j]].m < 1.5 && std::abs(atom[ia[1 + j]].q) < hq)
                     {
                         bUse = FALSE;
                     }
@@ -191,17 +191,17 @@ static void fill_ang(int nft, int *ft, int fac,
             {
                 if (nr[indg] % 1000 == 0)
                 {
-                    srenew(index[indg], fac*(nr[indg]+1000));
+                    srenew(index[indg], fac * (nr[indg] + 1000));
                 }
-                nr_fac = fac*nr[indg];
+                nr_fac = fac * nr[indg];
                 for (j = 0; (j < fac); j++)
                 {
-                    index[indg][nr_fac+j] = ia[j+1];
+                    index[indg][nr_fac + j] = ia[j + 1];
                 }
                 nr[indg]++;
             }
-            ia += interaction_function[ftype].nratoms+1;
-            i  += interaction_function[ftype].nratoms+1;
+            ia += interaction_function[ftype].nratoms + 1;
+            i  += interaction_function[ftype].nratoms + 1;
         }
     }
 }
@@ -215,12 +215,12 @@ static int *select_ftype(const char *opt, int *nft, int *mult)
         *mult = 3;
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if ((interaction_function[ftype].flags & IF_ATYPE) ||
-                ftype == F_TABANGLES)
+            if ((interaction_function[ftype].flags & IF_ATYPE)
+                || ftype == F_TABANGLES)
             {
                 (*nft)++;
                 srenew(ft, *nft);
-                ft[*nft-1] = ftype;
+                ft[*nft - 1] = ftype;
             }
         }
     }
@@ -267,16 +267,16 @@ int gmx_mk_angndx(int argc, char *argv[])
           "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
     };
 
-    gmx_output_env_t  *oenv;
-    FILE              *out;
-    t_topology        *top;
-    int                i, j, ntype;
-    int                nft = 0, *ft, mult = 0;
-    int              **index;
-    int               *ft_ind;
-    int               *nr;
-    char             **grpnames;
-    t_filenm           fnm[] = {
+    gmx_output_env_t *oenv;
+    FILE *            out;
+    t_topology *      top;
+    int               i, j, ntype;
+    int               nft = 0, *ft, mult = 0;
+    int **            index;
+    int *             ft_ind;
+    int *             nr;
+    char **           grpnames;
+    t_filenm          fnm[] = {
         { efTPR, nullptr, nullptr, ffREAD  },
         { efNDX, nullptr, "angle", ffWRITE }
     };
@@ -309,9 +309,9 @@ int gmx_mk_angndx(int argc, char *argv[])
         if (nr[i] > 0)
         {
             fprintf(out, "[ %s ]\n", grpnames[i]);
-            for (j = 0; (j < nr[i]*mult); j++)
+            for (j = 0; (j < nr[i] * mult); j++)
             {
-                fprintf(out, " %5d", index[i][j]+1);
+                fprintf(out, " %5d", index[i][j] + 1);
                 if ((j % 12) == 11)
                 {
                     fprintf(out, "\n");

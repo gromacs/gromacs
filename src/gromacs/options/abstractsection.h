@@ -116,7 +116,7 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
         static StorageType *getStorage(internal::OptionSectionImpl *section)
         {
             IOptionSectionStorage *storage = getStorage(section);
-            StorageType           *typedStorage
+            StorageType *          typedStorage
                 = dynamic_cast<StorageType *>(storage);
             GMX_ASSERT(typedStorage != nullptr, "Mismatching section storage type");
             return typedStorage;

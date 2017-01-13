@@ -60,14 +60,14 @@
 
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {
-    FILE         *fp;
-    gmx_bool      bCont;
-    char          libfilename[128];
-    char          format[128], f1[128];
-    char          buf[1024], elem[16], type[16], nbbuf[16], **newbuf;
-    int           i, nb, nnnm, line = 1;
-    double        qq, mm;
-    t_nm2type    *nm2t = nullptr;
+    FILE *     fp;
+    gmx_bool   bCont;
+    char       libfilename[128];
+    char       format[128], f1[128];
+    char       buf[1024], elem[16], type[16], nbbuf[16], **newbuf;
+    int        i, nb, nnnm, line = 1;
+    double     qq, mm;
+    t_nm2type *nm2t = nullptr;
 
     fp = fflib_open(fn);
     if (nullptr == fp)
@@ -89,7 +89,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
             if (sscanf(buf, "%s%s%lf%lf%d", elem, type, &qq, &mm, &nb) == 5)
             {
                 /* If we can read the first four, there probably is more */
-                srenew(nm2t, nnnm+1);
+                srenew(nm2t, nnnm + 1);
                 snew(nm2t[nnnm].blen, nb);
                 if (nb > 0)
                 {
@@ -122,8 +122,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
             }
             line++;
         }
-    }
-    while (bCont);
+    } while (bCont);
     gmx_ffclose(fp);
 
     *nnm = nnnm;
@@ -133,7 +132,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 t_nm2type *rd_nm2type(const char *ffdir, int *nnm)
 {
     int        nff, f;
-    char     **ff;
+    char **    ff;
     t_nm2type *nm;
 
     nff  = fflib_search_file_end(ffdir, ".n2t", FALSE, &ff);
@@ -167,7 +166,8 @@ void dump_nm2type(FILE *fp, int nnm, t_nm2type nm2t[])
     }
 }
 
-enum {
+enum
+{
     ematchNone, ematchWild, ematchElem, ematchExact, ematchNR
 };
 
@@ -198,11 +198,11 @@ static int match_str(const char *atom, const char *template_string)
 int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             gpp_atomtype_t atype, int *nbonds, t_params *bonds)
 {
-    int      cur = 0;
-#define prev (1-cur)
+    int cur = 0;
+#define prev (1 - cur)
     int      i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
-    int     *bbb, *n_mask, *m_mask, **match;
-    char    *aname_i, *aname_m, *aname_n, *type;
+    int *    bbb, *n_mask, *m_mask, **match;
+    char *   aname_i, *aname_m, *aname_n, *type;
     double   qq, mm;
     t_param *param;
 
@@ -292,15 +292,15 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
                         n_mask[m] = 0;
                         m_mask[m] = 0;
                     }
-                    for (j = ematchNR-1; (j > 0); j--)
+                    for (j = ematchNR - 1; (j > 0); j--)
                     {
                         for (m = 0; (m < nb); m++)
                         {
                             for (n = 0; (n < nb); n++)
                             {
-                                if ((n_mask[n] == 0) &&
-                                    (m_mask[m] == 0) &&
-                                    (match[m][n] == j))
+                                if ((n_mask[n] == 0)
+                                    && (m_mask[m] == 0)
+                                    && (match[m][n] == j))
                                 {
                                     n_mask[n] = 1;
                                     m_mask[m] = 1;
@@ -309,18 +309,18 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
                             }
                         }
                     }
-                    if ((nqual[cur][ematchExact]+
-                         nqual[cur][ematchElem]+
-                         nqual[cur][ematchWild]) == nb)
+                    if ((nqual[cur][ematchExact]
+                         + nqual[cur][ematchElem]
+                         + nqual[cur][ematchWild]) == nb)
                     {
                         if ((nqual[cur][ematchExact] > nqual[prev][ematchExact]) ||
 
-                            ((nqual[cur][ematchExact] == nqual[prev][ematchExact]) &&
-                             (nqual[cur][ematchElem] > nqual[prev][ematchElem])) ||
+                            ((nqual[cur][ematchExact] == nqual[prev][ematchExact])
+                             && (nqual[cur][ematchElem] > nqual[prev][ematchElem])) ||
 
-                            ((nqual[cur][ematchExact] == nqual[prev][ematchExact]) &&
-                             (nqual[cur][ematchElem] == nqual[prev][ematchElem]) &&
-                             (nqual[cur][ematchWild] > nqual[prev][ematchWild])))
+                            ((nqual[cur][ematchExact] == nqual[prev][ematchExact])
+                             && (nqual[cur][ematchElem] == nqual[prev][ematchElem])
+                             && (nqual[cur][ematchWild] > nqual[prev][ematchWild])))
                         {
                             best = k;
                             cur  = prev;
@@ -356,7 +356,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         else
         {
             fprintf(stderr, "Can not find forcefield for atom %s-%d with %d bonds\n",
-                    *atoms->atomname[i], i+1, nb);
+                    *atoms->atomname[i], i + 1, nb);
         }
     }
     sfree(bbb);

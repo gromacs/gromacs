@@ -65,7 +65,8 @@
 #include "gromacs/utility/smalloc.h"
 
 
-enum {
+enum
+{
     methSEL, methBISECT, methFUNCFIT, methNR
 };
 
@@ -83,7 +84,7 @@ static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
         tmass += mm;
         for (m = 0; (m < DIM); m++)
         {
-            com[m] += mm*x0[i][m];
+            com[m] += mm * x0[i][m];
         }
     }
     for (m = 0; (m < DIM); m++)
@@ -117,7 +118,7 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
     t_trxstatus *status;
     gmx_rmpbc_t  gpbc = nullptr;
     matrix       box;                    /* Box - 3x3 -each step*/
-    rvec        *x0;                     /* List of Coord without PBC*/
+    rvec *       x0;                     /* List of Coord without PBC*/
     int          i, j,                   /* loop indices, checks etc*/
                  ax1     = 0, ax2 = 0,   /* tangent directions */
                  framenr = 0,            /* frame number in trajectory*/
@@ -150,9 +151,9 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
 
 
     }
-    *zslices = 1+static_cast<int>(std::floor(box[axis][axis]/bwz));
-    *yslices = 1+static_cast<int>(std::floor(box[ax2][ax2]/bw));
-    *xslices = 1+static_cast<int>(std::floor(box[ax1][ax1]/bw));
+    *zslices = 1 + static_cast<int>(std::floor(box[axis][axis] / bwz));
+    *yslices = 1 + static_cast<int>(std::floor(box[ax2][ax2] / bw));
+    *xslices = 1 + static_cast<int>(std::floor(box[ax1][ax1] / bw));
     if (bps1d)
     {
         if (*xslices < *yslices)
@@ -177,9 +178,9 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
 
     do
     {
-        bbww[XX] = box[ax1][ax1]/ *xslices;
-        bbww[YY] = box[ax2][ax2]/ *yslices;
-        bbww[ZZ] = box[axis][axis]/ *zslices;
+        bbww[XX] = box[ax1][ax1] / *xslices;
+        bbww[YY] = box[ax2][ax2] / *yslices;
+        bbww[ZZ] = box[axis][axis] / *zslices;
         gmx_rmpbc(gpbc, top->atoms.nr, box, x0);
         /*Reset Densslice every nsttblock steps*/
         /* The first conditional is for clang to understand that this branch is
@@ -199,11 +200,11 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
             /* Allocate Memory to  extra frame in Densdevel -  rather stupid approach:
              * A single frame each time, although only every nsttblock steps.
              */
-            srenew(*Densdevel, *tblock+1);
+            srenew(*Densdevel, *tblock + 1);
             (*Densdevel)[*tblock] = Densslice;
         }
 
-        dscale = (*xslices)*(*yslices)*(*zslices)*AMU/ (box[ax1][ax1]*box[ax2][ax2]*box[axis][axis]*nsttblock*(NANO*NANO*NANO));
+        dscale = (*xslices) * (*yslices) * (*zslices) * AMU / (box[ax1][ax1] * box[ax2][ax2] * box[axis][axis] * nsttblock * (NANO * NANO * NANO));
 
         if (bCenter)
         {
@@ -243,10 +244,10 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
                 z -= box[axis][axis];
             }
 
-            slicex = static_cast<int>(x/bbww[XX]) % *xslices;
-            slicey = static_cast<int>(y/bbww[YY]) % *yslices;
-            slicez = static_cast<int>(z/bbww[ZZ]) % *zslices;
-            Densslice[slicex][slicey][slicez] += (top->atoms.atom[index[0][j]].m*dscale);
+            slicex                             = static_cast<int>(x / bbww[XX]) % *xslices;
+            slicey                             = static_cast<int>(y / bbww[YY]) % *yslices;
+            slicez                             = static_cast<int>(z / bbww[ZZ]) % *zslices;
+            Densslice[slicex][slicey][slicez] += (top->atoms.atom[index[0][j]].m * dscale);
         }
 
         framenr++;
@@ -258,8 +259,7 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
             (*tblock)++;
         }
 
-    }
-    while (read_next_x(oenv, status, &t, x0, box));
+    } while (read_next_x(oenv, status, &t, x0, box));
 
 
     /*Free memory we no longer need and exit.*/
@@ -314,7 +314,7 @@ static void outputfield(const char *fldfn, real ****Densmap,
             }
         }
     }
-    totdens /= (xslices*yslices*zslices*tdim);
+    totdens /= (xslices * yslices * zslices * tdim);
     fprintf(stderr, "Total density [kg/m^3]  %8f", totdens);
     gmx_ffclose(fldH);
 }
@@ -324,9 +324,9 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
     real *kernel;
     real  std, var;
     int   i, j, n, order;
-    order = ftsize/2;
-    std   = order/2.0;
-    var   = std*std;
+    order = ftsize / 2;
+    std   = order / 2.0;
+    var   = std * std;
     snew(kernel, ftsize);
     gausskernel(kernel, ftsize, var);
     for (n = 0; n < tblocks; n++)
@@ -350,23 +350,23 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                             t_interf ****intf2, const gmx_output_env_t *oenv)
 {
     /*Returns two pointers to 3D arrays of t_interf structs containing (position,thickness) of the interface(s)*/
-    FILE         *xvg;
-    real         *zDensavg; /* zDensavg[z]*/
+    FILE *        xvg;
+    real *        zDensavg; /* zDensavg[z]*/
     int           i, j, k, n;
     int           xysize;
     int           ndx1, ndx2, *zperm;
     real          densmid;
     real          splitpoint, startpoint, endpoint;
-    real         *sigma1, *sigma2;
+    real *        sigma1, *sigma2;
     double        beginfit1[4];
     double        beginfit2[4];
-    double       *fit1 = nullptr, *fit2 = nullptr;
+    double *      fit1 = nullptr, *fit2 = nullptr;
     const double *avgfit1;
     const double *avgfit2;
-    const real    onehalf = 1.00/2.00;
-    t_interf   ***int1    = nullptr, ***int2 = nullptr; /*Interface matrices [t][x,y] - last index in row-major order*/
+    const real    onehalf = 1.00 / 2.00;
+    t_interf ***  int1    = nullptr, ***int2 = nullptr; /*Interface matrices [t][x,y] - last index in row-major order*/
     /*Create int1(t,xy) and int2(t,xy) arrays with correct number of interf_t elements*/
-    xysize = xslices*yslices;
+    xysize = xslices * yslices;
     snew(int1, tblocks);
     snew(int2, tblocks);
     for (i = 0; i < tblocks; i++)
@@ -384,7 +384,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
 
     if (method == methBISECT)
     {
-        densmid = onehalf*(dens1+dens2);
+        densmid = onehalf * (dens1 + dens2);
         snew(zperm, zslices);
         for (n = 0; n < tblocks; n++)
         {
@@ -394,8 +394,8 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                 {
                     rangeArray(zperm, zslices); /*reset permutation array to identity*/
                     /*Binsearch returns slice-nr where the order param is  <= setpoint sgmid*/
-                    ndx1 = start_binsearch(Densmap[n][i][j], zperm, 0, zslices/2-1, densmid, 1);
-                    ndx2 = start_binsearch(Densmap[n][i][j], zperm, zslices/2, zslices-1, densmid, -1);
+                    ndx1 = start_binsearch(Densmap[n][i][j], zperm, 0, zslices / 2 - 1, densmid, 1);
+                    ndx2 = start_binsearch(Densmap[n][i][j], zperm, zslices / 2, zslices - 1, densmid, -1);
 
                     /* Linear interpolation (for use later if time allows)
                      * rho_1s= Densmap[n][i][j][zperm[ndx1]]
@@ -425,10 +425,10 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                      * pos=zperm[ndx2]+alpha*deltandx;   */
 
                     /*After filtering we use the direct approach	*/
-                    int1[n][j+(i*yslices)]->Z = (zperm[ndx1]+onehalf)*binwidth;
-                    int1[n][j+(i*yslices)]->t = binwidth;
-                    int2[n][j+(i*yslices)]->Z = (zperm[ndx2]+onehalf)*binwidth;
-                    int2[n][j+(i*yslices)]->t = binwidth;
+                    int1[n][j + (i * yslices)]->Z = (zperm[ndx1] + onehalf) * binwidth;
+                    int1[n][j + (i * yslices)]->t = binwidth;
+                    int2[n][j + (i * yslices)]->Z = (zperm[ndx2] + onehalf) * binwidth;
+                    int2[n][j + (i * yslices)]->t = binwidth;
                 }
             }
         }
@@ -438,17 +438,17 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
     {
         /*Assume a box divided in 2 along midpoint of z for starters*/
         startpoint = 0.0;
-        endpoint   = binwidth*zslices;
-        splitpoint = (startpoint+endpoint)/2.0;
+        endpoint   = binwidth * zslices;
+        splitpoint = (startpoint + endpoint) / 2.0;
         /*Initial fit proposals*/
         beginfit1[0] = dens1;
         beginfit1[1] = dens2;
-        beginfit1[2] = (splitpoint/2);
+        beginfit1[2] = (splitpoint / 2);
         beginfit1[3] = 0.5;
 
         beginfit2[0] = dens2;
         beginfit2[1] = dens1;
-        beginfit2[2] = (3*splitpoint/2);
+        beginfit2[2] = (3 * splitpoint / 2);
         beginfit2[3] = 0.5;
 
         snew(zDensavg, zslices);
@@ -468,7 +468,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                 {
                     for (j = 0; j < yslices; j++)
                     {
-                        zDensavg[k] += (Densmap[n][i][j][k]/(xslices*yslices*tblocks));
+                        zDensavg[k] += (Densmap[n][i][j][k] / (xslices * yslices * tblocks));
                     }
                 }
             }
@@ -479,7 +479,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
             xvg = xvgropen("DensprofileonZ.xvg", "Averaged Densityprofile on Z", "z[nm]", "Density[kg/m^3]", oenv);
             for (k = 0; k < zslices; k++)
             {
-                fprintf(xvg, "%4f.3   %8f.4\n", k*binwidth, zDensavg[k]);
+                fprintf(xvg, "%4f.3   %8f.4\n", k * binwidth, zDensavg[k]);
             }
             xvgrclose(xvg);
         }
@@ -514,11 +514,11 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                     }
                     /*Now fit and store in structures in row-major order int[n][i][j]*/
                     do_lmfit(zslices, Densmap[n][i][j], sigma1, binwidth, nullptr, startpoint, splitpoint, oenv, FALSE, effnERF, fit1, 0, nullptr);
-                    int1[n][j+(yslices*i)]->Z = fit1[2];
-                    int1[n][j+(yslices*i)]->t = fit1[3];
+                    int1[n][j + (yslices * i)]->Z = fit1[2];
+                    int1[n][j + (yslices * i)]->t = fit1[3];
                     do_lmfit(zslices, Densmap[n][i][j], sigma2, binwidth, nullptr, splitpoint, endpoint, oenv, FALSE, effnERF, fit2, 0, nullptr);
-                    int2[n][j+(yslices*i)]->Z = fit2[2];
-                    int2[n][j+(yslices*i)]->t = fit2[3];
+                    int2[n][j + (yslices * i)]->Z = fit2[2];
+                    int2[n][j + (yslices * i)]->t = fit2[3];
                 }
             }
         }
@@ -538,22 +538,22 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
     real   max1, max2, min1, min2, *xticks, *yticks;
     t_rgb  lo = {0, 0, 0};
     t_rgb  hi = {1, 1, 1};
-    FILE  *xpmfile1, *xpmfile2;
+    FILE * xpmfile1, *xpmfile2;
 
 /*Prepare xpm structures for output*/
 
 /*Allocate memory to tick's and matrices*/
-    snew (xticks, xbins+1);
-    snew (yticks, ybins+1);
+    snew (xticks, xbins + 1);
+    snew (yticks, ybins + 1);
 
     profile1 = mk_matrix(xbins, ybins, FALSE);
     profile2 = mk_matrix(xbins, ybins, FALSE);
 
-    for (i = 0; i < xbins+1; i++)
+    for (i = 0; i < xbins + 1; i++)
     {
         xticks[i] += bw;
     }
-    for (j = 0; j < ybins+1; j++)
+    for (j = 0; j < ybins + 1; j++)
     {
         yticks[j] += bw;
     }
@@ -562,7 +562,7 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
     xpmfile2 = gmx_ffopen(outfiles[1], "w");
 
     max1 = max2 = 0.0;
-    min1 = min2 = zbins*bwz;
+    min1 = min2 = zbins * bwz;
 
     for (n = 0; n < tblocks; n++)
     {
@@ -572,8 +572,8 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
         {
             for (j = 0; j < ybins; j++)
             {
-                profile1[i][j] = (surf1[n][j+ybins*i])->Z;
-                profile2[i][j] = (surf2[n][j+ybins*i])->Z;
+                profile1[i][j] = (surf1[n][j + ybins * i])->Z;
+                profile2[i][j] = (surf2[n][j + ybins * i])->Z;
                 /*Finding max and min values*/
                 if (profile1[i][j] > max1)
                 {
@@ -638,8 +638,8 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
         {
             for (j = 0; j < ybins; j++)
             {
-                fprintf(raw1, "%i  %i  %8.5f  %6.4f\n", i, j, (int1[n][j+ybins*i])->Z, (int1[n][j+ybins*i])->t);
-                fprintf(raw2, "%i  %i  %8.5f  %6.4f\n", i, j, (int2[n][j+ybins*i])->Z, (int2[n][j+ybins*i])->t);
+                fprintf(raw1, "%i  %i  %8.5f  %6.4f\n", i, j, (int1[n][j + ybins * i])->Z, (int1[n][j + ybins * i])->t);
+                fprintf(raw2, "%i  %i  %8.5f  %6.4f\n", i, j, (int2[n][j + ybins * i])->Z, (int2[n][j + ybins * i])->t);
             }
         }
     }
@@ -665,9 +665,9 @@ int gmx_densorder(int argc, char *argv[])
      * options when running the program, without mentioning them here!
      */
 
-    gmx_output_env_t  *oenv;
-    t_topology        *top;
-    char             **grpname;
+    gmx_output_env_t * oenv;
+    t_topology *       top;
+    char **            grpname;
     int                ePBC, *ngx;
     static real        binw      = 0.2;
     static real        binwz     = 0.05;
@@ -677,7 +677,7 @@ int gmx_densorder(int argc, char *argv[])
     static int         nsttblock = 100;
     static int         axis      = 2;
     static const char *axtitle   = "Z";
-    int              **index; /* Index list for single group*/
+    int **             index; /* Index list for single group*/
     int                xslices, yslices, zslices, tblock;
     static gmx_bool    bGraph   = FALSE;
     static gmx_bool    bCenter  = FALSE;
@@ -687,17 +687,17 @@ int gmx_densorder(int argc, char *argv[])
     static gmx_bool    b1d      = FALSE;
     static int         nlevels  = 100;
     /*Densitymap - Densmap[t][x][y][z]*/
-    real           ****Densmap = nullptr;
+    real ****Densmap = nullptr;
     /* Surfaces surf[t][surf_x,surf_y]*/
-    t_interf        ***surf1, ***surf2;
+    t_interf ***surf1, ***surf2;
 
     static const char *meth[] = {nullptr, "bisect", "functional", nullptr};
     int                eMeth;
 
-    char             **graphfiles, **rawfiles, **spectra; /* Filenames for xpm-surface maps, rawdata and powerspectra */
-    int                nfxpm = -1, nfraw, nfspect;        /* # files for interface maps and spectra = # interfaces */
+    char **graphfiles, **rawfiles, **spectra;             /* Filenames for xpm-surface maps, rawdata and powerspectra */
+    int    nfxpm = -1, nfraw, nfspect;                    /* # files for interface maps and spectra = # interfaces */
 
-    t_pargs            pa[] = {
+    t_pargs pa[] = {
         { "-1d", FALSE, etBOOL, {&b1d},
           "Pseudo-1d interface geometry"},
         { "-bw", FALSE, etREAL, {&binw},
@@ -761,7 +761,7 @@ int gmx_densorder(int argc, char *argv[])
 
     if (ftorder > 0)
     {
-        filterdensmap(Densmap, xslices, yslices, zslices, tblock, 2*ftorder+1);
+        filterdensmap(Densmap, xslices, yslices, zslices, tblock, 2 * ftorder + 1);
     }
 
     if (bOut)

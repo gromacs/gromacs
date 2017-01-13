@@ -66,7 +66,8 @@
 
 using gmx::RVec;
 
-typedef struct {
+typedef struct
+{
     char *name;
     int   natoms;
     int   nmol;
@@ -79,7 +80,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
 {
     int         atnr, i, j, moltp = 0, nrmoltypes, resi_o, resi_n, resnr;
     t_moltypes *moltypes;
-    t_atoms    *atoms, *newatoms;
+    t_atoms *   atoms, *newatoms;
 
     fprintf(stderr, "Sorting configuration\n");
 
@@ -90,7 +91,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
     nrmoltypes = 0;
     for (i = 0; i < atoms->nr; i++)
     {
-        if ( (i == 0) || (atoms->atom[i].resind != atoms->atom[i-1].resind) )
+        if ( (i == 0) || (atoms->atom[i].resind != atoms->atom[i - 1].resind) )
         {
             /* see if this was a molecule type we haven't had yet: */
             moltp = -1;
@@ -111,8 +112,8 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
                 srenew(moltypes, nrmoltypes);
                 moltypes[moltp].name = *(atoms->resinfo[atoms->atom[i].resind].name);
                 atnr                 = 0;
-                while ((i+atnr < atoms->nr) &&
-                       (atoms->atom[i].resind == atoms->atom[i+atnr].resind))
+                while ((i + atnr < atoms->nr)
+                       && (atoms->atom[i].resind == atoms->atom[i + atnr].resind))
                 {
                     atnr++;
                 }
@@ -133,7 +134,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         }
         else
         {
-            moltypes[j].res0 = moltypes[j-1].res0+moltypes[j-1].nmol;
+            moltypes[j].res0 = moltypes[j - 1].res0 + moltypes[j - 1].nmol;
         }
         fprintf(stderr, "%7s (%4d atoms): %5d residues\n",
                 moltypes[j].name, moltypes[j].natoms, moltypes[j].nmol);
@@ -146,9 +147,9 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         moltypes[0].i = moltypes[0].i0 = 0;
         for (j = 1; j < nrmoltypes; j++)
         {
-            moltypes[j].i      =
-                moltypes[j].i0 =
-                    moltypes[j-1].i0+moltypes[j-1].natoms*moltypes[j-1].nmol;
+            moltypes[j].i
+                        = moltypes[j].i0
+                        = moltypes[j - 1].i0 + moltypes[j - 1].natoms * moltypes[j - 1].nmol;
         }
 
         /* now put them there: */
@@ -186,8 +187,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
                         }
                         i++;
                         j++;
-                    }
-                    while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+                    } while (i < atoms->nr && atoms->atom[i].resind == resi_o);
                     /* Increase the new residue counters */
                     resi_n++;
                     resnr++;
@@ -198,8 +198,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
                     do
                     {
                         i++;
-                    }
-                    while (i < atoms->nr && atoms->atom[i].resind == resi_o);
+                    } while (i < atoms->nr && atoms->atom[i].resind == resi_o);
                 }
             }
         }
@@ -231,8 +230,8 @@ static void rm_res_pbc(const t_atoms *atoms, std::vector<RVec> *x, matrix box)
             nat++;
             rvec_inc(xcg, (*x)[n]);
         }
-        if ( (n+1 == atoms->nr) ||
-             (atoms->atom[n+1].resind != atoms->atom[n].resind) )
+        if ( (n + 1 == atoms->nr)
+             || (atoms->atom[n + 1].resind != atoms->atom[n].resind) )
         {
             /* if nat==0 we have only hydrogens in the solvent,
                we take last coordinate as cg */
@@ -241,7 +240,7 @@ static void rm_res_pbc(const t_atoms *atoms, std::vector<RVec> *x, matrix box)
                 nat = 1;
                 copy_rvec((*x)[n], xcg);
             }
-            svmul(1.0/nat, xcg, xcg);
+            svmul(1.0 / nat, xcg, xcg);
             for (int d = 0; d < DIM; d++)
             {
                 while (xcg[d] < 0)
@@ -261,7 +260,7 @@ static void rm_res_pbc(const t_atoms *atoms, std::vector<RVec> *x, matrix box)
                     xcg[d] -= box[d][d];
                 }
             }
-            start = n+1;
+            start = n + 1;
             nat   = 0;
             clear_rvec(xcg);
         }
@@ -309,7 +308,7 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
     // Create arrays for storing the generated system (cannot be done in-place
     // in case the target box is smaller than the original in one dimension,
     // but not in all).
-    t_atoms           newAtoms;
+    t_atoms newAtoms;
     init_t_atoms(&newAtoms, 0, FALSE);
     gmx::AtomsBuilder builder(&newAtoms, nullptr);
     builder.reserve(atoms->nr * nmol, atoms->nres * nmol);
@@ -317,25 +316,25 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
     std::vector<RVec> newV(!v->empty() ? atoms->nr * nmol : 0);
     std::vector<real> newR(atoms->nr * nmol);
 
-    const real        maxRadius = *std::max_element(r->begin(), r->end());
-    rvec              boxWithMargin;
+    const real maxRadius = *std::max_element(r->begin(), r->end());
+    rvec       boxWithMargin;
     for (int i = 0; i < DIM; ++i)
     {
         // The code below is only interested about the box diagonal.
-        boxWithMargin[i] = boxTarget[i][i] + 3*maxRadius;
+        boxWithMargin[i] = boxTarget[i][i] + 3 * maxRadius;
     }
 
     for (int ix = 0; ix < n_box[XX]; ++ix)
     {
         rvec delta;
-        delta[XX] = ix*box[XX][XX];
+        delta[XX] = ix * box[XX][XX];
         for (int iy = 0; iy < n_box[YY]; ++iy)
         {
-            delta[YY] = iy*box[YY][YY];
+            delta[YY] = iy * box[YY][YY];
             for (int iz = 0; iz < n_box[ZZ]; ++iz)
             {
-                delta[ZZ] = iz*box[ZZ][ZZ];
-                bool bKeepResidue     = false;
+                delta[ZZ] = iz * box[ZZ][ZZ];
+                bool bKeepResidue = false;
                 for (int i = 0; i < atoms->nr; ++i)
                 {
                     const int newIndex  = builder.currentAtomCount();
@@ -354,7 +353,7 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
                     newR[newIndex] = (*r)[i];
                     builder.addAtom(*atoms, i);
                     if (i == atoms->nr - 1
-                        || atoms->atom[i+1].resind != atoms->atom[i].resind)
+                        || atoms->atom[i + 1].resind != atoms->atom[i].resind)
                     {
                         if (bKeepResidue)
                         {
@@ -365,7 +364,7 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
                             builder.discardCurrentResidue();
                         }
                         // Reset state for the next residue.
-                        bKeepResidue     = false;
+                        bKeepResidue = false;
                     }
                 }
             }
@@ -422,17 +421,17 @@ static void removeSolventBoxOverlap(t_atoms *atoms, std::vector<RVec> *x,
     // TODO: We could limit the amount of pairs searched significantly,
     // since we are only interested in pairs where the positions are on
     // opposite edges.
-    const real maxRadius = *std::max_element(r->begin(), r->end());
-    gmx::AnalysisNeighborhood           nb;
-    nb.setCutoff(2*maxRadius);
+    const real                maxRadius = *std::max_element(r->begin(), r->end());
+    gmx::AnalysisNeighborhood nb;
+    nb.setCutoff(2 * maxRadius);
     gmx::AnalysisNeighborhoodPositions  pos(*x);
     gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, pos);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
     gmx::AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
-        const int  i1 = pair.refIndex();
-        const int  i2 = pair.testIndex();
+        const int i1 = pair.refIndex();
+        const int i2 = pair.testIndex();
         if (remover.isMarked(i2))
         {
             pairSearch.skipRemainingPairsForTestPosition();
@@ -511,12 +510,12 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
                                 const std::vector<real> &r_solute,
                                 real rshell)
 {
-    const real                          maxRadius1
+    const real maxRadius1
         = *std::max_element(r->begin(), r->end());
-    const real                          maxRadius2
+    const real maxRadius2
         = *std::max_element(r_solute.begin(), r_solute.end());
 
-    gmx::AtomsRemover                   remover(*atoms);
+    gmx::AtomsRemover remover(*atoms);
     // If rshell is >0, the neighborhood search looks at all pairs
     // within rshell, and unmarks those that are within the cutoff.
     // This line marks everything, so that solvent outside rshell remains
@@ -528,10 +527,10 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
         remover.markAll();
     }
 
-    gmx::AnalysisNeighborhood           nb;
+    gmx::AnalysisNeighborhood nb;
     nb.setCutoff(std::max(maxRadius1 + maxRadius2, rshell));
     gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
-    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
+    gmx::AnalysisNeighborhoodSearch     search = nb.initSearch(&pbc, posSolute);
     gmx::AnalysisNeighborhoodPositions  pos(*x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
     gmx::AnalysisNeighborhoodPair       pair;
@@ -582,7 +581,7 @@ static void removeExtraSolventMolecules(t_atoms *atoms, std::vector<RVec> *x,
     const int stride = atoms->nr / numberToRemove;
     for (int i = 0; i < numberToRemove; ++i)
     {
-        int atomIndex = (i+1)*stride - 1;
+        int atomIndex = (i + 1) * stride - 1;
         while (remover.isMarked(atomIndex))
         {
             ++atomIndex;
@@ -607,13 +606,13 @@ static void add_solv(const char *fn, t_topology *top,
                      real defaultDistance, real scaleFactor,
                      real rshell, int max_sol)
 {
-    t_topology       *top_solvt;
+    t_topology *      top_solvt;
     std::vector<RVec> x_solvt;
     std::vector<RVec> v_solvt;
     int               ePBC_solvt;
     matrix            box_solvt;
 
-    char             *filename = gmxlibfn(fn);
+    char *filename = gmxlibfn(fn);
     snew(top_solvt, 1);
     readConformation(filename, top_solvt, &x_solvt, !v->empty() ? &v_solvt : nullptr,
                      &ePBC_solvt, box_solvt, "solvent");
@@ -632,7 +631,7 @@ static void add_solv(const char *fn, t_topology *top,
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     const std::vector<real> exclusionDistances(
             makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor));
-    std::vector<real>       exclusionDistances_solvt(
+    std::vector<real> exclusionDistances_solvt(
             makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor));
 
     /* generate a new solvent configuration */
@@ -680,7 +679,7 @@ static void add_solv(const char *fn, t_topology *top,
 static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                        gmx_atomprop_t aps)
 {
-    FILE       *fpin, *fpout;
+    FILE *      fpin, *fpout;
     char        buf[STRLEN], buf2[STRLEN], *temp;
     const char *topinout;
     int         line;
@@ -692,9 +691,9 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     for (i = 0; (i < atoms->nres); i++)
     {
         /* calculate number of SOLvent molecules */
-        if ( (strcmp(*atoms->resinfo[i].name, "SOL") == 0) ||
-             (strcmp(*atoms->resinfo[i].name, "WAT") == 0) ||
-             (strcmp(*atoms->resinfo[i].name, "HOH") == 0) )
+        if ( (strcmp(*atoms->resinfo[i].name, "SOL") == 0)
+             || (strcmp(*atoms->resinfo[i].name, "WAT") == 0)
+             || (strcmp(*atoms->resinfo[i].name, "HOH") == 0) )
         {
             nsol++;
         }
@@ -712,11 +711,11 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
 
     fprintf(stderr, "Volume                 :  %10g (nm^3)\n", vol);
     fprintf(stderr, "Density                :  %10g (g/l)\n",
-            (mtot*1e24)/(AVOGADRO*vol));
+            (mtot * 1e24) / (AVOGADRO * vol));
     fprintf(stderr, "Number of SOL molecules:  %5d   \n\n", nsol);
 
     /* open topology file and append sol molecules */
-    topinout  = ftp2fn(efTOP, NFILE, fnm);
+    topinout = ftp2fn(efTOP, NFILE, fnm);
     if (ftp2bSet(efTOP, NFILE, fnm) )
     {
         char temporary_filename[STRLEN];
@@ -745,9 +744,9 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                     temp[0] = '\0';
                 }
                 rtrim(buf2);
-                if (buf2[strlen(buf2)-1] == ']')
+                if (buf2[strlen(buf2) - 1] == ']')
                 {
-                    buf2[strlen(buf2)-1] = '\0';
+                    buf2[strlen(buf2) - 1] = '\0';
                     ltrim(buf2);
                     rtrim(buf2);
                     bSystem    = (gmx_strcasecmp(buf2, "system") == 0);
@@ -865,7 +864,7 @@ int gmx_solvate(int argc, char *argv[])
 
     /* parameter data */
     gmx_bool       bProt, bBox;
-    const char    *conf_prot, *confout;
+    const char *   conf_prot, *confout;
     gmx_atomprop_t aps;
 
     /* solute configuration data */
@@ -873,7 +872,7 @@ int gmx_solvate(int argc, char *argv[])
     int         ePBC = -1;
     matrix      box;
 
-    t_filenm    fnm[] = {
+    t_filenm fnm[] = {
         { efSTX, "-cp", "protein", ffOPTRD },
         { efSTX, "-cs", "spc216",  ffLIBRD},
         { efSTO, nullptr,  nullptr,      ffWRITE},
@@ -886,7 +885,7 @@ int gmx_solvate(int argc, char *argv[])
     static gmx_bool   bReadV          = FALSE;
     static int        max_sol         = 0;
     gmx_output_env_t *oenv;
-    t_pargs           pa[]              = {
+    t_pargs           pa[] = {
         { "-box",    FALSE, etRVEC, {new_box},
           "Box size (in nm)" },
         { "-radius",   FALSE, etREAL, {&defaultDistance},
@@ -908,8 +907,8 @@ int gmx_solvate(int argc, char *argv[])
     }
 
     const char *solventFileName = opt2fn("-cs", NFILE, fnm);
-    bProt     = opt2bSet("-cp", NFILE, fnm);
-    bBox      = opt2parg_bSet("-box", asize(pa), pa);
+    bProt = opt2bSet("-cp", NFILE, fnm);
+    bBox  = opt2parg_bSet("-box", asize(pa), pa);
 
     /* check input */
     if (!bProt && !bBox)

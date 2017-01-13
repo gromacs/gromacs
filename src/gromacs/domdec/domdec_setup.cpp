@@ -82,20 +82,20 @@ static int factorize(int n, int **fac, int **mfac)
     }
 
     /* Decompose n in factors */
-    snew(*fac, n/2);
-    snew(*mfac, n/2);
+    snew(*fac, n / 2);
+    snew(*mfac, n / 2);
     d    = 2;
     ndiv = 0;
     while (n > 1)
     {
         while (n % d == 0)
         {
-            if (ndiv == 0 || (*fac)[ndiv-1] != d)
+            if (ndiv == 0 || (*fac)[ndiv - 1] != d)
             {
                 ndiv++;
-                (*fac)[ndiv-1] = d;
+                (*fac)[ndiv - 1] = d;
             }
-            (*mfac)[ndiv-1]++;
+            (*mfac)[ndiv - 1]++;
             n /= d;
         }
         d++;
@@ -110,7 +110,7 @@ static gmx_bool largest_divisor(int n)
     int ndiv, *div, *mdiv, ldiv;
 
     ndiv = factorize(n, &div, &mdiv);
-    ldiv = div[ndiv-1];
+    ldiv = div[ndiv - 1];
     sfree(div);
     sfree(mdiv);
 
@@ -137,7 +137,7 @@ static int lcd(int n1, int n2)
 /*! \brief Returns TRUE when there are enough PME ranks for the ratio */
 static gmx_bool fits_pme_ratio(int nrank_tot, int nrank_pme, float ratio)
 {
-    return ((double)nrank_pme/(double)nrank_tot > 0.95*ratio);
+    return ((double)nrank_pme / (double)nrank_tot > 0.95 * ratio);
 }
 
 /*! \brief Returns TRUE when npme out of ntot ranks doing PME is expected to give reasonable performance */
@@ -147,7 +147,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
     int npp_root3, npme_root2;
 
     ndiv = factorize(ntot - npme, &div, &mdiv);
-    ldiv = div[ndiv-1];
+    ldiv = div[ndiv - 1];
     sfree(div);
     sfree(mdiv);
 
@@ -169,7 +169,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
      * The factor of 2 allows for a maximum ratio of 2^2=4
      * between nx_pme and ny_pme.
      */
-    if (lcd(ntot - npme, npme)*2 < npme_root2)
+    if (lcd(ntot - npme, npme) * 2 < npme_root2)
     {
         return FALSE;
     }
@@ -183,8 +183,8 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
                       matrix box,
                       int nrank_tot)
 {
-    float      ratio;
-    int        npme;
+    float ratio;
+    int   npme;
 
     ratio = pme_load_estimate(mtop, ir, box);
 
@@ -198,7 +198,7 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
      * but (hopefully) this will balance out between PP and PME.
      */
 
-    if (!fits_pme_ratio(nrank_tot, nrank_tot/2, ratio))
+    if (!fits_pme_ratio(nrank_tot, nrank_tot / 2, ratio))
     {
         /* We would need more than nrank_tot/2 PME only nodes,
          * which is not possible. Since the PME load is very high,
@@ -212,8 +212,8 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
      * We start with a minimum PME node fraction of 1/16
      * and avoid ratios which lead to large prime factors in nnodes-npme.
      */
-    npme = (nrank_tot + 15)/16;
-    while (npme <= nrank_tot/3)
+    npme = (nrank_tot + 15) / 16;
+    while (npme <= nrank_tot / 3)
     {
         if (nrank_tot % npme == 0)
         {
@@ -227,11 +227,11 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         npme++;
     }
-    if (npme > nrank_tot/3)
+    if (npme > nrank_tot / 3)
     {
         /* Try any possible number for npme */
         npme = 1;
-        while (npme <= nrank_tot/2)
+        while (npme <= nrank_tot / 2)
         {
             /* Note that fits_perf may change the PME grid */
             if (fits_pp_pme_perf(nrank_tot, npme, ratio))
@@ -241,11 +241,11 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
             npme++;
         }
     }
-    if (npme > nrank_tot/2)
+    if (npme > nrank_tot / 2)
     {
         gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
-                  ratio, (int)(0.95*ratio*nrank_tot + 0.5), nrank_tot/2, ir->nkx, ir->nky);
+                  ratio, (int)(0.95 * ratio * nrank_tot + 0.5), nrank_tot / 2, ir->nkx, ir->nky);
         /* Keep the compiler happy */
         npme = 0;
     }
@@ -270,7 +270,7 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
 /*! \brief Return \p n divided by \p f rounded up to the next integer. */
 static int div_up(int n, int f)
 {
-    return (n + f - 1)/f;
+    return (n + f - 1) / f;
 }
 
 real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
@@ -281,8 +281,8 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
 
     for (i = 0; i < DIM; i++)
     {
-        real bt = ddbox->box_size[i]*ddbox->skew_fac[i];
-        nw[i] = dd_nc[i]*cutoff/bt;
+        real bt = ddbox->box_size[i] * ddbox->skew_fac[i];
+        nw[i] = dd_nc[i] * cutoff / bt;
     }
 
     comm_vol = 0;
@@ -291,16 +291,16 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
         if (dd_nc[i] > 1)
         {
             comm_vol += nw[i];
-            for (j = i+1; j < DIM; j++)
+            for (j = i + 1; j < DIM; j++)
             {
                 if (dd_nc[j] > 1)
                 {
-                    comm_vol += nw[i]*nw[j]*M_PI/4;
-                    for (k = j+1; k < DIM; k++)
+                    comm_vol += nw[i] * nw[j] * M_PI / 4;
+                    for (k = j + 1; k < DIM; k++)
                     {
                         if (dd_nc[k] > 1)
                         {
-                            comm_vol += nw[i]*nw[j]*nw[k]*M_PI/6;
+                            comm_vol += nw[i] * nw[j] * nw[k] * M_PI / 6;
                         }
                     }
                 }
@@ -314,8 +314,8 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
 /*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec *ir)
 {
-    return ((EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) &&
-            ir->ePBC == epbcXYZ && ir->ewald_geometry == eewg3DC);
+    return ((EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
+            && ir->ePBC == epbcXYZ && ir->ewald_geometry == eewg3DC);
 }
 
 /*! \brief Estimate cost of PME FFT communication
@@ -360,8 +360,8 @@ static float comm_cost_est(real limit, real cutoff,
     float temp;
 
     /* Check the DD algorithm restrictions */
-    if ((ir->ePBC == epbcXY && ir->nwall < 2 && nc[ZZ] > 1) ||
-        (ir->ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
+    if ((ir->ePBC == epbcXY && ir->nwall < 2 && nc[ZZ] > 1)
+        || (ir->ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
     {
         return -1;
     }
@@ -376,10 +376,10 @@ static float comm_cost_est(real limit, real cutoff,
     /* Check if the triclinic requirements are met */
     for (i = 0; i < DIM; i++)
     {
-        for (j = i+1; j < ddbox->npbcdim; j++)
+        for (j = i + 1; j < ddbox->npbcdim; j++)
         {
-            if (box[j][i] != 0 || ir->deform[j][i] != 0 ||
-                (ir->epc != epcNO && ir->compress[j][i] != 0))
+            if (box[j][i] != 0 || ir->deform[j][i] != 0
+                || (ir->epc != epcNO && ir->compress[j][i] != 0))
             {
                 if (nc[j] > 1 && nc[i] == 1)
                 {
@@ -391,15 +391,15 @@ static float comm_cost_est(real limit, real cutoff,
 
     for (i = 0; i < DIM; i++)
     {
-        bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
+        bt[i] = ddbox->box_size[i] * ddbox->skew_fac[i];
 
         /* Without PBC and with 2 cells, there are no lower limits on the cell size */
-        if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
+        if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i] * limit)
         {
             return -1;
         }
         /* With PBC, check if the cut-off fits in nc[i]-1 cells */
-        if (i < ddbox->npbcdim && nc[i] > 1 && (nc[i] - 1)*bt[i] < nc[i]*cutoff)
+        if (i < ddbox->npbcdim && nc[i] > 1 && (nc[i] - 1) * bt[i] < nc[i] * cutoff)
         {
             return -1;
         }
@@ -424,7 +424,7 @@ static float comm_cost_est(real limit, real cutoff,
         {
             /* Will we use 1D or 2D PME decomposition? */
             npme[XX] = (npme_tot % nc[XX] == 0) ? nc[XX] : npme_tot;
-            npme[YY] = npme_tot/npme[XX];
+            npme[YY] = npme_tot / npme[XX];
         }
     }
 
@@ -434,12 +434,12 @@ static float comm_cost_est(real limit, real cutoff,
      */
     for (i = 0; i < DIM; i++)
     {
-        for (j = i+1; j < DIM; j++)
+        for (j = i + 1; j < DIM; j++)
         {
             /* Check if the box size is nearly identical,
              * in that case we prefer nx > ny  and ny > nz.
              */
-            if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
+            if (fabs(bt[j] - bt[i]) < 0.01 * bt[i] && nc[j] > nc[i])
             {
                 /* The XX/YY check is a bit compact. If nc[YY]==npme[YY]
                  * this means the swapped nc has nc[XX]==npme[XX],
@@ -449,9 +449,9 @@ static float comm_cost_est(real limit, real cutoff,
                  * For x/y: if nc[YY]!=npme[YY], we can not swap x/y
                  * For y/z: we can not have PME decomposition in z
                  */
-                if (npme_tot <= 1 ||
-                    !((i == XX && j == YY && nc[YY] != npme[YY]) ||
-                      (i == YY && j == ZZ && npme[YY] > 1)))
+                if (npme_tot <= 1
+                    || !((i == XX && j == YY && nc[YY] != npme[YY])
+                         || (i == YY && j == ZZ && npme[YY] > 1)))
                 {
                     return -1;
                 }
@@ -474,20 +474,20 @@ static float comm_cost_est(real limit, real cutoff,
         {
             if (nc[i] > npme[i])
             {
-                comm_vol_xf = (npme[i] == 2 ? 1.0/3.0 : 0.5);
+                comm_vol_xf = (npme[i] == 2 ? 1.0 / 3.0 : 0.5);
             }
             else
             {
-                comm_vol_xf = 1.0 - lcd(nc[i], npme[i])/(double)npme[i];
+                comm_vol_xf = 1.0 - lcd(nc[i], npme[i]) / (double)npme[i];
             }
-            comm_pme += 3*natoms*comm_vol_xf;
+            comm_pme += 3 * natoms * comm_vol_xf;
         }
 
         /* Grid overlap communication */
         if (npme[i] > 1)
         {
             nk        = (i == 0 ? ir->nkx : ir->nky);
-            overlap   = (nk % npme[i] == 0 ? ir->pme_order-1 : ir->pme_order);
+            overlap   = (nk % npme[i] == 0 ? ir->pme_order - 1 : ir->pme_order);
             temp      = npme[i];
             temp     *= overlap;
             temp     *= ir->nkx;
@@ -506,14 +506,14 @@ static float comm_cost_est(real limit, real cutoff,
     cost_pbcdx = 0;
     if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir->ePBC != epbcXY))
     {
-        if ((ddbox->tric_dir[XX] && nc[XX] == 1) ||
-            (ddbox->tric_dir[YY] && nc[YY] == 1))
+        if ((ddbox->tric_dir[XX] && nc[XX] == 1)
+            || (ddbox->tric_dir[YY] && nc[YY] == 1))
         {
-            cost_pbcdx = pbcdxr*pbcdx_tric_fac;
+            cost_pbcdx = pbcdxr * pbcdx_tric_fac;
         }
         else
         {
-            cost_pbcdx = pbcdxr*pbcdx_rect_fac;
+            cost_pbcdx = pbcdxr * pbcdx_rect_fac;
         }
     }
 
@@ -522,11 +522,11 @@ static float comm_cost_est(real limit, real cutoff,
         fprintf(debug,
                 "nc %2d %2d %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %9.3e tot %9.3e\n",
                 nc[XX], nc[YY], nc[ZZ], npme[XX], npme[YY],
-                comm_vol, cost_pbcdx, comm_pme/(3*natoms),
-                comm_vol + cost_pbcdx + comm_pme/(3*natoms));
+                comm_vol, cost_pbcdx, comm_pme / (3 * natoms),
+                comm_vol + cost_pbcdx + comm_pme / (3 * natoms));
     }
 
-    return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
+    return 3 * natoms * (comm_vol + cost_pbcdx) + comm_pme;
 }
 
 /*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
@@ -544,10 +544,10 @@ static void assign_factors(const gmx_domdec_t *dd,
     {
         ce = comm_cost_est(limit, cutoff, box, ddbox,
                            natoms, ir, pbcdxr, npme, ir_try);
-        if (ce >= 0 && (opt[XX] == 0 ||
-                        ce < comm_cost_est(limit, cutoff, box, ddbox,
-                                           natoms, ir, pbcdxr,
-                                           npme, opt)))
+        if (ce >= 0 && (opt[XX] == 0
+                        || ce < comm_cost_est(limit, cutoff, box, ddbox,
+                                              natoms, ir, pbcdxr,
+                                              npme, opt)))
         {
             copy_ivec(ir_try, opt);
         }
@@ -561,22 +561,22 @@ static void assign_factors(const gmx_domdec_t *dd,
         {
             ir_try[XX] *= div[0];
         }
-        for (y = mdiv[0]-x; y >= 0; y--)
+        for (y = mdiv[0] - x; y >= 0; y--)
         {
             for (i = 0; i < y; i++)
             {
                 ir_try[YY] *= div[0];
             }
-            for (i = 0; i < mdiv[0]-x-y; i++)
+            for (i = 0; i < mdiv[0] - x - y; i++)
             {
                 ir_try[ZZ] *= div[0];
             }
 
             /* recurse */
             assign_factors(dd, limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme,
-                           ndiv-1, div+1, mdiv+1, ir_try, opt);
+                           ndiv - 1, div + 1, mdiv + 1, ir_try, opt);
 
-            for (i = 0; i < mdiv[0]-x-y; i++)
+            for (i = 0; i < mdiv[0] - x - y; i++)
             {
                 ir_try[ZZ] /= div[0];
             }
@@ -604,12 +604,12 @@ static real optimize_ncells(FILE *fplog,
                             gmx_bool bInterCGBondeds,
                             ivec nc)
 {
-    int      npp, npme, ndiv, *div, *mdiv, d, nmax;
-    double   pbcdxr;
-    real     limit;
-    ivec     itry;
+    int    npp, npme, ndiv, *div, *mdiv, d, nmax;
+    double pbcdxr;
+    real   limit;
+    ivec   itry;
 
-    limit  = cellsize_limit;
+    limit = cellsize_limit;
 
     dd->nc[XX] = 1;
     dd->nc[YY] = 1;
@@ -648,7 +648,7 @@ static real optimize_ncells(FILE *fplog,
         }
         if (fplog)
         {
-            fprintf(fplog, "Scaling the initial minimum size with 1/%g (option -dds) = %g\n", dlb_scale, 1/dlb_scale);
+            fprintf(fplog, "Scaling the initial minimum size with 1/%g (option -dds) = %g\n", dlb_scale, 1 / dlb_scale);
         }
         limit /= dlb_scale;
     }
@@ -675,7 +675,7 @@ static real optimize_ncells(FILE *fplog,
             fprintf(fplog, "The maximum allowed number of cells is:");
             for (d = 0; d < DIM; d++)
             {
-                nmax = (int)(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
+                nmax = (int)(ddbox->box_size[d] * ddbox->skew_fac[d] / limit);
                 if (d >= ddbox->npbcdim && nmax < 2)
                 {
                     nmax = 2;
@@ -721,8 +721,8 @@ real dd_choose_grid(FILE *fplog,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds)
 {
-    gmx_int64_t     nnodes_div, ldiv;
-    real            limit;
+    gmx_int64_t nnodes_div, ldiv;
+    real        limit;
 
     if (MASTER(cr))
     {
@@ -753,7 +753,7 @@ real dd_choose_grid(FILE *fplog,
         {
             ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */
-            if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
+            if (ldiv * ldiv * ldiv > nnodes_div * nnodes_div)
             {
                 gmx_fatal(FARGS, "The number of ranks you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
                           nnodes_div, ldiv);

@@ -79,9 +79,9 @@ const char *const c_compressedExtensions[] =
  * The first match is returned.
  * Returns an empty string if no existing file is found.
  */
-std::string findExistingExtension(const std::string                  &prefix,
-                                  const FileNameOptionInfo           &option,
-                                  const IFileInputRedirector         *redirector)
+std::string findExistingExtension(const std::string &         prefix,
+                                  const FileNameOptionInfo &  option,
+                                  const IFileInputRedirector *redirector)
 {
     ConstArrayRef<int>                 types = option.fileTypes();
     ConstArrayRef<int>::const_iterator i;
@@ -117,11 +117,11 @@ class FileNameOptionManager::Impl
         }
 
         //! Redirector for file existence checks.
-        const IFileInputRedirector         *redirector_;
+        const IFileInputRedirector *redirector_;
         //! Global default file name, if set.
-        std::string                         defaultFileName_;
+        std::string defaultFileName_;
         //! Whether input option processing has been disabled.
-        bool                                bInputCheckingDisabled_;
+        bool bInputCheckingDisabled_;
 };
 
 /********************************************************************

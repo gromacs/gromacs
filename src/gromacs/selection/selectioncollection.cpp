@@ -86,11 +86,11 @@ namespace gmx
 SelectionCollection::Impl::Impl()
     : debugLevel_(0), bExternalGroupsSet_(false), grps_(nullptr)
 {
-    sc_.nvars     = 0;
-    sc_.varstrs   = nullptr;
-    sc_.top       = nullptr;
+    sc_.nvars   = 0;
+    sc_.varstrs = nullptr;
+    sc_.top     = nullptr;
     gmx_ana_index_clear(&sc_.gall);
-    sc_.mempool   = nullptr;
+    sc_.mempool = nullptr;
     sc_.symtab.reset(new SelectionParserSymbolTable);
     gmx_ana_index_clear(&requiredAtoms_);
     gmx_ana_selmethod_register_defaults(sc_.symtab.get());
@@ -118,8 +118,7 @@ SelectionCollection::Impl::~Impl()
 }
 
 
-void
-SelectionCollection::Impl::clearSymbolTable()
+void SelectionCollection::Impl::clearSymbolTable()
 {
     sc_.symtab.reset();
 }
@@ -187,7 +186,7 @@ bool promptLine(TextInputStream *inputStream, TextWriter *statusWriter,
 int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
                   bool bInteractive)
 {
-    int status    = YYPUSH_MORE;
+    int status = YYPUSH_MORE;
     do
     {
         YYSTYPE value;
@@ -198,8 +197,7 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
             break;
         }
         status = _gmx_sel_yypush_parse(parserState, token, &value, &location, scanner);
-    }
-    while (status == YYPUSH_MORE);
+    } while (status == YYPUSH_MORE);
     _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
     return status;
 }
@@ -332,9 +330,9 @@ SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
 {
     std::shared_ptr<void>    scannerGuard(scanner, &_gmx_sel_free_lexer);
     gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
-    gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+    gmx_ana_indexgrps_t *    grps = _gmx_sel_lexer_indexgrps(scanner);
 
-    size_t                   oldCount = sc->sel.size();
+    size_t oldCount = sc->sel.size();
     {
         std::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
@@ -428,7 +426,7 @@ early_termination:
  */
 void checkExternalGroups(const SelectionTreeElementPointer &root,
                          int                                natoms,
-                         ExceptionInitializer              *errors)
+                         ExceptionInitializer *             errors)
 {
     if (root->type == SEL_CONST && root->v.type == GROUP_VALUE)
     {
@@ -451,7 +449,7 @@ void checkExternalGroups(const SelectionTreeElementPointer &root,
 }
 
 //! Checks whether the given topology properties are available.
-void checkTopologyProperties(const gmx_mtop_t                  *top,
+void checkTopologyProperties(const gmx_mtop_t *                 top,
                              const SelectionTopologyProperties &props)
 {
     if (top == nullptr)
@@ -473,7 +471,7 @@ void checkTopologyProperties(const gmx_mtop_t                  *top,
 
 void SelectionCollection::Impl::resolveExternalGroups(
         const SelectionTreeElementPointer &root,
-        ExceptionInitializer              *errors)
+        ExceptionInitializer *             errors)
 {
 
     if (root->type == SEL_GROUPREF)
@@ -511,8 +509,7 @@ bool SelectionCollection::Impl::areForcesRequested() const
 }
 
 
-SelectionTopologyProperties
-SelectionCollection::Impl::requiredTopologyPropertiesForPositionType(
+SelectionTopologyProperties SelectionCollection::Impl::requiredTopologyPropertiesForPositionType(
         const std::string &post, bool forces) const
 {
     SelectionTopologyProperties props;
@@ -549,9 +546,8 @@ SelectionCollection::~SelectionCollection()
 }
 
 
-void
-SelectionCollection::initOptions(IOptionsContainer   *options,
-                                 SelectionTypeOption  selectionTypeOption)
+void SelectionCollection::initOptions(IOptionsContainer * options,
+                                      SelectionTypeOption selectionTypeOption)
 {
     const char * const debug_levels[]
         = { "no", "basic", "compile", "eval", "full" };
@@ -580,39 +576,35 @@ SelectionCollection::initOptions(IOptionsContainer   *options,
 }
 
 
-void
-SelectionCollection::setReferencePosType(const char *type)
+void SelectionCollection::setReferencePosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != nullptr, "Cannot assign NULL position type");
     // Check that the type is valid, throw if it is not.
-    e_poscalc_t  dummytype;
-    int          dummyflags;
+    e_poscalc_t dummytype;
+    int         dummyflags;
     PositionCalculationCollection::typeFromEnum(type, &dummytype, &dummyflags);
     impl_->rpost_ = type;
 }
 
 
-void
-SelectionCollection::setOutputPosType(const char *type)
+void SelectionCollection::setOutputPosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != nullptr, "Cannot assign NULL position type");
     // Check that the type is valid, throw if it is not.
-    e_poscalc_t  dummytype;
-    int          dummyflags;
+    e_poscalc_t dummytype;
+    int         dummyflags;
     PositionCalculationCollection::typeFromEnum(type, &dummytype, &dummyflags);
     impl_->spost_ = type;
 }
 
 
-void
-SelectionCollection::setDebugLevel(int debugLevel)
+void SelectionCollection::setDebugLevel(int debugLevel)
 {
     impl_->debugLevel_ = debugLevel;
 }
 
 
-void
-SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
+void SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != nullptr,
                        "The number of atoms must be given if there is no topology");
@@ -644,8 +636,7 @@ SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
 }
 
 
-void
-SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
+void SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 {
     GMX_RELEASE_ASSERT(grps == nullptr || !impl_->bExternalGroupsSet_,
                        "Can only set external groups once or clear them afterwards");
@@ -670,8 +661,7 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     }
 }
 
-SelectionTopologyProperties
-SelectionCollection::requiredTopologyProperties() const
+SelectionTopologyProperties SelectionCollection::requiredTopologyProperties() const
 {
     SelectionTopologyProperties props;
 
@@ -691,8 +681,7 @@ SelectionCollection::requiredTopologyProperties() const
 }
 
 
-bool
-SelectionCollection::requiresIndexGroups() const
+bool SelectionCollection::requiresIndexGroups() const
 {
     SelectionTreeElementPointer sel = impl_->sc_.root;
     while (sel)
@@ -707,9 +696,8 @@ SelectionCollection::requiresIndexGroups() const
 }
 
 
-SelectionList
-SelectionCollection::parseFromStdin(int count, bool bInteractive,
-                                    const std::string &context)
+SelectionList SelectionCollection::parseFromStdin(int count, bool bInteractive,
+                                                  const std::string &context)
 {
     return parseInteractive(count, &StandardInputStream::instance(),
                             bInteractive ? &TextOutputFile::standardError() : nullptr,
@@ -733,11 +721,10 @@ std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
 
 }   // namespace
 
-SelectionList
-SelectionCollection::parseInteractive(int                count,
-                                      TextInputStream   *inputStream,
-                                      TextOutputStream  *statusStream,
-                                      const std::string &context)
+SelectionList SelectionCollection::parseInteractive(int                count,
+                                                    TextInputStream *  inputStream,
+                                                    TextOutputStream * statusStream,
+                                                    const std::string &context)
 {
     yyscan_t scanner;
 
@@ -749,8 +736,7 @@ SelectionCollection::parseInteractive(int                count,
 }
 
 
-SelectionList
-SelectionCollection::parseFromFile(const std::string &filename)
+SelectionList SelectionCollection::parseFromFile(const std::string &filename)
 {
 
     try
@@ -774,8 +760,7 @@ SelectionCollection::parseFromFile(const std::string &filename)
 }
 
 
-SelectionList
-SelectionCollection::parseFromString(const std::string &str)
+SelectionList SelectionCollection::parseFromString(const std::string &str)
 {
     yyscan_t scanner;
 
@@ -787,8 +772,7 @@ SelectionCollection::parseFromString(const std::string &str)
 }
 
 
-void
-SelectionCollection::compile()
+void SelectionCollection::compile()
 {
     checkTopologyProperties(impl_->sc_.top, requiredTopologyProperties());
     if (!impl_->bExternalGroupsSet_)
@@ -863,8 +847,7 @@ SelectionCollection::compile()
 }
 
 
-void
-SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
+void SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
     checkTopologyProperties(impl_->sc_.top, requiredTopologyProperties());
     if (fr->bIndex)
@@ -907,16 +890,14 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 }
 
 
-void
-SelectionCollection::evaluateFinal(int nframes)
+void SelectionCollection::evaluateFinal(int nframes)
 {
     SelectionEvaluator evaluator;
     evaluator.evaluateFinal(this, nframes);
 }
 
 
-void
-SelectionCollection::printTree(FILE *fp, bool bValues) const
+void SelectionCollection::printTree(FILE *fp, bool bValues) const
 {
     SelectionTreeElementPointer sel = impl_->sc_.root;
     while (sel)
@@ -927,8 +908,7 @@ SelectionCollection::printTree(FILE *fp, bool bValues) const
 }
 
 
-void
-SelectionCollection::printXvgrInfo(FILE *out) const
+void SelectionCollection::printXvgrInfo(FILE *out) const
 {
     const gmx_ana_selcollection_t &sc = impl_->sc_;
     std::fprintf(out, "# Selections:\n");

@@ -287,7 +287,7 @@ std::string Path::getFilename(const std::string &path)
     {
         return path;
     }
-    return path.substr(pos+1);
+    return path.substr(pos + 1);
 }
 
 bool Path::hasExtension(const std::string &path)
@@ -316,9 +316,9 @@ std::string Path::concatenateBeforeExtension(const std::string &input, const std
     // Make sure that if there's an extension-separator character,
     // that it follows the last path-separator character (if any),
     // before we interpret it as an extension separator.
-    bool haveExtension = (extSeparatorPosition != std::string::npos &&
-                          ((!havePath ||
-                            (extSeparatorPosition > dirSeparatorPosition))));
+    bool haveExtension = (extSeparatorPosition != std::string::npos
+                          && ((!havePath
+                               || (extSeparatorPosition > dirSeparatorPosition))));
     if (!haveExtension)
     {
         output = input + stringToAdd;
@@ -396,7 +396,7 @@ std::string Path::getWorkingDirectory()
     return cwd;
 }
 
-void Path::splitPathEnvironment(const std::string        &pathEnv,
+void Path::splitPathEnvironment(const std::string &       pathEnv,
                                 std::vector<std::string> *result)
 {
     size_t prevPos = 0;
@@ -406,8 +406,7 @@ void Path::splitPathEnvironment(const std::string        &pathEnv,
         separator = pathEnv.find(cPathSeparator, prevPos);
         result->push_back(pathEnv.substr(prevPos, separator - prevPos));
         prevPos = separator + 1;
-    }
-    while (separator != std::string::npos);
+    } while (separator != std::string::npos);
 }
 
 std::vector<std::string> Path::getExecutablePaths()
@@ -432,9 +431,9 @@ std::string Path::resolveSymlinks(const std::string &path)
      * resolves the entire path (it does that recursively). */
     std::string result(path);
 #if !GMX_NATIVE_WINDOWS
-    char        buf[GMX_PATH_MAX];
-    int         length;
-    while ((length = readlink(result.c_str(), buf, sizeof(buf)-1)) > 0)
+    char buf[GMX_PATH_MAX];
+    int  length;
+    while ((length = readlink(result.c_str(), buf, sizeof(buf) - 1)) > 0)
     {
         buf[length] = '\0';
         if (isAbsolute(buf))

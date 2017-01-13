@@ -61,8 +61,8 @@
 
 static int search_str2(int nstr, char **str, char *key)
 {
-    int  i, n;
-    int  keylen = std::strlen(key);
+    int i, n;
+    int keylen = std::strlen(key);
     /* Linear search */
     n = 0;
     while ( (n < keylen) && ((key[n] < '0') || (key[n] > '9')) )
@@ -82,7 +82,7 @@ static int search_str2(int nstr, char **str, char *key)
 
 int gmx_enemat(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char *    desc[] = {
         "[THISMODULE] extracts an energy matrix from the energy file ([TT]-f[tt]).",
         "With [TT]-groups[tt] a file must be supplied with on each",
         "line a group of atoms to be used. For these groups matrix of",
@@ -122,7 +122,7 @@ int gmx_enemat(int argc, char *argv[])
     static gmx_bool bCoulSR   = TRUE, bCoul14 = FALSE;
     static gmx_bool bLJSR     = TRUE, bLJ14 = FALSE, bBhamSR = FALSE,
                     bFree     = TRUE;
-    t_pargs         pa[]      = {
+    t_pargs pa[]              = {
         { "-sum",  FALSE, etBOOL, {&bSum},
           "Sum the energy terms selected rather than display them all" },
         { "-skip", FALSE, etINT,  {&skip},
@@ -146,32 +146,32 @@ int gmx_enemat(int argc, char *argv[])
        egTotal (total energy) */
 #define egTotal egNR
 #define egSP 1
-    gmx_bool          egrp_use[egNR+egSP];
+    gmx_bool          egrp_use[egNR + egSP];
     ener_file_t       in;
-    FILE             *out;
+    FILE *            out;
     int               timecheck = 0;
-    gmx_enxnm_t      *enm       = nullptr;
-    t_enxframe       *fr;
+    gmx_enxnm_t *     enm       = nullptr;
+    t_enxframe *      fr;
     int               teller = 0;
     real              sum;
     gmx_bool          bCont, bRef;
     gmx_bool          bCutmax, bCutmin;
-    real            **eneset, *time = nullptr;
-    int              *set, i, j, k, prevk, m = 0, n, nre, nset, nenergy;
-    char            **groups = nullptr;
+    real **           eneset, *time = nullptr;
+    int *             set, i, j, k, prevk, m = 0, n, nre, nset, nenergy;
+    char **           groups = nullptr;
     char              groupname[255], fn[255];
     int               ngroups;
     t_rgb             rlo, rhi, rmid;
     real              emax, emid, emin;
-    real           ***emat, **etot, *groupnr;
+    real ***          emat, **etot, *groupnr;
     double            beta, expE, **e, *eaver, *efree = nullptr, edum;
     char              label[234];
-    char            **ereflines, **erefres = nullptr;
-    real             *eref  = nullptr, *edif = nullptr;
+    char **           ereflines, **erefres = nullptr;
+    real *            eref  = nullptr, *edif = nullptr;
     int               neref = 0;
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efEDR, "-f", nullptr, ffOPTRD },
         { efDAT, "-groups", "groups", ffREAD },
         { efDAT, "-eref",   "eref",   ffOPTRD },
@@ -186,7 +186,7 @@ int gmx_enemat(int argc, char *argv[])
         return 0;
     }
 
-    for (i = 0; (i < egNR+egSP); i++)
+    for (i = 0; (i < egNR + egSP); i++)
     {
         egrp_use[i] = FALSE;
     }
@@ -217,7 +217,7 @@ int gmx_enemat(int argc, char *argv[])
     fprintf(stderr, "Will read groupnames from inputfile\n");
     ngroups = get_lines(opt2fn("-groups", NFILE, fnm), &groups);
     fprintf(stderr, "Read %d groups\n", ngroups);
-    snew(set, static_cast<size_t>(gmx::square(ngroups)*egNR/2));
+    snew(set, static_cast<size_t>(gmx::square(ngroups) * egNR / 2));
     n     = 0;
     prevk = 0;
     for (i = 0; (i < ngroups); i++)
@@ -235,15 +235,15 @@ int gmx_enemat(int argc, char *argv[])
                     fprintf(stderr, "\r%-15s %5d", groupname, n);
                     fflush(stderr);
 #endif
-                    for (k = prevk; (k < prevk+nre); k++)
+                    for (k = prevk; (k < prevk + nre); k++)
                     {
-                        if (std::strcmp(enm[k%nre].name, groupname) == 0)
+                        if (std::strcmp(enm[k % nre].name, groupname) == 0)
                         {
                             set[n++] = k;
                             break;
                         }
                     }
-                    if (k == prevk+nre)
+                    if (k == prevk + nre)
                     {
                         fprintf(stderr, "WARNING! could not find group %s (%d,%d)"
                                 "in energy file\n", groupname, i, j);
@@ -258,7 +258,7 @@ int gmx_enemat(int argc, char *argv[])
     }
     fprintf(stderr, "\n");
     nset = n;
-    snew(eneset, nset+1);
+    snew(eneset, nset + 1);
     fprintf(stderr, "Will select half-matrix of energies with %d elements\n", n);
 
     /* Start reading energy frames */
@@ -272,8 +272,7 @@ int gmx_enemat(int argc, char *argv[])
             {
                 timecheck = check_times(fr->t);
             }
-        }
-        while (bCont && (timecheck < 0));
+        } while (bCont && (timecheck < 0));
 
         if (timecheck == 0)
         {
@@ -286,10 +285,10 @@ int gmx_enemat(int argc, char *argv[])
 
                 if ((nenergy % 1000) == 0)
                 {
-                    srenew(time, nenergy+1000);
+                    srenew(time, nenergy + 1000);
                     for (i = 0; (i <= nset); i++)
                     {
-                        srenew(eneset[i], nenergy+1000);
+                        srenew(eneset[i], nenergy + 1000);
                     }
                 }
                 time[nenergy] = fr->t;
@@ -307,16 +306,15 @@ int gmx_enemat(int argc, char *argv[])
             }
             teller++;
         }
-    }
-    while (bCont && (timecheck == 0));
+    } while (bCont && (timecheck == 0));
 
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Will build energy half-matrix of %d groups, %d elements, "
             "over %d frames\n", ngroups, nset, nenergy);
 
-    snew(emat, egNR+egSP);
-    for (j = 0; (j < egNR+egSP); j++)
+    snew(emat, egNR + egSP);
+    for (j = 0; (j < egNR + egSP); j++)
     {
         if (egrp_use[m])
         {
@@ -330,7 +328,7 @@ int gmx_enemat(int argc, char *argv[])
     snew(groupnr, ngroups);
     for (i = 0; (i < ngroups); i++)
     {
-        groupnr[i] = i+1;
+        groupnr[i] = i + 1;
     }
     rlo.r  = 1.0, rlo.g  = 0.0, rlo.b  = 0.0;
     rmid.r = 1.0, rmid.g = 1.0, rmid.b = 1.0;
@@ -392,7 +390,7 @@ int gmx_enemat(int argc, char *argv[])
                 }
                 eaver[i] /= nenergy;
             }
-            beta = 1.0/(BOLTZ*reftemp);
+            beta = 1.0 / (BOLTZ * reftemp);
             snew(efree, ngroups);
             snew(edif, ngroups);
             for (i = 0; (i < ngroups); i++)
@@ -400,15 +398,15 @@ int gmx_enemat(int argc, char *argv[])
                 expE = 0;
                 for (k = 0; (k < nenergy); k++)
                 {
-                    expE += std::exp(beta*(e[i][k]-eaver[i]));
+                    expE += std::exp(beta * (e[i][k] - eaver[i]));
                 }
-                efree[i] = std::log(expE/nenergy)/beta + eaver[i];
+                efree[i] = std::log(expE / nenergy) / beta + eaver[i];
                 if (bRef)
                 {
                     n = search_str2(neref, erefres, groups[i]);
                     if (n != -1)
                     {
-                        edif[i] = efree[i]-eref[n];
+                        edif[i] = efree[i] - eref[n];
                     }
                     else
                     {
@@ -426,7 +424,7 @@ int gmx_enemat(int argc, char *argv[])
 
         emid             = 0.0; /*(emin+emax)*0.5;*/
         egrp_nm[egTotal] = "total";
-        for (m = 0; (m < egNR+egSP); m++)
+        for (m = 0; (m < egNR + egSP); m++)
         {
             if (egrp_use[m])
             {
@@ -496,8 +494,8 @@ int gmx_enemat(int argc, char *argv[])
                 }
             }
         }
-        snew(etot, egNR+egSP);
-        for (m = 0; (m < egNR+egSP); m++)
+        snew(etot, egNR + egSP);
+        for (m = 0; (m < egNR + egSP); m++)
         {
             snew(etot[m], ngroups);
             for (i = 0; (i < ngroups); i++)
@@ -527,7 +525,7 @@ int gmx_enemat(int argc, char *argv[])
                 sprintf(str2, " legend ");
             }
 
-            for (m = 0; (m < egNR+egSP); m++)
+            for (m = 0; (m < egNR + egSP); m++)
             {
                 if (egrp_use[m])
                 {
@@ -545,7 +543,7 @@ int gmx_enemat(int argc, char *argv[])
             fprintf(out, "@TYPE xy\n");
             fprintf(out, "#%3s", "grp");
 
-            for (m = 0; (m < egNR+egSP); m++)
+            for (m = 0; (m < egNR + egSP); m++)
             {
                 if (egrp_use[m])
                 {
@@ -565,7 +563,7 @@ int gmx_enemat(int argc, char *argv[])
         for (i = 0; (i < ngroups); i++)
         {
             fprintf(out, "%3.0f", groupnr[i]);
-            for (m = 0; (m < egNR+egSP); m++)
+            for (m = 0; (m < egNR + egSP); m++)
             {
                 if (egrp_use[m])
                 {

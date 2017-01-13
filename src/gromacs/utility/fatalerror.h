@@ -65,7 +65,7 @@ extern "C" {
    }
    \endcode
  */
-extern FILE    *debug;
+extern FILE *debug;
 /** Whether extra debugging is enabled. */
 extern gmx_bool gmx_debug_at;
 

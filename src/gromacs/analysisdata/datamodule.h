@@ -87,15 +87,15 @@ class IAnalysisDataModule
         enum Flag
         {
             //! The module can process multipoint data.
-            efAllowMultipoint           = 1<<0,
+            efAllowMultipoint = 1 << 0,
             //! The module does not make sense for non-multipoint data.
-            efOnlyMultipoint            = 1<<1,
+            efOnlyMultipoint = 1 << 1,
             //! The module can process data with more than one column.
-            efAllowMulticolumn          = 1<<2,
+            efAllowMulticolumn = 1 << 2,
             //! The module can process data with missing points.
-            efAllowMissing              = 1<<3,
+            efAllowMissing = 1 << 3,
             //! The module can process data with multiple data sets.
-            efAllowMultipleDataSets     = 1<<4
+            efAllowMultipleDataSets = 1 << 4
         };
 
         virtual ~IAnalysisDataModule() {};
@@ -169,7 +169,7 @@ class IAnalysisDataModule
          * supported (or rather, accessing the requested storage doesn't work).
          */
         virtual bool parallelDataStarted(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options) = 0;
         /*! \brief
          * Called at the start of each data frame.
@@ -248,11 +248,11 @@ class AnalysisDataModuleSerial : public IAnalysisDataModule
         virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
         virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
         virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
-        virtual void dataFinished() = 0;
+        virtual void dataFinished()                                       = 0;
 
     private:
         virtual bool parallelDataStarted(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options);
         virtual void frameFinishedSerial(int /*frameIndex*/) {}
 };
@@ -275,13 +275,13 @@ class AnalysisDataModuleParallel : public IAnalysisDataModule
         virtual int flags() const = 0;
 
         virtual bool parallelDataStarted(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options)                   = 0;
         virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
         virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
         virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
-        virtual void frameFinishedSerial(int index) = 0;
-        virtual void dataFinished()                 = 0;
+        virtual void frameFinishedSerial(int index)                       = 0;
+        virtual void dataFinished()                                       = 0;
 
     private:
         virtual void dataStarted(AbstractAnalysisData *data);

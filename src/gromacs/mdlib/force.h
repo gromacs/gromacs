@@ -113,7 +113,7 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
 
 
 gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
-                                          const t_inputrec    *ir,
+                                          const t_inputrec *   ir,
                                           gmx_bool             bRerunMD);
 /* Return if GPU acceleration is supported with the given settings.
  *
@@ -122,7 +122,7 @@ gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
  */
 
 gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
-                              const t_inputrec    *ir);
+                              const t_inputrec *   ir);
 /* Return if CPU SIMD support exists for the given inputrec
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
  * message to fplog/stderr.
@@ -183,45 +183,45 @@ void do_force(FILE *log, t_commrec *cr,
  * f is always required.
  */
 
-void ns(FILE              *fplog,
-        t_forcerec        *fr,
-        matrix             box,
-        gmx_groups_t      *groups,
-        gmx_localtop_t    *top,
-        t_mdatoms         *md,
-        t_commrec         *cr,
-        t_nrnb            *nrnb,
-        gmx_bool           bFillGrid);
+void ns(FILE *          fplog,
+        t_forcerec *    fr,
+        matrix          box,
+        gmx_groups_t *  groups,
+        gmx_localtop_t *top,
+        t_mdatoms *     md,
+        t_commrec *     cr,
+        t_nrnb *        nrnb,
+        gmx_bool        bFillGrid);
 /* Call the neighborsearcher */
 
-void do_force_lowlevel(t_forcerec   *fr,
-                       t_inputrec   *ir,
-                       t_idef       *idef,
-                       t_commrec    *cr,
-                       t_nrnb       *nrnb,
+void do_force_lowlevel(t_forcerec   * fr,
+                       t_inputrec   * ir,
+                       t_idef       * idef,
+                       t_commrec    * cr,
+                       t_nrnb       * nrnb,
                        gmx_wallcycle_t wcycle,
-                       t_mdatoms    *md,
+                       t_mdatoms    * md,
                        rvec         x[],
-                       history_t    *hist,
+                       history_t    * hist,
                        rvec         f_shortrange[],
-                       gmx_enerdata_t *enerd,
-                       t_fcdata     *fcd,
-                       gmx_localtop_t *top,
-                       gmx_genborn_t *born,
+                       gmx_enerdata_t * enerd,
+                       t_fcdata     * fcd,
+                       gmx_localtop_t * top,
+                       gmx_genborn_t * born,
                        gmx_bool         bBornRadii,
                        matrix       box,
-                       t_lambda     *fepvals,
-                       real         *lambda,
-                       t_graph      *graph,
-                       t_blocka     *excl,
+                       t_lambda     * fepvals,
+                       real         * lambda,
+                       t_graph      * graph,
+                       t_blocka     * excl,
                        rvec         mu_tot[2],
                        int          flags,
                        float        *cycles_pme);
 /* Call all the force routines */
 
-void free_gpu_resources(const t_forcerec            *fr,
-                        const t_commrec             *cr,
-                        const gmx_gpu_info_t        *gpu_info,
-                        const gmx_gpu_opt_t         *gpu_opt);
+void free_gpu_resources(const t_forcerec *    fr,
+                        const t_commrec *     cr,
+                        const gmx_gpu_info_t *gpu_info,
+                        const gmx_gpu_opt_t * gpu_opt);
 
 #endif

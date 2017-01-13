@@ -57,35 +57,36 @@ struct t_commrec;
  *
  * \inpublicapi
  */
-struct t_filenm {
+struct t_filenm
+{
     int           ftp;    //!< File type (see enum in filetypes.h)
-    const char   *opt;    //!< Command line option
-    const char   *fn;     //!< File name (as set in source code)
+    const char *  opt;    //!< Command line option
+    const char *  fn;     //!< File name (as set in source code)
     unsigned long flag;   //!< Flag for all kinds of info (see defs)
     int           nfiles; //!< number of files
-    char        **fns;    //!< File names
+    char **       fns;    //!< File names
 };
 
 //! Whether a file name option is set.
-#define ffSET   1<<0
+#define ffSET   1 << 0
 //! Whether a file name option specifies an input file.
-#define ffREAD  1<<1
+#define ffREAD  1 << 1
 //! Whether a file name option specifies an output file.
-#define ffWRITE 1<<2
+#define ffWRITE 1 << 2
 //! Whether a file name option specifies an optional file.
-#define ffOPT   1<<3
+#define ffOPT   1 << 3
 //! Whether a file name option specifies a library file.
-#define ffLIB   1<<4
+#define ffLIB   1 << 4
 //! Whether a file name option accepts multiple file names.
-#define ffMULT  1<<5
+#define ffMULT  1 << 5
 //! Whether an input file name option accepts non-existent files.
-#define ffALLOW_MISSING 1<<6
+#define ffALLOW_MISSING 1 << 6
 //! Convenience flag for an input/output file.
 #define ffRW    (ffREAD | ffWRITE)
 //! Convenience flag for an optional input file.
 #define ffOPTRD (ffREAD | ffOPT)
 //! Convenience flag for an optional output file.
-#define ffOPTWR (ffWRITE| ffOPT)
+#define ffOPTWR (ffWRITE | ffOPT)
 //! Convenience flag for an optional input/output file.
 #define ffOPTRW (ffRW   | ffOPT)
 //! Convenience flag for a library input file.

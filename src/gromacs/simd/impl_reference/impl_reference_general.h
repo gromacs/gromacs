@@ -67,8 +67,7 @@ namespace gmx
  *        but if the pointer is not aligned the prefetch might start at the
  *        lower cache line boundary (meaning fewer bytes are prefetched).
  */
-static void
-simdPrefetch(void gmx_unused * m)
+static void simdPrefetch(void gmx_unused * m)
 {
     // Do nothing for reference implementation
 }

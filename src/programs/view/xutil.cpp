@@ -48,11 +48,12 @@
 
 int CheckWin(Window win, const char *file, int line)
 {
-    typedef struct {
+    typedef struct
+    {
         Window      n;
         const char *s;
     } t_winerr;
-    t_winerr          winerr[] = {
+    t_winerr winerr[] = {
         { BadAlloc,  "Bad Alloc" },
         { BadColor,  "Bad Color" },
         { BadCursor, "Bad Cursor"},
@@ -61,8 +62,8 @@ int CheckWin(Window win, const char *file, int line)
         { BadValue,  "Bad Value" },
         { BadWindow, "Bad Window"}
     };
-#define NERR (sizeof(winerr)/sizeof(winerr[0]))
-    unsigned int      i;
+#define NERR (sizeof(winerr) / sizeof(winerr[0]))
+    unsigned int i;
 
     for (i = 0; (i < NERR); i++)
     {
@@ -114,24 +115,24 @@ void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
             x0 = x;
             break;
         case eXRight:
-            x0 = x+width-fw;
+            x0 = x + width - fw;
             break;
         case eXCenter:
         default:
-            x0 = x+(width-fw)/2;
+            x0 = x + (width - fw) / 2;
             break;
     }
     switch (eY)
     {
         case eYTop:
-            y0 = y+f->ascent;
+            y0 = y + f->ascent;
             break;
         case eYBottom:
-            y0 = y+height-f->descent;
+            y0 = y + height - f->descent;
             break;
         case eYCenter:
         default:
-            y0 = y+(height-fh)/2+f->ascent;
+            y0 = y + (height - fh) / 2 + f->ascent;
             break;
     }
     XDrawString(x11->disp, win, x11->gc, x0, y0, s, std::strlen(s));
@@ -208,7 +209,7 @@ void ExposeWin(Display *disp, Window win)
 void XDrawRoundRect(Display *disp, Window win, GC gc,
                     int x, int y, int w, int h)
 {
-#define RAD (OFFS_X/2)
+#define RAD (OFFS_X / 2)
 #define SetPoint(pn, x0, y0) pn.x = x0; pn.y = y0
 
     if ((w < 10) || (h < 10))
@@ -219,14 +220,14 @@ void XDrawRoundRect(Display *disp, Window win, GC gc,
     {
         XPoint p[9];
 
-        SetPoint(p[0], x+RAD, y);
-        SetPoint(p[1], w-2*RAD, 0);
+        SetPoint(p[0], x + RAD, y);
+        SetPoint(p[1], w - 2 * RAD, 0);
         SetPoint(p[2], RAD, RAD);
-        SetPoint(p[3], 0, h-2*RAD);
+        SetPoint(p[3], 0, h - 2 * RAD);
         SetPoint(p[4], -RAD, RAD);
-        SetPoint(p[5], 2*RAD-w, 0);
+        SetPoint(p[5], 2 * RAD - w, 0);
         SetPoint(p[6], -RAD, -RAD);
-        SetPoint(p[7], 0, 2*RAD-h);
+        SetPoint(p[7], 0, 2 * RAD - h);
         SetPoint(p[8], RAD, -RAD);
         XDrawLines(disp, win, gc, p, 9, CoordModePrevious);
     }
@@ -238,7 +239,7 @@ void RoundRectWin(Display *disp, GC gc, t_windata *win,
     XSetLineAttributes(disp, gc, 1, LineOnOffDash, CapButt, JoinRound);
     XSetForeground(disp, gc, color);
     XDrawRoundRect(disp, win->self, gc, offsx, offsy,
-                   win->width-2*offsx-1, win->height-2*offsy-1);
+                   win->width - 2 * offsx - 1, win->height - 2 * offsy - 1);
     XSetLineAttributes(disp, gc, 1, LineSolid, CapButt, JoinRound);
 }
 
@@ -247,10 +248,11 @@ void RectWin(Display *disp, GC gc, t_windata *win, unsigned long color)
     int bw = 1; /*2*w.bwidth;*/
 
     XSetForeground(disp, gc, color);
-    XDrawRoundRect(disp, win->self, gc, 0, 0, win->width-bw, win->height-bw);
+    XDrawRoundRect(disp, win->self, gc, 0, 0, win->width - bw, win->height - bw);
 }
 
-typedef struct t_mpos {
+typedef struct t_mpos
+{
     int            x, y;
     struct t_mpos *prev;
 } t_mpos;
@@ -259,11 +261,11 @@ static t_mpos *mpos = nullptr;
 
 void PushMouse(Display *disp, Window dest, int x, int y)
 {
-    Window         root, child;
-    int            root_x, root_y;
-    int            win_x, win_y;
-    unsigned int   keybut;
-    t_mpos        *newpos;
+    Window       root, child;
+    int          root_x, root_y;
+    int          win_x, win_y;
+    unsigned int keybut;
+    t_mpos *     newpos;
 
     snew(newpos, 1);
     XQueryPointer(disp, DefaultRootWindow(disp), &root, &child, &root_x, &root_y,
@@ -299,7 +301,7 @@ void PopMouse(Display *disp)
 bool HelpPressed(XEvent *event)
 {
 #define BUFSIZE 24
-    char           buf[BUFSIZE+1];
+    char           buf[BUFSIZE + 1];
     XComposeStatus compose;
     KeySym         keysym;
 

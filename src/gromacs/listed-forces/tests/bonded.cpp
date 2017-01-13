@@ -68,10 +68,10 @@ namespace
 class BondedTest : public ::testing::Test
 {
     protected:
-        rvec   x[NATOMS];
-        matrix box;
-        test::TestReferenceData           refData_;
-        test::TestReferenceChecker        checker_;
+        rvec                       x[NATOMS];
+        matrix                     box;
+        test::TestReferenceData    refData_;
+        test::TestReferenceChecker checker_;
         BondedTest( ) :
             checker_(refData_.rootChecker())
         {
@@ -137,21 +137,21 @@ class BondedTest : public ::testing::Test
                     f[i][j] = 0;
                 }
             }
-            rvec  fshift[N_IVEC];
+            rvec fshift[N_IVEC];
             clear_rvecs(N_IVEC, fshift);
             t_pbc pbc;
             set_pbc(&pbc, epbc, box);
-            int   ddgatindex = 0;
-            real  energy     = interaction_function[ftype].ifunc(iatoms.size(),
-                                                                 iatoms.data(),
-                                                                 iparams,
-                                                                 x, f, fshift,
-                                                                 &pbc,
-                                                                 /* const struct t_graph *g */ nullptr,
-                                                                 lambda, &dvdlambda,
-                                                                 /* const struct t_mdatoms *md */ nullptr,
-                                                                 /* struct t_fcdata *fcd */ nullptr,
-                                                                 &ddgatindex);
+            int  ddgatindex = 0;
+            real energy     = interaction_function[ftype].ifunc(iatoms.size(),
+                                                                iatoms.data(),
+                                                                iparams,
+                                                                x, f, fshift,
+                                                                &pbc,
+                                                                /* const struct t_graph *g */ nullptr,
+                                                                lambda, &dvdlambda,
+                                                                /* const struct t_mdatoms *md */ nullptr,
+                                                                /* struct t_fcdata *fcd */ nullptr,
+                                                                &ddgatindex);
             checker_.checkReal(energy, interaction_function[ftype].longname);
         }
 
@@ -226,7 +226,7 @@ TEST_F (BondedTest, IfuncAnglesPbcNo)
 
 TEST_F (BondedTest, IfuncAnglesPbcXy)
 {
-    std::vector<t_iatom> iatoms  = { 0, 0, 1, 2, 0, 1, 2, 3 };
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 0, 1, 2, 3 };
     t_iparams            iparams;
     real                 k = 50;
     iparams.harmonic.rA  = iparams.harmonic.rB  = 100;
@@ -266,7 +266,7 @@ TEST_F (BondedTest, IfuncProperDihedralsPbcXy)
 
 TEST_F (BondedTest, IfuncProperDihedralsPbcXyz)
 {
-    std::vector<t_iatom> iatoms  = { 0, 0, 1, 2, 3 };
+    std::vector<t_iatom> iatoms = { 0, 0, 1, 2, 3 };
     t_iparams            iparams;
     iparams.pdihs.phiA = iparams.pdihs.phiB = -100;
     iparams.pdihs.cpA  = iparams.pdihs.cpB  = 10;

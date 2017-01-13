@@ -699,4 +699,4 @@ nb_kernel_info_t
 };
 
 int
-    kernellist_c_size = sizeof(kernellist_c)/sizeof(kernellist_c[0]);
+    kernellist_c_size = sizeof(kernellist_c) / sizeof(kernellist_c[0]);

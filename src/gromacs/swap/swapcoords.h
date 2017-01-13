@@ -81,15 +81,15 @@ struct t_swapcoords;
  *                          whether we are doing a rerun, appending, etc.
  */
 void init_swapcoords(
-        FILE                   *fplog,
+        FILE *                  fplog,
         gmx_bool                bVerbose,
-        t_inputrec             *ir,
-        const char             *fn,
-        gmx_mtop_t             *mtop,
+        t_inputrec *            ir,
+        const char *            fn,
+        gmx_mtop_t *            mtop,
         rvec                    x[],
         matrix                  box,
-        swapstate_t           **swapstatePtr,
-        t_commrec              *cr,
+        swapstate_t **          swapstatePtr,
+        t_commrec *             cr,
         const gmx_output_env_t *oenv,
         unsigned long           Flags);
 
@@ -127,14 +127,14 @@ void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
  * \returns Whether at least one pair of molecules was swapped.
  */
 gmx_bool do_swapcoords(
-        t_commrec        *cr,
-        gmx_int64_t       step,
-        double            t,
-        t_inputrec       *ir,
-        gmx_wallcycle_t   wcycle,
-        rvec              x[],
-        matrix            box,
-        gmx_bool          bVerbose,
-        gmx_bool          bRerun);
+        t_commrec *     cr,
+        gmx_int64_t     step,
+        double          t,
+        t_inputrec *    ir,
+        gmx_wallcycle_t wcycle,
+        rvec            x[],
+        matrix          box,
+        gmx_bool        bVerbose,
+        gmx_bool        bRerun);
 
 #endif

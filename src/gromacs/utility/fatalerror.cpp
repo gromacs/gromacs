@@ -63,14 +63,14 @@
 
 #include "errorformat.h"
 
-static bool                bDebug         = false;
-static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+static bool                bDebug      = false;
+static tMPI_Thread_mutex_t where_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-FILE                      *debug          = nullptr;
-gmx_bool                   gmx_debug_at   = FALSE;
+FILE *   debug        = nullptr;
+gmx_bool gmx_debug_at = FALSE;
 
-static FILE               *log_file       = nullptr;
-static tMPI_Thread_mutex_t error_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+static FILE *              log_file    = nullptr;
+static tMPI_Thread_mutex_t error_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 void gmx_init_debug(const int dbglevel, const char *dbgfile)
 {
@@ -96,8 +96,8 @@ void _where(const char *file, int line)
     static gmx_bool bFirst = TRUE;
     static int      nskip  = -1;
     static int      nwhere =  0;
-    FILE           *fp;
-    char           *temp;
+    FILE *          fp;
+    char *          temp;
 
     if (bFirst)
     {
@@ -163,7 +163,8 @@ void gmx_set_error_handler(gmx_error_handler_t func)
 
 static const char *gmx_strerror(const char *key)
 {
-    struct ErrorKeyEntry {
+    struct ErrorKeyEntry
+    {
         const char *key;
         const char *msg;
     };
@@ -299,7 +300,7 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
             buf[0] = '\0';
         }
 
-        sprintf(buf+strlen(buf), "Variable %s has value %d. It should have been "
+        sprintf(buf + strlen(buf), "Variable %s has value %d. It should have been "
                 "within [ %d .. %d ]\n", var, n, n_min, n_max);
 
         _gmx_error("range", buf, file, line);

@@ -61,12 +61,12 @@ class ThreeFry2x64Test : public ::testing::TestWithParam<std::vector<gmx_uint64_
 
 TEST_P(ThreeFry2x64Test, Default)
 {
-    gmx::test::TestReferenceData       data;
-    gmx::test::TestReferenceChecker    checker(data.rootChecker());
-    const std::vector<gmx_uint64_t>    input = GetParam();
-    std::vector<gmx_uint64_t>          result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    const std::vector<gmx_uint64_t> input = GetParam();
+    std::vector<gmx_uint64_t>       result;
 
-    gmx::ThreeFry2x64<0>               rng(input[2], input[3]);
+    gmx::ThreeFry2x64<0> rng(input[2], input[3]);
     rng.restart(input[0], input[1]);
 
     result.push_back(rng());
@@ -77,12 +77,12 @@ TEST_P(ThreeFry2x64Test, Default)
 
 TEST_P(ThreeFry2x64Test, Fast)
 {
-    gmx::test::TestReferenceData       data;
-    gmx::test::TestReferenceChecker    checker(data.rootChecker());
-    const std::vector<gmx_uint64_t>    input = GetParam();
-    std::vector<gmx_uint64_t>          result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    const std::vector<gmx_uint64_t> input = GetParam();
+    std::vector<gmx_uint64_t>       result;
 
-    gmx::ThreeFry2x64Fast<0>           rng(input[2], input[3]);
+    gmx::ThreeFry2x64Fast<0> rng(input[2], input[3]);
     rng.restart(input[0], input[1]);
 
     result.push_back(rng());
@@ -93,12 +93,12 @@ TEST_P(ThreeFry2x64Test, Fast)
 
 TEST_P(ThreeFry2x64Test, Using40Rounds)
 {
-    gmx::test::TestReferenceData       data;
-    gmx::test::TestReferenceChecker    checker(data.rootChecker());
-    const std::vector<gmx_uint64_t>    input = GetParam();
-    std::vector<gmx_uint64_t>          result;
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    const std::vector<gmx_uint64_t> input = GetParam();
+    std::vector<gmx_uint64_t>       result;
 
-    gmx::ThreeFry2x64General<40, 0>    rng(input[2], input[3]);
+    gmx::ThreeFry2x64General<40, 0> rng(input[2], input[3]);
     rng.restart(input[0], input[1]);
 
     result.push_back(rng());
@@ -166,13 +166,13 @@ TEST_F(ThreeFry2x64Test, Logical)
 
 TEST_F(ThreeFry2x64Test, InternalCounterSequence)
 {
-    gmx::test::TestReferenceData     data;
-    gmx::test::TestReferenceChecker  checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
     // 66 bits of internal counter means the first four increments (giving 2*4=8 results)
     // correspond to incrementing word 0, and then we should carry over to word 1.
-    gmx::ThreeFry2x64<66>        rngA(123456, gmx::RandomDomain::Other);
-    std::vector<gmx_uint64_t>    result;
+    gmx::ThreeFry2x64<66>     rngA(123456, gmx::RandomDomain::Other);
+    std::vector<gmx_uint64_t> result;
 
     for (int i = 0; i < 16; i++)
     {
@@ -181,14 +181,14 @@ TEST_F(ThreeFry2x64Test, InternalCounterSequence)
     checker.checkSequence(result.begin(), result.end(), "ThreeFry2x64InternalCounterSequence");
 
     // Make sure nothing goes wrong with the internal counter sequence when we use a full 64-bit word
-    gmx::ThreeFry2x64<64>        rngB(123456, gmx::RandomDomain::Other);
+    gmx::ThreeFry2x64<64> rngB(123456, gmx::RandomDomain::Other);
     for (int i = 0; i < 16; i++)
     {
         rngB();
     }
 
     // Use every single bit for the internal counter
-    gmx::ThreeFry2x64<128>        rngC(123456, gmx::RandomDomain::Other);
+    gmx::ThreeFry2x64<128> rngC(123456, gmx::RandomDomain::Other);
     for (int i = 0; i < 16; i++)
     {
         rngC();

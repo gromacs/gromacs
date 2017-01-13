@@ -139,62 +139,62 @@ typedef struct
  */
 typedef struct t_gmx_IMD
 {
-    FILE      *outf;                 /**< Output file for IMD data, mainly forces.    */
+    FILE *outf;                      /**< Output file for IMD data, mainly forces.    */
 
-    int        nat;                  /**< Number of atoms that can be pulled via IMD. */
-    int        nat_loc;              /**< Part of the atoms that are local.           */
-    int       *ind;                  /**< Global indices of the IMD atoms.            */
-    int       *ind_loc;              /**< Local indices of the IMD atoms.             */
-    int        nalloc_loc;           /**< Allocation size for ind_loc.                */
-    rvec      *xa;                   /**< Positions for all IMD atoms assembled on
+    int   nat;                       /**< Number of atoms that can be pulled via IMD. */
+    int   nat_loc;                   /**< Part of the atoms that are local.           */
+    int * ind;                       /**< Global indices of the IMD atoms.            */
+    int * ind_loc;                   /**< Local indices of the IMD atoms.             */
+    int   nalloc_loc;                /**< Allocation size for ind_loc.                */
+    rvec *xa;                        /**< Positions for all IMD atoms assembled on
                                           the master node.                            */
-    ivec      *xa_shifts;            /**< Shifts for all IMD atoms, to make
+    ivec *xa_shifts;                 /**< Shifts for all IMD atoms, to make
                                           molecule(s) whole.                          */
-    ivec      *xa_eshifts;           /**< Extra shifts since last DD step.            */
-    rvec      *xa_old;               /**< Old positions for all IMD atoms on master.  */
-    int       *xa_ind;               /**< Position of each local atom in the
+    ivec *xa_eshifts;                /**< Extra shifts since last DD step.            */
+    rvec *xa_old;                    /**< Old positions for all IMD atoms on master.  */
+    int * xa_ind;                    /**< Position of each local atom in the
                                           collective array.                           */
 
-    int             nstimd;          /**< Global IMD frequency, known to all nodes.   */
-    int             nstimd_new;      /**< New frequency from IMD client, master only. */
-    int             nstimd_def;      /**< Default IMD frequency when disconnected.    */
+    int nstimd;                      /**< Global IMD frequency, known to all nodes.   */
+    int nstimd_new;                  /**< New frequency from IMD client, master only. */
+    int nstimd_def;                  /**< Default IMD frequency when disconnected.    */
 
-    int             port;            /**< Port to use for network socket.             */
-    IMDSocket      *socket;          /**< The IMD socket on the master node.          */
-    IMDSocket      *clientsocket;    /**< The IMD socket on the client.               */
-    int             length;          /**< Length we got with last header.             */
+    int        port;                 /**< Port to use for network socket.             */
+    IMDSocket *socket;               /**< The IMD socket on the master node.          */
+    IMDSocket *clientsocket;         /**< The IMD socket on the client.               */
+    int        length;               /**< Length we got with last header.             */
 
-    gmx_bool        bWConnect;       /**< Shall we block and wait for connection?     */
-    gmx_bool        bTerminated;     /**< Set if MD is terminated.                    */
-    gmx_bool        bTerminatable;   /**< Set if MD can be terminated.                */
-    gmx_bool        bConnected;      /**< Set if connection is present.               */
-    gmx_bool        bNewForces;      /**< Set if we received new forces.              */
-    gmx_bool        bForceActivated; /**< Set if pulling from VMD is allowed.         */
+    gmx_bool bWConnect;              /**< Shall we block and wait for connection?     */
+    gmx_bool bTerminated;            /**< Set if MD is terminated.                    */
+    gmx_bool bTerminatable;          /**< Set if MD can be terminated.                */
+    gmx_bool bConnected;             /**< Set if connection is present.               */
+    gmx_bool bNewForces;             /**< Set if we received new forces.              */
+    gmx_bool bForceActivated;        /**< Set if pulling from VMD is allowed.         */
 
     IMDEnergyBlock *energies;        /**< Pointer to energies we send back.           */
 
-    gmx_int32_t     vmd_nforces;     /**< Number of VMD forces.                       */
-    gmx_int32_t    *vmd_f_ind;       /**< VMD forces indices.                         */
-    float          *vmd_forces;      /**< The VMD forces flat in memory.              */
-    int             nforces;         /**< Number of actual MD forces;
+    gmx_int32_t  vmd_nforces;        /**< Number of VMD forces.                       */
+    gmx_int32_t *vmd_f_ind;          /**< VMD forces indices.                         */
+    float *      vmd_forces;         /**< The VMD forces flat in memory.              */
+    int          nforces;            /**< Number of actual MD forces;
                                           this gets communicated to the clients.      */
-    int            *f_ind;           /**< Force indices.                              */
-    rvec           *f;               /**< The IMD pulling forces.                     */
+    int * f_ind;                     /**< Force indices.                              */
+    rvec *f;                         /**< The IMD pulling forces.                     */
 
-    char           *forcesendbuf;    /**< Buffer for force sending.                   */
-    char           *coordsendbuf;    /**< Buffer for coordinate sending.              */
-    char           *energysendbuf;   /**< Send buffer for energies.                   */
-    rvec           *sendxbuf;        /**< Buffer to make molecules whole before
+    char *forcesendbuf;              /**< Buffer for force sending.                   */
+    char *coordsendbuf;              /**< Buffer for coordinate sending.              */
+    char *energysendbuf;             /**< Send buffer for energies.                   */
+    rvec *sendxbuf;                  /**< Buffer to make molecules whole before
                                           sending.                                    */
 
-    t_block         mols;            /**< Molecules block in IMD group.               */
+    t_block mols;                    /**< Molecules block in IMD group.               */
 
     /* The next block is used on the master node only to reduce the output
      * without sacrificing information. If any of these values changes,
      * we need to write output */
-    int       old_nforces;       /**< Old value for nforces.                      */
-    int      *old_f_ind;         /**< Old values for force indices.               */
-    rvec     *old_forces;        /**< Old values for IMD pulling forces.          */
+    int   old_nforces;           /**< Old value for nforces.                      */
+    int * old_f_ind;             /**< Old values for force indices.               */
+    rvec *old_forces;            /**< Old values for IMD pulling forces.          */
 
 } t_gmx_IMD_setup;
 
@@ -444,8 +444,8 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
 
 void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
 {
-    gmx_ga2la_t       *ga2la;
-    t_gmx_IMD_setup   *IMDsetup;
+    gmx_ga2la_t *    ga2la;
+    t_gmx_IMD_setup *IMDsetup;
 
     if (bIMD)
     {
@@ -509,12 +509,12 @@ static t_gmx_IMD_setup* imd_create(int imdatoms, int nstimddef, int imdport)
     IMDsetup->nstimd_def      = nstimddef;
     if (imdport < 1)
     {
-        IMDsetup->port        = 0;
+        IMDsetup->port = 0;
         fprintf(stderr, "%s You chose a port number < 1. Will automatically assign a free port.\n", IMDstr);
     }
     else
     {
-        IMDsetup->port        = imdport;
+        IMDsetup->port = imdport;
     }
 
     return IMDsetup;
@@ -669,7 +669,7 @@ static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_prepare_vmd_Forces(t_gmx_IMD_setup *IMDsetup)
 {
     srenew((IMDsetup->vmd_f_ind), IMDsetup->vmd_nforces);
-    srenew((IMDsetup->vmd_forces), 3*IMDsetup->vmd_nforces);
+    srenew((IMDsetup->vmd_forces), 3 * IMDsetup->vmd_nforces);
 }
 
 
@@ -715,9 +715,9 @@ static void imd_copyto_MD_Forces(t_gmx_IMD_setup *IMDsetup)
         IMDsetup->f_ind[i] = IMDsetup->vmd_f_ind[i];
 
         /* Convert to rvecs and do a proper unit conversion */
-        IMDsetup->f[i][0] = IMDsetup->vmd_forces[3*i    ] * conversion;
-        IMDsetup->f[i][1] = IMDsetup->vmd_forces[3*i + 1] * conversion;
-        IMDsetup->f[i][2] = IMDsetup->vmd_forces[3*i + 2] * conversion;
+        IMDsetup->f[i][0] = IMDsetup->vmd_forces[3 * i    ] * conversion;
+        IMDsetup->f[i][1] = IMDsetup->vmd_forces[3 * i + 1] * conversion;
+        IMDsetup->f[i][2] = IMDsetup->vmd_forces[3 * i + 2] * conversion;
     }
 }
 
@@ -1004,13 +1004,13 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
  *
  * Call on master only.
  */
-static FILE *open_imd_out(const char             *fn,
-                          t_gmx_IMD_setup        *IMDsetup,
+static FILE *open_imd_out(const char *            fn,
+                          t_gmx_IMD_setup *       IMDsetup,
                           int                     nat_total,
                           const gmx_output_env_t *oenv,
                           unsigned long           Flags)
 {
-    FILE       *fp;
+    FILE *fp;
 
 
     /* Open log file of applied IMD forces if requested */
@@ -1072,11 +1072,11 @@ void IMD_finalize(gmx_bool bIMD, t_IMD *imd)
 /*! \brief Creates the molecule start-end position array of molecules in the IMD group. */
 static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mtop_t *top_global)
 {
-    int      i, ii;
-    int      gstart, gend, count;
-    t_block  gmols, lmols;
-    int      nat;
-    int     *ind;
+    int     i, ii;
+    int     gstart, gend, count;
+    t_block gmols, lmols;
+    int     nat;
+    int *   ind;
 
     gmols = top_global->mols;
     nat   = IMDsetup->nat;
@@ -1085,21 +1085,21 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
     lmols.nr = 0;
 
     /* check whether index is sorted */
-    for (i = 0; i < nat-1; i++)
+    for (i = 0; i < nat - 1; i++)
     {
-        if (ind[i] > ind[i+1])
+        if (ind[i] > ind[i + 1])
         {
             gmx_fatal(FARGS, "%s IMD index is not sorted. This is currently not supported.\n", IMDstr);
         }
     }
 
-    snew(lmols.index, gmols.nr+1);
+    snew(lmols.index, gmols.nr + 1);
     lmols.index[0] = 0;
 
     for (i = 0; i < gmols.nr; i++)
     {
         gstart = gmols.index[i];
-        gend   = gmols.index[i+1];
+        gend   = gmols.index[i + 1];
         count  = 0;
         for (ii = 0; ii < nat; ii++)
         {
@@ -1110,12 +1110,12 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
         }
         if (count > 0)
         {
-            lmols.index[lmols.nr+1] = lmols.index[lmols.nr]+count;
-            lmols.nr               += 1;
+            lmols.index[lmols.nr + 1] = lmols.index[lmols.nr] + count;
+            lmols.nr                 += 1;
         }
     }
-    srenew(lmols.index, lmols.nr+1);
-    lmols.nalloc_index = lmols.nr+1;
+    srenew(lmols.index, lmols.nr + 1);
+    lmols.nalloc_index = lmols.nr + 1;
     IMDsetup->mols     = lmols;
 }
 
@@ -1127,7 +1127,7 @@ static void shift_positions(
         ivec   is,       /* The shift [0..nr] */
         int    nr)       /* The number of positions */
 {
-    int      i, tx, ty, tz;
+    int i, tx, ty, tz;
 
     /* Loop over the group's atoms */
     if (TRICLINIC(box))
@@ -1138,9 +1138,9 @@ static void shift_positions(
             ty = is[YY];
             tz = is[ZZ];
 
-            x[i][XX] = x[i][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
-            x[i][YY] = x[i][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
-            x[i][ZZ] = x[i][ZZ]-tz*box[ZZ][ZZ];
+            x[i][XX] = x[i][XX] - tx * box[XX][XX] - ty * box[YY][XX] - tz * box[ZZ][XX];
+            x[i][YY] = x[i][YY] - ty * box[YY][YY] - tz * box[ZZ][YY];
+            x[i][ZZ] = x[i][ZZ] - tz * box[ZZ][ZZ];
         }
     }
     else
@@ -1151,9 +1151,9 @@ static void shift_positions(
             ty = is[YY];
             tz = is[ZZ];
 
-            x[i][XX] = x[i][XX]-tx*box[XX][XX];
-            x[i][YY] = x[i][YY]-ty*box[YY][YY];
-            x[i][ZZ] = x[i][ZZ]-tz*box[ZZ][ZZ];
+            x[i][XX] = x[i][XX] - tx * box[XX][XX];
+            x[i][YY] = x[i][YY] - ty * box[YY][YY];
+            x[i][ZZ] = x[i][ZZ] - tz * box[ZZ][ZZ];
         }
     }
 }
@@ -1181,11 +1181,11 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
         copy_ivec(IMDsetup->xa_shifts[mols.index[i]], largest);
         copy_ivec(IMDsetup->xa_shifts[mols.index[i]], smallest);
 
-        for (ii = mols.index[i]+1; ii < mols.index[i+1]; ii++)
+        for (ii = mols.index[i] + 1; ii < mols.index[i + 1]; ii++)
         {
             if (IMDsetup->xa_shifts[ii][XX] > largest[XX])
             {
-                largest[XX]  = IMDsetup->xa_shifts[ii][XX];
+                largest[XX] = IMDsetup->xa_shifts[ii][XX];
             }
             if (IMDsetup->xa_shifts[ii][XX] < smallest[XX])
             {
@@ -1194,7 +1194,7 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
 
             if (IMDsetup->xa_shifts[ii][YY] > largest[YY])
             {
-                largest[YY]  = IMDsetup->xa_shifts[ii][YY];
+                largest[YY] = IMDsetup->xa_shifts[ii][YY];
             }
             if (IMDsetup->xa_shifts[ii][YY] < smallest[YY])
             {
@@ -1203,7 +1203,7 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
 
             if (IMDsetup->xa_shifts[ii][ZZ] > largest[ZZ])
             {
-                largest[ZZ]  = IMDsetup->xa_shifts[ii][ZZ];
+                largest[ZZ] = IMDsetup->xa_shifts[ii][ZZ];
             }
             if (IMDsetup->xa_shifts[ii][ZZ] < smallest[ZZ])
             {
@@ -1243,7 +1243,7 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
         /* is there a shift at all? */
         if ((shift[XX]) || (shift[YY]) || (shift[ZZ]))
         {
-            molsize = mols.index[i+1]-mols.index[i];
+            molsize = mols.index[i + 1] - mols.index[i];
             /* shift the positions */
             shift_positions(box, &(IMDsetup->xa[mols.index[i]]), shift, molsize);
         }
@@ -1311,10 +1311,10 @@ static void imd_check_integrator_parallel(t_inputrec *ir, t_commrec *cr)
     }
 }
 
-void init_IMD(t_inputrec             *ir,
-              t_commrec              *cr,
-              gmx_mtop_t             *top_global,
-              FILE                   *fplog,
+void init_IMD(t_inputrec *            ir,
+              t_commrec *             cr,
+              gmx_mtop_t *            top_global,
+              FILE *                  fplog,
               int                     defnstimd,
               rvec                    x[],
               int                     nfile,
@@ -1400,7 +1400,7 @@ void init_IMD(t_inputrec             *ir,
      * will be zero. For those cases we transfer _all_ atomic positions */
     ir->imd->setup = imd_create(ir->imd->nat > 0 ? ir->imd->nat : nat_total,
                                 defnstimd, imdport);
-    IMDsetup       = ir->imd->setup;
+    IMDsetup = ir->imd->setup;
 
     /* We might need to open an output file for IMD forces data */
     if (MASTER(cr))
@@ -1500,11 +1500,11 @@ void init_IMD(t_inputrec             *ir,
 
 gmx_bool do_IMD(gmx_bool        bIMD,
                 gmx_int64_t     step,
-                t_commrec      *cr,
+                t_commrec *     cr,
                 gmx_bool        bNS,
                 matrix          box,
                 rvec            x[],
-                t_inputrec     *ir,
+                t_inputrec *    ir,
                 double          t,
                 gmx_wallcycle_t wcycle)
 {
@@ -1587,7 +1587,7 @@ void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
                             gmx_int64_t step, gmx_bool bHaveNewEnergies)
 {
     IMDEnergyBlock *ene;
-    t_gmx_IMD      *IMDsetup;
+    t_gmx_IMD *     IMDsetup;
 
 
     if (bIMD)

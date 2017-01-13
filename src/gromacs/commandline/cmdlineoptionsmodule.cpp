@@ -121,10 +121,10 @@ class CommandLineOptionsModule : public ICommandLineModule
     private:
         void parseOptions(int argc, char *argv[]);
 
-        const char                       *name_;
-        const char                       *description_;
-        FactoryMethod                     factory_;
-        ICommandLineOptionsModulePointer  module_;
+        const char *                     name_;
+        const char *                     description_;
+        FactoryMethod                    factory_;
+        ICommandLineOptionsModulePointer module_;
 };
 
 void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
@@ -146,8 +146,8 @@ int CommandLineOptionsModule::run(int argc, char *argv[])
 
 void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) const
 {
-    ICommandLineOptionsModulePointer  moduleGuard;
-    ICommandLineOptionsModule        *module = module_.get();
+    ICommandLineOptionsModulePointer moduleGuard;
+    ICommandLineOptionsModule *      module = module_.get();
     if (!module)
     {
         GMX_RELEASE_ASSERT(factory_ != nullptr, "Neither factory nor module provided");

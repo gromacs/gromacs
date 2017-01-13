@@ -47,29 +47,31 @@
 struct gmx_groups_t;
 struct t_inputrec;
 
-typedef struct {
-    rvec      p;        /* Linear momentum                     */
-    rvec      x;        /* Center of mass                      */
-    rvec      j;        /* Angular momentum                    */
-    tensor    i;        /* Moment of inertia                   */
-    real      mass;     /* Mass                                */
+typedef struct
+{
+    rvec   p;           /* Linear momentum                     */
+    rvec   x;           /* Center of mass                      */
+    rvec   j;           /* Angular momentum                    */
+    tensor i;           /* Moment of inertia                   */
+    real   mass;        /* Mass                                */
 } t_vcm_thread;
 
-typedef struct {
+typedef struct
+{
     int           nr;          /* Number of groups                    */
     int           size;        /* Size of group arrays                */
     int           stride;      /* Stride for thread data              */
     int           mode;        /* One of the enums above              */
     gmx_bool      ndim;        /* The number of dimensions for corr.  */
-    real         *group_ndf;   /* Number of degrees of freedom        */
-    rvec         *group_p;     /* Linear momentum per group           */
-    rvec         *group_v;     /* Linear velocity per group           */
-    rvec         *group_x;     /* Center of mass per group            */
-    rvec         *group_j;     /* Angular momentum per group          */
-    rvec         *group_w;     /* Angular velocity (omega)            */
-    tensor       *group_i;     /* Moment of inertia per group         */
-    real         *group_mass;  /* Mass per group                      */
-    char        **group_name;  /* These two are copies to pointers in */
+    real *        group_ndf;   /* Number of degrees of freedom        */
+    rvec *        group_p;     /* Linear momentum per group           */
+    rvec *        group_v;     /* Linear velocity per group           */
+    rvec *        group_x;     /* Center of mass per group            */
+    rvec *        group_j;     /* Angular momentum per group          */
+    rvec *        group_w;     /* Angular velocity (omega)            */
+    tensor *      group_i;     /* Moment of inertia per group         */
+    real *        group_mass;  /* Mass per group                      */
+    char **       group_name;  /* These two are copies to pointers in */
     t_vcm_thread *thread_vcm;  /* Temporary data per thread and group */
 } t_vcm;
 

@@ -66,7 +66,7 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
          * \param     manager    Manager for this object.
          */
         SelectionFileOptionStorage(const SelectionFileOption &settings,
-                                   SelectionOptionManager    *manager);
+                                   SelectionOptionManager *   manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "file"; }
@@ -82,9 +82,9 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual void processSet();
         virtual void processAll() {}
 
-        SelectionFileOptionInfo  info_;
-        SelectionOptionManager  &manager_;
-        bool                     bValueParsed_;
+        SelectionFileOptionInfo info_;
+        SelectionOptionManager &manager_;
+        bool                    bValueParsed_;
 };
 
 } // namespace gmx

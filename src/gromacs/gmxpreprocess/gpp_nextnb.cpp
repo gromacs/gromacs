@@ -48,12 +48,12 @@
 
 /* #define DEBUG_NNB */
 
-typedef struct {
+typedef struct
+{
     int ai, aj;
 } sortable;
 
-static int
-bond_sort (const void *a, const void *b)
+static int bond_sort (const void *a, const void *b)
 {
     sortable *sa, *sb;
 
@@ -62,16 +62,15 @@ bond_sort (const void *a, const void *b)
 
     if (sa->ai == sb->ai)
     {
-        return (sa->aj-sb->aj);
+        return (sa->aj - sb->aj);
     }
     else
     {
-        return (sa->ai-sb->ai);
+        return (sa->ai - sb->ai);
     }
 }
 
-static int
-compare_int (const void * a, const void * b)
+static int compare_int (const void * a, const void * b)
 {
     return ( *(int*)a - *(int*)b );
 }
@@ -111,14 +110,14 @@ void init_nnb(t_nextnb *nnb, int nr, int nrex)
     snew(nnb->nrexcl, nr);
     for (i = 0; (i < nr); i++)
     {
-        snew(nnb->a[i], nrex+1);
-        snew(nnb->nrexcl[i], nrex+1);
+        snew(nnb->a[i], nrex + 1);
+        snew(nnb->nrexcl[i], nrex + 1);
     }
 }
 
 static void add_nnb (t_nextnb *nnb, int nre, int i, int j)
 {
-    srenew(nnb->a[i][nre], nnb->nrexcl[i][nre]+1);
+    srenew(nnb->a[i][nre], nnb->nrexcl[i][nre] + 1);
     nnb->a[i][nre][nnb->nrexcl[i][nre]] = j;
     nnb->nrexcl[i][nre]++;
 }
@@ -177,7 +176,7 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
     int       nre, nrx, nrs, nr_of_sortables;
     sortable *s;
 
-    srenew(excl->index, nnb->nr+1);
+    srenew(excl->index, nnb->nr + 1);
     excl->index[0] = 0;
     for (i = 0; (i < nnb->nr); i++)
     {
@@ -223,26 +222,26 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         {
             for (j = 1; (j < nr_of_sortables); j++)
             {
-                if ((s[j].ai != s[j-1].ai) || (s[j].aj != s[j-1].aj))
+                if ((s[j].ai != s[j - 1].ai) || (s[j].aj != s[j - 1].aj))
                 {
-                    s[j_index++] = s[j-1];
+                    s[j_index++] = s[j - 1];
                 }
             }
-            s[j_index++] = s[j-1];
+            s[j_index++] = s[j - 1];
         }
         nr_of_sortables = j_index;
         prints("after rm-double", j_index, s);
 
         /* make space for arrays */
-        srenew(excl->a, excl->nra+nr_of_sortables);
+        srenew(excl->a, excl->nra + nr_of_sortables);
 
         /* put the sorted exclusions in the target list */
         for (nrs = 0; (nrs < nr_of_sortables); nrs++)
         {
-            excl->a[excl->nra+nrs] = s[nrs].aj;
+            excl->a[excl->nra + nrs] = s[nrs].aj;
         }
-        excl->nra       += nr_of_sortables;
-        excl->index[i+1] = excl->nra;
+        excl->nra         += nr_of_sortables;
+        excl->index[i + 1] = excl->nra;
 
         /* cleanup temporary space */
         sfree (s);
@@ -295,7 +294,7 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
                 {
                     if (i != nnb->a[nb][n][k])
                     {
-                        add_nnb(nnb, n+1, i, nnb->a[nb][n][k]);
+                        add_nnb(nnb, n + 1, i, nnb->a[nb][n][k]);
                     }
                 }
             }
@@ -338,7 +337,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
         if (IS_CHEMBOND(i))
         {
             /* we need every bond twice (bidirectional) */
-            nrbonds += 2*plist[i].nr;
+            nrbonds += 2 * plist[i].nr;
         }
     }
 
@@ -365,8 +364,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
     sfree(s);
 }
 
-static void
-sort_and_purge_nnb(t_nextnb *nnb)
+static void sort_and_purge_nnb(t_nextnb *nnb)
 {
     int i, j, k, m, n, cnt, found, prev, idx;
 

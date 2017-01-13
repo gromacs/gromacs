@@ -98,10 +98,9 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
     return cacheFilename;
 }
 
-cl_program
-makeProgramFromCache(const std::string &filename,
-                     cl_context         context,
-                     cl_device_id       deviceId)
+cl_program makeProgramFromCache(const std::string &filename,
+                                cl_context         context,
+                                cl_device_id       deviceId)
 {
     // TODO all this file reading stuff should become gmx::BinaryReader
     const auto f = create_unique_with_deleter(fopen(filename.c_str(), "rb"), fclose);
@@ -112,7 +111,7 @@ makeProgramFromCache(const std::string &filename,
 
     // TODO more stdio error handling
     fseek(f.get(), 0, SEEK_END);
-    unsigned char             *binary;
+    unsigned char *            binary;
     unique_cptr<unsigned char> binaryGuard;
     size_t                     fileSize = ftell(f.get());
     snew(binary, fileSize);
@@ -149,8 +148,7 @@ makeProgramFromCache(const std::string &filename,
     return program;
 }
 
-void
-writeBinaryToCache(cl_program program, const std::string &filename)
+void writeBinaryToCache(cl_program program, const std::string &filename)
 {
     size_t fileSize;
     cl_int cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(fileSize), &fileSize, NULL);
@@ -160,7 +158,7 @@ writeBinaryToCache(cl_program program, const std::string &filename)
     }
 
     // TODO all this file writing stuff should become gmx::BinaryWriter
-    unsigned char                   *binary;
+    unsigned char *binary;
     snew(binary, fileSize);
     const unique_cptr<unsigned char> binaryGuard(binary);
 

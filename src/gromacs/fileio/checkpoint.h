@@ -113,8 +113,8 @@ void list_checkpoint(const char *fn, FILE *out);
  *
  * The output variables will both contain 0 if filename is NULL, the file
  * does not exist, or is not readable. */
-void read_checkpoint_part_and_step(const char  *filename,
-                                   int         *simulation_part,
+void read_checkpoint_part_and_step(const char * filename,
+                                   int *        simulation_part,
                                    gmx_int64_t *step);
 
 /* ! \brief Read simulation part and output filenames from a checkpoint file
@@ -127,9 +127,9 @@ void read_checkpoint_part_and_step(const char  *filename,
  * \param[out] outputfiles      Pointer to array of output file names from the previous run. Pointer is allocated in this function.
  */
 void
-read_checkpoint_simulation_part_and_filenames(struct t_fileio             *fp,
-                                              int                         *simulation_part,
-                                              int                         *nfiles,
+read_checkpoint_simulation_part_and_filenames(struct t_fileio *            fp,
+                                              int *                        simulation_part,
+                                              int *                        nfiles,
                                               struct gmx_file_position_t **outputfiles);
 
 #ifdef __cplusplus

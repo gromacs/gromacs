@@ -51,7 +51,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-typedef struct {
+typedef struct
+{
     char *filebase;
     char *res;
     char *atom;
@@ -64,7 +65,7 @@ static void get_xlatoms(const char *fn, FILE *fp,
     char          filebase[STRLEN];
     char          line[STRLEN];
     char          abuf[1024], rbuf[1024], repbuf[1024], dumbuf[1024];
-    char         *_ptr;
+    char *        _ptr;
     int           n, na, idum;
     t_xlate_atom *xl;
 
@@ -88,7 +89,7 @@ static void get_xlatoms(const char *fn, FILE *fp,
             gmx_fatal(FARGS, "Expected a residue name and two atom names in file '%s', not '%s'", fn, line);
         }
 
-        srenew(xl, n+1);
+        srenew(xl, n + 1);
         xl[n].filebase = gmx_strdup(filebase);
 
         /* Use wildcards... */
@@ -138,11 +139,11 @@ void rename_atoms(const char *xlfile, const char *ffdir,
                   gmx_bool bResname, gmx_residuetype_t *rt, gmx_bool bReorderNum,
                   gmx_bool bVerbose)
 {
-    FILE         *fp;
+    FILE *        fp;
     int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
     int           nf;
-    char        **f;
+    char **       f;
     char          c, *rnm, atombuf[32], *ptr0, *ptr1;
     gmx_bool      bReorderedNum, bRenamed, bMatch;
     gmx_bool      bStartTerm, bEndTerm;
@@ -172,8 +173,8 @@ void rename_atoms(const char *xlfile, const char *ffdir,
     {
         resind = atoms->atom[a].resind;
 
-        bStartTerm = (resind == 0) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind-1].chainnum;
-        bEndTerm   = (resind >= atoms->nres-1) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind+1].chainnum;
+        bStartTerm = (resind == 0) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind - 1].chainnum;
+        bEndTerm   = (resind >= atoms->nres - 1) || atoms->resinfo[resind].chainnum != atoms->resinfo[resind + 1].chainnum;
 
         if (bResname)
         {
@@ -191,9 +192,9 @@ void rename_atoms(const char *xlfile, const char *ffdir,
             if (isdigit(atombuf[0]))
             {
                 c = atombuf[0];
-                for (i = 0; ((size_t)i < strlen(atombuf)-1); i++)
+                for (i = 0; ((size_t)i < strlen(atombuf) - 1); i++)
                 {
-                    atombuf[i] = atombuf[i+1];
+                    atombuf[i] = atombuf[i + 1];
                 }
                 atombuf[i]    = c;
                 bReorderedNum = TRUE;
@@ -203,27 +204,27 @@ void rename_atoms(const char *xlfile, const char *ffdir,
         for (i = 0; (i < nxlate) && !bRenamed; i++)
         {
             /* Check if the base file name of the rtp and arn entry match */
-            if (restp == nullptr ||
-                gmx_strcasecmp(restp[resind].filebase, xlatom[i].filebase) == 0)
+            if (restp == nullptr
+                || gmx_strcasecmp(restp[resind].filebase, xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
-                bMatch = (xlatom[i].res == nullptr ||
-                          (gmx_strcasecmp("protein-nterm", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm) && bStartTerm) ||
-                          (gmx_strcasecmp("protein-cterm", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm) && bEndTerm) ||
-                          (gmx_strcasecmp("protein", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt, rnm)) ||
-                          (gmx_strcasecmp("DNA", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_dna(rt, rnm)) ||
-                          (gmx_strcasecmp("RNA", xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_rna(rt, rnm)));
+                bMatch = (xlatom[i].res == nullptr
+                          || (gmx_strcasecmp("protein-nterm", xlatom[i].res) == 0
+                              && gmx_residuetype_is_protein(rt, rnm) && bStartTerm)
+                          || (gmx_strcasecmp("protein-cterm", xlatom[i].res) == 0
+                              && gmx_residuetype_is_protein(rt, rnm) && bEndTerm)
+                          || (gmx_strcasecmp("protein", xlatom[i].res) == 0
+                              && gmx_residuetype_is_protein(rt, rnm))
+                          || (gmx_strcasecmp("DNA", xlatom[i].res) == 0
+                              && gmx_residuetype_is_dna(rt, rnm))
+                          || (gmx_strcasecmp("RNA", xlatom[i].res) == 0
+                              && gmx_residuetype_is_rna(rt, rnm)));
                 if (!bMatch)
                 {
                     ptr0 = rnm;
                     ptr1 = xlatom[i].res;
-                    while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
-                           (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
+                    while (ptr0[0] != '\0' && ptr1[0] != '\0'
+                           && (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
                     {
                         ptr0++;
                         ptr1++;

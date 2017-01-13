@@ -52,7 +52,7 @@ struct gmx_domdec_zones_t;
 static const int c_gpuNumClusterPerCellZ = 2;
 static const int c_gpuNumClusterPerCellY = 2;
 static const int c_gpuNumClusterPerCellX = 2;
-static const int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
+static const int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;
 
 
 /* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
@@ -62,19 +62,19 @@ static const int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClust
 static const int c_packX4 = 4;
 static const int c_packX8 = 8;
 /* Strides for a pack of 4 and 8 coordinates/forces */
-#define STRIDE_P4         (DIM*c_packX4)
-#define STRIDE_P8         (DIM*c_packX8)
+#define STRIDE_P4         (DIM * c_packX4)
+#define STRIDE_P8         (DIM * c_packX8)
 
 /* Returns the index in a coordinate array corresponding to atom a */
-template<int packSize> static gmx_inline int atom_to_x_index(int a)
+template <int packSize> static gmx_inline int atom_to_x_index(int a)
 {
-    return DIM*(a & ~(packSize - 1)) + (a & (packSize - 1));
+    return DIM * (a & ~(packSize - 1)) + (a & (packSize - 1));
 }
 
 
 #if GMX_SIMD
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
-#define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH*sizeof(real))
+#define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH * sizeof(real))
 #else
 /* No alignment required, but set it so we can call the same routines */
 #define NBNXN_MEM_ALIGN  32
@@ -88,7 +88,7 @@ template<int packSize> static gmx_inline int atom_to_x_index(int a)
 #if GMX_SIMD4_HAVE_FLOAT
 #    define NBNXN_SEARCH_BB_SIMD4      1
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
-#    define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH*sizeof(float))
+#    define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH * sizeof(float))
 #else
 #    define NBNXN_SEARCH_BB_SIMD4      0
 /* No alignment required, but set it so we can call the same routines */
@@ -128,7 +128,7 @@ template<int packSize> static gmx_inline int atom_to_x_index(int a)
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #    define NBNXN_BBXXXX  1
 /* Size of bounding box corners quadruplet */
-#    define NNBSBB_XXXX  (NNBSBB_D*DIM*STRIDE_PBB)
+#    define NNBSBB_XXXX  (NNBSBB_D * DIM * STRIDE_PBB)
 
 #else  /* NBNXN_SEARCH_BB_SIMD4 */
 
@@ -139,84 +139,87 @@ template<int packSize> static gmx_inline int atom_to_x_index(int a)
 
 
 /* Bounding box for a nbnxn atom cluster */
-typedef struct {
+typedef struct
+{
     float lower[NNBSBB_C];
     float upper[NNBSBB_C];
 } nbnxn_bb_t;
 
 
 /* A pair-search grid struct for one domain decomposition zone */
-typedef struct {
-    rvec          c0;               /* The lower corner of the (local) grid        */
-    rvec          c1;               /* The upper corner of the (local) grid        */
-    rvec          size;             /* c1 - c0                                     */
-    real          atom_density;     /* The atom number density for the local grid  */
+typedef struct
+{
+    rvec c0;                        /* The lower corner of the (local) grid        */
+    rvec c1;                        /* The upper corner of the (local) grid        */
+    rvec size;                      /* c1 - c0                                     */
+    real atom_density;              /* The atom number density for the local grid  */
 
-    gmx_bool      bSimple;          /* Is this grid simple or super/sub            */
-    int           na_c;             /* Number of atoms per cluster                 */
-    int           na_cj;            /* Number of atoms for list j-clusters         */
-    int           na_sc;            /* Number of atoms per super-cluster           */
-    int           na_c_2log;        /* 2log of na_c                                */
+    gmx_bool bSimple;               /* Is this grid simple or super/sub            */
+    int      na_c;                  /* Number of atoms per cluster                 */
+    int      na_cj;                 /* Number of atoms for list j-clusters         */
+    int      na_sc;                 /* Number of atoms per super-cluster           */
+    int      na_c_2log;             /* 2log of na_c                                */
 
-    int           ncx;              /* Number of (super-)cells along x             */
-    int           ncy;              /* Number of (super-)cells along y             */
-    int           nc;               /* Total number of (super-)cells               */
+    int ncx;                        /* Number of (super-)cells along x             */
+    int ncy;                        /* Number of (super-)cells along y             */
+    int nc;                         /* Total number of (super-)cells               */
 
-    real          sx;               /* x-size of a (super-)cell                    */
-    real          sy;               /* y-size of a (super-)cell                    */
-    real          inv_sx;           /* 1/sx                                        */
-    real          inv_sy;           /* 1/sy                                        */
+    real sx;                        /* x-size of a (super-)cell                    */
+    real sy;                        /* y-size of a (super-)cell                    */
+    real inv_sx;                    /* 1/sx                                        */
+    real inv_sy;                    /* 1/sy                                        */
 
-    int           cell0;            /* Index in nbs->cell corresponding to cell 0  */
+    int cell0;                      /* Index in nbs->cell corresponding to cell 0  */
 
-    int          *cxy_na;           /* The number of atoms for each column in x,y  */
-    int          *cxy_ind;          /* Grid (super)cell index, offset from cell0   */
-    int           cxy_nalloc;       /* Allocation size for cxy_na and cxy_ind      */
+    int *cxy_na;                    /* The number of atoms for each column in x,y  */
+    int *cxy_ind;                   /* Grid (super)cell index, offset from cell0   */
+    int  cxy_nalloc;                /* Allocation size for cxy_na and cxy_ind      */
 
-    int          *nsubc;            /* The number of sub cells for each super cell */
-    float        *bbcz;             /* Bounding boxes in z for the super cells     */
-    nbnxn_bb_t   *bb;               /* 3D bounding boxes for the sub cells         */
-    nbnxn_bb_t   *bbj;              /* 3D j-bounding boxes for the case where      *
+    int *       nsubc;              /* The number of sub cells for each super cell */
+    float *     bbcz;               /* Bounding boxes in z for the super cells     */
+    nbnxn_bb_t *bb;                 /* 3D bounding boxes for the sub cells         */
+    nbnxn_bb_t *bbj;                /* 3D j-bounding boxes for the case where      *
                                      * the i- and j-cluster sizes are different    */
-    float        *pbb;              /* 3D b. boxes in xxxx format per super cell   */
-    int          *flags;            /* Flag for the super cells                    */
+    float *       pbb;              /* 3D b. boxes in xxxx format per super cell   */
+    int *         flags;            /* Flag for the super cells                    */
     unsigned int *fep;              /* FEP signal bits for sub cells               */
     int           nc_nalloc;        /* Allocation size for the pointers above      */
 
-    float        *bbcz_simple;      /* bbcz for simple grid converted from super   */
-    nbnxn_bb_t   *bb_simple;        /* bb for simple grid converted from super     */
-    int          *flags_simple;     /* flags for simple grid converted from super  */
-    int           nc_nalloc_simple; /* Allocation size for the pointers above   */
+    float *     bbcz_simple;        /* bbcz for simple grid converted from super   */
+    nbnxn_bb_t *bb_simple;          /* bb for simple grid converted from super     */
+    int *       flags_simple;       /* flags for simple grid converted from super  */
+    int         nc_nalloc_simple;   /* Allocation size for the pointers above   */
 
-    int           nsubc_tot;        /* Total number of subcell, used for printing  */
+    int nsubc_tot;                  /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
 
 /* Working data for the actual i-supercell during pair search */
-typedef struct nbnxn_list_work {
-    gmx_cache_protect_t     cp0;             /* Protect cache between threads               */
+typedef struct nbnxn_list_work
+{
+    gmx_cache_protect_t cp0;                 /* Protect cache between threads               */
 
-    nbnxn_bb_t             *bb_ci;           /* The bounding boxes, pbc shifted, for each cluster */
-    float                  *pbb_ci;          /* As bb_ci, but in xxxx packed format               */
-    real                   *x_ci;            /* The coordinates, pbc shifted, for each atom       */
-    real                   *x_ci_simd;       /* aligned pointer to 4*DIM*GMX_SIMD_REAL_WIDTH floats */
-    int                     cj_ind;          /* The current cj_ind index for the current list     */
-    int                     cj4_init;        /* The first unitialized cj4 block                   */
+    nbnxn_bb_t *bb_ci;                       /* The bounding boxes, pbc shifted, for each cluster */
+    float *     pbb_ci;                      /* As bb_ci, but in xxxx packed format               */
+    real *      x_ci;                        /* The coordinates, pbc shifted, for each atom       */
+    real *      x_ci_simd;                   /* aligned pointer to 4*DIM*GMX_SIMD_REAL_WIDTH floats */
+    int         cj_ind;                      /* The current cj_ind index for the current list     */
+    int         cj4_init;                    /* The first unitialized cj4 block                   */
 
-    float                  *d2;              /* Bounding box distance work array                  */
+    float *d2;                               /* Bounding box distance work array                  */
 
-    nbnxn_cj_t             *cj;              /* The j-cell list                                   */
-    int                     cj_nalloc;       /* Allocation size of cj                             */
+    nbnxn_cj_t *cj;                          /* The j-cell list                                   */
+    int         cj_nalloc;                   /* Allocation size of cj                             */
 
-    int                     ncj_noq;         /* Nr. of cluster pairs without Coul for flop count  */
-    int                     ncj_hlj;         /* Nr. of cluster pairs with 1/2 LJ for flop count   */
+    int ncj_noq;                             /* Nr. of cluster pairs without Coul for flop count  */
+    int ncj_hlj;                             /* Nr. of cluster pairs with 1/2 LJ for flop count   */
 
-    int                    *sort;            /* Sort index                    */
-    int                     sort_nalloc;     /* Allocation size of sort       */
+    int *sort;                               /* Sort index                    */
+    int  sort_nalloc;                        /* Allocation size of sort       */
 
-    nbnxn_sci_t            *sci_sort;        /* Second sci array, for sorting */
-    int                     sci_sort_nalloc; /* Allocation size of sci_sort   */
+    nbnxn_sci_t *sci_sort;                   /* Second sci array, for sorting */
+    int          sci_sort_nalloc;            /* Allocation size of sci_sort   */
 
-    gmx_cache_protect_t     cp1;             /* Protect cache between threads               */
+    gmx_cache_protect_t cp1;                 /* Protect cache between threads               */
 } nbnxn_list_work_t;
 
 /* Function type for setting the i-atom coordinate working data */
@@ -234,64 +237,68 @@ static gmx_icell_set_x_t icell_set_x_simple_simd_2xnn;
 static gmx_icell_set_x_t icell_set_x_supersub;
 
 /* Local cycle count struct for profiling */
-typedef struct {
+typedef struct
+{
     int          count;
     gmx_cycles_t c;
     gmx_cycles_t start;
 } nbnxn_cycle_t;
 
 /* Local cycle count enum for profiling */
-enum {
+enum
+{
     enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr
 };
 
 /* Thread-local work struct, contains part of nbnxn_grid_t */
-typedef struct {
-    gmx_cache_protect_t  cp0;
+typedef struct
+{
+    gmx_cache_protect_t cp0;
 
-    int                 *cxy_na;
-    int                  cxy_na_nalloc;
+    int *cxy_na;
+    int  cxy_na_nalloc;
 
-    int                 *sort_work;
-    int                  sort_work_nalloc;
+    int *sort_work;
+    int  sort_work_nalloc;
 
     nbnxn_buffer_flags_t buffer_flags; /* Flags for force buffer access */
 
-    int                  ndistc;       /* Number of distance checks for flop counting */
+    int ndistc;                        /* Number of distance checks for flop counting */
 
-    t_nblist            *nbl_fep;      /* Temporary FEP list for load balancing */
+    t_nblist *nbl_fep;                 /* Temporary FEP list for load balancing */
 
-    nbnxn_cycle_t        cc[enbsCCnr];
+    nbnxn_cycle_t cc[enbsCCnr];
 
-    gmx_cache_protect_t  cp1;
+    gmx_cache_protect_t cp1;
 } nbnxn_search_work_t;
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
-typedef struct nbnxn_search {
-    gmx_bool                   bFEP;            /* Do we have perturbed atoms? */
-    int                        ePBC;            /* PBC type enum                              */
-    matrix                     box;             /* The periodic unit-cell                     */
+typedef struct nbnxn_search
+{
+    gmx_bool bFEP;                              /* Do we have perturbed atoms? */
+    int      ePBC;                              /* PBC type enum                              */
+    matrix   box;                               /* The periodic unit-cell                     */
 
     gmx_bool                   DomDec;          /* Are we doing domain decomposition?         */
     ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
     struct gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
 
-    int                        ngrid;           /* The number of grids, equal to #DD-zones    */
-    nbnxn_grid_t              *grid;            /* Array of grids, size ngrid                 */
-    int                       *cell;            /* Actual allocated cell array for all grids  */
-    int                        cell_nalloc;     /* Allocation size of cell                    */
-    int                       *a;               /* Atom index for grid, the inverse of cell   */
-    int                        a_nalloc;        /* Allocation size of a                       */
+    int           ngrid;                        /* The number of grids, equal to #DD-zones    */
+    nbnxn_grid_t *grid;                         /* Array of grids, size ngrid                 */
+    int *         cell;                         /* Actual allocated cell array for all grids  */
+    int           cell_nalloc;                  /* Allocation size of cell                    */
+    int *         a;                            /* Atom index for grid, the inverse of cell   */
+    int           a_nalloc;                     /* Allocation size of a                       */
 
-    int                        natoms_local;    /* The local atoms run from 0 to natoms_local */
-    int                        natoms_nonlocal; /* The non-local atoms run from natoms_local
+    int natoms_local;                           /* The local atoms run from 0 to natoms_local */
+    int natoms_nonlocal;                        /* The non-local atoms run from natoms_local
                                                  * to natoms_nonlocal */
 
-    gmx_bool             print_cycles;
-    int                  search_count;
-    nbnxn_cycle_t        cc[enbsCCnr];
+    gmx_bool      print_cycles;
+    int           search_count;
+    nbnxn_cycle_t cc[enbsCCnr];
 
-    gmx_icell_set_x_t   *icell_set_x; /* Function for setting i-coords    */
+    gmx_icell_set_x_t *icell_set_x;   /* Function for setting i-coords    */
 
     int                  nthread_max; /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work;        /* Work array, size nthread_max          */

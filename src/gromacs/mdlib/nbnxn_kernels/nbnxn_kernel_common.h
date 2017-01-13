@@ -60,10 +60,10 @@ clear_fshift(real *fshift);
 
 /* Reduce the collected energy terms over the pair-lists/threads */
 void
-reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
-                           int                         nlist,
-                           real                       *Vvdw,
-                           real                       *Vc);
+reduce_energies_over_lists(const nbnxn_atomdata_t *nbat,
+                           int                     nlist,
+                           real *                  Vvdw,
+                           real *                  Vc);
 
 #if 0
 {

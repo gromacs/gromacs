@@ -78,12 +78,12 @@
 #include "gromacs/utility/stringutil.h"
 
 /* this must correspond to enum in pdb2top.h */
-const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
+const char *hh[ehisNR] = { "HISD", "HISE", "HISH", "HIS1" };
 
 static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
-    char    *name;
+    char *   name;
     gmx_bool bFound;
 
     nmiss = 0;
@@ -125,16 +125,15 @@ gmx_bool is_int(double x)
     }
     ix = std::round(x);
 
-    return (fabs(x-ix) < tol);
+    return (fabs(x - ix) < tol);
 }
 
-static void
-choose_ff_impl(const char *ffsel,
-               char *forcefield, int ff_maxlen,
-               char *ffdir, int ffdir_maxlen)
+static void choose_ff_impl(const char *ffsel,
+                           char *forcefield, int ff_maxlen,
+                           char *ffdir, int ffdir_maxlen)
 {
     std::vector<gmx::DataFileInfo> ffdirs = fflib_enumerate_forcefields();
-    const int nff = static_cast<int>(ffdirs.size());
+    const int                      nff    = static_cast<int>(ffdirs.size());
 
     /* Replace with unix path separators */
     if (DIR_SEPARATOR != '/')
@@ -157,9 +156,9 @@ choose_ff_impl(const char *ffsel,
     int sel;
     if (ffsel != nullptr)
     {
-        sel         = -1;
-        int cwdsel  = -1;
-        int nfound  = 0;
+        sel = -1;
+        int cwdsel = -1;
+        int nfound = 0;
         for (int i = 0; i < nff; ++i)
         {
             if (ffs[i] == ffsel)
@@ -221,7 +220,7 @@ choose_ff_impl(const char *ffsel,
             if (gmx::File::exists(docFileName, gmx::File::returnFalseOnError))
             {
                 // TODO: Use a C++ API without such an intermediate/fixed-length buffer.
-                char  buf[STRLEN];
+                char buf[STRLEN];
                 /* We don't use fflib_open, because we don't want printf's */
                 FILE *fp = gmx_ffopen(docFileName.c_str(), "r");
                 get_a_line(fp, buf, STRLEN);
@@ -240,10 +239,10 @@ choose_ff_impl(const char *ffsel,
         {
             for (int j = i + 1; j < nff; ++j)
             {
-                if (ffdirs[i].dir == ffdirs[j].dir &&
-                    ((desc[i][0] == '[' && desc[j][0] != '[') ||
-                     ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                      gmx_strcasecmp(desc[i].c_str(), desc[j].c_str()) > 0)))
+                if (ffdirs[i].dir == ffdirs[j].dir
+                    && ((desc[i][0] == '[' && desc[j][0] != '[')
+                        || ((desc[i][0] == '[' || desc[j][0] != '[')
+                            && gmx_strcasecmp(desc[i].c_str(), desc[j].c_str()) > 0)))
                 {
                     std::swap(ffdirs[i].name, ffdirs[j].name);
                     std::swap(ffs[i], ffs[j]);
@@ -255,7 +254,7 @@ choose_ff_impl(const char *ffsel,
         printf("\nSelect the Force Field:\n");
         for (int i = 0; i < nff; ++i)
         {
-            if (i == 0 || ffdirs[i-1].dir != ffdirs[i].dir)
+            if (i == 0 || ffdirs[i - 1].dir != ffdirs[i].dir)
             {
                 if (ffdirs[i].dir == ".")
                 {
@@ -266,13 +265,13 @@ choose_ff_impl(const char *ffsel,
                     printf("From '%s':\n", ffdirs[i].dir.c_str());
                 }
             }
-            printf("%2d: %s\n", i+1, desc[i].c_str());
+            printf("%2d: %s\n", i + 1, desc[i].c_str());
         }
 
         sel = -1;
         // TODO: Add a C++ API for this.
-        char   buf[STRLEN];
-        char  *pret;
+        char  buf[STRLEN];
+        char *pret;
         do
         {
             pret = fgets(buf, STRLEN, stdin);
@@ -282,8 +281,7 @@ choose_ff_impl(const char *ffsel,
                 sel = strtol(buf, nullptr, 10);
                 sel--;
             }
-        }
-        while (pret == nullptr || (sel < 0) || (sel >= nff));
+        } while (pret == nullptr || (sel < 0) || (sel >= nff));
 
         /* Check for a current limitation of the fflib code.
          * It will always read from the first ff directory in the list.
@@ -340,10 +338,9 @@ choose_ff_impl(const char *ffsel,
     strcpy(ffdir, ffpath.c_str());
 }
 
-void
-choose_ff(const char *ffsel,
-          char *forcefield, int ff_maxlen,
-          char *ffdir, int ffdir_maxlen)
+void choose_ff(const char *ffsel,
+               char *forcefield, int ff_maxlen,
+               char *ffdir, int ffdir_maxlen)
 {
     try
     {
@@ -357,11 +354,11 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 {
     const char *fn_watermodels = "watermodels.dat";
     char        fn_list[STRLEN];
-    FILE       *fp;
+    FILE *      fp;
     char        buf[STRLEN];
     int         nwm, sel, i;
-    char      **model;
-    char       *pret;
+    char **     model;
+    char *      pret;
 
     if (strcmp(wmsel, "none") == 0)
     {
@@ -393,13 +390,13 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     model = nullptr;
     while (get_a_line(fp, buf, STRLEN))
     {
-        srenew(model, nwm+1);
+        srenew(model, nwm + 1);
         snew(model[nwm], STRLEN);
         sscanf(buf, "%s%n", model[nwm], &i);
         if (i > 0)
         {
-            ltrim(buf+i);
-            fprintf(stderr, "%2d: %s\n", nwm+1, buf+i);
+            ltrim(buf + i);
+            fprintf(stderr, "%2d: %s\n", nwm + 1, buf + i);
             nwm++;
         }
         else
@@ -408,7 +405,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
         }
     }
     gmx_ffclose(fp);
-    fprintf(stderr, "%2d: %s\n", nwm+1, "None");
+    fprintf(stderr, "%2d: %s\n", nwm + 1, "None");
 
     sel = -1;
     do
@@ -420,8 +417,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
             sel = strtol(buf, nullptr, 10);
             sel--;
         }
-    }
-    while (pret == nullptr || sel < 0 || sel > nwm);
+    } while (pret == nullptr || sel < 0 || sel > nwm);
 
     if (sel == nwm)
     {
@@ -442,11 +438,11 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 static int name2type(t_atoms *at, int **cgnr,
                      t_restp restp[], gmx_residuetype_t *rt)
 {
-    int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
-    char       *name;
-    gmx_bool    bNterm;
-    double      qt;
-    int         nmissat;
+    int      i, j, prevresind, resind, i0, prevcg, cg, curcg;
+    char *   name;
+    gmx_bool bNterm;
+    double   qt;
+    int      nmissat;
 
     nmissat = 0;
 
@@ -480,7 +476,7 @@ static int name2type(t_atoms *at, int **cgnr,
             if (debug)
             {
                 fprintf(debug, "atom %d%s: curcg=%d, prevcg=%d, cg=%d\n",
-                        i+1, *(at->atomname[i]), curcg, prevcg,
+                        i + 1, *(at->atomname[i]), curcg, prevcg,
                         j == NOTSET ? NOTSET : restp[resind].cgnr[j]);
             }
             qt               = 0;
@@ -504,7 +500,7 @@ static int name2type(t_atoms *at, int **cgnr,
             if (debug)
             {
                 fprintf(debug, "atom %d%s: curcg=%d, qt=%g, is_int=%d\n",
-                        i+1, *(at->atomname[i]), curcg, qt, is_int(qt));
+                        i + 1, *(at->atomname[i]), curcg, qt, is_int(qt));
             }
             cg = -1;
             if (is_int(qt))
@@ -541,7 +537,7 @@ static void print_top_heavy_H(FILE *out, real mHmult)
     }
 }
 
-void print_top_comment(FILE       *out,
+void print_top_comment(FILE *      out,
                        const char *filename,
                        const char *ffdir,
                        gmx_bool    bITP)
@@ -570,9 +566,9 @@ void print_top_comment(FILE       *out,
     }
     else
     {
-        strncpy(ffdir_parent, ffdir, STRLEN-1);
-        ffdir_parent[STRLEN-1] = '\0'; /*make sure it is 0-terminated even for long string*/
-        p = strrchr(ffdir_parent, '/');
+        strncpy(ffdir_parent, ffdir, STRLEN - 1);
+        ffdir_parent[STRLEN - 1] = '\0'; /*make sure it is 0-terminated even for long string*/
+        p                        = strrchr(ffdir_parent, '/');
 
         *p = '\0';
 
@@ -599,7 +595,7 @@ void print_top_header(FILE *out, const char *filename,
     fprintf(out, "; Include forcefield parameters\n");
 
     p = strrchr(ffdir, '/');
-    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p+1;
+    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p + 1;
 
     fprintf(out, "#include \"%s/%s\"\n\n", p, fflib_forcefield_itp());
 }
@@ -620,7 +616,7 @@ static void print_top_water(FILE *out, const char *ffdir, const char *water)
     fprintf(out, "; Include water topology\n");
 
     p = strrchr(ffdir, '/');
-    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p+1;
+    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p + 1;
     fprintf(out, "#include \"%s/%s.itp\"\n", p, water);
 
     fprintf(out, "\n");
@@ -737,8 +733,8 @@ void write_top(FILE *out, char *pr, char *molname,
 static void do_ssbonds(t_params *ps, t_atoms *atoms,
                        int nssbonds, t_ssbond *ssbonds, gmx_bool bAllowMissing)
 {
-    int     i, ri, rj;
-    int     ai, aj;
+    int i, ri, rj;
+    int ai, aj;
 
     for (i = 0; (i < nssbonds); i++)
     {
@@ -801,12 +797,12 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 
                 {
                     fprintf(stderr, "Warning: Long Bond (%d-%d = %g nm)\n",
-                            ai+1, aj+1, std::sqrt(dist2));
+                            ai + 1, aj + 1, std::sqrt(dist2));
                 }
                 else if (dist2 < short_bond_dist2)
                 {
                     fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n",
-                            ai+1, aj+1, std::sqrt(dist2));
+                            ai + 1, aj + 1, std::sqrt(dist2));
                 }
                 add_param(psb, ai, aj, nullptr, hb[resind].rb[ebtsBONDS].b[j].s);
             }
@@ -816,21 +812,21 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
         {
             for (j = 0; j < hb[resind].nhack; j++)
             {
-                if ( ( hb[resind].hack[j].tp > 0 ||
-                       hb[resind].hack[j].oname == nullptr ) &&
-                     strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
+                if ( ( hb[resind].hack[j].tp > 0
+                       || hb[resind].hack[j].oname == nullptr )
+                     && strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
                 {
                     switch (hb[resind].hack[j].tp)
                     {
-                        case 9:                                         /* COOH terminus */
-                            add_param(psb, i, i+1, nullptr, nullptr);   /* C-O  */
-                            add_param(psb, i, i+2, nullptr, nullptr);   /* C-OA */
-                            add_param(psb, i+2, i+3, nullptr, nullptr); /* OA-H */
+                        case 9:                                             /* COOH terminus */
+                            add_param(psb, i, i + 1, nullptr, nullptr);     /* C-O  */
+                            add_param(psb, i, i + 2, nullptr, nullptr);     /* C-OA */
+                            add_param(psb, i + 2, i + 3, nullptr, nullptr); /* OA-H */
                             break;
                         default:
                             for (k = 0; (k < hb[resind].hack[j].nr); k++)
                             {
-                                add_param(psb, i, i+k+1, nullptr, nullptr);
+                                add_param(psb, i, i + k + 1, nullptr, nullptr);
                             }
                     }
                 }
@@ -865,8 +861,8 @@ static int pcompar(const void *a, const void *b)
 
 static void clean_bonds(t_params *ps)
 {
-    int     i, j;
-    int     a;
+    int i, j;
+    int a;
 
     if (ps->nr > 0)
     {
@@ -888,8 +884,8 @@ static void clean_bonds(t_params *ps)
         j = 1;
         for (i = 1; (i < ps->nr); i++)
         {
-            if ((ps->param[i].a[0] != ps->param[j-1].a[0]) ||
-                (ps->param[i].a[1] != ps->param[j-1].a[1]) )
+            if ((ps->param[i].a[0] != ps->param[j - 1].a[0])
+                || (ps->param[i].a[1] != ps->param[j - 1].a[1]) )
             {
                 if (j != i)
                 {
@@ -970,7 +966,7 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
      * restp->atomname[at_start], resnr, restp->resname);
                 }*/
     strcpy(buf, hack->nname);
-    buf[strlen(buf)+1] = '\0';
+    buf[strlen(buf) + 1] = '\0';
     if (hack->nr > 1)
     {
         buf[strlen(buf)] = '-';
@@ -981,14 +977,14 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
     srenew(restp->atomname, restp->natom);
     srenew(restp->cgnr,     restp->natom);
     /* shift the rest */
-    for (k = restp->natom-1; k > at_start+hack->nr; k--)
+    for (k = restp->natom - 1; k > at_start + hack->nr; k--)
     {
-        restp->atom[k] =
-            restp->atom    [k - hack->nr];
-        restp->atomname[k] =
-            restp->atomname[k - hack->nr];
-        restp->cgnr[k] =
-            restp->cgnr    [k - hack->nr];
+        restp->atom[k]
+            = restp->atom    [k - hack->nr];
+        restp->atomname[k]
+            = restp->atomname[k - hack->nr];
+        restp->cgnr[k]
+            = restp->cgnr    [k - hack->nr];
     }
     /* now add them */
     for (k = 0; k < hack->nr; k++)
@@ -996,18 +992,18 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
         /* set counter in atomname */
         if (hack->nr > 1)
         {
-            buf[strlen(buf)-1] = Hnum[k];
+            buf[strlen(buf) - 1] = Hnum[k];
         }
-        snew( restp->atomname[at_start+1+k], 1);
-        restp->atom     [at_start+1+k] = *hack->atom;
-        *restp->atomname[at_start+1+k] = gmx_strdup(buf);
+        snew( restp->atomname[at_start + 1 + k], 1);
+        restp->atom     [at_start + 1 + k] = *hack->atom;
+        *restp->atomname[at_start + 1 + k] = gmx_strdup(buf);
         if (hack->cgnr != NOTSET)
         {
-            restp->cgnr   [at_start+1+k] = hack->cgnr;
+            restp->cgnr   [at_start + 1 + k] = hack->cgnr;
         }
         else
         {
-            restp->cgnr   [at_start+1+k] = restp->cgnr[at_start];
+            restp->cgnr   [at_start + 1 + k] = restp->cgnr[at_start];
         }
     }
 }
@@ -1019,11 +1015,11 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         int *rn, int *rc)
 {
-    int         i, j, k, l;
-    char       *key;
-    t_restp    *res;
-    int         tern, terc;
-    gmx_bool    bRM;
+    int      i, j, k, l;
+    char *   key;
+    t_restp *res;
+    int      tern, terc;
+    gmx_bool bRM;
 
     snew(*hb, nres);
     snew(*restp, nres);
@@ -1077,13 +1073,13 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
         }
         bRM = merge_t_bondeds(res->rb, (*hb)[i].rb, tern >= 0, terc >= 0);
 
-        if (bRM && ((tern >= 0 && ntdb[tern] == nullptr) ||
-                    (terc >= 0 && ctdb[terc] == nullptr)))
+        if (bRM && ((tern >= 0 && ntdb[tern] == nullptr)
+                    || (terc >= 0 && ctdb[terc] == nullptr)))
         {
             gmx_fatal(FARGS, "There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Fix your terminal residues so that they match the residue database (.rtp) entries, or provide terminal database entries (.tdb).");
         }
-        if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
-                    (terc >= 0 && ctdb[terc]->nhack == 0)))
+        if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0)
+                    || (terc >= 0 && ctdb[terc]->nhack == 0)))
         {
             gmx_fatal(FARGS, "There is a dangling bond at at least one of the terminal ends. Fix your coordinate file, add a new terminal database entry (.tdb), or select the proper existing terminal entry.");
         }
@@ -1102,10 +1098,10 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                 /* find atom in restp */
                 for (l = 0; l < (*restp)[i].natom; l++)
                 {
-                    if ( ( (*hb)[i].hack[j].oname == nullptr &&
-                           strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0 ) ||
-                         ( (*hb)[i].hack[j].oname != nullptr &&
-                           strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
+                    if ( ( (*hb)[i].hack[j].oname == nullptr
+                           && strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0 )
+                         || ( (*hb)[i].hack[j].oname != nullptr
+                              && strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
                     {
                         break;
                     }
@@ -1119,17 +1115,17 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     /* Deleting can happen also only on the input atoms,
                      * not necessarily always on the rtp entry.
                      */
-                    if (!((*hb)[i].hack[j].oname != nullptr &&
-                          (*hb)[i].hack[j].nname != nullptr) &&
-                        !((*hb)[i].hack[j].oname != nullptr &&
-                          (*hb)[i].hack[j].nname == nullptr))
+                    if (!((*hb)[i].hack[j].oname != nullptr
+                          && (*hb)[i].hack[j].nname != nullptr)
+                        && !((*hb)[i].hack[j].oname != nullptr
+                             && (*hb)[i].hack[j].nname == nullptr))
                     {
                         gmx_fatal(FARGS,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
-                                  (*hb)[i].hack[j].oname != nullptr ?
-                                  (*hb)[i].hack[j].oname : (*hb)[i].hack[j].a[0],
-                                  i+1, *resinfo[i].rtp);
+                                  (*hb)[i].hack[j].oname != nullptr
+                                  ? (*hb)[i].hack[j].oname : (*hb)[i].hack[j].a[0],
+                                  i + 1, *resinfo[i].rtp);
                     }
                 }
                 else
@@ -1149,15 +1145,15 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                             {
                                 fprintf(debug, "deleting atom %s from res %d%s in rtp\n",
                                         *(*restp)[i].atomname[l],
-                                        i+1, (*restp)[i].resname);
+                                        i + 1, (*restp)[i].resname);
                             }
                             /* shift the rest */
                             (*restp)[i].natom--;
                             for (k = l; k < (*restp)[i].natom; k++)
                             {
-                                (*restp)[i].atom    [k] = (*restp)[i].atom    [k+1];
-                                (*restp)[i].atomname[k] = (*restp)[i].atomname[k+1];
-                                (*restp)[i].cgnr    [k] = (*restp)[i].cgnr    [k+1];
+                                (*restp)[i].atom    [k] = (*restp)[i].atom    [k + 1];
+                                (*restp)[i].atomname[k] = (*restp)[i].atomname[k + 1];
+                                (*restp)[i].cgnr    [k] = (*restp)[i].cgnr    [k + 1];
                             }
                             /* give back space */
                             srenew((*restp)[i].atom,     (*restp)[i].natom);
@@ -1170,7 +1166,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                             {
                                 fprintf(debug, "replacing atom %s by %s in res %d%s in rtp\n",
                                         *(*restp)[i].atomname[l], (*hb)[i].hack[j].nname,
-                                        i+1, (*restp)[i].resname);
+                                        i + 1, (*restp)[i].resname);
                             }
                             snew( (*restp)[i].atomname[l], 1);
                             (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
@@ -1198,9 +1194,9 @@ static gmx_bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
     }
     else
     {
-        if (isdigit(anm[strlen(anm)-1]))
+        if (isdigit(anm[strlen(anm) - 1]))
         {
-            *nr = anm[strlen(anm)-1] - '0';
+            *nr = anm[strlen(anm) - 1] - '0';
         }
         else
         {
@@ -1212,8 +1208,8 @@ static gmx_bool atomname_cmp_nr(const char *anm, t_hack *hack, int *nr)
         }
         else
         {
-            return (strlen(anm) == strlen(hack->nname) + 1 &&
-                    gmx_strncasecmp(anm, hack->nname, strlen(hack->nname)) == 0);
+            return (strlen(anm) == strlen(hack->nname) + 1
+                    && gmx_strncasecmp(anm, hack->nname, strlen(hack->nname)) == 0);
         }
     }
 }
@@ -1224,9 +1220,9 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
 {
     int      resnr;
     int      j, k;
-    char    *oldnm, *newnm;
+    char *   oldnm, *newnm;
     int      anmnr;
-    char    *start_at, buf[STRLEN];
+    char *   start_at, buf[STRLEN];
     int      start_nr;
     gmx_bool bReplaceReplace, bFoundInAdd;
     gmx_bool bDeleted;
@@ -1237,17 +1233,17 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
     bDeleted = FALSE;
     for (j = 0; j < hbr->nhack; j++)
     {
-        if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname != nullptr &&
-            gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
+        if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname != nullptr
+            && gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
         {
             /* This is a replace entry. */
             /* Check if we are not replacing a replaced atom. */
             bReplaceReplace = FALSE;
             for (k = 0; k < hbr->nhack; k++)
             {
-                if (k != j &&
-                    hbr->hack[k].oname != nullptr && hbr->hack[k].nname != nullptr &&
-                    gmx_strcasecmp(hbr->hack[k].nname, hbr->hack[j].oname) == 0)
+                if (k != j
+                    && hbr->hack[k].oname != nullptr && hbr->hack[k].nname != nullptr
+                    && gmx_strcasecmp(hbr->hack[k].nname, hbr->hack[j].oname) == 0)
                 {
                     /* The replace in hack[j] replaces an atom that
                      * was already replaced in hack[k], we do not want
@@ -1283,9 +1279,9 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 bFoundInAdd = FALSE;
                 for (k = 0; k < hbr->nhack; k++)
                 {
-                    if (hbr->hack[k].oname == nullptr &&
-                        hbr->hack[k].nname != nullptr &&
-                        atomname_cmp_nr(newnm, &hbr->hack[k], &anmnr))
+                    if (hbr->hack[k].oname == nullptr
+                        && hbr->hack[k].nname != nullptr
+                        && atomname_cmp_nr(newnm, &hbr->hack[k], &anmnr))
                     {
                         if (anmnr <= 1)
                         {
@@ -1293,7 +1289,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                         }
                         else
                         {
-                            sprintf(buf, "%s%d", hbr->hack[k].nname, anmnr-1);
+                            sprintf(buf, "%s%d", hbr->hack[k].nname, anmnr - 1);
                             start_at = buf;
                         }
                         for (start_nr = 0; start_nr < rptr->natom; start_nr++)
@@ -1333,8 +1329,8 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             snew(pdba->atomname[atind], 1);
             *pdba->atomname[atind] = gmx_strdup(newnm);
         }
-        else if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname == nullptr &&
-                 gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
+        else if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname == nullptr
+                 && gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
         {
             /* This is a delete entry, check if this atom is present
              * in the rtp entry of this residue.
@@ -1360,11 +1356,11 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                  * but it might be used multiple times in the symtab.
                  * sfree(pdba->atomname[atind]);
                  */
-                for (k = atind+1; k < pdba->nr; k++)
+                for (k = atind + 1; k < pdba->nr; k++)
                 {
-                    pdba->atom[k-1]     = pdba->atom[k];
-                    pdba->atomname[k-1] = pdba->atomname[k];
-                    copy_rvec(x[k], x[k-1]);
+                    pdba->atom[k - 1]     = pdba->atom[k];
+                    pdba->atomname[k - 1] = pdba->atomname[k];
+                    copy_rvec(x[k], x[k - 1]);
                 }
                 pdba->nr--;
                 bDeleted = TRUE;
@@ -1379,9 +1375,9 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
                               t_atoms *pdba, rvec *x,
                               gmx_bool bVerbose)
 {
-    int          i, j;
-    char        *oldnm;
-    t_restp     *rptr;
+    int      i, j;
+    char *   oldnm;
+    t_restp *rptr;
 
     for (i = 0; i < pdba->nr; i++)
     {
@@ -1414,7 +1410,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     int         residx, i, j, k;
     const char *ptr;
     const char *pname;
-    t_resinfo  *resinfo = atoms->resinfo;
+    t_resinfo * resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
     gmx_bool    bAddCMAP;
     int         cmap_atomid[NUM_CMAP_ATOMS];
@@ -1454,8 +1450,8 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
                 /* Skip this CMAP entry if it refers to residues before the
                  * first or after the last residue.
                  */
-                if (((strchr(pname, '-') != nullptr) && (residx == 0)) ||
-                    ((strchr(pname, '+') != nullptr) && (residx == nres-1)))
+                if (((strchr(pname, '-') != nullptr) && (residx == 0))
+                    || ((strchr(pname, '+') != nullptr) && (residx == nres - 1)))
                 {
                     bAddCMAP = FALSE;
                     break;
@@ -1481,8 +1477,8 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
                     /* Does the residue for this atom have the same
                      * chain number as the residues for previous
                      * atoms? */
-                    bAddCMAP = bAddCMAP &&
-                        cmap_chainnum == resinfo[this_residue_index].chainnum;
+                    bAddCMAP = bAddCMAP
+                        && cmap_chainnum == resinfo[this_residue_index].chainnum;
                 }
                 /* Here we used to check that the residuetype was protein and
                  * disable bAddCMAP if that was not the case. However, some
@@ -1503,9 +1499,9 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
             }
         }
 
-        if (residx < nres-1)
+        if (residx < nres - 1)
         {
-            while (atoms->atom[i].resind < residx+1)
+            while (atoms->atom[i].resind < residx + 1)
             {
                 i++;
             }
@@ -1514,14 +1510,13 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     /* Start the next residue */
 }
 
-static void
-scrub_charge_groups(int *cgnr, int natoms)
+static void scrub_charge_groups(int *cgnr, int natoms)
 {
     int i;
 
     for (i = 0; i < natoms; i++)
     {
-        cgnr[i] = i+1;
+        cgnr[i] = i + 1;
     }
 }
 
@@ -1544,10 +1539,10 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
        t_restp  *restp;
      */
     t_params          plist[F_NRE];
-    t_excls          *excls;
+    t_excls *         excls;
     t_nextnb          nnb;
-    int              *cgnr;
-    int              *vsite_type;
+    int *             cgnr;
+    int *             vsite_type;
     int               i, nmissat;
     int               bts[ebtsNR];
     gmx_residuetype_t*rt;
@@ -1637,13 +1632,13 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
             "          %4d pairs,     %4d bonds and  %4d virtual sites\n",
             plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
             plist[F_LJ14].nr, plist[F_BONDS].nr,
-            plist[F_VSITE2].nr +
-            plist[F_VSITE3].nr +
-            plist[F_VSITE3FD].nr +
-            plist[F_VSITE3FAD].nr +
-            plist[F_VSITE3OUT].nr +
-            plist[F_VSITE4FD].nr +
-            plist[F_VSITE4FDN].nr );
+            plist[F_VSITE2].nr
+            + plist[F_VSITE3].nr
+            + plist[F_VSITE3FD].nr
+            + plist[F_VSITE3FAD].nr
+            + plist[F_VSITE3OUT].nr
+            + plist[F_VSITE4FD].nr
+            + plist[F_VSITE4FDN].nr );
 
     print_sums(atoms, FALSE);
 

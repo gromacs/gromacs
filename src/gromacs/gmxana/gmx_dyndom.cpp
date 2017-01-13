@@ -56,12 +56,12 @@ static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans,
                      rvec head, rvec tail, int isize, int index[],
                      rvec xout[], rvec vout[])
 {
-    rvec     arrow, xcm;
-    real     theta, phi, arrow_len;
-    mat4     Rx, Ry, Rz, Rinvy, Rinvz, Mtot;
-    mat4     temp1, temp2, temp3;
-    vec4     xv;
-    int      i, ai;
+    rvec arrow, xcm;
+    real theta, phi, arrow_len;
+    mat4 Rx, Ry, Rz, Rinvy, Rinvz, Mtot;
+    mat4 temp1, temp2, temp3;
+    vec4 xv;
+    int  i, ai;
 
     rvec_sub(tail, head, arrow);
     arrow_len = norm(arrow);
@@ -104,20 +104,20 @@ static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans,
     }
 
     /* Compute theta and phi that describe the arrow */
-    theta = std::acos(arrow[ZZ]/arrow_len);
-    phi   = std::atan2(arrow[YY]/arrow_len, arrow[XX]/arrow_len);
+    theta = std::acos(arrow[ZZ] / arrow_len);
+    phi   = std::atan2(arrow[YY] / arrow_len, arrow[XX] / arrow_len);
     if (debug)
     {
-        fprintf(debug, "Phi = %.1f, Theta = %.1f\n", RAD2DEG*phi, RAD2DEG*theta);
+        fprintf(debug, "Phi = %.1f, Theta = %.1f\n", RAD2DEG * phi, RAD2DEG * theta);
     }
 
     /* Now the total rotation matrix: */
     /* Rotate a couple of times */
     gmx_mat4_init_rotation(ZZ, -phi, Rz);
-    gmx_mat4_init_rotation(YY, M_PI/2-theta, Ry);
-    gmx_mat4_init_rotation(XX, angle*DEG2RAD, Rx);
+    gmx_mat4_init_rotation(YY, M_PI / 2 - theta, Ry);
+    gmx_mat4_init_rotation(XX, angle * DEG2RAD, Rx);
     Rx[WW][XX] = trans;
-    gmx_mat4_init_rotation(YY, theta-M_PI/2, Rinvy);
+    gmx_mat4_init_rotation(YY, theta - M_PI / 2, Rinvy);
     gmx_mat4_init_rotation(ZZ, phi, Rinvz);
 
     gmx_mat4_mmul(temp1, Ry, Rz);
@@ -147,7 +147,7 @@ static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans,
 
 int gmx_dyndom(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] reads a [REF].pdb[ref] file output from DynDom",
         "(http://www.cmp.uea.ac.uk/dyndom/).",
         "It reads the coordinates, the coordinates of the rotation axis,",
@@ -189,15 +189,15 @@ int gmx_dyndom(int argc, char *argv[])
           "Last atom of the arrow vector" }
     };
     int               i, j, natoms, isize;
-    t_trxstatus      *status;
-    int              *index = nullptr, *index_all;
-    char             *grpname;
+    t_trxstatus *     status;
+    int *             index = nullptr, *index_all;
+    char *            grpname;
     real              angle, trans;
-    rvec             *x, *v, *xout, *vout;
+    rvec *            x, *v, *xout, *vout;
     matrix            box;
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efPDB, "-f", "dyndom",  ffREAD },
         { efTRO, "-o", "rotated", ffWRITE },
         { efNDX, "-n", "domains", ffREAD }
@@ -218,7 +218,7 @@ int gmx_dyndom(int argc, char *argv[])
     t_topology *top;
     snew(top, 1);
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, nullptr, &x, &v, box, FALSE);
-    t_atoms  &atoms = top->atoms;
+    t_atoms &atoms = top->atoms;
     if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
@@ -243,8 +243,8 @@ int gmx_dyndom(int argc, char *argv[])
     label = 'A';
     for (i = 0; (i < nframes); i++, label++)
     {
-        angle = angle0 + (i*(angle1-angle0))/(nframes-1);
-        trans = trans0*0.1*angle/maxangle;
+        angle = angle0 + (i * (angle1 - angle0)) / (nframes - 1);
+        trans = trans0 * 0.1 * angle / maxangle;
         printf("Frame: %2d (label %c), angle: %8.3f deg., trans: %8.3f nm\n",
                i, label, angle, trans);
         rot_conf(&atoms, x, v, trans, angle, head, tail, isize, index, xout, vout);

@@ -82,8 +82,8 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 
             while (j > startndx && arr[j - 1] > arr[j])
             {
-                Swap(&arr[j], &arr[j-1]);
-                pswap(&perm[j], &perm[j-1]);
+                Swap(&arr[j], &arr[j - 1]);
+                pswap(&perm[j], &perm[j - 1]);
                 j--;
             }
 
@@ -99,8 +99,8 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 
             while (j > startndx && arr[j - 1] < arr[j])
             {
-                Swap(&arr[j], &arr[j-1]);
-                pswap(&perm[j], &perm[j-1]);
+                Swap(&arr[j], &arr[j - 1]);
+                pswap(&perm[j], &perm[j - 1]);
                 j--;
             }
 
@@ -112,17 +112,17 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 int BinarySearch (real *array, int low, int high, real key, int direction)
 {
     int iMid, iMax, iMin;
-    iMax = high+2;
-    iMin = low+1;
+    iMax = high + 2;
+    iMin = low + 1;
 
 /*Iterative implementation*/
 
     if (direction >= 0)
     {
-        while (iMax-iMin > 1)
+        while (iMax - iMin > 1)
         {
-            iMid = (iMin+iMax)>>1;
-            if (key < array[iMid-1])
+            iMid = (iMin + iMax) >> 1;
+            if (key < array[iMid - 1])
             {
                 iMax = iMid;
             }
@@ -135,10 +135,10 @@ int BinarySearch (real *array, int low, int high, real key, int direction)
     }
     else
     {
-        while (iMax-iMin > 1)
+        while (iMax - iMin > 1)
         {
-            iMid = (iMin+iMax)>>1;
-            if (key > array[iMid-1])
+            iMid = (iMin + iMax) >> 1;
+            if (key > array[iMid - 1])
             {
                 iMax = iMid;
             }
@@ -147,7 +147,7 @@ int BinarySearch (real *array, int low, int high, real key, int direction)
                 iMin = iMid;
             }
         }
-        return iMin-1;
+        return iMin - 1;
     }
 }
 
@@ -173,7 +173,7 @@ int LinearSearch (double *array, int startindx, int stopindx,
             (*count)++;
             if (array[i] > key)
             {
-                keyindex = i-1;
+                keyindex = i - 1;
                 return keyindex;
             }
         }
@@ -185,7 +185,7 @@ int LinearSearch (double *array, int startindx, int stopindx,
             (*count)++;
             if (array[i] > key)
             {
-                keyindex = i+1;
+                keyindex = i + 1;
                 return keyindex;
             }
         }

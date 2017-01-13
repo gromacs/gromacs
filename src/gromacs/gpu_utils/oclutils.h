@@ -54,7 +54,8 @@
 #include <string>
 
 /*! \brief OpenCL vendor IDs */
-typedef enum {
+typedef enum
+{
     OCL_VENDOR_NVIDIA = 0,
     OCL_VENDOR_AMD,
     OCL_VENDOR_INTEL,
@@ -69,8 +70,8 @@ typedef enum {
  */
 typedef struct
 {
-    cl_platform_id      ocl_platform_id; /**< Platform ID */
-    cl_device_id        ocl_device_id;   /**< Device ID */
+    cl_platform_id ocl_platform_id;      /**< Platform ID */
+    cl_device_id   ocl_device_id;        /**< Device ID */
 } ocl_gpu_id_t;
 
 /*! \internal
@@ -82,14 +83,14 @@ typedef struct
  */
 struct gmx_device_info_t
 {
-    ocl_gpu_id_t        ocl_gpu_id;          /**< device ID assigned at detection   */
-    char                device_name[256];    /**< device name */
-    char                device_version[256]; /**< device version */
-    char                device_vendor[256];  /**< device vendor */
-    int                 compute_units;       /**< number of compute units */
-    int                 adress_bits;         /**< number of adress bits the device is capable of */
-    int                 stat;                /**< device status takes values of e_gpu_detect_res_t */
-    ocl_vendor_id_t     vendor_e;            /**< device vendor as defined by ocl_vendor_id_t */
+    ocl_gpu_id_t    ocl_gpu_id;              /**< device ID assigned at detection   */
+    char            device_name[256];        /**< device name */
+    char            device_version[256];     /**< device version */
+    char            device_vendor[256];      /**< device vendor */
+    int             compute_units;           /**< number of compute units */
+    int             adress_bits;             /**< number of adress bits the device is capable of */
+    int             stat;                    /**< device status takes values of e_gpu_detect_res_t */
+    ocl_vendor_id_t vendor_e;                /**< device vendor as defined by ocl_vendor_id_t */
 };
 
 /*! \internal

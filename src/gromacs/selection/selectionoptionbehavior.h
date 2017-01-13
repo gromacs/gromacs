@@ -101,7 +101,7 @@ class ITopologyProvider
          * It should return the number of atoms that at most need to be
          * selected by the selections.
          */
-        virtual int getAtomCount()                     = 0;
+        virtual int getAtomCount() = 0;
 
     protected:
         virtual ~ITopologyProvider();
@@ -155,7 +155,7 @@ class SelectionOptionBehavior : public IOptionsBehavior
          * from a file specified by a file option.
          */
         SelectionOptionBehavior(SelectionCollection *selections,
-                                ITopologyProvider   *topologyProvider);
+                                ITopologyProvider *  topologyProvider);
         ~SelectionOptionBehavior();
 
         /*! \brief

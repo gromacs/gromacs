@@ -94,8 +94,8 @@ class CommandLineModuleGroupData
          * Does not throw.
          */
         CommandLineModuleGroupData(const CommandLineModuleMap &modules,
-                                   const char                 *binaryName,
-                                   const char                 *title)
+                                   const char *                binaryName,
+                                   const char *                title)
             : allModules_(modules), binaryName_(binaryName), title_(title)
         {
         }
@@ -119,8 +119,8 @@ class CommandLineModuleGroupData
 
     private:
         const CommandLineModuleMap &allModules_;
-        const char                 *binaryName_;
-        const char                 *title_;
+        const char *                binaryName_;
+        const char *                title_;
         ModuleList                  modules_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineModuleGroupData);
@@ -195,19 +195,19 @@ class CommandLineCommonOptionsHolder
         FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
 
     private:
-        Options                      options_;
+        Options options_;
         //! Settings for what to write in the startup header.
-        BinaryInformationSettings    binaryInfoSettings_;
-        bool                         bHelp_;
-        bool                         bHidden_;
-        bool                         bQuiet_;
-        bool                         bVersion_;
-        bool                         bCopyright_;
-        int                          niceLevel_;
-        bool                         bNiceSet_;
-        bool                         bBackup_;
-        bool                         bFpexcept_;
-        int                          debugLevel_;
+        BinaryInformationSettings binaryInfoSettings_;
+        bool                      bHelp_;
+        bool                      bHidden_;
+        bool                      bQuiet_;
+        bool                      bVersion_;
+        bool                      bCopyright_;
+        int                       niceLevel_;
+        bool                      bNiceSet_;
+        bool                      bBackup_;
+        bool                      bFpexcept_;
+        int                       debugLevel_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);
 };

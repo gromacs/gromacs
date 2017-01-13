@@ -54,9 +54,9 @@
 #include "gromacs/utility/strdb.h"
 
 /* use bonded types definitions in hackblock.h */
-#define ekwRepl ebtsNR+1
-#define ekwAdd  ebtsNR+2
-#define ekwDel  ebtsNR+3
+#define ekwRepl ebtsNR + 1
+#define ekwAdd  ebtsNR + 2
+#define ekwDel  ebtsNR + 3
 #define ekwNR   3
 const char *kw_names[ekwNR] = {
     "replace", "add", "delete"
@@ -185,7 +185,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
         }
         if (nrepl)
         {
-            fprintf(out, "[ %s ]\n", kw_names[ekwRepl-ebtsNR-1]);
+            fprintf(out, "[ %s ]\n", kw_names[ekwRepl - ebtsNR - 1]);
             for (j = 0; j < tb[i].nhack; j++)
             {
                 if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname != nullptr)
@@ -197,7 +197,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
         }
         if (nadd)
         {
-            fprintf(out, "[ %s ]\n", kw_names[ekwAdd-ebtsNR-1]);
+            fprintf(out, "[ %s ]\n", kw_names[ekwAdd - ebtsNR - 1]);
             for (j = 0; j < tb[i].nhack; j++)
             {
                 if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname != nullptr)
@@ -209,7 +209,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
         }
         if (ndel)
         {
-            fprintf(out, "[ %s ]\n", kw_names[ekwDel-ebtsNR-1]);
+            fprintf(out, "[ %s ]\n", kw_names[ekwDel - ebtsNR - 1]);
             for (j = 0; j < tb[i].nhack; j++)
             {
                 if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname == nullptr)
@@ -247,7 +247,7 @@ static void read_ter_db_file(char *fn,
                              gpp_atomtype_t atype)
 {
     char         filebase[STRLEN], *ptr;
-    FILE        *in;
+    FILE *       in;
     char         header[STRLEN], buf[STRLEN], line[STRLEN];
     t_hackblock *tb;
     int          i, j, n, ni, kwnr, nb, maxnb, nh;
@@ -344,7 +344,7 @@ static void read_ter_db_file(char *fn,
                 if (kwnr == ekwRepl || kwnr == ekwAdd)
                 {
                     snew(tb[nb].hack[nh].atom, 1);
-                    read_atom(line+n, kwnr == ekwAdd,
+                    read_atom(line + n, kwnr == ekwAdd,
                               &tb[nb].hack[nh].nname, tb[nb].hack[nh].atom, atype,
                               &tb[nb].hack[nh].cgnr);
                     if (tb[nb].hack[nh].nname == nullptr)
@@ -363,17 +363,17 @@ static void read_ter_db_file(char *fn,
             else if (kwnr >= 0 && kwnr < ebtsNR)
             {
                 /* this is bonded data: bonds, angles, dihedrals or impropers */
-                srenew(tb[nb].rb[kwnr].b, tb[nb].rb[kwnr].nb+1);
+                srenew(tb[nb].rb[kwnr].b, tb[nb].rb[kwnr].nb + 1);
                 n = 0;
                 for (j = 0; j < btsNiatoms[kwnr]; j++)
                 {
-                    if (sscanf(line+n, "%s%n", buf, &ni) == 1)
+                    if (sscanf(line + n, "%s%n", buf, &ni) == 1)
                     {
                         tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = gmx_strdup(buf);
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Reading Termini Database '%s': expected %d atom names (found %d) on line\n%s", fn, btsNiatoms[kwnr], j-1, line);
+                        gmx_fatal(FARGS, "Reading Termini Database '%s': expected %d atom names (found %d) on line\n%s", fn, btsNiatoms[kwnr], j - 1, line);
                     }
                     n += ni;
                 }
@@ -382,7 +382,7 @@ static void read_ter_db_file(char *fn,
                     tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = nullptr;
                 }
                 strcpy(buf, "");
-                sscanf(line+n, "%s", buf);
+                sscanf(line + n, "%s", buf);
                 tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = gmx_strdup(buf);
                 tb[nb].rb[kwnr].nb++;
             }
@@ -462,11 +462,11 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
      * Remember to free the list when you are done with it...
      */
 
-    t_restp     *   restp;
-    int             i, j, n, none_idx;
-    gmx_bool        found;
-    char           *rtpname_match, *s;
-    t_hackblock   **list;
+    t_restp *     restp;
+    int           i, j, n, none_idx;
+    gmx_bool      found;
+    char *        rtpname_match, *s;
+    t_hackblock **list;
 
     rtpname_match = search_rtp(rtpname, nrtp, rtp);
     restp         = get_restp(rtpname_match, nrtp, rtp);
@@ -485,11 +485,11 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
              * This makes termini selection for different molecule types
              * much cleaner.
              */
-            if (gmx_strcasecmp(restp->filebase, tb[i].filebase) == 0 &&
-                gmx_strncasecmp(resname, s, 3) == 0)
+            if (gmx_strcasecmp(restp->filebase, tb[i].filebase) == 0
+                && gmx_strncasecmp(resname, s, 3) == 0)
             {
                 found = TRUE;
-                srenew(list, n+1);
+                srenew(list, n + 1);
                 list[n] = &(tb[i]);
                 n++;
             }
@@ -502,8 +502,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                     s++;
                 }
             }
-        }
-        while (!found && s != nullptr);
+        } while (!found && s != nullptr);
     }
 
     /* All residue-specific termini have been added. We might have to fall
@@ -540,8 +539,8 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                 /* '-' as the last character indicates charge, so if that's
                    the only one found e.g. "COO-", then it was not a conjunction
                    hyphen, so this is a generic terminus */
-                bool bOnlyFoundChargeHyphen = (bFoundAnyHyphen &&
-                                               *(c+1) == '\0');
+                bool bOnlyFoundChargeHyphen = (bFoundAnyHyphen
+                                               && *(c + 1) == '\0');
                 /* Thus, "GLY-COO-" is not recognized as a generic terminus. */
                 bool bFoundGenericTerminus = !bFoundAnyHyphen || bOnlyFoundChargeHyphen;
                 if (bFoundGenericTerminus)
@@ -555,7 +554,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                     }
                     if (j == n)
                     {
-                        srenew(list, n+1);
+                        srenew(list, n + 1);
                         list[n] = &(tb[i]);
                         n++;
                     }
@@ -565,7 +564,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
     }
     if (none_idx >= 0)
     {
-        srenew(list, n+1);
+        srenew(list, n + 1);
         list[n] = &(tb[none_idx]);
         n++;
     }
@@ -589,8 +588,7 @@ t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title)
     do
     {
         ret = fscanf(stdin, "%d", &sel);
-    }
-    while ((ret != 1) || (sel < 0) || (sel >= nb));
+    } while ((ret != 1) || (sel < 0) || (sel >= nb));
 
     return tb[sel];
 }

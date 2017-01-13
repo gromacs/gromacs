@@ -136,8 +136,8 @@ class BasicVector
  * Casts a gmx::BasicVector array into an equivalent raw C array.
  */
 template <typename ValueType> static inline
-typename BasicVector<ValueType>::RawArray *
-as_vec_array(BasicVector<ValueType> *x)
+typename BasicVector<ValueType>::RawArray
+* as_vec_array(BasicVector<ValueType> *x)
 {
     return reinterpret_cast<typename BasicVector<ValueType>::RawArray *>(x);
 }
@@ -146,8 +146,8 @@ as_vec_array(BasicVector<ValueType> *x)
  * Casts a gmx::BasicVector array into an equivalent raw C array.
  */
 template <typename ValueType> static inline
-const typename BasicVector<ValueType>::RawArray *
-as_vec_array(const BasicVector<ValueType> *x)
+const typename BasicVector<ValueType>::RawArray
+* as_vec_array(const BasicVector<ValueType> *x)
 {
     return reinterpret_cast<const typename BasicVector<ValueType>::RawArray *>(x);
 }

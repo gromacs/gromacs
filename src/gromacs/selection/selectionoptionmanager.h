@@ -118,7 +118,7 @@ class SelectionOptionManager : public IOptionManager
          * through any public or library API.
          */
         void convertOptionValue(SelectionOptionStorage *storage,
-                                const std::string      &value,
+                                const std::string &     value,
                                 bool                    bFullValue);
         /*! \brief
          * Adds a selection option for delayed user input.

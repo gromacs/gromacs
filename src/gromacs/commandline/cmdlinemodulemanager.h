@@ -189,7 +189,7 @@ class CommandLineModuleManager
          * \p programInfo is non-const to allow the manager to amend it based
          * on the actual module that is getting executed.
          */
-        CommandLineModuleManager(const char                *binaryName,
+        CommandLineModuleManager(const char *               binaryName,
                                  CommandLineProgramContext *programContext);
         ~CommandLineModuleManager();
 
@@ -397,7 +397,7 @@ class CommandLineModuleGroup
 
     private:
         //! Pointer to the data owned by CommandLineModuleManager.
-        Impl                     *impl_;
+        Impl *impl_;
 };
 
 //! \}

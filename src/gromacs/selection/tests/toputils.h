@@ -80,9 +80,9 @@ class TopologyManager
         t_trxframe *frame() { return frame_; }
 
     private:
-        gmx_mtop_t             *mtop_;
-        t_trxframe             *frame_;
-        std::vector<char *>     atomtypes_;
+        gmx_mtop_t *        mtop_;
+        t_trxframe *        frame_;
+        std::vector<char *> atomtypes_;
 };
 
 } // namespace test

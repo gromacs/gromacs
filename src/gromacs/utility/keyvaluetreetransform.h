@@ -71,8 +71,7 @@ class IKeyValueTreeTransformRules
     public:
         virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
 
-    protected:
-        ~IKeyValueTreeTransformRules();
+    protected: ~IKeyValueTreeTransformRules();
 };
 
 class IKeyValueTreeBackMapping
@@ -94,13 +93,13 @@ class KeyValueTreeTransformResult
         typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
 
         KeyValueTreeTransformResult(KeyValueTreeObject &&object,
-                                    MappingPointer     &&mapping)
+                                    MappingPointer &&    mapping)
             : object_(std::move(object)), mapping_(std::move(mapping))
         {
         }
 
-        KeyValueTreeObject                         object_;
-        std::unique_ptr<IKeyValueTreeBackMapping>  mapping_;
+        KeyValueTreeObject                        object_;
+        std::unique_ptr<IKeyValueTreeBackMapping> mapping_;
 
         friend class internal::KeyValueTreeTransformerImpl;
 };
@@ -116,7 +115,7 @@ class KeyValueTreeTransformer
         std::vector<KeyValueTreePath> mappedPaths() const;
 
         KeyValueTreeTransformResult
-        transform(const KeyValueTreeObject  &tree,
+        transform(const KeyValueTreeObject & tree,
                   IKeyValueTreeErrorHandler *errorHandler) const;
 
     private:

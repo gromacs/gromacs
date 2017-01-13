@@ -102,7 +102,7 @@ static const bool isPowerPC = false;
 #endif
 
 //! Constant used to help minimize preprocessed code
-static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
+static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 
 /* Note that some of the following arrays must match the "GPU support
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
@@ -127,13 +127,13 @@ const char * const gpu_detect_res_str[egpuNR] =
     "compatible", "inexistent", "incompatible", "insane"
 };
 
-static const char * invalid_gpuid_hint =
-    "A delimiter-free sequence of valid numeric IDs of available GPUs is expected.";
+static const char * invalid_gpuid_hint
+    = "A delimiter-free sequence of valid numeric IDs of available GPUs is expected.";
 
 /* The globally shared hwinfo structure. */
-static gmx_hw_info_t      *hwinfo_g;
+static gmx_hw_info_t *hwinfo_g;
 /* A reference counter for the hwinfo structure */
-static int                 n_hwinfo = 0;
+static int n_hwinfo = 0;
 /* A lock to protect the hwinfo structure */
 static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
@@ -141,7 +141,7 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 /* FW decl. */
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
-                                    const gmx_gpu_opt_t  *gpu_opt);
+                                    const gmx_gpu_opt_t * gpu_opt);
 
 gmx_bool gmx_multiple_gpu_per_node_supported()
 {
@@ -174,11 +174,10 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
  * \param[in] bPrintHostName Print the hostname in the usage information
  * \return                   String to write to the log file
  * \throws                   std::bad_alloc if out of memory */
-static std::string
-makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
-                   const gmx_gpu_opt_t  *gpu_opt,
-                   size_t                numPpRanks,
-                   bool                  bPrintHostName)
+static std::string makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
+                                      const gmx_gpu_opt_t * gpu_opt,
+                                      size_t                numPpRanks,
+                                      bool                  bPrintHostName)
 {
     int  ngpu_use  = gpu_opt->n_dev_use;
     int  ngpu_comp = gpu_info->n_dev_compatible;
@@ -201,10 +200,10 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     if (!gpu_opt->bUserSet)
     {
         // gpu_opt->dev_compatible is only populated during auto-selection
-        std::string gpuIdsString =
-            formatAndJoin(gmx::constArrayRefFromArray(gpu_opt->dev_compatible,
-                                                      gpu_opt->n_dev_compatible),
-                          ",", gmx::StringFormatter("%d"));
+        std::string gpuIdsString
+            = formatAndJoin(gmx::constArrayRefFromArray(gpu_opt->dev_compatible,
+                                                        gpu_opt->n_dev_compatible),
+                            ",", gmx::StringFormatter("%d"));
         bool bPluralGpus = gpu_opt->n_dev_compatible > 1;
 
         if (bPrintHostName)
@@ -225,10 +224,10 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
         {
             gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
         }
-        std::string gpuIdsString =
-            formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
-        int         numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
-        bool        bPluralGpus  = numGpusInUse > 1;
+        std::string gpuIdsString
+            = formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
+        int  numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
+        bool bPluralGpus  = numGpusInUse > 1;
 
         if (bPrintHostName)
         {
@@ -249,9 +248,8 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
 
 /* Give a suitable fatal error or warning if the build configuration
    and runtime CPU do not match. */
-static void
-check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
-                                const gmx::CpuInfo    &cpuInfo)
+static void check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger &mdlog,
+                                            const gmx::CpuInfo & cpuInfo)
 {
 #ifdef HAVE_RDTSCP
     bool binaryUsesRdtscp = TRUE;
@@ -298,8 +296,8 @@ check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
 
 void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
+                                      const t_commrec *    cr,
+                                      const gmx_hw_opt_t * hw_opt,
                                       gmx_bool             bUseGPU)
 {
     int      npppn;
@@ -334,7 +332,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
 
     /* GPU emulation detection is done later, but we need here as well
      * -- uncool, but there's no elegant workaround */
-    bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != nullptr);
+    bEmulateGPU = (getenv("GMX_EMULATE_GPU") != nullptr);
 
     if (hwinfo->gpu_info.n_dev_compatible > 0)
     {
@@ -384,8 +382,8 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         sprintf(th_or_proc, "process");
     }
 
-    if (bUseGPU && hwinfo->gpu_info.n_dev_compatible > 0 &&
-        !bEmulateGPU)
+    if (bUseGPU && hwinfo->gpu_info.n_dev_compatible > 0
+        && !bEmulateGPU)
     {
         int  ngpu_comp, ngpu_use;
         char gpu_comp_plural[2], gpu_use_plural[2];
@@ -464,9 +462,9 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                 if (cr->rank_pp_intranode == 0)
                 {
                     std::string reasonForLimit;
-                    if (ngpu_comp > 1 &&
-                        ngpu_use == 1 &&
-                        !gmx_multiple_gpu_per_node_supported())
+                    if (ngpu_comp > 1
+                        && ngpu_use == 1
+                        && !gmx_multiple_gpu_per_node_supported())
                     {
                         reasonForLimit  = "can be used by ";
                         reasonForLimit += getGpuImplementationString();
@@ -488,7 +486,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         }
 
         {
-            int      same_count;
+            int same_count;
 
             same_count = gmx_count_gpu_dev_shared(&hw_opt->gpu_opt);
 
@@ -521,19 +519,19 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
  */
 int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
 {
-    int      same_count    = 0;
-    int      ngpu          = gpu_opt->n_dev_use;
+    int same_count = 0;
+    int ngpu       = gpu_opt->n_dev_use;
 
     if (gpu_opt->bUserSet)
     {
-        int      i, j;
+        int i, j;
 
         for (i = 0; i < ngpu - 1; i++)
         {
             for (j = i + 1; j < ngpu; j++)
             {
-                same_count      += (gpu_opt->dev_use[i] ==
-                                    gpu_opt->dev_use[j]);
+                same_count += (gpu_opt->dev_use[i]
+                               == gpu_opt->dev_use[j]);
             }
         }
     }
@@ -548,7 +546,7 @@ int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
  * number of GPU IDs selected.
  */
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
-                                    const gmx_gpu_opt_t  *gpu_opt)
+                                    const gmx_gpu_opt_t * gpu_opt)
 {
     int  i, uniq_count, ngpu;
     int *uniq_ids;
@@ -558,7 +556,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
 
     ngpu = gpu_info->n_dev;
 
-    uniq_count  = 0;
+    uniq_count = 0;
 
     snew(uniq_ids, ngpu);
 
@@ -585,10 +583,10 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
 static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
 #if GMX_LIB_MPI
-    int              rank_world;
-    MPI_Comm         physicalnode_comm;
+    int      rank_world;
+    MPI_Comm physicalnode_comm;
 #endif
-    int              rank_local;
+    int rank_local;
 
     /* Under certain circumstances MPI ranks on the same physical node
      * can not simultaneously access the same GPU(s). Therefore we run
@@ -653,12 +651,12 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
         {
             int dev_size;
 
-            dev_size = hwinfo_g->gpu_info.n_dev*sizeof_gpu_dev_info();
+            dev_size = hwinfo_g->gpu_info.n_dev * sizeof_gpu_dev_info();
 
             if (rank_local > 0)
             {
-                hwinfo_g->gpu_info.gpu_dev =
-                    (struct gmx_device_info_t *)malloc(dev_size);
+                hwinfo_g->gpu_info.gpu_dev
+                    = (struct gmx_device_info_t *)malloc(dev_size);
             }
             MPI_Bcast(hwinfo_g->gpu_info.gpu_dev, dev_size, MPI_BYTE,
                       0, physicalnode_comm);
@@ -675,18 +673,18 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 {
     const int ncore = hwinfo_g->hardwareTopology->numberOfCores();
 #if GMX_LIB_MPI
-    int       rank_id;
-    int       nrank, rank, nhwthread, ngpu, i;
-    int       gpu_hash;
-    int      *buf, *all;
+    int  rank_id;
+    int  nrank, rank, nhwthread, ngpu, i;
+    int  gpu_hash;
+    int *buf, *all;
 
-    rank_id   = gmx_physicalnode_id_hash();
+    rank_id = gmx_physicalnode_id_hash();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nrank);
     nhwthread = hwinfo_g->nthreads_hw_avail;
     ngpu      = hwinfo_g->gpu_info.n_dev_compatible;
     /* Create a unique hash of the GPU type(s) in this node */
-    gpu_hash  = 0;
+    gpu_hash = 0;
     /* Here it might be better to only loop over the compatible GPU, but we
      * don't have that information available and it would also require
      * removing the device ID from the device info string.
@@ -810,16 +808,15 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
  *
  *  This routine will not throw exceptions.
  */
-static void
-spinUpCore() noexcept
+static void spinUpCore() noexcept
 {
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
     float dummy           = 0.1;
     int   countConfigured = sysconf(_SC_NPROCESSORS_CONF);    // noexcept
     auto  start           = std::chrono::steady_clock::now(); // noexcept
 
-    while (sysconf(_SC_NPROCESSORS_ONLN) < countConfigured &&
-           std::chrono::steady_clock::now() - start < std::chrono::seconds(2))
+    while (sysconf(_SC_NPROCESSORS_ONLN) < countConfigured
+           && std::chrono::steady_clock::now() - start < std::chrono::seconds(2))
     {
         for (int i = 1; i < 10000; i++)
         {
@@ -854,16 +851,15 @@ spinUpCore() noexcept
  * \note Cores will sleep relatively quickly again, so it's important to issue
  *       the real detection code directly after this routine.
  */
-static void
-hardwareTopologyPrepareDetection()
+static void hardwareTopologyPrepareDetection()
 {
-#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && \
-    (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF)    \
+    && (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
 
     // Modify this conditional when/if x86 or PowerPC starts to sleep some cores
     if (!isX86 && !isPowerPC)
     {
-        int                      countConfigured  = sysconf(_SC_NPROCESSORS_CONF);
+        int                      countConfigured = sysconf(_SC_NPROCESSORS_CONF);
         std::vector<std::thread> workThreads(countConfigured);
 
         for (auto &t : workThreads)
@@ -884,9 +880,8 @@ hardwareTopologyPrepareDetection()
  *  \param mdlog            Logger.
  *  \param hardwareTopology Reference to hardwareTopology object.
  */
-static void
-hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdlog,
-                                     const gmx::HardwareTopology gmx_unused &hardwareTopology)
+static void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused &        mdlog,
+                                                 const gmx::HardwareTopology gmx_unused &hardwareTopology)
 {
 #if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_CONF)
     if (hardwareTopology.supportLevel() < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
@@ -907,14 +902,14 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
         GMX_LOG(mdlog.info).
             appendTextFormatted("Note: %d CPUs configured, but only %d were detected to be online.\n", countConfigured, countFromDetection);
 
-        if (isX86 && countConfigured == 2*countFromDetection)
+        if (isX86 && countConfigured == 2 * countFromDetection)
         {
             GMX_LOG(mdlog.info).
                 appendText("      X86 Hyperthreading is likely disabled; enable it for better performance.");
         }
         // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
         // We only warn if it is completely disabled since default performance drops with SMT8.
-        if (isPowerPC && countConfigured == 8*countFromDetection)
+        if (isPowerPC && countConfigured == 8 * countFromDetection)
         {
             GMX_LOG(mdlog.info).
                 appendText("      PowerPC SMT is likely disabled; enable SMT2/SMT4 for better performance.");
@@ -941,10 +936,10 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
     {
         snew(hwinfo_g, 1);
 
-        hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
+        hwinfo_g->cpuInfo = new gmx::CpuInfo(gmx::CpuInfo::detect());
 
         hardwareTopologyPrepareDetection();
-        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
+        hwinfo_g->hardwareTopology = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
 
         // If we detected the topology on this system, double-check that it makes sense
         if (hwinfo_g->hardwareTopology->isThisSystem())
@@ -963,9 +958,9 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
         /* Run the detection if the binary was compiled with GPU support
          * and we requested detection.
          */
-        hwinfo_g->gpu_info.bDetectGPUs =
-            (bGPUBinary && bDetectGPUs &&
-             getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
+        hwinfo_g->gpu_info.bDetectGPUs
+            = (bGPUBinary && bDetectGPUs
+               && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
         if (hwinfo_g->gpu_info.bDetectGPUs)
         {
             gmx_detect_gpus(mdlog, cr);
@@ -988,9 +983,9 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
 static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                                             bool                 bFullCpuInfo)
 {
-    std::string                  s;
+    std::string s;
 
-    const gmx::CpuInfo          &cpuInfo = *hwinfo_g->cpuInfo;
+    const gmx::CpuInfo &         cpuInfo = *hwinfo_g->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
     s  = gmx::formatString("\n");
@@ -1200,8 +1195,8 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         }
     }
 
-    if (bGPUBinary && (hwinfo->ngpu_compatible_tot > 0 ||
-                       hwinfo->gpu_info.n_dev > 0))
+    if (bGPUBinary && (hwinfo->ngpu_compatible_tot > 0
+                       || hwinfo->gpu_info.n_dev > 0))
     {
         s += gmx::formatString("  GPU info:\n");
         s += gmx::formatString("    Number of GPUs detected: %d\n",

@@ -55,7 +55,7 @@
 #define BITMASK_SIZE GMX_OPENMP_MAX_THREADS
 #endif
 
-#if BITMASK_SIZE != 32 && BITMASK_SIZE%64 != 0
+#if BITMASK_SIZE != 32 && BITMASK_SIZE % 64 != 0
 #error BITMASK_SIZE has to be 32 or a multiple of 64.
 #endif
 
@@ -120,35 +120,35 @@ gmx_inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
     *a |= b;
 }
 #else
-#define BITMASK_ALEN (BITMASK_SIZE/64)
+#define BITMASK_ALEN (BITMASK_SIZE / 64)
 typedef gmx_uint64_t gmx_bitmask_t[BITMASK_ALEN];
 
 gmx_inline static void bitmask_clear(gmx_bitmask_t* m)
 {
-    memset(*m, 0, BITMASK_SIZE/8);
+    memset(*m, 0, BITMASK_SIZE / 8);
 }
 
 gmx_inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
-    (*m)[b/64] |= ((gmx_uint64_t)1 << (b%64));
+    (*m)[b / 64] |= ((gmx_uint64_t)1 << (b % 64));
 }
 
 gmx_inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
     bitmask_clear(m);
-    (*m)[b/64] = ((gmx_uint64_t)1 << (b%64));
+    (*m)[b / 64] = ((gmx_uint64_t)1 << (b % 64));
 }
 
 gmx_inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
-    memset(*m, 255, b/64*8);
-    (*m)[b/64] = ((gmx_uint64_t)1 << (b%64)) - 1;
-    memset(&(*m)[b/64+1], 0, (BITMASK_ALEN-b/64-1)*8);
+    memset(*m, 255, b / 64 * 8);
+    (*m)[b / 64] = ((gmx_uint64_t)1 << (b % 64)) - 1;
+    memset(&(*m)[b / 64 + 1], 0, (BITMASK_ALEN - b / 64 - 1) * 8);
 }
 
 gmx_inline static gmx_bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
-    return (m[b/64] & ((gmx_uint64_t)1 << (b%64))) != 0;
+    return (m[b / 64] & ((gmx_uint64_t)1 << (b % 64))) != 0;
 }
 
 gmx_inline static gmx_bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)

@@ -74,7 +74,7 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
 
     if (settings.name_ != nullptr)
     {
-        name_  = settings.name_;
+        name_ = settings.name_;
     }
     if (settings.descr_ != nullptr)
     {

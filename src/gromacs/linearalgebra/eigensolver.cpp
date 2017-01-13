@@ -46,22 +46,21 @@
 #include "gmx_arpack.h"
 #include "gmx_lapack.h"
 
-void
-eigensolver(real *   a,
-            int      n,
-            int      index_lower,
-            int      index_upper,
-            real *   eigenvalues,
-            real *   eigenvectors)
+void eigensolver(real * a,
+                 int    n,
+                 int    index_lower,
+                 int    index_upper,
+                 real * eigenvalues,
+                 real * eigenvectors)
 {
-    int       *   isuppz;
-    int           lwork, liwork;
-    int           m, iw0, info;
-    real          w0, abstol;
-    int       *   iwork;
-    real       *  work;
-    real          vl, vu;
-    const char *  jobz;
+    int *        isuppz;
+    int          lwork, liwork;
+    int          m, iw0, info;
+    real         w0, abstol;
+    int *        iwork;
+    real *       work;
+    real         vl, vu;
+    const char * jobz;
 
     if (index_lower < 0)
     {
@@ -70,7 +69,7 @@ eigensolver(real *   a,
 
     if (index_upper >= n)
     {
-        index_upper = n-1;
+        index_upper = n - 1;
     }
 
     /* Make jobz point to the character "V" if eigenvectors
@@ -79,7 +78,7 @@ eigensolver(real *   a,
     jobz = (eigenvectors != nullptr) ? "V" : "N";
 
     /* allocate lapack stuff */
-    snew(isuppz, 2*n);
+    snew(isuppz, 2 * n);
     vl = vu = 0;
 
     /* First time we ask the routine how much workspace it needs */
@@ -141,26 +140,25 @@ eigensolver(real *   a,
 
 
 #ifdef GMX_MPI_NOT
-void
-sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
-                            int                     neig,
-                            real *                  eigenvalues,
-                            real *                  eigenvectors,
-                            int                     maxiter)
+void sparse_parallel_eigensolver(gmx_sparsematrix_t * A,
+                                 int                  neig,
+                                 real *               eigenvalues,
+                                 real *               eigenvectors,
+                                 int                  maxiter)
 {
-    int      iwork[80];
-    int      iparam[11];
-    int      ipntr[11];
-    real *   resid;
-    real *   workd;
-    real *   workl;
-    real *   v;
-    int      n;
-    int      ido, info, lworkl, i, ncv, dovec;
-    real     abstol;
-    int *    select;
-    int      iter;
-    int      nnodes, rank;
+    int    iwork[80];
+    int    iparam[11];
+    int    ipntr[11];
+    real * resid;
+    real * workd;
+    real * workl;
+    real * v;
+    int    n;
+    int    ido, info, lworkl, i, ncv, dovec;
+    real   abstol;
+    int *  select;
+    int    iter;
+    int    nnodes, rank;
 
     MPI_Comm_size( MPI_COMM_WORLD, &nnodes );
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
@@ -175,7 +173,7 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
     }
 
     n   = A->nrow;
-    ncv = 2*neig;
+    ncv = 2 * neig;
 
     if (ncv > n)
     {
@@ -191,12 +189,12 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
     iparam[2] = maxiter; /* Max number of iterations */
     iparam[6] = 1;       /* Standard symmetric eigenproblem */
 
-    lworkl = ncv*(8+ncv);
+    lworkl = ncv * (8 + ncv);
     snew(resid, n);
-    snew(workd, (3*n+4));
+    snew(workd, (3 * n + 4));
     snew(workl, lworkl);
     snew(select, ncv);
-    snew(v, n*ncv);
+    snew(v, n * ncv);
 
     /* Use machine tolerance - roughly 1e-16 in double precision */
     abstol = 0;
@@ -218,13 +216,12 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
 #endif
         if (ido == -1 || ido == 1)
         {
-            gmx_sparsematrix_vector_multiply(A, workd+ipntr[0]-1, workd+ipntr[1]-1);
+            gmx_sparsematrix_vector_multiply(A, workd + ipntr[0] - 1, workd + ipntr[1] - 1);
         }
 
         fprintf(stderr, "\rIteration %4d: %3d out of %3d Ritz values converged.", iter++, iparam[4], neig);
         fflush(stderr);
-    }
-    while (info == 0 && (ido == -1 || ido == 1));
+    } while (info == 0 && (ido == -1 || ido == 1));
 
     fprintf(stderr, "\n");
     if (info == 1)
@@ -264,25 +261,24 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
 #endif
 
 
-void
-sparse_eigensolver(gmx_sparsematrix_t *    A,
-                   int                     neig,
-                   real *                  eigenvalues,
-                   real *                  eigenvectors,
-                   int                     maxiter)
+void sparse_eigensolver(gmx_sparsematrix_t * A,
+                        int                  neig,
+                        real *               eigenvalues,
+                        real *               eigenvectors,
+                        int                  maxiter)
 {
-    int      iwork[80];
-    int      iparam[11];
-    int      ipntr[11];
-    real *   resid;
-    real *   workd;
-    real *   workl;
-    real *   v;
-    int      n;
-    int      ido, info, lworkl, i, ncv, dovec;
-    real     abstol;
-    int *    select;
-    int      iter;
+    int    iwork[80];
+    int    iparam[11];
+    int    ipntr[11];
+    real * resid;
+    real * workd;
+    real * workl;
+    real * v;
+    int    n;
+    int    ido, info, lworkl, i, ncv, dovec;
+    real   abstol;
+    int *  select;
+    int    iter;
 
 #ifdef GMX_MPI_NOT
     MPI_Comm_size( MPI_COMM_WORLD, &n );
@@ -303,7 +299,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     }
 
     n   = A->nrow;
-    ncv = 2*neig;
+    ncv = 2 * neig;
 
     if (ncv > n)
     {
@@ -319,12 +315,12 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     iparam[2] = maxiter; /* Max number of iterations */
     iparam[6] = 1;       /* Standard symmetric eigenproblem */
 
-    lworkl = ncv*(8+ncv);
+    lworkl = ncv * (8 + ncv);
     snew(resid, n);
-    snew(workd, (3*n+4));
+    snew(workd, (3 * n + 4));
     snew(workl, lworkl);
     snew(select, ncv);
-    snew(v, n*ncv);
+    snew(v, n * ncv);
 
     /* Use machine tolerance - roughly 1e-16 in double precision */
     abstol = 0;
@@ -346,13 +342,12 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
 #endif
         if (ido == -1 || ido == 1)
         {
-            gmx_sparsematrix_vector_multiply(A, workd+ipntr[0]-1, workd+ipntr[1]-1);
+            gmx_sparsematrix_vector_multiply(A, workd + ipntr[0] - 1, workd + ipntr[1] - 1);
         }
 
         fprintf(stderr, "\rIteration %4d: %3d out of %3d Ritz values converged.", iter++, iparam[4], neig);
         fflush(stderr);
-    }
-    while (info == 0 && (ido == -1 || ido == 1));
+    } while (info == 0 && (ido == -1 || ido == 1));
 
     fprintf(stderr, "\n");
     if (info == 1)

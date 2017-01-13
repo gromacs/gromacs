@@ -115,24 +115,24 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         TopologyInformation         topInfo_;
 
         //! Name of the trajectory file (empty if not provided).
-        std::string                 trjfile_;
+        std::string trjfile_;
         //! Name of the topology file (empty if no topology provided).
-        std::string                 topfile_;
-        Selection                   trajectoryGroup_;
-        double                      startTime_;
-        double                      endTime_;
-        double                      deltaTime_;
-        bool                        bStartTimeSet_;
-        bool                        bEndTimeSet_;
-        bool                        bDeltaTimeSet_;
+        std::string topfile_;
+        Selection   trajectoryGroup_;
+        double      startTime_;
+        double      endTime_;
+        double      deltaTime_;
+        bool        bStartTimeSet_;
+        bool        bEndTimeSet_;
+        bool        bDeltaTimeSet_;
 
-        bool                        bTrajOpen_;
+        bool bTrajOpen_;
         //! The current frame, or \p NULL if no frame loaded yet.
-        t_trxframe                 *fr;
-        gmx_rmpbc_t                 gpbc_;
+        t_trxframe *fr;
+        gmx_rmpbc_t gpbc_;
         //! Used to store the status variable from read_first_frame().
-        t_trxstatus                *status_;
-        gmx_output_env_t           *oenv_;
+        t_trxstatus *     status_;
+        gmx_output_env_t *oenv_;
 };
 
 
@@ -163,8 +163,7 @@ TrajectoryAnalysisRunnerCommon::Impl::~Impl()
     }
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
+void TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
 {
     // Return immediately if the topology has already been loaded.
     if (topInfo_.hasTopology())
@@ -204,8 +203,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     }
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
+void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
 {
     // Return if we have already initialized the trajectory.
     if (fr != nullptr)
@@ -258,7 +256,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         snew(fr->x, fr->natoms);
         memcpy(fr->x, topInfo_.xtop_,
                sizeof(*fr->x) * fr->natoms);
-        fr->bBox   = TRUE;
+        fr->bBox = TRUE;
         copy_mat(topInfo_.boxtop_, fr->box);
     }
 
@@ -270,8 +268,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     }
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
+void TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
 {
     if (!trajectoryGroup_.isValid())
     {
@@ -294,8 +291,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
               fr->index);
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
+void TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
 {
     if (bTrajOpen_)
     {
@@ -325,16 +321,14 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 }
 
 
-ITopologyProvider *
-TrajectoryAnalysisRunnerCommon::topologyProvider()
+ITopologyProvider *TrajectoryAnalysisRunnerCommon::topologyProvider()
 {
     return impl_.get();
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
-                                            TimeUnitBehavior  *timeUnitBehavior)
+void TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
+                                                 TimeUnitBehavior * timeUnitBehavior)
 {
     TrajectoryAnalysisSettings &settings = impl_->settings_;
 
@@ -392,8 +386,7 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::optionsFinished()
+void TrajectoryAnalysisRunnerCommon::optionsFinished()
 {
     if (impl_->trjfile_.empty() && impl_->topfile_.empty())
     {
@@ -422,31 +415,27 @@ TrajectoryAnalysisRunnerCommon::optionsFinished()
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initTopology()
+void TrajectoryAnalysisRunnerCommon::initTopology()
 {
-    const bool topologyRequired =
-        impl_->settings_.hasFlag(TrajectoryAnalysisSettings::efRequireTop);
+    const bool topologyRequired
+        = impl_->settings_.hasFlag(TrajectoryAnalysisSettings::efRequireTop);
     impl_->initTopology(topologyRequired);
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initFirstFrame()
+void TrajectoryAnalysisRunnerCommon::initFirstFrame()
 {
     impl_->initFirstFrame();
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initFrameIndexGroup()
+void TrajectoryAnalysisRunnerCommon::initFrameIndexGroup()
 {
     impl_->initFrameIndexGroup();
 }
 
 
-bool
-TrajectoryAnalysisRunnerCommon::readNextFrame()
+bool TrajectoryAnalysisRunnerCommon::readNextFrame()
 {
     bool bContinue = false;
     if (hasTrajectory())
@@ -461,8 +450,7 @@ TrajectoryAnalysisRunnerCommon::readNextFrame()
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initFrame()
+void TrajectoryAnalysisRunnerCommon::initFrame()
 {
     if (impl_->gpbc_ != nullptr)
     {
@@ -471,22 +459,19 @@ TrajectoryAnalysisRunnerCommon::initFrame()
 }
 
 
-bool
-TrajectoryAnalysisRunnerCommon::hasTrajectory() const
+bool TrajectoryAnalysisRunnerCommon::hasTrajectory() const
 {
     return impl_->hasTrajectory();
 }
 
 
-const TopologyInformation &
-TrajectoryAnalysisRunnerCommon::topologyInformation() const
+const TopologyInformation &TrajectoryAnalysisRunnerCommon::topologyInformation() const
 {
     return impl_->topInfo_;
 }
 
 
-t_trxframe &
-TrajectoryAnalysisRunnerCommon::frame() const
+t_trxframe &TrajectoryAnalysisRunnerCommon::frame() const
 {
     GMX_RELEASE_ASSERT(impl_->fr != nullptr, "Frame not available when accessed");
     return *impl_->fr;

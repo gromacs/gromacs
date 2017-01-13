@@ -64,40 +64,41 @@ typedef struct t_mde_delta_h_coll t_mde_delta_h_coll;
 
 /* This is the collection of energy averages collected during mdrun, and to
    be written out to the .edr file. */
-typedef struct t_mdebin {
-    double              delta_t;
-    t_ebin             *ebin;
-    int                 ie, iconrmsd, ib, ivol, idens, ipv, ienthalpy;
-    int                 isvir, ifvir, ipres, ivir, isurft, ipc, itemp, itc, itcb, iu, imu;
-    int                 ivcos, ivisc;
-    int                 nE, nEg, nEc, nTC, nTCP, nU, nNHC;
-    int                *igrp;
-    char              **grpnms;
-    int                 mde_n, mdeb_n;
-    real               *tmp_r;
-    rvec               *tmp_v;
-    gmx_bool            bConstr;
-    gmx_bool            bConstrVir;
-    gmx_bool            bTricl;
-    gmx_bool            bDynBox;
-    gmx_bool            bNHC_trotter;
-    gmx_bool            bPrintNHChains;
-    gmx_bool            bMTTK;
-    gmx_bool            bMu; /* true if dipole is calculated */
-    gmx_bool            bDiagPres;
-    int                 f_nre;
-    int                 epc;
-    real                ref_p;
-    int                 etc;
-    int                 nCrmsd;
-    gmx_bool            bEner[F_NRE];
-    gmx_bool            bEInd[egNR];
-    char              **print_grpnms;
+typedef struct t_mdebin
+{
+    double   delta_t;
+    t_ebin * ebin;
+    int      ie, iconrmsd, ib, ivol, idens, ipv, ienthalpy;
+    int      isvir, ifvir, ipres, ivir, isurft, ipc, itemp, itc, itcb, iu, imu;
+    int      ivcos, ivisc;
+    int      nE, nEg, nEc, nTC, nTCP, nU, nNHC;
+    int *    igrp;
+    char **  grpnms;
+    int      mde_n, mdeb_n;
+    real *   tmp_r;
+    rvec *   tmp_v;
+    gmx_bool bConstr;
+    gmx_bool bConstrVir;
+    gmx_bool bTricl;
+    gmx_bool bDynBox;
+    gmx_bool bNHC_trotter;
+    gmx_bool bPrintNHChains;
+    gmx_bool bMTTK;
+    gmx_bool bMu;            /* true if dipole is calculated */
+    gmx_bool bDiagPres;
+    int      f_nre;
+    int      epc;
+    real     ref_p;
+    int      etc;
+    int      nCrmsd;
+    gmx_bool bEner[F_NRE];
+    gmx_bool bEInd[egNR];
+    char **  print_grpnms;
 
-    FILE               *fp_dhdl; /* the dhdl.xvg output file */
-    double             *dE;      /* energy components for dhdl.xvg output */
+    FILE *              fp_dhdl; /* the dhdl.xvg output file */
+    double *            dE;      /* energy components for dhdl.xvg output */
     t_mde_delta_h_coll *dhc;     /* the delta U components (raw data + histogram) */
-    real               *temperatures;
+    real *              temperatures;
 } t_mdebin;
 
 
@@ -117,7 +118,7 @@ enum
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
-                      FILE             *fp_dhdl);
+                      FILE *            fp_dhdl);
 /* Initiate MD energy bin and write header to energy file. */
 
 FILE *open_dhdl(const char *filename, const t_inputrec *ir,
@@ -126,23 +127,23 @@ FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
 /* update the averaging structures. Called every time
    the energies are evaluated. */
-void upd_mdebin(t_mdebin                 *md,
-                gmx_bool                  bDoDHDL,
-                gmx_bool                  bSum,
-                double                    time,
-                real                      tmass,
-                gmx_enerdata_t           *enerd,
-                t_state                  *state,
-                t_lambda                 *fep,
-                t_expanded               *expand,
-                matrix                    lastbox,
-                tensor                    svir,
-                tensor                    fvir,
-                tensor                    vir,
-                tensor                    pres,
-                gmx_ekindata_t           *ekind,
-                rvec                      mu_tot,
-                gmx_constr               *constr);
+void upd_mdebin(t_mdebin *      md,
+                gmx_bool        bDoDHDL,
+                gmx_bool        bSum,
+                double          time,
+                real            tmass,
+                gmx_enerdata_t *enerd,
+                t_state *       state,
+                t_lambda *      fep,
+                t_expanded *    expand,
+                matrix          lastbox,
+                tensor          svir,
+                tensor          fvir,
+                tensor          vir,
+                tensor          pres,
+                gmx_ekindata_t *ekind,
+                rvec            mu_tot,
+                gmx_constr *    constr);
 
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
@@ -167,7 +168,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin);
 
 /* Read the energyhistory_t data to a mdebin structure*/
-void restore_energyhistory_from_state(t_mdebin        * mdebin,
+void restore_energyhistory_from_state(t_mdebin *        mdebin,
                                       energyhistory_t * enerhist);
 
 #endif

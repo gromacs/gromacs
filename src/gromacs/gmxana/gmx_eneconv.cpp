@@ -67,7 +67,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
 {
     gmx_bool *bE;
     int       n, k, j, i;
-    int      *set;
+    int *     set;
     gmx_bool  bVerbose = TRUE;
 
     if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
@@ -84,7 +84,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
         {
             for (j = 0; (j < 4) && (k < nre); j++, k++)
             {
-                fprintf(stderr, " %3d=%14s", k+1, nm[k].name);
+                fprintf(stderr, " %3d=%14s", k + 1, nm[k].name);
             }
             fprintf(stderr, "\n");
         }
@@ -99,10 +99,9 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
         }
         if ((n > 0) && (n <= nre))
         {
-            bE[n-1] = TRUE;
+            bE[n - 1] = TRUE;
         }
-    }
-    while (n != 0);
+    } while (n != 0);
 
     snew(set, nre);
     for (i = (*nset) = 0; (i < nre); i++)
@@ -127,7 +126,7 @@ static void sort_files(char **fnms, real *settime, int nfile)
     for (i = 0; i < nfile; i++)
     {
         minidx = i;
-        for (j = i+1; j < nfile; j++)
+        for (j = i + 1; j < nfile; j++)
         {
             if (settime[j] < settime[minidx])
             {
@@ -156,7 +155,7 @@ static int scan_ene_files(char **fnms, int nfiles,
     real         t1, t2;
     char         inputstring[STRLEN];
     gmx_enxnm_t *enm;
-    t_enxframe  *fr;
+    t_enxframe * fr;
 
     snew(fr, 1);
 
@@ -175,7 +174,7 @@ static int scan_ene_files(char **fnms, int nfiles,
             t1 = fr->t;
             do_enx(in, fr);
             t2          = fr->t;
-            *timestep   = t2-t1;
+            *timestep   = t2 - t1;
             readtime[f] = t1;
             close_enx(in);
         }
@@ -187,11 +186,11 @@ static int scan_ene_files(char **fnms, int nfiles,
             {
                 fprintf(stderr,
                         "Energy files don't match, different number of energies:\n"
-                        " %s: %d\n %s: %d\n", fnms[f-1], nresav, fnms[f], fr->nre);
+                        " %s: %d\n %s: %d\n", fnms[f - 1], nresav, fnms[f], fr->nre);
                 fprintf(stderr,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
                         "(you should be sure that the energy terms match)\n", nremin);
-                if (nullptr == fgets(inputstring, STRLEN-1, stdin))
+                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
@@ -252,11 +251,11 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
             ok = FALSE;
             do
             {
-                if (nullptr == fgets(inputstring, STRLEN-1, stdin))
+                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
-                inputstring[std::strlen(inputstring)-1] = 0;
+                inputstring[std::strlen(inputstring) - 1] = 0;
 
                 if (inputstring[0] == 'c' || inputstring[0] == 'C')
                 {
@@ -265,8 +264,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
                     ok           = TRUE;
                     settime[i]   = FLT_MAX;
                 }
-                else if (inputstring[0] == 'l' ||
-                         inputstring[0] == 'L')
+                else if (inputstring[0] == 'l'
+                         || inputstring[0] == 'L')
                 {
                     cont_type[i] = TIME_LAST;
                     bSort        = FALSE;
@@ -286,8 +285,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
                         ok           = TRUE;
                     }
                 }
-            }
-            while (!ok);
+            } while (!ok);
         }
         if (cont_type[0] != TIME_EXPLICIT)
         {
@@ -347,8 +345,8 @@ static void update_ee_sum(int nre,
                           t_energy *ee_sum,
                           t_enxframe *fr, int out_step)
 {
-    gmx_int64_t     nsteps, nsum, fr_nsum;
-    int             i;
+    gmx_int64_t nsteps, nsum, fr_nsum;
+    int         i;
 
     nsteps = *ee_sum_nsteps;
     nsum   = *ee_sum_nsum;
@@ -386,9 +384,9 @@ static void update_ee_sum(int nre,
         {
             for (i = 0; i < nre; i++)
             {
-                ee_sum[i].eav  +=
-                    gmx::square(ee_sum[i].esum/nsum
-                                - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
+                ee_sum[i].eav
+                    += gmx::square(ee_sum[i].esum / nsum
+                                   - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1)) * nsum * (nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
         }
@@ -396,11 +394,11 @@ static void update_ee_sum(int nre,
         {
             for (i = 0; i < fr->nre; i++)
             {
-                ee_sum[i].eav  +=
-                    fr->ener[i].eav +
-                    gmx::square(ee_sum[i].esum/nsum
-                                - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
-                    nsum*(nsum + fr->nsum)/static_cast<double>(fr->nsum);
+                ee_sum[i].eav
+                    += fr->ener[i].eav
+                        + gmx::square(ee_sum[i].esum / nsum
+                                      - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
+                        * nsum * (nsum + fr->nsum) / static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
             }
         }
@@ -424,7 +422,7 @@ static void update_ee_sum(int nre,
 
 int gmx_eneconv(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char * desc[] = {
         "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[PAR]",
         "Concatenates several energy files in sorted order.",
         "In the case of double time frames, the one",
@@ -441,48 +439,48 @@ int gmx_eneconv(int argc, char *argv[])
         "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
         "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
     };
-    const char       *bugs[] = {
+    const char * bugs[] = {
         "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
     };
-    ener_file_t       in  = nullptr, out = nullptr;
-    gmx_enxnm_t      *enm = nullptr;
+    ener_file_t  in  = nullptr, out = nullptr;
+    gmx_enxnm_t *enm = nullptr;
 #if 0
-    ener_file_t       in, out = NULL;
-    gmx_enxnm_t      *enm = NULL;
+    ener_file_t  in, out = NULL;
+    gmx_enxnm_t *enm = NULL;
 #endif
-    t_enxframe       *fr, *fro;
+    t_enxframe *      fr, *fro;
     gmx_int64_t       ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
-    t_energy         *ee_sum;
+    t_energy *        ee_sum;
     gmx_int64_t       lastfilestep, laststep, startstep_file = 0;
     int               noutfr;
     int               nre, nremax, this_nre, nfile, f, i, kkk, nset, *set = nullptr;
     double            last_t;
-    char            **fnms;
-    real             *readtime, *settime, timestep, tadjust;
+    char **           fnms;
+    real *            readtime, *settime, timestep, tadjust;
     char              buf[22], buf2[22];
-    int              *cont_type;
+    int *             cont_type;
     gmx_bool          bNewFile, bFirst, bNewOutput;
     gmx_output_env_t *oenv;
     gmx_bool          warned_about_dh = FALSE;
-    t_enxblock       *blocks          = nullptr;
+    t_enxblock *      blocks          = nullptr;
     int               nblocks         = 0;
     int               nblocks_alloc   = 0;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efEDR, "-f", nullptr,    ffRDMULT },
         { efEDR, "-o", "fixed", ffWRITE  },
     };
 
 #define NFILE asize(fnm)
-    gmx_bool         bWrite;
-    static real      delta_t   = 0.0, toffset = 0, scalefac = 1;
-    static gmx_bool  bSetTime  = FALSE;
-    static gmx_bool  bSort     = TRUE, bError = TRUE;
-    static real      begin     = -1;
-    static real      end       = -1;
-    gmx_bool         remove_dh = FALSE;
+    gmx_bool        bWrite;
+    static real     delta_t   = 0.0, toffset = 0, scalefac = 1;
+    static gmx_bool bSetTime  = FALSE;
+    static gmx_bool bSort     = TRUE, bError = TRUE;
+    static real     begin     = -1;
+    static real     end       = -1;
+    gmx_bool        remove_dh = FALSE;
 
-    t_pargs          pa[] = {
+    t_pargs pa[] = {
         { "-b",        FALSE, etREAL, {&begin},
           "First time to use"},
         { "-e",        FALSE, etREAL, {&end},
@@ -523,9 +521,9 @@ int gmx_eneconv(int argc, char *argv[])
         gmx_fatal(FARGS, "No input files!");
     }
 
-    snew(settime, nfile+1);
-    snew(readtime, nfile+1);
-    snew(cont_type, nfile+1);
+    snew(settime, nfile + 1);
+    snew(readtime, nfile + 1);
+    snew(cont_type, nfile + 1);
 
     nre = scan_ene_files(fnms, nfile, readtime, &timestep, &nremax);
     edit_files(fnms, nfile, readtime, settime, cont_type, bSetTime, bSort);
@@ -564,17 +562,17 @@ int gmx_eneconv(int argc, char *argv[])
         }
 
         /* start reading from the next file */
-        while ((fro->t <= (settime[f+1] + GMX_REAL_EPS)) &&
-               do_enx(in, fr))
+        while ((fro->t <= (settime[f + 1] + GMX_REAL_EPS))
+               && do_enx(in, fr))
         {
             if (bNewFile)
             {
                 startstep_file = fr->step;
                 tadjust        = settime[f] - fr->t;
-                if (cont_type[f+1] == TIME_LAST)
+                if (cont_type[f + 1] == TIME_LAST)
                 {
-                    settime[f+1]   = readtime[f+1]-readtime[f]+settime[f];
-                    cont_type[f+1] = TIME_EXPLICIT;
+                    settime[f + 1]   = readtime[f + 1] - readtime[f] + settime[f];
+                    cont_type[f + 1] = TIME_EXPLICIT;
                 }
                 bNewFile = FALSE;
             }
@@ -595,9 +593,9 @@ int gmx_eneconv(int argc, char *argv[])
             fro->step = lastfilestep + fr->step - startstep_file;
             fro->t    = tadjust  + fr->t;
 
-            bWrite = ((begin < 0 || (fro->t >= begin-GMX_REAL_EPS)) &&
-                      (end  < 0  || (fro->t <= end  +GMX_REAL_EPS)) &&
-                      (fro->t <= settime[f+1]+0.5*timestep));
+            bWrite = ((begin < 0 || (fro->t >= begin - GMX_REAL_EPS))
+                      && (end  < 0  || (fro->t <= end  + GMX_REAL_EPS))
+                      && (fro->t <= settime[f + 1] + 0.5 * timestep));
 
             if (debug)
             {
@@ -609,18 +607,18 @@ int gmx_eneconv(int argc, char *argv[])
 
             if (bError)
             {
-                if ((end > 0) && (fro->t > end+GMX_REAL_EPS))
+                if ((end > 0) && (fro->t > end + GMX_REAL_EPS))
                 {
                     f = nfile;
                     break;
                 }
             }
 
-            if (fro->t >= begin-GMX_REAL_EPS)
+            if (fro->t >= begin - GMX_REAL_EPS)
             {
                 if (bFirst)
                 {
-                    bFirst    = FALSE;
+                    bFirst = FALSE;
                 }
                 if (bWrite)
                 {
@@ -673,10 +671,10 @@ int gmx_eneconv(int argc, char *argv[])
                 {
                     for (kkk = 0; kkk < nset; kkk++)
                     {
-                        fro->ener[set[kkk]].e    *= scalefac;
+                        fro->ener[set[kkk]].e *= scalefac;
                         if (fro->nsum > 0)
                         {
-                            fro->ener[set[kkk]].eav  *= scalefac*scalefac;
+                            fro->ener[set[kkk]].eav  *= scalefac * scalefac;
                             fro->ener[set[kkk]].esum *= scalefac;
                         }
                     }
@@ -685,9 +683,9 @@ int gmx_eneconv(int argc, char *argv[])
                 /*fro->ndisre       = fr->ndisre;
                    fro->disre_rm3tav = fr->disre_rm3tav;
                    fro->disre_rt     = fr->disre_rt;*/
-                fro->nblock       = fr->nblock;
+                fro->nblock = fr->nblock;
                 /*fro->nr           = fr->nr;*/
-                fro->block        = fr->block;
+                fro->block = fr->block;
 
                 /* check if we have blocks with delta_h data and are throwing
                    away data */
@@ -706,9 +704,9 @@ int gmx_eneconv(int argc, char *argv[])
 
                         for (i = 0; i < fr->nblock; i++)
                         {
-                            if ( (fr->block[i].id != enxDHCOLL) &&
-                                 (fr->block[i].id != enxDH) &&
-                                 (fr->block[i].id != enxDHHIST) )
+                            if ( (fr->block[i].id != enxDHCOLL)
+                                 && (fr->block[i].id != enxDH)
+                                 && (fr->block[i].id != enxDHHIST) )
                             {
                                 /* copy everything verbatim */
                                 blocks[nblocks] = fr->block[i];
@@ -725,8 +723,8 @@ int gmx_eneconv(int argc, char *argv[])
                         {
                             for (i = 0; i < fr->nblock; i++)
                             {
-                                if (fr->block[i].id == enxDH ||
-                                    fr->block[i].id == enxDHHIST)
+                                if (fr->block[i].id == enxDH
+                                    || fr->block[i].id == enxDHHIST)
                                 {
                                     int size;
                                     if (fr->block[i].id == enxDH)
@@ -772,19 +770,19 @@ int gmx_eneconv(int argc, char *argv[])
         lastfilestep = laststep;
 
         /* set the next time from the last in previous file */
-        if (cont_type[f+1] == TIME_CONTINUE)
+        if (cont_type[f + 1] == TIME_CONTINUE)
         {
-            settime[f+1] = fro->t;
+            settime[f + 1] = fro->t;
             /* in this case we have already written the last frame of
              * previous file, so update begin to avoid doubling it
              * with the start of the next file
              */
-            begin = fro->t+0.5*timestep;
+            begin = fro->t + 0.5 * timestep;
             /* cont_type[f+1]==TIME_EXPLICIT; */
         }
 
-        if ((fro->t < end) && (f < nfile-1) &&
-            (fro->t < settime[f+1]-1.5*timestep))
+        if ((fro->t < end) && (f < nfile - 1)
+            && (fro->t < settime[f + 1] - 1.5 * timestep))
         {
             fprintf(stderr,
                     "\nWARNING: There might be a gap around t=%g\n", fro->t);

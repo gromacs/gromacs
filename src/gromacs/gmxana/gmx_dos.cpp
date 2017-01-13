@@ -62,16 +62,17 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-enum {
+enum
+{
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
 };
 
 static int calcMoleculesInIndexGroup(const t_block *mols, int natoms, const int *index, int nindex)
 {
-    int   i    = 0;
-    int   mol  = 0;
-    int   nMol = 0;
-    int   j;
+    int i    = 0;
+    int mol  = 0;
+    int nMol = 0;
+    int j;
 
     while (i < nindex)
     {
@@ -80,10 +81,10 @@ static int calcMoleculesInIndexGroup(const t_block *mols, int natoms, const int 
             mol++;
             if (mol >= mols->nr)
             {
-                gmx_fatal(FARGS, "Atom index out of range: %d", index[i]+1);
+                gmx_fatal(FARGS, "Atom index out of range: %d", index[i] + 1);
             }
         }
-        for (j = mols->index[mol]; j < mols->index[mol+1]; j++)
+        for (j = mols->index[mol]; j < mols->index[mol + 1]; j++)
         {
             if (index[i] != j)
             {
@@ -102,17 +103,17 @@ static int calcMoleculesInIndexGroup(const t_block *mols, int natoms, const int 
 
 static double FD(double Delta, double f)
 {
-    return (2*std::pow(Delta, -4.5)*std::pow(f, 7.5) -
-            6*std::pow(Delta, -3.0)*std::pow(f, 5.0) -
-            std::pow(Delta, -1.5)*std::pow(f, 3.5) +
-            6*std::pow(Delta, -1.5)*std::pow(f, 2.5) +
-            2*f - 2);
+    return (2 * std::pow(Delta, -4.5) * std::pow(f, 7.5)
+            - 6 * std::pow(Delta, -3.0) * std::pow(f, 5.0)
+            - std::pow(Delta, -1.5) * std::pow(f, 3.5)
+            + 6 * std::pow(Delta, -1.5) * std::pow(f, 2.5)
+            + 2 * f - 2);
 }
 
 static double YYY(double f, double y)
 {
-    return (2*gmx::power3(y*f) - gmx::square(f)*y*(1+6*y) +
-            (2+6*y)*f - 2);
+    return (2 * gmx::power3(y * f) - gmx::square(f) * y * (1 + 6 * y)
+            + (2 + 6 * y) * f - 2);
 }
 
 static double calc_compress(double y)
@@ -121,7 +122,7 @@ static double calc_compress(double y)
     {
         return 0;
     }
-    return ((1+y+gmx::square(y)-gmx::power3(y))/(gmx::power3(1-y)));
+    return ((1 + y + gmx::square(y) - gmx::power3(y)) / (gmx::power3(1 - y)));
 }
 
 static double bisector(double Delta, double tol,
@@ -141,8 +142,8 @@ static double bisector(double Delta, double tol,
 
     do
     {
-        f   = (f0+f1)*0.5;
-        fd  = ff(Delta, f);
+        f  = (f0 + f1) * 0.5;
+        fd = ff(Delta, f);
         if (fd < 0)
         {
             f0 = f;
@@ -155,8 +156,7 @@ static double bisector(double Delta, double tol,
         {
             return f;
         }
-    }
-    while ((f1-f0) > tol);
+    } while ((f1 - f0) > tol);
 
     return f;
 }
@@ -170,9 +170,9 @@ static double calc_y(double f, double Delta, double toler)
 {
     double y1, y2;
 
-    y1 = std::pow(f/Delta, 1.5);
+    y1 = std::pow(f / Delta, 1.5);
     y2 = bisector(f, toler, 0, 10000, YYY);
-    if (std::abs((y1-y2)/(y1+y2)) > 100*toler)
+    if (std::abs((y1 - y2) / (y1 + y2)) > 100 * toler)
     {
         fprintf(stderr, "Inconsistency computing y: y1 = %f, y2 = %f, using y1.\n",
                 y1, y2);
@@ -183,14 +183,14 @@ static double calc_y(double f, double Delta, double toler)
 
 static double calc_Shs(double f, double y)
 {
-    double fy  = f*y;
+    double fy = f * y;
 
-    return BOLTZ*(std::log(calc_compress(fy)) + fy*(3*fy-4)/gmx::square(1-fy));
+    return BOLTZ * (std::log(calc_compress(fy)) + fy * (3 * fy - 4) / gmx::square(1 - fy));
 }
 
 static real wCsolid(real nu, real beta)
 {
-    real bhn = beta*PLANCK*nu;
+    real bhn = beta * PLANCK * nu;
     real ebn, koko;
 
     if (bhn == 0)
@@ -200,14 +200,14 @@ static real wCsolid(real nu, real beta)
     else
     {
         ebn  = std::exp(bhn);
-        koko = gmx::square(1-ebn);
-        return gmx::square(bhn)*ebn/koko;
+        koko = gmx::square(1 - ebn);
+        return gmx::square(bhn) * ebn / koko;
     }
 }
 
 static real wSsolid(real nu, real beta)
 {
-    real bhn = beta*PLANCK*nu;
+    real bhn = beta * PLANCK * nu;
 
     if (bhn == 0)
     {
@@ -215,13 +215,13 @@ static real wSsolid(real nu, real beta)
     }
     else
     {
-        return bhn/std::expm1(bhn) - std::log1p(-std::exp(-bhn));
+        return bhn / std::expm1(bhn) - std::log1p(-std::exp(-bhn));
     }
 }
 
 static real wAsolid(real nu, real beta)
 {
-    real bhn = beta*PLANCK*nu;
+    real bhn = beta * PLANCK * nu;
 
     if (bhn == 0)
     {
@@ -229,13 +229,13 @@ static real wAsolid(real nu, real beta)
     }
     else
     {
-        return std::log((1-std::exp(-bhn))/(std::exp(-bhn/2))) - std::log(bhn);
+        return std::log((1 - std::exp(-bhn)) / (std::exp(-bhn / 2))) - std::log(bhn);
     }
 }
 
 static real wEsolid(real nu, real beta)
 {
-    real bhn = beta*PLANCK*nu;
+    real bhn = beta * PLANCK * nu;
 
     if (bhn == 0)
     {
@@ -243,13 +243,13 @@ static real wEsolid(real nu, real beta)
     }
     else
     {
-        return bhn/2 + bhn/std::expm1(bhn)-1;
+        return bhn / 2 + bhn / std::expm1(bhn) - 1;
     }
 }
 
 int gmx_dos(int argc, char *argv[])
 {
-    const char         *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] computes the Density of States from a simulations.",
         "In order for this to be meaningful the velocities must be saved",
         "in the trajecotry with sufficiently high frequency such as to cover",
@@ -262,36 +262,36 @@ int gmx_dos(int argc, char *argv[])
         "substantially from the plain vibrational power spectrum you can",
         "calculate with gmx velacc."
     };
-    const char         *bugs[] = {
+    const char *      bugs[] = {
         "This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision)."
     };
-    FILE               *fp, *fplog;
-    t_topology          top;
-    int                 ePBC = -1;
-    t_trxframe          fr;
-    matrix              box;
-    int                 gnx;
-    real                t0, t1;
-    t_trxstatus        *status;
-    int                 nV, nframes, n_alloc, i, j, fftcode, Nmol, Natom;
-    double              rho, dt, Vsum, V, tmass, dostot, dos2;
-    real              **c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
-    gmx_output_env_t   *oenv;
-    gmx_fft_t           fft;
-    double              cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
-    double              wCdiff, wSdiff, wAdiff, wEdiff;
-    int                 grpNatoms;
-    int                *index;
-    char               *grpname;
-    double              invNormalize;
-    gmx_bool            normalizeAutocorrelation;
+    FILE *            fp, *fplog;
+    t_topology        top;
+    int               ePBC = -1;
+    t_trxframe        fr;
+    matrix            box;
+    int               gnx;
+    real              t0, t1;
+    t_trxstatus *     status;
+    int               nV, nframes, n_alloc, i, j, fftcode, Nmol, Natom;
+    double            rho, dt, Vsum, V, tmass, dostot, dos2;
+    real **           c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
+    gmx_output_env_t *oenv;
+    gmx_fft_t         fft;
+    double            cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
+    double            wCdiff, wSdiff, wAdiff, wEdiff;
+    int               grpNatoms;
+    int *             index;
+    char *            grpname;
+    double            invNormalize;
+    gmx_bool          normalizeAutocorrelation;
 
     static     gmx_bool bVerbose   = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
     static     gmx_bool bRecip     = FALSE;
     static     real     Temp       = 298.15, toler = 1e-6;
     int                 min_frames = 100;
 
-    t_pargs             pa[]     = {
+    t_pargs pa[] = {
         { "-v", FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy." },
         { "-recip", FALSE, etBOOL, {&bRecip},
@@ -306,7 +306,7 @@ int gmx_dos(int argc, char *argv[])
           "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" }
     };
 
-    t_filenm            fnm[] = {
+    t_filenm fnm[] = {
         { efTRN, "-f",    nullptr,    ffREAD  },
         { efTPR, "-s",    nullptr,    ffREAD  },
         { efNDX, nullptr,    nullptr,    ffOPTRD },
@@ -316,9 +316,9 @@ int gmx_dos(int argc, char *argv[])
         { efLOG, "-g",    "dos",   ffWRITE },
     };
 #define NFILE asize(fnm)
-    int                 npargs;
-    t_pargs            *ppa;
-    const char         *DoSlegend[] = {
+    int         npargs;
+    t_pargs *   ppa;
+    const char *DoSlegend[] = {
         "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]"
     };
 
@@ -332,7 +332,7 @@ int gmx_dos(int argc, char *argv[])
         return 0;
     }
 
-    beta = 1/(Temp*BOLTZ);
+    beta = 1 / (Temp * BOLTZ);
 
     fplog = gmx_fio_fopen(ftp2fn(efLOG, NFILE, fnm), "w");
     fprintf(fplog, "Doing density of states analysis based on trajectory.\n");
@@ -353,7 +353,7 @@ int gmx_dos(int argc, char *argv[])
 
     Natom = grpNatoms;
     Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.nr, index, grpNatoms);
-    gnx   = Natom*DIM;
+    gnx   = Natom * DIM;
 
     /* Correlation stuff */
     snew(c1, gnx);
@@ -373,8 +373,8 @@ int gmx_dos(int argc, char *argv[])
     {
         if (fr.bBox)
         {
-            V      = det(fr.box);
-            Vsum  += V;
+            V     = det(fr.box);
+            Vsum += V;
             nV++;
         }
         if (nframes >= n_alloc)
@@ -387,16 +387,15 @@ int gmx_dos(int argc, char *argv[])
         }
         for (i = 0; i < gnx; i += DIM)
         {
-            c1[i+XX][nframes] = fr.v[index[i/DIM]][XX];
-            c1[i+YY][nframes] = fr.v[index[i/DIM]][YY];
-            c1[i+ZZ][nframes] = fr.v[index[i/DIM]][ZZ];
+            c1[i + XX][nframes] = fr.v[index[i / DIM]][XX];
+            c1[i + YY][nframes] = fr.v[index[i / DIM]][YY];
+            c1[i + ZZ][nframes] = fr.v[index[i / DIM]][ZZ];
         }
 
         t1 = fr.time;
 
         nframes++;
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
 
     close_trj(status);
 
@@ -404,10 +403,10 @@ int gmx_dos(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "You need at least %d frames in the trajectory and you only have %d.", min_frames, nframes);
     }
-    dt = (t1-t0)/(nframes-1);
+    dt = (t1 - t0) / (nframes - 1);
     if (nV > 0)
     {
-        V = Vsum/nV;
+        V = Vsum / nV;
     }
     if (bVerbose)
     {
@@ -434,7 +433,7 @@ int gmx_dos(int argc, char *argv[])
     snew(dos, DOS_NR);
     for (j = 0; (j < DOS_NR); j++)
     {
-        snew(dos[j], nframes+4);
+        snew(dos[j], nframes + 4);
     }
 
     if (bVerbose)
@@ -443,24 +442,24 @@ int gmx_dos(int argc, char *argv[])
     }
     for (i = 0; (i < gnx); i += DIM)
     {
-        mi = top.atoms.atom[index[i/DIM]].m;
-        for (j = 0; (j < nframes/2); j++)
+        mi = top.atoms.atom[index[i / DIM]].m;
+        for (j = 0; (j < nframes / 2); j++)
         {
-            c1j            = (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);
-            dos[VACF][j]  += c1j/Natom;
-            dos[MVACF][j] += mi*c1j;
+            c1j            = (c1[i + XX][j] + c1[i + YY][j] + c1[i + ZZ][j]);
+            dos[VACF][j]  += c1j / Natom;
+            dos[MVACF][j] += mi * c1j;
         }
     }
 
     fp = xvgropen(opt2fn("-vacf", NFILE, fnm), "Velocity autocorrelation function",
                   "Time (ps)", "C(t)", oenv);
-    snew(tt, nframes/2);
+    snew(tt, nframes / 2);
 
-    invNormalize = normalizeAutocorrelation ? 1.0/dos[VACF][0] : 1.0;
+    invNormalize = normalizeAutocorrelation ? 1.0 / dos[VACF][0] : 1.0;
 
-    for (j = 0; (j < nframes/2); j++)
+    for (j = 0; (j < nframes / 2); j++)
     {
-        tt[j] = j*dt;
+        tt[j] = j * dt;
         fprintf(fp, "%10g  %10g\n", tt[j], dos[VACF][j] * invNormalize);
     }
     xvgrclose(fp);
@@ -468,15 +467,15 @@ int gmx_dos(int argc, char *argv[])
     fp = xvgropen(opt2fn("-mvacf", NFILE, fnm), "Mass-weighted velocity autocorrelation function",
                   "Time (ps)", "C(t)", oenv);
 
-    invNormalize = normalizeAutocorrelation ? 1.0/dos[VACF][0] : 1.0;
+    invNormalize = normalizeAutocorrelation ? 1.0 / dos[VACF][0] : 1.0;
 
-    for (j = 0; (j < nframes/2); j++)
+    for (j = 0; (j < nframes / 2); j++)
     {
         fprintf(fp, "%10g  %10g\n", tt[j], dos[MVACF][j] * invNormalize);
     }
     xvgrclose(fp);
 
-    if ((fftcode = gmx_fft_init_1d_real(&fft, nframes/2,
+    if ((fftcode = gmx_fft_init_1d_real(&fft, nframes / 2,
                                         GMX_FFT_FLAG_NONE)) != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
@@ -489,29 +488,29 @@ int gmx_dos(int argc, char *argv[])
 
     /* First compute the DoS */
     /* Magic factor of 8 included now. */
-    bfac = 8*dt*beta/2;
+    bfac = 8 * dt * beta / 2;
     dos2 = 0;
-    snew(nu, nframes/4);
-    for (j = 0; (j < nframes/4); j++)
+    snew(nu, nframes / 4);
+    for (j = 0; (j < nframes / 4); j++)
     {
-        nu[j] = 2*j/(t1-t0);
-        dos2 += gmx::square(dos[DOS][2*j]) + gmx::square(dos[DOS][2*j+1]);
+        nu[j] = 2 * j / (t1 - t0);
+        dos2 += gmx::square(dos[DOS][2 * j]) + gmx::square(dos[DOS][2 * j + 1]);
         if (bAbsolute)
         {
-            dos[DOS][j] = bfac*std::hypot(dos[DOS][2*j], dos[DOS][2*j+1]);
+            dos[DOS][j] = bfac * std::hypot(dos[DOS][2 * j], dos[DOS][2 * j + 1]);
         }
         else
         {
-            dos[DOS][j] = bfac*dos[DOS][2*j];
+            dos[DOS][j] = bfac * dos[DOS][2 * j];
         }
     }
     /* Normalize it */
-    dostot = evaluate_integral(nframes/4, nu, dos[DOS], nullptr, nframes/4, &stddev);
+    dostot = evaluate_integral(nframes / 4, nu, dos[DOS], nullptr, nframes / 4, &stddev);
     if (bNormalizeDos)
     {
-        for (j = 0; (j < nframes/4); j++)
+        for (j = 0; (j < nframes / 4); j++)
         {
-            dos[DOS][j] *= 3*Natom/dostot;
+            dos[DOS][j] *= 3 * Natom / dostot;
         }
     }
 
@@ -519,15 +518,15 @@ int gmx_dos(int argc, char *argv[])
     DoS0 = dos[DOS][0];
 
     /* Note this eqn. is incorrect in Pascal2011a! */
-    Delta = ((2*DoS0/(9*Natom))*std::sqrt(M_PI*BOLTZ*Temp*Natom/tmass)*
-             std::pow((Natom/V), 1.0/3.0)*std::pow(6.0/M_PI, 2.0/3.0));
+    Delta = ((2 * DoS0 / (9 * Natom)) * std::sqrt(M_PI * BOLTZ * Temp * Natom / tmass)
+             * std::pow((Natom / V), 1.0 / 3.0) * std::pow(6.0 / M_PI, 2.0 / 3.0));
     f     = calc_fluidicity(Delta, toler);
     y     = calc_y(f, Delta, toler);
     z     = calc_compress(y);
-    Sig   = BOLTZ*(5.0/2.0+std::log(2*M_PI*BOLTZ*Temp/(gmx::square(PLANCK))*V/(f*Natom)));
-    Shs   = Sig+calc_Shs(f, y);
-    rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
-    sigHS = std::cbrt(6*y*V/(M_PI*Natom));
+    Sig   = BOLTZ * (5.0 / 2.0 + std::log(2 * M_PI * BOLTZ * Temp / (gmx::square(PLANCK)) * V / (f * Natom)));
+    Shs   = Sig + calc_Shs(f, y);
+    rho   = (tmass * AMU) / (V * NANO * NANO * NANO);
+    sigHS = std::cbrt(6 * y * V / (M_PI * Natom));
 
     fprintf(fplog, "System = \"%s\"\n", *top.name);
     fprintf(fplog, "Nmol = %d\n", Nmol);
@@ -556,45 +555,45 @@ int gmx_dos(int argc, char *argv[])
                   bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)",
                   "\\f{4}S(\\f{12}n\\f{4})", oenv);
     xvgr_legend(fp, asize(DoSlegend), DoSlegend, oenv);
-    recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
-    for (j = 0; (j < nframes/4); j++)
+    recip_fac = bRecip ? (1e7 / SPEED_OF_LIGHT) : 1.0;
+    for (j = 0; (j < nframes / 4); j++)
     {
-        dos[DOS_DIFF][j]  = DoS0/(1+gmx::square(DoS0*M_PI*nu[j]/(6*f*Natom)));
-        dos[DOS_SOLID][j] = dos[DOS][j]-dos[DOS_DIFF][j];
+        dos[DOS_DIFF][j]  = DoS0 / (1 + gmx::square(DoS0 * M_PI * nu[j] / (6 * f * Natom)));
+        dos[DOS_SOLID][j] = dos[DOS][j] - dos[DOS_DIFF][j];
         fprintf(fp, "%10g  %10g  %10g  %10g\n",
-                recip_fac*nu[j],
-                dos[DOS][j]/recip_fac,
-                dos[DOS_SOLID][j]/recip_fac,
-                dos[DOS_DIFF][j]/recip_fac);
+                recip_fac * nu[j],
+                dos[DOS][j] / recip_fac,
+                dos[DOS_SOLID][j] / recip_fac,
+                dos[DOS_DIFF][j] / recip_fac);
     }
     xvgrclose(fp);
 
     /* Finally analyze the results! */
     wCdiff = 0.5;
-    wSdiff = Shs/(3*BOLTZ); /* Is this correct? */
+    wSdiff = Shs / (3 * BOLTZ); /* Is this correct? */
     wEdiff = 0.5;
-    wAdiff = wEdiff-wSdiff;
-    for (j = 0; (j < nframes/4); j++)
+    wAdiff = wEdiff - wSdiff;
+    for (j = 0; (j < nframes / 4); j++)
     {
-        dos[DOS_CP][j] = (dos[DOS_DIFF][j]*wCdiff +
-                          dos[DOS_SOLID][j]*wCsolid(nu[j], beta));
-        dos[DOS_S][j]  = (dos[DOS_DIFF][j]*wSdiff +
-                          dos[DOS_SOLID][j]*wSsolid(nu[j], beta));
-        dos[DOS_A][j]  = (dos[DOS_DIFF][j]*wAdiff +
-                          dos[DOS_SOLID][j]*wAsolid(nu[j], beta));
-        dos[DOS_E][j]  = (dos[DOS_DIFF][j]*wEdiff +
-                          dos[DOS_SOLID][j]*wEsolid(nu[j], beta));
+        dos[DOS_CP][j] = (dos[DOS_DIFF][j] * wCdiff
+                          + dos[DOS_SOLID][j] * wCsolid(nu[j], beta));
+        dos[DOS_S][j] = (dos[DOS_DIFF][j] * wSdiff
+                         + dos[DOS_SOLID][j] * wSsolid(nu[j], beta));
+        dos[DOS_A][j] = (dos[DOS_DIFF][j] * wAdiff
+                         + dos[DOS_SOLID][j] * wAsolid(nu[j], beta));
+        dos[DOS_E][j] = (dos[DOS_DIFF][j] * wEdiff
+                         + dos[DOS_SOLID][j] * wEsolid(nu[j], beta));
     }
-    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], nullptr, nframes/2, &stddev);
-    DiffCoeff = 1000*DiffCoeff/3.0;
+    DiffCoeff = evaluate_integral(nframes / 2, tt, dos[VACF], nullptr, nframes / 2, &stddev);
+    DiffCoeff = 1000 * DiffCoeff / 3.0;
     fprintf(fplog, "Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",
             DiffCoeff);
     fprintf(fplog, "Diffusion coefficient from DoS %g 10^-5 cm^2/s\n",
-            1000*DoS0/(12*tmass*beta));
+            1000 * DoS0 / (12 * tmass * beta));
 
-    cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], nullptr,
-                                   nframes/4, &stddev);
-    fprintf(fplog, "Heat capacity %g J/mol K\n", 1000*cP/Nmol);
+    cP = BOLTZ * evaluate_integral(nframes / 4, nu, dos[DOS_CP], nullptr,
+                                   nframes / 4, &stddev);
+    fprintf(fplog, "Heat capacity %g J/mol K\n", 1000 * cP / Nmol);
     fprintf(fplog, "\nArrivederci!\n");
     gmx_fio_fclose(fplog);
 

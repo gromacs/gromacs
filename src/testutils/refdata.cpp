@@ -96,7 +96,7 @@ class TestReferenceDataImpl
         void onTestEnd(bool testPassed);
 
         //! Full path of the reference data file.
-        std::string             fullFilename_;
+        std::string fullFilename_;
         /*! \brief
          * Root entry for comparing the reference data.
          *
@@ -106,7 +106,7 @@ class TestReferenceDataImpl
          * \a outputRootEntry_, and ReferenceDataEntry::correspondingOutputEntry()
          * points to the copy in the output tree.
          */
-        ReferenceDataEntry::EntryPointer  compareRootEntry_;
+        ReferenceDataEntry::EntryPointer compareRootEntry_;
         /*! \brief
          * Root entry for writing new reference data.
          *
@@ -118,17 +118,17 @@ class TestReferenceDataImpl
          * from \a compareRootEntry_ (if they exist and comparison passes), or
          * by creating new ones.
          */
-        ReferenceDataEntry::EntryPointer  outputRootEntry_;
+        ReferenceDataEntry::EntryPointer outputRootEntry_;
         /*! \brief
          * Whether updating existing reference data.
          */
-        bool                    updateMismatchingEntries_;
+        bool updateMismatchingEntries_;
         //! `true` if self-testing (enables extra failure messages).
-        bool                    bSelfTestMode_;
+        bool bSelfTestMode_;
         /*! \brief
          * Whether any reference checkers have been created for this data.
          */
-        bool                    bInUse_;
+        bool bInUse_;
 };
 
 }       // namespace internal
@@ -154,7 +154,7 @@ typedef std::shared_ptr<internal::TestReferenceDataImpl>
  */
 TestReferenceDataImplPointer g_referenceData;
 //! Global reference data mode set with setReferenceDataMode().
-ReferenceDataMode            g_referenceDataMode = erefdataCompare;
+ReferenceDataMode g_referenceDataMode = erefdataCompare;
 
 //! Returns the global reference data mode.
 ReferenceDataMode getReferenceDataMode()
@@ -214,12 +214,12 @@ std::string formatEntryPath(const std::string &prefix, const std::string &id)
 //! Formats a path to a reference data entry with a null id.
 std::string formatSequenceEntryPath(const std::string &prefix, int seqIndex)
 {
-    return formatString("%s/[%d]", prefix.c_str(), seqIndex+1);
+    return formatString("%s/[%d]", prefix.c_str(), seqIndex + 1);
 }
 
 //! Finds all entries that have not been checked under a given root.
 void gatherUnusedEntries(const ReferenceDataEntry &root,
-                         const std::string        &rootPath,
+                         const std::string &       rootPath,
                          std::vector<std::string> *unusedPaths)
 {
     if (!root.hasBeenChecked())
@@ -292,10 +292,10 @@ TestReferenceDataImpl::TestReferenceDataImpl(
         ReferenceDataMode mode, bool bSelfTestMode)
     : updateMismatchingEntries_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
-    const std::string dirname =
-        bSelfTestMode
-        ? TestFileManager::getGlobalOutputTempDirectory()
-        : TestFileManager::getInputDataDirectory();
+    const std::string dirname
+        = bSelfTestMode
+            ? TestFileManager::getGlobalOutputTempDirectory()
+            : TestFileManager::getInputDataDirectory();
     const std::string filename = TestFileManager::getTestSpecificFileName(".xml");
     fullFilename_ = Path::join(dirname, "refdata", filename);
 
@@ -381,29 +381,29 @@ class TestReferenceChecker::Impl
 {
     public:
         //! String constant for naming XML elements for boolean values.
-        static const char * const    cBooleanNodeName;
+        static const char * const cBooleanNodeName;
         //! String constant for naming XML elements for string values.
-        static const char * const    cStringNodeName;
+        static const char * const cStringNodeName;
         //! String constant for naming XML elements for unsigned char values.
-        static const char * const    cUCharNodeName;
+        static const char * const cUCharNodeName;
         //! String constant for naming XML elements for integer values.
-        static const char * const    cIntegerNodeName;
+        static const char * const cIntegerNodeName;
         //! String constant for naming XML elements for int64 values.
-        static const char * const    cInt64NodeName;
+        static const char * const cInt64NodeName;
         //! String constant for naming XML elements for unsigned int64 values.
-        static const char * const    cUInt64NodeName;
+        static const char * const cUInt64NodeName;
         //! String constant for naming XML elements for floating-point values.
-        static const char * const    cRealNodeName;
+        static const char * const cRealNodeName;
         //! String constant for naming XML attribute for value identifiers.
-        static const char * const    cIdAttrName;
+        static const char * const cIdAttrName;
         //! String constant for naming compounds for vectors.
-        static const char * const    cVectorType;
+        static const char * const cVectorType;
         //! String constant for naming compounds for key-value tree objects.
-        static const char * const    cObjectType;
+        static const char * const cObjectType;
         //! String constant for naming compounds for sequences.
-        static const char * const    cSequenceType;
+        static const char * const cSequenceType;
         //! String constant for value identifier for sequence length.
-        static const char * const    cSequenceLengthName;
+        static const char * const cSequenceLengthName;
 
         //! Creates a checker that does nothing.
         explicit Impl(bool initialized);
@@ -416,18 +416,16 @@ class TestReferenceChecker::Impl
         std::string appendPath(const char *id) const;
 
         //! Creates an entry with given parameters and fills it with \p checker.
-        ReferenceDataEntry::EntryPointer
-        createEntry(const char *type, const char *id,
-                    const IReferenceDataEntryChecker &checker) const
+        ReferenceDataEntry::EntryPointer createEntry(const char *type, const char *id,
+                                                     const IReferenceDataEntryChecker &checker) const
         {
             ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
             checker.fillEntry(entry.get());
             return entry;
         }
         //! Checks an entry for correct type and using \p checker.
-        ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId,
-                   const char *type, const IReferenceDataEntryChecker &checker) const
+        ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId,
+                                              const char *type, const IReferenceDataEntryChecker &checker) const
         {
             if (entry.type() != type)
             {
@@ -496,9 +494,9 @@ class TestReferenceChecker::Impl
         }
 
         //! Whether initialized with other means than the default constructor.
-        bool                    initialized_;
+        bool initialized_;
         //! Default floating-point comparison tolerance.
-        FloatingPointTolerance  defaultTolerance_;
+        FloatingPointTolerance defaultTolerance_;
         /*! \brief
          * Human-readable path to the root node of this checker.
          *
@@ -506,7 +504,7 @@ class TestReferenceChecker::Impl
          * id of the compound is added.  Used for reporting comparison
          * mismatches.
          */
-        std::string             path_;
+        std::string path_;
         /*! \brief
          * Current entry under which reference data is searched for comparison.
          *
@@ -516,7 +514,7 @@ class TestReferenceChecker::Impl
          * Can be NULL, in which case this checker does nothing (doesn't even
          * report errors, see shouldIgnore()).
          */
-        ReferenceDataEntry     *compareRootEntry_;
+        ReferenceDataEntry *compareRootEntry_;
         /*! \brief
          * Current entry under which entries for writing are created.
          *
@@ -524,7 +522,7 @@ class TestReferenceChecker::Impl
          * a compound entry in the tree rooted at that entry.  NULL if only
          * comparing, or if shouldIgnore() returns `false`.
          */
-        ReferenceDataEntry     *outputRootEntry_;
+        ReferenceDataEntry *outputRootEntry_;
         /*! \brief
          * Iterator to a child of \a compareRootEntry_ that was last found.
          *
@@ -540,15 +538,15 @@ class TestReferenceChecker::Impl
          * Whether the reference data is being written (true) or compared
          * (false).
          */
-        bool                    updateMismatchingEntries_;
+        bool updateMismatchingEntries_;
         //! `true` if self-testing (enables extra failure messages).
-        bool                    bSelfTestMode_;
+        bool bSelfTestMode_;
         /*! \brief
          * Current number of unnamed elements in a sequence.
          *
          * It is the index of the current unnamed element.
          */
-        int                     seqIndex_;
+        int seqIndex_;
 };
 
 const char *const TestReferenceChecker::Impl::cBooleanNodeName    = "Bool";
@@ -587,8 +585,7 @@ TestReferenceChecker::Impl::Impl(const std::string &path,
 }
 
 
-std::string
-TestReferenceChecker::Impl::appendPath(const char *id) const
+std::string TestReferenceChecker::Impl::appendPath(const char *id) const
 {
     return id != nullptr
            ? formatEntryPath(path_, id)
@@ -599,7 +596,7 @@ TestReferenceChecker::Impl::appendPath(const char *id) const
 ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
 {
     ReferenceDataEntry::ChildIterator entry = compareRootEntry_->findChild(id, lastFoundEntry_);
-    seqIndex_ = (id == nullptr) ? seqIndex_+1 : -1;
+    seqIndex_ = (id == nullptr) ? seqIndex_ + 1 : -1;
     if (compareRootEntry_->isValidChild(entry))
     {
         lastFoundEntry_ = entry;
@@ -608,8 +605,7 @@ ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
     return nullptr;
 }
 
-ReferenceDataEntry *
-TestReferenceChecker::Impl::findOrCreateEntry(
+ReferenceDataEntry *TestReferenceChecker::Impl::findOrCreateEntry(
         const char *type, const char *id,
         const IReferenceDataEntryChecker &checker)
 {
@@ -622,9 +618,8 @@ TestReferenceChecker::Impl::findOrCreateEntry(
     return entry;
 }
 
-::testing::AssertionResult
-TestReferenceChecker::Impl::processItem(const char *type, const char *id,
-                                        const IReferenceDataEntryChecker &checker)
+::testing::AssertionResult TestReferenceChecker::Impl::processItem(const char *type, const char *id,
+                                                                   const IReferenceDataEntryChecker &checker)
 {
     if (shouldIgnore())
     {
@@ -731,8 +726,7 @@ TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other)
 {
 }
 
-TestReferenceChecker &
-TestReferenceChecker::operator=(TestReferenceChecker &&other)
+TestReferenceChecker &TestReferenceChecker::operator=(TestReferenceChecker &&other)
 {
     impl_ = std::move(other.impl_);
     return *this;
@@ -772,9 +766,9 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
     {
         return bPresent;
     }
-    ReferenceDataEntry::ChildIterator  entry
+    ReferenceDataEntry::ChildIterator entry
         = impl_->compareRootEntry_->findChild(id, impl_->lastFoundEntry_);
-    const bool                         bFound
+    const bool bFound
         = impl_->compareRootEntry_->isValidChild(entry);
     if (bFound != bPresent)
     {
@@ -800,7 +794,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     }
     std::string         fullId = impl_->appendPath(id);
     NullChecker         checker;
-    ReferenceDataEntry *entry  = impl_->findOrCreateEntry(type, id, checker);
+    ReferenceDataEntry *entry = impl_->findOrCreateEntry(type, id, checker);
     if (entry == nullptr)
     {
         ADD_FAILURE() << "Reference data item " << fullId << " not found";
@@ -841,8 +835,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
  * \todo Eliminate this limitation of TinyXML2. See
  * e.g. https://github.com/leethomason/tinyxml2/issues/432
  */
-static void
-throwIfNonEmptyAndOnlyWhitespace(const std::string &s, const char *id)
+static void throwIfNonEmptyAndOnlyWhitespace(const std::string &s, const char *id)
 {
     if (!s.empty() && std::all_of(s.cbegin(), s.cend(), [](const char &c){ return std::isspace(c); }))
     {
@@ -881,7 +874,7 @@ void TestReferenceChecker::checkString(const std::string &value, const char *id)
 
 
 void TestReferenceChecker::checkTextBlock(const std::string &value,
-                                          const char        *id)
+                                          const char *       id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
                                     ExactStringBlockChecker(value)));
@@ -1030,8 +1023,7 @@ void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue &value
 }
 
 
-TestReferenceChecker
-TestReferenceChecker::checkSequenceCompound(const char *id, size_t length)
+TestReferenceChecker TestReferenceChecker::checkSequenceCompound(const char *id, size_t length)
 {
     TestReferenceChecker compound(checkCompound(Impl::cSequenceType, id));
     compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);

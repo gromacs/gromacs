@@ -99,7 +99,7 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     hack->tp = tp;
     if ((tp < 1) || (tp >= maxcontrol))
     {
-        gmx_fatal(FARGS, "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s", fn, maxcontrol-1, line);
+        gmx_fatal(FARGS, "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s", fn, maxcontrol - 1, line);
     }
 
     hack->nctl = ns - 3;
@@ -128,7 +128,7 @@ void read_ab(char *line, const char *fn, t_hack *hack)
 
 static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 {
-    FILE        *in;
+    FILE *       in;
     char         filebase[STRLEN], line[STRLEN], buf[STRLEN];
     int          i, n, nab, nah;
     t_hackblock *aah;
@@ -148,7 +148,7 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
 
     nah = *nahptr;
     aah = *ah;
-    while (fgets2(line, STRLEN-1, in))
+    while (fgets2(line, STRLEN - 1, in))
     {
         if (sscanf(line, "%s%n", buf, &n) != 1)
         {
@@ -160,12 +160,12 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
         {
             fprintf(debug, "%s", buf);
         }
-        srenew(aah, nah+1);
+        srenew(aah, nah + 1);
         clear_t_hackblock(&aah[nah]);
         aah[nah].name     = gmx_strdup(buf);
         aah[nah].filebase = gmx_strdup(filebase);
 
-        if (sscanf(line+n, "%d", &nab) == 1)
+        if (sscanf(line + n, "%d", &nab) == 1)
         {
             if (debug)
             {
@@ -179,7 +179,7 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
                 {
                     gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
                               "while reading Hydrogen Database %s residue %s",
-                              nab, i-1, aah[nah].name, hfn);
+                              nab, i - 1, aah[nah].name, hfn);
                 }
                 if (nullptr == fgets(buf, STRLEN, in))
                 {

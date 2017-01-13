@@ -76,10 +76,10 @@ static void list_tpx(const char *fn,
                      const char *mdpfn,
                      gmx_bool    bSysTop)
 {
-    FILE         *gp;
+    FILE *        gp;
     int           indent, i, j, **gcount, atot;
     t_state       state {};
-    t_inputrec   *ir = nullptr;
+    t_inputrec *  ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     gmx_groups_t *groups;
@@ -175,11 +175,11 @@ static void list_tpx(const char *fn,
 
 static void list_top(const char *fn)
 {
-    int       status, done;
+    int status, done;
 #define BUFLEN 256
     char      buf[BUFLEN];
     gmx_cpp_t handle;
-    char     *cppopts[] = { nullptr };
+    char *    cppopts[] = { nullptr };
 
     status = cpp_open_file(fn, &handle, cppopts);
     if (status != 0)
@@ -201,8 +201,7 @@ static void list_top(const char *fn)
                 printf("%s\n", buf);
             }
         }
-    }
-    while (!done);
+    } while (!done);
     status = cpp_close_file(&handle);
     if (status != eCPP_OK)
     {
@@ -212,15 +211,15 @@ static void list_top(const char *fn)
 
 static void list_trr(const char *fn)
 {
-    t_fileio         *fpread;
-    int               nframe, indent;
-    char              buf[256];
-    rvec             *x, *v, *f;
-    matrix            box;
-    gmx_trr_header_t  trrheader;
-    gmx_bool          bOK;
+    t_fileio *       fpread;
+    int              nframe, indent;
+    char             buf[256];
+    rvec *           x, *v, *f;
+    matrix           box;
+    gmx_trr_header_t trrheader;
+    gmx_bool         bOK;
 
-    fpread  = gmx_trr_open(fn, "r");
+    fpread = gmx_trr_open(fn, "r");
 
     nframe = 0;
     while (gmx_trr_read_frame_header(fpread, &trrheader, &bOK))
@@ -278,10 +277,10 @@ static void list_trr(const char *fn)
 
 void list_xtc(const char *fn)
 {
-    t_fileio   *xd;
+    t_fileio *  xd;
     int         indent;
     char        buf[256];
-    rvec       *x;
+    rvec *      x;
     matrix      box;
     int         nframe, natoms;
     gmx_int64_t step;
@@ -303,8 +302,7 @@ void list_xtc(const char *fn)
         pr_rvecs(stdout, indent, "box", box, DIM);
         pr_rvecs(stdout, indent, "x", x, natoms);
         nframe++;
-    }
-    while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK));
+    } while (read_next_xtc(xd, natoms, &step, &time, box, x, &prec, &bOK));
     if (!bOK)
     {
         fprintf(stderr, "\nWARNING: Incomplete frame at time %g\n", time);
@@ -316,17 +314,17 @@ void list_xtc(const char *fn)
 /*! \brief Callback used by list_tng_for_gmx_dump. */
 static void list_tng_inner(const char *fn,
                            gmx_bool    bFirstFrame,
-                           real       *values,
+                           real *      values,
                            gmx_int64_t step,
                            double      frame_time,
                            gmx_int64_t n_values_per_frame,
                            gmx_int64_t n_atoms,
                            real        prec,
                            gmx_int64_t nframe,
-                           char       *block_name)
+                           char *      block_name)
 {
-    char                 buf[256];
-    int                  indent = 0;
+    char buf[256];
+    int  indent = 0;
 
     if (bFirstFrame)
     {
@@ -348,28 +346,28 @@ static void list_tng_inner(const char *fn,
 static void list_tng(const char gmx_unused *fn)
 {
 #ifdef GMX_USE_TNG
-    tng_trajectory_t     tng;
-    gmx_int64_t          nframe = 0;
-    gmx_int64_t          i, *block_ids = nullptr, step, ndatablocks;
-    gmx_bool             bOK;
-    real                *values = nullptr;
+    tng_trajectory_t tng;
+    gmx_int64_t      nframe = 0;
+    gmx_int64_t      i, *block_ids = nullptr, step, ndatablocks;
+    gmx_bool         bOK;
+    real *           values = nullptr;
 
     gmx_tng_open(fn, 'r', &tng);
     gmx_print_tng_molecule_system(tng, stdout);
 
-    bOK    = gmx_get_tng_data_block_types_of_next_frame(tng, -1,
-                                                        0,
-                                                        nullptr,
-                                                        &step, &ndatablocks,
-                                                        &block_ids);
+    bOK = gmx_get_tng_data_block_types_of_next_frame(tng, -1,
+                                                     0,
+                                                     nullptr,
+                                                     &step, &ndatablocks,
+                                                     &block_ids);
     do
     {
         for (i = 0; i < ndatablocks; i++)
         {
-            double               frame_time;
-            real                 prec;
-            gmx_int64_t          n_values_per_frame, n_atoms;
-            char                 block_name[STRLEN];
+            double      frame_time;
+            real        prec;
+            gmx_int64_t n_values_per_frame, n_atoms;
+            char        block_name[STRLEN];
 
             gmx_get_tng_data_next_frame_of_block_type(tng, block_ids[i], &values,
                                                       &step, &frame_time,
@@ -389,13 +387,12 @@ static void list_tng(const char gmx_unused *fn)
             }
         }
         nframe++;
-    }
-    while (gmx_get_tng_data_block_types_of_next_frame(tng, step,
-                                                      0,
-                                                      nullptr,
-                                                      &step,
-                                                      &ndatablocks,
-                                                      &block_ids));
+    } while (gmx_get_tng_data_block_types_of_next_frame(tng, step,
+                                                        0,
+                                                        nullptr,
+                                                        &step,
+                                                        &ndatablocks,
+                                                        &block_ids));
 
     if (block_ids)
     {
@@ -427,12 +424,12 @@ void list_trx(const char *fn)
 
 void list_ene(const char *fn)
 {
-    ener_file_t    in;
-    gmx_bool       bCont;
-    gmx_enxnm_t   *enm = nullptr;
-    t_enxframe    *fr;
-    int            i, j, nre, b;
-    char           buf[22];
+    ener_file_t  in;
+    gmx_bool     bCont;
+    gmx_enxnm_t *enm = nullptr;
+    t_enxframe * fr;
+    int          i, j, nre, b;
+    char         buf[22];
 
     printf("gmx dump: %s\n", fn);
     in = open_enx(fn, "r");
@@ -544,8 +541,7 @@ void list_ene(const char *fn)
                 }
             }
         }
-    }
-    while (bCont);
+    } while (bCont);
 
     close_enx(in);
 
@@ -557,15 +553,15 @@ void list_ene(const char *fn)
 static void list_mtx(const char *fn)
 {
     int                  nrow, ncol, i, j, k;
-    real                *full   = nullptr, value;
+    real *               full   = nullptr, value;
     gmx_sparsematrix_t * sparse = nullptr;
 
     gmx_mtxio_read(fn, &nrow, &ncol, &full, &sparse);
 
     if (full == nullptr)
     {
-        snew(full, nrow*ncol);
-        for (i = 0; i < nrow*ncol; i++)
+        snew(full, nrow * ncol);
+        for (i = 0; i < nrow * ncol; i++)
         {
             full[i] = 0;
         }
@@ -574,10 +570,10 @@ static void list_mtx(const char *fn)
         {
             for (j = 0; j < sparse->ndata[i]; j++)
             {
-                k              = sparse->data[i][j].col;
-                value          = sparse->data[i][j].value;
-                full[i*ncol+k] = value;
-                full[k*ncol+i] = value;
+                k                  = sparse->data[i][j].col;
+                value              = sparse->data[i][j].value;
+                full[i * ncol + k] = value;
+                full[k * ncol + i] = value;
             }
         }
         gmx_sparsematrix_destroy(sparse);
@@ -588,7 +584,7 @@ static void list_mtx(const char *fn)
     {
         for (j = 0; j < ncol; j++)
         {
-            printf(" %g", full[i*ncol+j]);
+            printf(" %g", full[i * ncol + j]);
         }
         printf("\n");
     }
@@ -625,10 +621,10 @@ int gmx_dump(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     /* Command line options */
-    static gmx_bool   bShowNumbers = TRUE;
-    static gmx_bool   bShowParams  = FALSE;
-    static gmx_bool   bSysTop      = FALSE;
-    t_pargs           pa[]         = {
+    static gmx_bool bShowNumbers = TRUE;
+    static gmx_bool bShowParams  = FALSE;
+    static gmx_bool bSysTop      = FALSE;
+    t_pargs         pa[]         = {
         { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
         { "-param", FALSE, etBOOL, {&bShowParams}, "Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)" },
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }

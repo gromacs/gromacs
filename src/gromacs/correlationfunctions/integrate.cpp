@@ -64,11 +64,11 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[],
         c0 = c[j];
         if (fp && (nskip == 0 || j % nskip == 0))
         {
-            fprintf(fp, "%10.3f  %10.5f\n", j*dt, c0);
+            fprintf(fp, "%10.3f  %10.5f\n", j * dt, c0);
         }
         if (j > 0)
         {
-            sum += dt*(c0+c[j-1]);
+            sum += dt * (c0 + c[j - 1]);
         }
     }
     if (fp)
@@ -80,13 +80,13 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[],
             {
                 if (nskip == 0 || j % nskip == 0)
                 {
-                    fprintf(fp, "%10.3f  %10.5f\n", j*dt, fit[j]);
+                    fprintf(fp, "%10.3f  %10.5f\n", j * dt, fit[j]);
                 }
             }
             fprintf(fp, "&\n");
         }
     }
-    return sum*0.5;
+    return sum * 0.5;
 }
 
 /*! \brief Compute and return the integral of a function. */
@@ -112,17 +112,17 @@ real evaluate_integral(int n, const real x[], const real y[],
         w = 0;
         if (j > 0)
         {
-            w += 0.5*(x[j] - x[j-1]);
+            w += 0.5 * (x[j] - x[j - 1]);
         }
-        if (j < n-1)
+        if (j < n - 1)
         {
-            w += 0.5*(x[j+1] - x[j]);
+            w += 0.5 * (x[j + 1] - x[j]);
         }
-        sum += w*y[j];
+        sum += w * y[j];
         if (dy)
         {
             /* Assume all errors are uncorrelated */
-            sum_var += gmx::square(w*dy[j]);
+            sum_var += gmx::square(w * dy[j]);
         }
 
         if ((aver_start > 0) && (x[j] >= aver_start))
@@ -135,9 +135,9 @@ real evaluate_integral(int n, const real x[], const real y[],
 
     if (nsum_tail > 0)
     {
-        sum = sum_tail/nsum_tail;
+        sum = sum_tail / nsum_tail;
         /* This is a worst case estimate, assuming all stddev's are correlated. */
-        *stddev = sum2_tail/nsum_tail;
+        *stddev = sum2_tail / nsum_tail;
     }
     else
     {

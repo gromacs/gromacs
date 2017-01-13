@@ -91,9 +91,8 @@ namespace
  *                       this will be updated to reflect the amount of
  *                       information written to the machine structure.
  */
-void
-parseCpuInfo(HardwareTopology::Machine *        machine,
-             HardwareTopology::SupportLevel *   supportLevel)
+void parseCpuInfo(HardwareTopology::Machine *      machine,
+                  HardwareTopology::SupportLevel * supportLevel)
 {
     CpuInfo cpuInfo(CpuInfo::detect());
 
@@ -207,12 +206,11 @@ getHwLocDescendantsByType(const hwloc_obj_t obj, const hwloc_obj_type_t type)
  *
  *  \return If all the data is found the return value is 0, otherwise non-zero.
  */
-int
-parseHwLocSocketsCoresThreads(const hwloc_topology_t             topo,
-                              HardwareTopology::Machine *        machine)
+int parseHwLocSocketsCoresThreads(const hwloc_topology_t      topo,
+                                  HardwareTopology::Machine * machine)
 {
-    const hwloc_obj_t              root         = hwloc_get_root_obj(topo);
-    std::vector<hwloc_obj_t>       hwlocSockets = getHwLocDescendantsByType(root, HWLOC_OBJ_PACKAGE);
+    const hwloc_obj_t        root         = hwloc_get_root_obj(topo);
+    std::vector<hwloc_obj_t> hwlocSockets = getHwLocDescendantsByType(root, HWLOC_OBJ_PACKAGE);
 
     machine->logicalProcessorCount = hwloc_get_nbobjs_by_type(topo, HWLOC_OBJ_PU);
     machine->logicalProcessors.resize(machine->logicalProcessorCount);
@@ -248,7 +246,7 @@ parseHwLocSocketsCoresThreads(const hwloc_topology_t             topo,
             for (std::size_t k = 0; k < hwlocPUs.size() && topologyOk; k++)
             {
                 // Assign information about this hwthread
-                std::size_t logicalProcessorId                               = hwlocPUs[k]->os_index;
+                std::size_t logicalProcessorId = hwlocPUs[k]->os_index;
                 machine->sockets[i].cores[j].hwThreads[k].id                 = hwlocPUs[k]->logical_index;
                 machine->sockets[i].cores[j].hwThreads[k].logicalProcessorId = logicalProcessorId;
 
@@ -288,9 +286,8 @@ parseHwLocSocketsCoresThreads(const hwloc_topology_t             topo,
  *
  *  \return If any cache data is found the return value is 0, otherwise non-zero.
  */
-int
-parseHwLocCache(const hwloc_topology_t             topo,
-                HardwareTopology::Machine *        machine)
+int parseHwLocCache(const hwloc_topology_t      topo,
+                    HardwareTopology::Machine * machine)
 {
     // Parse caches up to L5
     for (int cachelevel : { 1, 2, 3, 4, 5})
@@ -336,9 +333,8 @@ parseHwLocCache(const hwloc_topology_t             topo,
  *  \return If the data found makes sense (either in the numa node or the
  *          entire machine) the return value is 0, otherwise non-zero.
  */
-int
-parseHwLocNuma(const hwloc_topology_t             topo,
-               HardwareTopology::Machine *        machine)
+int parseHwLocNuma(const hwloc_topology_t      topo,
+                   HardwareTopology::Machine * machine)
 {
     const hwloc_obj_t        root           = hwloc_get_root_obj(topo);
     std::vector<hwloc_obj_t> hwlocNumaNodes = getHwLocDescendantsByType(root, HWLOC_OBJ_NUMANODE);
@@ -374,8 +370,8 @@ parseHwLocNuma(const hwloc_topology_t             topo,
             }
         }
 
-        int depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
-        const struct hwloc_distances_s * dist = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
+        int                              depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
+        const struct hwloc_distances_s * dist  = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
         if (dist != nullptr && dist->nbobjs == hwlocNumaNodes.size())
         {
             machine->numa.baseLatency        = dist->latency_base;
@@ -386,7 +382,7 @@ parseHwLocNuma(const hwloc_topology_t             topo,
                 machine->numa.relativeLatency[i].resize(dist->nbobjs);
                 for (std::size_t j = 0; j < dist->nbobjs; j++)
                 {
-                    machine->numa.relativeLatency[i][j] = dist->latency[i*dist->nbobjs+j];
+                    machine->numa.relativeLatency[i][j] = dist->latency[i * dist->nbobjs + j];
                 }
             }
         }
@@ -403,11 +399,11 @@ parseHwLocNuma(const hwloc_topology_t             topo,
         if (hwlocMachine != nullptr)
         {
             machine->numa.nodes.resize(1);
-            machine->numa.nodes[0].id           = 0;
-            machine->numa.nodes[0].memory       = hwlocMachine->memory.total_memory;
-            machine->numa.baseLatency           = 10;
-            machine->numa.maxRelativeLatency    = 1;
-            machine->numa.relativeLatency       = { { 1.0 } };
+            machine->numa.nodes[0].id        = 0;
+            machine->numa.nodes[0].memory    = hwlocMachine->memory.total_memory;
+            machine->numa.baseLatency        = 10;
+            machine->numa.maxRelativeLatency = 1;
+            machine->numa.relativeLatency    = { { 1.0 } };
 
             for (int i = 0; i < machine->logicalProcessorCount; i++)
             {
@@ -451,9 +447,8 @@ parseHwLocNuma(const hwloc_topology_t             topo,
  * *
  *  \return If any devices were found the return value is 0, otherwise non-zero.
  */
-int
-parseHwLocDevices(const hwloc_topology_t             topo,
-                  HardwareTopology::Machine *        machine)
+int parseHwLocDevices(const hwloc_topology_t      topo,
+                      HardwareTopology::Machine * machine)
 {
     const hwloc_obj_t        root    = hwloc_get_root_obj(topo);
     std::vector<hwloc_obj_t> pcidevs = getHwLocDescendantsByType(root, HWLOC_OBJ_PCI_DEVICE);
@@ -488,12 +483,11 @@ parseHwLocDevices(const hwloc_topology_t             topo,
     return pcidevs.empty();
 }
 
-void
-parseHwLoc(HardwareTopology::Machine *        machine,
-           HardwareTopology::SupportLevel *   supportLevel,
-           bool *                             isThisSystem)
+void parseHwLoc(HardwareTopology::Machine *      machine,
+                HardwareTopology::SupportLevel * supportLevel,
+                bool *                           isThisSystem)
 {
-    hwloc_topology_t    topo;
+    hwloc_topology_t topo;
 
     // Initialize a hwloc object, set flags to request IO device information too,
     // try to load the topology, and get the root object. If either step fails,
@@ -553,8 +547,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
  *
  *  \return The number of hardware processing units, or 0 if it fails.
  */
-int
-detectLogicalProcessorCount()
+int detectLogicalProcessorCount()
 {
     int count = 0;
 

@@ -57,14 +57,14 @@
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {
     int            nfile, f;
-    char         **file;
-    FILE          *in;
+    char **        file;
+    FILE *         in;
     char           buf[STRLEN], name[STRLEN];
     double         m;
     int            nratt = 0;
     gpp_atomtype_t at;
-    t_atom        *a;
-    t_param       *nb;
+    t_atom *       a;
+    t_param *      nb;
 
     nfile = fflib_search_file_end(ffdir, ".atp", TRUE, &file);
     at    = init_atomtype();
@@ -84,8 +84,7 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
                     strip_comment(buf);
                     trim(buf);
                 }
-            }
-            while (!feof(in) && strlen(buf) == 0);
+            } while (!feof(in) && strlen(buf) == 0);
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
@@ -194,7 +193,7 @@ gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
         n = 0;
         for (j = 0; j < btsNiatoms[bt]; j++)
         {
-            if (sscanf(line+n, "%s%n", str, &ni) == 1)
+            if (sscanf(line + n, "%s%n", str, &ni) == 1)
             {
                 rtp->rb[bt].b[rtp->rb[bt].nb].a[j] = gmx_strdup(str);
             }
@@ -212,8 +211,8 @@ gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
         {
             n++;
         }
-        rtrim(line+n);
-        rtp->rb[bt].b[rtp->rb[bt].nb].s = gmx_strdup(line+n);
+        rtrim(line + n);
+        rtp->rb[bt].b[rtp->rb[bt].nb].s = gmx_strdup(line + n);
         rtp->rb[bt].nb++;
     }
     /* give back unused memory */
@@ -252,7 +251,7 @@ static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
     /* check for double entries, assuming list is already sorted */
     for (i = 1; (i < nrtp); i++)
     {
-        if (gmx_strcasecmp(rtp[i-1].resname, rtp[i].resname) == 0)
+        if (gmx_strcasecmp(rtp[i - 1].resname, rtp[i].resname) == 0)
         {
             fprintf(stderr, "WARNING double entry %s in file %s\n",
                     rtp[i].resname, libfn);
@@ -324,13 +323,13 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                  gpp_atomtype_t atype, t_symtab *tab,
                  gmx_bool bAllowOverrideRTP)
 {
-    FILE         *in;
-    char          filebase[STRLEN], line[STRLEN], header[STRLEN];
-    int           i, nrtp, maxrtp, bt, nparam;
-    int           dum1, dum2, dum3;
-    t_restp      *rrtp, *header_settings;
-    gmx_bool      bNextResidue, bError;
-    int           firstrtp;
+    FILE *   in;
+    char     filebase[STRLEN], line[STRLEN], header[STRLEN];
+    int      i, nrtp, maxrtp, bt, nparam;
+    int      dum1, dum2, dum3;
+    t_restp *rrtp, *header_settings;
+    gmx_bool bNextResidue, bError;
+    int      firstrtp;
 
     fflib_filename_base(rrdb, filebase, STRLEN);
 
@@ -479,8 +478,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                 gmx_fatal(FARGS, "in .rtp file in residue %s at line:\n%s\n",
                           rrtp[nrtp].resname, line);
             }
-        }
-        while (!feof(in) && !bNextResidue);
+        } while (!feof(in) && !bNextResidue);
 
         if (rrtp[nrtp].natom == 0)
         {
@@ -490,7 +488,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         if (debug)
         {
             fprintf(debug, "%3d %5s %5d",
-                    nrtp+1, rrtp[nrtp].resname, rrtp[nrtp].natom);
+                    nrtp + 1, rrtp[nrtp].resname, rrtp[nrtp].natom);
             for (i = 0; i < ebtsNR; i++)
             {
                 fprintf(debug, " %10d", rrtp[nrtp].rb[i].nb);
@@ -541,7 +539,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     srenew(rrtp, nrtp);
 
     fprintf(stderr, "\nSorting it all out...\n");
-    std::sort(rrtp, rrtp+nrtp, [](const t_restp &a, const t_restp &b) {return gmx_strcasecmp(a.resname, b.resname) < 0; });
+    std::sort(rrtp, rrtp + nrtp, [](const t_restp &a, const t_restp &b) {return gmx_strcasecmp(a.resname, b.resname) < 0; });
 
     check_rtp(nrtp, rrtp, rrdb);
 
@@ -570,10 +568,10 @@ static int neq_str_sign(const char *a1, const char *a2)
     l2 = (int)strlen(a2);
     lm = std::min(l1, l2);
 
-    if (lm >= 1 &&
-        ((l1 == l2+1 && is_sign(a1[l1-1])) ||
-         (l2 == l1+1 && is_sign(a2[l2-1]))) &&
-        gmx_strncasecmp(a1, a2, lm) == 0)
+    if (lm >= 1
+        && ((l1 == l2 + 1 && is_sign(a1[l1 - 1]))
+            || (l2 == l1 + 1 && is_sign(a2[l2 - 1])))
+        && gmx_strncasecmp(a1, a2, lm) == 0)
     {
         return lm;
     }
@@ -591,7 +589,7 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
     nbest =  0;
     besti = -1;
     /* We want to match at least one character */
-    best  =  1;
+    best =  1;
     for (i = 0; (i < nrtp); i++)
     {
         if (gmx_strcasecmp(key, rtp[i].resname) == 0)
@@ -604,9 +602,9 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
         {
             /* Allow a mismatch of at most a sign character (with warning) */
             n = neq_str_sign(key, rtp[i].resname);
-            if (n >= best &&
-                n+1 >= (int)strlen(key) &&
-                n+1 >= (int)strlen(rtp[i].resname))
+            if (n >= best
+                && n + 1 >= (int)strlen(key)
+                && n + 1 >= (int)strlen(rtp[i].resname))
             {
                 if (n == best)
                 {
@@ -650,7 +648,7 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
 
 t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[])
 {
-    int  i;
+    int i;
 
     i = 0;
     while (i < nrtp && gmx_strcasecmp(rtpname, rtp[i].resname) != 0)

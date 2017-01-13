@@ -93,9 +93,9 @@ enum GroupType
 };
 
 //! Strings corresponding to DistanceType.
-const char *const           c_distanceTypes[] = { "min", "max" };
+const char *const c_distanceTypes[] = { "min", "max" };
 //! Strings corresponding to GroupType.
-const char *const           c_groupTypes[]    = { "all", "res", "mol", "none" };
+const char *const c_groupTypes[] = { "all", "res", "mol", "none" };
 
 /*! \brief
  * Implements `gmx pairdist` trajectory analysis module.
@@ -105,14 +105,14 @@ class PairDistance : public TrajectoryAnalysisModule
     public:
         PairDistance();
 
-        virtual void initOptions(IOptionsContainer          *options,
+        virtual void initOptions(IOptionsContainer *         options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+                                  const TopologyInformation &       top);
 
         virtual TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections);
+            const SelectionCollection &        selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -127,7 +127,7 @@ class PairDistance : public TrajectoryAnalysisModule
          * Within each data set, there is one column for each distance to be
          * computed, as explained in the `-h` text.
          */
-        AnalysisData            distances_;
+        AnalysisData distances_;
 
         /*! \brief
          * Reference selection to compute distances to.
@@ -135,33 +135,33 @@ class PairDistance : public TrajectoryAnalysisModule
          * mappedId() identifies the group (of type `refGroupType_`) into which
          * each position belogs.
          */
-        Selection               refSel_;
+        Selection refSel_;
         /*! \brief
          * Selections to compute distances from.
          *
          * mappedId() identifies the group (of type `selGroupType_`) into which
          * each position belogs.
          */
-        SelectionList           sel_;
+        SelectionList sel_;
 
-        std::string             fnDist_;
+        std::string fnDist_;
 
-        double                  cutoff_;
-        DistanceType            distanceType_;
-        GroupType               refGroupType_;
-        GroupType               selGroupType_;
+        double       cutoff_;
+        DistanceType distanceType_;
+        GroupType    refGroupType_;
+        GroupType    selGroupType_;
 
         //! Number of groups in `refSel_`.
-        int                     refGroupCount_;
+        int refGroupCount_;
         //! Maximum number of pairs of groups for one selection.
-        int                     maxGroupCount_;
+        int maxGroupCount_;
         //! Initial squared distance for distance accumulation.
-        real                    initialDist2_;
+        real initialDist2_;
         //! Cutoff squared for use in the actual calculation.
-        real                    cutoff2_;
+        real cutoff2_;
 
         //! Neighborhood search object for the pair search.
-        AnalysisNeighborhood    nb_;
+        AnalysisNeighborhood nb_;
 
         // Copy and assign disallowed by base.
 };
@@ -175,8 +175,7 @@ PairDistance::PairDistance()
 }
 
 
-void
-PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates pairwise distances between one reference",
@@ -252,9 +251,8 @@ int initSelectionGroups(Selection *sel, const gmx_mtop_t *top, int type)
 }
 
 
-void
-PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                           const TopologyInformation        &top)
+void PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                const TopologyInformation &       top)
 {
     refGroupCount_ = initSelectionGroups(&refSel_, top.mtop(), refGroupType_);
 
@@ -320,11 +318,11 @@ class PairDistanceModuleData : public TrajectoryAnalysisModuleData
         /*! \brief
          * Reserves memory for the frame-local data.
          */
-        PairDistanceModuleData(TrajectoryAnalysisModule          *module,
+        PairDistanceModuleData(TrajectoryAnalysisModule *         module,
                                const AnalysisDataParallelOptions &opt,
-                               const SelectionCollection         &selections,
+                               const SelectionCollection &        selections,
                                int                                refGroupCount,
-                               const Selection                   &refSel,
+                               const Selection &                  refSel,
                                int                                maxGroupCount)
             : TrajectoryAnalysisModuleData(module, opt, selections)
         {
@@ -380,7 +378,7 @@ class PairDistanceModuleData : public TrajectoryAnalysisModuleData
          * cutoff and whether there were additional pairs outside the cutoff
          * that were not covered by the neihborhood search.
          */
-        std::vector<int>  countArray_;
+        std::vector<int> countArray_;
         /*! \brief
          * Number of positions within each reference group.
          *
@@ -388,28 +386,27 @@ class PairDistanceModuleData : public TrajectoryAnalysisModuleData
          * (for comparison with `countArray_`), as otherwise these numbers
          * would need to be recomputed for each selection.
          */
-        std::vector<int>  refCountArray_;
+        std::vector<int> refCountArray_;
 };
 
 TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(
         const AnalysisDataParallelOptions &opt,
-        const SelectionCollection         &selections)
+        const SelectionCollection &        selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new PairDistanceModuleData(this, opt, selections, refGroupCount_,
                                        refSel_, maxGroupCount_));
 }
 
-void
-PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                           TrajectoryAnalysisModuleData *pdata)
+void PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle         dh            = pdata->dataHandle(distances_);
-    const Selection           &refSel        = pdata->parallelSelection(refSel_);
-    const SelectionList       &sel           = pdata->parallelSelections(sel_);
-    PairDistanceModuleData    &frameData     = *static_cast<PairDistanceModuleData *>(pdata);
-    std::vector<real>         &distArray     = frameData.distArray_;
-    std::vector<int>          &countArray    = frameData.countArray_;
+    AnalysisDataHandle      dh         = pdata->dataHandle(distances_);
+    const Selection &       refSel     = pdata->parallelSelection(refSel_);
+    const SelectionList &   sel        = pdata->parallelSelections(sel_);
+    PairDistanceModuleData &frameData  = *static_cast<PairDistanceModuleData *>(pdata);
+    std::vector<real> &     distArray  = frameData.distArray_;
+    std::vector<int> &      countArray = frameData.countArray_;
 
     if (cutoff_ > 0.0 && refSel.isDynamic())
     {
@@ -421,9 +418,9 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         // and it has been initialized in the constructor of the data object.
         frameData.initRefCountArray(refSel);
     }
-    const std::vector<int>    &refCountArray = frameData.refCountArray_;
+    const std::vector<int> &refCountArray = frameData.refCountArray_;
 
-    AnalysisNeighborhoodSearch nbsearch  = nb_.initSearch(pbc, refSel);
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refSel);
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
@@ -525,13 +522,11 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     dh.finishFrame();
 }
 
-void
-PairDistance::finishAnalysis(int /*nframes*/)
+void PairDistance::finishAnalysis(int /*nframes*/)
 {
 }
 
-void
-PairDistance::writeOutput()
+void PairDistance::writeOutput()
 {
 }
 
@@ -539,9 +534,9 @@ PairDistance::writeOutput()
 
 }       // namespace
 
-const char PairDistanceInfo::name[]             = "pairdist";
-const char PairDistanceInfo::shortDescription[] =
-    "Calculate pairwise distances between groups of positions";
+const char PairDistanceInfo::name[] = "pairdist";
+const char PairDistanceInfo::shortDescription[]
+    = "Calculate pairwise distances between groups of positions";
 
 TrajectoryAnalysisModulePointer PairDistanceInfo::create()
 {

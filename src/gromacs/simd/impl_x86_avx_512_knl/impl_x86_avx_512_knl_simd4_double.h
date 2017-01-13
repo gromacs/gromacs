@@ -45,8 +45,7 @@
 namespace gmx
 {
 
-static inline Simd4Double gmx_simdcall
-rsqrt(Simd4Double x)
+static inline Simd4Double gmx_simdcall rsqrt(Simd4Double x)
 {
     return {
 #ifndef NDEBUG //for debug mask to the 4 actually used elements to not trigger 1/0 fp exception

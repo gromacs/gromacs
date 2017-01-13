@@ -40,7 +40,8 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
-typedef struct tagDirStack {
+typedef struct tagDirStack
+{
     directive           d;
     struct tagDirStack *prev;
 } DirStack;

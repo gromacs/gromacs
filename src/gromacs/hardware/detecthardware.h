@@ -96,8 +96,8 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
    This function should be called once on each MPI rank. */
 void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
+                                      const t_commrec *    cr,
+                                      const gmx_hw_opt_t * hw_opt,
                                       gmx_bool             bUseGPU);
 
 /* Check whether a GPU is shared among ranks, and return the number of shared

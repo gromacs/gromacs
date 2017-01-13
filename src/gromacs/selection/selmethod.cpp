@@ -113,16 +113,17 @@ extern gmx_ana_selmethod_t sm_permute;
 /*! \internal \brief
  * Helper structure for defining selection methods.
  */
-typedef struct {
+typedef struct
+{
     /*! \brief
      * Name to register the method under.
      *
      * If NULL, use the actual name of the method.
      * This field is used for defining synonyms.
      */
-    const char            *name;
+    const char *name;
     /** Method data structure to register. */
-    gmx_ana_selmethod_t   *method;
+    gmx_ana_selmethod_t *method;
 } t_register_method;
 
 /** Array of selection methods defined in the library. */
@@ -175,8 +176,7 @@ static const t_register_method smtable_def[] = {
 /*! \brief
  * Convenience function for reporting errors found in selection methods.
  */
-static void
-report_error(FILE *fp, const char *name, const char *fmt, ...)
+static void report_error(FILE *fp, const char *name, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -192,9 +192,8 @@ report_error(FILE *fp, const char *name, const char *fmt, ...)
 /*! \brief
  * Convenience function for reporting errors found in selection method parameters.
  */
-static void
-report_param_error(FILE *fp, const char *mname, const char *pname,
-                   const char *fmt, ...)
+static void report_param_error(FILE *fp, const char *mname, const char *pname,
+                               const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -228,12 +227,11 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * If you remove a check, make sure that the parameter parser can handle the
  * resulting parameters.
  */
-static bool
-check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
-             const gmx::SelectionParserSymbolTable &symtab)
+static bool check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
+                         const gmx::SelectionParserSymbolTable &symtab)
 {
-    bool              bOk = true;
-    int               i, j;
+    bool bOk = true;
+    int  i, j;
 
     if (nparams > 0 && !param)
     {
@@ -401,8 +399,8 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
     while (symbol != symtab.endIterator())
     {
         gmx_ana_selmethod_t *method = symbol->methodValue();
-        gmx_ana_selparam_t  *param  =
-            gmx_ana_selmethod_find_param(name, method);
+        gmx_ana_selparam_t * param
+            = gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
             report_param_error(fp, method->name, param->name, "error: name conflicts with another method or a keyword");
@@ -426,12 +424,11 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
  * This function checks that all the required callbacks are defined, i.e.,
  * not NULL, to find programming errors.
  */
-static bool
-check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
+static bool check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
-    bool         bOk = true;
-    bool         bNeedInit;
-    int          i;
+    bool bOk = true;
+    bool bNeedInit;
+    int  i;
 
     /* Make some checks on init_data and free */
     if (method->nparams > 0 && !method->init_data)
@@ -503,11 +500,10 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static bool
-check_method(FILE *fp, gmx_ana_selmethod_t *method,
-             const gmx::SelectionParserSymbolTable &symtab)
+static bool check_method(FILE *fp, gmx_ana_selmethod_t *method,
+                         const gmx::SelectionParserSymbolTable &symtab)
 {
-    bool         bOk = true;
+    bool bOk = true;
 
     /* Check the type */
     if (method->type == NO_VALUE)
@@ -574,11 +570,10 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static bool
-check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
-               const gmx::SelectionParserSymbolTable &symtab)
+static bool check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
+                           const gmx::SelectionParserSymbolTable &symtab)
 {
-    bool         bOk = true;
+    bool bOk = true;
 
     /* Check the type */
     if (method->type != NO_VALUE && method->type != POS_VALUE)
@@ -594,7 +589,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
     }
     /* Check the parameters */
     /* The first parameter is skipped */
-    if (!check_params(fp, method->name, method->nparams-1, method->param+1, symtab))
+    if (!check_params(fp, method->name, method->nparams - 1, method->param + 1, symtab))
     {
         bOk = false;
     }
@@ -634,9 +629,8 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
  * Some problems only generate warnings.
  * All problems are described to \p stderr.
  */
-int
-gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
-                           const char *name, gmx_ana_selmethod_t *method)
+int gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
+                               const char *name, gmx_ana_selmethod_t *method)
 {
     bool bOk;
 
@@ -675,8 +669,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
  * \returns       0 on success, -1 if any of the default methods could not be
  *   registered.
  */
-int
-gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
+int gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
     size_t i;
     int    rc;
@@ -712,8 +705,7 @@ gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
  *
  * This is a simple wrapper for gmx_ana_selparam_find().
  */
-gmx_ana_selparam_t *
-gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method)
+gmx_ana_selparam_t *gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method)
 {
     return gmx_ana_selparam_find(name, method->nparams, method->param);
 }

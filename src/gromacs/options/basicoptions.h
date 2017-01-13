@@ -360,9 +360,9 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
-        const char *const      *enumValues_;
-        int                     enumValuesCount_;
-        int                     defaultEnumIndex_;
+        const char *const *enumValues_;
+        int                enumValuesCount_;
+        int                defaultEnumIndex_;
 
         /*! \brief
          * Needed to initialize StringOptionStorage from this class without
@@ -444,7 +444,7 @@ class EnumIndexStore : public IOptionValueStore<int>
     private:
         //! Stores the integer values for values().
         std::vector<int>       intStore_;
-        EnumType              *store_;
+        EnumType *             store_;
         std::vector<EnumType> *storeVector_;
 };
 
@@ -580,8 +580,8 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
                             MyBase::store(), MyBase::storeVector()));
         }
 
-        const char *const      *enumValues_;
-        int                     enumValuesCount_;
+        const char *const *enumValues_;
+        int                enumValuesCount_;
 
         /*! \brief
          * Needed to initialize EnumOptionStorage from this class without

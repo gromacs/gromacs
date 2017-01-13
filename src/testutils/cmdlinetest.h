@@ -231,7 +231,7 @@ class CommandLineTestHelper
          */
         static int
         runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
-                        CommandLine                               *commandLine);
+                        CommandLine *                              commandLine);
         /*! \brief
          * Runs a command-line program that implements
          * ICommandLineOptionsModule.
@@ -244,8 +244,8 @@ class CommandLineTestHelper
          *     module.
          */
         static int
-        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
-                         CommandLine                                                 *commandLine);
+        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory,
+                         CommandLine *                                               commandLine);
 
         /*! \brief
          * Initializes an instance.
@@ -373,16 +373,16 @@ class CommandLineTestBase : public ::testing::Test
          *
          * \see CommandLineTestHelper::setInputFileContents()
          */
-        void setInputFileContents(const char        *option,
-                                  const char        *extension,
+        void setInputFileContents(const char *       option,
+                                  const char *       extension,
                                   const std::string &contents);
         /*! \brief
          * Generates and sets an input file.
          *
          * \see CommandLineTestHelper::setInputFileContents()
          */
-        void setInputFileContents(const char                        *option,
-                                  const char                        *extension,
+        void setInputFileContents(const char *                       option,
+                                  const char *                       extension,
                                   const ConstArrayRef<const char *> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.

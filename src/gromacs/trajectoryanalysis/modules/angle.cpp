@@ -271,11 +271,11 @@ class Angle : public TrajectoryAnalysisModule
     public:
         Angle();
 
-        virtual void initOptions(IOptionsContainer          *options,
+        virtual void initOptions(IOptionsContainer *         options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+                                  const TopologyInformation &       top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -289,26 +289,26 @@ class Angle : public TrajectoryAnalysisModule
         void checkSelections(const SelectionList &sel1,
                              const SelectionList &sel2) const;
 
-        SelectionList                            sel1_;
-        SelectionList                            sel2_;
-        SelectionOptionInfo                     *sel1info_;
-        SelectionOptionInfo                     *sel2info_;
-        std::string                              fnAverage_;
-        std::string                              fnAll_;
-        std::string                              fnHistogram_;
+        SelectionList        sel1_;
+        SelectionList        sel2_;
+        SelectionOptionInfo *sel1info_;
+        SelectionOptionInfo *sel2info_;
+        std::string          fnAverage_;
+        std::string          fnAll_;
+        std::string          fnHistogram_;
 
-        Group1Type                               g1type_;
-        Group2Type                               g2type_;
-        double                                   binWidth_;
+        Group1Type g1type_;
+        Group2Type g2type_;
+        double     binWidth_;
 
         AnalysisData                             angles_;
         AnalysisDataFrameAverageModulePointer    averageModule_;
         AnalysisDataSimpleHistogramModulePointer histogramModule_;
 
-        std::vector<int>                         angleCount_;
-        int                                      natoms1_;
-        int                                      natoms2_;
-        std::vector<std::vector<RVec> >          vt0_;
+        std::vector<int>                angleCount_;
+        int                             natoms1_;
+        int                             natoms2_;
+        std::vector<std::vector<RVec> > vt0_;
 
         // Copy and assign disallowed by base.
 };
@@ -329,8 +329,7 @@ Angle::Angle()
 }
 
 
-void
-Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes different types of angles between vectors.",
@@ -413,8 +412,7 @@ Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setti
 }
 
 
-void
-Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
+void Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
 {
     const bool bSingle = (g1type_ == Group1Type_Angle || g1type_ == Group1Type_Dihedral);
 
@@ -464,9 +462,8 @@ Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
 }
 
 
-void
-Angle::initFromSelections(const SelectionList &sel1,
-                          const SelectionList &sel2)
+void Angle::initFromSelections(const SelectionList &sel1,
+                               const SelectionList &sel2)
 {
     const int  angleGroups         = std::max(sel1.size(), sel2.size());
     const bool bHasSecondSelection = natoms2_ > 0;
@@ -521,9 +518,8 @@ Angle::initFromSelections(const SelectionList &sel1,
 }
 
 
-void
-Angle::checkSelections(const SelectionList &sel1,
-                       const SelectionList &sel2) const
+void Angle::checkSelections(const SelectionList &sel1,
+                            const SelectionList &sel2) const
 {
     AnglePositionIterator iter1(sel1, natoms1_);
     AnglePositionIterator iter2(sel2, natoms2_);
@@ -562,10 +558,10 @@ Angle::checkSelections(const SelectionList &sel1,
                 }
                 if (!bOk)
                 {
-                    std::string message =
-                        formatString("Dynamic selection %d does not select "
-                                     "a consistent set of angles over the frames",
-                                     static_cast<int>(g + 1));
+                    std::string message
+                        = formatString("Dynamic selection %d does not select "
+                                       "a consistent set of angles over the frames",
+                                       static_cast<int>(g + 1));
                     GMX_THROW(InconsistentInputError(message));
                 }
             }
@@ -574,9 +570,8 @@ Angle::checkSelections(const SelectionList &sel1,
 }
 
 
-void
-Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                    const TopologyInformation         & /* top */)
+void Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                         const TopologyInformation         & /* top */)
 {
     initFromSelections(sel1_, sel2_);
 
@@ -648,8 +643,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 //! Helper method to calculate a vector from two or three positions.
-static void
-calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
+static void calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 {
     switch (natoms)
     {
@@ -681,7 +675,7 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
             cprod(v1, v2, xout);
             rvec_add(x[0], x[1], cout);
             rvec_add(cout, x[2], cout);
-            svmul(1.0/3.0, cout, cout);
+            svmul(1.0 / 3.0, cout, cout);
             break;
         }
         default:
@@ -690,13 +684,12 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 }
 
 
-void
-Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                    TrajectoryAnalysisModuleData *pdata)
+void Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                         TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh   = pdata->dataHandle(angles_);
-    const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
-    const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
+    AnalysisDataHandle   dh   = pdata->dataHandle(angles_);
+    const SelectionList &sel1 = pdata->parallelSelections(sel1_);
+    const SelectionList &sel2 = pdata->parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 
@@ -706,8 +699,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     AnglePositionIterator iter2(sel2, natoms2_);
     for (size_t g = 0; g < angleCount_.size(); ++g, iter1.nextGroup(), iter2.nextGroup())
     {
-        rvec  v1, v2;
-        rvec  c1, c2;
+        rvec v1, v2;
+        rvec c1, c2;
 
         // v2 & c2 are conditionally set in the switch statement below, and conditionally
         // used in a different switch statement later. Apparently the clang static analyzer
@@ -743,8 +736,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             real angle;
             // checkSelections() ensures that this reflects all the involved
             // positions.
-            const bool bPresent =
-                iter1.currentValuesSelected() && iter2.currentValuesSelected();
+            const bool bPresent
+                = iter1.currentValuesSelected() && iter2.currentValuesSelected();
             iter1.getCurrentPositions(x);
             switch (g1type_)
             {
@@ -838,8 +831,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 }
 
 
-void
-Angle::finishAnalysis(int /*nframes*/)
+void Angle::finishAnalysis(int /*nframes*/)
 {
     AbstractAverageHistogram &averageHistogram = histogramModule_->averager();
     averageHistogram.normalizeProbability();
@@ -847,16 +839,15 @@ Angle::finishAnalysis(int /*nframes*/)
 }
 
 
-void
-Angle::writeOutput()
+void Angle::writeOutput()
 {
 }
 
 }       // namespace
 
-const char AngleInfo::name[]             = "gangle";
-const char AngleInfo::shortDescription[] =
-    "Calculate angles";
+const char AngleInfo::name[] = "gangle";
+const char AngleInfo::shortDescription[]
+    = "Calculate angles";
 
 TrajectoryAnalysisModulePointer AngleInfo::create()
 {

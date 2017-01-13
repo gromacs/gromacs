@@ -78,9 +78,9 @@ typedef struct
     /** Name of the argument (with leading dash included). */
     const char *option;
     /** Whether the argument is set (should be initialized to `FALSE`). */
-    gmx_bool    bSet;
+    gmx_bool bSet;
     /** Type of the argument (one of the enums in pargs.h). */
-    int         type;
+    int type;
     /*! \brief
      * Pointer to variable that is to receive the value.
      *
@@ -96,13 +96,13 @@ typedef struct
          *
          * Needs to be the first member to use initialized arrays.
          */
-        void            *v;
+        void *v;
         /** Integer value for etINT. */
-        int             *i;
+        int *i;
         /** Integer value for etINT64. */
-        gmx_int64_t     *is;
+        gmx_int64_t *is;
         /** Real value for etREAL and etTIME. */
-        real            *r;
+        real *r;
         /*! \brief
          * String value for etSTR and etENUM.
          *
@@ -116,11 +116,11 @@ typedef struct
          * value.  After the arguments are parsed, the first element in the array
          * points to the selected enum value (pointers will be equal).
          */
-        const char     **c;
+        const char **c;
         /** Boolean value for etBOOL. */
-        gmx_bool        *b;
+        gmx_bool *b;
         /** Vector value for etRVEC. */
-        rvec            *rv;
+        rvec *rv;
     }           u;
     /*! \brief
      * Description for the argument.
@@ -218,25 +218,25 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 
 
 /** Add option -w to view output files (must be implemented in program). */
-#define PCA_CAN_VIEW       (1<<5)
+#define PCA_CAN_VIEW       (1 << 5)
 /** Add option to set begin time for trajectory reading. */
-#define PCA_CAN_BEGIN      (1<<6)
+#define PCA_CAN_BEGIN      (1 << 6)
 /** Add option to set end time for trajectory reading. */
-#define PCA_CAN_END        (1<<7)
+#define PCA_CAN_END        (1 << 7)
 /** Add option to set time step for trajectory reading. */
-#define PCA_CAN_DT         (1<<14)
+#define PCA_CAN_DT         (1 << 14)
 /** Add all options for trajectory time control. */
 #define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
 /** Add option -tu to set time unit for output. */
-#define PCA_TIME_UNIT      (1<<15)
+#define PCA_TIME_UNIT      (1 << 15)
 /** Add option -deffnm to set default for all file options. */
-#define PCA_CAN_SET_DEFFNM (1<<10)
+#define PCA_CAN_SET_DEFFNM (1 << 10)
 /** Do not raise a fatal error when invalid options are encountered. */
-#define PCA_NOEXIT_ON_ARGS (1<<11)
+#define PCA_NOEXIT_ON_ARGS (1 << 11)
 /** Is this node not reading: for parallel all nodes but the master */
-#define PCA_NOT_READ_NODE  (1<<16)
+#define PCA_NOT_READ_NODE  (1 << 16)
 /** Don't do any special processing for ffREAD files */
-#define PCA_DISABLE_INPUT_FILE_CHECKING (1<<17)
+#define PCA_DISABLE_INPUT_FILE_CHECKING (1 << 17)
 
 /*! \brief
  * Parse command-line arguments.

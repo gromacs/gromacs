@@ -47,7 +47,8 @@
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct t_commrec;
 
-enum {
+enum
+{
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
     ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
     ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
@@ -59,7 +60,8 @@ enum {
 };
 
 
-enum {
+enum
+{
     ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
     ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
     ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,

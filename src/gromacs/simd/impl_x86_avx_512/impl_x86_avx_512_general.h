@@ -41,8 +41,7 @@
 namespace gmx
 {
 
-static inline void
-simdPrefetch(const void * m)
+static inline void simdPrefetch(const void * m)
 {
     _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
 }
@@ -53,8 +52,7 @@ simdPrefetch(const void * m)
  *
  *  \return Short integer representation of mask
  */
-static inline short
-avx512Mask2Int(__mmask16 m)
+static inline short avx512Mask2Int(__mmask16 m)
 {
     return static_cast<short>(m);
 }
@@ -65,8 +63,7 @@ avx512Mask2Int(__mmask16 m)
  *
  *  \return Mask suitable for use with AVX-512 instructions.
  */
-static inline __mmask16
-avx512Int2Mask(short i)
+static inline __mmask16 avx512Int2Mask(short i)
 {
     return static_cast<__mmask16>(i);
 }

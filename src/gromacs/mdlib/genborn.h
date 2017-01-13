@@ -81,55 +81,55 @@ typedef struct gmx_genborn_t
      * node runs, and for DD at every call to dd_partition_system
      */
 
-    real       *gpol;              /* Atomic polarisation energies */
-    real       *gpol_globalindex;  /*  */
-    real       *gpol_still_work;   /* Work array for Still model */
-    real       *gpol_hct_work;     /* Work array for HCT/OBC models */
-    real       *bRad;              /* Atomic Born radii */
-    real       *vsolv;             /* Atomic solvation volumes */
-    real       *vsolv_globalindex; /*  */
-    real       *gb_radius;         /* Radius info, copied from atomtypes */
-    real       *gb_radius_globalindex;
+    real *gpol;                    /* Atomic polarisation energies */
+    real *gpol_globalindex;        /*  */
+    real *gpol_still_work;         /* Work array for Still model */
+    real *gpol_hct_work;           /* Work array for HCT/OBC models */
+    real *bRad;                    /* Atomic Born radii */
+    real *vsolv;                   /* Atomic solvation volumes */
+    real *vsolv_globalindex;       /*  */
+    real *gb_radius;               /* Radius info, copied from atomtypes */
+    real *gb_radius_globalindex;
 
-    int        *use;                /* Array that till if this atom does GB */
-    int        *use_globalindex;    /* Global array for parallelization */
+    int *use;                       /* Array that till if this atom does GB */
+    int *use_globalindex;           /* Global array for parallelization */
 
-    real        es;                 /* Solvation energy and derivatives */
-    real       *asurf;              /* Atomic surface area */
-    rvec       *dasurf;             /* Surface area derivatives */
-    real        as;                 /* Total surface area */
+    real  es;                       /* Solvation energy and derivatives */
+    real *asurf;                    /* Atomic surface area */
+    rvec *dasurf;                   /* Surface area derivatives */
+    real  as;                       /* Total surface area */
 
-    real       *drobc;              /* Parameters for OBC chain rule calculation */
-    real       *param;              /* Precomputed factor rai*atype->S_hct for HCT/OBC */
-    real       *param_globalindex;  /*  */
+    real *drobc;                    /* Parameters for OBC chain rule calculation */
+    real *param;                    /* Precomputed factor rai*atype->S_hct for HCT/OBC */
+    real *param_globalindex;        /*  */
 
-    real       *log_table;          /* Table for logarithm lookup */
+    real *log_table;                /* Table for logarithm lookup */
 
-    real        obc_alpha;          /* OBC parameters */
-    real        obc_beta;           /* OBC parameters */
-    real        obc_gamma;          /* OBC parameters */
-    real        gb_doffset;         /* Dielectric offset for Still/HCT/OBC */
-    real        gb_epsilon_solvent; /*   */
-    real        epsilon_r;          /* Used for inner dielectric */
+    real obc_alpha;                 /* OBC parameters */
+    real obc_beta;                  /* OBC parameters */
+    real obc_gamma;                 /* OBC parameters */
+    real gb_doffset;                /* Dielectric offset for Still/HCT/OBC */
+    real gb_epsilon_solvent;        /*   */
+    real epsilon_r;                 /* Used for inner dielectric */
 
-    real        sa_surface_tension; /* Surface tension for non-polar solvation */
+    real sa_surface_tension;        /* Surface tension for non-polar solvation */
 
-    real       *work;               /* Used for parallel summation and in the chain rule, length natoms         */
-    real       *buf;                /* Used for parallel summation and in the chain rule, length natoms         */
-    int        *count;              /* Used for setting up the special gb nblist, length natoms                 */
+    real *      work;               /* Used for parallel summation and in the chain rule, length natoms         */
+    real *      buf;                /* Used for parallel summation and in the chain rule, length natoms         */
+    int *       count;              /* Used for setting up the special gb nblist, length natoms                 */
     gbtmpnbls_t nblist_work;        /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */
     int         nblist_work_nalloc; /* Length of second dimension of nblist_work                                */
 }
 gmx_genborn_t;
 /* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
-#define STILL_P1  0.073*0.1              /* length        */
-#define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
-#define STILL_P3  6.211*0.1*CAL2JOULE    /* energy*length */
-#define STILL_P4  15.236*0.1*CAL2JOULE
+#define STILL_P1  0.073 * 0.1              /* length        */
+#define STILL_P2  0.921 * 0.1 * CAL2JOULE  /* energy*length */
+#define STILL_P3  6.211 * 0.1 * CAL2JOULE  /* energy*length */
+#define STILL_P4  15.236 * 0.1 * CAL2JOULE
 #define STILL_P5  1.254
 
-#define STILL_P5INV (1.0/STILL_P5)
-#define STILL_PIP5  (M_PI*STILL_P5)
+#define STILL_P5INV (1.0 / STILL_P5)
+#define STILL_PIP5  (M_PI * STILL_P5)
 
 
 /* Initialise GB stuff */

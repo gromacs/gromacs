@@ -53,11 +53,11 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
 {
     real            r2v1, r2v2, r2c1, r2c2, r2;
     int             ntype, i, j, mb, m, cg, a_mol, a0, a1, a;
-    gmx_bool       *bLJ;
+    gmx_bool *      bLJ;
     gmx_molblock_t *molb;
-    gmx_moltype_t  *molt;
-    t_block        *cgs;
-    t_atom         *atom;
+    gmx_moltype_t * molt;
+    t_block *       cgs;
+    t_atom *        atom;
     rvec            cen;
 
     r2v1 = 0;
@@ -72,8 +72,8 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
         bLJ[i] = FALSE;
         for (j = 0; j < ntype; j++)
         {
-            if (mtop->ffparams.iparams[i*ntype+j].lj.c6  != 0 ||
-                mtop->ffparams.iparams[i*ntype+j].lj.c12 != 0)
+            if (mtop->ffparams.iparams[i * ntype + j].lj.c6  != 0
+                || mtop->ffparams.iparams[i * ntype + j].lj.c12 != 0)
             {
                 bLJ[i] = TRUE;
             }
@@ -92,20 +92,20 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 a0 = cgs->index[cg];
-                a1 = cgs->index[cg+1];
+                a1 = cgs->index[cg + 1];
                 if (a1 - a0 > 1)
                 {
                     clear_rvec(cen);
                     for (a = a0; a < a1; a++)
                     {
-                        rvec_inc(cen, x[a_mol+a]);
+                        rvec_inc(cen, x[a_mol + a]);
                     }
-                    svmul(1.0/(a1-a0), cen, cen);
+                    svmul(1.0 / (a1 - a0), cen, cen);
                     for (a = a0; a < a1; a++)
                     {
-                        r2 = distance2(cen, x[a_mol+a]);
-                        if (r2 > r2v2 && (bLJ[atom[a].type ] ||
-                                          bLJ[atom[a].typeB]))
+                        r2 = distance2(cen, x[a_mol + a]);
+                        if (r2 > r2v2 && (bLJ[atom[a].type ]
+                                          || bLJ[atom[a].typeB]))
                         {
                             if (r2 > r2v1)
                             {
@@ -117,8 +117,8 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                                 r2v2 = r2;
                             }
                         }
-                        if (r2 > r2c2 &&
-                            (atom[a].q != 0 || atom[a].qB != 0))
+                        if (r2 > r2c2
+                            && (atom[a].q != 0 || atom[a].qB != 0))
                         {
                             if (r2 > r2c1)
                             {
@@ -148,10 +148,10 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
 void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, const t_block *cgs,
                rvec pos[], rvec cg_cm[])
 {
-    int      icg, k, k0, k1, d;
-    rvec     cg;
-    real     nrcg, inv_ncg;
-    int     *cgindex;
+    int  icg, k, k0, k1, d;
+    rvec cg;
+    real nrcg, inv_ncg;
+    int *cgindex;
 
 #ifdef DEBUG
     fprintf(fplog, "Calculating centre of geometry for charge groups %d to %d\n",
@@ -162,16 +162,16 @@ void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, const t_block *cgs,
     /* Compute the center of geometry for all charge groups */
     for (icg = cg0; (icg < cg1); icg++)
     {
-        k0      = cgindex[icg];
-        k1      = cgindex[icg+1];
-        nrcg    = k1-k0;
+        k0   = cgindex[icg];
+        k1   = cgindex[icg + 1];
+        nrcg = k1 - k0;
         if (nrcg == 1)
         {
             copy_rvec(pos[k0], cg_cm[icg]);
         }
         else
         {
-            inv_ncg = 1.0/nrcg;
+            inv_ncg = 1.0 / nrcg;
 
             clear_rvec(cg);
             for (k = k0; (k < k1); k++)
@@ -183,7 +183,7 @@ void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, const t_block *cgs,
             }
             for (d = 0; (d < DIM); d++)
             {
-                cg_cm[icg][d] = inv_ncg*cg[d];
+                cg_cm[icg][d] = inv_ncg * cg[d];
             }
         }
     }
@@ -197,7 +197,7 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
     int      npbcdim, icg, k, k0, k1, d, e;
     rvec     cg;
     real     nrcg, inv_ncg;
-    int     *cgindex;
+    int *    cgindex;
     gmx_bool bTric;
 
     if (ePBC == epbcNONE)
@@ -224,9 +224,9 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
     for (icg = cg0; (icg < cg1); icg++)
     {
         /* First compute the center of geometry for this charge group */
-        k0      = cgindex[icg];
-        k1      = cgindex[icg+1];
-        nrcg    = k1-k0;
+        k0   = cgindex[icg];
+        k1   = cgindex[icg + 1];
+        nrcg = k1 - k0;
 
         if (nrcg == 1)
         {
@@ -234,7 +234,7 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
         }
         else
         {
-            inv_ncg = 1.0/nrcg;
+            inv_ncg = 1.0 / nrcg;
 
             clear_rvec(cg);
             for (k = k0; (k < k1); k++)
@@ -246,13 +246,13 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
             }
             for (d = 0; d < DIM; d++)
             {
-                cg_cm[icg][d] = inv_ncg*cg[d];
+                cg_cm[icg][d] = inv_ncg * cg[d];
             }
         }
         /* Now check pbc for this cg */
         if (bTric)
         {
-            for (d = npbcdim-1; d >= 0; d--)
+            for (d = npbcdim - 1; d >= 0; d--)
             {
                 while (cg_cm[icg][d] < 0)
                 {

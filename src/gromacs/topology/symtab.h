@@ -45,9 +45,9 @@ extern "C" {
 
 typedef struct t_symbuf
 {
-    int               bufsize;
-    char            **buf;
-    struct t_symbuf  *next;
+    int              bufsize;
+    char **          buf;
+    struct t_symbuf *next;
 } t_symbuf;
 
 typedef struct t_symtab

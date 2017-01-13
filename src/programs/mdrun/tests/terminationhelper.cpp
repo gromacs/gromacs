@@ -55,8 +55,8 @@ namespace gmx
 namespace test
 {
 
-TerminationHelper::TerminationHelper(TestFileManager  *fileManager,
-                                     CommandLine      *mdrunCaller,
+TerminationHelper::TerminationHelper(TestFileManager * fileManager,
+                                     CommandLine *     mdrunCaller,
                                      SimulationRunner *runner)
     : mdrunCaller_(mdrunCaller), runner_(runner)
 {

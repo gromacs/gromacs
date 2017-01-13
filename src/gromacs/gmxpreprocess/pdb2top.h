@@ -44,12 +44,14 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 
 /* this *MUST* correspond to array in pdb2top.c */
-enum {
+enum
+{
     ehisA, ehisB, ehisH, ehis1, ehisNR
 };
 extern const char *hh[ehisNR];
 
-typedef struct {
+typedef struct
+{
     int   res1, res2;
     char *a1, *a2;
 } t_ssbond;

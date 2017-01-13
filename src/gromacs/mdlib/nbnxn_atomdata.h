@@ -67,7 +67,8 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                             const rvec *x, int nbatFormat,
                             real *xnb, int a0);
 
-enum {
+enum
+{
     enbnxninitcombruleDETECT, enbnxninitcombruleGEOM, enbnxninitcombruleLB, enbnxninitcombruleNONE
 };
 
@@ -88,15 +89,15 @@ void nbnxn_atomdata_init(FILE *fp,
                          nbnxn_free_t  *free);
 
 /* Copy the atom data to the non-bonded atom data structure */
-void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
+void nbnxn_atomdata_set(nbnxn_atomdata_t *   nbat,
                         int                  locality,
                         const nbnxn_search_t nbs,
-                        const t_mdatoms     *mdatoms,
-                        const int           *atinfo);
+                        const t_mdatoms *    mdatoms,
+                        const int *          atinfo);
 
 /* Copy the shift vectors to nbat */
 void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
-                                  rvec             *shift_vec,
+                                  rvec *            shift_vec,
                                   nbnxn_atomdata_t *nbat);
 
 /* Copy x to nbat->x.
@@ -105,17 +106,17 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
 void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      int                  locality,
                                      gmx_bool             FillLocal,
-                                     rvec                *x,
-                                     nbnxn_atomdata_t    *nbat);
+                                     rvec *               x,
+                                     nbnxn_atomdata_t *   nbat);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
-                                    rvec                   *f);
+                                    rvec *                  f);
 
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
-                                              rvec                   *fshift);
+                                              rvec *                  fshift);
 
 #endif

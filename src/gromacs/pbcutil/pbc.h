@@ -50,12 +50,13 @@ struct t_inputrec;
 extern "C" {
 #endif
 
-enum {
+enum
+{
     epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
 };
 
 //! Strings corresponding to epbc enum values.
-extern const char *epbc_names[epbcNR+1];
+extern const char *epbc_names[epbcNR + 1];
 
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of
@@ -64,34 +65,35 @@ extern const char *epbc_names[epbcNR+1];
 #define MAX_NTRICVEC 12
 
 /*! \brief Structure containing info on periodic boundary conditions */
-typedef struct t_pbc {
+typedef struct t_pbc
+{
     //! The PBC type
-    int        ePBC;
+    int ePBC;
     //! Number of dimensions in which PBC is exerted
-    int        ndim_ePBC;
+    int ndim_ePBC;
     /*! \brief Determines how to compute distance vectors.
      *
      *  Indicator of how to compute distance vectors, depending
      *  on PBC type (depends on ePBC and dimensions with(out) DD)
      *  and the box angles.
      */
-    int        ePBCDX;
+    int ePBCDX;
     /*! \brief Used for selecting which dimensions to use in PBC.
      *
      *  In case of 1-D PBC this indicates which dimension is used,
      *  in case of 2-D PBC this indicates the opposite
      */
-    int        dim;
+    int dim;
     //! The simulation box
-    matrix     box;
+    matrix box;
     //! The lengths of the diagonal of the full box
-    rvec       fbox_diag;
+    rvec fbox_diag;
     //! Halve of the above
-    rvec       hbox_diag;
+    rvec hbox_diag;
     //! Negative of the above
-    rvec       mhbox_diag;
+    rvec mhbox_diag;
     //! Maximum allowed cutoff squared for the box and PBC used
-    real       max_cutoff2;
+    real max_cutoff2;
     /*! \brief Number of triclinic shift vectors.
      *
      *  Number of triclinic shift vectors depends on the skewedness
@@ -102,11 +104,11 @@ typedef struct t_pbc {
      *  be tried. Because of the restrictions imposed on the unit-cell
      *  by GROMACS, ntric_vec <= MAX_NTRICVEC = 12.
      */
-    int        ntric_vec;
+    int ntric_vec;
     //! The triclinic shift vectors in grid cells. Internal use only.
-    ivec       tric_shift[MAX_NTRICVEC];
+    ivec tric_shift[MAX_NTRICVEC];
     //!  The triclinic shift vectors in length units
-    rvec       tric_vec[MAX_NTRICVEC];
+    rvec tric_vec[MAX_NTRICVEC];
 } t_pbc;
 
 #define TRICLINIC(box) (box[YY][XX] != 0 || box[ZZ][XX] != 0 || box[ZZ][YY] != 0)
@@ -115,7 +117,8 @@ typedef struct t_pbc {
 #define NCUCVERT 24
 #define NCUCEDGE 36
 
-enum {
+enum
+{
     ecenterTRIC, /* 0.5*(a+b+c)                  */
     ecenterRECT, /* (0.5*a[x],0.5*b[y],0.5*c[z]) */
     ecenterZERO, /* (0,0,0)                      */

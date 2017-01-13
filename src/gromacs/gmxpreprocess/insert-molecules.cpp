@@ -78,7 +78,8 @@
 using gmx::RVec;
 
 /* enum for random rotations of inserted solutes */
-enum RotationType {
+enum RotationType
+{
     en_rotXYZ, en_rotZ, en_rotNone
 };
 const char *const cRotationEnum[] = {"xyz", "z", "none"};
@@ -92,7 +93,7 @@ static void center_molecule(std::vector<RVec> *x)
     {
         rvec_inc(center, (*x)[i]);
     }
-    svmul(1.0/atomCount, center, center);
+    svmul(1.0 / atomCount, center, center);
     for (size_t i = 0; i < atomCount; ++i)
     {
         rvec_dec((*x)[i], center);
@@ -104,7 +105,7 @@ static void generate_trial_conf(const std::vector<RVec> &xin,
                                 gmx::DefaultRandomEngine * rng,
                                 std::vector<RVec> *xout)
 {
-    gmx::UniformRealDistribution<real> dist(0, 2.0*M_PI);
+    gmx::UniformRealDistribution<real> dist(0, 2.0 * M_PI);
     *xout = xin;
 
     real alfa = 0.0, beta = 0.0, gamma = 0.0;
@@ -134,12 +135,12 @@ static void generate_trial_conf(const std::vector<RVec> &xin,
 }
 
 static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
-                               const std::vector<real>         &exclusionDistances,
-                               const std::vector<RVec>         &x,
-                               const std::vector<real>         &exclusionDistances_insrt,
-                               const t_atoms                   &atoms,
-                               const std::set<int>             &removableAtoms,
-                               gmx::AtomsRemover               *remover)
+                               const std::vector<real> &        exclusionDistances,
+                               const std::vector<RVec> &        x,
+                               const std::vector<real> &        exclusionDistances_insrt,
+                               const t_atoms &                  atoms,
+                               const std::set<int> &            removableAtoms,
+                               gmx::AtomsRemover *              remover)
 {
     gmx::AnalysisNeighborhoodPositions  pos(x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
@@ -172,17 +173,17 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         RotationType enum_rot)
 {
     fprintf(stderr, "Initialising inter-atomic distances...\n");
-    gmx_atomprop_t          aps = gmx_atomprop_init();
-    std::vector<real>       exclusionDistances(
+    gmx_atomprop_t    aps = gmx_atomprop_init();
+    std::vector<real> exclusionDistances(
             makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor));
     const std::vector<real> exclusionDistances_insrt(
             makeExclusionDistances(&atoms_insrt, aps, defaultDistance, scaleFactor));
     gmx_atomprop_destroy(aps);
 
-    const real       maxInsertRadius
+    const real maxInsertRadius
         = *std::max_element(exclusionDistances_insrt.begin(),
                             exclusionDistances_insrt.end());
-    real             maxRadius = maxInsertRadius;
+    real maxRadius = maxInsertRadius;
     if (!exclusionDistances.empty())
     {
         const real maxExistingRadius
@@ -204,12 +205,12 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     gmx::DefaultRandomEngine rng(seed);
 
-    t_pbc                    pbc;
+    t_pbc pbc;
     set_pbc(&pbc, ePBC, box);
 
     /* With -ip, take nmol_insrt from file posfn */
-    double     **rpos              = nullptr;
-    const bool   insertAtPositions = !posfn.empty();
+    double **  rpos              = nullptr;
+    const bool insertAtPositions = !posfn.empty();
     if (insertAtPositions)
     {
         int ncol;
@@ -233,15 +234,15 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         exclusionDistances.reserve(finalAtomCount);
     }
 
-    std::vector<RVec>                    x_n(x_insrt.size());
+    std::vector<RVec> x_n(x_insrt.size());
 
-    int                                  mol        = 0;
-    int                                  trial      = 0;
-    int                                  firstTrial = 0;
-    int                                  failed     = 0;
-    gmx::UniformRealDistribution<real>   dist;
+    int                                mol        = 0;
+    int                                trial      = 0;
+    int                                firstTrial = 0;
+    int                                failed     = 0;
+    gmx::UniformRealDistribution<real> dist;
 
-    while (mol < nmol_insrt && trial < ntry*nmol_insrt)
+    while (mol < nmol_insrt && trial < ntry * nmol_insrt)
     {
         // cppcheck 1.72 complains about uninitialized variables in the
         // assignments below otherwise...
@@ -266,9 +267,9 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                 continue;
             }
             // Insert at positions taken from option -ip file.
-            offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * dist(rng)-1);
-            offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2 * dist(rng)-1);
-            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * dist(rng)-1);
+            offset_x[XX] = rpos[XX][mol] + deltaR[XX] * (2 * dist(rng) - 1);
+            offset_x[YY] = rpos[YY][mol] + deltaR[YY] * (2 * dist(rng) - 1);
+            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ] * (2 * dist(rng) - 1);
         }
         fprintf(stderr, "\rTry %d", ++trial);
         fflush(stderr);
@@ -352,7 +353,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         virtual void init(CommandLineModuleSettings * /*settings*/)
         {
         }
-        virtual void initOptions(IOptionsContainer                 *options,
+        virtual void initOptions(IOptionsContainer *                options,
                                  ICommandLineOptionsModuleSettings *settings);
         virtual void optionsFinished();
         virtual int run();
@@ -362,28 +363,28 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
 
         SelectionCollection selections_;
 
-        std::string         inputConfFile_;
-        std::string         insertConfFile_;
-        std::string         positionFile_;
-        std::string         outputConfFile_;
-        rvec                newBox_;
-        bool                bBox_;
-        int                 nmolIns_;
-        int                 nmolTry_;
-        int                 seed_;
-        real                defaultDistance_;
-        real                scaleFactor_;
-        rvec                deltaR_;
-        RotationType        enumRot_;
-        Selection           replaceSel_;
+        std::string  inputConfFile_;
+        std::string  insertConfFile_;
+        std::string  positionFile_;
+        std::string  outputConfFile_;
+        rvec         newBox_;
+        bool         bBox_;
+        int          nmolIns_;
+        int          nmolTry_;
+        int          seed_;
+        real         defaultDistance_;
+        real         scaleFactor_;
+        rvec         deltaR_;
+        RotationType enumRot_;
+        Selection    replaceSel_;
 
-        gmx_mtop_t         *top_;
-        std::vector<RVec>   x_;
-        matrix              box_;
-        int                 ePBC_;
+        gmx_mtop_t *      top_;
+        std::vector<RVec> x_;
+        matrix            box_;
+        int               ePBC_;
 };
 
-void InsertMolecules::initOptions(IOptionsContainer                 *options,
+void InsertMolecules::initOptions(IOptionsContainer *                options,
                                   ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {
@@ -523,7 +524,7 @@ int InsertMolecules::run()
     std::set<int> removableAtoms;
     if (replaceSel_.isValid())
     {
-        t_pbc       pbc;
+        t_pbc pbc;
         set_pbc(&pbc, ePBC_, box_);
         t_trxframe *fr;
         snew(fr, 1);
@@ -553,12 +554,12 @@ int InsertMolecules::run()
                   "or give explicit -box command line option");
     }
 
-    t_topology        *top_insrt;
-    std::vector<RVec>  x_insrt;
+    t_topology *      top_insrt;
+    std::vector<RVec> x_insrt;
     snew(top_insrt, 1);
     {
-        int         ePBC_dummy;
-        matrix      box_dummy;
+        int    ePBC_dummy;
+        matrix box_dummy;
         readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
                          nullptr, &ePBC_dummy, box_dummy, "molecule");
         if (top_insrt->atoms.nr == 0)
@@ -604,9 +605,9 @@ int InsertMolecules::run()
 
 }   // namespace
 
-const char InsertMoleculesInfo::name[]             = "insert-molecules";
-const char InsertMoleculesInfo::shortDescription[] =
-    "Insert molecules into existing vacancies";
+const char InsertMoleculesInfo::name[] = "insert-molecules";
+const char InsertMoleculesInfo::shortDescription[]
+    = "Insert molecules into existing vacancies";
 ICommandLineOptionsModulePointer InsertMoleculesInfo::create()
 {
     return ICommandLineOptionsModulePointer(new InsertMolecules());

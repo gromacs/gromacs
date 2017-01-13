@@ -61,7 +61,7 @@ gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn);
 
 void gmx_structurefactors_done(gmx_structurefactors_t *gsf);
 
-int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, real a[4], real b[4], real *c);
+int gmx_structurefactors_get_sf(gmx_structurefactors_t * gsf, int elem, real a[4], real b[4], real * c);
 
 real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momentum, real ref_k,
                                   real lambda, int n_angles);

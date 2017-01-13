@@ -67,7 +67,7 @@ class IOptionSectionStorage
         /*! \brief
          * Called when option assignment enters this section.
          */
-        virtual void startSection()  = 0;
+        virtual void startSection() = 0;
         /*! \brief
          * Called when option assignment leaves this section.
          */

@@ -82,64 +82,55 @@ void TrajectoryAnalysisSettings::setOptionsModuleSettings(
 }
 
 
-TimeUnit
-TrajectoryAnalysisSettings::timeUnit() const
+TimeUnit TrajectoryAnalysisSettings::timeUnit() const
 {
     return impl_->timeUnit;
 }
 
 
-const AnalysisDataPlotSettings &
-TrajectoryAnalysisSettings::plotSettings() const
+const AnalysisDataPlotSettings &TrajectoryAnalysisSettings::plotSettings() const
 {
     return impl_->plotSettings;
 }
 
 
-unsigned long
-TrajectoryAnalysisSettings::flags() const
+unsigned long TrajectoryAnalysisSettings::flags() const
 {
     return impl_->flags;
 }
 
 
-bool
-TrajectoryAnalysisSettings::hasFlag(unsigned long flag) const
+bool TrajectoryAnalysisSettings::hasFlag(unsigned long flag) const
 {
     return impl_->flags & flag;
 }
 
 
-bool
-TrajectoryAnalysisSettings::hasPBC() const
+bool TrajectoryAnalysisSettings::hasPBC() const
 {
     return impl_->bPBC;
 }
 
 
-bool
-TrajectoryAnalysisSettings::hasRmPBC() const
+bool TrajectoryAnalysisSettings::hasRmPBC() const
 {
     return impl_->bRmPBC;
 }
 
 
-int
-TrajectoryAnalysisSettings::frflags() const
+int TrajectoryAnalysisSettings::frflags() const
 {
     return impl_->frflags;
 }
 
 
-void
-TrajectoryAnalysisSettings::setFlags(unsigned long flags)
+void TrajectoryAnalysisSettings::setFlags(unsigned long flags)
 {
     impl_->flags = flags;
 }
 
 
-void
-TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
+void TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
 {
     if (bSet)
     {
@@ -152,28 +143,24 @@ TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
 }
 
 
-void
-TrajectoryAnalysisSettings::setPBC(bool bPBC)
+void TrajectoryAnalysisSettings::setPBC(bool bPBC)
 {
     impl_->bPBC = bPBC;
 }
 
 
-void
-TrajectoryAnalysisSettings::setRmPBC(bool bRmPBC)
+void TrajectoryAnalysisSettings::setRmPBC(bool bRmPBC)
 {
     impl_->bRmPBC = bRmPBC;
 }
 
 
-void
-TrajectoryAnalysisSettings::setFrameFlags(int frflags)
+void TrajectoryAnalysisSettings::setFrameFlags(int frflags)
 {
     impl_->frflags = frflags;
 }
 
-void
-TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
+void TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
 {
     GMX_RELEASE_ASSERT(impl_->optionsModuleSettings_ != nullptr,
                        "setHelpText() called in invalid context");
@@ -212,8 +199,7 @@ t_topology *TopologyInformation::topology() const
 }
 
 
-void
-TopologyInformation::getTopologyConf(rvec **x, matrix box) const
+void TopologyInformation::getTopologyConf(rvec **x, matrix box) const
 {
     if (box)
     {

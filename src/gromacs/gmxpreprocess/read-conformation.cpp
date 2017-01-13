@@ -80,11 +80,11 @@ void readConformation(const char *confin, gmx_mtop_t *top,
 {
     fprintf(stderr, "Reading %s configuration%s\n", statusTitle,
             v ? " and velocities" : "");
-    rvec                   *x_tmp = nullptr, *v_tmp = nullptr;
-    bool                    dummy;
+    rvec *x_tmp = nullptr, *v_tmp = nullptr;
+    bool  dummy;
     readConfAndTopology(confin, &dummy, top, ePBC, x ? &x_tmp : nullptr, v ? &v_tmp : nullptr, box);
-    const gmx::sfree_guard  xguard(x_tmp);
-    const gmx::sfree_guard  vguard(v_tmp);
+    const gmx::sfree_guard xguard(x_tmp);
+    const gmx::sfree_guard vguard(v_tmp);
     if (x && x_tmp)
     {
         *x = std::vector<RVec>(x_tmp, x_tmp + top->natoms);
@@ -103,10 +103,10 @@ void readConformation(const char *confin, t_topology *top,
 {
     fprintf(stderr, "Reading %s configuration%s\n", statusTitle,
             v ? " and velocities" : "");
-    rvec                   *x_tmp = nullptr, *v_tmp = nullptr;
+    rvec *x_tmp = nullptr, *v_tmp = nullptr;
     read_tps_conf(confin, top, ePBC, x ? &x_tmp : nullptr, v ? &v_tmp : nullptr, box, FALSE);
-    const gmx::sfree_guard  xguard(x_tmp);
-    const gmx::sfree_guard  vguard(v_tmp);
+    const gmx::sfree_guard xguard(x_tmp);
+    const gmx::sfree_guard vguard(v_tmp);
     if (x && x_tmp)
     {
         *x = std::vector<RVec>(x_tmp, x_tmp + top->atoms.nr);

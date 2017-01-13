@@ -79,7 +79,7 @@ class SelectionOptionTestBase : public ::testing::Test
         gmx::Options                options_;
 
     private:
-        gmx::test::TopologyManager  topManager_;
+        gmx::test::TopologyManager topManager_;
 };
 
 SelectionOptionTestBase::SelectionOptionTestBase()
@@ -272,7 +272,7 @@ TEST_F(SelectionOptionTest, HandlesDefaultSelectionText)
 
 TEST_F(SelectionOptionTest, HandlesAdjuster)
 {
-    gmx::SelectionList        sel;
+    gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
                 SelectionOption("sel").storeVector(&sel).multiValue());
@@ -291,7 +291,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 {
-    gmx::Selection            sel;
+    gmx::Selection sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
                 SelectionOption("sel").store(&sel));
@@ -309,7 +309,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 {
-    gmx::SelectionList        sel;
+    gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
                 SelectionOption("sel").storeVector(&sel).multiValue());
@@ -328,7 +328,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
 {
-    gmx::SelectionList        sel;
+    gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
                 SelectionOption("sel").storeVector(&sel).multiValue());
@@ -395,7 +395,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
 
 TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
 {
-    gmx::SelectionList        sel;
+    gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
                 SelectionOption("sel").storeVector(&sel).valueCount(3));

@@ -45,31 +45,27 @@
 namespace gmx
 {
 
-static inline Simd4Float gmx_simdcall
-round(Simd4Float x)
+static inline Simd4Float gmx_simdcall round(Simd4Float x)
 {
     return {
                _mm_round_ps(x.simdInternal_, _MM_FROUND_NINT)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-trunc(Simd4Float x)
+static inline Simd4Float gmx_simdcall trunc(Simd4Float x)
 {
     return {
                _mm_round_ps(x.simdInternal_, _MM_FROUND_TRUNC)
     };
 }
 
-static inline float gmx_simdcall
-dotProduct(Simd4Float a, Simd4Float b)
+static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
     __m128 res = _mm_dp_ps(a.simdInternal_, b.simdInternal_, 0x71);
     return *reinterpret_cast<float *>(&res);
 }
 
-static inline Simd4Float gmx_simdcall
-blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+static inline Simd4Float gmx_simdcall blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 {
     return {
                _mm_blendv_ps(a.simdInternal_, b.simdInternal_, sel.simdInternal_)

@@ -178,20 +178,20 @@ class AbstractOption
         }
 
         //! Minimum number of values required for the option.
-        int                     minValueCount_;
+        int minValueCount_;
         //! Maximum number of values allowed for the option.
-        int                     maxValueCount_;
+        int maxValueCount_;
         //! \endcond
 
     private:
         //! Returns true if a flag has been set.
         bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
 
-        const char             *name_;
+        const char *name_;
         //! Pointer to description of the option.
-        const char             *descr_;
-        OptionFlags             flags_;
-        bool                   *storeIsSet_;
+        const char *descr_;
+        OptionFlags flags_;
+        bool *      storeIsSet_;
 
         /*! \brief
          * Needed to initialize an AbstractOptionStorage object from this class
@@ -387,11 +387,11 @@ class OptionTemplate : public AbstractOption
         //! \endcond
 
     private:
-        const T                *defaultValue_;
-        const T                *defaultValueIfSet_;
-        T                      *store_;
-        int                    *countptr_;
-        std::vector<T>         *storeVector_;
+        const T *       defaultValue_;
+        const T *       defaultValueIfSet_;
+        T *             store_;
+        int *           countptr_;
+        std::vector<T> *storeVector_;
 
         /*! \brief
          * Needed to initialize storage from this class without otherwise
@@ -529,14 +529,14 @@ class OptionInfo
         explicit OptionInfo(AbstractOptionStorage *option);
 
         //! Returns the wrapped option storage object.
-        AbstractOptionStorage       &option() { return option_; }
+        AbstractOptionStorage &option() { return option_; }
         //! Returns the wrapped option storage object.
         const AbstractOptionStorage &option() const { return option_; }
         //! \endcond
 
     private:
         //! The wrapped option.
-        AbstractOptionStorage  &option_;
+        AbstractOptionStorage &option_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
 };

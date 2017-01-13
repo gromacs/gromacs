@@ -138,8 +138,8 @@ class LoggerOwner
 
         LoggerOwner(std::unique_ptr<Impl> impl);
 
-        PrivateImplPointer<Impl>  impl_;
-        const MDLogger           *logger_;
+        PrivateImplPointer<Impl> impl_;
+        const MDLogger *         logger_;
 
         friend class LoggerBuilder;
 };

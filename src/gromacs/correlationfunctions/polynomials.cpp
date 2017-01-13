@@ -62,21 +62,21 @@ real LegendreP(real x, unsigned int m)
             polynomial = x;
             break;
         case 2:
-            x2         = x*x;
-            polynomial = 1.5*x2 - 0.5;
+            x2         = x * x;
+            polynomial = 1.5 * x2 - 0.5;
             break;
         case 3:
-            x2         = x*x;
-            polynomial = (5*x2*x - 3*x )* 0.5;
+            x2         = x * x;
+            polynomial = (5 * x2 * x - 3 * x ) * 0.5;
             break;
         case 4:
-            x2         = x*x;
-            polynomial = (35*x2*x2 - 30*x2 + 3)/8;
+            x2         = x * x;
+            polynomial = (35 * x2 * x2 - 30 * x2 + 3) / 8;
             break;
         case 5:
-            x2         = x*x;
-            x3         = x2*x;
-            polynomial = (63*x3*x2 - 70*x3 + 15*x)/8;
+            x2         = x * x;
+            x3         = x2 * x;
+            polynomial = (63 * x3 * x2 - 70 * x3 + 15 * x) / 8;
             break;
         default:
             gmx_fatal(FARGS, "Legendre polynomials of order %u are not supported", m);

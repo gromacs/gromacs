@@ -60,10 +60,10 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static void pull_reduce_real(t_commrec   *cr,
+static void pull_reduce_real(t_commrec *  cr,
                              pull_comm_t *comm,
                              int          n,
-                             real        *data)
+                             real *       data)
 {
     if (cr != nullptr && PAR(cr))
     {
@@ -100,10 +100,10 @@ static void pull_reduce_real(t_commrec   *cr,
     }
 }
 
-static void pull_reduce_double(t_commrec   *cr,
+static void pull_reduce_double(t_commrec *  cr,
                                pull_comm_t *comm,
                                int          n,
-                               double      *data)
+                               double *     data)
 {
     if (cr != nullptr && PAR(cr))
     {
@@ -189,7 +189,7 @@ static void pull_set_pbcatoms(t_commrec *cr, struct pull_t *pull,
          * This can be very expensive at high parallelization, so we only
          * do this after each DD repartitioning.
          */
-        pull_reduce_real(cr, &pull->comm, pull->ngroup*DIM, x_pbc[0]);
+        pull_reduce_real(cr, &pull->comm, pull->ngroup * DIM, x_pbc[0]);
     }
 }
 
@@ -197,18 +197,18 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                              t_pbc *pbc, double t, rvec *x)
 {
     /* The size and stride per coord for the reduction buffer */
-    const int       stride = 9;
-    int             c, i, ii, m, start, end;
-    rvec            g_x, dx, dir;
-    double          inv_cyl_r2;
-    pull_comm_t    *comm;
-    gmx_ga2la_t    *ga2la = nullptr;
+    const int    stride = 9;
+    int          c, i, ii, m, start, end;
+    rvec         g_x, dx, dir;
+    double       inv_cyl_r2;
+    pull_comm_t *comm;
+    gmx_ga2la_t *ga2la = nullptr;
 
     comm = &pull->comm;
 
     if (comm->dbuf_cyl == nullptr)
     {
-        snew(comm->dbuf_cyl, pull->ncoord*stride);
+        snew(comm->dbuf_cyl, pull->ncoord * stride);
     }
 
     if (cr && DOMAINDECOMP(cr))
@@ -219,7 +219,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
     start = 0;
     end   = md->homenr;
 
-    inv_cyl_r2 = 1.0/gmx::square(pull->params.cylinder_r);
+    inv_cyl_r2 = 1.0 / gmx::square(pull->params.cylinder_r);
 
     /* loop over all groups to make a reference group for each*/
     for (c = 0; c < pull->ncoord; c++)
@@ -228,7 +228,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
         double             sum_a, wmass, wwmass;
         dvec               radf_fac0, radf_fac1;
 
-        pcrd   = &pull->coord[c];
+        pcrd = &pull->coord[c];
 
         sum_a  = 0;
         wmass  = 0;
@@ -255,11 +255,11 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             if (pcrd->params.rate != 0)
             {
                 /* With rate=0, value_ref is set initially */
-                pcrd->value_ref = pcrd->params.init + pcrd->params.rate*t;
+                pcrd->value_ref = pcrd->params.init + pcrd->params.rate * t;
             }
             for (m = 0; m < DIM; m++)
             {
-                g_x[m] = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
+                g_x[m] = pgrp->x[m] - pcrd->vec[m] * pcrd->value_ref;
             }
 
             /* loop over all atoms in the main ref group */
@@ -284,10 +284,10 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                     for (m = 0; m < DIM; m++)
                     {
                         /* Determine the radial components */
-                        dr[m] = dx[m] - inp*dir[m];
-                        dr2  += dr[m]*dr[m];
+                        dr[m] = dx[m] - inp * dir[m];
+                        dr2  += dr[m] * dr[m];
                     }
-                    dr2_rel = dr2*inv_cyl_r2;
+                    dr2_rel = dr2 * inv_cyl_r2;
 
                     if (dr2_rel < 1)
                     {
@@ -297,7 +297,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                         /* add to index, to sum of COM, to weight array */
                         if (pdyna->nat_loc >= pdyna->nalloc_loc)
                         {
-                            pdyna->nalloc_loc = over_alloc_large(pdyna->nat_loc+1);
+                            pdyna->nalloc_loc = over_alloc_large(pdyna->nat_loc + 1);
                             srenew(pdyna->ind_loc,    pdyna->nalloc_loc);
                             srenew(pdyna->weight_loc, pdyna->nalloc_loc);
                             srenew(pdyna->mdw,        pdyna->nalloc_loc);
@@ -305,19 +305,19 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                         }
                         pdyna->ind_loc[pdyna->nat_loc] = ii;
 
-                        mass      = md->massT[ii];
+                        mass = md->massT[ii];
                         /* The radial weight function is 1-2x^2+x^4,
                          * where x=r/cylinder_r. Since this function depends
                          * on the radial component, we also get radial forces
                          * on both groups.
                          */
-                        weight    = 1 + (-2 + dr2_rel)*dr2_rel;
-                        dweight_r = (-4 + 4*dr2_rel)*inv_cyl_r2;
+                        weight                            = 1 + (-2 + dr2_rel) * dr2_rel;
+                        dweight_r                         = (-4 + 4 * dr2_rel) * inv_cyl_r2;
                         pdyna->weight_loc[pdyna->nat_loc] = weight;
-                        sum_a    += mass*weight*inp;
-                        wmass    += mass*weight;
-                        wwmass   += mass*weight*weight;
-                        dsvmul(mass*dweight_r, dr, mdw);
+                        sum_a                            += mass * weight * inp;
+                        wmass                            += mass * weight;
+                        wwmass                           += mass * weight * weight;
+                        dsvmul(mass * dweight_r, dr, mdw);
                         copy_dvec(mdw, pdyna->mdw[pdyna->nat_loc]);
                         /* Currently we only have the axial component of the
                          * distance (inp) up to an unkown offset. We add this
@@ -328,35 +328,35 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                         for (m = 0; m < DIM; m++)
                         {
                             radf_fac0[m] += mdw[m];
-                            radf_fac1[m] += mdw[m]*inp;
+                            radf_fac1[m] += mdw[m] * inp;
                         }
                         pdyna->nat_loc++;
                     }
                 }
             }
         }
-        comm->dbuf_cyl[c*stride+0] = wmass;
-        comm->dbuf_cyl[c*stride+1] = wwmass;
-        comm->dbuf_cyl[c*stride+2] = sum_a;
-        comm->dbuf_cyl[c*stride+3] = radf_fac0[XX];
-        comm->dbuf_cyl[c*stride+4] = radf_fac0[YY];
-        comm->dbuf_cyl[c*stride+5] = radf_fac0[ZZ];
-        comm->dbuf_cyl[c*stride+6] = radf_fac1[XX];
-        comm->dbuf_cyl[c*stride+7] = radf_fac1[YY];
-        comm->dbuf_cyl[c*stride+8] = radf_fac1[ZZ];
+        comm->dbuf_cyl[c * stride + 0] = wmass;
+        comm->dbuf_cyl[c * stride + 1] = wwmass;
+        comm->dbuf_cyl[c * stride + 2] = sum_a;
+        comm->dbuf_cyl[c * stride + 3] = radf_fac0[XX];
+        comm->dbuf_cyl[c * stride + 4] = radf_fac0[YY];
+        comm->dbuf_cyl[c * stride + 5] = radf_fac0[ZZ];
+        comm->dbuf_cyl[c * stride + 6] = radf_fac1[XX];
+        comm->dbuf_cyl[c * stride + 7] = radf_fac1[YY];
+        comm->dbuf_cyl[c * stride + 8] = radf_fac1[ZZ];
     }
 
     if (cr != nullptr && PAR(cr))
     {
         /* Sum the contributions over the ranks */
-        pull_reduce_double(cr, comm, pull->ncoord*stride, comm->dbuf_cyl);
+        pull_reduce_double(cr, comm, pull->ncoord * stride, comm->dbuf_cyl);
     }
 
     for (c = 0; c < pull->ncoord; c++)
     {
         pull_coord_work_t *pcrd;
 
-        pcrd  = &pull->coord[c];
+        pcrd = &pull->coord[c];
 
         if (pcrd->params.eGeom == epullgCYL)
         {
@@ -366,24 +366,24 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             pdyna = &pull->dyna[c];
             pgrp  = &pull->group[pcrd->params.group[1]];
 
-            wmass          = comm->dbuf_cyl[c*stride+0];
-            wwmass         = comm->dbuf_cyl[c*stride+1];
-            pdyna->mwscale = 1.0/wmass;
+            wmass          = comm->dbuf_cyl[c * stride + 0];
+            wwmass         = comm->dbuf_cyl[c * stride + 1];
+            pdyna->mwscale = 1.0 / wmass;
             /* Cylinder pulling can't be used with constraints, but we set
              * wscale and invtm anyhow, in case someone would like to use them.
              */
-            pdyna->wscale  = wmass/wwmass;
-            pdyna->invtm   = wwmass/(wmass*wmass);
+            pdyna->wscale = wmass / wwmass;
+            pdyna->invtm  = wwmass / (wmass * wmass);
 
             /* We store the deviation of the COM from the reference location
              * used above, since we need it when we apply the radial forces
              * to the atoms in the cylinder group.
              */
-            pcrd->cyl_dev  = 0;
+            pcrd->cyl_dev = 0;
             for (m = 0; m < DIM; m++)
             {
-                g_x[m]         = pgrp->x[m] - pcrd->vec[m]*pcrd->value_ref;
-                dist           = -pcrd->vec[m]*comm->dbuf_cyl[c*stride+2]*pdyna->mwscale;
+                g_x[m]         = pgrp->x[m] - pcrd->vec[m] * pcrd->value_ref;
+                dist           = -pcrd->vec[m] * comm->dbuf_cyl[c * stride + 2] * pdyna->mwscale;
                 pdyna->x[m]    = g_x[m] - dist;
                 pcrd->cyl_dev += dist;
             }
@@ -394,15 +394,15 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
              */
             for (m = 0; m < DIM; m++)
             {
-                pcrd->ffrad[m] = (comm->dbuf_cyl[c*stride+6+m] +
-                                  comm->dbuf_cyl[c*stride+3+m]*pcrd->cyl_dev)/wmass;
+                pcrd->ffrad[m] = (comm->dbuf_cyl[c * stride + 6 + m]
+                                  + comm->dbuf_cyl[c * stride + 3 + m] * pcrd->cyl_dev) / wmass;
             }
 
             if (debug)
             {
                 fprintf(debug, "Pull cylinder group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
                         c, pdyna->x[0], pdyna->x[1],
-                        pdyna->x[2], 1.0/pdyna->invtm);
+                        pdyna->x[2], 1.0 / pdyna->invtm);
                 fprintf(debug, "ffrad %8.3f %8.3f %8.3f\n",
                         pcrd->ffrad[XX], pcrd->ffrad[YY], pcrd->ffrad[ZZ]);
             }
@@ -417,7 +417,7 @@ static double atan2_0_2pi(double y, double x)
     a = atan2(y, x);
     if (a < 0)
     {
-        a += 2.0*M_PI;
+        a += 2.0 * M_PI;
     }
     return a;
 }
@@ -449,22 +449,22 @@ static void sum_com_part(const pull_group_work_t *pgrp,
             real w;
 
             w        = pgrp->weight_loc[i];
-            wm       = w*mass[ii];
+            wm       = w * mass[ii];
             sum_wm  += wm;
-            sum_wwm += wm*w;
+            sum_wwm += wm * w;
         }
         if (pgrp->epgrppbc == epgrppbcNONE)
         {
             /* Plain COM: sum the coordinates */
             for (int d = 0; d < DIM; d++)
             {
-                sum_wmx[d]      += wm*x[ii][d];
+                sum_wmx[d] += wm * x[ii][d];
             }
             if (xp)
             {
                 for (int d = 0; d < DIM; d++)
                 {
-                    sum_wmxp[d] += wm*xp[ii][d];
+                    sum_wmxp[d] += wm * xp[ii][d];
                 }
             }
         }
@@ -476,7 +476,7 @@ static void sum_com_part(const pull_group_work_t *pgrp,
             pbc_dx(pbc, x[ii], x_pbc, dx);
             for (int d = 0; d < DIM; d++)
             {
-                sum_wmx[d]     += wm*dx[d];
+                sum_wmx[d] += wm * dx[d];
             }
             if (xp)
             {
@@ -486,7 +486,7 @@ static void sum_com_part(const pull_group_work_t *pgrp,
                  */
                 for (int d = 0; d < DIM; d++)
                 {
-                    sum_wmxp[d] += wm*(dx[d] + xp[ii][d] - x[ii][d]);
+                    sum_wmxp[d] += wm * (dx[d] + xp[ii][d] - x[ii][d]);
                 }
             }
         }
@@ -519,23 +519,23 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int  ii  = pgrp->ind_loc[i];
-        real m   = mass[ii];
+        int  ii = pgrp->ind_loc[i];
+        real m  = mass[ii];
         /* Determine cos and sin sums */
-        real cw  = std::cos(x[ii][cosdim]*twopi_box);
-        real sw  = std::sin(x[ii][cosdim]*twopi_box);
-        sum_cm  += static_cast<double>(cw*m);
-        sum_sm  += static_cast<double>(sw*m);
-        sum_ccm += static_cast<double>(cw*cw*m);
-        sum_csm += static_cast<double>(cw*sw*m);
-        sum_ssm += static_cast<double>(sw*sw*m);
+        real cw = std::cos(x[ii][cosdim] * twopi_box);
+        real sw = std::sin(x[ii][cosdim] * twopi_box);
+        sum_cm  += static_cast<double>(cw * m);
+        sum_sm  += static_cast<double>(sw * m);
+        sum_ccm += static_cast<double>(cw * cw * m);
+        sum_csm += static_cast<double>(cw * sw * m);
+        sum_ssm += static_cast<double>(sw * sw * m);
 
         if (xp != nullptr)
         {
-            real cw  = std::cos(xp[ii][cosdim]*twopi_box);
-            real sw  = std::sin(xp[ii][cosdim]*twopi_box);
-            sum_cmp += static_cast<double>(cw*m);
-            sum_smp += static_cast<double>(sw*m);
+            real cw = std::cos(xp[ii][cosdim] * twopi_box);
+            real sw = std::sin(xp[ii][cosdim] * twopi_box);
+            sum_cmp += static_cast<double>(cw * m);
+            sum_smp += static_cast<double>(sw * m);
         }
     }
 
@@ -565,7 +565,7 @@ void pull_calc_coms(t_commrec *cr,
     }
     if (comm->dbuf == nullptr)
     {
-        snew(comm->dbuf, 3*pull->ngroup);
+        snew(comm->dbuf, 3 * pull->ngroup);
     }
 
     if (pull->bRefAt && pull->bSetPBCatoms)
@@ -591,14 +591,14 @@ void pull_calc_coms(t_commrec *cr,
 
         assert(pull->npbcdim <= DIM);
 
-        for (m = pull->cosdim+1; m < pull->npbcdim; m++)
+        for (m = pull->cosdim + 1; m < pull->npbcdim; m++)
         {
             if (pbc->box[m][pull->cosdim] != 0)
             {
                 gmx_fatal(FARGS, "Can not do cosine weighting for trilinic dimensions");
             }
         }
-        twopi_box = 2.0*M_PI/pbc->box[pull->cosdim][pull->cosdim];
+        twopi_box = 2.0 * M_PI / pbc->box[pull->cosdim][pull->cosdim];
     }
 
     for (g = 0; g < pull->ngroup; g++)
@@ -611,7 +611,7 @@ void pull_calc_coms(t_commrec *cr,
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
-                rvec   x_pbc = { 0, 0, 0 };
+                rvec x_pbc = { 0, 0, 0 };
 
                 if (pgrp->epgrppbc == epgrppbcREFAT)
                 {
@@ -627,9 +627,9 @@ void pull_calc_coms(t_commrec *cr,
                  * Note that with constraint pulling the mass does matter, but
                  * in that case a check group mass != 0 has been done before.
                  */
-                if (pgrp->params.nat == 1 &&
-                    pgrp->nat_loc == 1 &&
-                    md->massT[pgrp->ind_loc[0]] == 0)
+                if (pgrp->params.nat == 1
+                    && pgrp->nat_loc == 1
+                    && md->massT[pgrp->ind_loc[0]] == 0)
                 {
                     GMX_ASSERT(xp == NULL, "We should not have groups with zero mass with constraints, i.e. xp!=NULL");
 
@@ -654,8 +654,8 @@ void pull_calc_coms(t_commrec *cr,
 #pragma omp parallel for num_threads(pull->nthreads) schedule(static)
                     for (int t = 0; t < pull->nthreads; t++)
                     {
-                        int ind_start = (pgrp->nat_loc*(t + 0))/pull->nthreads;
-                        int ind_end   = (pgrp->nat_loc*(t + 1))/pull->nthreads;
+                        int ind_start = (pgrp->nat_loc * (t + 0)) / pull->nthreads;
+                        int ind_end   = (pgrp->nat_loc * (t + 1)) / pull->nthreads;
                         sum_com_part(pgrp, ind_start, ind_end,
                                      x, xp, md->massT,
                                      pbc, x_pbc,
@@ -678,11 +678,11 @@ void pull_calc_coms(t_commrec *cr,
                 }
 
                 /* Copy local sums to a buffer for global summing */
-                copy_dvec(sum_com->sum_wmx,  comm->dbuf[g*3]);
-                copy_dvec(sum_com->sum_wmxp, comm->dbuf[g*3 + 1]);
-                comm->dbuf[g*3 + 2][0] = sum_com->sum_wm;
-                comm->dbuf[g*3 + 2][1] = sum_com->sum_wwm;
-                comm->dbuf[g*3 + 2][2] = 0;
+                copy_dvec(sum_com->sum_wmx,  comm->dbuf[g * 3]);
+                copy_dvec(sum_com->sum_wmxp, comm->dbuf[g * 3 + 1]);
+                comm->dbuf[g * 3 + 2][0] = sum_com->sum_wm;
+                comm->dbuf[g * 3 + 2][1] = sum_com->sum_wwm;
+                comm->dbuf[g * 3 + 2][2] = 0;
             }
             else
             {
@@ -693,8 +693,8 @@ void pull_calc_coms(t_commrec *cr,
 #pragma omp parallel for num_threads(pull->nthreads) schedule(static)
                 for (int t = 0; t < pull->nthreads; t++)
                 {
-                    int ind_start = (pgrp->nat_loc*(t + 0))/pull->nthreads;
-                    int ind_end   = (pgrp->nat_loc*(t + 1))/pull->nthreads;
+                    int ind_start = (pgrp->nat_loc * (t + 0)) / pull->nthreads;
+                    int ind_end   = (pgrp->nat_loc * (t + 1)) / pull->nthreads;
                     sum_com_part_cosweight(pgrp, ind_start, ind_end,
                                            pull->cosdim, twopi_box,
                                            x, xp, md->massT,
@@ -715,20 +715,20 @@ void pull_calc_coms(t_commrec *cr,
                 }
 
                 /* Copy local sums to a buffer for global summing */
-                comm->dbuf[g*3    ][0] = sum_com->sum_cm;
-                comm->dbuf[g*3    ][1] = sum_com->sum_sm;
-                comm->dbuf[g*3    ][2] = 0;
-                comm->dbuf[g*3 + 1][0] = sum_com->sum_ccm;
-                comm->dbuf[g*3 + 1][1] = sum_com->sum_csm;
-                comm->dbuf[g*3 + 1][2] = sum_com->sum_ssm;
-                comm->dbuf[g*3 + 2][0] = sum_com->sum_cmp;
-                comm->dbuf[g*3 + 2][1] = sum_com->sum_smp;
-                comm->dbuf[g*3 + 2][2] = 0;
+                comm->dbuf[g * 3    ][0] = sum_com->sum_cm;
+                comm->dbuf[g * 3    ][1] = sum_com->sum_sm;
+                comm->dbuf[g * 3    ][2] = 0;
+                comm->dbuf[g * 3 + 1][0] = sum_com->sum_ccm;
+                comm->dbuf[g * 3 + 1][1] = sum_com->sum_csm;
+                comm->dbuf[g * 3 + 1][2] = sum_com->sum_ssm;
+                comm->dbuf[g * 3 + 2][0] = sum_com->sum_cmp;
+                comm->dbuf[g * 3 + 2][1] = sum_com->sum_smp;
+                comm->dbuf[g * 3 + 2][2] = 0;
             }
         }
     }
 
-    pull_reduce_double(cr, comm, pull->ngroup*3*DIM, comm->dbuf[0]);
+    pull_reduce_double(cr, comm, pull->ngroup * 3 * DIM, comm->dbuf[0]);
 
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -743,26 +743,26 @@ void pull_calc_coms(t_commrec *cr,
                 int    m;
 
                 /* Determine the inverse mass */
-                wmass             = comm->dbuf[g*3+2][0];
-                wwmass            = comm->dbuf[g*3+2][1];
-                pgrp->mwscale     = 1.0/wmass;
+                wmass         = comm->dbuf[g * 3 + 2][0];
+                wwmass        = comm->dbuf[g * 3 + 2][1];
+                pgrp->mwscale = 1.0 / wmass;
                 /* invtm==0 signals a frozen group, so then we should keep it zero */
                 if (pgrp->invtm != 0)
                 {
-                    pgrp->wscale  = wmass/wwmass;
-                    pgrp->invtm   = wwmass/(wmass*wmass);
+                    pgrp->wscale = wmass / wwmass;
+                    pgrp->invtm  = wwmass / (wmass * wmass);
                 }
                 /* Divide by the total mass */
                 for (m = 0; m < DIM; m++)
                 {
-                    pgrp->x[m]      = comm->dbuf[g*3  ][m]*pgrp->mwscale;
+                    pgrp->x[m] = comm->dbuf[g * 3  ][m] * pgrp->mwscale;
                     if (xp)
                     {
-                        pgrp->xp[m] = comm->dbuf[g*3+1][m]*pgrp->mwscale;
+                        pgrp->xp[m] = comm->dbuf[g * 3 + 1][m] * pgrp->mwscale;
                     }
                     if (pgrp->epgrppbc == epgrppbcREFAT)
                     {
-                        pgrp->x[m]      += comm->rbuf[g][m];
+                        pgrp->x[m] += comm->rbuf[g][m];
                         if (xp)
                         {
                             pgrp->xp[m] += comm->rbuf[g][m];
@@ -777,38 +777,38 @@ void pull_calc_coms(t_commrec *cr,
                 int    i, ii;
 
                 /* Determine the optimal location of the cosine weight */
-                csw                   = comm->dbuf[g*3][0];
-                snw                   = comm->dbuf[g*3][1];
-                pgrp->x[pull->cosdim] = atan2_0_2pi(snw, csw)/twopi_box;
+                csw                   = comm->dbuf[g * 3][0];
+                snw                   = comm->dbuf[g * 3][1];
+                pgrp->x[pull->cosdim] = atan2_0_2pi(snw, csw) / twopi_box;
                 /* Set the weights for the local atoms */
-                wmass  = sqrt(csw*csw + snw*snw);
-                wwmass = (comm->dbuf[g*3+1][0]*csw*csw +
-                          comm->dbuf[g*3+1][1]*csw*snw +
-                          comm->dbuf[g*3+1][2]*snw*snw)/(wmass*wmass);
+                wmass  = sqrt(csw * csw + snw * snw);
+                wwmass = (comm->dbuf[g * 3 + 1][0] * csw * csw
+                          + comm->dbuf[g * 3 + 1][1] * csw * snw
+                          + comm->dbuf[g * 3 + 1][2] * snw * snw) / (wmass * wmass);
 
-                pgrp->mwscale = 1.0/wmass;
-                pgrp->wscale  = wmass/wwmass;
-                pgrp->invtm   = wwmass/(wmass*wmass);
+                pgrp->mwscale = 1.0 / wmass;
+                pgrp->wscale  = wmass / wwmass;
+                pgrp->invtm   = wwmass / (wmass * wmass);
                 /* Set the weights for the local atoms */
                 csw *= pgrp->invtm;
                 snw *= pgrp->invtm;
                 for (i = 0; i < pgrp->nat_loc; i++)
                 {
                     ii                  = pgrp->ind_loc[i];
-                    pgrp->weight_loc[i] = csw*cos(twopi_box*x[ii][pull->cosdim]) +
-                        snw*sin(twopi_box*x[ii][pull->cosdim]);
+                    pgrp->weight_loc[i] = csw * cos(twopi_box * x[ii][pull->cosdim])
+                        + snw * sin(twopi_box * x[ii][pull->cosdim]);
                 }
                 if (xp)
                 {
-                    csw                    = comm->dbuf[g*3+2][0];
-                    snw                    = comm->dbuf[g*3+2][1];
-                    pgrp->xp[pull->cosdim] = atan2_0_2pi(snw, csw)/twopi_box;
+                    csw                    = comm->dbuf[g * 3 + 2][0];
+                    snw                    = comm->dbuf[g * 3 + 2][1];
+                    pgrp->xp[pull->cosdim] = atan2_0_2pi(snw, csw) / twopi_box;
                 }
             }
             if (debug)
             {
                 fprintf(debug, "Pull group %d wmass %f invtm %f\n",
-                        g, 1.0/pgrp->mwscale, pgrp->invtm);
+                        g, 1.0 / pgrp->mwscale, pgrp->invtm);
             }
         }
     }

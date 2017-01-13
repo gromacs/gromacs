@@ -74,9 +74,9 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     double                  mtot;
     rvec                    com;
     gmx_mtop_ilistloop_t    iloop;
-    t_ilist                *il;
+    t_ilist *               il;
     gmx_mtop_atomloop_all_t aloop;
-    const gmx_multisim_t   *ms;
+    const gmx_multisim_t *  ms;
 
     od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);
     if (0 == od->nr)
@@ -114,12 +114,12 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
             ex = mtop->ffparams.iparams[il[F_ORIRES].iatoms[i]].orires.ex;
             if (ex >= od->nex)
             {
-                srenew(nr_ex, ex+1);
-                for (j = od->nex; j < ex+1; j++)
+                srenew(nr_ex, ex + 1);
+                for (j = od->nex; j < ex + 1; j++)
                 {
                     nr_ex[j] = 0;
                 }
-                od->nex = ex+1;
+                od->nex = ex + 1;
             }
             nr_ex[ex]++;
         }
@@ -147,14 +147,14 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     else
     {
         snew(od->Dtav, od->nr);
-        od->edt   = std::exp(-ir->delta_t/ir->orires_tau);
+        od->edt   = std::exp(-ir->delta_t / ir->orires_tau);
         od->edt_1 = 1.0 - od->edt;
 
         /* Extend the state with the orires history */
-        state->flags           |= (1<<estORIRE_INITF);
+        state->flags           |= (1 << estORIRE_INITF);
         state->hist.orire_initf = 1;
-        state->flags           |= (1<<estORIRE_DTAV);
-        state->hist.norire_Dtav = od->nr*5;
+        state->flags           |= (1 << estORIRE_DTAV);
+        state->hist.norire_Dtav = od->nr * 5;
         snew(state->hist.orire_Dtav, state->hist.norire_Dtav);
     }
 
@@ -198,7 +198,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     snew(od->xref, od->nref);
     snew(od->xtmp, od->nref);
 
-    snew(od->eig, od->nex*12);
+    snew(od->eig, od->nex * 12);
 
     /* Determine the reference structure on the master node.
      * Copy it to the other nodes after checking multi compatibility,
@@ -211,8 +211,8 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     const t_atom *atom;
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
-        if (mtop->groups.grpnr[egcORFIT] == nullptr ||
-            mtop->groups.grpnr[egcORFIT][i] == 0)
+        if (mtop->groups.grpnr[egcORFIT] == nullptr
+            || mtop->groups.grpnr[egcORFIT][i] == 0)
         {
             /* Not correct for free-energy with changing masses */
             od->mref[j] = atom->m;
@@ -221,14 +221,14 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                 copy_rvec(xref[i], od->xref[j]);
                 for (d = 0; d < DIM; d++)
                 {
-                    com[d] += od->mref[j]*xref[i][d];
+                    com[d] += od->mref[j] * xref[i][d];
                 }
             }
             mtot += od->mref[j];
             j++;
         }
     }
-    svmul(1.0/mtot, com, com);
+    svmul(1.0 / mtot, com, com);
     if (ms == nullptr || MASTERSIM(ms))
     {
         for (j = 0; j < od->nref; j++)
@@ -240,7 +240,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     fprintf(fplog, "Found %d orientation experiments\n", od->nex);
     for (i = 0; i < od->nex; i++)
     {
-        fprintf(fplog, "  experiment %d has %d restraints\n", i+1, nr_ex[i]);
+        fprintf(fplog, "  experiment %d has %d restraints\n", i + 1, nr_ex[i]);
     }
 
     sfree(nr_ex);
@@ -260,7 +260,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                         FALSE);
         check_multi_int(fplog, ms, ir->nsteps, "nsteps", FALSE);
         /* Copy the reference coordinates from the master to the other nodes */
-        gmx_sum_sim(DIM*od->nref, od->xref[0], ms);
+        gmx_sum_sim(DIM * od->nref, od->xref[0], ms);
     }
 
     please_cite(fplog, "Hess2003");
@@ -268,8 +268,8 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
 
 void diagonalize_orires_tensors(t_oriresdata *od)
 {
-    int           ex, i, j, nrot, ord[DIM], t;
-    matrix        S, TMP;
+    int    ex, i, j, nrot, ord[DIM], t;
+    matrix S, TMP;
 
     if (od->M == nullptr)
     {
@@ -307,7 +307,7 @@ void diagonalize_orires_tensors(t_oriresdata *od)
         }
         for (i = 0; i < DIM; i++)
         {
-            for (j = i+1; j < DIM; j++)
+            for (j = i + 1; j < DIM; j++)
             {
                 if (gmx::square(od->eig_diag[ord[j]]) > gmx::square(od->eig_diag[ord[i]]))
                 {
@@ -320,13 +320,13 @@ void diagonalize_orires_tensors(t_oriresdata *od)
 
         for (i = 0; i < DIM; i++)
         {
-            od->eig[ex*12 + i] = od->eig_diag[ord[i]];
+            od->eig[ex * 12 + i] = od->eig_diag[ord[i]];
         }
         for (i = 0; i < DIM; i++)
         {
             for (j = 0; j < DIM; j++)
             {
-                od->eig[ex*12 + 3 + 3*i + j] = od->v[j][ord[i]];
+                od->eig[ex * 12 + 3 + 3 * i + j] = od->v[j][ord[i]];
             }
         }
     }
@@ -341,16 +341,16 @@ void print_orires_log(FILE *log, t_oriresdata *od)
 
     for (ex = 0; ex < od->nex; ex++)
     {
-        eig = od->eig + ex*12;
-        fprintf(log, "  Orientation experiment %d:\n", ex+1);
+        eig = od->eig + ex * 12;
+        fprintf(log, "  Orientation experiment %d:\n", ex + 1);
         fprintf(log, "    order parameter: %g\n", eig[0]);
         for (i = 0; i < DIM; i++)
         {
             fprintf(log, "    eig: %6.3f   %6.3f %6.3f %6.3f\n",
-                    (eig[0] != 0) ? eig[i]/eig[0] : eig[i],
-                    eig[DIM+i*DIM+XX],
-                    eig[DIM+i*DIM+YY],
-                    eig[DIM+i*DIM+ZZ]);
+                    (eig[0] != 0) ? eig[i] / eig[0] : eig[i],
+                    eig[DIM + i * DIM + XX],
+                    eig[DIM + i * DIM + YY],
+                    eig[DIM + i * DIM + ZZ]);
         }
         fprintf(log, "\n");
     }
@@ -361,16 +361,16 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                      const t_mdatoms *md, const rvec x[], const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist)
 {
-    int              fa, d, i, j, type, ex, nref;
-    real             edt, edt_1, invn, pfac, r2, invr, corrfac, weight, wsv2, sw, dev;
-    tensor          *S, R, TMP;
-    rvec5           *Dinsl, *Dins, *Dtav, *rhs;
-    real            *mref, ***T;
-    double           mtot;
-    rvec            *xref, *xtmp, com, r_unrot, r;
-    t_oriresdata    *od;
-    gmx_bool         bTAV;
-    const real       two_thr = 2.0/3.0;
+    int           fa, d, i, j, type, ex, nref;
+    real          edt, edt_1, invn, pfac, r2, invr, corrfac, weight, wsv2, sw, dev;
+    tensor *      S, R, TMP;
+    rvec5 *       Dinsl, *Dins, *Dtav, *rhs;
+    real *        mref, ***T;
+    double        mtot;
+    rvec *        xref, *xtmp, com, r_unrot, r;
+    t_oriresdata *od;
+    gmx_bool      bTAV;
+    const real    two_thr = 2.0 / 3.0;
 
     od = &(fcd->orires);
 
@@ -396,12 +396,12 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
     if (bTAV)
     {
-        od->exp_min_t_tau = hist->orire_initf*edt;
+        od->exp_min_t_tau = hist->orire_initf * edt;
 
         /* Correction factor to correct for the lack of history
          * at short times.
          */
-        corrfac = 1.0/(1.0 - od->exp_min_t_tau);
+        corrfac = 1.0 / (1.0 - od->exp_min_t_tau);
     }
     else
     {
@@ -410,7 +410,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
     if (ms)
     {
-        invn = 1.0/ms->nsim;
+        invn = 1.0 / ms->nsim;
     }
     else
     {
@@ -428,13 +428,13 @@ real calc_orires_dev(const gmx_multisim_t *ms,
             mref[j] = md->massT[i];
             for (d = 0; d < DIM; d++)
             {
-                com[d] += mref[j]*xref[j][d];
+                com[d] += mref[j] * xref[j][d];
             }
             mtot += mref[j];
             j++;
         }
     }
-    svmul(1.0/mtot, com, com);
+    svmul(1.0 / mtot, com, com);
     for (j = 0; j < nref; j++)
     {
         rvec_dec(xtmp[j], com);
@@ -449,32 +449,32 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         type = forceatoms[fa];
         if (pbc)
         {
-            pbc_dx_aiuc(pbc, x[forceatoms[fa+1]], x[forceatoms[fa+2]], r_unrot);
+            pbc_dx_aiuc(pbc, x[forceatoms[fa + 1]], x[forceatoms[fa + 2]], r_unrot);
         }
         else
         {
-            rvec_sub(x[forceatoms[fa+1]], x[forceatoms[fa+2]], r_unrot);
+            rvec_sub(x[forceatoms[fa + 1]], x[forceatoms[fa + 2]], r_unrot);
         }
         mvmul(R, r_unrot, r);
         r2   = norm2(r);
         invr = gmx::invsqrt(r2);
         /* Calculate the prefactor for the D tensor, this includes the factor 3! */
-        pfac = ip[type].orires.c*invr*invr*3;
+        pfac = ip[type].orires.c * invr * invr * 3;
         for (i = 0; i < ip[type].orires.power; i++)
         {
             pfac *= invr;
         }
-        Dinsl[d][0] = pfac*(2*r[0]*r[0] + r[1]*r[1] - r2);
-        Dinsl[d][1] = pfac*(2*r[0]*r[1]);
-        Dinsl[d][2] = pfac*(2*r[0]*r[2]);
-        Dinsl[d][3] = pfac*(2*r[1]*r[1] + r[0]*r[0] - r2);
-        Dinsl[d][4] = pfac*(2*r[1]*r[2]);
+        Dinsl[d][0] = pfac * (2 * r[0] * r[0] + r[1] * r[1] - r2);
+        Dinsl[d][1] = pfac * (2 * r[0] * r[1]);
+        Dinsl[d][2] = pfac * (2 * r[0] * r[2]);
+        Dinsl[d][3] = pfac * (2 * r[1] * r[1] + r[0] * r[0] - r2);
+        Dinsl[d][4] = pfac * (2 * r[1] * r[2]);
 
         if (ms)
         {
             for (i = 0; i < 5; i++)
             {
-                Dins[d][i] = Dinsl[d][i]*invn;
+                Dins[d][i] = Dinsl[d][i] * invn;
             }
         }
 
@@ -483,7 +483,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
     if (ms)
     {
-        gmx_sum_sim(5*od->nr, Dins[0], ms);
+        gmx_sum_sim(5 * od->nr, Dins[0], ms);
     }
 
     /* Calculate the order tensor S for each experiment via optimization */
@@ -509,7 +509,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
              */
             for (i = 0; i < 5; i++)
             {
-                Dtav[d][i] = edt*hist->orire_Dtav[d*5+i] + edt_1*Dins[d][i];
+                Dtav[d][i] = edt * hist->orire_Dtav[d * 5 + i] + edt_1 * Dins[d][i];
             }
         }
 
@@ -519,10 +519,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         /* Calculate the vector rhs and half the matrix T for the 5 equations */
         for (i = 0; i < 5; i++)
         {
-            rhs[ex][i] += Dtav[d][i]*ip[type].orires.obs*weight;
+            rhs[ex][i] += Dtav[d][i] * ip[type].orires.obs * weight;
             for (j = 0; j <= i; j++)
             {
-                T[ex][i][j] += Dtav[d][i]*Dtav[d][j]*weight;
+                T[ex][i][j] += Dtav[d][i] * Dtav[d][j] * weight;
             }
         }
         d++;
@@ -550,11 +550,11 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         S[ex][1][2] = 0;
         for (i = 0; i < 5; i++)
         {
-            S[ex][0][0] += 1.5*T[ex][0][i]*rhs[ex][i];
-            S[ex][0][1] += 1.5*T[ex][1][i]*rhs[ex][i];
-            S[ex][0][2] += 1.5*T[ex][2][i]*rhs[ex][i];
-            S[ex][1][1] += 1.5*T[ex][3][i]*rhs[ex][i];
-            S[ex][1][2] += 1.5*T[ex][4][i]*rhs[ex][i];
+            S[ex][0][0] += 1.5 * T[ex][0][i] * rhs[ex][i];
+            S[ex][0][1] += 1.5 * T[ex][1][i] * rhs[ex][i];
+            S[ex][0][2] += 1.5 * T[ex][2][i] * rhs[ex][i];
+            S[ex][1][1] += 1.5 * T[ex][3][i] * rhs[ex][i];
+            S[ex][1][2] += 1.5 * T[ex][4][i] * rhs[ex][i];
         }
         S[ex][1][0] = S[ex][0][1];
         S[ex][2][0] = S[ex][0][2];
@@ -571,35 +571,35 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         type = forceatoms[fa];
         ex   = ip[type].orires.ex;
 
-        od->otav[d] = two_thr*
-            corrfac*(S[ex][0][0]*Dtav[d][0] + S[ex][0][1]*Dtav[d][1] +
-                     S[ex][0][2]*Dtav[d][2] + S[ex][1][1]*Dtav[d][3] +
-                     S[ex][1][2]*Dtav[d][4]);
+        od->otav[d] = two_thr
+            * corrfac * (S[ex][0][0] * Dtav[d][0] + S[ex][0][1] * Dtav[d][1]
+                         + S[ex][0][2] * Dtav[d][2] + S[ex][1][1] * Dtav[d][3]
+                         + S[ex][1][2] * Dtav[d][4]);
         if (bTAV)
         {
-            od->oins[d] = two_thr*(S[ex][0][0]*Dins[d][0] + S[ex][0][1]*Dins[d][1] +
-                                   S[ex][0][2]*Dins[d][2] + S[ex][1][1]*Dins[d][3] +
-                                   S[ex][1][2]*Dins[d][4]);
+            od->oins[d] = two_thr * (S[ex][0][0] * Dins[d][0] + S[ex][0][1] * Dins[d][1]
+                                     + S[ex][0][2] * Dins[d][2] + S[ex][1][1] * Dins[d][3]
+                                     + S[ex][1][2] * Dins[d][4]);
         }
         if (ms)
         {
             /* When ensemble averaging is used recalculate the local orientation
              * for output to the energy file.
              */
-            od->oinsl[d] = two_thr*
-                (S[ex][0][0]*Dinsl[d][0] + S[ex][0][1]*Dinsl[d][1] +
-                 S[ex][0][2]*Dinsl[d][2] + S[ex][1][1]*Dinsl[d][3] +
-                 S[ex][1][2]*Dinsl[d][4]);
+            od->oinsl[d] = two_thr
+                * (S[ex][0][0] * Dinsl[d][0] + S[ex][0][1] * Dinsl[d][1]
+                   + S[ex][0][2] * Dinsl[d][2] + S[ex][1][1] * Dinsl[d][3]
+                   + S[ex][1][2] * Dinsl[d][4]);
         }
 
         dev = od->otav[d] - ip[type].orires.obs;
 
-        wsv2 += ip[type].orires.kfac*gmx::square(dev);
+        wsv2 += ip[type].orires.kfac * gmx::square(dev);
         sw   += ip[type].orires.kfac;
 
         d++;
     }
-    od->rmsdev = std::sqrt(wsv2/sw);
+    od->rmsdev = std::sqrt(wsv2 / sw);
 
     /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
     for (ex = 0; ex < od->nex; ex++)
@@ -646,9 +646,9 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
         d = 0;
         for (fa = 0; fa < nfa; fa += 3)
         {
-            type  = forceatoms[fa];
-            ai    = forceatoms[fa+1];
-            aj    = forceatoms[fa+2];
+            type = forceatoms[fa];
+            ai   = forceatoms[fa + 1];
+            aj   = forceatoms[fa + 2];
             if (pbc)
             {
                 ki = pbc_dx_aiuc(pbc, x[ai], x[aj], r);
@@ -659,10 +659,10 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             }
             r2    = norm2(r);
             invr  = gmx::invsqrt(r2);
-            invr2 = invr*invr;
+            invr2 = invr * invr;
             ex    = ip[type].orires.ex;
             power = ip[type].orires.power;
-            fc    = smooth_fc*ip[type].orires.kfac;
+            fc    = smooth_fc * ip[type].orires.kfac;
             dev   = od->otav[d] - ip[type].orires.obs;
 
             /* NOTE:
@@ -674,13 +674,13 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             {
                 /* Calculate the force as the sqrt of tav times instantaneous */
                 devins = od->oins[d] - ip[type].orires.obs;
-                if (dev*devins <= 0)
+                if (dev * devins <= 0)
                 {
                     dev = 0;
                 }
                 else
                 {
-                    dev = std::sqrt(dev*devins);
+                    dev = std::sqrt(dev * devins);
                     if (devins < 0)
                     {
                         dev = -dev;
@@ -688,7 +688,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
             }
 
-            pfac  = fc*ip[type].orires.c*invr2;
+            pfac = fc * ip[type].orires.c * invr2;
             for (i = 0; i < power; i++)
             {
                 pfac *= invr;
@@ -696,8 +696,8 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             mvmul(od->S[ex], r, Sr);
             for (i = 0; i < DIM; i++)
             {
-                fij[i] =
-                    -pfac*dev*(4*Sr[i] - 2*(2+power)*invr2*iprod(Sr, r)*r[i]);
+                fij[i]
+                    = -pfac * dev * (4 * Sr[i] - 2 * (2 + power) * invr2 * iprod(Sr, r) * r[i]);
             }
 
             if (g)
@@ -738,7 +738,7 @@ void update_orires_history(t_fcdata *fcd, history_t *hist)
         {
             for (i = 0; i < 5; i++)
             {
-                hist->orire_Dtav[pair*5+i] = od->Dtav[pair][i];
+                hist->orire_Dtav[pair * 5 + i] = od->Dtav[pair][i];
             }
         }
     }

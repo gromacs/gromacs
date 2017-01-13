@@ -523,4 +523,4 @@ nb_kernel_info_t
 };
 
 int
-    kernellist_avx_128_fma_double_size = sizeof(kernellist_avx_128_fma_double)/sizeof(kernellist_avx_128_fma_double[0]);
+    kernellist_avx_128_fma_double_size = sizeof(kernellist_avx_128_fma_double) / sizeof(kernellist_avx_128_fma_double[0]);

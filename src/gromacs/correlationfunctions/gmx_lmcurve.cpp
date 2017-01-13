@@ -47,7 +47,8 @@
 #include <lmmin.h>
 #include <lmstruct.h>
 
-typedef struct {
+typedef struct
+{
     const double* t;
     const double* y;
     const double* dy;
@@ -68,7 +69,7 @@ static void lmcurve_evaluate(
         {
             dy = 1;
         }
-        fvec[i] = (D->y[i] - D->f(D->t[i], par))/dy;
+        fvec[i] = (D->y[i] - D->f(D->t[i], par)) / dy;
     }
     *info = 0;
 }

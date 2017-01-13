@@ -79,8 +79,7 @@ class NullChecker : public IReferenceDataEntryChecker
 {
     public:
         virtual void fillEntry(ReferenceDataEntry *) const {}
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &, const std::string &) const
+        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &, const std::string &) const
         {
             return ::testing::AssertionSuccess();
         }
@@ -98,8 +97,7 @@ class ExactStringChecker : public IReferenceDataEntryChecker
         {
             entry->setValue(value_);
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
         {
             if (entry.value() == value_)
             {
@@ -112,7 +110,7 @@ class ExactStringChecker : public IReferenceDataEntryChecker
         }
 
     private:
-        std::string  value_;
+        std::string value_;
 };
 
 class ExactStringBlockChecker : public IReferenceDataEntryChecker
@@ -127,8 +125,7 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
         {
             entry->setTextBlockValue(value_);
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
         {
             if (entry.value() == value_)
             {
@@ -141,7 +138,7 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
         }
 
     private:
-        std::string  value_;
+        std::string value_;
 };
 
 
@@ -172,8 +169,7 @@ class FloatingPointChecker : public IReferenceDataEntryChecker
             const int prec = std::numeric_limits<FloatType>::digits10 + 2;
             entry->setValue(formatString("%.*g", prec, value_));
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
         {
             FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
             FloatingPointDifference diff(refValue, value_);
@@ -190,8 +186,8 @@ class FloatingPointChecker : public IReferenceDataEntryChecker
         }
 
     private:
-        FloatType               value_;
-        FloatingPointTolerance  tolerance_;
+        FloatType              value_;
+        FloatingPointTolerance tolerance_;
 };
 
 template <typename FloatType>
@@ -208,8 +204,7 @@ class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
         {
             entry->setValue(value_);
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
         {
             FloatType               value    = fromString<FloatType>(value_);
             FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
@@ -227,8 +222,8 @@ class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
         }
 
     private:
-        std::string             value_;
-        FloatingPointTolerance  tolerance_;
+        std::string            value_;
+        FloatingPointTolerance tolerance_;
 };
 
 template <typename ValueType>
@@ -244,8 +239,7 @@ class ValueExtractor : public IReferenceDataEntryChecker
         {
             GMX_THROW(TestException("Extracting value from non-existent reference data entry"));
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &) const
+        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &) const
         {
             extractValue(entry.value());
             return ::testing::AssertionSuccess();
@@ -260,8 +254,7 @@ class ValueExtractor : public IReferenceDataEntryChecker
         ValueType *value_;
 };
 
-template <> inline void
-ValueExtractor<std::string>::extractValue(const std::string &value) const
+template <> inline void ValueExtractor<std::string>::extractValue(const std::string &value) const
 {
     *value_ = value;
 }

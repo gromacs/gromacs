@@ -58,7 +58,7 @@ class SimdFloat
         // Internal utility constructor to simplify return statements
         SimdFloat(__m512 simd) : simdInternal_(simd) {}
 
-        __m512  simdInternal_;
+        __m512 simdInternal_;
 };
 
 class SimdFInt32
@@ -71,7 +71,7 @@ class SimdFInt32
         // Internal utility constructor to simplify return statements
         SimdFInt32(__m512i simd) : simdInternal_(simd) {}
 
-        __m512i  simdInternal_;
+        __m512i simdInternal_;
 };
 
 class SimdFBool
@@ -82,7 +82,7 @@ class SimdFBool
         // Internal utility constructor to simplify return statements
         SimdFBool(__mmask16 simd) : simdInternal_(simd) {}
 
-        __mmask16  simdInternal_;
+        __mmask16 simdInternal_;
 };
 
 class SimdFIBool
@@ -93,11 +93,10 @@ class SimdFIBool
         // Internal utility constructor to simplify return statements
         SimdFIBool(__mmask16 simd) : simdInternal_(simd) {}
 
-        __mmask16  simdInternal_;
+        __mmask16 simdInternal_;
 };
 
-static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+static inline SimdFloat gmx_simdcall simdLoad(const float *m)
 {
     assert(std::size_t(m) % 64 == 0);
     return {
@@ -105,37 +104,32 @@ simdLoad(const float *m)
     };
 }
 
-static inline void gmx_simdcall
-store(float *m, SimdFloat a)
+static inline void gmx_simdcall store(float *m, SimdFloat a)
 {
     assert(std::size_t(m) % 64 == 0);
     _mm512_store_ps(m, a.simdInternal_);
 }
 
-static inline SimdFloat gmx_simdcall
-simdLoadU(const float *m)
+static inline SimdFloat gmx_simdcall simdLoadU(const float *m)
 {
     return {
                _mm512_loadu_ps(m)
     };
 }
 
-static inline void gmx_simdcall
-storeU(float *m, SimdFloat a)
+static inline void gmx_simdcall storeU(float *m, SimdFloat a)
 {
     _mm512_storeu_ps(m, a.simdInternal_);
 }
 
-static inline SimdFloat gmx_simdcall
-setZeroF()
+static inline SimdFloat gmx_simdcall setZeroF()
 {
     return {
                _mm512_setzero_ps()
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t * m)
 {
     assert(std::size_t(m) % 64 == 0);
     return {
@@ -143,29 +137,25 @@ simdLoadFI(const std::int32_t * m)
     };
 }
 
-static inline void gmx_simdcall
-store(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall store(std::int32_t * m, SimdFInt32 a)
 {
     assert(std::size_t(m) % 64 == 0);
     _mm512_store_si512(m, a.simdInternal_);
 }
 
-static inline SimdFInt32 gmx_simdcall
-simdLoadUFI(const std::int32_t *m)
+static inline SimdFInt32 gmx_simdcall simdLoadUFI(const std::int32_t *m)
 {
     return {
                _mm512_loadu_si512(m)
     };
 }
 
-static inline void gmx_simdcall
-storeU(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall storeU(std::int32_t * m, SimdFInt32 a)
 {
     _mm512_storeu_si512(m, a.simdInternal_);
 }
 
-static inline SimdFInt32 gmx_simdcall
-setZeroFI()
+static inline SimdFInt32 gmx_simdcall setZeroFI()
 {
     return {
                _mm512_setzero_si512()
@@ -173,96 +163,84 @@ setZeroFI()
 }
 
 
-static inline SimdFloat gmx_simdcall
-operator&(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator&(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a.simdInternal_), _mm512_castps_si512(b.simdInternal_)))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-andNot(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall andNot(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_castsi512_ps(_mm512_andnot_epi32(_mm512_castps_si512(a.simdInternal_), _mm512_castps_si512(b.simdInternal_)))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-operator|(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator|(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_castsi512_ps(_mm512_or_epi32(_mm512_castps_si512(a.simdInternal_), _mm512_castps_si512(b.simdInternal_)))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-operator^(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator^(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a.simdInternal_), _mm512_castps_si512(b.simdInternal_)))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-operator+(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator+(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_add_ps(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-operator-(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator-(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_sub_ps(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-operator-(SimdFloat x)
+static inline SimdFloat gmx_simdcall operator-(SimdFloat x)
 {
     return {
                _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(x.simdInternal_), _mm512_castps_si512(_mm512_set1_ps(GMX_FLOAT_NEGZERO))))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-operator*(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator*(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_mul_ps(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm512_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm512_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm512_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
                _mm512_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
@@ -271,16 +249,14 @@ fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 
 // Override for AVX-512-KNL
 #if GMX_SIMD_X86_AVX_512
-static inline SimdFloat gmx_simdcall
-rsqrt(SimdFloat x)
+static inline SimdFloat gmx_simdcall rsqrt(SimdFloat x)
 {
     return {
                _mm512_rsqrt14_ps(x.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-rcp(SimdFloat x)
+static inline SimdFloat gmx_simdcall rcp(SimdFloat x)
 {
     return {
                _mm512_rcp14_ps(x.simdInternal_)
@@ -288,24 +264,21 @@ rcp(SimdFloat x)
 }
 #endif
 
-static inline SimdFloat gmx_simdcall
-maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
 {
     return {
                _mm512_mask_add_ps(a.simdInternal_, m.simdInternal_, a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
 {
     return {
                _mm512_maskz_mul_ps(m.simdInternal_, a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 {
     return {
                _mm512_maskz_fmadd_ps(m.simdInternal_, a.simdInternal_, b.simdInternal_, c.simdInternal_)
@@ -314,16 +287,14 @@ maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 
 // Override for AVX-512-KNL
 #if GMX_SIMD_X86_AVX_512
-static inline SimdFloat gmx_simdcall
-maskzRsqrt(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzRsqrt(SimdFloat x, SimdFBool m)
 {
     return {
                _mm512_maskz_rsqrt14_ps(m.simdInternal_, x.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-maskzRcp(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzRcp(SimdFloat x, SimdFBool m)
 {
     return {
                _mm512_maskz_rcp14_ps(m.simdInternal_, x.simdInternal_)
@@ -331,40 +302,35 @@ maskzRcp(SimdFloat x, SimdFBool m)
 }
 #endif
 
-static inline SimdFloat gmx_simdcall
-abs(SimdFloat x)
+static inline SimdFloat gmx_simdcall abs(SimdFloat x)
 {
     return {
                _mm512_castsi512_ps(_mm512_andnot_epi32(_mm512_castps_si512(_mm512_set1_ps(GMX_FLOAT_NEGZERO)), _mm512_castps_si512(x.simdInternal_)))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-max(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall max(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_max_ps(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-min(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall min(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_min_ps(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-round(SimdFloat x)
+static inline SimdFloat gmx_simdcall round(SimdFloat x)
 {
     return {
                _mm512_roundscale_ps(x.simdInternal_, 0)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-trunc(SimdFloat x)
+static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 {
 #if defined(__INTEL_COMPILER) || defined(__ECC)
     return {
@@ -377,8 +343,7 @@ trunc(SimdFloat x)
 #endif
 }
 
-static inline SimdFloat gmx_simdcall
-frexp(SimdFloat value, SimdFInt32 * exponent)
+static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 * exponent)
 {
     __m512  rExponent = _mm512_getexp_ps(value.simdInternal_);
     __m512i iExponent =  _mm512_cvtps_epi32(rExponent);
@@ -390,8 +355,7 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-ldexp(SimdFloat value, SimdFInt32 exponent)
+static inline SimdFloat gmx_simdcall ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const __m512i exponentBias = _mm512_set1_epi32(127);
     __m512i       iExponent;
@@ -403,8 +367,7 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
     };
 }
 
-static inline float gmx_simdcall
-reduce(SimdFloat a)
+static inline float gmx_simdcall reduce(SimdFloat a)
 {
     __m512 x = a.simdInternal_;
     x = _mm512_add_ps(x, _mm512_shuffle_f32x4(x, x, 0xEE));
@@ -414,268 +377,234 @@ reduce(SimdFloat a)
     return *reinterpret_cast<float *>(&x);
 }
 
-static inline SimdFBool gmx_simdcall
-operator==(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator==(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_EQ_OQ)
     };
 }
 
-static inline SimdFBool gmx_simdcall
-operator!=(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator!=(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_NEQ_OQ)
     };
 }
 
-static inline SimdFBool gmx_simdcall
-operator<(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator<(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_LT_OQ)
     };
 }
 
-static inline SimdFBool gmx_simdcall
-operator<=(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator<=(SimdFloat a, SimdFloat b)
 {
     return {
                _mm512_cmp_ps_mask(a.simdInternal_, b.simdInternal_, _CMP_LE_OQ)
     };
 }
 
-static inline SimdFBool gmx_simdcall
-testBits(SimdFloat a)
+static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
 {
     return {
                _mm512_test_epi32_mask( _mm512_castps_si512(a.simdInternal_), _mm512_castps_si512(a.simdInternal_) )
     };
 }
 
-static inline SimdFBool gmx_simdcall
-operator&&(SimdFBool a, SimdFBool b)
+static inline SimdFBool gmx_simdcall operator&&(SimdFBool a, SimdFBool b)
 {
     return {
                _mm512_kand(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFBool gmx_simdcall
-operator||(SimdFBool a, SimdFBool b)
+static inline SimdFBool gmx_simdcall operator||(SimdFBool a, SimdFBool b)
 {
     return {
                _mm512_kor(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline bool gmx_simdcall
-anyTrue(SimdFBool a)
+static inline bool gmx_simdcall anyTrue(SimdFBool a)
 {
     return ( avx512Mask2Int(a.simdInternal_) != 0);
 }
 
-static inline SimdFloat gmx_simdcall
-selectByMask(SimdFloat a, SimdFBool m)
+static inline SimdFloat gmx_simdcall selectByMask(SimdFloat a, SimdFBool m)
 {
     return {
                _mm512_mask_mov_ps(_mm512_setzero_ps(), m.simdInternal_, a.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-selectByNotMask(SimdFloat a, SimdFBool m)
+static inline SimdFloat gmx_simdcall selectByNotMask(SimdFloat a, SimdFBool m)
 {
     return {
                _mm512_mask_mov_ps(a.simdInternal_, m.simdInternal_, _mm512_setzero_ps())
     };
 }
 
-static inline SimdFloat gmx_simdcall
-blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+static inline SimdFloat gmx_simdcall blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
     return {
                _mm512_mask_blend_ps(sel.simdInternal_, a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
+static inline SimdFInt32 gmx_simdcall operator<<(SimdFInt32 a, int n)
 {
     return {
                _mm512_slli_epi32(a.simdInternal_, n)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
+static inline SimdFInt32 gmx_simdcall operator>>(SimdFInt32 a, int n)
 {
     return {
                _mm512_srli_epi32(a.simdInternal_, n)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator&(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator&(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_and_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-andNot(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall andNot(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_andnot_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator|(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator|(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_or_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator^(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator^(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_xor_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator+(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator+(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_add_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator-(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator-(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_sub_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator*(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator*(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_mullo_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFIBool gmx_simdcall
-operator==(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFIBool gmx_simdcall operator==(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_cmp_epi32_mask(a.simdInternal_, b.simdInternal_, _MM_CMPINT_EQ)
     };
 }
 
-static inline SimdFIBool gmx_simdcall
-testBits(SimdFInt32 a)
+static inline SimdFIBool gmx_simdcall testBits(SimdFInt32 a)
 {
     return {
                _mm512_test_epi32_mask( a.simdInternal_, a.simdInternal_ )
     };
 }
 
-static inline SimdFIBool gmx_simdcall
-operator<(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFIBool gmx_simdcall operator<(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm512_cmp_epi32_mask(a.simdInternal_, b.simdInternal_, _MM_CMPINT_LT)
     };
 }
 
-static inline SimdFIBool gmx_simdcall
-operator&&(SimdFIBool a, SimdFIBool b)
+static inline SimdFIBool gmx_simdcall operator&&(SimdFIBool a, SimdFIBool b)
 {
     return {
                _mm512_kand(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFIBool gmx_simdcall
-operator||(SimdFIBool a, SimdFIBool b)
+static inline SimdFIBool gmx_simdcall operator||(SimdFIBool a, SimdFIBool b)
 {
     return {
                _mm512_kor(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline bool gmx_simdcall
-anyTrue(SimdFIBool a)
+static inline bool gmx_simdcall anyTrue(SimdFIBool a)
 {
     return ( avx512Mask2Int(a.simdInternal_) != 0);
 }
 
-static inline SimdFInt32 gmx_simdcall
-selectByMask(SimdFInt32 a, SimdFIBool m)
+static inline SimdFInt32 gmx_simdcall selectByMask(SimdFInt32 a, SimdFIBool m)
 {
     return {
                _mm512_mask_mov_epi32(_mm512_setzero_epi32(), m.simdInternal_, a.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-selectByNotMask(SimdFInt32 a, SimdFIBool m)
+static inline SimdFInt32 gmx_simdcall selectByNotMask(SimdFInt32 a, SimdFIBool m)
 {
     return {
                _mm512_mask_mov_epi32(a.simdInternal_, m.simdInternal_, _mm512_setzero_epi32())
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+static inline SimdFInt32 gmx_simdcall blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
     return {
                _mm512_mask_blend_epi32(sel.simdInternal_, a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-cvtR2I(SimdFloat a)
+static inline SimdFInt32 gmx_simdcall cvtR2I(SimdFloat a)
 {
     return {
                _mm512_cvtps_epi32(a.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-cvttR2I(SimdFloat a)
+static inline SimdFInt32 gmx_simdcall cvttR2I(SimdFloat a)
 {
     return {
                _mm512_cvttps_epi32(a.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-cvtI2R(SimdFInt32 a)
+static inline SimdFloat gmx_simdcall cvtI2R(SimdFInt32 a)
 {
     return {
                _mm512_cvtepi32_ps(a.simdInternal_)
     };
 }
 
-static inline SimdFIBool gmx_simdcall
-cvtB2IB(SimdFBool a)
+static inline SimdFIBool gmx_simdcall cvtB2IB(SimdFBool a)
 {
     return {
                a.simdInternal_
     };
 }
 
-static inline SimdFBool gmx_simdcall
-cvtIB2B(SimdFIBool a)
+static inline SimdFBool gmx_simdcall cvtIB2B(SimdFIBool a)
 {
     return {
                a.simdInternal_

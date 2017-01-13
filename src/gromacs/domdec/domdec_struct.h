@@ -67,7 +67,8 @@ struct gmx_hash_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
 
-typedef struct {
+typedef struct
+{
     int  j0;     /* j-zone start               */
     int  j1;     /* j-zone end                 */
     int  cg1;    /* i-charge-group end         */
@@ -77,31 +78,34 @@ typedef struct {
     ivec shift1; /* Maximum shifts to consider */
 } gmx_domdec_ns_ranges_t;
 
-typedef struct {
+typedef struct
+{
     rvec x0;     /* Zone lower corner in triclinic coordinates         */
     rvec x1;     /* Zone upper corner in triclinic coordinates         */
     rvec bb_x0;  /* Zone bounding box lower corner in Cartesian coords */
     rvec bb_x1;  /* Zone bounding box upper corner in Cartesian coords */
 } gmx_domdec_zone_size_t;
 
-struct gmx_domdec_zones_t {
+struct gmx_domdec_zones_t
+{
     /* The number of zones including the home zone */
-    int                    n;
+    int n;
     /* The shift of the zones with respect to the home zone */
-    ivec                   shift[DD_MAXZONE];
+    ivec shift[DD_MAXZONE];
     /* The charge group boundaries for the zones */
-    int                    cg_range[DD_MAXZONE+1];
+    int cg_range[DD_MAXZONE + 1];
     /* The number of neighbor search zones with i-particles */
-    int                    nizone;
+    int nizone;
     /* The neighbor search charge group ranges for each i-zone */
     gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
     /* Boundaries of the zones */
     gmx_domdec_zone_size_t size[DD_MAXZONE];
     /* The cg density of the home zone */
-    real                   dens_zone0;
+    real dens_zone0;
 };
 
-struct gmx_ddbox_t {
+struct gmx_ddbox_t
+{
     int  npbcdim;
     int  nboundeddim;
     rvec box0;
@@ -116,32 +120,33 @@ struct gmx_ddbox_t {
 };
 
 
-struct gmx_domdec_t {
+struct gmx_domdec_t
+{
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
      */
-    int                    nnodes;
-    MPI_Comm               mpi_comm_all;
+    int      nnodes;
+    MPI_Comm mpi_comm_all;
     /* Use MPI_Sendrecv communication instead of non-blocking calls */
-    gmx_bool               bSendRecv2;
+    gmx_bool bSendRecv2;
     /* The local DD cell index and rank */
-    ivec                   ci;
-    int                    rank;
-    ivec                   master_ci;
-    int                    masterrank;
+    ivec ci;
+    int  rank;
+    ivec master_ci;
+    int  masterrank;
     /* Communication with the PME only nodes */
-    int                    pme_nodeid;
-    gmx_bool               pme_receive_vir_ener;
-    gmx_pme_comm_n_box_t  *cnb;
-    int                    nreq_pme;
-    MPI_Request            req_pme[8];
+    int                   pme_nodeid;
+    gmx_bool              pme_receive_vir_ener;
+    gmx_pme_comm_n_box_t *cnb;
+    int                   nreq_pme;
+    MPI_Request           req_pme[8];
 
 
     /* The communication setup, identical for each cell, cartesian index */
-    ivec     nc;
-    int      ndim;
-    ivec     dim; /* indexed by 0 to ndim */
+    ivec nc;
+    int  ndim;
+    ivec dim;     /* indexed by 0 to ndim */
 
     /* PBC from dim 0 to npbcdim */
     int npbcdim;
@@ -150,7 +155,7 @@ struct gmx_domdec_t {
     gmx_bool bScrewPBC;
 
     /* Forward and backward neighboring cells, indexed by 0 to ndim */
-    int  neighbor[DIM][2];
+    int neighbor[DIM][2];
 
     /* Only available on the master node */
     gmx_domdec_master_t *ma;
@@ -160,41 +165,41 @@ struct gmx_domdec_t {
     gmx_bool bInterCGsettles;
 
     /* Global atom number to interaction list */
-    gmx_reverse_top_t  *reverse_top;
-    int                 nbonded_global;
-    int                 nbonded_local;
+    gmx_reverse_top_t *reverse_top;
+    int                nbonded_global;
+    int                nbonded_local;
 
     /* The number of inter charge-group exclusions */
-    int  n_intercg_excl;
+    int n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                *ga2la_vsite;
-    gmx_domdec_specat_comm_t  *vsite_comm;
+    gmx_hash_t *              ga2la_vsite;
+    gmx_domdec_specat_comm_t *vsite_comm;
 
     /* Constraint stuff */
     gmx_domdec_constraints_t *constraints;
     gmx_domdec_specat_comm_t *constraint_comm;
 
     /* The local to gobal charge group index and local cg to local atom index */
-    int   ncg_home;
-    int   ncg_tot;
-    int  *index_gl;
-    int  *cgindex;
-    int   cg_nalloc;
+    int  ncg_home;
+    int  ncg_tot;
+    int *index_gl;
+    int *cgindex;
+    int  cg_nalloc;
     /* Local atom to local cg index, only for special cases */
-    int  *la2lc;
-    int   la2lc_nalloc;
+    int *la2lc;
+    int  la2lc_nalloc;
 
     /* The number of home atoms */
-    int   nat_home;
+    int nat_home;
     /* The total number of atoms: home and received zones */
-    int   nat_tot;
+    int nat_tot;
     /* Index from the local atoms to the global atoms */
-    int  *gatindex;
-    int   gatindex_nalloc;
+    int *gatindex;
+    int  gatindex_nalloc;
 
     /* Global atom number to local atom number list */
-    gmx_ga2la_t  *ga2la;
+    gmx_ga2la_t *ga2la;
 
     /* Communication stuff */
     gmx_domdec_comm_t *comm;

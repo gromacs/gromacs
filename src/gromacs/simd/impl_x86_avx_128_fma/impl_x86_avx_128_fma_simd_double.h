@@ -46,39 +46,34 @@
 namespace gmx
 {
 
-static inline double gmx_simdcall
-reduce(SimdDouble a)
+static inline double gmx_simdcall reduce(SimdDouble a)
 {
     __m128d b = _mm_add_sd(a.simdInternal_, _mm_permute_pd(a.simdInternal_, _MM_SHUFFLE2(1, 1)));
     return *reinterpret_cast<double *>(&b);
 }
 
-static inline SimdDouble gmx_simdcall
-fma(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
                _mm_macc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdDouble gmx_simdcall
-fms(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
                _mm_msub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdDouble gmx_simdcall
-fnma(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fnma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
                _mm_nmacc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline SimdDouble gmx_simdcall
-fnms(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fnms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
                _mm_nmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)

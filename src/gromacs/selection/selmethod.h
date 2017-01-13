@@ -346,13 +346,13 @@ struct SelMethodEvalContext
      * For static methods that are evaluated based on topology information
      * alone, this is `NULL`.
      */
-    t_trxframe       *fr;
+    t_trxframe *fr;
     /*! \brief
      * Periodic boundary condition information.
      *
      * Can be `NULL`, in which case PBC should not be used.
      */
-    const t_pbc      *pbc;
+    const t_pbc *pbc;
 };
 
 } // namespace gmx
@@ -570,7 +570,7 @@ typedef void  (*sel_freefunc)(void *data);
  * NULL.
  */
 typedef void  (*sel_framefunc)(const gmx::SelMethodEvalContext &context,
-                               void                            *data);
+                               void *                           data);
 /*! \brief
  * Evaluates a selection method.
  *
@@ -645,27 +645,27 @@ struct gmx_ana_selmethod_help_t
      *
      * If NULL, the name of the method is used.
      */
-    const char         *syntax;
+    const char *syntax;
     /*! \brief
      * Title for the help text in \p help.
      *
      * If NULL, the name of the method is used.
      * Only used if `nlhelp > 0`.
      */
-    const char         *helpTitle;
+    const char *helpTitle;
     /*! \brief
      * Number of strings in \p help.
      *
      * Set to 0 if \p help is NULL.
      */
-    int                 nlhelp;
+    int nlhelp;
     /*! \brief
      * Detailed help for the method.
      *
      * If there is no help available in addition to \p syntax, this can be set
      * to NULL.
      */
-    const char *const  *help;
+    const char *const *help;
 };
 
 /*! \internal
@@ -684,37 +684,37 @@ struct gmx_ana_selmethod_help_t
 struct gmx_ana_selmethod_t
 {
     /** Name of the method. */
-    const char         *name;
+    const char *name;
     /** Type which the method returns. */
-    e_selvalue_t        type;
+    e_selvalue_t type;
     /*! \brief
      * Flags to specify how the method should be handled.
      *
      * See \ref selmethod_flags for allowed values.
      */
-    int                 flags;
+    int flags;
     /** Number of parameters the method takes. */
-    int                 nparams;
+    int nparams;
     /** Pointer to the array of parameter descriptions. */
     gmx_ana_selparam_t *param;
 
     /** Function for allocating and initializing internal data and parameters. */
-    sel_datafunc        init_data;
+    sel_datafunc init_data;
     /** Function to set the position calculation collection. */
-    sel_posfunc         set_poscoll;
+    sel_posfunc set_poscoll;
     /** Function to do initialization based on topology and/or parameter values. */
-    sel_initfunc        init;
+    sel_initfunc init;
     /** Function to initialize output data structure. */
-    sel_outinitfunc     outinit;
+    sel_outinitfunc outinit;
     /** Function to free the internal data. */
-    sel_freefunc        free;
+    sel_freefunc free;
 
     /** Function to initialize the calculation for a new frame. */
-    sel_framefunc       init_frame;
+    sel_framefunc init_frame;
     /** Function to evaluate the value. */
-    sel_updatefunc      update;
+    sel_updatefunc update;
     /** Function to evaluate the value using positions. */
-    sel_updatefunc_pos  pupdate;
+    sel_updatefunc_pos pupdate;
 
     /** Help data for the method. */
     gmx_ana_selmethod_help_t help;

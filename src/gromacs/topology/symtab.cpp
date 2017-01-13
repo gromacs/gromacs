@@ -64,10 +64,10 @@ static char *trim_string(const char *s, char *out, int maxlen)
 {
     int len, i;
 
-    if (strlen(s) > (size_t)(maxlen-1))
+    if (strlen(s) > (size_t)(maxlen - 1))
     {
         gmx_fatal(FARGS, "String '%s' (%d) is longer than buffer (%d).\n",
-                  s, strlen(s), maxlen-1);
+                  s, strlen(s), maxlen - 1);
     }
 
     for (; (*s) == ' '; s++)
@@ -76,14 +76,14 @@ static char *trim_string(const char *s, char *out, int maxlen)
     }
     for (len = strlen(s); (len > 0); len--)
     {
-        if (s[len-1] != ' ')
+        if (s[len - 1] != ' ')
         {
             break;
         }
     }
     if (len >= BUFSIZE)
     {
-        len = BUFSIZE-1;
+        len = BUFSIZE - 1;
     }
     for (i = 0; i < len; i++)
     {
@@ -102,10 +102,10 @@ int lookup_symtab(t_symtab *symtab, char **name)
     symbuf = symtab->symbuf;
     while (symbuf != nullptr)
     {
-        const int index = name-symbuf->buf;
+        const int index = name - symbuf->buf;
         if ( ( index >= 0 ) && ( index < symbuf->bufsize ) )
         {
-            return index+base;
+            return index + base;
         }
         else
         {
@@ -152,9 +152,9 @@ static t_symbuf *new_symbuf(void)
 
 static char **enter_buf(t_symtab *symtab, char *name)
 {
-    int          i;
-    t_symbuf    *symbuf;
-    gmx_bool     bCont;
+    int       i;
+    t_symbuf *symbuf;
+    gmx_bool  bCont;
 
     if (symtab->symbuf == nullptr)
     {
@@ -186,8 +186,7 @@ static char **enter_buf(t_symtab *symtab, char *name)
         {
             bCont = FALSE;
         }
-    }
-    while (bCont);
+    } while (bCont);
 
     symbuf->next = new_symbuf();
     symbuf       = symbuf->next;

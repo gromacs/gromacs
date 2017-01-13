@@ -49,18 +49,18 @@ struct t_topology;
 
 struct t_tpxheader
 {
-    int   bIr;       /* Non zero if input_rec is present		*/
-    int   bBox;      /* Non zero if a box is present			*/
-    int   bTop;      /* Non zero if a topology is present		*/
-    int   bX;        /* Non zero if coordinates are present		*/
-    int   bV;        /* Non zero if velocities are present		*/
-    int   bF;        /* Non zero if forces are present (no longer
+    int bIr;         /* Non zero if input_rec is present		*/
+    int bBox;        /* Non zero if a box is present			*/
+    int bTop;        /* Non zero if a topology is present		*/
+    int bX;          /* Non zero if coordinates are present		*/
+    int bV;          /* Non zero if velocities are present		*/
+    int bF;          /* Non zero if forces are present (no longer
                         supported, but retained so old .tpr can be read) */
 
-    int   natoms;    /* The total number of atoms			*/
-    int   ngtc;      /* The number of temperature coupling groups    */
-    real  lambda;    /* Current value of lambda			*/
-    int   fep_state; /* Current value of the alchemical state --
+    int  natoms;     /* The total number of atoms			*/
+    int  ngtc;       /* The number of temperature coupling groups    */
+    real lambda;     /* Current value of lambda			*/
+    int  fep_state;  /* Current value of the alchemical state --
                       * not yet printed out.  */
     /*a better decision will eventually (5.0 or later) need to be made
        on how to treat the alchemical state of the system, which can now

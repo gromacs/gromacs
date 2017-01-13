@@ -240,9 +240,9 @@ std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
  * \param[out] mtop    The molecular topology output containing atoms.
  */
 void
-convertAtomsToMtop(t_symtab    *symtab,
-                   char       **name,
-                   t_atoms     *atoms,
-                   gmx_mtop_t  *mtop);
+convertAtomsToMtop(t_symtab *  symtab,
+                   char **     name,
+                   t_atoms *   atoms,
+                   gmx_mtop_t *mtop);
 
 #endif

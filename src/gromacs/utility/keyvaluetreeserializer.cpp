@@ -63,9 +63,9 @@ class ValueSerializer
 
         struct Serializer
         {
-            unsigned char         typeTag;
-            SerializerFunction    serialize;
-            DeserializerFunction  deserialize;
+            unsigned char        typeTag;
+            SerializerFunction   serialize;
+            DeserializerFunction deserialize;
         };
 
         static Mutex                                         s_initMutex;
@@ -87,7 +87,7 @@ struct SerializationTraits<KeyValueTreeObject>
 {
     static void serialize(const KeyValueTreeObject &value, ISerializer *serializer)
     {
-        int         count = value.properties().size();
+        int count = value.properties().size();
         serializer->doInt(&count);
         for (const auto &prop : value.properties())
         {
@@ -118,7 +118,7 @@ struct SerializationTraits<KeyValueTreeArray>
 {
     static void serialize(const KeyValueTreeArray &array, ISerializer *serializer)
     {
-        int         count = array.values().size();
+        int count = array.values().size();
         serializer->doInt(&count);
         for (const auto &value : array.values())
         {
@@ -245,7 +245,7 @@ KeyValueTreeValue ValueSerializer::deserialize(ISerializer *serializer)
 {
     unsigned char typeTag;
     serializer->doUChar(&typeTag);
-    auto          iter = s_deserializers.find(typeTag);
+    auto iter = s_deserializers.find(typeTag);
     GMX_RELEASE_ASSERT(iter != s_deserializers.end(),
                        "Unknown type tag for deserializization");
     KeyValueTreeValueBuilder builder;

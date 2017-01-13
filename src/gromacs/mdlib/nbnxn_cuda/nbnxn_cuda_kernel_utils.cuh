@@ -67,16 +67,16 @@
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
-static const int    c_clSizeLog2  = 3;
+static const int c_clSizeLog2 = 3;
 /*! \brief Square of cluster size. */
-static const int    c_clSizeSq    = c_clSize*c_clSize;
+static const int c_clSizeSq = c_clSize * c_clSize;
 /*! \brief j-cluster size after split (4 in the current implementation). */
-static const int    c_splitClSize = c_clSize/c_nbnxnGpuClusterpairSplit;
+static const int c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
 /*! \brief Stride in the force accumualation buffer */
-static const int    c_fbufStride  = c_clSizeSq;
+static const int c_fbufStride = c_clSizeSq;
 
-static const float  c_oneSixth    = 0.16666667f;
-static const float  c_oneTwelveth = 0.08333333f;
+static const float c_oneSixth    = 0.16666667f;
+static const float c_oneTwelveth = 0.08333333f;
 
 /* With multiple compilation units this ensures that texture refs are available
    in the the kernels' compilation units. */
@@ -93,15 +93,15 @@ extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__
-void convert_sigma_epsilon_to_c6_c12(const float  sigma,
-                                     const float  epsilon,
-                                     float       *c6,
-                                     float       *c12)
+void convert_sigma_epsilon_to_c6_c12(const float sigma,
+                                     const float epsilon,
+                                     float *     c6,
+                                     float *     c12)
 {
     float sigma2, sigma6;
 
     sigma2 = sigma * sigma;
-    sigma6 = sigma2 *sigma2 * sigma2;
+    sigma6 = sigma2 * sigma2 * sigma2;
     *c6    = epsilon * sigma6;
     *c12   = *c6 * sigma6;
 }
@@ -113,7 +113,7 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
                               float               c12,
                               float               inv_r,
                               float               r2,
-                              float              *F_invr)
+                              float *             F_invr)
 {
     float r, r_switch;
 
@@ -123,13 +123,13 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
     float repu_shift_V2 = nbparam.repulsion_shift.c2;
     float repu_shift_V3 = nbparam.repulsion_shift.c3;
 
-    r         = r2 * inv_r;
-    r_switch  = r - nbparam.rvdw_switch;
-    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+    r        = r2 * inv_r;
+    r_switch = r - nbparam.rvdw_switch;
+    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
 
-    *F_invr  +=
-        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+    *F_invr
+        += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
+            + c12 * (-repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
 }
 
 /*! Apply force switch, force-only version. */
@@ -139,8 +139,8 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
                                 float               c12,
                                 float               inv_r,
                                 float               r2,
-                                float              *F_invr,
-                                float              *E_lj)
+                                float *             F_invr,
+                                float *             E_lj)
 {
     float r, r_switch;
 
@@ -150,21 +150,21 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
     float repu_shift_V2 = nbparam.repulsion_shift.c2;
     float repu_shift_V3 = nbparam.repulsion_shift.c3;
 
-    float disp_shift_F2 = nbparam.dispersion_shift.c2/3;
-    float disp_shift_F3 = nbparam.dispersion_shift.c3/4;
-    float repu_shift_F2 = nbparam.repulsion_shift.c2/3;
-    float repu_shift_F3 = nbparam.repulsion_shift.c3/4;
+    float disp_shift_F2 = nbparam.dispersion_shift.c2 / 3;
+    float disp_shift_F3 = nbparam.dispersion_shift.c3 / 4;
+    float repu_shift_F2 = nbparam.repulsion_shift.c2 / 3;
+    float repu_shift_F3 = nbparam.repulsion_shift.c3 / 4;
 
-    r         = r2 * inv_r;
-    r_switch  = r - nbparam.rvdw_switch;
-    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+    r        = r2 * inv_r;
+    r_switch = r - nbparam.rvdw_switch;
+    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
 
-    *F_invr  +=
-        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(-repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
-    *E_lj    +=
-        c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
-        c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;
+    *F_invr
+        += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
+            + c12 * (-repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
+    *E_lj
+        += c6 * (disp_shift_F2 + disp_shift_F3 * r_switch) * r_switch * r_switch * r_switch
+            - c12 * (repu_shift_F2 + repu_shift_F3 * r_switch) * r_switch * r_switch * r_switch;
 }
 
 /*! Apply potential switch, force-only version. */
@@ -174,8 +174,8 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
                                   float               c12,
                                   float               inv_r,
                                   float               r2,
-                                  float              *F_invr,
-                                  float              *E_lj)
+                                  float *             F_invr,
+                                  float *             E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -184,9 +184,9 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
     float switch_V3 = nbparam.vdw_switch.c3;
     float switch_V4 = nbparam.vdw_switch.c4;
     float switch_V5 = nbparam.vdw_switch.c5;
-    float switch_F2 = 3*nbparam.vdw_switch.c3;
-    float switch_F3 = 4*nbparam.vdw_switch.c4;
-    float switch_F4 = 5*nbparam.vdw_switch.c5;
+    float switch_F2 = 3 * nbparam.vdw_switch.c3;
+    float switch_F3 = 4 * nbparam.vdw_switch.c4;
+    float switch_F4 = 5 * nbparam.vdw_switch.c5;
 
     r        = r2 * inv_r;
     r_switch = r - nbparam.rvdw_switch;
@@ -194,10 +194,10 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
     /* Unlike in the F+E kernel, conditional is faster here */
     if (r_switch > 0.0f)
     {
-        sw      = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
-        dsw     = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+        sw  = 1.0f + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
+        dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
 
-        *F_invr = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
+        *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
     }
 }
 
@@ -208,8 +208,8 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
                                     float               c12,
                                     float               inv_r,
                                     float               r2,
-                                    float              *F_invr,
-                                    float              *E_lj)
+                                    float *             F_invr,
+                                    float *             E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -218,20 +218,20 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
     float switch_V3 = nbparam.vdw_switch.c3;
     float switch_V4 = nbparam.vdw_switch.c4;
     float switch_V5 = nbparam.vdw_switch.c5;
-    float switch_F2 = 3*nbparam.vdw_switch.c3;
-    float switch_F3 = 4*nbparam.vdw_switch.c4;
-    float switch_F4 = 5*nbparam.vdw_switch.c5;
+    float switch_F2 = 3 * nbparam.vdw_switch.c3;
+    float switch_F3 = 4 * nbparam.vdw_switch.c4;
+    float switch_F4 = 5 * nbparam.vdw_switch.c5;
 
     r        = r2 * inv_r;
     r_switch = r - nbparam.rvdw_switch;
     r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
 
     /* Unlike in the F-only kernel, masking is faster here */
-    sw       = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
-    dsw      = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+    sw  = 1.0f + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
+    dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
 
-    *F_invr  = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
-    *E_lj   *= sw;
+    *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
+    *E_lj  *= sw;
 }
 
 /*! Calculate LJ-PME grid force contribution with
@@ -245,24 +245,24 @@ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
                                     float              inv_r2,
                                     float              lje_coeff2,
                                     float              lje_coeff6_6,
-                                    float             *F_invr)
+                                    float *            F_invr)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
 
 #ifdef USE_TEXOBJ
-    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+    c6grid = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typej);
 #else
-    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+    c6grid = tex1Dfetch(nbfp_comb_texref, 2 * typei) * tex1Dfetch(nbfp_comb_texref, 2 * typej);
 #endif /* USE_TEXOBJ */
 
     /* Recalculate inv_r6 without exclusion mask */
-    inv_r6_nm = inv_r2*inv_r2*inv_r2;
-    cr2       = lje_coeff2*r2;
+    inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
+    cr2       = lje_coeff2 * r2;
     expmcr2   = expf(-cr2);
-    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
-    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+    *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 }
 
 /*! Calculate LJ-PME grid force + energy contribution with
@@ -277,29 +277,29 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
                                       float              lje_coeff2,
                                       float              lje_coeff6_6,
                                       float              int_bit,
-                                      float             *F_invr,
-                                      float             *E_lj)
+                                      float *            F_invr,
+                                      float *            E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
 #ifdef USE_TEXOBJ
-    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+    c6grid = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typej);
 #else
-    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+    c6grid = tex1Dfetch(nbfp_comb_texref, 2 * typei) * tex1Dfetch(nbfp_comb_texref, 2 * typej);
 #endif /* USE_TEXOBJ */
 
     /* Recalculate inv_r6 without exclusion mask */
-    inv_r6_nm = inv_r2*inv_r2*inv_r2;
-    cr2       = lje_coeff2*r2;
+    inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
+    cr2       = lje_coeff2 * r2;
     expmcr2   = expf(-cr2);
-    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
-    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+    *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 
     /* Shift should be applied only to real LJ pairs */
-    sh_mask   = nbparam.sh_lj_ewald*int_bit;
-    *E_lj    += c_oneSixth*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+    sh_mask = nbparam.sh_lj_ewald * int_bit;
+    *E_lj  += c_oneSixth * c6grid * (inv_r6_nm * (1.0f - expmcr2 * poly) + sh_mask);
 }
 
 /*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
@@ -316,39 +316,39 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
                                     float              lje_coeff2,
                                     float              lje_coeff6_6,
                                     float              int_bit,
-                                    float             *F_invr,
-                                    float             *E_lj)
+                                    float *            F_invr,
+                                    float *            E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
     float sigma, sigma2, epsilon;
 
     /* sigma and epsilon are scaled to give 6*C6 */
 #ifdef USE_TEXOBJ
-    sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej    );
-    epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej + 1);
+    sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typej    );
+    epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typej + 1);
 #else
-    sigma   = tex1Dfetch(nbfp_comb_texref, 2*typei    ) + tex1Dfetch(nbfp_comb_texref, 2*typej    );
-    epsilon = tex1Dfetch(nbfp_comb_texref, 2*typei + 1) * tex1Dfetch(nbfp_comb_texref, 2*typej + 1);
+    sigma   = tex1Dfetch(nbfp_comb_texref, 2 * typei    ) + tex1Dfetch(nbfp_comb_texref, 2 * typej    );
+    epsilon = tex1Dfetch(nbfp_comb_texref, 2 * typei + 1) * tex1Dfetch(nbfp_comb_texref, 2 * typej + 1);
 #endif /* USE_TEXOBJ */
-    sigma2  = sigma*sigma;
-    c6grid  = epsilon*sigma2*sigma2*sigma2;
+    sigma2 = sigma * sigma;
+    c6grid = epsilon * sigma2 * sigma2 * sigma2;
 
     /* Recalculate inv_r6 without exclusion mask */
-    inv_r6_nm = inv_r2*inv_r2*inv_r2;
-    cr2       = lje_coeff2*r2;
+    inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
+    cr2       = lje_coeff2 * r2;
     expmcr2   = expf(-cr2);
-    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
-    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+    *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 
     if (E_lj != NULL)
     {
         float sh_mask;
 
         /* Shift should be applied only to real LJ pairs */
-        sh_mask   = nbparam.sh_lj_ewald*int_bit;
-        *E_lj    += c_oneSixth*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+        sh_mask = nbparam.sh_lj_ewald * int_bit;
+        *E_lj  += c_oneSixth * c6grid * (inv_r6_nm * (1.0f - expmcr2 * poly) + sh_mask);
     }
 }
 
@@ -358,10 +358,10 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
 static __forceinline__ __device__
 float interpolate_coulomb_force_r(float r, float scale)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
 
     return fract1 * tex1Dfetch(coulomb_tab_texref, index)
            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
@@ -371,13 +371,13 @@ static __forceinline__ __device__
 float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
 
-    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
-           fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index)
+           + fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
 
 /*! Calculate analytical Ewald correction term. */
@@ -398,26 +398,26 @@ float pmecorrF(float z2)
     const float FD1 = 0.50736591960530292870f;
     const float FD0 = 1.0f;
 
-    float       z4;
-    float       polyFN0, polyFN1, polyFD0, polyFD1;
+    float z4;
+    float polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4          = z2*z2;
+    z4 = z2 * z2;
 
-    polyFD0     = FD4*z4 + FD2;
-    polyFD1     = FD3*z4 + FD1;
-    polyFD0     = polyFD0*z4 + FD0;
-    polyFD0     = polyFD1*z2 + polyFD0;
+    polyFD0 = FD4 * z4 + FD2;
+    polyFD1 = FD3 * z4 + FD1;
+    polyFD0 = polyFD0 * z4 + FD0;
+    polyFD0 = polyFD1 * z2 + polyFD0;
 
-    polyFD0     = 1.0f/polyFD0;
+    polyFD0 = 1.0f / polyFD0;
 
-    polyFN0     = FN6*z4 + FN4;
-    polyFN1     = FN5*z4 + FN3;
-    polyFN0     = polyFN0*z4 + FN2;
-    polyFN1     = polyFN1*z4 + FN1;
-    polyFN0     = polyFN0*z4 + FN0;
-    polyFN0     = polyFN1*z2 + polyFN0;
+    polyFN0 = FN6 * z4 + FN4;
+    polyFN1 = FN5 * z4 + FN3;
+    polyFN0 = polyFN0 * z4 + FN2;
+    polyFN1 = polyFN1 * z4 + FN1;
+    polyFN0 = polyFN0 * z4 + FN0;
+    polyFN0 = polyFN1 * z2 + polyFN0;
 
-    return polyFN0*polyFD0;
+    return polyFN0 * polyFD0;
 }
 
 /*! Final j-force reduction; this generic implementation works with
@@ -435,7 +435,7 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
             f += f_buf[c_fbufStride * tidxi + j];
         }
 
-        atomicAdd((&fout[aidx].x)+tidxi, f);
+        atomicAdd((&fout[aidx].x) + tidxi, f);
     }
 }
 
@@ -507,8 +507,8 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
                          float *fshift_buf, bool bCalcFshift,
                          int tidxi, int tidxj, int aidx)
 {
-    int     i, j;
-    float   f;
+    int   i, j;
+    float f;
 
     assert(c_clSize == 1 << c_clSizeLog2);
 
@@ -516,7 +516,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
      * every step by using c_clSize * i threads.
      * Can't just use i as loop variable because than nvcc refuses to unroll.
      */
-    i = c_clSize/2;
+    i = c_clSize / 2;
 #pragma unroll 5
     for (j = c_clSizeLog2 - 1; j > 0; j--)
     {
@@ -534,8 +534,8 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     if (tidxj < 3)
     {
         /* tidxj*c_fbufStride selects x, y or z */
-        f = f_buf[tidxj * c_fbufStride               + tidxi] +
-            f_buf[tidxj * c_fbufStride + i * c_clSize + tidxi];
+        f = f_buf[tidxj * c_fbufStride               + tidxi]
+            + f_buf[tidxj * c_fbufStride + i * c_clSize + tidxi];
 
         atomicAdd(&(fout[aidx].x) + tidxj, f);
 
@@ -583,8 +583,8 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
         fin.x = fin.y;
     }
 
-    fin.x += __shfl_down(fin.x, 2*c_clSize);
-    fin.z += __shfl_up  (fin.z, 2*c_clSize);
+    fin.x += __shfl_down(fin.x, 2 * c_clSize);
+    fin.z += __shfl_up  (fin.z, 2 * c_clSize);
 
     if (tidxj & 2)
     {
@@ -612,10 +612,10 @@ void reduce_energy_pow2(volatile float *buf,
                         float *e_lj, float *e_el,
                         unsigned int tidx)
 {
-    int     i, j;
-    float   e1, e2;
+    int   i, j;
+    float e1, e2;
 
-    i = warp_size/2;
+    i = warp_size / 2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
 #pragma unroll 10

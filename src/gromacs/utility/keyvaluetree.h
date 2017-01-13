@@ -93,12 +93,12 @@ class KeyValueTreeValue
         bool isType() const { return value_.isType<T>(); }
         std::type_index type() const { return value_.type(); }
 
-        const KeyValueTreeArray  &asArray() const;
+        const KeyValueTreeArray & asArray() const;
         const KeyValueTreeObject &asObject() const;
         template <typename T>
-        const T                  &cast() const { return value_.cast<T>(); }
+        const T &cast() const { return value_.cast<T>(); }
 
-        const Variant            &asVariant() const { return value_; }
+        const Variant &asVariant() const { return value_; }
 
     private:
         explicit KeyValueTreeValue(Variant &&value) : value_(std::move(value)) {}
@@ -106,7 +106,7 @@ class KeyValueTreeValue
         KeyValueTreeArray &asArray();
         KeyValueTreeObject &asObject();
 
-        Variant             value_;
+        Variant value_;
 
         friend class KeyValueTreeBuilder;
         friend class KeyValueTreeObjectBuilder;
@@ -185,8 +185,7 @@ class KeyValueTreeObject
         {
             return valueMap_.at(key);
         }
-        std::map<std::string, KeyValueTreeValue>::iterator
-        addProperty(const std::string &key, KeyValueTreeValue &&value)
+        std::map<std::string, KeyValueTreeValue>::iterator addProperty(const std::string &key, KeyValueTreeValue &&value)
         {
             values_.reserve(values_.size() + 1);
             auto iter = valueMap_.insert(std::make_pair(key, std::move(value))).first;

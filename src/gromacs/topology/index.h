@@ -86,11 +86,12 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
  * for the atoms in *atoms.
  */
 
-typedef struct {
-    int               maxframe;
-    char            **grpname;
-    struct t_blocka  *clust;
-    int              *inv_clust;
+typedef struct
+{
+    int              maxframe;
+    char **          grpname;
+    struct t_blocka *clust;
+    int *            inv_clust;
 } t_cluster_ndx;
 
 t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);

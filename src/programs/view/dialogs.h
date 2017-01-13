@@ -43,38 +43,44 @@
 #include "pulldown.h"
 #include "xdlg.h"
 
-typedef struct {
-    bool      bMapped;
-    t_dlg    *dlg;
+typedef struct
+{
+    bool   bMapped;
+    t_dlg *dlg;
 } t_dialogs;
 
-enum eDialogs {
+enum eDialogs
+{
     edExport, edBonds, edFilter, edNR
 };
 
-enum eMBoxes {
+enum eMBoxes
+{
     emQuit, emHelp, emAbout, emNotImplemented, emNR
 };
 
-enum eExport {
+enum eExport
+{
     eExpGromos, eExpPDB, eExpNR
 };
 
-typedef struct {
-    char           confout[256]; /* Export file			*/
-    int            ExpMode;      /* Export mode			*/
-    t_dlg        **dlgs;         /* Temporary storage for dlgs	*/
-    int            which_mb;     /* Which mb is visible          */
-    t_dlg        **mboxes;       /* id for message boxes         */
-    t_filter      *filter;       /* Filter for visibility etc.	*/
-    t_windata     *wd;           /* The main window		*/
-    t_pulldown    *pd;           /* The pull-down menu		*/
-    t_manager     *man;          /* The manager			*/
+typedef struct
+{
+    char        confout[256];    /* Export file			*/
+    int         ExpMode;         /* Export mode			*/
+    t_dlg **    dlgs;            /* Temporary storage for dlgs	*/
+    int         which_mb;        /* Which mb is visible          */
+    t_dlg **    mboxes;          /* id for message boxes         */
+    t_filter *  filter;          /* Filter for visibility etc.	*/
+    t_windata * wd;              /* The main window		*/
+    t_pulldown *pd;              /* The pull-down menu		*/
+    t_manager * man;             /* The manager			*/
     /*t_statrec    *sr;*/		/* The statistics dlg		*/
-    t_logo        *logo;         /* The gromacs logo             */
+    t_logo *logo;                /* The gromacs logo             */
 } t_gmx;
 
-enum {
+enum
+{
     IDNEW, IDOPEN, IDOPENED, IDCLOSE, IDIMPORT, IDEXPORT, IDDOEXPORT, IDQUIT, IDTERM,
     IDEDITTOP, IDEDITCOORDS, IDEDITPARAMS,
     IDGROMPP, IDRUNMD, IDDOGROMPP, IDGSTAT, IDDOGSTAT, IDDORUNMD,

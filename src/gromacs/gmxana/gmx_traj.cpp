@@ -133,7 +133,7 @@ static void average_data(rvec x[], rvec xav[], real *mass,
         {
             for (d = 0; d < DIM; d++)
             {
-                xav[g][d] = sum[d]/mtot;
+                xav[g][d] = sum[d] / mtot;
             }
         }
         else
@@ -171,7 +171,7 @@ static void print_data(FILE *fp, real time, rvec x[], real *mass, gmx_bool bCom,
 static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, gmx_bool bCom,
                         int ngrps, int isize[], int **index)
 {
-    static rvec    *xav   = nullptr;
+    static rvec *   xav   = nullptr;
     static t_atoms *atoms = nullptr;
     t_trxframe      fr_av;
     int             i;
@@ -211,7 +211,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
                         char **name, gmx_bool bCom, gmx_bool bMol, gmx_bool bDim[],
                         const gmx_output_env_t *oenv)
 {
-    char      **leg;
+    char **     leg;
     const char *dimtxt[] = { " X", " Y", " Z", "" };
     int         n, i, j, d;
 
@@ -224,7 +224,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
         n = isize;
     }
 
-    snew(leg, 4*n);
+    snew(leg, 4 * n);
     j = 0;
     for (i = 0; i < n; i++)
     {
@@ -235,7 +235,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
                 snew(leg[j], STRLEN);
                 if (bMol)
                 {
-                    sprintf(leg[j], "mol %d%s", index[i]+1, dimtxt[d]);
+                    sprintf(leg[j], "mol %d%s", index[i] + 1, dimtxt[d]);
                 }
                 else if (bCom)
                 {
@@ -243,7 +243,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
                 }
                 else
                 {
-                    sprintf(leg[j], "atom %d%s", index[i]+1, dimtxt[d]);
+                    sprintf(leg[j], "atom %d%s", index[i] + 1, dimtxt[d]);
                 }
                 j++;
             }
@@ -293,9 +293,9 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
         cprod(x[j], v[j], a0);
         for (m = 0; (m < DIM); m++)
         {
-            xcm[m] += m0*x[j][m]; /* c.o.m. position */
-            vcm[m] += m0*v[j][m]; /* c.o.m. velocity */
-            acm[m] += m0*a0[m];   /* rotational velocity around c.o.m. */
+            xcm[m] += m0 * x[j][m]; /* c.o.m. position */
+            vcm[m] += m0 * v[j][m]; /* c.o.m. velocity */
+            acm[m] += m0 * a0[m];   /* rotational velocity around c.o.m. */
         }
     }
     dcprod(xcm, vcm, b0);
@@ -303,7 +303,7 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
     {
         xcm[m] /= tm;
         vcm[m] /= tm;
-        acm[m] -= b0[m]/tm;
+        acm[m] -= b0[m] / tm;
     }
 
     lxx = lxy = lxz = lyy = lyz = lzz = 0.0;
@@ -315,12 +315,12 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
         {
             dx[m] = x[j][m] - xcm[m];
         }
-        lxx += dx[XX]*dx[XX]*m0;
-        lxy += dx[XX]*dx[YY]*m0;
-        lxz += dx[XX]*dx[ZZ]*m0;
-        lyy += dx[YY]*dx[YY]*m0;
-        lyz += dx[YY]*dx[ZZ]*m0;
-        lzz += dx[ZZ]*dx[ZZ]*m0;
+        lxx += dx[XX] * dx[XX] * m0;
+        lxy += dx[XX] * dx[YY] * m0;
+        lxz += dx[XX] * dx[ZZ] * m0;
+        lyy += dx[YY] * dx[YY] * m0;
+        lyz += dx[YY] * dx[ZZ] * m0;
+        lzz += dx[ZZ] * dx[ZZ] * m0;
     }
 
     L[XX][XX] =  lyy + lzz;
@@ -342,9 +342,9 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
     {
         for (n = 0; n < DIM; n++)
         {
-            ocm[m] += TCM[m][n]*acm[n];
+            ocm[m] += TCM[m][n] * acm[n];
         }
-        ekrot += 0.5*ocm[m]*acm[m];
+        ekrot += 0.5 * ocm[m] * acm[m];
     }
 
     return ekrot;
@@ -363,12 +363,12 @@ static real ektrans(rvec v[], real mass[], int isize, int index[])
         j = index[i];
         for (d = 0; d < DIM; d++)
         {
-            mvcom[d] += mass[j]*v[j][d];
+            mvcom[d] += mass[j] * v[j][d];
         }
         mtot += mass[j];
     }
 
-    return dnorm2(mvcom)/(mtot*2);
+    return dnorm2(mvcom) / (mtot * 2);
 }
 
 static real temp(rvec v[], real mass[], int isize, int index[])
@@ -380,10 +380,10 @@ static real temp(rvec v[], real mass[], int isize, int index[])
     for (i = 0; i < isize; i++)
     {
         j      = index[i];
-        ekin2 += mass[j]*norm2(v[j]);
+        ekin2 += mass[j] * norm2(v[j]);
     }
 
-    return ekin2/(3*isize*BOLTZ);
+    return ekin2 / (3 * isize * BOLTZ);
 }
 
 static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
@@ -393,20 +393,20 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
 
     for (d = 0; d < DIM; d++)
     {
-        hbox[d] = 0.5*box[d][d];
+        hbox[d] = 0.5 * box[d][d];
     }
     for (i = 0; i < natoms; i++)
     {
-        for (m = DIM-1; m >= 0; m--)
+        for (m = DIM - 1; m >= 0; m--)
         {
-            while (x[i][m]-xp[i][m] <= -hbox[m])
+            while (x[i][m] - xp[i][m] <= -hbox[m])
             {
                 for (d = 0; d <= m; d++)
                 {
                     x[i][d] += box[m][d];
                 }
             }
-            while (x[i][m]-xp[i][m] > hbox[m])
+            while (x[i][m] - xp[i][m] > hbox[m])
             {
                 for (d = 0; d <= m; d++)
                 {
@@ -424,10 +424,10 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                            gmx_bool bDim[], real scale_factor,
                            const gmx_output_env_t *oenv)
 {
-    FILE       *fp;
-    real        max, len2, scale;
-    int         maxi;
-    int         i, m, onedim;
+    FILE *fp;
+    real  max, len2, scale;
+    int   maxi;
+    int   i, m, onedim;
 
     if ((nfr_x == 0) || (nfr_v == 0))
     {
@@ -455,7 +455,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                 onedim = -1;
             }
         }
-        scale = 1.0/nfr_v;
+        scale = 1.0 / nfr_v;
         for (i = 0; i < isize; i++)
         {
             svmul(scale, sum[index[i]], sum[index[i]]);
@@ -464,7 +464,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
         fp = xvgropen(xname, title, "Atom", "", oenv);
         for (i = 0; i < isize; i++)
         {
-            fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1+i,
+            fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1 + i,
                     sum[index[i]][XX], sum[index[i]][YY], sum[index[i]][ZZ]);
         }
         xvgrclose(fp);
@@ -498,12 +498,12 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             }
             else
             {
-                scale = 10.0/std::sqrt(max);
+                scale = 10.0 / std::sqrt(max);
             }
         }
 
         printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
-               title, std::sqrt(max), maxi+1, *(atoms->atomname[maxi]),
+               title, std::sqrt(max), maxi + 1, *(atoms->atomname[maxi]),
                *(atoms->resinfo[atoms->atom[maxi].resind].name),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
 
@@ -525,14 +525,14 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                         len2 += gmx::square(sum[index[i]][m]);
                     }
                 }
-                atoms->pdbinfo[index[i]].bfac = std::sqrt(len2)*scale;
+                atoms->pdbinfo[index[i]].bfac = std::sqrt(len2) * scale;
             }
         }
         else
         {
             for (i = 0; i < isize; i++)
             {
-                atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim]*scale;
+                atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim] * scale;
             }
         }
         write_sto_conf_indexed(fname, title, atoms, x, nullptr, ePBC, box, isize, index);
@@ -554,16 +554,16 @@ static void update_histo(int gnx, int index[], rvec v[],
             vnmax = std::max(vn, vnmax);
         }
         vnmax  *= 2;
-        *nhisto = static_cast<int>(1+(vnmax/binwidth));
+        *nhisto = static_cast<int>(1 + (vnmax / binwidth));
         snew(*histo, *nhisto);
     }
     for (i = 0; (i < gnx); i++)
     {
         vn = norm(v[index[i]]);
-        in = static_cast<int>(vn/binwidth);
+        in = static_cast<int>(vn / binwidth);
         if (in >= *nhisto)
         {
-            nnn = in+100;
+            nnn = in + 100;
             fprintf(stderr, "Extending histogram from %d to %d\n", *nhisto, nnn);
 
             srenew(*histo, nnn);
@@ -587,14 +587,14 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
                   oenv);
     for (i = 0; (i < nhisto); i++)
     {
-        fprintf(fp, "%10.3e  %10d\n", i*binwidth, histo[i]);
+        fprintf(fp, "%10.3e  %10d\n", i * binwidth, histo[i]);
     }
     xvgrclose(fp);
 }
 
 int gmx_traj(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
@@ -659,34 +659,34 @@ int gmx_traj(int argc, char *argv[])
         { "-scale", FALSE, etREAL, {&scale},
           "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
-    FILE             *outx   = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
-    FILE             *outekt = nullptr, *outekr = nullptr;
+    FILE *            outx   = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
+    FILE *            outekt = nullptr, *outekr = nullptr;
     t_topology        top;
     int               ePBC;
-    real             *mass, time;
-    const char       *indexfn;
+    real *            mass, time;
+    const char *      indexfn;
     t_trxframe        fr;
     int               flags, nvhisto = 0, *vhisto = nullptr;
-    rvec             *xtop, *xp = nullptr;
-    rvec             *sumx = nullptr, *sumv = nullptr, *sumf = nullptr;
+    rvec *            xtop, *xp = nullptr;
+    rvec *            sumx = nullptr, *sumv = nullptr, *sumf = nullptr;
     matrix            topbox;
-    t_trxstatus      *status;
-    t_trxstatus      *status_out = nullptr;
+    t_trxstatus *     status;
+    t_trxstatus *     status_out = nullptr;
     gmx_rmpbc_t       gpbc       = nullptr;
     int               i, j;
     int               nr_xfr, nr_vfr, nr_ffr;
-    char            **grpname;
-    int              *isize0, *isize;
-    int             **index0, **index;
-    int              *atndx;
-    t_block          *mols;
+    char **           grpname;
+    int *             isize0, *isize;
+    int **            index0, **index;
+    int *             atndx;
+    t_block *         mols;
     gmx_bool          bTop, bOX, bOXT, bOV, bOF, bOB, bOT, bEKT, bEKR, bCV, bCF;
     gmx_bool          bDim[4], bDum[4], bVD;
     char              sffmt[STRLEN], sffmt6[STRLEN];
-    const char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
+    const char *      box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
     gmx_output_env_t *oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },
         { efTPS, nullptr, nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffOPTRD },
@@ -789,9 +789,9 @@ int gmx_traj(int argc, char *argv[])
             if (index0[0][i] < 0 || index0[0][i] >= mols->nr)
             {
                 gmx_fatal(FARGS, "Molecule index (%d) is out of range (%d-%d)",
-                          index0[0][i]+1, 1, mols->nr);
+                          index0[0][i] + 1, 1, mols->nr);
             }
-            isize[i] = atndx[index0[0][i]+1] - atndx[index0[0][i]];
+            isize[i] = atndx[index0[0][i] + 1] - atndx[index0[0][i]];
             snew(index[i], isize[i]);
             for (j = 0; j < isize[i]; j++)
             {
@@ -1023,9 +1023,9 @@ int gmx_traj(int argc, char *argv[])
             }
             fprintf(outekr, "\n");
         }
-        if ((bCV || bCF) && fr.bX &&
-            (ctime < 0 || (fr.time >= ctime*0.999999 &&
-                           fr.time <= ctime*1.000001)))
+        if ((bCV || bCF) && fr.bX
+            && (ctime < 0 || (fr.time >= ctime * 0.999999
+                              && fr.time <= ctime * 1.000001)))
         {
             for (i = 0; i < fr.natoms; i++)
             {
@@ -1050,8 +1050,7 @@ int gmx_traj(int argc, char *argv[])
             nr_ffr++;
         }
 
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
 
     if (gpbc != nullptr)
     {
@@ -1110,7 +1109,7 @@ int gmx_traj(int argc, char *argv[])
             }
             for (i = 0; i < isize[0]; i++)
             {
-                svmul(1.0/nr_xfr, sumx[index[0][i]], sumx[index[0][i]]);
+                svmul(1.0 / nr_xfr, sumx[index[0][i]], sumx[index[0][i]]);
             }
         }
         else if (nr_xfr == 0)

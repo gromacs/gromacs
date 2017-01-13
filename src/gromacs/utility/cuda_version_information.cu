@@ -50,6 +50,6 @@ void gmx_print_version_info_cuda_gpu(FILE *fp)
     cudaDriverGetVersion(&cuda_driver);
     cuda_runtime = 0;
     cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
+    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver / 1000, cuda_driver % 100);
+    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime / 1000, cuda_runtime % 100);
 }

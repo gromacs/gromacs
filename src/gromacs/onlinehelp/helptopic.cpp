@@ -65,8 +65,7 @@ bool AbstractSimpleHelpTopic::hasSubTopics() const
     return false;
 }
 
-const IHelpTopic *
-AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
+const IHelpTopic *AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
 {
     return nullptr;
 }
@@ -98,13 +97,13 @@ class AbstractCompositeHelpTopic::Impl
          *
          * Owns the contained subtopics.
          */
-        SubTopicList            subTopics_;
+        SubTopicList subTopics_;
         /*! \brief
          * Maps subtopic names to help topic objects.
          *
          * Points to objects in the \a subTopics_ map.
          */
-        SubTopicMap             subTopicMap_;
+        SubTopicMap subTopicMap_;
 };
 
 /********************************************************************
@@ -125,8 +124,7 @@ bool AbstractCompositeHelpTopic::hasSubTopics() const
     return !impl_->subTopics_.empty();
 }
 
-const IHelpTopic *
-AbstractCompositeHelpTopic::findSubTopic(const char *name) const
+const IHelpTopic *AbstractCompositeHelpTopic::findSubTopic(const char *name) const
 {
     Impl::SubTopicMap::const_iterator topic = impl_->subTopicMap_.find(name);
     if (topic == impl_->subTopicMap_.end())
@@ -142,9 +140,8 @@ void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext &context) con
     writeSubTopicList(context, "\nAvailable subtopics:");
 }
 
-bool
-AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
-                                              const std::string       &title) const
+bool AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
+                                                   const std::string &      title) const
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
@@ -162,7 +159,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
         }
         return true;
     }
-    int maxNameLength = 0;
+    int                               maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;
     for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
@@ -180,7 +177,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     {
         return false;
     }
-    TextWriter        &file = context.outputFile();
+    TextWriter &       file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(nullptr, maxNameLength + 1, false);
     formatter.addColumn(nullptr, 72 - maxNameLength, true);

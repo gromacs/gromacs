@@ -235,7 +235,7 @@ typedef void gmx_host_free_t (void *ptr);
 /*! \brief Set page-locked memory allocation functions used by the GPU host. */
 void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
-                                  gmx_host_free_t  **nb_free);
+                                  gmx_host_free_t ** nb_free);
 
 
 

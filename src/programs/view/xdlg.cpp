@@ -161,7 +161,7 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
 {
     t_dlgitem *dlgitem;
 #ifdef DEBUG
-    int        old_w, old_h;
+    int old_w, old_h;
 #endif
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
@@ -199,7 +199,7 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
                 t_dlgitem *child = dlg->dlgitem[i];
                 if ((child->GroupID == gid) && (child->ID != id))
                 {
-                    SetDlgItemSize(dlg, child->ID, w-4*OFFS_X, 0);
+                    SetDlgItemSize(dlg, child->ID, w - 4 * OFFS_X, 0);
                 }
             }
         }
@@ -233,14 +233,14 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
             int  i, x, y;
             t_id gid = dlgitem->GroupID;
             t_id id  = dlgitem->ID;
-            x = dlgitem->win.x+2*OFFS_X-old_x;
-            y = dlgitem->win.y+2*OFFS_Y-old_y;
+            x = dlgitem->win.x + 2 * OFFS_X - old_x;
+            y = dlgitem->win.y + 2 * OFFS_Y - old_y;
             for (i = 0; (i < dlg->nitem); i++)
             {
                 t_dlgitem *child = dlg->dlgitem[i];
                 if ((child->GroupID == gid) && (child->ID != id))
                 {
-                    SetDlgItemPos(dlg, child->ID, child->win.x+x, child->win.y+y);
+                    SetDlgItemPos(dlg, child->ID, child->win.x + x, child->win.y + y);
                 }
             }
         }
@@ -276,9 +276,9 @@ t_id RBSelected(t_dlg *dlg, int gid)
 
     for (i = 0; (i < dlg->nitem); i++)
     {
-        if ((dlg->dlgitem[i]->type == edlgRB) &&
-            (dlg->dlgitem[i]->u.radiobutton.bSelect) &&
-            (dlg->dlgitem[i]->GroupID == gid))
+        if ((dlg->dlgitem[i]->type == edlgRB)
+            && (dlg->dlgitem[i]->u.radiobutton.bSelect)
+            && (dlg->dlgitem[i]->GroupID == gid))
         {
             return dlg->dlgitem[i]->ID;
         }
@@ -339,11 +339,11 @@ void ShowDlg(t_dlg *dlg)
     for (i = 0; (i < dlg->nitem); i++)
     {
         dlgitem = dlg->dlgitem[i];
-        if ((dlgitem->type == edlgBN) &&
-            (dlgitem->u.button.bDefault))
+        if ((dlgitem->type == edlgBN)
+            && (dlgitem->u.button.bDefault))
         {
             PushMouse(dlg->x11->disp, dlgitem->win.self,
-                      dlgitem->win.width/2, dlgitem->win.height/2);
+                      dlgitem->win.width / 2, dlgitem->win.height / 2);
             dlg->bPop = true;
             break;
         }
@@ -385,10 +385,10 @@ void HelpDlg(t_dlg *dlg)
 
 void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
 {
-    char     buf[80];
-    bool     bCont = true;
-    int      i, nlines = 0;
-    char   **lines = nullptr;
+    char   buf[80];
+    bool   bCont = true;
+    int    i, nlines = 0;
+    char **lines = nullptr;
 
     if (!dlgitem->help)
     {
@@ -424,11 +424,10 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
             if (bCont)
             {
                 srenew(lines, ++nlines);
-                lines[nlines-1] = gmx_strdup(buf);
+                lines[nlines - 1] = gmx_strdup(buf);
             }
         }
-    }
-    while (bCont);
+    } while (bCont);
     MessageBox(dlg->x11, dlg->wDad, "Help",
                nlines, lines,
                MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
@@ -467,7 +466,7 @@ static void ExitDlg(t_dlg *dlg)
 
 static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
 {
-    t_dlg     *dlg = (t_dlg *)data;
+    t_dlg *    dlg = (t_dlg *)data;
     int        i, nWndProc;
     t_dlgitem *dlgitem;
 
@@ -497,12 +496,12 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                 {
                     for (i = 0; (i < dlg->nitem); i++)
                     {
-                        if ((dlg->dlgitem[i]->type == edlgBN) &&
-                            (dlg->dlgitem[i]->u.button.bDefault))
+                        if ((dlg->dlgitem[i]->type == edlgBN)
+                            && (dlg->dlgitem[i]->u.button.bDefault))
                         {
                             PushMouse(x11->disp, dlg->dlgitem[i]->win.self,
-                                      dlg->dlgitem[i]->win.width/2,
-                                      dlg->dlgitem[i]->win.height/2);
+                                      dlg->dlgitem[i]->win.width / 2,
+                                      dlg->dlgitem[i]->win.height / 2);
                             break;
                         }
                     }
@@ -609,8 +608,8 @@ void DoCreateDlg(t_dlg *dlg)
     attr.override_redirect = False;
     attr.save_under        = True;
     attr.cursor            = XCreateFontCursor(dlg->x11->disp, XC_hand2);
-    Val                    = CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder |
-        CWCursor;
+    Val                    = CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder
+        | CWCursor;
     dlg->win.self = XCreateWindow(dlg->x11->disp, dlg->wDad,
                                   dlg->win.x, dlg->win.y,
                                   dlg->win.width, dlg->win.height,
@@ -651,15 +650,15 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
     {
         DoCreateDlg(dlg);
     }
-    srenew(dlg->dlgitem, dlg->nitem+1);
+    srenew(dlg->dlgitem, dlg->nitem + 1);
     if (!item)
     {
         gmx_fatal(FARGS, "dlgitem not allocated");
     }
-    item->win.self =
-        XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
-                            item->win.width, item->win.height,
-                            item->win.bwidth, dlg->x11->fg, dlg->x11->bg);
+    item->win.self
+        = XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
+                              item->win.width, item->win.height,
+                              item->win.bwidth, dlg->x11->fg, dlg->x11->bg);
     CheckWindow(item->win.self);
 
     dlg->x11->RegisterCallback(dlg->x11, item->win.self, dlg->win.self,
@@ -770,8 +769,8 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
                  int x0, int y0, int w, int h, int bw,
                  DlgCallback *cb, void *data)
 {
-    t_dlg   *dlg;
-    int      x = 0, y = 0;
+    t_dlg *dlg;
+    int    x = 0, y = 0;
 
     snew(dlg, 1);
     dlg->x11  = x11;
@@ -801,8 +800,8 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     }
     else
     {
-        Window         root;
-        unsigned int   dum;
+        Window       root;
+        unsigned int dum;
 
         XGetGeometry(x11->disp, Parent, &root, &x, &y,
                      &(dlg->xmax), &(dlg->ymax), &dum, &dum);
@@ -839,8 +838,8 @@ void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition)
     {
         int x, y;
 
-        x          = (dlg->xmax-w)/2;
-        y          = (dlg->ymax-h)/2;
+        x          = (dlg->xmax - w) / 2;
+        y          = (dlg->ymax - h) / 2;
         dlg->win.x = x;
         dlg->win.y = y;
     }

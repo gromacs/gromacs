@@ -96,7 +96,7 @@ bool StringInputStream::readLine(std::string *line)
             // To include the newline as well!
             newpos += 1;
         }
-        line->assign(input_.substr(pos_, newpos-pos_));
+        line->assign(input_.substr(pos_, newpos - pos_));
         pos_ = newpos;
         return true;
     }

@@ -73,7 +73,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
           dipole,        /* dipole moment due to one molecules */
           normal,
           com;           /* center of mass of micel, with bMicel */
-    rvec        *dip;    /* sum of dipoles, unnormalized */
+    rvec *       dip;    /* sum of dipoles, unnormalized */
     matrix       box;    /* box (3x3) */
     t_trxstatus *status;
     real         t,      /* time from trajectory */
@@ -83,7 +83,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
         i, j, teller = 0,
         slice = 0,       /* current slice number */
     *count;              /* nr. of atoms in one slice */
-    gmx_rmpbc_t  gpbc = nullptr;
+    gmx_rmpbc_t gpbc = nullptr;
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
     {
@@ -119,7 +119,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
     snew(dip, *nslices);
     snew(frame, *nslices);
 
-    *slWidth = box[axis][axis]/(*nslices);
+    *slWidth = box[axis][axis] / (*nslices);
     fprintf(stderr, "Box divided in %d slices. Initial width of slice: %f\n",
             *nslices, *slWidth);
 
@@ -129,7 +129,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
     /*********** Start processing trajectory ***********/
     do
     {
-        *slWidth = box[axis][axis]/(*nslices);
+        *slWidth = box[axis][axis] / (*nslices);
         teller++;
 
         gmx_rmpbc(gpbc, natoms, box, x0);
@@ -139,31 +139,31 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
             calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);
         }
 
-        for (i = 0; i < ngx/3; i++)
+        for (i = 0; i < ngx / 3; i++)
         {
             /* put all waters in box */
             for (j = 0; j < DIM; j++)
             {
-                if (x0[index[3*i]][j] < 0)
+                if (x0[index[3 * i]][j] < 0)
                 {
-                    x0[index[3*i]][j]   += box[j][j];
-                    x0[index[3*i+1]][j] += box[j][j];
-                    x0[index[3*i+2]][j] += box[j][j];
+                    x0[index[3 * i]][j]     += box[j][j];
+                    x0[index[3 * i + 1]][j] += box[j][j];
+                    x0[index[3 * i + 2]][j] += box[j][j];
                 }
-                if (x0[index[3*i]][j] > box[j][j])
+                if (x0[index[3 * i]][j] > box[j][j])
                 {
-                    x0[index[3*i]][j]   -= box[j][j];
-                    x0[index[3*i+1]][j] -= box[j][j];
-                    x0[index[3*i+2]][j] -= box[j][j];
+                    x0[index[3 * i]][j]     -= box[j][j];
+                    x0[index[3 * i + 1]][j] -= box[j][j];
+                    x0[index[3 * i + 2]][j] -= box[j][j];
                 }
             }
 
             for (j = 0; j < DIM; j++)
             {
-                dipole[j] =
-                    x0[index[3*i]][j] * top->atoms.atom[index[3*i]].q +
-                    x0[index[3*i+1]][j] * top->atoms.atom[index[3*i+1]].q +
-                    x0[index[3*i+2]][j] * top->atoms.atom[index[3*i+2]].q;
+                dipole[j]
+                    = x0[index[3 * i]][j] * top->atoms.atom[index[3 * i]].q
+                        + x0[index[3 * i + 1]][j] * top->atoms.atom[index[3 * i + 1]].q
+                        + x0[index[3 * i + 2]][j] * top->atoms.atom[index[3 * i + 2]].q;
             }
 
             /* now we have a dipole vector. Might as well safe it. Then the
@@ -172,9 +172,9 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
              */
 
             if (bMicel)
-            {                                                      /* this is for spherical interfaces */
-                rvec_sub(com, x0[index[3*i]], normal);             /* vector from Oxygen to COM */
-                slice = static_cast<int>(norm(normal)/(*slWidth)); /* spherical slice           */
+            {                                                        /* this is for spherical interfaces */
+                rvec_sub(com, x0[index[3 * i]], normal);             /* vector from Oxygen to COM */
+                slice = static_cast<int>(norm(normal) / (*slWidth)); /* spherical slice           */
 
                 sum[slice]   += iprod(dipole, normal) / (norm(dipole) * norm(normal));
                 frame[slice] += iprod(dipole, normal) / (norm(dipole) * norm(normal));
@@ -186,26 +186,25 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
                 /* this is for flat interfaces      */
 
                 /* determine which slice atom is in */
-                slice = static_cast<int>(x0[index[3*i]][axis] / (*slWidth));
+                slice = static_cast<int>(x0[index[3 * i]][axis] / (*slWidth));
                 if (slice < 0 || slice >= *nslices)
                 {
-                    fprintf(stderr, "Coordinate: %f ", x0[index[3*i]][axis]);
+                    fprintf(stderr, "Coordinate: %f ", x0[index[3 * i]][axis]);
                     fprintf(stderr, "HELP PANIC! slice = %d, OUT OF RANGE!\n", slice);
                 }
                 else
                 {
                     rvec_add(dipole, dip[slice], dip[slice]);
                     /* Add dipole to total. mag[slice] is total dipole in axis direction */
-                    sum[slice]   += iprod(dipole, normal)/norm(dipole);
-                    frame[slice] += iprod(dipole, normal)/norm(dipole);
+                    sum[slice]   += iprod(dipole, normal) / norm(dipole);
+                    frame[slice] += iprod(dipole, normal) / norm(dipole);
                     /* increase count for that slice */
                     count[slice]++;
                 }
             }
         }
 
-    }
-    while (read_next_x(oenv, status, &t, x0, box));
+    } while (read_next_x(oenv, status, &t, x0, box));
     /*********** done with status file **********/
 
     fprintf(stderr, "\nRead trajectory. Printing parameters to file\n");
@@ -235,13 +234,13 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
 void h2order_plot(rvec dipole[], real order[], const char *afile,
                   int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
-    FILE       *ord;              /* xvgr files with order parameters  */
-    int         slice;            /* loop index     */
-    char        buf[256];         /* for xvgr title */
-    real        factor;           /* conversion to Debye from electron*nm */
+    FILE *ord;                    /* xvgr files with order parameters  */
+    int   slice;                  /* loop index     */
+    char  buf[256];               /* for xvgr title */
+    real  factor;                 /* conversion to Debye from electron*nm */
 
     /*  factor = 1e-9*1.60217733e-19/3.336e-30 */
-    factor = 1.60217733/3.336e-2;
+    factor = 1.60217733 / 3.336e-2;
     fprintf(stderr, "%d slices\n", nslices);
     sprintf(buf, "Water orientation with respect to normal");
     ord = xvgropen(afile, buf,
@@ -249,9 +248,9 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 
     for (slice = 0; slice < nslices; slice++)
     {
-        fprintf(ord, "%8.3f %8.3f %8.3f %8.3f %e\n", slWidth*slice,
-                factor*dipole[slice][XX], factor*dipole[slice][YY],
-                factor*dipole[slice][ZZ], order[slice]);
+        fprintf(ord, "%8.3f %8.3f %8.3f %8.3f %e\n", slWidth * slice,
+                factor * dipole[slice][XX], factor * dipole[slice][YY],
+                factor * dipole[slice][ZZ], order[slice]);
     }
 
     xvgrclose(ord);
@@ -259,7 +258,7 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 
 int gmx_h2order(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] computes the orientation of water molecules with respect to the normal",
         "of the box. The program determines the average cosine of the angle",
         "between the dipole moment of water and an axis of the box. The box is",
@@ -279,27 +278,27 @@ int gmx_h2order(int argc, char *argv[])
           "Calculate order parameter as function of boxlength, dividing the box"
           " in this number of slices."}
     };
-    const char        *bugs[] = {
+    const char *       bugs[] = {
         "The program assigns whole water molecules to a slice, based on the first "
         "atom of three in the index file group. It assumes an order O,H,H. "
         "Name is not important, but the order is. If this demand is not met, "
         "assigning molecules to slices is different."
     };
 
-    gmx_output_env_t  *oenv;
-    real              *slOrder,               /* av. cosine, per slice      */
-                       slWidth = 0.0;         /* width of a slice           */
-    rvec              *slDipole;
-    char              *grpname,               /* groupnames                 */
+    gmx_output_env_t *oenv;
+    real *            slOrder,                /* av. cosine, per slice      */
+                      slWidth = 0.0;          /* width of a slice           */
+    rvec *slDipole;
+    char *grpname,                            /* groupnames                 */
     *micname;
-    int                ngx,                   /* nr. of atomsin sol group   */
-                       nmic = 0;              /* nr. of atoms in micelle    */
-    t_topology        *top;                   /* topology           */
-    int                ePBC;
-    int               *index,                 /* indices for solvent group  */
-    *micelle                  = nullptr;
-    gmx_bool           bMicel =  FALSE;       /* think we're a micel        */
-    t_filenm           fnm[]  = {             /* files for g_order      */
+    int ngx,                                  /* nr. of atomsin sol group   */
+        nmic = 0;                             /* nr. of atoms in micelle    */
+    t_topology *top;                          /* topology           */
+    int         ePBC;
+    int *       index,                        /* indices for solvent group  */
+    *micelle        = nullptr;
+    gmx_bool bMicel =  FALSE;                 /* think we're a micel        */
+    t_filenm fnm[]  = {                       /* files for g_order      */
         { efTRX, "-f", nullptr,  ffREAD },    /* trajectory file            */
         { efNDX, nullptr, nullptr,  ffREAD }, /* index file         */
         { efNDX, "-nm", nullptr, ffOPTRD },   /* index with micelle atoms   */

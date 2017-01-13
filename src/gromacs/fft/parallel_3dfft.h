@@ -80,8 +80,8 @@ typedef struct gmx_parallel_3dfft *
 int
     gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                                ivec                      ndata,
-                               real **real_data,
-                               t_complex **complex_data,
+                               real * *real_data,
+                               t_complex * *complex_data,
                                MPI_Comm                  comm[2],
                                gmx_bool                  bReproducible,
                                int                       nthreads);
@@ -93,27 +93,27 @@ int
 /*! \brief Get direct space grid index limits
  */
 int
-gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
-                               ivec                      local_ndata,
-                               ivec                      local_offset,
-                               ivec                      local_size);
+gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t pfft_setup,
+                               ivec                 local_ndata,
+                               ivec                 local_offset,
+                               ivec                 local_size);
 
 
 /*! \brief Get reciprocal space grid index limits
  */
 int
-gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
-                                  ivec                      complex_order,
-                                  ivec                      local_ndata,
-                                  ivec                      local_offset,
-                                  ivec                      local_size);
+gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t pfft_setup,
+                                  ivec                 complex_order,
+                                  ivec                 local_ndata,
+                                  ivec                 local_offset,
+                                  ivec                 local_size);
 
 
 int
-gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
-                           enum gmx_fft_direction  dir,
-                           int                     thread,
-                           gmx_wallcycle_t         wcycle);
+gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t   pfft_setup,
+                           enum gmx_fft_direction dir,
+                           int                    thread,
+                           gmx_wallcycle_t        wcycle);
 
 
 /*! \brief Release all data in parallel fft setup
@@ -126,7 +126,7 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
  *  \return 0 or a standard error code.
  */
 int
-gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
+gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t pfft_setup);
 
 #ifdef __cplusplus
 }

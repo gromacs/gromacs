@@ -54,8 +54,7 @@ class IKeyValueTreeErrorHandler
     public:
         virtual bool onError(UserInputError *ex, const KeyValueTreePath &context) = 0;
 
-    protected:
-        ~IKeyValueTreeErrorHandler();
+    protected: ~IKeyValueTreeErrorHandler();
 };
 
 //! \cond libapi

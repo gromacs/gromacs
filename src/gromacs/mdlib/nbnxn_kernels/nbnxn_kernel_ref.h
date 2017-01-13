@@ -48,14 +48,14 @@ extern "C" {
 /* Wrapper call for the non-bonded n vs n reference kernels */
 void
 nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
-                 const nbnxn_atomdata_t     *nbat,
-                 const interaction_const_t  *ic,
-                 rvec                       *shift_vec,
+                 const nbnxn_atomdata_t *    nbat,
+                 const interaction_const_t * ic,
+                 rvec *                      shift_vec,
                  int                         force_flags,
                  int                         clearF,
-                 real                       *fshift,
-                 real                       *Vc,
-                 real                       *Vvdw);
+                 real *                      fshift,
+                 real *                      Vc,
+                 real *                      Vvdw);
 
 #ifdef __cplusplus
 }

@@ -135,8 +135,7 @@ class AnalysisNeighborhoodPositions
          * actual exclusions have been set with
          * AnalysisNeighborhood::setTopologyExclusions().
          */
-        AnalysisNeighborhoodPositions &
-        exclusionIds(ConstArrayRef<int> ids)
+        AnalysisNeighborhoodPositions &exclusionIds(ConstArrayRef<int> ids)
         {
             GMX_ASSERT(static_cast<int>(ids.size()) == count_,
                        "Exclusion id array should match the number of positions");
@@ -151,8 +150,7 @@ class AnalysisNeighborhoodPositions
          * All returned indices from AnalysisNeighborhoodPair objects are
          * indices to the \p indices array passed here.
          */
-        AnalysisNeighborhoodPositions &
-        indexed(ConstArrayRef<int> indices)
+        AnalysisNeighborhoodPositions &indexed(ConstArrayRef<int> indices)
         {
             count_   = indices.size();
             indices_ = indices.data();
@@ -179,11 +177,11 @@ class AnalysisNeighborhoodPositions
         }
 
     private:
-        int                     count_;
-        int                     index_;
-        const rvec             *x_;
-        const int              *exclusionIds_;
-        const int              *indices_;
+        int         count_;
+        int         index_;
+        const rvec *x_;
+        const int * exclusionIds_;
+        const int * indices_;
 
         //! To access the positions for initialization.
         friend class internal::AnalysisNeighborhoodSearchImpl;
@@ -303,7 +301,7 @@ class AnalysisNeighborhood
          * AnalysisNeighborhoodPositions::selectSingleFromArray().
          */
         AnalysisNeighborhoodSearch
-        initSearch(const t_pbc                         *pbc,
+        initSearch(const t_pbc *                        pbc,
                    const AnalysisNeighborhoodPositions &positions);
 
     private:
@@ -386,10 +384,10 @@ class AnalysisNeighborhoodPair
         }
 
     private:
-        int                     refIndex_;
-        int                     testIndex_;
-        real                    distance2_;
-        rvec                    dx_;
+        int  refIndex_;
+        int  testIndex_;
+        real distance2_;
+        rvec dx_;
 };
 
 /*! \brief
@@ -513,7 +511,7 @@ class AnalysisNeighborhoodSearch
     private:
         typedef internal::AnalysisNeighborhoodSearchImpl Impl;
 
-        ImplPointer             impl_;
+        ImplPointer impl_;
 };
 
 /*! \brief
@@ -594,7 +592,7 @@ class AnalysisNeighborhoodPairSearch
         void skipRemainingPairsForTestPosition();
 
     private:
-        ImplPointer             impl_;
+        ImplPointer impl_;
 };
 
 } // namespace gmx

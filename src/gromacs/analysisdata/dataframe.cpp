@@ -70,9 +70,9 @@ AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
  */
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader  &header,
+        const AnalysisDataFrameHeader & header,
         const AnalysisDataPointSetInfo &pointSetInfo,
-        const AnalysisDataValuesRef    &values)
+        const AnalysisDataValuesRef &   values)
     : header_(header),
       dataSetIndex_(pointSetInfo.dataSetIndex()),
       firstColumn_(pointSetInfo.firstColumn()),
@@ -85,7 +85,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
 
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader        &header,
+        const AnalysisDataFrameHeader &       header,
         const std::vector<AnalysisDataValue> &values)
     : header_(header), dataSetIndex_(0), firstColumn_(0),
       values_(constArrayRefFromVector<AnalysisDataValue>(values.begin(), values.end()))
@@ -108,8 +108,8 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
     {
         return;
     }
-    AnalysisDataValuesRef::const_iterator begin = points.values().begin();
-    int pointsOffset = firstColumn - points.firstColumn();
+    AnalysisDataValuesRef::const_iterator begin        = points.values().begin();
+    int                                   pointsOffset = firstColumn - points.firstColumn();
     if (pointsOffset > 0)
     {
         // Offset pointer if the first column is not the first in points.
@@ -155,8 +155,8 @@ AnalysisDataFrameRef::AnalysisDataFrameRef()
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader      &header,
-        const AnalysisDataValuesRef        &values,
+        const AnalysisDataFrameHeader &     header,
+        const AnalysisDataValuesRef &       values,
         const AnalysisDataPointSetInfosRef &pointSets)
     : header_(header), values_(values), pointSets_(pointSets)
 {
@@ -165,8 +165,8 @@ AnalysisDataFrameRef::AnalysisDataFrameRef(
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader               &header,
-        const std::vector<AnalysisDataValue>        &values,
+        const AnalysisDataFrameHeader &              header,
+        const std::vector<AnalysisDataValue> &       values,
         const std::vector<AnalysisDataPointSetInfo> &pointSets)
     : header_(header), values_(constArrayRefFromVector<AnalysisDataValue>(values.begin(), values.end())),
       pointSets_(constArrayRefFromVector<AnalysisDataPointSetInfo>(pointSets.begin(), pointSets.end()))

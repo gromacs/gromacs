@@ -133,7 +133,7 @@ TEST_F(SimdIntegerTest, or)
 
 TEST_F(SimdIntegerTest, xor)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x3C3C3C3C), iSimd_0xF0F0F0F0 ^iSimd_0xCCCCCCCC);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x3C3C3C3C), iSimd_0xF0F0F0F0 ^ iSimd_0xCCCCCCCC);
 }
 #endif      // GMX_SIMD_HAVE_INT32_LOGICAL
 
@@ -145,7 +145,7 @@ TEST_F(SimdIntegerTest, extract)
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        idata[i] = i+1;
+        idata[i] = i + 1;
     }
     simd = load(idata);
 
@@ -241,43 +241,43 @@ TEST_F(SimdIntegerTest, cvtI2R)
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, cmpEqAndSelectMask)
 {
-    SimdIBool eq   = (iSimd_5_7_9 == iSimd_7_8_9);
+    SimdIBool eq = (iSimd_5_7_9 == iSimd_7_8_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, 0, 3), selectByMask(iSimd_1_2_3, eq));
 }
 
 TEST_F(SimdIntegerTest, cmpEqAndSelectNotMask)
 {
-    SimdIBool eq   = (iSimd_5_7_9 == iSimd_7_8_9);
+    SimdIBool eq = (iSimd_5_7_9 == iSimd_7_8_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 2, 0), selectByNotMask(iSimd_1_2_3, eq));
 }
 
 TEST_F(SimdIntegerTest, cmpLt)
 {
-    SimdIBool lt   = (iSimd_5_7_9 < iSimd_7_8_9);
+    SimdIBool lt = (iSimd_5_7_9 < iSimd_7_8_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 2, 0), selectByMask(iSimd_1_2_3, lt));
 }
 
 TEST_F(SimdIntegerTest, testBits)
 {
-    SimdIBool eq   = testBits(setSimdIntFrom3I(1, 0, 2));
+    SimdIBool eq = testBits(setSimdIntFrom3I(1, 0, 2));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 3), selectByMask(iSimd_1_2_3, eq));
 
     // Test if we detect only the sign bit being set
-    eq            = testBits(setSimdIntFrom1I(0x80000000));
+    eq = testBits(setSimdIntFrom1I(0x80000000));
     GMX_EXPECT_SIMD_INT_EQ(iSimd_1_2_3, selectByMask(iSimd_1_2_3, eq));
 }
 
 TEST_F(SimdIntegerTest, andB)
 {
-    SimdIBool eq1  = (iSimd_5_7_9 == iSimd_7_8_9);
-    SimdIBool eq2  = (iSimd_5_7_9 == iSimd_5_7_9);
+    SimdIBool eq1 = (iSimd_5_7_9 == iSimd_7_8_9);
+    SimdIBool eq2 = (iSimd_5_7_9 == iSimd_5_7_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, 0, 3), selectByMask(iSimd_1_2_3, eq1 && eq2));
 }
 
 TEST_F(SimdIntegerTest, orB)
 {
-    SimdIBool eq1  = (iSimd_5_7_9 == iSimd_7_8_9);
-    SimdIBool eq2  = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
+    SimdIBool eq1 = (iSimd_5_7_9 == iSimd_7_8_9);
+    SimdIBool eq2 = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 3), selectByMask(iSimd_1_2_3, eq1 || eq2));
 }
 
@@ -297,7 +297,7 @@ TEST_F(SimdIntegerTest, anyTrue)
 
 TEST_F(SimdIntegerTest, blend)
 {
-    SimdIBool lt   = (iSimd_5_7_9 < iSimd_7_8_9);
+    SimdIBool lt = (iSimd_5_7_9 < iSimd_7_8_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 5, 3), blend(iSimd_1_2_3, iSimd_4_5_6, lt));
 }
 #endif      // GMX_SIMD_HAVE_INT32_ARITHMETICS
@@ -305,16 +305,16 @@ TEST_F(SimdIntegerTest, blend)
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, cvtB2IB)
 {
-    SimdBool  eq   = (rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
-    SimdIBool eqi  = cvtB2IB(eq);
+    SimdBool  eq  = (rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0));   // eq should be T,F,F
+    SimdIBool eqi = cvtB2IB(eq);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 0), selectByMask(iSimd_1_2_3, eqi));
 
 }
 
 TEST_F(SimdIntegerTest, cvtIB2B)
 {
-    SimdIBool eqi  = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));  // eq should be T,F,F
-    SimdBool  eq   = cvtIB2B(eqi);
+    SimdIBool eqi = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));   // eq should be T,F,F
+    SimdBool  eq  = cvtIB2B(eqi);
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), selectByMask(rSimd_1_2_3, eq));
 }
 #endif      // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS

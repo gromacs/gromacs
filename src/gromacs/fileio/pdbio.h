@@ -61,24 +61,25 @@ typedef struct gmx_conect_t *gmx_conect;
  * Returns the number of characters printed.
  */
 int
-gmx_fprintf_pdb_atomline(FILE *            fp,
-                         enum PDB_record   record,
-                         int               atom_seq_number,
-                         const char *      atom_name,
-                         char              alternate_location,
-                         const char *      res_name,
-                         char              chain_id,
-                         int               res_seq_number,
-                         char              res_insertion_code,
-                         real              x,
-                         real              y,
-                         real              z,
-                         real              occupancy,
-                         real              b_factor,
-                         const char *      element);
+gmx_fprintf_pdb_atomline(FILE *          fp,
+                         enum PDB_record record,
+                         int             atom_seq_number,
+                         const char *    atom_name,
+                         char            alternate_location,
+                         const char *    res_name,
+                         char            chain_id,
+                         int             res_seq_number,
+                         char            res_insertion_code,
+                         real            x,
+                         real            y,
+                         real            z,
+                         real            occupancy,
+                         real            b_factor,
+                         const char *    element);
 
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
-enum {
+enum
+{
     U11, U22, U33, U12, U13, U23
 };
 

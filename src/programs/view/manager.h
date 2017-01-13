@@ -59,44 +59,51 @@ struct gmx_output_env_t;
 #define LDHEIGHT      0
 #define LEGHEIGHT    60
 
-enum eObject {
+enum eObject
+{
     eOSingle, eOBond, eOHBond, eONR
 };
 
-enum eVisible {
+enum eVisible
+{
     eVNormal, eVSpecial, eVHidden, evNR
 };
 
-enum eBwidth {
+enum eBwidth
+{
     eBThin, eBFat, eBVeryFat, eBSpheres, eBNR
 };
 
-enum esBox {
+enum esBox
+{
     esbNone, esbRect, esbTri, esbTrunc, esbNR
 };
 
-typedef struct {
-    t_windata     wd;            /* Mol window structure			*/
-    bool          bShowHydrogen; /* Show Hydrogens?			*/
-    int           bond_type;     /* Show one of the above bondtypes      */
-    int           ePBC;          /* PBC type                             */
-    int           boxtype;       /* Rectangular, Tric, TruncOct (display)*/
-    int           realbox;       /* Property of the real box             */
+typedef struct
+{
+    t_windata wd;                /* Mol window structure			*/
+    bool      bShowHydrogen;     /* Show Hydrogens?			*/
+    int       bond_type;         /* Show one of the above bondtypes      */
+    int       ePBC;              /* PBC type                             */
+    int       boxtype;           /* Rectangular, Tric, TruncOct (display)*/
+    int       realbox;           /* Property of the real box             */
 } t_molwin;
 
-typedef struct {
-    eObject           eO;     /* The type of object			*/
-    eVisible          eV;     /* Visibility status of the object	*/
-    unsigned long     color;  /* The color (only when eV==evSpecial)    */
-    int               ai, aj; /* The int for i (and j if bond)	*/
-    real              z;      /* The Z-coordinate for depht cueing	*/
+typedef struct
+{
+    eObject       eO;         /* The type of object			*/
+    eVisible      eV;         /* Visibility status of the object	*/
+    unsigned long color;      /* The color (only when eV==evSpecial)    */
+    int           ai, aj;     /* The int for i (and j if bond)	*/
+    real          z;          /* The Z-coordinate for depht cueing	*/
 } t_object;
 
-typedef struct {
-    t_blocka    *grps;     /* Blocks with atom numbers		*/
-    char       **grpnames; /* The names of the groups		*/
-    bool        *bDisable; /* Group indexes out of natoms in TRX   */
-    bool        *bShow;    /* Show a group ?			*/
+typedef struct
+{
+    t_blocka *grps;        /* Blocks with atom numbers		*/
+    char **   grpnames;    /* The names of the groups		*/
+    bool *    bDisable;    /* Group indexes out of natoms in TRX   */
+    bool *    bShow;       /* Show a group ?			*/
 } t_filter;
 
 /*
@@ -107,43 +114,44 @@ typedef struct {
  * be updated.
  *
  */
-typedef struct {
-    t_trxstatus      *status;
-    const char       *trajfile;
-    int               natom;    /* The number of atoms			*/
-    t_topology        top;      /* topology                             */
-    rvec              box_size;
-    real              time;     /* The actual time                      */
-    rvec             *x;        /* The coordinates			*/
-    iv2              *ix;       /* The coordinates after projection	*/
-    real             *zz;       /* Z-coords                             */
-    matrix            box;      /* The box				*/
-    int               nobj;     /* The number of objects		*/
-    t_object         *obj;      /* The objects on screen		*/
-    bool             *bHydro;   /* true for hydrogen atoms		*/
-    bool             *bLabel;   /* Show a label on atom i?              */
-    char            **szLab;    /* Array of pointers to labels          */
-    unsigned long    *col;      /* The colour of the atoms		*/
-    int              *size;     /* The size of the atoms		*/
-    real             *vdw;      /* The VDWaals radius of the atoms	*/
-    bool             *bVis;     /* visibility of atoms                  */
-    bool              bPbc;     /* Remove Periodic boundary             */
-    bool              bAnimate; /* Animation going on?			*/
-    bool              bEof;     /* End of file reached?                 */
-    bool              bStop;    /* Stopped by user?                     */
-    bool              bSort;    /* Sort the coordinates			*/
-    bool              bPlus;    /* Draw plus for single atom		*/
-    int               nSkip;    /* Skip n steps after each frame	*/
-    int               nWait;    /* Wait n ms after each frame           */
-    gmx_rmpbc_t       gpbc;     /* For removing peridiocity             */
+typedef struct
+{
+    t_trxstatus *  status;
+    const char *   trajfile;
+    int            natom;       /* The number of atoms			*/
+    t_topology     top;         /* topology                             */
+    rvec           box_size;
+    real           time;        /* The actual time                      */
+    rvec *         x;           /* The coordinates			*/
+    iv2 *          ix;          /* The coordinates after projection	*/
+    real *         zz;          /* Z-coords                             */
+    matrix         box;         /* The box				*/
+    int            nobj;        /* The number of objects		*/
+    t_object *     obj;         /* The objects on screen		*/
+    bool *         bHydro;      /* true for hydrogen atoms		*/
+    bool *         bLabel;      /* Show a label on atom i?              */
+    char **        szLab;       /* Array of pointers to labels          */
+    unsigned long *col;         /* The colour of the atoms		*/
+    int *          size;        /* The size of the atoms		*/
+    real *         vdw;         /* The VDWaals radius of the atoms	*/
+    bool *         bVis;        /* visibility of atoms                  */
+    bool           bPbc;        /* Remove Periodic boundary             */
+    bool           bAnimate;    /* Animation going on?			*/
+    bool           bEof;        /* End of file reached?                 */
+    bool           bStop;       /* Stopped by user?                     */
+    bool           bSort;       /* Sort the coordinates			*/
+    bool           bPlus;       /* Draw plus for single atom		*/
+    int            nSkip;       /* Skip n steps after each frame	*/
+    int            nWait;       /* Wait n ms after each frame           */
+    gmx_rmpbc_t    gpbc;        /* For removing peridiocity             */
 
-    t_windata         wd;       /* The manager subwindow                */
-    t_windata         title;    /* Title window				*/
-    t_3dview         *view;     /* The 3d struct                        */
-    t_molwin         *molw;     /* The molecule window			*/
-    t_butbox         *vbox;     /* The video box			*/
-    t_butbox         *bbox;     /* The button box			*/
-    t_legendwin      *legw;     /* The legend window			*/
+    t_windata    wd;            /* The manager subwindow                */
+    t_windata    title;         /* Title window				*/
+    t_3dview *   view;          /* The 3d struct                        */
+    t_molwin *   molw;          /* The molecule window			*/
+    t_butbox *   vbox;          /* The video box			*/
+    t_butbox *   bbox;          /* The button box			*/
+    t_legendwin *legw;          /* The legend window			*/
 
     gmx_output_env_t *oenv;     /* output env data */
 } t_manager;

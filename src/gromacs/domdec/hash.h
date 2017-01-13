@@ -59,11 +59,11 @@ struct gmx_hash_e_t
 {
     public:
         //! The (unique) key for storing/looking up a value
-        int  key;
+        int key;
         //! The value belonging to key
-        int  val;
+        int val;
         //! Index for the next element in the array with indentical value key%mod, -1 if there is no next element
-        int  next;
+        int next;
 };
 
 /*! \internal \brief Hashing helper struct */
@@ -71,17 +71,17 @@ struct gmx_hash_t
 {
     public:
         //! Keys are looked up by first checking array index key%mod in hash
-        int           mod;
+        int mod;
         //! mask=log2(mod), used to replace a % by the faster & operation
-        int           mask;
+        int mask;
         //! Allocated size of hash
-        int           nalloc;
+        int nalloc;
         //! The actual array containing the keys, values and next indices
         gmx_hash_e_t *hash;
         //! The number of keys stored
-        int           nkey;
+        int nkey;
         //! Index in hash where we should start searching for space to store a new key/value
-        int           start_space_search;
+        int start_space_search;
 };
 
 //! Clear all the entries in the hash table.
@@ -116,7 +116,7 @@ static void gmx_hash_realloc(gmx_hash_t *hash, int nkey_used_estimate)
      */
     /* Make the hash table a power of 2 and at least double the number of keys */
     hash->mod = 4;
-    while (2*nkey_used_estimate > hash->mod)
+    while (2 * nkey_used_estimate > hash->mod)
     {
         hash->mod *= 2;
     }
@@ -138,8 +138,8 @@ static void gmx_hash_realloc(gmx_hash_t *hash, int nkey_used_estimate)
 static void gmx_hash_clear_and_optimize(gmx_hash_t *hash)
 {
     /* Resize the hash table when the occupation is < 1/4 or > 2/3 */
-    if (hash->nkey > 0 &&
-        (4*hash->nkey < hash->mod || 3*hash->nkey > 2*hash->mod))
+    if (hash->nkey > 0
+        && (4 * hash->nkey < hash->mod || 3 * hash->nkey > 2 * hash->mod))
     {
         if (debug != nullptr)
         {
@@ -191,7 +191,7 @@ static void gmx_hash_set(gmx_hash_t *hash, int key, int value)
         /* If we are at the end of the list we need to increase the size */
         if (ind == hash->nalloc)
         {
-            hash->nalloc = over_alloc_dd(ind+1);
+            hash->nalloc = over_alloc_dd(ind + 1);
             srenew(hash->hash, hash->nalloc);
             for (i = ind; i < hash->nalloc; i++)
             {
@@ -242,8 +242,7 @@ static void gmx_hash_del(gmx_hash_t *hash, int key)
         }
         ind_prev = ind;
         ind      = hash->hash[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return;
 }
@@ -263,8 +262,7 @@ static void gmx_hash_change_value(gmx_hash_t *hash, int key, int value)
             return;
         }
         ind = hash->hash[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return;
 }
@@ -284,8 +282,7 @@ static void gmx_hash_change_or_set(gmx_hash_t *hash, int key, int value)
             return;
         }
         ind = hash->hash[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     gmx_hash_set(hash, key, value);
 
@@ -307,8 +304,7 @@ static gmx_bool gmx_hash_get(const gmx_hash_t *hash, int key, int *value)
             return TRUE;
         }
         ind = hash->hash[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return FALSE;
 }
@@ -326,8 +322,7 @@ static int gmx_hash_get_minone(const gmx_hash_t *hash, int key)
             return hash->hash[ind].val;
         }
         ind = hash->hash[ind].next;
-    }
-    while (ind >= 0);
+    } while (ind >= 0);
 
     return -1;
 }

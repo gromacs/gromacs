@@ -49,25 +49,24 @@ const char gmx_residuetype_undefined[] = "Other";
 
 struct gmx_residuetype_t
 {
-    int      n;
-    char **  resname;
-    char **  restype;
+    int     n;
+    char ** resname;
+    char ** restype;
 };
 
-int
-gmx_residuetype_init(gmx_residuetype_t **prt)
+int gmx_residuetype_init(gmx_residuetype_t **prt)
 {
-    FILE                 *  db;
-    char                    line[STRLEN];
-    char                    resname[STRLEN], restype[STRLEN], dum[STRLEN];
-    gmx_residuetype_t      *rt;
+    FILE *             db;
+    char               line[STRLEN];
+    char               resname[STRLEN], restype[STRLEN], dum[STRLEN];
+    gmx_residuetype_t *rt;
 
     snew(rt, 1);
     *prt = rt;
 
-    rt->n        = 0;
-    rt->resname  = nullptr;
-    rt->restype  = nullptr;
+    rt->n       = 0;
+    rt->resname = nullptr;
+    rt->restype = nullptr;
 
     db = libopen("residuetypes.dat");
 
@@ -90,8 +89,7 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
     return 0;
 }
 
-int
-gmx_residuetype_destroy(gmx_residuetype_t *rt)
+int gmx_residuetype_destroy(gmx_residuetype_t *rt)
 {
     int i;
 
@@ -110,10 +108,9 @@ gmx_residuetype_destroy(gmx_residuetype_t *rt)
 /* Return 0 if the name was found, otherwise -1.
  * p_restype is set to a pointer to the type name, or 'Other' if we did not find it.
  */
-int
-gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char ** p_restype)
+int gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char ** p_restype)
 {
-    int    i, rc;
+    int i, rc;
 
     rc = -1;
     for (i = 0; i < rt->n && rc; i++)
@@ -121,16 +118,15 @@ gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char
         rc = gmx_strcasecmp(rt->resname[i], resname);
     }
 
-    *p_restype = (rc == 0) ? rt->restype[i-1] : gmx_residuetype_undefined;
+    *p_restype = (rc == 0) ? rt->restype[i - 1] : gmx_residuetype_undefined;
 
     return rc;
 }
 
-int
-gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype)
+int gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype)
 {
-    int           found;
-    const char *  p_oldtype;
+    int          found;
+    const char * p_oldtype;
 
     found = !gmx_residuetype_get_type(rt, newresname, &p_oldtype);
 
@@ -142,8 +138,8 @@ gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *n
 
     if (found == 0)
     {
-        srenew(rt->resname, rt->n+1);
-        srenew(rt->restype, rt->n+1);
+        srenew(rt->resname, rt->n + 1);
+        srenew(rt->restype, rt->n + 1);
         rt->resname[rt->n] = gmx_strdup(newresname);
         rt->restype[rt->n] = gmx_strdup(newrestype);
         rt->n++;
@@ -152,10 +148,9 @@ gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *n
     return 0;
 }
 
-int
-gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
-                             const char ***       p_typenames,
-                             int *                ntypes)
+int gmx_residuetype_get_alltypes(gmx_residuetype_t *rt,
+                                 const char ***     p_typenames,
+                                 int *              ntypes)
 {
     int          n           = 0;
     const char **my_typename = nullptr;
@@ -164,7 +159,7 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
     {
         int         i = 0;
         const char *p = rt->restype[i];
-        snew(my_typename, n+1);
+        snew(my_typename, n + 1);
         my_typename[n] = p;
         n              = 1;
 
@@ -178,7 +173,7 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
             }
             if (!bFound)
             {
-                srenew(my_typename, n+1);
+                srenew(my_typename, n + 1);
                 my_typename[n] = p;
                 n++;
             }
@@ -190,14 +185,13 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
     return 0;
 }
 
-gmx_bool
-gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm)
+gmx_bool gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm)
 {
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "Protein") == 0)
+    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0
+        && gmx_strcasecmp(p_type, "Protein") == 0)
     {
         rc = TRUE;
     }
@@ -208,14 +202,13 @@ gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm)
     return rc;
 }
 
-gmx_bool
-gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm)
+gmx_bool gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm)
 {
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "DNA") == 0)
+    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0
+        && gmx_strcasecmp(p_type, "DNA") == 0)
     {
         rc = TRUE;
     }
@@ -226,14 +219,13 @@ gmx_residuetype_is_dna(gmx_residuetype_t *rt, const char *resnm)
     return rc;
 }
 
-gmx_bool
-gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm)
+gmx_bool gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm)
 {
     gmx_bool    rc;
     const char *p_type;
 
-    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0 &&
-        gmx_strcasecmp(p_type, "RNA") == 0)
+    if (gmx_residuetype_get_type(rt, resnm, &p_type) == 0
+        && gmx_strcasecmp(p_type, "RNA") == 0)
     {
         rc = TRUE;
     }
@@ -245,8 +237,7 @@ gmx_residuetype_is_rna(gmx_residuetype_t *rt, const char *resnm)
 }
 
 /* Return the size of the arrays */
-int
-gmx_residuetype_get_size(gmx_residuetype_t *rt)
+int gmx_residuetype_get_size(gmx_residuetype_t *rt)
 {
     return rt->n;
 }
@@ -255,8 +246,7 @@ gmx_residuetype_get_size(gmx_residuetype_t *rt)
  * gmx_residuetype database. Return the index if found,
  * otherwise -1.
  */
-int
-gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm)
+int gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm)
 {
     int i, rc;
 
@@ -266,13 +256,12 @@ gmx_residuetype_get_index(gmx_residuetype_t *rt, const char *resnm)
         rc = gmx_strcasecmp(rt->resname[i], resnm);
     }
 
-    return (0 == rc) ? i-1 : -1;
+    return (0 == rc) ? i - 1 : -1;
 }
 
 /* Return the name of the residuetype with the given index, or
  * NULL if not found. */
-const char *
-gmx_residuetype_get_name(gmx_residuetype_t *rt, int index)
+const char *gmx_residuetype_get_name(gmx_residuetype_t *rt, int index)
 {
     if (index >= 0 && index < rt->n)
     {

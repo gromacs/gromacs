@@ -84,10 +84,10 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             testTop_ = nullptr;
             testX_   = nullptr;
             clear_mat(testBox_);
-            referenceFilename_ =
-                fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
-            testFilename_ =
-                fileManager_.getTemporaryFilePath(getFileSuffix("test"));
+            referenceFilename_
+                = fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
+            testFilename_
+                = fileManager_.getTemporaryFilePath(getFileSuffix("test"));
         }
         ~StructureIORoundtripTest()
         {
@@ -111,7 +111,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void readReferenceFileTps()
         {
             snew(testTop_, 1);
-            int  ePBC = -2;
+            int ePBC = -2;
             read_tps_conf(referenceFilename_.c_str(), testTop_,
                           &ePBC, &testX_, nullptr, testBox_, FALSE);
         }
@@ -153,18 +153,18 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             {
                 char name[3];
                 name[0]                       = 'A';
-                name[1]                       = 'A' + i%3;
+                name[1]                       = 'A' + i % 3;
                 name[2]                       = '\0';
                 refTop_->atoms.atomname[i]    = put_symtab(&refTop_->symtab, name);
-                refTop_->atoms.atom[i].resind = i/3;
-                if (i%3 == 0)
+                refTop_->atoms.atom[i].resind = i / 3;
+                if (i % 3 == 0)
                 {
                     char resname[3];
                     resname[0] = 'R';
-                    resname[1] = 'A' + i/3;
+                    resname[1] = 'A' + i / 3;
                     resname[2] = '\0';
                     t_atoms_set_resinfo(&refTop_->atoms, i, &refTop_->symtab,
-                                        resname, i/3 + 1, ' ', 0, ' ');
+                                        resname, i / 3 + 1, ' ', 0, ' ');
                 }
             }
             refTop_->atoms.nres = 4;
@@ -181,19 +181,19 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             refX_.reserve(atomCount);
             for (int i = 0; i < atomCount; ++i)
             {
-                refX_.emplace_back(i%4, i/4, (i/2)%3);
+                refX_.emplace_back(i % 4, i / 4, (i / 2) % 3);
             }
         }
 
-        gmx::test::TestFileManager      fileManager_;
-        std::string                     referenceFilename_;
-        std::string                     testFilename_;
-        t_topology                     *refTop_;
-        std::vector<gmx::RVec>          refX_;
-        matrix                          refBox_;
-        t_topology                     *testTop_;
-        rvec                           *testX_;
-        matrix                          testBox_;
+        gmx::test::TestFileManager fileManager_;
+        std::string                referenceFilename_;
+        std::string                testFilename_;
+        t_topology *               refTop_;
+        std::vector<gmx::RVec>     refX_;
+        matrix                     refBox_;
+        t_topology *               testTop_;
+        rvec *                     testX_;
+        matrix                     testBox_;
 };
 
 TEST_P(StructureIORoundtripTest, ReadWriteTpsConf)

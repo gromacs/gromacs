@@ -83,9 +83,9 @@ struct SelectionTopologyProperties;
 struct gmx_ana_selcollection_t
 {
     //! Position calculation collection used for selection position evaluation.
-    gmx::PositionCalculationCollection  pcc;
+    gmx::PositionCalculationCollection pcc;
     //! Root of the selection element tree.
-    gmx::SelectionTreeElementPointer    root;
+    gmx::SelectionTreeElementPointer root;
     /*! \brief
      * Array of compiled selections.
      *
@@ -93,23 +93,23 @@ struct gmx_ana_selcollection_t
      * but note that gmx::Selection instances also hold pointers to the
      * objects.
      */
-    gmx::SelectionDataList         sel;
+    gmx::SelectionDataList sel;
     /** Number of variables defined. */
-    int                            nvars;
+    int nvars;
     /** Selection strings for variables. */
-    char                         **varstrs;
+    char **varstrs;
 
     /** Topology for the collection. */
-    const gmx_mtop_t                                  *top;
+    const gmx_mtop_t *top;
     /** Index group that contains all the atoms. */
-    gmx_ana_index_t                                    gall;
+    gmx_ana_index_t gall;
     /** Memory pool used for selection evaluation. */
-    gmx_sel_mempool_t                                 *mempool;
+    gmx_sel_mempool_t *mempool;
     //! Parser symbol table.
     // Never releases ownership.
-    std::unique_ptr<gmx::SelectionParserSymbolTable>   symtab;
+    std::unique_ptr<gmx::SelectionParserSymbolTable> symtab;
     //! Root of help topic tree (NULL is no help yet requested).
-    gmx::HelpTopicPointer                              rootHelp;
+    gmx::HelpTopicPointer rootHelp;
 };
 
 namespace gmx
@@ -153,7 +153,7 @@ class SelectionCollection::Impl
          * resolve references are reported to \p errors.
          */
         void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
-                                   ExceptionInitializer                   *errors);
+                                   ExceptionInitializer *                  errors);
 
         //! Whether forces have been requested for some selection.
         bool areForcesRequested() const;
@@ -167,11 +167,11 @@ class SelectionCollection::Impl
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;
         //! Default reference position type for selections.
-        std::string             rpost_;
+        std::string rpost_;
         //! Default output position type for selections.
-        std::string             spost_;
+        std::string spost_;
         //! Atoms needed for evaluating the selections.
-        gmx_ana_index_t         requiredAtoms_;
+        gmx_ana_index_t requiredAtoms_;
         /*! \brief
          * Debugging level for the collection.
          *
@@ -182,11 +182,11 @@ class SelectionCollection::Impl
          *  - 3: like 1, also print the tree after evaluation
          *  - 4: combine 2 and 3
          */
-        int                     debugLevel_;
+        int debugLevel_;
         //! Whether setIndexGroups() has been called.
-        bool                    bExternalGroupsSet_;
+        bool bExternalGroupsSet_;
         //! External index groups (can be NULL).
-        gmx_ana_indexgrps_t    *grps_;
+        gmx_ana_indexgrps_t *grps_;
 };
 
 /*! \internal

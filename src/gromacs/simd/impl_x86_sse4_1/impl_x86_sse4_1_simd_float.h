@@ -45,15 +45,13 @@
 namespace gmx
 {
 
-template<int index>
-static inline std::int32_t gmx_simdcall
-extract(SimdFInt32 a)
+template <int index>
+static inline std::int32_t gmx_simdcall extract(SimdFInt32 a)
 {
     return _mm_extract_epi32(a.simdInternal_, index);
 }
 
-static inline SimdFloat
-maskzRsqrt(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzRsqrt(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
     x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
@@ -63,8 +61,7 @@ maskzRsqrt(SimdFloat x, SimdFBool m)
     };
 }
 
-static inline SimdFloat
-maskzRcp(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzRcp(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
     x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
@@ -74,40 +71,35 @@ maskzRcp(SimdFloat x, SimdFBool m)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-round(SimdFloat x)
+static inline SimdFloat gmx_simdcall round(SimdFloat x)
 {
     return {
                _mm_round_ps(x.simdInternal_, _MM_FROUND_NINT)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-trunc(SimdFloat x)
+static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 {
     return {
                _mm_round_ps(x.simdInternal_, _MM_FROUND_TRUNC)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+static inline SimdFloat gmx_simdcall blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
     return {
                _mm_blendv_ps(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator*(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator*(SimdFInt32 a, SimdFInt32 b)
 {
     return {
                _mm_mullo_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+static inline SimdFInt32 gmx_simdcall blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
     return {
                _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)

@@ -104,8 +104,7 @@ class FlagsTemplate
             return FlagsTemplate<FlagType>(flags_ | other.flags_);
         }
         //! Combines flags from another flag object.
-        FlagsTemplate<FlagType> &
-        operator|=(const FlagsTemplate<FlagType> &other)
+        FlagsTemplate<FlagType> &operator|=(const FlagsTemplate<FlagType> &other)
         {
             flags_ |= other.flags_;
             return *this;
@@ -126,7 +125,7 @@ class FlagsTemplate
         //! Creates a flags object with the given flags.
         explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
-        unsigned long           flags_;
+        unsigned long flags_;
 };
 
 } // namespace gmx

@@ -70,8 +70,8 @@ void
     F77_FUNC(endgms, ENDGMS) (void);
 
 void
-    F77_FUNC(grads, GRADS) (int *nrqmat, real *qmcrd, int *nrmmat, real *mmchrg,
-                            real *mmcrd, real *qmgrad, real *mmgrad, real *energy);
+    F77_FUNC(grads, GRADS) (int *nrqmat, real * qmcrd, int *nrmmat, real * mmchrg,
+                            real * mmcrd, real * qmgrad, real * mmgrad, real * energy);
 
 
 
@@ -88,7 +88,7 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
     int
         i, j;
     FILE
-       *out;
+    * out;
     char
         periodic_system[37][3] = {
         "XX", "H ", "He", "Li", "Be", "B ", "C ", "N ",
@@ -114,35 +114,35 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             {
 #ifdef DOUBLE
                 fprintf(out, "%10.7lf  %10.7lf  %10.7lf  %5.3lf  %2s\n",
-                        i/2.,
-                        i/3.,
-                        i/4.,
-                        qm->atomicnumberQM[i]*1.0,
+                        i / 2.,
+                        i / 3.,
+                        i / 4.,
+                        qm->atomicnumberQM[i] * 1.0,
                         periodic_system[qm->atomicnumberQM[i]]);
 #else
                 fprintf(out, "%10.7f  %10.7f  %10.7f  %5.3f  %2s\n",
-                        i/2.,
-                        i/3.,
-                        i/4.,
-                        qm->atomicnumberQM[i]*1.0,
+                        i / 2.,
+                        i / 3.,
+                        i / 4.,
+                        qm->atomicnumberQM[i] * 1.0,
                         periodic_system[qm->atomicnumberQM[i]]);
 #endif
             }
             if (mm->nrMMatoms)
             {
-                for (j = i; j < i+2; j++)
+                for (j = i; j < i + 2; j++)
                 {
 #ifdef DOUBLE
                     fprintf(out, "%10.7lf  %10.7lf  %10.7lf  %5.3lf  BQ\n",
-                            j/5.,
-                            j/6.,
-                            j/7.,
+                            j / 5.,
+                            j / 6.,
+                            j / 7.,
                             1.0);
 #else
                     fprintf(out, "%10.7f  %10.7f  %10.7f  %5.3f  BQ\n",
-                            j/5.,
-                            j/6.,
-                            j/7.,
+                            j / 5.,
+                            j / 6.,
+                            j / 7.,
                             2.0);
 #endif
                 }
@@ -177,35 +177,35 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         {
 #ifdef DOUBLE
             fprintf(out, "%10.7lf  %10.7lf  %10.7lf  %5.3lf  %2s\n",
-                    i/2.,
-                    i/3.,
-                    i/4.,
-                    qm->atomicnumberQM[i]*1.0,
+                    i / 2.,
+                    i / 3.,
+                    i / 4.,
+                    qm->atomicnumberQM[i] * 1.0,
                     periodic_system[qm->atomicnumberQM[i]]);
 #else
             fprintf(out, "%10.7f  %10.7f  %10.7f  %5.3f  %2s\n",
-                    i/2.,
-                    i/3.,
-                    i/4.,
-                    qm->atomicnumberQM[i]*1.0,
+                    i / 2.,
+                    i / 3.,
+                    i / 4.,
+                    qm->atomicnumberQM[i] * 1.0,
                     periodic_system[qm->atomicnumberQM[i]]);
 #endif
         }
         if (mm->nrMMatoms)
         {
-            for (j = i; j < i+2; j++)
+            for (j = i; j < i + 2; j++)
             {
 #ifdef DOUBLE
                 fprintf(out, "%10.7lf  %10.7lf  %10.7lf  %5.3lf  BQ\n",
-                        j/5.,
-                        j/6.,
-                        j/7.,
+                        j / 5.,
+                        j / 6.,
+                        j / 7.,
                         1.0);
 #else
                 fprintf(out, "%10.7f  %10.7f  %10.7f  %5.3f  BQ\n",
-                        j/5.,
-                        j/6.,
-                        j/7.,
+                        j / 5.,
+                        j / 6.,
+                        j / 7.,
                         2.0);
 #endif
             }
@@ -239,14 +239,14 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     real
         QMener = 0.0, *qmgrad, *mmgrad, *mmcrd, *qmcrd, energy;
     t_QMMMrec
-       *qr;
+    * qr;
 
     /* copy the QMMMrec pointer */
     qr = fr->qr;
-    snew(qmcrd, 3*(qm->nrQMatoms));
-    snew(mmcrd, 3*(mm->nrMMatoms));
-    snew(qmgrad, 3*(qm->nrQMatoms));
-    snew(mmgrad, 3*(mm->nrMMatoms));
+    snew(qmcrd, 3 * (qm->nrQMatoms));
+    snew(mmcrd, 3 * (mm->nrMMatoms));
+    snew(qmgrad, 3 * (qm->nrQMatoms));
+    snew(mmgrad, 3 * (mm->nrMMatoms));
 
     /* copy the data from qr into the arrays that are going to be used
      * in the fortran routines of gamess
@@ -255,22 +255,22 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     {
         for (j = 0; j < DIM; j++)
         {
-            qmcrd[DIM*i+j] = 1/BOHR2NM*qm->xQM[i][j];
+            qmcrd[DIM * i + j] = 1 / BOHR2NM * qm->xQM[i][j];
         }
     }
     for (i = 0; i < mm->nrMMatoms; i++)
     {
         for (j = 0; j < DIM; j++)
         {
-            mmcrd[DIM*i+j] = 1/BOHR2NM*mm->xMM[i][j];
+            mmcrd[DIM * i + j] = 1 / BOHR2NM * mm->xMM[i][j];
         }
     }
-    for (i = 0; i < 3*qm->nrQMatoms; i += 3)
+    for (i = 0; i < 3 * qm->nrQMatoms; i += 3)
     {
         fprintf(stderr, "%8.5f, %8.5f, %8.5f\n",
                 qmcrd[i],
-                qmcrd[i+1],
-                qmcrd[i+2]);
+                qmcrd[i + 1],
+                qmcrd[i + 2]);
     }
 
     F77_FUNC(grads, GRADS) (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms, mm->MMcharges,
@@ -280,20 +280,20 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     {
         for (j = 0; j < DIM; j++)
         {
-            f[i][j]      = HARTREE_BOHR2MD*qmgrad[3*i+j];
-            fshift[i][j] = HARTREE_BOHR2MD*qmgrad[3*i+j];
+            f[i][j]      = HARTREE_BOHR2MD * qmgrad[3 * i + j];
+            fshift[i][j] = HARTREE_BOHR2MD * qmgrad[3 * i + j];
         }
     }
     for (i = 0; i < mm->nrMMatoms; i++)
     {
         for (j = 0; j < DIM; j++)
         {
-            f[i][j]      = HARTREE_BOHR2MD*mmgrad[3*i+j];
-            fshift[i][j] = HARTREE_BOHR2MD*mmgrad[3*i+j];
+            f[i][j]      = HARTREE_BOHR2MD * mmgrad[3 * i + j];
+            fshift[i][j] = HARTREE_BOHR2MD * mmgrad[3 * i + j];
         }
     }
     /* convert a.u to kJ/mol */
-    QMener = energy*HARTREE2KJ*AVOGADRO;
+    QMener = energy * HARTREE2KJ * AVOGADRO;
     return(QMener);
 }
 

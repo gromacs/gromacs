@@ -67,14 +67,14 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *f, rvec *fshift)
 {
     gmx_specatsend_t *spas;
-    rvec             *vbuf;
+    rvec *            vbuf;
     int               n, n0, n1, d, dim, dir, i;
     ivec              vis;
     int               is;
     gmx_bool          bPBC, bScrew;
 
     n = spac->at_end;
-    for (d = dd->ndim-1; d >= 0; d--)
+    for (d = dd->ndim - 1; d >= 0; d--)
     {
         dim = dd->dim[d];
         if (dd->nc[dim] > 2)
@@ -87,12 +87,12 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             vbuf = spac->vbuf;
             /* Send and receive the coordinates */
             dd_sendrecv2_rvec(dd, d,
-                              f+n+n1, n0, vbuf, spas[0].nsend,
-                              f+n, n1, vbuf+spas[0].nsend, spas[1].nsend);
+                              f + n + n1, n0, vbuf, spas[0].nsend,
+                              f + n, n1, vbuf + spas[0].nsend, spas[1].nsend);
             for (dir = 0; dir < 2; dir++)
             {
-                bPBC   = ((dir == 0 && dd->ci[dim] == 0) ||
-                          (dir == 1 && dd->ci[dim] == dd->nc[dim]-1));
+                bPBC = ((dir == 0 && dd->ci[dim] == 0)
+                        || (dir == 1 && dd->ci[dim] == dd->nc[dim] - 1));
                 bScrew = (bPBC && dd->bScrewPBC && dim == XX);
 
                 spas = &spac->spas[d][dir];
@@ -145,11 +145,11 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             n   -= spas->nrecv;
             /* Send and receive the coordinates */
             dd_sendrecv_rvec(dd, d, dddirForward,
-                             f+n, spas->nrecv, spac->vbuf, spas->nsend);
+                             f + n, spas->nrecv, spac->vbuf, spas->nsend);
             /* Sum the buffer into the required forces */
-            if (dd->bScrewPBC && dim == XX &&
-                (dd->ci[dim] == 0 ||
-                 dd->ci[dim] == dd->nc[dim]-1))
+            if (dd->bScrewPBC && dim == XX
+                && (dd->ci[dim] == 0
+                    || dd->ci[dim] == dd->nc[dim] - 1))
             {
                 for (i = 0; i < spas->nsend; i++)
                 {
@@ -176,7 +176,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *x1, gmx_bool bX1IsCoord)
 {
     gmx_specatsend_t *spas;
-    rvec             *x, *vbuf, *rbuf;
+    rvec *            x, *vbuf, *rbuf;
     int               nvec, v, n, nn, ns0, ns1, nr0, nr1, nr, d, dim, dir, i;
     gmx_bool          bPBC, bScrew = FALSE;
     rvec              shift = {0, 0, 0};
@@ -203,7 +203,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     bScrew = (dd->bScrewPBC && dim == XX);
                     copy_rvec(box[dim], shift);
                 }
-                else if (dir == 1 && dd->ci[dim] == dd->nc[dim]-1)
+                else if (dir == 1 && dd->ci[dim] == dd->nc[dim] - 1)
                 {
                     bPBC   = TRUE;
                     bScrew = (dd->bScrewPBC && dim == XX);
@@ -262,16 +262,16 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             if (nvec == 1)
             {
                 dd_sendrecv2_rvec(dd, d,
-                                  spac->vbuf+ns0, ns1, x0+n, nr1,
-                                  spac->vbuf, ns0, x0+n+nr1, nr0);
+                                  spac->vbuf + ns0, ns1, x0 + n, nr1,
+                                  spac->vbuf, ns0, x0 + n + nr1, nr0);
             }
             else
             {
                 /* Communicate both vectors in one buffer */
                 rbuf = spac->vbuf2;
                 dd_sendrecv2_rvec(dd, d,
-                                  spac->vbuf+2*ns0, 2*ns1, rbuf, 2*nr1,
-                                  spac->vbuf, 2*ns0, rbuf+2*nr1, 2*nr0);
+                                  spac->vbuf + 2 * ns0, 2 * ns1, rbuf, 2 * nr1,
+                                  spac->vbuf, 2 * ns0, rbuf + 2 * nr1, 2 * nr0);
                 /* Split the buffer into the two vectors */
                 nn = n;
                 for (dir = 1; dir >= 0; dir--)
@@ -282,7 +282,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                         x = (v == 0 ? x0 : x1);
                         for (i = 0; i < nr; i++)
                         {
-                            copy_rvec(*rbuf, x[nn+i]);
+                            copy_rvec(*rbuf, x[nn + i]);
                             rbuf++;
                         }
                     }
@@ -299,8 +299,8 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             for (v = 0; v < nvec; v++)
             {
                 x = (v == 0 ? x0 : x1);
-                if (dd->bScrewPBC && dim == XX &&
-                    (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX]-1))
+                if (dd->bScrewPBC && dim == XX
+                    && (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX] - 1))
                 {
                     /* Here we only perform the rotation, the rest of the pbc
                      * is handled in the constraint or viste routines.
@@ -326,14 +326,14 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
             if (nvec == 1)
             {
                 dd_sendrecv_rvec(dd, d, dddirBackward,
-                                 spac->vbuf, spas->nsend, x0+n, spas->nrecv);
+                                 spac->vbuf, spas->nsend, x0 + n, spas->nrecv);
             }
             else
             {
                 /* Communicate both vectors in one buffer */
                 rbuf = spac->vbuf2;
                 dd_sendrecv_rvec(dd, d, dddirBackward,
-                                 spac->vbuf, 2*spas->nsend, rbuf, 2*spas->nrecv);
+                                 spac->vbuf, 2 * spas->nsend, rbuf, 2 * spas->nrecv);
                 /* Split the buffer into the two vectors */
                 nr = spas[0].nrecv;
                 for (v = 0; v < 2; v++)
@@ -341,7 +341,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                     x = (v == 0 ? x0 : x1);
                     for (i = 0; i < nr; i++)
                     {
-                        copy_rvec(*rbuf, x[n+i]);
+                        copy_rvec(*rbuf, x[n + i]);
                         rbuf++;
                     }
                 }
@@ -351,14 +351,14 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-int setup_specat_communication(gmx_domdec_t               *dd,
-                               ind_req_t                  *ireq,
-                               gmx_domdec_specat_comm_t   *spac,
-                               gmx_hash_t                 *ga2la_specat,
-                               int                         at_start,
-                               int                         vbuf_fac,
-                               const char                 *specat_type,
-                               const char                 *add_err)
+int setup_specat_communication(gmx_domdec_t *            dd,
+                               ind_req_t *               ireq,
+                               gmx_domdec_specat_comm_t *spac,
+                               gmx_hash_t *              ga2la_specat,
+                               int                       at_start,
+                               int                       vbuf_fac,
+                               const char *              specat_type,
+                               const char *              add_err)
 {
     int               nsend[2], nlast, nsend_zero[2] = {0, 0}, *nsend_ptr;
     int               d, dim, ndir, dir, nr, ns, i, nrecv_local, n0, start, indr, ind, buf[2];
@@ -378,7 +378,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
     nsend[0] = ireq->n;
     nsend[1] = nsend[0];
     nlast    = nsend[1];
-    for (d = dd->ndim-1; d >= 0; d--)
+    for (d = dd->ndim - 1; d >= 0; d--)
     {
         /* Pulse the grid forward and backward */
         dim  = dd->dim[d];
@@ -394,10 +394,10 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         }
         for (dir = 0; dir < ndir; dir++)
         {
-            if (!bPBC &&
-                dd->nc[dim] > 2 &&
-                ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) ||
-                 (dir == 1 && dd->ci[dim] == 0)))
+            if (!bPBC
+                && dd->nc[dim] > 2
+                && ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1)
+                    || (dir == 1 && dd->ci[dim] == 0)))
             {
                 /* No pbc: the fist/last cell should not request atoms */
                 nsend_ptr = nsend_zero;
@@ -410,14 +410,14 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             dd_sendrecv_int(dd, d, dir == 0 ? dddirForward : dddirBackward,
                             nsend_ptr, 2, spac->nreq[d][dir], 2);
             nr = spac->nreq[d][dir][1];
-            if (nlast+nr > ireq->nalloc)
+            if (nlast + nr > ireq->nalloc)
             {
-                ireq->nalloc = over_alloc_dd(nlast+nr);
+                ireq->nalloc = over_alloc_dd(nlast + nr);
                 srenew(ireq->ind, ireq->nalloc);
             }
             /* Communicate the indices */
             dd_sendrecv_int(dd, d, dir == 0 ? dddirForward : dddirBackward,
-                            ireq->ind, nsend_ptr[1], ireq->ind+nlast, nr);
+                            ireq->ind, nsend_ptr[1], ireq->ind + nlast, nr);
             nlast += nr;
         }
         nsend[1] = nlast;
@@ -442,7 +442,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             ndir = 1;
         }
         nat_tot_prev = nat_tot_specat;
-        for (dir = ndir-1; dir >= 0; dir--)
+        for (dir = ndir - 1; dir >= 0; dir--)
         {
             if (nat_tot_specat > spac->bSendAtom_nalloc)
             {
@@ -467,7 +467,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             nsend[0]    = 0;
             for (i = 0; i < nr; i++)
             {
-                indr = ireq->ind[start+i];
+                indr = ireq->ind[start + i];
                 ind  = -1;
                 /* Check if this is a home atom and if so ind will be set */
                 if (!ga2la_get_home(dd->ga2la, indr, &ind))
@@ -479,9 +479,9 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                 {
                     if (i < n0 || !spac->bSendAtom[ind])
                     {
-                        if (spas->nsend+1 > spas->a_nalloc)
+                        if (spas->nsend + 1 > spas->a_nalloc)
                         {
-                            spas->a_nalloc = over_alloc_large(spas->nsend+1);
+                            spas->a_nalloc = over_alloc_large(spas->nsend + 1);
                             srenew(spas->a, spas->a_nalloc);
                         }
                         /* Store the local index so we know which coordinates
@@ -489,9 +489,9 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                          */
                         spas->a[spas->nsend] = ind;
                         spac->bSendAtom[ind] = TRUE;
-                        if (spas->nsend+1 > spac->ibuf_nalloc)
+                        if (spas->nsend + 1 > spac->ibuf_nalloc)
                         {
-                            spac->ibuf_nalloc = over_alloc_large(spas->nsend+1);
+                            spac->ibuf_nalloc = over_alloc_large(spas->nsend + 1);
                             srenew(spac->ibuf, spac->ibuf_nalloc);
                         }
                         /* Store the global index so we can send it now */
@@ -518,13 +518,13 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             {
                 fprintf(debug, "Send to rank %d, %d (%d) indices, "
                         "receive from rank %d, %d (%d) indices\n",
-                        dd->neighbor[d][1-dir], nsend[1], nsend[0],
+                        dd->neighbor[d][1 - dir], nsend[1], nsend[0],
                         dd->neighbor[d][dir], buf[1], buf[0]);
                 if (gmx_debug_at)
                 {
                     for (i = 0; i < spas->nsend; i++)
                     {
-                        fprintf(debug, " %d", spac->ibuf[i]+1);
+                        fprintf(debug, " %d", spac->ibuf[i] + 1);
                     }
                     fprintf(debug, "\n");
                 }
@@ -533,14 +533,14 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             spas->nrecv  = buf[1];
             if (nat_tot_specat + spas->nrecv > dd->gatindex_nalloc)
             {
-                dd->gatindex_nalloc =
-                    over_alloc_dd(nat_tot_specat + spas->nrecv);
+                dd->gatindex_nalloc
+                    = over_alloc_dd(nat_tot_specat + spas->nrecv);
                 srenew(dd->gatindex, dd->gatindex_nalloc);
             }
             /* Send and receive the indices */
             dd_sendrecv_int(dd, d, dir == 0 ? dddirBackward : dddirForward,
                             spac->ibuf, spas->nsend,
-                            dd->gatindex+nat_tot_specat, spas->nrecv);
+                            dd->gatindex + nat_tot_specat, spas->nrecv);
             nat_tot_specat += spas->nrecv;
         }
 
@@ -552,14 +552,14 @@ int setup_specat_communication(gmx_domdec_t               *dd,
             ns += spac->spas[d][1].nsend;
             nr += spac->spas[d][1].nrecv;
         }
-        if (vbuf_fac*ns > spac->vbuf_nalloc)
+        if (vbuf_fac * ns > spac->vbuf_nalloc)
         {
-            spac->vbuf_nalloc = over_alloc_dd(vbuf_fac*ns);
+            spac->vbuf_nalloc = over_alloc_dd(vbuf_fac * ns);
             srenew(spac->vbuf, spac->vbuf_nalloc);
         }
-        if (vbuf_fac == 2 && vbuf_fac*nr > spac->vbuf2_nalloc)
+        if (vbuf_fac == 2 && vbuf_fac * nr > spac->vbuf2_nalloc)
         {
-            spac->vbuf2_nalloc = over_alloc_dd(vbuf_fac*nr);
+            spac->vbuf2_nalloc = over_alloc_dd(vbuf_fac * nr);
             srenew(spac->vbuf2, spac->vbuf2_nalloc);
         }
 
@@ -576,7 +576,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         if (debug)
         {
             fprintf(debug, "Requested %d, received %d (tot recv %d)\n",
-                    ireq->n, nrecv_local, nat_tot_specat-at_start);
+                    ireq->n, nrecv_local, nat_tot_specat - at_start);
             if (gmx_debug_at)
             {
                 for (i = 0; i < ireq->n; i++)
@@ -584,7 +584,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
                     ind = gmx_hash_get_minone(ga2la_specat, ireq->ind[i]);
                     fprintf(debug, " %s%d",
                             (ind >= 0) ? "" : "!",
-                            ireq->ind[i]+1);
+                            ireq->ind[i] + 1);
                 }
                 fprintf(debug, "\n");
             }
@@ -595,7 +595,7 @@ int setup_specat_communication(gmx_domdec_t               *dd,
         {
             if (gmx_hash_get_minone(ga2la_specat, ireq->ind[i]) < 0)
             {
-                fprintf(stderr, " %d", ireq->ind[i]+1);
+                fprintf(stderr, " %d", ireq->ind[i] + 1);
             }
         }
         fprintf(stderr, "\n");

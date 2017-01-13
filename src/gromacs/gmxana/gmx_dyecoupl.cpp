@@ -76,7 +76,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     gmx_output_env_t *oenv;
     real              R0 = -1;
 
-    t_pargs           pa[] =
+    t_pargs pa[] =
     {
         { "-pbcdist", FALSE, etBOOL, { &bPBCdist }, "Distance R based on PBC" },
         { "-norm", FALSE, etBOOL, { &bNormHist }, "Normalize histograms" },
@@ -98,37 +98,37 @@ int gmx_dyecoupl(int argc, char *argv[])
 #define NFILE asize(fnm)
 
 
-    const char  *in_trajfile, *out_xvgrkfile = nullptr, *out_xvginstefffile = nullptr, *out_xvgrhistfile = nullptr, *out_xvgkhistfile = nullptr, *out_datfile = nullptr;
+    const char * in_trajfile, *out_xvgrkfile = nullptr, *out_xvginstefffile = nullptr, *out_xvgrhistfile = nullptr, *out_xvgkhistfile = nullptr, *out_datfile = nullptr;
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
-    int         *donindex, *accindex;
-    char        *grpnm;
+    int *        donindex, *accindex;
+    char *       grpnm;
     t_trxstatus *status;
     t_trxframe   fr;
 
-    int          flags;
-    int          allocblock = 1000;
-    real         histexpand = 1e-6;
-    rvec         donvec, accvec, donpos, accpos, dist, distnorm;
-    int          natoms;
+    int  flags;
+    int  allocblock = 1000;
+    real histexpand = 1e-6;
+    rvec donvec, accvec, donpos, accpos, dist, distnorm;
+    int  natoms;
 
     /*we rely on PBC autodetection (...currently)*/
-    int         ePBC = -1;
+    int ePBC = -1;
 
-    real       *rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
-    t_pbc      *pbc     = nullptr;
-    int         i, bin;
-    FILE       *rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
-    gmx_bool    bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
+    real *   rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
+    t_pbc *  pbc     = nullptr;
+    int      i, bin;
+    FILE *   rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
+    gmx_bool bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
 
     const char *rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
     const char *rhleg[1] = { "p(R)" };
     const char *khleg[1] = { "p(\\f{Symbol}k\\f{}\\S2\\N)" };
     const char *ieleg[1] = { "E\\sRET\\N(t)" };
 
-    real        R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
-                rrange, krange, rincr, kincr, Rfrac;
-    int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
+    real R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
+         rrange, krange, rincr, kincr, Rfrac;
+    int rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
@@ -304,12 +304,12 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 unitv(dist, distnorm);
                 R       = norm(dist);
-                kappa2  = iprod(donvec, accvec)- 3.* (iprod(donvec, distnorm) * iprod(distnorm, accvec));
+                kappa2  = iprod(donvec, accvec) - 3. * (iprod(donvec, distnorm) * iprod(distnorm, accvec));
                 kappa2 *= kappa2;
                 if (R0 > 0)
                 {
-                    Rfrac     = R/R0;
-                    insteff   = 1/(1+(Rfrac*Rfrac*Rfrac*Rfrac*Rfrac*Rfrac)*2/3/kappa2);
+                    Rfrac     = R / R0;
+                    insteff   = 1 / (1 + (Rfrac * Rfrac * Rfrac * Rfrac * Rfrac * Rfrac) * 2 / 3 / kappa2);
                     insteffs += insteff;
 
                     if (bInstEffout)
@@ -335,27 +335,26 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 if (bRhistout)
                 {
-                    rvalues[rkcount-1] = R;
+                    rvalues[rkcount - 1] = R;
                     if (rkcount % allocblock == 0)
                     {
-                        srenew(rvalues, allocblock*(rblocksallocated+1));
+                        srenew(rvalues, allocblock * (rblocksallocated + 1));
                         rblocksallocated += 1;
                     }
                 }
 
                 if (bKhistout)
                 {
-                    kappa2values[rkcount-1] = kappa2;
+                    kappa2values[rkcount - 1] = kappa2;
                     if (rkcount % allocblock == 0)
                     {
-                        srenew(kappa2values, allocblock*(kblocksallocated+1));
+                        srenew(kappa2values, allocblock * (kblocksallocated + 1));
                         kblocksallocated += 1;
                     }
                 }
 
                 bHaveNextFrame = read_next_frame(oenv, status, &fr);
-            }
-            while (bHaveNextFrame);
+            } while (bHaveNextFrame);
 
             if (bRKout)
             {
@@ -404,7 +403,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                 {
                     for (i = 0; i < histbins; i++)
                     {
-                        rhist[i] /= rkcount * rrange/histbins;
+                        rhist[i] /= rkcount * rrange / histbins;
                     }
                     rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
                                     "R (nm)", "Normalized Probability", oenv);
@@ -438,7 +437,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                 {
                     for (i = 0; i < histbins; i++)
                     {
-                        khist[i] /= rkcount * krange/histbins;
+                        khist[i] /= rkcount * krange / histbins;
                     }
                     khfp = xvgropen(out_xvgkhistfile,
                                     "\\f{Symbol}k\\f{}\\S2\\N Distribution",

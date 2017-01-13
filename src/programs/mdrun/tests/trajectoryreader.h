@@ -119,19 +119,19 @@ class TrajectoryFrameReader
         explicit TrajectoryFrameReader(const std::string &filename);
     private:
         //! Name of trajectory file to open and read
-        std::string        filename_;
+        std::string filename_;
         //! Owning handle of output environment object
-        oenv_ptr           oenvGuard_;
+        oenv_ptr oenvGuard_;
         //! Owning handle of an open trajectory file ready to read frames.
         trxstatus_file_ptr trajectoryFileGuard_;
         //! Owning handle of contents of trajectory file frame after reading.
         const trxframe_ptr trxframeGuard_;
         //! Whether the first frame has been read
-        bool               haveReadFirstFrame_;
+        bool haveReadFirstFrame_;
         //! Whether the API has been used properly (ie. probe before reading).
-        bool               haveProbedForNextFrame_;
+        bool haveProbedForNextFrame_;
         //! Whether there has been a probe that found a next frame.
-        bool               nextFrameExists_;
+        bool nextFrameExists_;
 
         // Multiple owners of these resources isn't very sensible, so prevent it
         GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);

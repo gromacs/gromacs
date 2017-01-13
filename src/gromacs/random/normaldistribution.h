@@ -100,7 +100,7 @@ namespace gmx
  *
  * \tparam RealType Floating-point type, real by default in GROMACS.
  */
-template<class RealType = real>
+template <class RealType = real>
 class NormalDistribution
 {
     public:
@@ -111,9 +111,9 @@ class NormalDistribution
         class param_type
         {
             /*! \brief Mean of normal distribution */
-            result_type  mean_;
+            result_type mean_;
             /*! \brief Standard deviation of distribution */
-            result_type  stddev_;
+            result_type stddev_;
 
             public:
                 /*! \brief Reference back to the distribution class */
@@ -136,8 +136,7 @@ class NormalDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator==(const param_type &x) const
+                bool operator==(const param_type &x) const
                 {
                     return mean_ == x.mean_ && stddev_ == x.stddev_;
                 }
@@ -146,8 +145,7 @@ class NormalDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
+                bool operator!=(const param_type &x) const { return !operator==(x); }
         };
 
     public:
@@ -168,8 +166,7 @@ class NormalDistribution
             : param_(param), hot_(false), saved_(0) {}
 
         /*! \brief Flush all internal saved values  */
-        void
-        reset() { hot_ = false; }
+        void reset() { hot_ = false; }
 
         /*! \brief Return values from normal distribution with internal parameters
          *
@@ -177,9 +174,8 @@ class NormalDistribution
          *
          *  \param  g     Random engine
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
+        template <class Rng>
+        result_type operator()(Rng &g) { return (*this)(g, param_); }
 
         /*! \brief Return value from normal distribution with given parameters
          *
@@ -188,9 +184,8 @@ class NormalDistribution
          *  \param  g     Random engine
          *  \param  param Parameters to use
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        template <class Rng>
+        result_type operator()(Rng &g, const param_type &param)
         {
             result_type result;
 
@@ -202,17 +197,16 @@ class NormalDistribution
             else
             {
                 UniformRealDistribution<result_type> uniformDist(-1.0, 1.0);
-                result_type u;
-                result_type v;
-                result_type s;
+                result_type                          u;
+                result_type                          v;
+                result_type                          s;
 
                 do
                 {
                     u = uniformDist(g);
                     v = uniformDist(g);
                     s = u * u + v * v;
-                }
-                while (s > 1.0 || s == 0.0);
+                } while (s > 1.0 || s == 0.0);
 
                 s      = std::sqrt(-2.0 * std::log(s) / s);
                 saved_ = v * s;
@@ -223,30 +217,25 @@ class NormalDistribution
         }
 
         /*! \brief Return the mean of the normal distribution */
-        result_type
-        mean() const { return param_.mean(); }
+        result_type mean() const { return param_.mean(); }
 
         /*! \brief Return the standard deviation of the normal distribution */
-        result_type
-        stddev() const { return param_.stddev(); }
+        result_type stddev() const { return param_.stddev(); }
 
         /*! \brief Return the full parameter class of the normal distribution */
         param_type param() const { return param_; }
 
         /*! \brief Smallest value that can be returned from normal distribution */
-        result_type
-        min() const { return -std::numeric_limits<result_type>::infinity(); }
+        result_type min() const { return -std::numeric_limits<result_type>::infinity(); }
 
         /*! \brief Largest value that can be returned from normal distribution */
-        result_type
-        max() const { return std::numeric_limits<result_type>::infinity(); }
+        result_type max() const { return std::numeric_limits<result_type>::infinity(); }
 
         /*! \brief True if two normal distributions will produce the same values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator==(const NormalDistribution &x) const
+        bool operator==(const NormalDistribution &x) const
         {
             /* Equal if: Params are identical, and saved-state is identical,
              * and if we have something saved, it must be identical.
@@ -258,15 +247,14 @@ class NormalDistribution
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator!=(const NormalDistribution &x) const
+        bool operator!=(const NormalDistribution &x) const
         { return !operator==(x); }
 
     private:
         /*! \brief Internal value for parameters, can be overridden at generation time. */
-        param_type  param_;
+        param_type param_;
         /*! \brief True if there is a saved result to return */
-        bool        hot_;
+        bool hot_;
         /*! \brief The saved result to return - only valid if hot_ is true */
         result_type saved_;
 

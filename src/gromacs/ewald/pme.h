@@ -62,7 +62,8 @@
 struct t_commrec;
 struct t_inputrec;
 
-enum {
+enum
+{
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
 
@@ -89,12 +90,12 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata);
  *
  * These can be combined with bitwise-OR if more than one thing is required.
  */
-#define GMX_PME_SPREAD        (1<<0)
-#define GMX_PME_SOLVE         (1<<1)
-#define GMX_PME_CALC_F        (1<<2)
-#define GMX_PME_CALC_ENER_VIR (1<<3)
+#define GMX_PME_SPREAD        (1 << 0)
+#define GMX_PME_SOLVE         (1 << 1)
+#define GMX_PME_CALC_F        (1 << 2)
+#define GMX_PME_CALC_ENER_VIR (1 << 3)
 /* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
-#define GMX_PME_CALC_POT      (1<<4)
+#define GMX_PME_CALC_POT      (1 << 4)
 
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}

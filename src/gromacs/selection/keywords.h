@@ -90,9 +90,9 @@ _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
 
 /** Does custom processing for parameters of the \c same selection method. */
 void
-_gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **method,
+_gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t **                   method,
                               const gmx::SelectionParserParameterListPointer &params,
-                              void                                           *scanner);
+                              void *                                          scanner);
 
 /*! \brief
  * Initializes a selection element for evaluating a keyword in a given group.
@@ -109,8 +109,8 @@ _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **me
  * \ref POS_VALUE.
  */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t              *method,
-                                const gmx::SelectionTreeElementPointer  &child,
-                                void                                    *scanner);
+_gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t *            method,
+                                const gmx::SelectionTreeElementPointer &child,
+                                void *                                  scanner);
 
 #endif

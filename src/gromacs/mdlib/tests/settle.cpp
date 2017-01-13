@@ -137,9 +137,9 @@ class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
         //! Water atom velocities to constrain (DIM reals per atom)
         std::vector<real> velocities_;
         //! PBC option to test
-        t_pbc             pbcNone_;
+        t_pbc pbcNone_;
         //! PBC option to test
-        t_pbc             pbcXYZ_;
+        t_pbc pbcXYZ_;
 
         //! Constructor
         SettleTest() :
@@ -196,7 +196,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
 
     // Set up the topology. We still have to make some raw pointers,
     // but they are put into scope guards for automatic cleanup.
-    gmx_mtop_t                   *mtop;
+    gmx_mtop_t *mtop;
     snew(mtop, 1);
     const unique_cptr<gmx_mtop_t> mtopGuard(mtop);
     mtop->mols.nr  = 1;
@@ -207,13 +207,13 @@ TEST_P(SettleTest, SatisfiesConstraints)
     snew(mtop->molblock, mtop->nmolblock);
     const unique_cptr<gmx_molblock_t> molblockGuard(mtop->molblock);
     mtop->molblock[0].type = 0;
-    std::vector<int>                  iatoms;
+    std::vector<int> iatoms;
     for (int i = 0; i < numSettles; ++i)
     {
         iatoms.push_back(settleType);
-        iatoms.push_back(i*atomsPerSettle+0);
-        iatoms.push_back(i*atomsPerSettle+1);
-        iatoms.push_back(i*atomsPerSettle+2);
+        iatoms.push_back(i * atomsPerSettle + 0);
+        iatoms.push_back(i * atomsPerSettle + 1);
+        iatoms.push_back(i * atomsPerSettle + 2);
     }
     mtop->moltype[0].ilist[F_SETTLE].iatoms = iatoms.data();
     mtop->moltype[0].ilist[F_SETTLE].nr     = iatoms.size();
@@ -236,9 +236,9 @@ TEST_P(SettleTest, SatisfiesConstraints)
         mass.push_back(oxygenMass);
         mass.push_back(hydrogenMass);
         mass.push_back(hydrogenMass);
-        massReciprocal.push_back(1./oxygenMass);
-        massReciprocal.push_back(1./hydrogenMass);
-        massReciprocal.push_back(1./hydrogenMass);
+        massReciprocal.push_back(1. / oxygenMass);
+        massReciprocal.push_back(1. / hydrogenMass);
+        massReciprocal.push_back(1. / hydrogenMass);
     }
     mdatoms.massT   = mass.data();
     mdatoms.invmass = massReciprocal.data();
@@ -255,7 +255,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     bool       errorOccured;
     tensor     virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     int        numThreads         = 1, threadIndex = 0;
-    const real reciprocalTimeStep = 1.0/0.002;
+    const real reciprocalTimeStep = 1.0 / 0.002;
     csettle(settled, numThreads, threadIndex,
             usePbc ? &pbcXYZ_ : &pbcNone_,
             startingPositions.data(), updatedPositions_.data(), reciprocalTimeStep,
@@ -268,8 +268,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // empirically. This isn't nice, but the required behaviour that
     // SETTLE produces constrained coordinates consistent with
     // sensible sampling needs to be tested at a much higher level.
-    FloatingPointTolerance tolerance =
-        relativeToleranceAsPrecisionDependentUlp(dOH*dOH, 80, 380);
+    FloatingPointTolerance tolerance
+        = relativeToleranceAsPrecisionDependentUlp(dOH * dOH, 80, 380);
 
     // Verify the updated coordinates match the requirements
     int positionIndex = 0, velocityIndex = 0;
@@ -285,9 +285,9 @@ TEST_P(SettleTest, SatisfiesConstraints)
             updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
         };
 
-        EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH1), tolerance) << formatString("for water %d ", i) << testDescription;
-        EXPECT_REAL_EQ_TOL(dOH*dOH, distance2(positionO, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
-        EXPECT_REAL_EQ_TOL(dHH*dHH, distance2(positionH1, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
+        EXPECT_REAL_EQ_TOL(dOH * dOH, distance2(positionO, positionH1), tolerance) << formatString("for water %d ", i) << testDescription;
+        EXPECT_REAL_EQ_TOL(dOH * dOH, distance2(positionO, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
+        EXPECT_REAL_EQ_TOL(dHH * dHH, distance2(positionH1, positionH2), tolerance) << formatString("for water %d ", i) << testDescription;
 
         // This merely tests whether the velocities were
         // updated from the starting values of zero (or not),

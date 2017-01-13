@@ -76,10 +76,10 @@ static void index_atom2mol(int *n, int *index, const t_block *mols)
             mol++;
             if (mol >= mols->nr)
             {
-                gmx_fatal(FARGS, "Atom index out of range: %d", index[i]+1);
+                gmx_fatal(FARGS, "Atom index out of range: %d", index[i] + 1);
             }
         }
-        for (j = mols->index[mol]; j < mols->index[mol+1]; j++)
+        for (j = mols->index[mol]; j < mols->index[mol + 1]; j++)
         {
             if (i >= nat || index[i] != j)
             {
@@ -104,7 +104,7 @@ static void precalc(const t_topology &top, real normm[])
     for (i = 0; i < top.mols.nr; i++)
     {
         k    = top.mols.index[i];
-        l    = top.mols.index[i+1];
+        l    = top.mols.index[i + 1];
         mtot = 0.0;
 
         for (j = k; j < l; j++)
@@ -114,7 +114,7 @@ static void precalc(const t_topology &top, real normm[])
 
         for (j = k; j < l; j++)
         {
-            normm[j] = top.atoms.atom[j].m/mtot;
+            normm[j] = top.atoms.atom[j].m / mtot;
         }
 
     }
@@ -124,13 +124,13 @@ static void precalc(const t_topology &top, real normm[])
 static void calc_spectrum(int n, real c[], real dt, const char *fn,
                           gmx_output_env_t *oenv, gmx_bool bRecip)
 {
-    FILE     *fp;
+    FILE *    fp;
     gmx_fft_t fft;
     int       i, status;
-    real     *data;
+    real *    data;
     real      nu, omega, recip_fac;
 
-    snew(data, n*2);
+    snew(data, n * 2);
     for (i = 0; (i < n); i++)
     {
         data[i] = c[i];
@@ -145,8 +145,8 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
         gmx_fatal(FARGS, "Invalid fft return status %d", status);
     }
     fp = xvgropen(fn, "Vibrational Power Spectrum",
-                  bRecip ? "\\f{12}w\\f{4} (cm\\S-1\\N)" :
-                  "\\f{12}n\\f{4} (ps\\S-1\\N)",
+                  bRecip ? "\\f{12}w\\f{4} (cm\\S-1\\N)"
+                  : "\\f{12}n\\f{4} (ps\\S-1\\N)",
                   "a.u.", oenv);
     /* This is difficult.
      * The length of the ACF is dt (as passed to this routine).
@@ -161,15 +161,15 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
      * The timestep between saving the trajectory is
      * 1e7 is to convert nanometer to cm
      */
-    recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
+    recip_fac = bRecip ? (1e7 / SPEED_OF_LIGHT) : 1.0;
     for (i = 0; (i < n); i += 2)
     {
-        nu    = i/(2*dt);
-        omega = nu*recip_fac;
+        nu    = i / (2 * dt);
+        omega = nu * recip_fac;
         /* Computing the square magnitude of a complex number, since this is a power
          * spectrum.
          */
-        fprintf(fp, "%10g  %10g\n", omega, gmx::square(data[i])+gmx::square(data[i+1]));
+        fprintf(fp, "%10g  %10g\n", omega, gmx::square(data[i]) + gmx::square(data[i + 1]));
     }
     xvgrclose(fp);
     gmx_fft_destroy(fft);
@@ -178,7 +178,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
 
 int gmx_velacc(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the velocity autocorrelation function.",
         "When the [TT]-m[tt] option is used, the momentum autocorrelation",
         "function is calculated.[PAR]",
@@ -201,29 +201,29 @@ int gmx_velacc(int argc, char *argv[])
           "Calculate the velocity acf of molecules" }
     };
 
-    t_topology      top;
-    int             ePBC = -1;
-    t_trxframe      fr;
-    matrix          box;
-    gmx_bool        bTPS = FALSE, bTop = FALSE;
-    int             gnx;
-    int            *index;
-    char           *grpname;
+    t_topology top;
+    int        ePBC = -1;
+    t_trxframe fr;
+    matrix     box;
+    gmx_bool   bTPS = FALSE, bTop = FALSE;
+    int        gnx;
+    int *      index;
+    char *     grpname;
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
-    real              t0, t1, dt, mass;
-    t_trxstatus      *status;
-    int               counter, n_alloc, i, j, counter_dim, k, l;
-    rvec              mv_mol;
+    real         t0, t1, dt, mass;
+    t_trxstatus *status;
+    int          counter, n_alloc, i, j, counter_dim, k, l;
+    rvec         mv_mol;
     /* Array for the correlation function */
-    real            **c1;
-    real             *normm = nullptr;
+    real **           c1;
+    real *            normm = nullptr;
     gmx_output_env_t *oenv;
 
 #define NHISTO 360
 
-    t_filenm  fnm[] = {
+    t_filenm fnm[] = {
         { efTRN, "-f",    nullptr,   ffREAD  },
         { efTPS, nullptr,    nullptr,   ffOPTRD },
         { efNDX, nullptr,    nullptr,   ffOPTRD },
@@ -231,8 +231,8 @@ int gmx_velacc(int argc, char *argv[])
         { efXVG, "-os",   "spectrum", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int       npargs;
-    t_pargs  *ppa;
+    int      npargs;
+    t_pargs *ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
@@ -289,17 +289,17 @@ int gmx_velacc(int argc, char *argv[])
             n_alloc += 100;
             for (i = 0; i < gnx; i++)
             {
-                srenew(c1[i], DIM*n_alloc);
+                srenew(c1[i], DIM * n_alloc);
             }
         }
-        counter_dim = DIM*counter;
+        counter_dim = DIM * counter;
         if (bMol)
         {
             for (i = 0; i < gnx; i++)
             {
                 clear_rvec(mv_mol);
                 k = top.mols.index[index[i]];
-                l = top.mols.index[index[i]+1];
+                l = top.mols.index[index[i] + 1];
                 for (j = k; j < l; j++)
                 {
                     if (bMass)
@@ -310,13 +310,13 @@ int gmx_velacc(int argc, char *argv[])
                     {
                         mass = normm[j];
                     }
-                    mv_mol[XX] += mass*fr.v[j][XX];
-                    mv_mol[YY] += mass*fr.v[j][YY];
-                    mv_mol[ZZ] += mass*fr.v[j][ZZ];
+                    mv_mol[XX] += mass * fr.v[j][XX];
+                    mv_mol[YY] += mass * fr.v[j][YY];
+                    mv_mol[ZZ] += mass * fr.v[j][ZZ];
                 }
-                c1[i][counter_dim+XX] = mv_mol[XX];
-                c1[i][counter_dim+YY] = mv_mol[YY];
-                c1[i][counter_dim+ZZ] = mv_mol[ZZ];
+                c1[i][counter_dim + XX] = mv_mol[XX];
+                c1[i][counter_dim + YY] = mv_mol[YY];
+                c1[i][counter_dim + ZZ] = mv_mol[ZZ];
             }
         }
         else
@@ -331,35 +331,34 @@ int gmx_velacc(int argc, char *argv[])
                 {
                     mass = 1;
                 }
-                c1[i][counter_dim+XX] = mass*fr.v[index[i]][XX];
-                c1[i][counter_dim+YY] = mass*fr.v[index[i]][YY];
-                c1[i][counter_dim+ZZ] = mass*fr.v[index[i]][ZZ];
+                c1[i][counter_dim + XX] = mass * fr.v[index[i]][XX];
+                c1[i][counter_dim + YY] = mass * fr.v[index[i]][YY];
+                c1[i][counter_dim + ZZ] = mass * fr.v[index[i]][ZZ];
             }
         }
 
         t1 = fr.time;
 
         counter++;
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
 
     close_trj(status);
 
     if (counter >= 4)
     {
         /* Compute time step between frames */
-        dt = (t1-t0)/(counter-1);
+        dt = (t1 - t0) / (counter - 1);
         do_autocorr(opt2fn("-o", NFILE, fnm), oenv,
-                    bMass ?
-                    "Momentum Autocorrelation Function" :
-                    "Velocity Autocorrelation Function",
+                    bMass
+                    ? "Momentum Autocorrelation Function"
+                    : "Velocity Autocorrelation Function",
                     counter, gnx, c1, dt, eacVector, TRUE);
 
         do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
 
         if (opt2bSet("-os", NFILE, fnm))
         {
-            calc_spectrum(counter/2, (real *) (c1[0]), (t1-t0)/2, opt2fn("-os", NFILE, fnm),
+            calc_spectrum(counter / 2, (real *) (c1[0]), (t1 - t0) / 2, opt2fn("-os", NFILE, fnm),
                           oenv, bRecip);
             do_view(oenv, opt2fn("-os", NFILE, fnm), "-nxy");
         }

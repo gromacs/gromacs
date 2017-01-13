@@ -57,12 +57,12 @@ namespace
 
 TEST(UniformIntDistributionTest, Output)
 {
-    gmx::test::TestReferenceData            data;
-    gmx::test::TestReferenceChecker         checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>                    rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformIntDistribution<int>        dist(1, 1000);
-    std::vector<int>                        result;
+    gmx::ThreeFry2x64<8>             rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformIntDistribution<int> dist(1, 1000);
+    std::vector<int>                 result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -74,11 +74,11 @@ TEST(UniformIntDistributionTest, Output)
 
 TEST(UniformIntDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<8>               rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformIntDistribution<int>   distA(2, 5);
-    gmx::UniformIntDistribution<int>   distB(2, 5);
-    gmx::UniformIntDistribution<int>   distC(3, 5);
-    gmx::UniformIntDistribution<int>   distD(2, 4);
+    gmx::ThreeFry2x64<8>             rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformIntDistribution<int> distA(2, 5);
+    gmx::UniformIntDistribution<int> distB(2, 5);
+    gmx::UniformIntDistribution<int> distC(3, 5);
+    gmx::UniformIntDistribution<int> distD(2, 4);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -88,10 +88,10 @@ TEST(UniformIntDistributionTest, Logical)
 
 TEST(UniformIntDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                         rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformIntDistribution<int>             distA(2, 5);
-    gmx::UniformIntDistribution<int>             distB(2, 5);
-    gmx::UniformIntDistribution<>::result_type   valA, valB;
+    gmx::ThreeFry2x64<8>                       rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformIntDistribution<int>           distA(2, 5);
+    gmx::UniformIntDistribution<int>           distB(2, 5);
+    gmx::UniformIntDistribution<>::result_type valA, valB;
 
     valA = distA(rng);
 
@@ -106,11 +106,11 @@ TEST(UniformIntDistributionTest, Reset)
 
 TEST(UniformIntDistributionTest, AltParam)
 {
-    gmx::ThreeFry2x64<8>                          rngA(123456, gmx::RandomDomain::Other);
-    gmx::ThreeFry2x64<8>                          rngB(123456, gmx::RandomDomain::Other);
-    gmx::UniformIntDistribution<int>              distA(2, 5);
-    gmx::UniformIntDistribution<int>              distB; // default parameters
-    gmx::UniformIntDistribution<int>::param_type  paramA(2, 5);
+    gmx::ThreeFry2x64<8>                         rngA(123456, gmx::RandomDomain::Other);
+    gmx::ThreeFry2x64<8>                         rngB(123456, gmx::RandomDomain::Other);
+    gmx::UniformIntDistribution<int>             distA(2, 5);
+    gmx::UniformIntDistribution<int>             distB;  // default parameters
+    gmx::UniformIntDistribution<int>::param_type paramA(2, 5);
 
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();

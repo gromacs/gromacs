@@ -133,15 +133,15 @@ class AnalysisDataTestInputPointSet
             explicit Value(real y) : y(y), error(0.0), bError(false) {}
             Value(real y, real error) : y(y), error(error), bError(true) {}
 
-            real                y;
-            real                error;
-            bool                bError;
+            real y;
+            real error;
+            bool bError;
         };
 
-        int                     index_;
-        int                     dataSetIndex_;
-        int                     firstColumn_;
-        std::vector<Value>      values_;
+        int                index_;
+        int                dataSetIndex_;
+        int                firstColumn_;
+        std::vector<Value> values_;
 
         //! For constructing new point sets.
         friend class AnalysisDataTestInputFrame;
@@ -191,9 +191,9 @@ class AnalysisDataTestInputFrame
         //! Constructs a new frame object with the given values.
         AnalysisDataTestInputFrame(int index, real x);
 
-        int                                         index_;
-        real                                        x_;
-        std::vector<AnalysisDataTestInputPointSet>  pointSets_;
+        int                                        index_;
+        real                                       x_;
+        std::vector<AnalysisDataTestInputPointSet> pointSets_;
 
         //! For constructing new frames.
         friend class AnalysisDataTestInput;
@@ -304,13 +304,13 @@ class AnalysisDataTestFixture : public ::testing::Test
          * Sets the column count and other properties based on the input data.
          */
         static void setupDataObject(const AnalysisDataTestInput &input,
-                                    AnalysisData                *data);
+                                    AnalysisData *               data);
 
         /*! \brief
          * Adds all data from AnalysisDataTestInput into an AnalysisData.
          */
         static void presentAllData(const AnalysisDataTestInput &input,
-                                   AnalysisData                *data);
+                                   AnalysisData *               data);
         /*! \brief
          * Adds a single frame from AnalysisDataTestInput into an AnalysisData.
          */
@@ -333,7 +333,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          */
         template <class ArrayData>
         static void setupArrayData(const AnalysisDataTestInput &input,
-                                   ArrayData                   *data);
+                                   ArrayData *                  data);
 
         /*! \brief
          * Adds a mock module that verifies output against
@@ -352,7 +352,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * \see AbstractAnalysisData::addModule()
          */
         static void addStaticCheckerModule(const AnalysisDataTestInput &data,
-                                           AbstractAnalysisData        *source);
+                                           AbstractAnalysisData *       source);
         /*! \brief
          * Adds a mock module that verifies parallel output against
          * AnalysisDataTestInput.
@@ -375,7 +375,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          */
         static void addStaticParallelCheckerModule(
             const AnalysisDataTestInput &data,
-            AbstractAnalysisData        *source);
+            AbstractAnalysisData *       source);
         /*! \brief
          * Adds a column mock module that verifies output against
          * AnalysisDataTestInput.
@@ -416,7 +416,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          */
         static void addStaticStorageCheckerModule(const AnalysisDataTestInput &data,
                                                   int                          storageCount,
-                                                  AbstractAnalysisData        *source);
+                                                  AbstractAnalysisData *       source);
         /*! \brief
          * Adds a mock module that verifies output against reference data.
          *
@@ -435,9 +435,9 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * \see TestReferenceData
          */
-        static void addReferenceCheckerModule(const TestReferenceChecker   &checker,
-                                              const char                   *id,
-                                              AbstractAnalysisData         *source,
+        static void addReferenceCheckerModule(const TestReferenceChecker &  checker,
+                                              const char *                  id,
+                                              AbstractAnalysisData *        source,
                                               const FloatingPointTolerance &tolerance);
 
         /*! \brief
@@ -451,7 +451,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * See the static overload for other details.
          */
-        void addReferenceCheckerModule(const char           *id,
+        void addReferenceCheckerModule(const char *          id,
                                        AbstractAnalysisData *source);
 
     protected:
@@ -460,13 +460,13 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * Tests can use the data object also for their own purposes if needed.
          */
-        gmx::test::TestReferenceData  data_;
+        gmx::test::TestReferenceData data_;
 };
 
 
 template <class ArrayData>
 void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
-                                             ArrayData                   *data)
+                                             ArrayData *                  data)
 {
     GMX_RELEASE_ASSERT(!input.isMultipoint(),
                        "Array data cannot be initialized from multipoint data");
@@ -481,7 +481,7 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
     data->allocateValues();
     for (int row = 0; row < input.frameCount(); ++row)
     {
-        const AnalysisDataTestInputFrame    &frame = input.frame(row);
+        const AnalysisDataTestInputFrame &frame = input.frame(row);
         EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
         GMX_RELEASE_ASSERT(frame.pointSetCount() == 1,
                            "Multiple point sets not supported by array data");

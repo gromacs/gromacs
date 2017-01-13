@@ -40,12 +40,13 @@
 
 #include "popup.h"
 
-typedef struct {
+typedef struct
+{
     t_windata    wd;
     int          nmenu;
     int          nsel;
-    int         *xpos;
-    t_menu     **m;
+    int *        xpos;
+    t_menu **    m;
     const char **title;
 } t_pulldown;
 

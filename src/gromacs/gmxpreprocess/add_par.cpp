@@ -219,15 +219,15 @@ int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
 {
     int    niter, iter, j, jmax;
     size_t k, kmax, minstrlen;
-    char  *rtpname, searchname[12];
+    char * rtpname, searchname[12];
 
     strcpy(searchname, name);
 
     /* Do a best match comparison */
     /* for protein N-terminus, allow renaming of H1, H2 and H3 to H */
-    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H') &&
-        ( (searchname[1] == '1') || (searchname[1] == '2') ||
-          (searchname[1] == '3') ) )
+    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H')
+        && ( (searchname[1] == '1') || (searchname[1] == '2')
+             || (searchname[1] == '3') ) )
     {
         niter = 2;
     }

@@ -166,35 +166,35 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {
-    gmx_localtop_t  *top;
-    gmx_groups_t    *groups;
-    gmx_enerdata_t  *enerd;
+    gmx_localtop_t * top;
+    gmx_groups_t *   groups;
+    gmx_enerdata_t * enerd;
     PaddedRVecVector f {};
     real             lambda, t, temp, beta, drmax, epot;
     double           embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
-    t_trxstatus     *status;
+    t_trxstatus *    status;
     t_trxframe       rerun_fr;
     gmx_bool         bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
     tensor           force_vir, shake_vir, vir, pres;
     int              cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
-    rvec            *x_mol;
+    rvec *           x_mol;
     rvec             mu_tot, x_init, dx, x_tp;
     int              nnodes, frame;
     gmx_int64_t      frame_step_prev, frame_step;
     gmx_int64_t      nsteps, stepblocksize = 0, step;
     gmx_int64_t      seed;
     int              i;
-    FILE            *fp_tpi = nullptr;
-    char            *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
+    FILE *           fp_tpi = nullptr;
+    char *           ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
     double           dbl, dump_ener;
     gmx_bool         bCavity;
     int              nat_cavity  = 0, d;
-    real            *mass_cavity = nullptr, mass_tot;
+    real *           mass_cavity = nullptr, mass_tot;
     int              nbin;
     double           invbinw, *bin, refvolshift, logV, bUlogV;
     real             prescorr, enercorr, dvdlcorr;
     gmx_bool         bEnergyOutOfBounds;
-    const char      *tpid_leg[2] = {"direct", "reweighted"};
+    const char *     tpid_leg[2] = {"direct", "reweighted"};
 
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.
@@ -229,10 +229,10 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             nat_cavity = 0;
             while (sscanf(ptr, "%20lf%n", &dbl, &i) > 0)
             {
-                srenew(mass_cavity, nat_cavity+1);
+                srenew(mass_cavity, nat_cavity + 1);
                 mass_cavity[nat_cavity] = dbl;
                 fprintf(fplog, "mass[%d] = %f\n",
-                        nat_cavity+1, mass_cavity[nat_cavity]);
+                        nat_cavity + 1, mass_cavity[nat_cavity]);
                 nat_cavity++;
                 ptr += i;
             }
@@ -264,7 +264,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 "\n  The temperature for test particle insertion is %.3f K\n\n",
                 temp);
     }
-    beta = 1.0/(BOLTZ*temp);
+    beta = 1.0 / (BOLTZ * temp);
 
     /* Number of insertions per frame */
     nsteps = inputrec->nsteps;
@@ -300,7 +300,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     /* The last charge group is the group to be inserted */
     cg_tp = top->cgs.nr - 1;
     a_tp0 = top->cgs.index[cg_tp];
-    a_tp1 = top->cgs.index[cg_tp+1];
+    a_tp1 = top->cgs.index[cg_tp + 1];
     if (debug)
     {
         fprintf(debug, "TPI cg %d, atoms %d-%d\n", cg_tp, a_tp0, a_tp1);
@@ -308,24 +308,24 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     GMX_RELEASE_ASSERT(inputrec->rcoulomb <= inputrec->rlist && inputrec->rvdw <= inputrec->rlist, "Twin-range interactions are not supported with TPI");
 
-    snew(x_mol, a_tp1-a_tp0);
+    snew(x_mol, a_tp1 - a_tp0);
 
     bDispCorr = (inputrec->eDispCorr != edispcNO);
     bCharge   = FALSE;
     for (i = a_tp0; i < a_tp1; i++)
     {
         /* Copy the coordinates of the molecule to be insterted */
-        copy_rvec(state_global->x[i], x_mol[i-a_tp0]);
+        copy_rvec(state_global->x[i], x_mol[i - a_tp0]);
         /* Check if we need to print electrostatic energies */
-        bCharge |= (mdatoms->chargeA[i] != 0 ||
-                    (mdatoms->chargeB && mdatoms->chargeB[i] != 0));
+        bCharge |= (mdatoms->chargeA[i] != 0
+                    || (mdatoms->chargeB && mdatoms->chargeB[i] != 0));
     }
     bRFExcl = (bCharge && EEL_RF(fr->eeltype));
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp + 1, &(top->cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
     if (bCavity)
     {
-        if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
+        if (norm(fr->cg_cm[cg_tp]) > 0.5 * inputrec->rlist && fplog)
         {
             fprintf(fplog, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
             fprintf(stderr, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
@@ -334,7 +334,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     else
     {
         /* Center the molecule to be inserted at zero */
-        for (i = 0; i < a_tp1-a_tp0; i++)
+        for (i = 0; i < a_tp1 - a_tp0; i++)
         {
             rvec_dec(x_mol[i], fr->cg_cm[cg_tp]);
         }
@@ -343,7 +343,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     if (fplog)
     {
         fprintf(fplog, "\nWill insert %d atoms %s partial charges\n",
-                a_tp1-a_tp0, bCharge ? "with" : "without");
+                a_tp1 - a_tp0, bCharge ? "with" : "without");
 
         fprintf(fplog, "\nWill insert %d times in each frame of %s\n",
                 (int)nsteps, opt2fn("-rerun", nfile, fnm));
@@ -353,7 +353,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     {
         if (inputrec->nstlist > 1)
         {
-            if (drmax == 0 && a_tp1-a_tp0 == 1)
+            if (drmax == 0 && a_tp1 - a_tp0 == 1)
             {
                 gmx_fatal(FARGS, "Re-using the neighborlist %d times for insertions of a single atom in a sphere of radius %f does not make sense", inputrec->nstlist, drmax);
             }
@@ -395,8 +395,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     /* Copy the random seed set by the user */
     seed = inputrec->ld_seed;
 
-    gmx::ThreeFry2x64<16>                rng(seed, gmx::RandomDomain::TestParticleInsertion); // 16 bits internal counter => 2^16 * 2 = 131072 values per stream
-    gmx::UniformRealDistribution<real>   dist;
+    gmx::ThreeFry2x64<16>              rng(seed, gmx::RandomDomain::TestParticleInsertion);   // 16 bits internal counter => 2^16 * 2 = 131072 values per stream
+    gmx::UniformRealDistribution<real> dist;
 
     if (MASTER(cr))
     {
@@ -404,7 +404,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                           "TPI energies", "Time (ps)",
                           "(kJ mol\\S-1\\N) / (nm\\S3\\N)", oenv);
         xvgr_subtitle(fp_tpi, "f. are averages over one frame", oenv);
-        snew(leg, 4+nener);
+        snew(leg, 4 + nener);
         e = 0;
         sprintf(str, "-kT log(<Ve\\S-\\betaU\\N>/<V>)");
         leg[e++] = gmx_strdup(str);
@@ -446,8 +446,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 leg[e++] = gmx_strdup(str);
             }
         }
-        xvgr_legend(fp_tpi, 4+nener, (const char**)leg, oenv);
-        for (i = 0; i < 4+nener; i++)
+        xvgr_legend(fp_tpi, 4 + nener, (const char**)leg, oenv);
+        for (i = 0; i < 4 + nener; i++)
         {
             sfree(leg[i]);
         }
@@ -468,14 +468,14 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                                      &rerun_fr, TRX_NEED_X);
     frame = 0;
 
-    if (rerun_fr.natoms - (bCavity ? nat_cavity : 0) !=
-        mdatoms->nr - (a_tp1 - a_tp0))
+    if (rerun_fr.natoms - (bCavity ? nat_cavity : 0)
+        != mdatoms->nr - (a_tp1 - a_tp0))
     {
         gmx_fatal(FARGS, "Number of atoms in trajectory (%d)%s "
                   "is not equal the number in the run input file (%d) "
                   "minus the number of atoms to insert (%d)\n",
                   rerun_fr.natoms, bCavity ? " minus one" : "",
-                  mdatoms->nr, a_tp1-a_tp0);
+                  mdatoms->nr, a_tp1 - a_tp0);
     }
 
     refvolshift = log(det(rerun_fr.box));
@@ -494,7 +494,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     while (bNotLastFrame)
     {
-        frame_step      = rerun_fr.step;
+        frame_step = rerun_fr.step;
         if (frame_step <= frame_step_prev)
         {
             /* We don't have step number in the trajectory file,
@@ -502,7 +502,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
              * Ensure we have increasing step numbers, since we use
              * the step numbers as a counter for random numbers.
              */
-            frame_step  = frame_step_prev + 1;
+            frame_step = frame_step_prev + 1;
         }
         frame_step_prev = frame_step;
 
@@ -528,7 +528,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         bStateChanged = TRUE;
         bNS           = TRUE;
 
-        step = cr->nodeid*stepblocksize;
+        step = cr->nodeid * stepblocksize;
         while (step < nsteps)
         {
             /* Restart random engine using the frame and insertion step
@@ -551,7 +551,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     /* Generate a random position in the box */
                     for (d = 0; d < DIM; d++)
                     {
-                        x_init[d] = dist(rng)*state_global->box[d][d];
+                        x_init[d] = dist(rng) * state_global->box[d][d];
                     }
                 }
 
@@ -566,10 +566,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     {
                         for (d = 0; d < DIM; d++)
                         {
-                            dx[d] = (2*dist(rng) - 1)*drmax;
+                            dx[d] = (2 * dist(rng) - 1) * drmax;
                         }
-                    }
-                    while (norm2(dx) > drmax*drmax);
+                    } while (norm2(dx) > drmax * drmax);
                     rvec_add(x_init, dx, x_tp);
                 }
             }
@@ -583,7 +582,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     if (nat_cavity == 1)
                     {
                         /* Copy the location of the cavity */
-                        copy_rvec(rerun_fr.x[rerun_fr.natoms-1], x_init);
+                        copy_rvec(rerun_fr.x[rerun_fr.natoms - 1], x_init);
                     }
                     else
                     {
@@ -594,8 +593,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                         {
                             for (d = 0; d < DIM; d++)
                             {
-                                x_init[d] +=
-                                    mass_cavity[i]*rerun_fr.x[rerun_fr.natoms-nat_cavity+i][d];
+                                x_init[d]
+                                    += mass_cavity[i] * rerun_fr.x[rerun_fr.natoms - nat_cavity + i][d];
                             }
                             mass_tot += mass_cavity[i];
                         }
@@ -610,10 +609,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        dx[d] = (2*dist(rng) - 1)*drmax;
+                        dx[d] = (2 * dist(rng) - 1) * drmax;
                     }
-                }
-                while (norm2(dx) > drmax*drmax);
+                } while (norm2(dx) > drmax * drmax);
                 rvec_add(x_init, dx, x_tp);
             }
 
@@ -627,13 +625,13 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 /* Copy the coordinates from the top file */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
-                    copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
+                    copy_rvec(x_mol[i - a_tp0], state_global->x[i]);
                 }
                 /* Rotate the molecule randomly */
-                rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, nullptr,
-                            2*M_PI*dist(rng),
-                            2*M_PI*dist(rng),
-                            2*M_PI*dist(rng));
+                rotate_conf(a_tp1 - a_tp0, as_rvec_array(state_global->x.data()) + a_tp0, nullptr,
+                            2 * M_PI * dist(rng),
+                            2 * M_PI * dist(rng),
+                            2 * M_PI * dist(rng));
                 /* Shift to the insertion location */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
@@ -648,7 +646,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             clear_mat(pres);
 
             /* Set the charge group center of mass of the test particle */
-            copy_rvec(x_init, fr->cg_cm[top->cgs.nr-1]);
+            copy_rvec(x_init, fr->cg_cm[top->cgs.nr - 1]);
 
             /* Calc energy (no forces) on new positions.
              * Since we only need the intermolecular energy
@@ -664,9 +662,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                      &f, force_vir, mdatoms, enerd, fcd,
                      &state_global->lambda,
                      nullptr, fr, nullptr, mu_tot, t, nullptr, FALSE,
-                     GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
-                     (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
-                     (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
+                     GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY
+                     | (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0)
+                     | (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
             bNS           = FALSE;
@@ -711,30 +709,30 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             }
             else
             {
-                embU      = exp(-beta*epot);
+                embU      = exp(-beta * epot);
                 sum_embU += embU;
                 /* Determine the weighted energy contributions of each energy group */
                 e                = 0;
-                sum_UgembU[e++] += epot*embU;
+                sum_UgembU[e++] += epot * embU;
                 if (fr->bBHAM)
                 {
                     for (i = 0; i < ngid; i++)
                     {
-                        sum_UgembU[e++] +=
-                            enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)]*embU;
+                        sum_UgembU[e++]
+                            += enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] * embU;
                     }
                 }
                 else
                 {
                     for (i = 0; i < ngid; i++)
                     {
-                        sum_UgembU[e++] +=
-                            enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)]*embU;
+                        sum_UgembU[e++]
+                            += enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] * embU;
                     }
                 }
                 if (bDispCorr)
                 {
-                    sum_UgembU[e++] += enerd->term[F_DISPCORR]*embU;
+                    sum_UgembU[e++] += enerd->term[F_DISPCORR] * embU;
                 }
                 if (bCharge)
                 {
@@ -744,23 +742,23 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     }
                     if (bRFExcl)
                     {
-                        sum_UgembU[e++] += enerd->term[F_RF_EXCL]*embU;
+                        sum_UgembU[e++] += enerd->term[F_RF_EXCL] * embU;
                     }
                     if (EEL_FULL(fr->eeltype))
                     {
-                        sum_UgembU[e++] += enerd->term[F_COUL_RECIP]*embU;
+                        sum_UgembU[e++] += enerd->term[F_COUL_RECIP] * embU;
                     }
                 }
             }
 
-            if (embU == 0 || beta*epot > bU_bin_limit)
+            if (embU == 0 || beta * epot > bU_bin_limit)
             {
                 bin[0]++;
             }
             else
             {
                 i = (int)((bU_logV_bin_limit
-                           - (beta*epot - logV + refvolshift))*invbinw
+                           - (beta * epot - logV + refvolshift)) * invbinw
                           + 0.5);
                 if (i < 0)
                 {
@@ -768,7 +766,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 }
                 if (i >= nbin)
                 {
-                    realloc_bins(&bin, &nbin, i+10);
+                    realloc_bins(&bin, &nbin, i + 10);
                 }
                 bin[i]++;
             }
@@ -788,10 +786,10 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             }
 
             step++;
-            if ((step/stepblocksize) % cr->nnodes != cr->nodeid)
+            if ((step / stepblocksize) % cr->nnodes != cr->nodeid)
             {
                 /* Skip all steps assigned to the other MPI ranks */
-                step += (cr->nnodes - 1)*stepblocksize;
+                step += (cr->nnodes - 1) * stepblocksize;
             }
         }
 
@@ -804,24 +802,24 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
         frame++;
         V_all     += V;
-        VembU_all += V*sum_embU/nsteps;
+        VembU_all += V * sum_embU / nsteps;
 
         if (fp_tpi)
         {
-            if (bVerbose || frame%10 == 0 || frame < 10)
+            if (bVerbose || frame % 10 == 0 || frame < 10)
             {
                 fprintf(stderr, "mu %10.3e <mu> %10.3e\n",
-                        -log(sum_embU/nsteps)/beta, -log(VembU_all/V_all)/beta);
+                        -log(sum_embU / nsteps) / beta, -log(VembU_all / V_all) / beta);
             }
 
             fprintf(fp_tpi, "%10.3f %12.5e %12.5e %12.5e %12.5e",
                     t,
-                    VembU_all == 0 ? 20/beta : -log(VembU_all/V_all)/beta,
-                    sum_embU == 0  ? 20/beta : -log(sum_embU/nsteps)/beta,
-                    sum_embU/nsteps, V);
+                    VembU_all == 0 ? 20 / beta : -log(VembU_all / V_all) / beta,
+                    sum_embU == 0  ? 20 / beta : -log(sum_embU / nsteps) / beta,
+                    sum_embU / nsteps, V);
             for (e = 0; e < nener; e++)
             {
-                fprintf(fp_tpi, " %12.5e", sum_UgembU[e]/nsteps);
+                fprintf(fp_tpi, " %12.5e", sum_UgembU[e] / nsteps);
             }
             fprintf(fp_tpi, "\n");
             fflush(fp_tpi);
@@ -841,8 +839,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     if (fplog != nullptr)
     {
         fprintf(fplog, "\n");
-        fprintf(fplog, "  <V>  = %12.5e nm^3\n", V_all/frame);
-        fprintf(fplog, "  <mu> = %12.5e kJ/mol\n", -log(VembU_all/V_all)/beta);
+        fprintf(fplog, "  <V>  = %12.5e nm^3\n", V_all / frame);
+        fprintf(fplog, "  <mu> = %12.5e kJ/mol\n", -log(VembU_all / V_all) / beta);
     }
 
     /* Write the Boltzmann factor histogram */
@@ -862,13 +860,13 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         sprintf(str, "number \\betaU > %g: %9.3e", bU_bin_limit, bin[0]);
         xvgr_subtitle(fp_tpi, str, oenv);
         xvgr_legend(fp_tpi, 2, (const char **)tpid_leg, oenv);
-        for (i = nbin-1; i > 0; i--)
+        for (i = nbin - 1; i > 0; i--)
         {
-            bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
+            bUlogV = -i / invbinw + bU_logV_bin_limit - refvolshift + log(V_all / frame);
             fprintf(fp_tpi, "%6.2f %10d %12.5e\n",
                     bUlogV,
-                    (int)(bin[i]+0.5),
-                    bin[i]*exp(-bUlogV)*V_all/VembU_all);
+                    (int)(bin[i] + 0.5),
+                    bin[i] * exp(-bUlogV) * V_all / VembU_all);
         }
         xvgrclose(fp_tpi);
     }
@@ -876,7 +874,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     sfree(sum_UgembU);
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, frame*inputrec->nsteps);
+    walltime_accounting_set_nsteps_done(walltime_accounting, frame * inputrec->nsteps);
 
     return 0;
 }

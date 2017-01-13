@@ -77,7 +77,7 @@ TEST(XvgTests, CreateFile)
         gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
-        gmx::StringInputStream          sis(input);
+        gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
@@ -85,7 +85,7 @@ TEST(XvgTests, CreateFile)
         gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
-        gmx::StringInputStream          sis(input);
+        gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
 }
@@ -97,11 +97,11 @@ TEST(XvgTests, CheckMissing)
         gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
-        gmx::StringInputStream          sis(input);
+        gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char * const              input[] = {
+        const char * const input[] = {
             "0     2905.86    -410.199",
             "0.2     6656.67    -430.437",
             "0.4     5262.44    -409.399"
@@ -121,11 +121,11 @@ TEST(XvgTests, CheckExtra)
         gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
-        gmx::StringInputStream          sis(input);
+        gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char * const              input[] = {
+        const char * const input[] = {
             "0     2905.86    -410.199",
             "0.2     6656.67    -430.437",
             "0.4     5262.44    -409.399",
@@ -149,11 +149,11 @@ TEST(XvgTests, ReadIncorrect)
         gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
-        gmx::StringInputStream          sis(input);
+        gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char * const              input[] = {
+        const char * const input[] = {
             "0     2905.86    -410.199",
             "0.2     6656.67    -430.437",
             "0.4     5262.44    -409.399",

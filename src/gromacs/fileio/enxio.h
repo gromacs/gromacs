@@ -58,7 +58,8 @@ struct t_inputrec;
  *
  **************************************************************/
 
-typedef struct {
+typedef struct
+{
     char *name;
     char *unit;
 } gmx_enxnm_t;
@@ -70,7 +71,8 @@ typedef struct {
  *
  * For backward compatibility, the order of these should not be changed.
  */
-enum {
+enum
+{
     enxOR,     /* Time and ensemble averaged data for orientation restraints */
     enxORI,    /* Instantaneous data for orientation restraints              */
     enxORT,    /* Order tensor(s) for orientation restraints                 */
@@ -98,12 +100,12 @@ typedef struct
     xdr_datatype type;      /* the block type */
 
     /* the values: pointers for each type */
-    float*             fval;
-    double*            dval;
-    int*               ival;
-    gmx_int64_t*       lval;
-    unsigned char*     cval;
-    char**             sval;
+    float*         fval;
+    double*        dval;
+    int*           ival;
+    gmx_int64_t*   lval;
+    unsigned char* cval;
+    char**         sval;
 
     /* the allocated sizes, defined separately.
        (nonzero sizes can be free()d later): */
@@ -118,7 +120,8 @@ typedef struct
 
 /* the energy file blocks. Each block contains a number of sub-blocks
    of a single type that contain the actual data. */
-typedef struct t_enxblock{
+typedef struct t_enxblock
+{
     int            id;         /* block id, from the enx enums above */
     int            nsub;       /* number of subblocks */
     t_enxsubblock *sub;        /* the subblocks */
@@ -127,19 +130,20 @@ typedef struct t_enxblock{
 
 
 /* The frames that are read/written */
-typedef struct {
-    double          t;            /* Timestamp of this frame	                     */
-    gmx_int64_t     step;         /* MD step	                             */
-    gmx_int64_t     nsteps;       /* The number of steps between frames            */
-    double          dt;           /* The MD time step                              */
-    int             nsum;         /* The number of terms for the sums in ener      */
-    int             nre;          /* Number of energies			     */
-    int             e_size;       /* Size (in bytes) of energies		     */
-    int             e_alloc;      /* Allocated size (in elements) of ener          */
-    t_energy       *ener;         /* The energies                                  */
-    int             nblock;       /* Number of following energy blocks             */
-    t_enxblock     *block;        /* The blocks                                    */
-    int             nblock_alloc; /* The number of blocks allocated                */
+typedef struct
+{
+    double      t;                /* Timestamp of this frame	                     */
+    gmx_int64_t step;             /* MD step	                             */
+    gmx_int64_t nsteps;           /* The number of steps between frames            */
+    double      dt;               /* The MD time step                              */
+    int         nsum;             /* The number of terms for the sums in ener      */
+    int         nre;              /* Number of energies			     */
+    int         e_size;           /* Size (in bytes) of energies		     */
+    int         e_alloc;          /* Allocated size (in elements) of ener          */
+    t_energy *  ener;             /* The energies                                  */
+    int         nblock;           /* Number of following energy blocks             */
+    t_enxblock *block;            /* The blocks                                    */
+    int         nblock_alloc;     /* The number of blocks allocated                */
 } t_enxframe;
 
 /* file handle */

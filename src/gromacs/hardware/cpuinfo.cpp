@@ -117,8 +117,7 @@ namespace
  *
  *  \param s  Pointer to string where whitespace will be removed
  */
-void
-trimString(std::string * s)
+void trimString(std::string * s)
 {
     // heading
     s->erase(s->begin(), std::find_if(s->begin(), s->end(), [](char &c) -> bool { return !std::isspace(c); }));
@@ -144,16 +143,15 @@ trimString(std::string * s)
  *
  *  \return 0 on success, or non-zero if the instruction could not execute.
  */
-int
-executeX86CpuID(unsigned int     gmx_unused level,
-                unsigned int     gmx_unused ecxval,
-                unsigned int *              eax,
-                unsigned int *              ebx,
-                unsigned int *              ecx,
-                unsigned int *              edx)
+int executeX86CpuID(unsigned int     gmx_unused level,
+                    unsigned int     gmx_unused ecxval,
+                    unsigned int *              eax,
+                    unsigned int *              ebx,
+                    unsigned int *              ecx,
+                    unsigned int *              edx)
 {
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
-    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86    \
+    || defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
 
 #    if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
 
@@ -220,8 +218,7 @@ executeX86CpuID(unsigned int     gmx_unused level,
  *          Intel nor Amd can be identified, or if the code fails to execute,
  *          gmx::CpuInfo::Vendor::Unknown is returned.
  */
-CpuInfo::Vendor
-detectX86Vendor()
+CpuInfo::Vendor detectX86Vendor()
 {
     unsigned int    eax, ebx, ecx, edx;
     CpuInfo::Vendor v = CpuInfo::Vendor::Unknown;
@@ -251,11 +248,10 @@ detectX86Vendor()
  *  \note Nothing is done if the bit is not set. In particular, this will not
  *        erase anything if the feature already exists in the set.
  */
-void
-setFeatureFromBit(std::set<CpuInfo::Feature> *   featureSet,
-                  CpuInfo::Feature               feature,
-                  unsigned int                   registerValue,
-                  unsigned char                  bit)
+void setFeatureFromBit(std::set<CpuInfo::Feature> * featureSet,
+                       CpuInfo::Feature             feature,
+                       unsigned int                 registerValue,
+                       unsigned char                bit)
 {
     if (registerValue & (1 << bit))
     {
@@ -271,12 +267,11 @@ setFeatureFromBit(std::set<CpuInfo::Feature> *   featureSet,
  *  \param[out] stepping   Minor version of processor
  *  \param[out] features   Feature set where supported features are inserted
  */
-void
-detectX86Features(std::string *                  brand,
-                  int *                          family,
-                  int *                          model,
-                  int *                          stepping,
-                  std::set<CpuInfo::Feature> *   features)
+void detectX86Features(std::string *                brand,
+                       int *                        family,
+                       int *                        model,
+                       int *                        stepping,
+                       std::set<CpuInfo::Feature> * features)
 {
     unsigned int eax, ebx, ecx, edx;
 
@@ -344,10 +339,10 @@ detectX86Features(std::string *                  brand,
     if (features->count(CpuInfo::Feature::X86_Htt) && maxStdLevel >= 0x4)
     {
         executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
-        unsigned int maxLogicalCores  = (ebx >> 16) & 0x0ff;
+        unsigned int maxLogicalCores = (ebx >> 16) & 0x0ff;
         executeX86CpuID(0x4, 0, &eax, &ebx, &ecx, &edx);
         unsigned int maxPhysicalCores = ((eax >> 26) & 0x3f) + 1;
-        if (maxLogicalCores/maxPhysicalCores < 2)
+        if (maxLogicalCores / maxPhysicalCores < 2)
         {
             features->erase(CpuInfo::Feature::X86_Htt);
         }
@@ -408,15 +403,15 @@ detectX86Features(std::string *                  brand,
 const std::vector<unsigned int>
 detectX86ApicIDs(bool gmx_unused haveX2Apic)
 {
-    std::vector<unsigned int>  apicID;
+    std::vector<unsigned int> apicID;
 
     // We cannot just ask for all APIC IDs, but must force execution on each
     // hardware thread and extract the APIC id there.
 #if HAVE_SCHED_AFFINITY && defined HAVE_SYSCONF
-    unsigned int   eax, ebx, ecx, edx;
-    unsigned int   nApic = sysconf(_SC_NPROCESSORS_ONLN);
-    cpu_set_t      saveCpuSet;
-    cpu_set_t      cpuSet;
+    unsigned int eax, ebx, ecx, edx;
+    unsigned int nApic = sysconf(_SC_NPROCESSORS_ONLN);
+    cpu_set_t    saveCpuSet;
+    cpu_set_t    cpuSet;
     sched_getaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
     CPU_ZERO(&cpuSet);
     for (unsigned int i = 0; i < nApic; i++)
@@ -437,14 +432,14 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
     }
     sched_setaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
 #elif GMX_NATIVE_WINDOWS
-    unsigned int   eax, ebx, ecx, edx;
-    SYSTEM_INFO    sysinfo;
+    unsigned int eax, ebx, ecx, edx;
+    SYSTEM_INFO  sysinfo;
     GetSystemInfo( &sysinfo );
-    unsigned int   nApic        = sysinfo.dwNumberOfProcessors;
-    unsigned int   saveAffinity = SetThreadAffinityMask(GetCurrentThread(), 1);
+    unsigned int nApic        = sysinfo.dwNumberOfProcessors;
+    unsigned int saveAffinity = SetThreadAffinityMask(GetCurrentThread(), 1);
     for (DWORD_PTR i = 0; i < nApic; i++)
     {
-        SetThreadAffinityMask(GetCurrentThread(), (((DWORD_PTR)1)<<i));
+        SetThreadAffinityMask(GetCurrentThread(), (((DWORD_PTR)1) << i));
         Sleep(0);
         if (haveX2Apic)
         {
@@ -472,8 +467,7 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
  * will be rewritten to {0,1,2,3,4,5,3,4,5,0,1,2}, and it returns 6 for the
  * number of unique elements.
  */
-void
-renumberIndex(std::vector<unsigned int> * v)
+void renumberIndex(std::vector<unsigned int> * v)
 {
     std::vector<unsigned int> sortedV (*v);
     std::sort(sortedV.begin(), sortedV.end());
@@ -501,14 +495,14 @@ renumberIndex(std::vector<unsigned int> * v)
 std::vector<CpuInfo::LogicalProcessor>
 detectX86LogicalProcessors()
 {
-    unsigned int   eax;
-    unsigned int   ebx;
-    unsigned int   ecx;
-    unsigned int   edx;
-    unsigned int   maxStdLevel;
-    unsigned int   maxExtLevel;
-    bool           haveApic;
-    bool           haveX2Apic;
+    unsigned int eax;
+    unsigned int ebx;
+    unsigned int ecx;
+    unsigned int edx;
+    unsigned int maxStdLevel;
+    unsigned int maxExtLevel;
+    bool         haveApic;
+    bool         haveX2Apic;
 
     std::vector<CpuInfo::LogicalProcessor> logicalProcessors;
 
@@ -532,15 +526,15 @@ detectX86LogicalProcessors()
 
     if (haveX2Apic || haveApic)
     {
-        unsigned int   hwThreadBits;
-        unsigned int   coreBits;
+        unsigned int hwThreadBits;
+        unsigned int coreBits;
         // Get bits for cores and hardware threads
         if (haveX2Apic)
         {
             executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
-            hwThreadBits    = eax & 0x1f;
+            hwThreadBits = eax & 0x1f;
             executeX86CpuID(0xb, 1, &eax, &ebx, &ecx, &edx);
-            coreBits        = (eax & 0x1f) - hwThreadBits;
+            coreBits = (eax & 0x1f) - hwThreadBits;
         }
         else    // haveApic
         {
@@ -560,18 +554,18 @@ detectX86LogicalProcessors()
             }
         }
 
-        std::vector<unsigned int>  apicID = detectX86ApicIDs(haveX2Apic);
+        std::vector<unsigned int> apicID = detectX86ApicIDs(haveX2Apic);
 
         if (!apicID.empty())
         {
             // APIC IDs can be buggy, and it is always a mess. Typically more bits are
             // reserved than needed, and the numbers might not increment by 1 even in
             // a single socket or core. Extract, renumber, and check that things make sense.
-            unsigned int               hwThreadMask  = (1 << hwThreadBits) - 1;
-            unsigned int               coreMask      = (1 << coreBits) - 1;
-            std::vector<unsigned int>  hwThreadRanks;
-            std::vector<unsigned int>  coreRanks;
-            std::vector<unsigned int>  socketRanks;
+            unsigned int              hwThreadMask = (1 << hwThreadBits) - 1;
+            unsigned int              coreMask     = (1 << coreBits) - 1;
+            std::vector<unsigned int> hwThreadRanks;
+            std::vector<unsigned int> coreRanks;
+            std::vector<unsigned int> socketRanks;
 
             for (auto a : apicID)
             {
@@ -584,9 +578,9 @@ detectX86LogicalProcessors()
             renumberIndex(&coreRanks);
             renumberIndex(&socketRanks);
 
-            unsigned int  hwThreadRankSize = 1 + *std::max_element(hwThreadRanks.begin(), hwThreadRanks.end());
-            unsigned int  coreRankSize     = 1 + *std::max_element(coreRanks.begin(), coreRanks.end());
-            unsigned int  socketRankSize   = 1 + *std::max_element(socketRanks.begin(), socketRanks.end());
+            unsigned int hwThreadRankSize = 1 + *std::max_element(hwThreadRanks.begin(), hwThreadRanks.end());
+            unsigned int coreRankSize     = 1 + *std::max_element(coreRanks.begin(), coreRanks.end());
+            unsigned int socketRankSize   = 1 + *std::max_element(socketRanks.begin(), socketRanks.end());
 
             if (socketRankSize * coreRankSize * hwThreadRankSize == apicID.size() )
             {
@@ -625,9 +619,9 @@ detectX86LogicalProcessors()
 const std::map<std::string, std::string>
 parseProcCpuInfo()
 {
-    std::ifstream                       procCpuInfo("/proc/cpuinfo");
-    std::string                         line;
-    std::map<std::string, std::string>  cpuInfo;
+    std::ifstream                      procCpuInfo("/proc/cpuinfo");
+    std::string                        line;
+    std::map<std::string, std::string> cpuInfo;
 
     while (std::getline(procCpuInfo, line))
     {
@@ -656,8 +650,7 @@ parseProcCpuInfo()
  *  they begin with the name of a standard vendor. If the file cannot be read
  *  or if no match is found, we return gmx::CpuInfo::Vendor::Unknown.
  */
-CpuInfo::Vendor
-detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
+CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
 {
     const std::map<std::string, CpuInfo::Vendor> testVendors =
     {
@@ -708,10 +701,9 @@ detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
  *  This routine tries to match a few common labels in /proc/cpuinfo to see if
  *  we can find the processor name and features. It is likely fragile.
  */
-void
-detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
-                     std::string *                             brand,
-                     std::set<CpuInfo::Feature> *              features)
+void detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
+                          std::string *                             brand,
+                          std::set<CpuInfo::Feature> *              features)
 {
     // Get brand string from 'cpu' label if present, otherwise 'Processor'
     if (cpuInfo.count("cpu"))
@@ -762,13 +754,12 @@ detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
  *  This routine tries to match a few common labels in /proc/cpuinfo to see if
  *  we can find the processor name and features. It is likely fragile.
  */
-void
-detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
-                     std::string *                               brand,
-                     int *                                       family,
-                     int *                                       model,
-                     int *                                       stepping,
-                     std::set<CpuInfo::Feature> *                features)
+void detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
+                          std::string *                               brand,
+                          int *                                       family,
+                          int *                                       model,
+                          int *                                       stepping,
+                          std::set<CpuInfo::Feature> *                features)
 {
     if (cpuInfo.count("Processor"))
     {
@@ -785,7 +776,7 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
     }
     if (cpuInfo.count("CPU variant"))
     {
-        *model    = std::strtol(cpuInfo.at("CPU variant").c_str(), nullptr, 16);
+        *model = std::strtol(cpuInfo.at("CPU variant").c_str(), nullptr, 16);
     }
     if (cpuInfo.count("CPU revision"))
     {
@@ -827,13 +818,12 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
  *  much more fragile than our x86 detection, but it does not depend on
  *  specific system calls, intrinsics or assembly instructions.
  */
-void
-detectProcCpuInfo(CpuInfo::Vendor *              vendor,
-                  std::string   *                brand,
-                  int   *                        family,
-                  int   *                        model,
-                  int   *                        stepping,
-                  std::set<CpuInfo::Feature> *   features)
+void detectProcCpuInfo(CpuInfo::Vendor *            vendor,
+                       std::string *                brand,
+                       int *                        family,
+                       int *                        model,
+                       int *                        stepping,
+                       std::set<CpuInfo::Feature> * features)
 {
     std::map<std::string, std::string> cpuInfo = parseProcCpuInfo();
 
@@ -872,19 +862,19 @@ CpuInfo CpuInfo::detect()
 {
     CpuInfo result;
 
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
-    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86    \
+    || defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
 
-    result.vendor_            = detectX86Vendor();
+    result.vendor_ = detectX86Vendor();
     detectX86Features(&result.brandString_, &result.family_, &result.model_,
                       &result.stepping_, &result.features_);
     result.logicalProcessors_ = detectX86LogicalProcessors();
 #else   // not x86
 
 #    if defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
-    result.vendor_  = CpuInfo::Vendor::Arm;
+    result.vendor_ = CpuInfo::Vendor::Arm;
 #    elif defined __powerpc__ || defined __ppc__ || defined __PPC__
-    result.vendor_  = CpuInfo::Vendor::Ibm;
+    result.vendor_ = CpuInfo::Vendor::Ibm;
 #    endif
 
 #    if defined __aarch64__ || ( defined _M_ARM && _M_ARM >= 8 )
@@ -995,21 +985,19 @@ CpuInfo::s_featureStrings_ =
 };
 
 
-bool
-cpuIsX86Nehalem(const CpuInfo &cpuInfo)
+bool cpuIsX86Nehalem(const CpuInfo &cpuInfo)
 {
-    return (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Intel &&
-            cpuInfo.family() == 6 &&
-            (cpuInfo.model() == 0x2E || cpuInfo.model() == 0x1A ||
-             cpuInfo.model() == 0x1E || cpuInfo.model() == 0x2F ||
-             cpuInfo.model() == 0x2C || cpuInfo.model() == 0x25) );
+    return (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Intel
+            && cpuInfo.family() == 6
+            && (cpuInfo.model() == 0x2E || cpuInfo.model() == 0x1A
+                || cpuInfo.model() == 0x1E || cpuInfo.model() == 0x2F
+                || cpuInfo.model() == 0x2C || cpuInfo.model() == 0x25) );
 }
 
 }  // namespace gmx
 
 #ifdef GMX_CPUINFO_STANDALONE
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     if (argc < 2)
     {
@@ -1026,8 +1014,8 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    std::string   arg(argv[1]);
-    gmx::CpuInfo  cpuInfo(gmx::CpuInfo::detect());
+    std::string  arg(argv[1]);
+    gmx::CpuInfo cpuInfo(gmx::CpuInfo::detect());
 
     if (arg == "-vendor")
     {

@@ -40,7 +40,8 @@
 #include "gromacs/utility/basedefinitions.h"
 
 /* this enum should correspond to the array deffile in filetypes.cpp */
-enum GromacsFileType {
+enum GromacsFileType
+{
     efMDP,
     efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
     efEDR,

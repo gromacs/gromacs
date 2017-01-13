@@ -67,14 +67,16 @@
 #include "gromacs/utility/smalloc.h"
 
 
-typedef struct {
+typedef struct
+{
     int  shift;
     int  naj;
     int *aj;
     int  aj_nalloc;
 } gbtmpnbl_t;
 
-typedef struct gbtmpnbls {
+typedef struct gbtmpnbls
+{
     int         nlist;
     gbtmpnbl_t *list;
     int         list_nalloc;
@@ -99,21 +101,21 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 
 static int init_gb_nblist(int natoms, t_nblist *nl)
 {
-    nl->maxnri      = natoms*4;
-    nl->maxnrj      = 0;
-    nl->nri         = 0;
-    nl->nrj         = 0;
-    nl->iinr        = nullptr;
-    nl->gid         = nullptr;
-    nl->shift       = nullptr;
-    nl->jindex      = nullptr;
-    nl->jjnr        = nullptr;
+    nl->maxnri = natoms * 4;
+    nl->maxnrj = 0;
+    nl->nri    = 0;
+    nl->nrj    = 0;
+    nl->iinr   = nullptr;
+    nl->gid    = nullptr;
+    nl->shift  = nullptr;
+    nl->jindex = nullptr;
+    nl->jjnr   = nullptr;
     /*nl->nltype      = nltype;*/
 
     srenew(nl->iinr,   nl->maxnri);
     srenew(nl->gid,    nl->maxnri);
     srenew(nl->shift,  nl->maxnri);
-    srenew(nl->jindex, nl->maxnri+1);
+    srenew(nl->jindex, nl->maxnri + 1);
 
     nl->jindex[0] = 0;
 
@@ -125,56 +127,56 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
                          gmx_genborn_t *born, int natoms)
 {
 
-    int   i, j, m, ia, ib;
-    real  r, ri, rj, ri2, rj2, r3, r4, ratio, term, h, doffset;
+    int  i, j, m, ia, ib;
+    real r, ri, rj, ri2, rj2, r3, r4, ratio, term, h, doffset;
 
     real *vsol;
     real *gp;
 
     snew(vsol, natoms);
     snew(gp, natoms);
-    snew(born->gpol_still_work, natoms+3);
+    snew(born->gpol_still_work, natoms + 3);
 
     doffset = born->gb_doffset;
 
     for (i = 0; i < natoms; i++)
     {
-        born->gpol_globalindex[i]              = born->vsolv_globalindex[i] =
-                born->gb_radius_globalindex[i] = 0;
+        born->gpol_globalindex[i] = born->vsolv_globalindex[i]
+                                  = born->gb_radius_globalindex[i] = 0;
     }
 
     /* Compute atomic solvation volumes for Still method */
     for (i = 0; i < natoms; i++)
     {
-        ri = atype->gb_radius[atoms->atom[i].type];
+        ri                             = atype->gb_radius[atoms->atom[i].type];
         born->gb_radius_globalindex[i] = ri;
-        r3 = ri*ri*ri;
-        born->vsolv_globalindex[i] = (4*M_PI/3)*r3;
+        r3                             = ri * ri * ri;
+        born->vsolv_globalindex[i]     = (4 * M_PI / 3) * r3;
     }
 
     for (j = 0; j < idef->il[F_GB12].nr; j += 3)
     {
         m  = idef->il[F_GB12].iatoms[j];
-        ia = idef->il[F_GB12].iatoms[j+1];
-        ib = idef->il[F_GB12].iatoms[j+2];
+        ia = idef->il[F_GB12].iatoms[j + 1];
+        ib = idef->il[F_GB12].iatoms[j + 2];
 
-        r = 1.01*idef->iparams[m].gb.st;
+        r = 1.01 * idef->iparams[m].gb.st;
 
-        ri   = atype->gb_radius[atoms->atom[ia].type];
-        rj   = atype->gb_radius[atoms->atom[ib].type];
+        ri = atype->gb_radius[atoms->atom[ia].type];
+        rj = atype->gb_radius[atoms->atom[ib].type];
 
-        ri2  = ri*ri;
-        rj2  = rj*rj;
+        ri2 = ri * ri;
+        rj2 = rj * rj;
 
-        ratio  = (rj2-ri2-r*r)/(2*ri*r);
-        h      = ri*(1+ratio);
-        term   = (M_PI/3.0)*h*h*(3.0*ri-h);
+        ratio = (rj2 - ri2 - r * r) / (2 * ri * r);
+        h     = ri * (1 + ratio);
+        term  = (M_PI / 3.0) * h * h * (3.0 * ri - h);
 
         born->vsolv_globalindex[ia] -= term;
 
-        ratio  = (ri2-rj2-r*r)/(2*rj*r);
-        h      = rj*(1+ratio);
-        term   = (M_PI/3.0)*h*h*(3.0*rj-h);
+        ratio = (ri2 - rj2 - r * r) / (2 * rj * r);
+        h     = rj * (1 + ratio);
+        term  = (M_PI / 3.0) * h * h * (3.0 * rj - h);
 
         born->vsolv_globalindex[ib] -= term;
     }
@@ -186,8 +188,8 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
     {
         if (born->use_globalindex[j] == 1)
         {
-            born->gpol_globalindex[j] = -0.5*ONE_4PI_EPS0/
-                (atype->gb_radius[atoms->atom[j].type]-doffset+STILL_P1);
+            born->gpol_globalindex[j] = -0.5 * ONE_4PI_EPS0
+                / (atype->gb_radius[atoms->atom[j].type] - doffset + STILL_P1);
         }
     }
 
@@ -195,33 +197,33 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
     for (j = 0; j < idef->il[F_GB12].nr; j += 3)
     {
         m  = idef->il[F_GB12].iatoms[j];
-        ia = idef->il[F_GB12].iatoms[j+1];
-        ib = idef->il[F_GB12].iatoms[j+2];
+        ia = idef->il[F_GB12].iatoms[j + 1];
+        ib = idef->il[F_GB12].iatoms[j + 2];
 
         r = idef->iparams[m].gb.st;
 
-        r4 = r*r*r*r;
+        r4 = r * r * r * r;
 
-        born->gpol_globalindex[ia] = born->gpol_globalindex[ia]+
-            STILL_P2*born->vsolv_globalindex[ib]/r4;
-        born->gpol_globalindex[ib] = born->gpol_globalindex[ib]+
-            STILL_P2*born->vsolv_globalindex[ia]/r4;
+        born->gpol_globalindex[ia] = born->gpol_globalindex[ia]
+            + STILL_P2 * born->vsolv_globalindex[ib] / r4;
+        born->gpol_globalindex[ib] = born->gpol_globalindex[ib]
+            + STILL_P2 * born->vsolv_globalindex[ia] / r4;
     }
 
     /* 1-3 */
     for (j = 0; j < idef->il[F_GB13].nr; j += 3)
     {
         m  = idef->il[F_GB13].iatoms[j];
-        ia = idef->il[F_GB13].iatoms[j+1];
-        ib = idef->il[F_GB13].iatoms[j+2];
+        ia = idef->il[F_GB13].iatoms[j + 1];
+        ib = idef->il[F_GB13].iatoms[j + 2];
 
         r  = idef->iparams[m].gb.st;
-        r4 = r*r*r*r;
+        r4 = r * r * r * r;
 
-        born->gpol_globalindex[ia] = born->gpol_globalindex[ia]+
-            STILL_P3*born->vsolv_globalindex[ib]/r4;
-        born->gpol_globalindex[ib] = born->gpol_globalindex[ib]+
-            STILL_P3*born->vsolv_globalindex[ia]/r4;
+        born->gpol_globalindex[ia] = born->gpol_globalindex[ia]
+            + STILL_P3 * born->vsolv_globalindex[ib] / r4;
+        born->gpol_globalindex[ib] = born->gpol_globalindex[ib]
+            + STILL_P3 * born->vsolv_globalindex[ia] / r4;
     }
 
     sfree(vsol);
@@ -235,14 +237,14 @@ int init_gb(gmx_genborn_t **p_born,
             t_forcerec *fr, const t_inputrec *ir,
             const gmx_mtop_t *mtop, int gb_algorithm)
 {
-    int             i, jj, natoms;
-    real            rai, sk, doffset;
+    int  i, jj, natoms;
+    real rai, sk, doffset;
 
     t_atoms         atoms;
-    gmx_genborn_t  *born;
+    gmx_genborn_t * born;
     gmx_localtop_t *localtop;
 
-    natoms   = mtop->natoms;
+    natoms = mtop->natoms;
 
     atoms    = gmx_mtop_global_atoms(mtop);
     localtop = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
@@ -250,17 +252,17 @@ int init_gb(gmx_genborn_t **p_born,
     snew(born, 1);
     *p_born = born;
 
-    born->nr  = natoms;
+    born->nr = natoms;
 
     snew(born->drobc, natoms);
     snew(born->bRad,  natoms);
 
     /* Allocate memory for the global data arrays */
-    snew(born->param_globalindex, natoms+3);
-    snew(born->gpol_globalindex,  natoms+3);
-    snew(born->vsolv_globalindex, natoms+3);
-    snew(born->gb_radius_globalindex, natoms+3);
-    snew(born->use_globalindex,    natoms+3);
+    snew(born->param_globalindex, natoms + 3);
+    snew(born->gpol_globalindex,  natoms + 3);
+    snew(born->vsolv_globalindex, natoms + 3);
+    snew(born->gb_radius_globalindex, natoms + 3);
+    snew(born->use_globalindex,    natoms + 3);
 
     snew(fr->invsqrta, natoms);
     snew(fr->dvda,     natoms);
@@ -292,9 +294,9 @@ int init_gb(gmx_genborn_t **p_born,
         }
 
         /* If we have a Vsite, put vs_globalindex[i]=0 */
-        if (C6 (fr->nbfp, fr->ntype, jj, jj) == 0 &&
-            C12(fr->nbfp, fr->ntype, jj, jj) == 0 &&
-            atoms.atom[i].q == 0)
+        if (C6 (fr->nbfp, fr->ntype, jj, jj) == 0
+            && C12(fr->nbfp, fr->ntype, jj, jj) == 0
+            && atoms.atom[i].q == 0)
         {
             born->use_globalindex[i] = 0;
         }
@@ -325,14 +327,14 @@ int init_gb(gmx_genborn_t **p_born,
     else if (gb_algorithm == egbHCT || gb_algorithm == egbOBC)
     {
 
-        snew(born->gpol_hct_work, natoms+3);
+        snew(born->gpol_hct_work, natoms + 3);
 
         for (i = 0; i < natoms; i++)
         {
             if (born->use_globalindex[i] == 1)
             {
-                rai = mtop->atomtypes.gb_radius[atoms.atom[i].type]-doffset;
-                sk  = rai * mtop->atomtypes.S_hct[atoms.atom[i].type];
+                rai                            = mtop->atomtypes.gb_radius[atoms.atom[i].type] - doffset;
+                sk                             = rai * mtop->atomtypes.S_hct[atoms.atom[i].type];
                 born->param_globalindex[i]     = sk;
                 born->gb_radius_globalindex[i] = rai;
             }
@@ -345,7 +347,7 @@ int init_gb(gmx_genborn_t **p_born,
     }
 
     /* Allocate memory for work arrays for temporary use */
-    snew(born->work, natoms+4);
+    snew(born->work, natoms + 4);
     snew(born->count, natoms);
     snew(born->nblist_work, natoms);
 
@@ -357,10 +359,9 @@ int init_gb(gmx_genborn_t **p_born,
 
 
 
-static int
-calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
-                  rvec x[], t_nblist *nl,
-                  gmx_genborn_t *born, t_mdatoms *md)
+static int calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
+                             rvec x[], t_nblist *nl,
+                             gmx_genborn_t *born, t_mdatoms *md)
 {
     int  i, k, n, nj0, nj1, ai, aj;
     int  shift;
@@ -371,8 +372,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     real factor;
     real vai, prod_ai, icf4, icf6;
 
-    factor  = 0.5*ONE_4PI_EPS0;
-    n       = 0;
+    factor = 0.5 * ONE_4PI_EPS0;
+    n      = 0;
 
     for (i = 0; i < born->nr; i++)
     {
@@ -381,48 +382,48 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
     for (i = 0; i < nl->nri; i++)
     {
-        ai      = nl->iinr[i];
+        ai = nl->iinr[i];
 
-        nj0     = nl->jindex[i];
-        nj1     = nl->jindex[i+1];
+        nj0 = nl->jindex[i];
+        nj1 = nl->jindex[i + 1];
 
         /* Load shifts for this list */
-        shift   = nl->shift[i];
-        shX     = fr->shift_vec[shift][0];
-        shY     = fr->shift_vec[shift][1];
-        shZ     = fr->shift_vec[shift][2];
+        shift = nl->shift[i];
+        shX   = fr->shift_vec[shift][0];
+        shY   = fr->shift_vec[shift][1];
+        shZ   = fr->shift_vec[shift][2];
 
-        gpi     = 0;
+        gpi = 0;
 
         rai     = top->atomtypes.gb_radius[md->typeA[ai]];
         vai     = born->vsolv[ai];
-        prod_ai = STILL_P4*vai;
+        prod_ai = STILL_P4 * vai;
 
         /* Load atom i coordinates, add shift vectors */
-        ix1     = shX + x[ai][0];
-        iy1     = shY + x[ai][1];
-        iz1     = shZ + x[ai][2];
+        ix1 = shX + x[ai][0];
+        iy1 = shY + x[ai][1];
+        iz1 = shZ + x[ai][2];
 
         for (k = nj0; k < nj1 && nl->jjnr[k] >= 0; k++)
         {
-            aj    = nl->jjnr[k];
-            jx1   = x[aj][0];
-            jy1   = x[aj][1];
-            jz1   = x[aj][2];
+            aj  = nl->jjnr[k];
+            jx1 = x[aj][0];
+            jy1 = x[aj][1];
+            jz1 = x[aj][2];
 
-            dx11  = ix1-jx1;
-            dy11  = iy1-jy1;
-            dz11  = iz1-jz1;
+            dx11 = ix1 - jx1;
+            dy11 = iy1 - jy1;
+            dz11 = iz1 - jz1;
 
-            dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv  = gmx::invsqrt(dr2);
-            idr2  = rinv*rinv;
-            idr4  = idr2*idr2;
-            idr6  = idr4*idr2;
+            dr2  = dx11 * dx11 + dy11 * dy11 + dz11 * dz11;
+            rinv = gmx::invsqrt(dr2);
+            idr2 = rinv * rinv;
+            idr4 = idr2 * idr2;
+            idr6 = idr4 * idr2;
 
             raj = top->atomtypes.gb_radius[md->typeA[aj]];
 
-            rvdw  = rai + raj;
+            rvdw = rai + raj;
 
             ratio = dr2 / (rvdw * rvdw);
             vaj   = born->vsolv[aj];
@@ -434,23 +435,23 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             }
             else
             {
-                theta = ratio*STILL_PIP5;
+                theta = ratio * STILL_PIP5;
                 cosq  = cos(theta);
-                term  = 0.5*(1.0-cosq);
-                ccf   = term*term;
-                sinq  = 1.0 - cosq*cosq;
-                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq)*theta;
+                term  = 0.5 * (1.0 - cosq);
+                ccf   = term * term;
+                sinq  = 1.0 - cosq * cosq;
+                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq) * theta;
             }
 
-            prod                       = STILL_P4*vaj;
-            icf4                       = ccf*idr4;
-            icf6                       = (4*ccf-dccf)*idr6;
-            born->gpol_still_work[aj] += prod_ai*icf4;
-            gpi                        = gpi+prod*icf4;
+            prod                       = STILL_P4 * vaj;
+            icf4                       = ccf * idr4;
+            icf6                       = (4 * ccf - dccf) * idr6;
+            born->gpol_still_work[aj] += prod_ai * icf4;
+            gpi                        = gpi + prod * icf4;
 
             /* Save ai->aj and aj->ai chain rule terms */
-            fr->dadx[n++]   = prod*icf6;
-            fr->dadx[n++]   = prod_ai*icf6;
+            fr->dadx[n++] = prod * icf6;
+            fr->dadx[n++] = prod_ai * icf6;
         }
         born->gpol_still_work[ai] += gpi;
     }
@@ -466,9 +467,9 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     {
         if (born->use[i] != 0)
         {
-            gpi             = born->gpol[i]+born->gpol_still_work[i];
+            gpi             = born->gpol[i] + born->gpol_still_work[i];
             gpi2            = gpi * gpi;
-            born->bRad[i]   = factor*gmx::invsqrt(gpi2);
+            born->bRad[i]   = factor * gmx::invsqrt(gpi2);
             fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
         }
     }
@@ -485,10 +486,9 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 }
 
 
-static int
-calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
-                rvec x[], t_nblist *nl,
-                gmx_genborn_t *born, t_mdatoms *md)
+static int calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
+                           rvec x[], t_nblist *nl,
+                           gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, n, ai, aj, nj0, nj1;
     int   shift;
@@ -510,98 +510,98 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     }
 
     /* Keep the compiler happy */
-    n    = 0;
+    n = 0;
 
     for (i = 0; i < nl->nri; i++)
     {
-        ai     = nl->iinr[i];
+        ai = nl->iinr[i];
 
-        nj0    = nl->jindex[i];
-        nj1    = nl->jindex[i+1];
+        nj0 = nl->jindex[i];
+        nj1 = nl->jindex[i + 1];
 
         /* Load shifts for this list */
-        shift   = nl->shift[i];
-        shX     = fr->shift_vec[shift][0];
-        shY     = fr->shift_vec[shift][1];
-        shZ     = fr->shift_vec[shift][2];
+        shift = nl->shift[i];
+        shX   = fr->shift_vec[shift][0];
+        shY   = fr->shift_vec[shift][1];
+        shZ   = fr->shift_vec[shift][2];
 
         rai     = gb_radius[ai];
-        rai_inv = 1.0/rai;
+        rai_inv = 1.0 / rai;
 
-        sk_ai   = born->param[ai];
-        sk2_ai  = sk_ai*sk_ai;
+        sk_ai  = born->param[ai];
+        sk2_ai = sk_ai * sk_ai;
 
         /* Load atom i coordinates, add shift vectors */
-        ix1     = shX + x[ai][0];
-        iy1     = shY + x[ai][1];
-        iz1     = shZ + x[ai][2];
+        ix1 = shX + x[ai][0];
+        iy1 = shY + x[ai][1];
+        iz1 = shZ + x[ai][2];
 
-        sum_ai  = 0;
+        sum_ai = 0;
 
         for (k = nj0; k < nj1 && nl->jjnr[k] >= 0; k++)
         {
-            aj    = nl->jjnr[k];
+            aj = nl->jjnr[k];
 
-            jx1   = x[aj][0];
-            jy1   = x[aj][1];
-            jz1   = x[aj][2];
+            jx1 = x[aj][0];
+            jy1 = x[aj][1];
+            jz1 = x[aj][2];
 
-            dx11  = ix1 - jx1;
-            dy11  = iy1 - jy1;
-            dz11  = iz1 - jz1;
+            dx11 = ix1 - jx1;
+            dy11 = iy1 - jy1;
+            dz11 = iz1 - jz1;
 
-            dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv  = gmx::invsqrt(dr2);
-            dr    = rinv*dr2;
+            dr2  = dx11 * dx11 + dy11 * dy11 + dz11 * dz11;
+            rinv = gmx::invsqrt(dr2);
+            dr   = rinv * dr2;
 
-            sk    = born->param[aj];
-            raj   = gb_radius[aj];
+            sk  = born->param[aj];
+            raj = gb_radius[aj];
 
             /* aj -> ai interaction */
-            if (rai < dr+sk)
+            if (rai < dr + sk)
             {
-                lij     = 1.0/(dr-sk);
-                dlij    = 1.0;
+                lij  = 1.0 / (dr - sk);
+                dlij = 1.0;
 
-                if (rai > dr-sk)
+                if (rai > dr - sk)
                 {
                     lij  = rai_inv;
                     dlij = 0.0;
                 }
 
-                lij2     = lij*lij;
-                lij3     = lij2*lij;
+                lij2 = lij * lij;
+                lij3 = lij2 * lij;
 
-                uij      = 1.0/(dr+sk);
-                uij2     = uij*uij;
-                uij3     = uij2*uij;
+                uij  = 1.0 / (dr + sk);
+                uij2 = uij * uij;
+                uij3 = uij2 * uij;
 
-                diff2    = uij2-lij2;
+                diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
-                sk2      = sk*sk;
-                sk2_rinv = sk2*rinv;
-                prod     = 0.25*sk2_rinv;
+                sk2      = sk * sk;
+                sk2_rinv = sk2 * rinv;
+                prod     = 0.25 * sk2_rinv;
 
-                log_term = std::log(uij*lij_inv);
+                log_term = std::log(uij * lij_inv);
 
-                tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term +
-                    prod*(-diff2);
+                tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term
+                    + prod * (-diff2);
 
-                if (rai < sk-dr)
+                if (rai < sk - dr)
                 {
-                    tmp = tmp + 2.0 * (rai_inv-lij);
+                    tmp = tmp + 2.0 * (rai_inv - lij);
                 }
 
-                t1 = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                t2 = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                t3 = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadx_val = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule */
+                dadx_val = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule */
                 /* fr->dadx[n++] = (dlij*t1+duij*t2+t3)*rinv; */
                 /* rb2 is moved to chainrule    */
 
-                sum_ai += 0.5*tmp;
+                sum_ai += 0.5 * tmp;
             }
             else
             {
@@ -613,51 +613,51 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             /* ai -> aj interaction */
             if (raj < dr + sk_ai)
             {
-                lij     = 1.0/(dr-sk_ai);
+                lij     = 1.0 / (dr - sk_ai);
                 dlij    = 1.0;
-                raj_inv = 1.0/raj;
+                raj_inv = 1.0 / raj;
 
-                if (raj > dr-sk_ai)
+                if (raj > dr - sk_ai)
                 {
                     lij  = raj_inv;
                     dlij = 0.0;
                 }
 
-                lij2     = lij  * lij;
-                lij3     = lij2 * lij;
+                lij2 = lij  * lij;
+                lij3 = lij2 * lij;
 
-                uij      = 1.0/(dr+sk_ai);
-                uij2     = uij  * uij;
-                uij3     = uij2 * uij;
+                uij  = 1.0 / (dr + sk_ai);
+                uij2 = uij  * uij;
+                uij3 = uij2 * uij;
 
-                diff2    = uij2-lij2;
+                diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
                 sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
-                sk2_rinv = sk2*rinv;
+                sk2_rinv = sk2 * rinv;
                 prod     = 0.25 * sk2_rinv;
 
                 /* log_term = table_log(uij*lij_inv,born->log_table,
                    LOG_TABLE_ACCURACY); */
-                log_term = std::log(uij*lij_inv);
+                log_term = std::log(uij * lij_inv);
 
-                tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term +
-                    prod*(-diff2);
+                tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term
+                    + prod * (-diff2);
 
-                if (raj < sk_ai-dr)
+                if (raj < sk_ai - dr)
                 {
-                    tmp     = tmp + 2.0 * (raj_inv-lij);
+                    tmp = tmp + 2.0 * (raj_inv - lij);
                 }
 
                 /* duij = 1.0 */
-                t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                t2      = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadx_val = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule    */
+                dadx_val = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule    */
                 /* fr->dadx[n++] = (dlij*t1+duij*t2+t3)*rinv; */ /* rb2 is moved to chainrule    */
 
-                born->gpol_hct_work[aj] += 0.5*tmp;
+                born->gpol_hct_work[aj] += 0.5 * tmp;
             }
             else
             {
@@ -679,10 +679,10 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     {
         if (born->use[i] != 0)
         {
-            rai     = top->atomtypes.gb_radius[md->typeA[i]]-doffset;
-            sum_ai  = 1.0/rai - born->gpol_hct_work[i];
+            rai     = top->atomtypes.gb_radius[md->typeA[i]] - doffset;
+            sum_ai  = 1.0 / rai - born->gpol_hct_work[i];
             min_rad = rai + doffset;
-            rad     = 1.0/sum_ai;
+            rad     = 1.0 / sum_ai;
 
             born->bRad[i]   = std::max(rad, min_rad);
             fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
@@ -700,9 +700,8 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     return 0;
 }
 
-static int
-calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
-                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
+static int calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
+                           rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, ai, aj, nj0, nj1, n;
     int   shift;
@@ -716,7 +715,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     real *gb_radius;
 
     /* Keep the compiler happy */
-    n    = 0;
+    n = 0;
 
     doffset   = born->gb_doffset;
     gb_radius = born->gb_radius;
@@ -728,92 +727,92 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
     for (i = 0; i < nl->nri; i++)
     {
-        ai      = nl->iinr[i];
+        ai = nl->iinr[i];
 
-        nj0     = nl->jindex[i];
-        nj1     = nl->jindex[i+1];
+        nj0 = nl->jindex[i];
+        nj1 = nl->jindex[i + 1];
 
         /* Load shifts for this list */
-        shift   = nl->shift[i];
-        shX     = fr->shift_vec[shift][0];
-        shY     = fr->shift_vec[shift][1];
-        shZ     = fr->shift_vec[shift][2];
+        shift = nl->shift[i];
+        shX   = fr->shift_vec[shift][0];
+        shY   = fr->shift_vec[shift][1];
+        shZ   = fr->shift_vec[shift][2];
 
-        rai      = gb_radius[ai];
-        rai_inv  = 1.0/rai;
+        rai     = gb_radius[ai];
+        rai_inv = 1.0 / rai;
 
-        sk_ai    = born->param[ai];
-        sk2_ai   = sk_ai*sk_ai;
+        sk_ai  = born->param[ai];
+        sk2_ai = sk_ai * sk_ai;
 
         /* Load atom i coordinates, add shift vectors */
-        ix1      = shX + x[ai][0];
-        iy1      = shY + x[ai][1];
-        iz1      = shZ + x[ai][2];
+        ix1 = shX + x[ai][0];
+        iy1 = shY + x[ai][1];
+        iz1 = shZ + x[ai][2];
 
-        sum_ai   = 0;
+        sum_ai = 0;
 
         for (k = nj0; k < nj1 && nl->jjnr[k] >= 0; k++)
         {
-            aj    = nl->jjnr[k];
+            aj = nl->jjnr[k];
 
-            jx1   = x[aj][0];
-            jy1   = x[aj][1];
-            jz1   = x[aj][2];
+            jx1 = x[aj][0];
+            jy1 = x[aj][1];
+            jz1 = x[aj][2];
 
-            dx11  = ix1 - jx1;
-            dy11  = iy1 - jy1;
-            dz11  = iz1 - jz1;
+            dx11 = ix1 - jx1;
+            dy11 = iy1 - jy1;
+            dz11 = iz1 - jz1;
 
-            dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv  = gmx::invsqrt(dr2);
-            dr    = dr2*rinv;
+            dr2  = dx11 * dx11 + dy11 * dy11 + dz11 * dz11;
+            rinv = gmx::invsqrt(dr2);
+            dr   = dr2 * rinv;
 
             /* sk is precalculated in init_gb() */
-            sk    = born->param[aj];
-            raj   = gb_radius[aj];
+            sk  = born->param[aj];
+            raj = gb_radius[aj];
 
             /* aj -> ai interaction */
-            if (rai < dr+sk)
+            if (rai < dr + sk)
             {
-                lij       = 1.0/(dr-sk);
-                dlij      = 1.0;
+                lij  = 1.0 / (dr - sk);
+                dlij = 1.0;
 
-                if (rai > dr-sk)
+                if (rai > dr - sk)
                 {
                     lij  = rai_inv;
                     dlij = 0.0;
                 }
 
-                uij      = 1.0/(dr+sk);
-                lij2     = lij  * lij;
-                lij3     = lij2 * lij;
-                uij2     = uij  * uij;
-                uij3     = uij2 * uij;
+                uij  = 1.0 / (dr + sk);
+                lij2 = lij  * lij;
+                lij3 = lij2 * lij;
+                uij2 = uij  * uij;
+                uij3 = uij2 * uij;
 
-                diff2    = uij2-lij2;
+                diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
-                sk2      = sk*sk;
-                sk2_rinv = sk2*rinv;
-                prod     = 0.25*sk2_rinv;
+                sk2      = sk * sk;
+                sk2_rinv = sk2 * rinv;
+                prod     = 0.25 * sk2_rinv;
 
-                log_term = std::log(uij*lij_inv);
+                log_term = std::log(uij * lij_inv);
 
-                tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
+                tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term + prod * (-diff2);
 
-                if (rai < sk-dr)
+                if (rai < sk - dr)
                 {
-                    tmp = tmp + 2.0 * (rai_inv-lij);
+                    tmp = tmp + 2.0 * (rai_inv - lij);
                 }
 
                 /* duij    = 1.0; */
-                t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                t2      = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadx_val = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule    */
+                dadx_val = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule    */
 
-                sum_ai += 0.5*tmp;
+                sum_ai += 0.5 * tmp;
             }
             else
             {
@@ -824,47 +823,47 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             /* ai -> aj interaction */
             if (raj < dr + sk_ai)
             {
-                lij     = 1.0/(dr-sk_ai);
+                lij     = 1.0 / (dr - sk_ai);
                 dlij    = 1.0;
-                raj_inv = 1.0/raj;
+                raj_inv = 1.0 / raj;
 
-                if (raj > dr-sk_ai)
+                if (raj > dr - sk_ai)
                 {
                     lij  = raj_inv;
                     dlij = 0.0;
                 }
 
-                lij2     = lij  * lij;
-                lij3     = lij2 * lij;
+                lij2 = lij  * lij;
+                lij3 = lij2 * lij;
 
-                uij      = 1.0/(dr+sk_ai);
-                uij2     = uij  * uij;
-                uij3     = uij2 * uij;
+                uij  = 1.0 / (dr + sk_ai);
+                uij2 = uij  * uij;
+                uij3 = uij2 * uij;
 
-                diff2    = uij2-lij2;
+                diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
                 sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
-                sk2_rinv = sk2*rinv;
+                sk2_rinv = sk2 * rinv;
                 prod     = 0.25 * sk2_rinv;
 
                 /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                log_term = std::log(uij*lij_inv);
+                log_term = std::log(uij * lij_inv);
 
-                tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
+                tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term + prod * (-diff2);
 
-                if (raj < sk_ai-dr)
+                if (raj < sk_ai - dr)
                 {
-                    tmp     = tmp + 2.0 * (raj_inv-lij);
+                    tmp = tmp + 2.0 * (raj_inv - lij);
                 }
 
-                t1      = 0.5*lij2 + prod*lij3 - 0.25*(lij*rinv+lij3*dr);
-                t2      = -0.5*uij2 - 0.25*sk2_rinv*uij3 + 0.25*(uij*rinv+uij3*dr);
-                t3      = 0.125*(1.0+sk2_rinv*rinv)*(-diff2)+0.25*log_term*rinv*rinv;
+                t1 = 0.5 * lij2 + prod * lij3 - 0.25 * (lij * rinv + lij3 * dr);
+                t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
+                t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadx_val = (dlij*t1+t2+t3)*rinv; /* rb2 is moved to chainrule    */
+                dadx_val = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule    */
 
-                born->gpol_hct_work[aj] += 0.5*tmp;
+                born->gpol_hct_work[aj] += 0.5 * tmp;
 
             }
             else
@@ -888,22 +887,22 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     {
         if (born->use[i] != 0)
         {
-            rai        = top->atomtypes.gb_radius[md->typeA[i]];
-            rai_inv2   = 1.0/rai;
-            rai        = rai-doffset;
-            rai_inv    = 1.0/rai;
-            sum_ai     = rai * born->gpol_hct_work[i];
-            sum_ai2    = sum_ai  * sum_ai;
-            sum_ai3    = sum_ai2 * sum_ai;
+            rai      = top->atomtypes.gb_radius[md->typeA[i]];
+            rai_inv2 = 1.0 / rai;
+            rai      = rai - doffset;
+            rai_inv  = 1.0 / rai;
+            sum_ai   = rai * born->gpol_hct_work[i];
+            sum_ai2  = sum_ai  * sum_ai;
+            sum_ai3  = sum_ai2 * sum_ai;
 
-            tsum          = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
-            born->bRad[i] = rai_inv - tsum*rai_inv2;
+            tsum          = tanh(born->obc_alpha * sum_ai - born->obc_beta * sum_ai2 + born->obc_gamma * sum_ai3);
+            born->bRad[i] = rai_inv - tsum * rai_inv2;
             born->bRad[i] = 1.0 / born->bRad[i];
 
             fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
 
-            tchain         = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
-            born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;
+            tchain         = rai * (born->obc_alpha - 2 * born->obc_beta * sum_ai + 3 * born->obc_gamma * sum_ai2);
+            born->drobc[i] = (1.0 - tsum * tsum) * tchain * rai_inv2;
         }
     }
 
@@ -924,15 +923,15 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
                 rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
 {
-    int   cnt;
-    int   ndadx;
+    int cnt;
+    int ndadx;
 
     if (fr->bAllvsAll && fr->dadx == nullptr)
     {
         /* We might need up to 8 atoms of padding before and after,
          * and another 4 units to guarantee SSE alignment.
          */
-        fr->nalloc_dadx = 2*(md->homenr+12)*(md->nr/2+1+12);
+        fr->nalloc_dadx = 2 * (md->homenr + 12) * (md->nr / 2 + 1 + 12);
         snew(fr->dadx_rawptr, fr->nalloc_dadx);
         fr->dadx = (real *) (((size_t) fr->dadx_rawptr + 16) & (~((size_t) 15)));
     }
@@ -944,7 +943,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
          * elements. This is because we want dadx to be aligned to a 16-
          * byte boundary, and being able to use _mm_store/load_ps
          */
-        ndadx = 2 * (nl->nrj + 3*nl->nri);
+        ndadx = 2 * (nl->nrj + 3 * nl->nri);
 
         /* First, reallocate the dadx array, we need 3 extra for SSE */
         if (ndadx + 3 > fr->nalloc_dadx)
@@ -957,19 +956,19 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 
     if (fr->bAllvsAll)
     {
-        cnt = md->homenr*(md->nr/2+1);
+        cnt = md->homenr * (md->nr / 2 + 1);
 
         if (ir->gb_algorithm == egbSTILL)
         {
             genborn_allvsall_calc_still_radii(fr, md, born, top, x[0], &fr->AllvsAll_workgb);
             /* 13 flops in outer loop, 47 flops in inner loop */
-            inc_nrnb(nrnb, eNR_BORN_AVA_RADII_STILL, md->homenr*13+cnt*47);
+            inc_nrnb(nrnb, eNR_BORN_AVA_RADII_STILL, md->homenr * 13 + cnt * 47);
         }
         else if (ir->gb_algorithm == egbHCT || ir->gb_algorithm == egbOBC)
         {
             genborn_allvsall_calc_hct_obc_radii(fr, md, born, ir->gb_algorithm, top, x[0], &fr->AllvsAll_workgb);
             /* 24 flops in outer loop, 183 in inner */
-            inc_nrnb(nrnb, eNR_BORN_AVA_RADII_HCT_OBC, md->homenr*24+cnt*183);
+            inc_nrnb(nrnb, eNR_BORN_AVA_RADII_HCT_OBC, md->homenr * 24 + cnt * 183);
         }
         else
         {
@@ -1023,12 +1022,12 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         {
             case egbSTILL:
                 /* 17 flops per outer loop iteration, 47 flops per inner loop */
-                inc_nrnb(nrnb, eNR_BORN_RADII_STILL, nl->nri*17+nl->nrj*47);
+                inc_nrnb(nrnb, eNR_BORN_RADII_STILL, nl->nri * 17 + nl->nrj * 47);
                 break;
             case egbHCT:
             case egbOBC:
                 /* 61 (assuming 10 for tanh) flops for outer loop iteration, 183 flops per inner loop */
-                inc_nrnb(nrnb, eNR_BORN_RADII_HCT_OBC, nl->nri*61+nl->nrj*183);
+                inc_nrnb(nrnb, eNR_BORN_RADII_HCT_OBC, nl->nri * 61 + nl->nrj * 183);
                 break;
 
             default:
@@ -1045,23 +1044,23 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
                   real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
                   real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph)
 {
-    int      i, j, n0, m, nnn, ai, aj;
-    int      ki;
+    int i, j, n0, m, nnn, ai, aj;
+    int ki;
 
-    real     isai, isaj;
-    real     r, rsq11;
-    real     rinv11, iq;
-    real     isaprod, qq, gbscale, gbtabscale, Y, F, Geps, Heps2, Fp, VV, FF, rt, eps, eps2;
-    real     vgb, fgb, fijC, dvdatmp, fscal;
-    real     vctot;
+    real isai, isaj;
+    real r, rsq11;
+    real rinv11, iq;
+    real isaprod, qq, gbscale, gbtabscale, Y, F, Geps, Heps2, Fp, VV, FF, rt, eps, eps2;
+    real vgb, fgb, fijC, dvdatmp, fscal;
+    real vctot;
 
-    rvec     dx;
-    ivec     dt;
+    rvec dx;
+    ivec dt;
 
     t_iatom *forceatoms;
 
     /* Scale the electrostatics by gb_epsilon_solvent */
-    facel = facel * ((1.0/epsilon_r) - 1.0/gb_epsilon_solvent);
+    facel = facel * ((1.0 / epsilon_r) - 1.0 / gb_epsilon_solvent);
 
     gbtabscale = *p_gbtabscale;
     vctot      = 0.0;
@@ -1076,40 +1075,40 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
              * the types in the forceatoms array, this saves some memory accesses
              */
             i++;
-            ai            = forceatoms[i++];
-            aj            = forceatoms[i++];
+            ai = forceatoms[i++];
+            aj = forceatoms[i++];
 
-            ki            = pbc_rvec_sub(pbc, x[ai], x[aj], dx);
-            rsq11         = iprod(dx, dx);
+            ki    = pbc_rvec_sub(pbc, x[ai], x[aj], dx);
+            rsq11 = iprod(dx, dx);
 
-            isai          = invsqrta[ai];
-            iq            = (-1)*facel*charge[ai];
+            isai = invsqrta[ai];
+            iq   = (-1) * facel * charge[ai];
 
-            rinv11        = gmx::invsqrt(rsq11);
-            isaj          = invsqrta[aj];
-            isaprod       = isai*isaj;
-            qq            = isaprod*iq*charge[aj];
-            gbscale       = isaprod*gbtabscale;
-            r             = rsq11*rinv11;
-            rt            = r*gbscale;
-            n0            = static_cast<int>(rt);
-            eps           = rt-n0;
-            eps2          = eps*eps;
-            nnn           = 4*n0;
-            Y             = GBtab[nnn];
-            F             = GBtab[nnn+1];
-            Geps          = eps*GBtab[nnn+2];
-            Heps2         = eps2*GBtab[nnn+3];
-            Fp            = F+Geps+Heps2;
-            VV            = Y+eps*Fp;
-            FF            = Fp+Geps+2.0*Heps2;
-            vgb           = qq*VV;
-            fijC          = qq*FF*gbscale;
-            dvdatmp       = -(vgb+fijC*r)*0.5;
-            dvda[aj]      = dvda[aj] + dvdatmp*isaj*isaj;
-            dvda[ai]      = dvda[ai] + dvdatmp*isai*isai;
-            vctot         = vctot + vgb;
-            fgb           = -(fijC)*rinv11;
+            rinv11   = gmx::invsqrt(rsq11);
+            isaj     = invsqrta[aj];
+            isaprod  = isai * isaj;
+            qq       = isaprod * iq * charge[aj];
+            gbscale  = isaprod * gbtabscale;
+            r        = rsq11 * rinv11;
+            rt       = r * gbscale;
+            n0       = static_cast<int>(rt);
+            eps      = rt - n0;
+            eps2     = eps * eps;
+            nnn      = 4 * n0;
+            Y        = GBtab[nnn];
+            F        = GBtab[nnn + 1];
+            Geps     = eps * GBtab[nnn + 2];
+            Heps2    = eps2 * GBtab[nnn + 3];
+            Fp       = F + Geps + Heps2;
+            VV       = Y + eps * Fp;
+            FF       = Fp + Geps + 2.0 * Heps2;
+            vgb      = qq * VV;
+            fijC     = qq * FF * gbscale;
+            dvdatmp  = -(vgb + fijC * r) * 0.5;
+            dvda[aj] = dvda[aj] + dvdatmp * isaj * isaj;
+            dvda[ai] = dvda[ai] + dvdatmp * isai * isai;
+            vctot    = vctot + vgb;
+            fgb      = -(fijC) * rinv11;
 
             if (graph)
             {
@@ -1119,7 +1118,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
 
             for (m = 0; (m < DIM); m++)             /*  15		*/
             {
-                fscal               = fgb*dx[m];
+                fscal               = fgb * dx[m];
                 f[ai][m]           += fscal;
                 f[aj][m]           -= fscal;
                 fshift[ki][m]      += fscal;
@@ -1150,26 +1149,26 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
     }
 
     /* Scale the electrostatics by gb_epsilon_solvent */
-    facel = facel * ((1.0/born->epsilon_r) - 1.0/born->gb_epsilon_solvent);
+    facel = facel * ((1.0 / born->epsilon_r) - 1.0 / born->gb_epsilon_solvent);
 
     vtot = 0.0;
 
     /* Apply self corrections */
     for (i = at0; i < at1; i++)
     {
-        ai       = i;
+        ai = i;
 
         if (born->use[ai] == 1)
         {
             rai       = born->bRad[ai];
-            rai_inv   = 1.0/rai;
+            rai_inv   = 1.0 / rai;
             q         = charge[ai];
-            q2        = q*q;
-            fi        = facel*q2;
-            e         = fi*rai_inv;
-            derb      = 0.5*e*rai_inv*rai_inv;
-            dvda[ai] += derb*rai;
-            vtot     -= 0.5*e;
+            q2        = q * q;
+            fi        = facel * q2;
+            e         = fi * rai_inv;
+            derb      = 0.5 * e * rai_inv * rai_inv;
+            dvda[ai] += derb * rai;
+            vtot     -= 0.5 * e;
         }
     }
 
@@ -1200,22 +1199,22 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
 
     es    = 0;
     probe = 0.14;
-    term  = M_PI*4;
+    term  = M_PI * 4;
 
     for (i = at0; i < at1; i++)
     {
-        ai        = i;
+        ai = i;
 
         if (born->use[ai] == 1)
         {
-            rai       = top->atomtypes.gb_radius[md->typeA[ai]];
-            rbi_inv   = fr->invsqrta[ai];
-            rbi_inv2  = rbi_inv * rbi_inv;
-            tmp       = (rai*rbi_inv2)*(rai*rbi_inv2);
-            tmp       = tmp*tmp*tmp;
-            e         = factor*term*(rai+probe)*(rai+probe)*tmp;
-            dvda[ai]  = dvda[ai] - 6*e*rbi_inv2;
-            es        = es + e;
+            rai      = top->atomtypes.gb_radius[md->typeA[ai]];
+            rbi_inv  = fr->invsqrta[ai];
+            rbi_inv2 = rbi_inv * rbi_inv;
+            tmp      = (rai * rbi_inv2) * (rai * rbi_inv2);
+            tmp      = tmp * tmp * tmp;
+            e        = factor * term * (rai + probe) * (rai + probe) * tmp;
+            dvda[ai] = dvda[ai] - 6 * e * rbi_inv2;
+            es       = es + e;
         }
     }
 
@@ -1227,13 +1226,13 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
 real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
                        rvec shift_vec[], int gb_algorithm, gmx_genborn_t *born)
 {
-    int          i, k, n, ai, aj, nj0, nj1, n0, n1;
-    int          shift;
-    real         shX, shY, shZ;
-    real         fgb, rbi, fix1, fiy1, fiz1;
-    real         ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11;
-    real         tx, ty, tz, rbai, rbaj, fgb_ai;
-    real        *rb;
+    int   i, k, n, ai, aj, nj0, nj1, n0, n1;
+    int   shift;
+    real  shX, shY, shZ;
+    real  fgb, rbi, fix1, fiy1, fiz1;
+    real  ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11;
+    real  tx, ty, tz, rbai, rbaj, fgb_ai;
+    real *rb;
 
     n  = 0;
     rb = born->work;
@@ -1246,7 +1245,7 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
         for (i = n0; i < n1; i++)
         {
             rbi   = born->bRad[i];
-            rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
+            rb[i] = (2 * rbi * rbi * dvda[i]) / ONE_4PI_EPS0;
         }
     }
     else if (gb_algorithm == egbHCT)
@@ -1268,21 +1267,21 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 
     for (i = 0; i < nl->nri; i++)
     {
-        ai   = nl->iinr[i];
+        ai = nl->iinr[i];
 
-        nj0  = nl->jindex[i];
-        nj1  = nl->jindex[i+1];
+        nj0 = nl->jindex[i];
+        nj1 = nl->jindex[i + 1];
 
         /* Load shifts for this list */
-        shift   = nl->shift[i];
-        shX     = shift_vec[shift][0];
-        shY     = shift_vec[shift][1];
-        shZ     = shift_vec[shift][2];
+        shift = nl->shift[i];
+        shX   = shift_vec[shift][0];
+        shY   = shift_vec[shift][1];
+        shZ   = shift_vec[shift][2];
 
         /* Load atom i coordinates, add shift vectors */
-        ix1  = shX + x[ai][0];
-        iy1  = shY + x[ai][1];
-        iz1  = shZ + x[ai][2];
+        ix1 = shX + x[ai][0];
+        iy1 = shY + x[ai][1];
+        iz1 = shZ + x[ai][2];
 
         fix1 = 0;
         fiy1 = 0;
@@ -1294,29 +1293,29 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
         {
             aj = nl->jjnr[k];
 
-            jx1     = x[aj][0];
-            jy1     = x[aj][1];
-            jz1     = x[aj][2];
+            jx1 = x[aj][0];
+            jy1 = x[aj][1];
+            jz1 = x[aj][2];
 
-            dx11    = ix1 - jx1;
-            dy11    = iy1 - jy1;
-            dz11    = iz1 - jz1;
+            dx11 = ix1 - jx1;
+            dy11 = iy1 - jy1;
+            dz11 = iz1 - jz1;
 
-            rbaj    = rb[aj];
+            rbaj = rb[aj];
 
-            fgb     = rbai*dadx[n++];
-            fgb_ai  = rbaj*dadx[n++];
+            fgb    = rbai * dadx[n++];
+            fgb_ai = rbaj * dadx[n++];
 
             /* Total force between ai and aj is the sum of ai->aj and aj->ai */
-            fgb     = fgb + fgb_ai;
+            fgb = fgb + fgb_ai;
 
-            tx      = fgb * dx11;
-            ty      = fgb * dy11;
-            tz      = fgb * dz11;
+            tx = fgb * dx11;
+            ty = fgb * dy11;
+            tz = fgb * dz11;
 
-            fix1    = fix1 + tx;
-            fiy1    = fiy1 + ty;
-            fiz1    = fiz1 + tz;
+            fix1 = fix1 + tx;
+            fiy1 = fiy1 + ty;
+            fiz1 = fiz1 + tz;
 
             /* Update force on atom aj */
             t[aj][0] = t[aj][0] - tx;
@@ -1339,12 +1338,11 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 }
 
 
-void
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
-               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
-               const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
+void calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
+                    rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
+                    const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
-    int  cnt;
+    int cnt;
 
     /* PBC or not? */
     const t_pbc *pbc_null;
@@ -1365,11 +1363,11 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     }
 
     /* Calculate the bonded GB-interactions using either table or analytical formula */
-    enerd->term[F_GBPOL]       += gb_bonds_tab(x, f, fr->fshift, md->chargeA, &(fr->gbtabscale),
-                                               fr->invsqrta, fr->dvda, fr->gbtab->data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+    enerd->term[F_GBPOL] += gb_bonds_tab(x, f, fr->fshift, md->chargeA, &(fr->gbtabscale),
+                                         fr->invsqrta, fr->dvda, fr->gbtab->data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
-    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, fr->epsfac);
+    enerd->term[F_GBPOL] += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, fr->epsfac);
 
     /* If parallel, sum the derivative of the potential w.r.t the born radii */
     if (DOMAINDECOMP(cr))
@@ -1381,9 +1379,9 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     if (fr->bAllvsAll)
     {
         genborn_allvsall_calc_chainrule(fr, md, born, x[0], f[0], gb_algorithm, fr->AllvsAll_workgb);
-        cnt = md->homenr*(md->nr/2+1);
+        cnt = md->homenr * (md->nr / 2 + 1);
         /* 9 flops for outer loop, 15 for inner */
-        inc_nrnb(nrnb, eNR_BORN_AVA_CHAINRULE, md->homenr*9+cnt*15);
+        inc_nrnb(nrnb, eNR_BORN_AVA_CHAINRULE, md->homenr * 9 + cnt * 15);
         return;
     }
 
@@ -1393,7 +1391,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     if (!fr->bAllvsAll)
     {
         /* 9 flops for outer loop, 15 for inner */
-        inc_nrnb(nrnb, eNR_BORN_CHAINRULE, fr->gblist->nri*9+fr->gblist->nrj*15);
+        inc_nrnb(nrnb, eNR_BORN_CHAINRULE, fr->gblist->nri * 9 + fr->gblist->nrj * 15);
     }
 }
 
@@ -1401,7 +1399,7 @@ static void add_j_to_gblist(gbtmpnbl_t *list, int aj)
 {
     if (list->naj >= list->aj_nalloc)
     {
-        list->aj_nalloc = over_alloc_large(list->naj+1);
+        list->aj_nalloc = over_alloc_large(list->naj + 1);
         srenew(list->aj, list->aj_nalloc);
     }
 
@@ -1451,8 +1449,8 @@ static void add_bondeds_to_gblist(t_ilist *il,
 
     for (ind = 0; ind < il->nr; ind += 3)
     {
-        ai = il->iatoms[ind+1];
-        aj = il->iatoms[ind+2];
+        ai = il->iatoms[ind + 1];
+        aj = il->iatoms[ind + 2];
 
         int shift = CENTRAL;
         if (g != nullptr)
@@ -1499,15 +1497,15 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                    rvec x[], matrix box,
                    t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born)
 {
-    int               i, j, k, n, nj0, nj1, ai, shift, s;
-    t_nblist         *nblist;
-    t_pbc             pbc;
+    int       i, j, k, n, nj0, nj1, ai, shift, s;
+    t_nblist *nblist;
+    t_pbc     pbc;
 
     struct gbtmpnbls *nls;
-    gbtmpnbl_t       *list = nullptr;
+    gbtmpnbl_t *      list = nullptr;
 
     set_pbc(&pbc, fr->ePBC, box);
-    nls   = born->nblist_work;
+    nls = born->nblist_work;
 
     for (i = 0; i < born->nr; i++)
     {
@@ -1555,7 +1553,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                     list = find_gbtmplist(&nls[ai], shift);
 
                     nj0 = nblist->jindex[j];
-                    nj1 = nblist->jindex[j+1];
+                    nj1 = nblist->jindex[j + 1];
 
                     /* Add all the j-atoms in the non-bonded list to the GB list */
                     for (k = nj0; k < nj1; k++)
@@ -1659,10 +1657,10 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         /* Arrays specific to different gb algorithms */
         if (gb_algorithm == egbSTILL)
         {
-            srenew(born->gpol,  nalloc+3);
-            srenew(born->vsolv, nalloc+3);
-            srenew(born->gb_radius, nalloc+3);
-            for (i = born->nalloc; (i < nalloc+3); i++)
+            srenew(born->gpol,  nalloc + 3);
+            srenew(born->vsolv, nalloc + 3);
+            srenew(born->gb_radius, nalloc + 3);
+            for (i = born->nalloc; (i < nalloc + 3); i++)
             {
                 born->gpol[i]      = 0;
                 born->vsolv[i]     = 0;
@@ -1671,9 +1669,9 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         }
         else
         {
-            srenew(born->param, nalloc+3);
-            srenew(born->gb_radius, nalloc+3);
-            for (i = born->nalloc; (i < nalloc+3); i++)
+            srenew(born->param, nalloc + 3);
+            srenew(born->gb_radius, nalloc + 3);
+            for (i = born->nalloc; (i < nalloc + 3); i++)
             {
                 born->param[i]     = 0;
                 born->gb_radius[i] = 0;
@@ -1681,8 +1679,8 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         }
 
         /* All gb-algorithms use the array for vsites exclusions */
-        srenew(born->use,    nalloc+3);
-        for (i = born->nalloc; (i < nalloc+3); i++)
+        srenew(born->use,    nalloc + 3);
+        for (i = born->nalloc; (i < nalloc + 3); i++)
         {
             born->use[i] = 0;
         }

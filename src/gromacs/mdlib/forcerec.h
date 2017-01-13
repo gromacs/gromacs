@@ -88,9 +88,9 @@ forcerec_set_ranges(t_forcerec *fr,
  * \param[in] ic   Structure holding the table constant
  * \param[in] rtab The additional distance to add to tables
  */
-void init_interaction_const_tables(FILE                   *fp,
-                                   interaction_const_t    *ic,
-                                   real                    rtab);
+void init_interaction_const_tables(FILE *               fp,
+                                   interaction_const_t *ic,
+                                   real                 rtab);
 
 /*! \brief Initialize forcerec structure.
  *
@@ -110,20 +110,20 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
-void init_forcerec(FILE                   *fplog,
-                   const gmx::MDLogger    &mdlog,
-                   t_forcerec             *fr,
-                   t_fcdata               *fcd,
-                   const t_inputrec       *ir,
-                   const gmx_mtop_t       *mtop,
-                   const t_commrec        *cr,
-                   matrix                  box,
-                   const char             *tabfn,
-                   const char             *tabpfn,
-                   const t_filenm         *tabbfnm,
-                   const char             *nbpu_opt,
-                   gmx_bool                bNoSolvOpt,
-                   real                    print_force);
+void init_forcerec(FILE *               fplog,
+                   const gmx::MDLogger &mdlog,
+                   t_forcerec *         fr,
+                   t_fcdata *           fcd,
+                   const t_inputrec *   ir,
+                   const gmx_mtop_t *   mtop,
+                   const t_commrec *    cr,
+                   matrix               box,
+                   const char *         tabfn,
+                   const char *         tabpfn,
+                   const t_filenm *     tabbfnm,
+                   const char *         nbpu_opt,
+                   gmx_bool             bNoSolvOpt,
+                   real                 print_force);
 
 /*! \brief Divide exclusions over threads
  *
@@ -131,7 +131,7 @@ void init_forcerec(FILE                   *fplog,
  * \param[out] fr  The force record
  * \param[in]  top The topology
  */
-void forcerec_set_excl_load(t_forcerec           *fr,
+void forcerec_set_excl_load(t_forcerec *          fr,
                             const gmx_localtop_t *top);
 
 /*! \brief Update parameters dependent on box

@@ -59,8 +59,8 @@ using gmx::FileNameOption;
 
 TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
                                     .filetype(gmx::eftGenericData).outputFile()
@@ -77,8 +77,8 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
                                     .filetype(gmx::eftGenericData).outputFile()
@@ -97,8 +97,8 @@ TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
 
 TEST(FileNameOptionTest, HandlesOptionalUnsetOption)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).outputFile()
@@ -115,8 +115,8 @@ TEST(FileNameOptionTest, HandlesOptionalUnsetOption)
 
 TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftIndex).outputFile()
@@ -135,8 +135,8 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, HandlesRequiredCustomDefaultExtension)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
                                     .filetype(gmx::eftTrajectory).outputFile()
@@ -154,8 +154,8 @@ TEST(FileNameOptionTest, HandlesRequiredCustomDefaultExtension)
 
 TEST(FileNameOptionTest, HandlesOptionalCustomDefaultExtension)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).outputFile()
@@ -175,8 +175,8 @@ TEST(FileNameOptionTest, HandlesOptionalCustomDefaultExtension)
 
 TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftIndex).outputFile()));
@@ -195,8 +195,8 @@ TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
 
 TEST(FileNameOptionTest, GivesErrorOnInvalidFileSuffix)
 {
-    gmx::Options           options;
-    std::string            value;
+    gmx::Options options;
+    std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
                                     .filetype(gmx::eftTrajectory).outputFile()));

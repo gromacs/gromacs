@@ -64,9 +64,9 @@
 
 static void add_gbond(t_graph *g, int a0, int a1)
 {
-    int         i;
-    int         inda0, inda1;
-    gmx_bool    bFound;
+    int      i;
+    int      inda0, inda1;
+    gmx_bool bFound;
 
     inda0  = a0 - g->at_start;
     inda1  = a1 - g->at_start;
@@ -125,7 +125,7 @@ static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                 /* Simply add this bond */
                 for (j = 1; j < np; j++)
                 {
-                    add_gbond(g, ia[j], ia[j+1]);
+                    add_gbond(g, ia[j], ia[j + 1]);
                 }
             }
             else
@@ -133,15 +133,15 @@ static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                 /* Add this bond when it connects two unlinked parts of the graph */
                 for (j = 1; j < np; j++)
                 {
-                    if (part[ia[j]] != part[ia[j+1]])
+                    if (part[ia[j]] != part[ia[j + 1]])
                     {
-                        add_gbond(g, ia[j], ia[j+1]);
+                        add_gbond(g, ia[j], ia[j + 1]);
                     }
                 }
             }
         }
-        ia += np+1;
-        i  += np+1;
+        ia += np + 1;
+        i  += np + 1;
     }
 }
 
@@ -168,15 +168,15 @@ void p_graph(FILE *log, const char *title, t_graph *g)
     {
         if (g->nedge[i] > 0)
         {
-            fprintf(log, "%5d%7d%7d%7d %1s%5d", g->at_start+i+1,
-                    g->ishift[g->at_start+i][XX],
-                    g->ishift[g->at_start+i][YY],
-                    g->ishift[g->at_start+i][ZZ],
+            fprintf(log, "%5d%7d%7d%7d %1s%5d", g->at_start + i + 1,
+                    g->ishift[g->at_start + i][XX],
+                    g->ishift[g->at_start + i][YY],
+                    g->ishift[g->at_start + i][ZZ],
                     (g->negc > 0) ? cc[g->egc[i]] : " ",
                     g->nedge[i]);
             for (j = 0; (j < g->nedge[i]); j++)
             {
-                fprintf(log, " %5d", g->edge[i][j]+1);
+                fprintf(log, " %5d", g->edge[i][j] + 1);
             }
             fprintf(log, "\n");
         }
@@ -193,20 +193,20 @@ static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
     end = il->nr;
 
     ia = il->iatoms;
-    for (j = 0; (j < end); j += nratoms+1, ia += nratoms+1)
+    for (j = 0; (j < end); j += nratoms + 1, ia += nratoms + 1)
     {
         nratoms = interaction_function[ftype].nratoms;
 
         if (ftype == F_SETTLE)
         {
-            iaa          = ia[1];
+            iaa = ia[1];
             if (iaa >= at_start && iaa < at_end)
             {
                 nbond[iaa]   += 2;
                 nbond[ia[2]] += 1;
                 nbond[ia[3]] += 1;
                 g->at_start   = std::min(g->at_start, iaa);
-                g->at_end     = std::max(g->at_end, iaa+2+1);
+                g->at_end     = std::max(g->at_end, iaa + 2 + 1);
             }
         }
         else
@@ -217,7 +217,7 @@ static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
                 if (iaa >= at_start && iaa < at_end)
                 {
                     g->at_start = std::min(g->at_start, iaa);
-                    g->at_end   = std::max(g->at_end,  iaa+1);
+                    g->at_end   = std::max(g->at_end,  iaa + 1);
                     /* When making the graph we (might) link all atoms in an interaction
                      * sequentially. Therefore the end atoms add 1 to the count,
                      * the middle atoms 2.
@@ -240,7 +240,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
                           int at_start, int at_end,
                           int nbond[])
 {
-    int   i, nnb, nbtot;
+    int i, nnb, nbtot;
 
     g->at_start = at_end;
     g->at_end   = 0;
@@ -285,7 +285,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
 
 static void compact_graph(FILE *fplog, t_graph *g)
 {
-    int      i, j, n, max_nedge;
+    int i, j, n, max_nedge;
 
     max_nedge = 0;
     n         = 0;
@@ -301,7 +301,7 @@ static void compact_graph(FILE *fplog, t_graph *g)
     /* set pointers after srenew because edge[0] might move */
     for (i = 1; i < g->nnodes; i++)
     {
-        g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+        g->edge[i] = g->edge[i - 1] + g->nedge[i - 1];
     }
 
     if (fplog)
@@ -358,8 +358,7 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
             fprintf(debug, "graph part[] nchanged=%d, bMultiPart=%d\n",
                     nchanged, bMultiPart);
         }
-    }
-    while (nchanged > 0);
+    } while (nchanged > 0);
 
     return bMultiPart;
 }
@@ -369,9 +368,9 @@ void mk_graph_ilist(FILE *fplog,
                     gmx_bool bShakeOnly, gmx_bool bSettle,
                     t_graph *g)
 {
-    int        *nbond;
-    int         i, nbtot;
-    gmx_bool    bMultiPart;
+    int *    nbond;
+    int      i, nbtot;
+    gmx_bool bMultiPart;
 
     /* The naming is somewhat confusing, but we need g->at0 and g->at1
      * for shifthing coordinates to a new array (not in place) when
@@ -400,7 +399,7 @@ void mk_graph_ilist(FILE *fplog,
         snew(g->edge[0], nbtot);
         for (i = 1; (i < g->nnodes); i++)
         {
-            g->edge[i] = g->edge[i-1] + nbond[g->at_start+i-1];
+            g->edge[i] = g->edge[i - 1] + nbond[g->at_start + i - 1];
         }
 
         if (!bShakeOnly)
@@ -513,23 +512,23 @@ static void mk_1shift_tric(int npbcdim, const matrix box, const rvec hbox,
     rvec_sub(xi, xj, dx);
 
     mj[ZZ] = 0;
-    for (m = npbcdim-1; (m >= 0); m--)
+    for (m = npbcdim - 1; (m >= 0); m--)
     {
         /* If dx < hbox, then xj will be reduced by box, so that
          * xi - xj will be bigger
          */
         if (dx[m] < -hbox[m])
         {
-            mj[m] = mi[m]-1;
-            for (d = m-1; d >= 0; d--)
+            mj[m] = mi[m] - 1;
+            for (d = m - 1; d >= 0; d--)
             {
                 dx[d] += box[m][d];
             }
         }
         else if (dx[m] >= hbox[m])
         {
-            mj[m] = mi[m]+1;
-            for (d = m-1; d >= 0; d--)
+            mj[m] = mi[m] + 1;
+            for (d = m - 1; d >= 0; d--)
             {
                 dx[d] -= box[m][d];
             }
@@ -558,11 +557,11 @@ static void mk_1shift(int npbcdim, const rvec hbox, const rvec xi, const rvec xj
          */
         if (dx[m] < -hbox[m])
         {
-            mj[m] = mi[m]-1;
+            mj[m] = mi[m] - 1;
         }
         else if (dx[m] >= hbox[m])
         {
-            mj[m] = mi[m]+1;
+            mj[m] = mi[m] + 1;
         }
         else
         {
@@ -578,8 +577,8 @@ static void mk_1shift_screw(const matrix box, const rvec hbox,
     int  signi, m;
     rvec dx;
 
-    if ((mi[XX] > 0 &&  mi[XX] % 2 == 1) ||
-        (mi[XX] < 0 && -mi[XX] % 2 == 1))
+    if ((mi[XX] > 0 &&  mi[XX] % 2 == 1)
+        || (mi[XX] < 0 && -mi[XX] % 2 == 1))
     {
         signi = -1;
     }
@@ -631,15 +630,15 @@ static void mk_1shift_screw(const matrix box, const rvec hbox,
 static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
                    int npbcdim, const matrix box, const rvec x[], int *nerror)
 {
-    int          m, j, ng, ai, aj, g0;
-    rvec         dx, hbox;
-    gmx_bool     bTriclinic;
-    ivec         is_aj;
-    t_pbc        pbc;
+    int      m, j, ng, ai, aj, g0;
+    rvec     dx, hbox;
+    gmx_bool bTriclinic;
+    ivec     is_aj;
+    t_pbc    pbc;
 
     for (m = 0; (m < DIM); m++)
     {
-        hbox[m] = box[m][m]*0.5;
+        hbox[m] = box[m][m] * 0.5;
     }
     bTriclinic = TRICLINIC(box);
 
@@ -648,9 +647,9 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
     ai = g0 + *AtomI;
 
     /* Loop over all the bonds */
-    for (j = 0; (j < g->nedge[ai-g0]); j++)
+    for (j = 0; (j < g->nedge[ai - g0]); j++)
     {
-        aj = g->edge[ai-g0][j];
+        aj = g->edge[ai - g0][j];
         /* If there is a white one, make it grey and set pbc */
         if (g->bScrewPBC)
         {
@@ -665,21 +664,21 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
             mk_1shift(npbcdim, hbox, x[ai], x[aj], g->ishift[ai], is_aj);
         }
 
-        if (egc[aj-g0] == egcolWhite)
+        if (egc[aj - g0] == egcolWhite)
         {
             if (aj - g0 < *AtomI)
             {
                 *AtomI = aj - g0;
             }
-            egc[aj-g0] = egcolGrey;
+            egc[aj - g0] = egcolGrey;
 
             copy_ivec(is_aj, g->ishift[aj]);
 
             ng++;
         }
-        else if ((is_aj[XX] != g->ishift[aj][XX]) ||
-                 (is_aj[YY] != g->ishift[aj][YY]) ||
-                 (is_aj[ZZ] != g->ishift[aj][ZZ]))
+        else if ((is_aj[XX] != g->ishift[aj][XX])
+                 || (is_aj[YY] != g->ishift[aj][YY])
+                 || (is_aj[ZZ] != g->ishift[aj][ZZ]))
         {
             if (gmx_debug_at)
             {
@@ -688,7 +687,7 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
                 fprintf(debug, "mk_grey: shifts for atom %d due to atom %d\n"
                         "are (%d,%d,%d), should be (%d,%d,%d)\n"
                         "dx = (%g,%g,%g)\n",
-                        aj+1, ai+1, is_aj[XX], is_aj[YY], is_aj[ZZ],
+                        aj + 1, ai + 1, is_aj[XX], is_aj[YY], is_aj[ZZ],
                         g->ishift[aj][XX], g->ishift[aj][YY], g->ishift[aj][ZZ],
                         dx[XX], dx[YY], dx[ZZ]);
             }
@@ -758,7 +757,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
         g->negc = nnodes;
         srenew(g->egc, g->negc);
     }
-    memset(g->egc, 0, (size_t)(nnodes*sizeof(g->egc[0])));
+    memset(g->egc, 0, (size_t)(nnodes * sizeof(g->egc[0])));
 
     nW = g->nbound;
     nG = 0;
@@ -792,7 +791,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
         fG = fW;
 #ifdef DEBUG2
         fprintf(log, "Starting G loop (nW=%d, nG=%d, nB=%d, total %d)\n",
-                nW, nG, nB, nW+nG+nB);
+                nW, nG, nB, nW + nG + nB);
 #endif
         while (nG > 0)
         {
@@ -847,9 +846,9 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
 
 void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
 {
-    ivec    *is;
-    int      g0, g1;
-    int      j, tx, ty, tz;
+    ivec *is;
+    int   g0, g1;
+    int   j, tx, ty, tz;
 
     GCHECK(g);
     g0 = g->at_start;
@@ -869,10 +868,10 @@ void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            if ((tx > 0 && tx % 2 == 1) ||
-                (tx < 0 && -tx %2 == 1))
+            if ((tx > 0 && tx % 2 == 1)
+                || (tx < 0 && -tx % 2 == 1))
             {
-                x_s[j][XX] = x[j][XX] + tx*box[XX][XX];
+                x_s[j][XX] = x[j][XX] + tx * box[XX][XX];
                 x_s[j][YY] = box[YY][YY] + box[ZZ][YY] - x[j][YY];
                 x_s[j][ZZ] = box[ZZ][ZZ]               - x[j][ZZ];
             }
@@ -880,8 +879,8 @@ void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
             {
                 x_s[j][XX] = x[j][XX];
             }
-            x_s[j][YY] = x[j][YY] + ty*box[YY][YY] + tz*box[ZZ][YY];
-            x_s[j][ZZ] = x[j][ZZ] + tz*box[ZZ][ZZ];
+            x_s[j][YY] = x[j][YY] + ty * box[YY][YY] + tz * box[ZZ][YY];
+            x_s[j][ZZ] = x[j][ZZ] + tz * box[ZZ][ZZ];
         }
     }
     else if (TRICLINIC(box))
@@ -892,9 +891,9 @@ void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x_s[j][XX] = x[j][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
-            x_s[j][YY] = x[j][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
-            x_s[j][ZZ] = x[j][ZZ]+tz*box[ZZ][ZZ];
+            x_s[j][XX] = x[j][XX] + tx * box[XX][XX] + ty * box[YY][XX] + tz * box[ZZ][XX];
+            x_s[j][YY] = x[j][YY] + ty * box[YY][YY] + tz * box[ZZ][YY];
+            x_s[j][ZZ] = x[j][ZZ] + tz * box[ZZ][ZZ];
         }
     }
     else
@@ -905,9 +904,9 @@ void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x_s[j][XX] = x[j][XX]+tx*box[XX][XX];
-            x_s[j][YY] = x[j][YY]+ty*box[YY][YY];
-            x_s[j][ZZ] = x[j][ZZ]+tz*box[ZZ][ZZ];
+            x_s[j][XX] = x[j][XX] + tx * box[XX][XX];
+            x_s[j][YY] = x[j][YY] + ty * box[YY][YY];
+            x_s[j][ZZ] = x[j][ZZ] + tz * box[ZZ][ZZ];
         }
     }
 
@@ -919,9 +918,9 @@ void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
 
 void shift_self(const t_graph *g, const matrix box, rvec x[])
 {
-    ivec    *is;
-    int      g0, g1;
-    int      j, tx, ty, tz;
+    ivec *is;
+    int   g0, g1;
+    int   j, tx, ty, tz;
 
     if (g->bScrewPBC)
     {
@@ -933,7 +932,7 @@ void shift_self(const t_graph *g, const matrix box, rvec x[])
     is = g->ishift;
 
 #ifdef DEBUG
-    fprintf(stderr, "Shifting atoms %d to %d\n", g0, g0+gn);
+    fprintf(stderr, "Shifting atoms %d to %d\n", g0, g0 + gn);
 #endif
     if (TRICLINIC(box))
     {
@@ -943,9 +942,9 @@ void shift_self(const t_graph *g, const matrix box, rvec x[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x[j][XX] = x[j][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
-            x[j][YY] = x[j][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
-            x[j][ZZ] = x[j][ZZ]+tz*box[ZZ][ZZ];
+            x[j][XX] = x[j][XX] + tx * box[XX][XX] + ty * box[YY][XX] + tz * box[ZZ][XX];
+            x[j][YY] = x[j][YY] + ty * box[YY][YY] + tz * box[ZZ][YY];
+            x[j][ZZ] = x[j][ZZ] + tz * box[ZZ][ZZ];
         }
     }
     else
@@ -956,18 +955,18 @@ void shift_self(const t_graph *g, const matrix box, rvec x[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x[j][XX] = x[j][XX]+tx*box[XX][XX];
-            x[j][YY] = x[j][YY]+ty*box[YY][YY];
-            x[j][ZZ] = x[j][ZZ]+tz*box[ZZ][ZZ];
+            x[j][XX] = x[j][XX] + tx * box[XX][XX];
+            x[j][YY] = x[j][YY] + ty * box[YY][YY];
+            x[j][ZZ] = x[j][ZZ] + tz * box[ZZ][ZZ];
         }
     }
 }
 
 void unshift_x(const t_graph *g, const matrix box, rvec x[], const rvec x_s[])
 {
-    ivec    *is;
-    int      g0, g1;
-    int      j, tx, ty, tz;
+    ivec *is;
+    int   g0, g1;
+    int   j, tx, ty, tz;
 
     if (g->bScrewPBC)
     {
@@ -991,9 +990,9 @@ void unshift_x(const t_graph *g, const matrix box, rvec x[], const rvec x_s[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x[j][XX] = x_s[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
-            x[j][YY] = x_s[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
-            x[j][ZZ] = x_s[j][ZZ]-tz*box[ZZ][ZZ];
+            x[j][XX] = x_s[j][XX] - tx * box[XX][XX] - ty * box[YY][XX] - tz * box[ZZ][XX];
+            x[j][YY] = x_s[j][YY] - ty * box[YY][YY] - tz * box[ZZ][YY];
+            x[j][ZZ] = x_s[j][ZZ] - tz * box[ZZ][ZZ];
         }
     }
     else
@@ -1004,9 +1003,9 @@ void unshift_x(const t_graph *g, const matrix box, rvec x[], const rvec x_s[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x[j][XX] = x_s[j][XX]-tx*box[XX][XX];
-            x[j][YY] = x_s[j][YY]-ty*box[YY][YY];
-            x[j][ZZ] = x_s[j][ZZ]-tz*box[ZZ][ZZ];
+            x[j][XX] = x_s[j][XX] - tx * box[XX][XX];
+            x[j][YY] = x_s[j][YY] - ty * box[YY][YY];
+            x[j][ZZ] = x_s[j][ZZ] - tz * box[ZZ][ZZ];
         }
     }
 
@@ -1039,9 +1038,9 @@ void unshift_self(const t_graph *g, const matrix box, rvec x[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x[j][XX] = x[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
-            x[j][YY] = x[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
-            x[j][ZZ] = x[j][ZZ]-tz*box[ZZ][ZZ];
+            x[j][XX] = x[j][XX] - tx * box[XX][XX] - ty * box[YY][XX] - tz * box[ZZ][XX];
+            x[j][YY] = x[j][YY] - ty * box[YY][YY] - tz * box[ZZ][YY];
+            x[j][ZZ] = x[j][ZZ] - tz * box[ZZ][ZZ];
         }
     }
     else
@@ -1052,9 +1051,9 @@ void unshift_self(const t_graph *g, const matrix box, rvec x[])
             ty = is[j][YY];
             tz = is[j][ZZ];
 
-            x[j][XX] = x[j][XX]-tx*box[XX][XX];
-            x[j][YY] = x[j][YY]-ty*box[YY][YY];
-            x[j][ZZ] = x[j][ZZ]-tz*box[ZZ][ZZ];
+            x[j][XX] = x[j][XX] - tx * box[XX][XX];
+            x[j][YY] = x[j][YY] - ty * box[YY][YY];
+            x[j][ZZ] = x[j][ZZ] - tz * box[ZZ][ZZ];
         }
     }
 }

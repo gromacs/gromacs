@@ -76,10 +76,10 @@ class Distance : public TrajectoryAnalysisModule
     public:
         Distance();
 
-        virtual void initOptions(IOptionsContainer          *options,
+        virtual void initOptions(IOptionsContainer *         options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+                                  const TopologyInformation &       top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -88,15 +88,15 @@ class Distance : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        SelectionList                            sel_;
-        std::string                              fnAverage_;
-        std::string                              fnAll_;
-        std::string                              fnXYZ_;
-        std::string                              fnHistogram_;
-        std::string                              fnAllStats_;
-        double                                   meanLength_;
-        double                                   lengthDev_;
-        double                                   binWidth_;
+        SelectionList sel_;
+        std::string   fnAverage_;
+        std::string   fnAll_;
+        std::string   fnXYZ_;
+        std::string   fnHistogram_;
+        std::string   fnAllStats_;
+        double        meanLength_;
+        double        lengthDev_;
+        double        binWidth_;
 
         AnalysisData                             distances_;
         AnalysisData                             xyz_;
@@ -130,8 +130,7 @@ Distance::Distance()
 }
 
 
-void
-Distance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void Distance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates distances between pairs of positions",
@@ -206,12 +205,12 @@ void checkSelections(const SelectionList &sel)
         {
             for (int i = 0; i < sel[g].posCount(); i += 2)
             {
-                if (sel[g].position(i).selected() != sel[g].position(i+1).selected())
+                if (sel[g].position(i).selected() != sel[g].position(i + 1).selected())
                 {
-                    std::string message =
-                        formatString("Dynamic selection %d does not select "
-                                     "a consistent set of pairs over the frames",
-                                     static_cast<int>(g + 1));
+                    std::string message
+                        = formatString("Dynamic selection %d does not select "
+                                       "a consistent set of pairs over the frames",
+                                       static_cast<int>(g + 1));
                     GMX_THROW(InconsistentInputError(message));
                 }
             }
@@ -220,9 +219,8 @@ void checkSelections(const SelectionList &sel)
 }
 
 
-void
-Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                       const TopologyInformation         & /*top*/)
+void Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                            const TopologyInformation         & /*top*/)
 {
     checkSelections(sel_);
 
@@ -313,9 +311,8 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-void
-Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                       TrajectoryAnalysisModuleData *pdata)
+void Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                            TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle   distHandle = pdata->dataHandle(distances_);
     AnalysisDataHandle   xyzHandle  = pdata->dataHandle(xyz_);
@@ -332,7 +329,7 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int i = 0, n = 0; i < sel[g].posCount(); i += 2, ++n)
         {
             const SelectionPosition &p1 = sel[g].position(i);
-            const SelectionPosition &p2 = sel[g].position(i+1);
+            const SelectionPosition &p2 = sel[g].position(i + 1);
             rvec                     dx;
             if (pbc != nullptr)
             {
@@ -345,7 +342,7 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             real dist     = norm(dx);
             bool bPresent = p1.selected() && p2.selected();
             distHandle.setPoint(n, dist, bPresent);
-            xyzHandle.setPoints(n*3, 3, dx, bPresent);
+            xyzHandle.setPoints(n * 3, 3, dx, bPresent);
         }
     }
     distHandle.finishFrame();
@@ -353,8 +350,7 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 }
 
 
-void
-Distance::finishAnalysis(int /*nframes*/)
+void Distance::finishAnalysis(int /*nframes*/)
 {
     AbstractAverageHistogram &averageHistogram = histogramModule_->averager();
     averageHistogram.normalizeProbability();
@@ -362,8 +358,7 @@ Distance::finishAnalysis(int /*nframes*/)
 }
 
 
-void
-Distance::writeOutput()
+void Distance::writeOutput()
 {
     SelectionList::const_iterator sel;
     int                           index;
@@ -381,9 +376,9 @@ Distance::writeOutput()
 
 }       // namespace
 
-const char DistanceInfo::name[]             = "distance";
-const char DistanceInfo::shortDescription[] =
-    "Calculate distances between pairs of positions";
+const char DistanceInfo::name[] = "distance";
+const char DistanceInfo::shortDescription[]
+    = "Calculate distances between pairs of positions";
 
 TrajectoryAnalysisModulePointer DistanceInfo::create()
 {

@@ -103,9 +103,9 @@ extern "C" {
  *  \return 1 if the relative difference is within tolerance, 0 if not.
  */
 int
-gmx_within_tol(double   f1,
-               double   f2,
-               double   tol);
+gmx_within_tol(double f1,
+               double f2,
+               double tol);
 
 /*!
  * \brief Check if a number is smaller than some preset safe minimum

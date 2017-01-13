@@ -44,7 +44,8 @@
 
 typedef int  iv2[2];
 
-typedef struct {
+typedef struct
+{
     matrix box;
     int    ecenter;     /* enum for centering, see pbc.h */
     vec4   eye, origin; /* The eye and origin position   */

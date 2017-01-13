@@ -67,7 +67,7 @@
 #include "gromacs/utility/smalloc.h"
 
 char atp[7] = "HCNOSX";
-#define NATP (asize(atp)-1)
+#define NATP (asize(atp) - 1)
 
 double blen[NATP][NATP] = {
     {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
@@ -88,11 +88,11 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
     {
         for (j = 0; (j < nmt[i].nbonds); j++)
         {
-            if ((((gmx_strncasecmp(ai, nmt[i].elem, 1) == 0) &&
-                  (gmx_strncasecmp(aj, nmt[i].bond[j], 1) == 0)) ||
-                 ((gmx_strncasecmp(ai, nmt[i].bond[j], 1) == 0) &&
-                  (gmx_strncasecmp(aj, nmt[i].elem, 1) == 0))) &&
-                (fabs(blen-nmt[i].blen[j]) <= 0.1*nmt[i].blen[j]))
+            if ((((gmx_strncasecmp(ai, nmt[i].elem, 1) == 0)
+                  && (gmx_strncasecmp(aj, nmt[i].bond[j], 1) == 0))
+                 || ((gmx_strncasecmp(ai, nmt[i].bond[j], 1) == 0)
+                     && (gmx_strncasecmp(aj, nmt[i].elem, 1) == 0)))
+                && (fabs(blen - nmt[i].blen[j]) <= 0.1 * nmt[i].blen[j]))
             {
                 return TRUE;
             }
@@ -131,7 +131,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
             fprintf(stderr, "\ratom %d", i);
             fflush(stderr);
         }
-        for (j = i+1; (j < atoms->nr); j++)
+        for (j = i + 1; (j < atoms->nr); j++)
         {
             if (bPBC)
             {
@@ -155,7 +155,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
                 if (debug)
                 {
                     fprintf(debug, "Bonding atoms %s-%d and %s-%d\n",
-                            *atoms->atomname[i], i+1, *atoms->atomname[j], j+1);
+                            *atoms->atomname[i], i + 1, *atoms->atomname[j], j + 1);
                 }
             }
         }
@@ -166,9 +166,9 @@ void mk_bonds(int nnm, t_nm2type nmt[],
 
 int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
 {
-    int     i, n = 1;
-    int    *cgnr;
-    double  qt = 0;
+    int    i, n = 1;
+    int *  cgnr;
+    double qt = 0;
 
     *qtot = *mtot = 0;
     snew(cgnr, atoms->nr);
@@ -252,11 +252,11 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
                 c[0] += 180;
             }
         }
-        GMX_ASSERT(nrfp <= MAXFORCEPARAM/2, "Only 6 parameters may be used for an interaction");
+        GMX_ASSERT(nrfp <= MAXFORCEPARAM / 2, "Only 6 parameters may be used for an interaction");
         for (j = 0; (j < nrfp); j++)
         {
-            plist->param[i].c[j]      = c[j];
-            plist->param[i].c[nrfp+j] = c[j];
+            plist->param[i].c[j]        = c[j];
+            plist->param[i].c[nrfp + j] = c[j];
         }
         set_p_string(&(plist->param[i]), "");
     }
@@ -280,10 +280,10 @@ void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRoun
 void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
                       matrix box)
 {
-    int    i, ai, aj, ak, al, t1, t2, t3;
-    rvec   r_ij, r_kj, r_kl, m, n;
-    real   sign, th, costh, ph;
-    t_pbc  pbc;
+    int   i, ai, aj, ak, al, t1, t2, t3;
+    rvec  r_ij, r_kj, r_kl, m, n;
+    real  sign, th, costh, ph;
+    t_pbc pbc;
 
     if (bPBC)
     {
@@ -298,8 +298,8 @@ void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPB
         ai = ang->param[i].ai();
         aj = ang->param[i].aj();
         ak = ang->param[i].ak();
-        th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
-                                r_ij, r_kj, &costh, &t1, &t2);
+        th = RAD2DEG * bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
+                                  r_ij, r_kj, &costh, &t1, &t2);
         if (debug)
         {
             fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
@@ -313,8 +313,8 @@ void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPB
         aj = dih->param[i].aj();
         ak = dih->param[i].ak();
         al = dih->param[i].al();
-        ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
-                               r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
+        ph = RAD2DEG * dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
+                                 r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
         if (debug)
         {
             fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
@@ -397,7 +397,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 
 int gmx_x2top(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *      desc[] = {
         "[THISMODULE] generates a primitive topology from a coordinate file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.",
@@ -418,34 +418,34 @@ int gmx_x2top(int argc, char *argv[])
         "one of the short names above on the command line instead. In that",
         "case [THISMODULE] just looks for the corresponding file.[PAR]",
     };
-    const char        *bugs[] = {
+    const char *      bugs[] = {
         "The atom type selection is primitive. Virtually no chemical knowledge is used",
         "Periodic boundary conditions screw up the bonding",
         "No improper dihedrals are generated",
         "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
     };
-    FILE              *fp;
-    t_params           plist[F_NRE];
-    t_excls           *excls;
-    gpp_atomtype_t     atype;
-    t_nextnb           nnb;
-    t_nm2type         *nm2t;
-    t_mols             mymol;
-    int                nnm;
-    char               forcefield[32], ffdir[STRLEN];
-    rvec              *x; /* coordinates? */
-    int               *nbonds, *cgnr;
-    int                bts[] = { 1, 1, 1, 2 };
-    matrix             box;    /* box length matrix */
-    int                natoms; /* number of atoms in one molecule  */
-    int                epbc;
-    gmx_bool           bRTP, bTOP, bOPLS;
-    t_symtab           symtab;
-    real               qtot, mtot;
-    char               n2t[STRLEN];
-    gmx_output_env_t  *oenv;
+    FILE *            fp;
+    t_params          plist[F_NRE];
+    t_excls *         excls;
+    gpp_atomtype_t    atype;
+    t_nextnb          nnb;
+    t_nm2type *       nm2t;
+    t_mols            mymol;
+    int               nnm;
+    char              forcefield[32], ffdir[STRLEN];
+    rvec *            x;  /* coordinates? */
+    int *             nbonds, *cgnr;
+    int               bts[] = { 1, 1, 1, 2 };
+    matrix            box;     /* box length matrix */
+    int               natoms;  /* number of atoms in one molecule  */
+    int               epbc;
+    gmx_bool          bRTP, bTOP, bOPLS;
+    t_symtab          symtab;
+    real              qtot, mtot;
+    char              n2t[STRLEN];
+    gmx_output_env_t *oenv;
 
-    t_filenm           fnm[] = {
+    t_filenm fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
         { efTOP, "-o", "out",  ffOPTWR },
         { efRTP, "-r", "out",  ffOPTWR }
@@ -507,7 +507,7 @@ int gmx_x2top(int argc, char *argv[])
     rtp_header_settings.bRemoveDihedralIfWithImproper = bRemoveDihedralIfWithImproper;
     rtp_header_settings.bGenerateHH14Interactions     = bGenerateHH14Interactions;
     rtp_header_settings.bKeepAllGeneratedDihedrals    = bKeepAllGeneratedDihedrals;
-    rtp_header_settings.nrexcl = nrexcl;
+    rtp_header_settings.nrexcl                        = nrexcl;
 
     if (!bRTP && !bTOP)
     {
@@ -532,7 +532,7 @@ int gmx_x2top(int argc, char *argv[])
     t_topology *top;
     snew(top, 1);
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
-    t_atoms  *atoms = &top->atoms;
+    t_atoms *atoms = &top->atoms;
     natoms = atoms->nr;
     if (atoms->pdbinfo == nullptr)
     {

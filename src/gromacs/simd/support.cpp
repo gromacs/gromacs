@@ -61,8 +61,7 @@ namespace gmx
 
 /*! \cond libapi */
 
-const std::string &
-simdString(SimdType s)
+const std::string &simdString(SimdType s)
 {
     static const std::map<SimdType, std::string> name =
     {
@@ -88,8 +87,7 @@ simdString(SimdType s)
     return name.at(s);
 }
 
-SimdType
-simdSuggested(const CpuInfo &c)
+SimdType simdSuggested(const CpuInfo &c)
 {
     SimdType suggested = SimdType::None;
 
@@ -188,8 +186,7 @@ simdSuggested(const CpuInfo &c)
     return suggested;
 }
 
-SimdType
-simdCompiled()
+SimdType simdCompiled()
 {
 #if GMX_SIMD_X86_AVX_512_KNL
     return SimdType::X86_Avx512Knl;
@@ -226,10 +223,9 @@ simdCompiled()
 #endif
 }
 
-bool
-simdCheck(gmx::SimdType    wanted,
-          FILE *           log,
-          bool             warnToStdErr)
+bool simdCheck(gmx::SimdType wanted,
+               FILE *        log,
+               bool          warnToStdErr)
 {
     SimdType compiled = simdCompiled();
 

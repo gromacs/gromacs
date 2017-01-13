@@ -58,7 +58,7 @@ namespace
 class ExactTextMatcher : public ITextBlockMatcher
 {
     public:
-        virtual void checkStream(TextInputStream      *stream,
+        virtual void checkStream(TextInputStream *     stream,
                                  TestReferenceChecker *checker)
         {
             TextReader reader(stream);

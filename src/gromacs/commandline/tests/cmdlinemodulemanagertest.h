@@ -77,9 +77,9 @@ class MockModule : public gmx::ICommandLineModule
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return descr_; }
 
-        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
+        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings * settings));
         MOCK_METHOD2(run, int(int argc, char *argv[]));
-        MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
+        MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext & context));
 
         //! Sets the expected display name for writeHelp() calls.
         void setExpectedDisplayName(const char *expected)
@@ -91,9 +91,9 @@ class MockModule : public gmx::ICommandLineModule
         //! Checks the context passed to writeHelp().
         void checkHelpContext(const gmx::CommandLineHelpContext &context) const;
 
-        const char             *name_;
-        const char             *descr_;
-        std::string             expectedDisplayName_;
+        const char *name_;
+        const char *descr_;
+        std::string expectedDisplayName_;
 };
 
 /*! \internal \brief
@@ -107,8 +107,8 @@ class MockOptionsModule : public gmx::ICommandLineOptionsModule
         MockOptionsModule();
         ~MockOptionsModule();
 
-        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
-        MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer *options, gmx::ICommandLineOptionsModuleSettings *settings));
+        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings * settings));
+        MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer * options, gmx::ICommandLineOptionsModuleSettings * settings));
         MOCK_METHOD0(optionsFinished, void());
         MOCK_METHOD0(run, int());
 };
@@ -127,11 +127,11 @@ class CommandLineModuleManagerTestBase : public gmx::test::StringTestBase
         //! Creates the manager to run the given command line.
         void initManager(const CommandLine &args, const char *realBinaryName);
         //! Adds a mock module to the manager.
-        MockModule               &addModule(const char *name, const char *description);
+        MockModule &addModule(const char *name, const char *description);
         //! Adds a mock module using gmx::Options to the manager.
-        MockOptionsModule        &addOptionsModule(const char *name, const char *description);
+        MockOptionsModule &addOptionsModule(const char *name, const char *description);
         //! Adds a mock help topic to the manager.
-        MockHelpTopic            &addHelpTopic(const char *name, const char *title);
+        MockHelpTopic &addHelpTopic(const char *name, const char *title);
 
         /*! \brief
          * Returns the manager for this test.

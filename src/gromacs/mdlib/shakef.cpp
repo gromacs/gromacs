@@ -54,9 +54,9 @@ typedef struct gmx_shakedata
     real *constraint_distance_squared;
     int   nalloc;
     /* SOR stuff */
-    real  delta;
-    real  omega;
-    real  gamma;
+    real delta;
+    real omega;
+    real gamma;
 } t_gmx_shakedata;
 
 gmx_shakedata_t shake_init()
@@ -117,16 +117,16 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
     /* default should be increased! MRS 8/4/2009 */
     const real mytol = 1e-10;
 
-    int        ll, i, j, i3, j3, l3;
-    int        ix, iy, iz, jx, jy, jz;
-    real       r_dot_r_prime;
-    real       constraint_distance_squared_ll;
-    real       r_prime_squared;
-    real       scaled_lagrange_multiplier_ll;
-    real       r_prime_x, r_prime_y, r_prime_z, diff, im, jm;
-    real       xh, yh, zh, rijx, rijy, rijz;
-    int        nit, error, nconv;
-    real       iconvf;
+    int  ll, i, j, i3, j3, l3;
+    int  ix, iy, iz, jx, jy, jz;
+    real r_dot_r_prime;
+    real constraint_distance_squared_ll;
+    real r_prime_squared;
+    real scaled_lagrange_multiplier_ll;
+    real r_prime_x, r_prime_y, r_prime_z, diff, im, jm;
+    real xh, yh, zh, rijx, rijy, rijz;
+    int  nit, error, nconv;
+    real iconvf;
 
     // TODO nconv is used solely as a boolean, so we should write the
     // code like that
@@ -137,31 +137,31 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
         nconv = 0;
         for (ll = 0; (ll < ncon) && (error == 0); ll++)
         {
-            l3    = 3*ll;
-            rijx  = initial_displacements[l3+XX];
-            rijy  = initial_displacements[l3+YY];
-            rijz  = initial_displacements[l3+ZZ];
-            i     = iatom[l3+1];
-            j     = iatom[l3+2];
-            i3    = 3*i;
-            j3    = 3*j;
-            ix    = i3+XX;
-            iy    = i3+YY;
-            iz    = i3+ZZ;
-            jx    = j3+XX;
-            jy    = j3+YY;
-            jz    = j3+ZZ;
+            l3   = 3 * ll;
+            rijx = initial_displacements[l3 + XX];
+            rijy = initial_displacements[l3 + YY];
+            rijz = initial_displacements[l3 + ZZ];
+            i    = iatom[l3 + 1];
+            j    = iatom[l3 + 2];
+            i3   = 3 * i;
+            j3   = 3 * j;
+            ix   = i3 + XX;
+            iy   = i3 + YY;
+            iz   = i3 + ZZ;
+            jx   = j3 + XX;
+            jy   = j3 + YY;
+            jz   = j3 + ZZ;
 
             /* Compute r prime between atoms i and j, which is the
                displacement *before* this update stage */
-            r_prime_x       = positions[ix]-positions[jx];
-            r_prime_y       = positions[iy]-positions[jy];
-            r_prime_z       = positions[iz]-positions[jz];
-            r_prime_squared = (r_prime_x * r_prime_x +
-                               r_prime_y * r_prime_y +
-                               r_prime_z * r_prime_z);
+            r_prime_x       = positions[ix] - positions[jx];
+            r_prime_y       = positions[iy] - positions[jy];
+            r_prime_z       = positions[iz] - positions[jz];
+            r_prime_squared = (r_prime_x * r_prime_x
+                               + r_prime_y * r_prime_y
+                               + r_prime_z * r_prime_z);
             constraint_distance_squared_ll = constraint_distance_squared[ll];
-            diff    = constraint_distance_squared_ll - r_prime_squared;
+            diff                           = constraint_distance_squared_ll - r_prime_squared;
 
             /* iconvf is less than 1 when the error is smaller than a bound */
             iconvf = fabs(diff) * distance_squared_tolerance[ll];
@@ -169,31 +169,31 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             if (iconvf > 1.0)
             {
                 nconv         = static_cast<int>(iconvf);
-                r_dot_r_prime = (rijx * r_prime_x +
-                                 rijy * r_prime_y +
-                                 rijz * r_prime_z);
+                r_dot_r_prime = (rijx * r_prime_x
+                                 + rijy * r_prime_y
+                                 + rijz * r_prime_z);
 
                 if (r_dot_r_prime < constraint_distance_squared_ll * mytol)
                 {
-                    error = ll+1;
+                    error = ll + 1;
                 }
                 else
                 {
                     /* The next line solves equation 5.6 (neglecting
                        the term in g^2), for g */
-                    scaled_lagrange_multiplier_ll   = omega*diff*half_of_reduced_mass[ll]/r_dot_r_prime;
+                    scaled_lagrange_multiplier_ll   = omega * diff * half_of_reduced_mass[ll] / r_dot_r_prime;
                     scaled_lagrange_multiplier[ll] += scaled_lagrange_multiplier_ll;
                     xh                              = rijx * scaled_lagrange_multiplier_ll;
                     yh                              = rijy * scaled_lagrange_multiplier_ll;
                     zh                              = rijz * scaled_lagrange_multiplier_ll;
                     im                              = invmass[i];
                     jm                              = invmass[j];
-                    positions[ix]                  += xh*im;
-                    positions[iy]                  += yh*im;
-                    positions[iz]                  += zh*im;
-                    positions[jx]                  -= xh*jm;
-                    positions[jy]                  -= yh*jm;
-                    positions[jz]                  -= zh*jm;
+                    positions[ix]                  += xh * im;
+                    positions[iy]                  += yh * im;
+                    positions[iz]                  += zh * im;
+                    positions[jx]                  -= xh * jm;
+                    positions[jy]                  -= yh * jm;
+                    positions[jz]                  -= zh * jm;
                 }
             }
         }
@@ -210,8 +210,8 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                real invdt, rvec *v,
                gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
-    rvec    *rij;
-    real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
+    rvec *   rij;
+    real *   half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
     int      maxnit = 1000;
     int      nit    = 0, ll, i, j, d, d2, type;
     t_iatom *ia;
@@ -228,34 +228,34 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         srenew(shaked->distance_squared_tolerance, shaked->nalloc);
         srenew(shaked->constraint_distance_squared, shaked->nalloc);
     }
-    rij                          = shaked->rij;
-    half_of_reduced_mass         = shaked->half_of_reduced_mass;
-    distance_squared_tolerance   = shaked->distance_squared_tolerance;
-    constraint_distance_squared  = shaked->constraint_distance_squared;
+    rij                         = shaked->rij;
+    half_of_reduced_mass        = shaked->half_of_reduced_mass;
+    distance_squared_tolerance  = shaked->distance_squared_tolerance;
+    constraint_distance_squared = shaked->constraint_distance_squared;
 
-    L1   = 1.0-lambda;
-    ia   = iatom;
+    L1 = 1.0 - lambda;
+    ia = iatom;
     for (ll = 0; (ll < ncon); ll++, ia += 3)
     {
-        type  = ia[0];
-        i     = ia[1];
-        j     = ia[2];
+        type = ia[0];
+        i    = ia[1];
+        j    = ia[2];
 
-        mm                       = 2.0*(invmass[i]+invmass[j]);
-        rij[ll][XX]              = x[i][XX]-x[j][XX];
-        rij[ll][YY]              = x[i][YY]-x[j][YY];
-        rij[ll][ZZ]              = x[i][ZZ]-x[j][ZZ];
-        half_of_reduced_mass[ll] = 1.0/mm;
+        mm                       = 2.0 * (invmass[i] + invmass[j]);
+        rij[ll][XX]              = x[i][XX] - x[j][XX];
+        rij[ll][YY]              = x[i][YY] - x[j][YY];
+        rij[ll][ZZ]              = x[i][ZZ] - x[j][ZZ];
+        half_of_reduced_mass[ll] = 1.0 / mm;
         if (bFEP)
         {
-            constraint_distance = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
+            constraint_distance = L1 * ip[type].constr.dA + lambda * ip[type].constr.dB;
         }
         else
         {
             constraint_distance = ip[type].constr.dA;
         }
-        constraint_distance_squared[ll]  = gmx::square(constraint_distance);
-        distance_squared_tolerance[ll]   = 0.5/(constraint_distance_squared[ll]*tol);
+        constraint_distance_squared[ll] = gmx::square(constraint_distance);
+        distance_squared_tolerance[ll]  = 0.5 / (constraint_distance_squared[ll] * tol);
     }
 
     switch (econq)
@@ -283,11 +283,11 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         {
             fprintf(fplog, "Inner product between old and new vector <= 0.0!\n"
                     "constraint #%d atoms %d and %d\n",
-                    error-1, iatom[3*(error-1)+1]+1, iatom[3*(error-1)+2]+1);
+                    error - 1, iatom[3 * (error - 1) + 1] + 1, iatom[3 * (error - 1) + 2] + 1);
         }
         fprintf(stderr, "Inner product between old and new vector <= 0.0!\n"
                 "constraint #%d atoms %d and %d\n",
-                error-1, iatom[3*(error-1)+1]+1, iatom[3*(error-1)+2]+1);
+                error - 1, iatom[3 * (error - 1) + 1] + 1, iatom[3 * (error - 1) + 2] + 1);
         nit = 0;
     }
 
@@ -297,22 +297,22 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
 
     for (ll = 0; (ll < ncon); ll++, ia += 3)
     {
-        type  = ia[0];
-        i     = ia[1];
-        j     = ia[2];
+        type = ia[0];
+        i    = ia[1];
+        j    = ia[2];
 
         if ((econq == econqCoord) && v != nullptr)
         {
             /* Correct the velocities */
-            mm = scaled_lagrange_multiplier[ll]*invmass[i]*invdt;
+            mm = scaled_lagrange_multiplier[ll] * invmass[i] * invdt;
             for (d = 0; d < DIM; d++)
             {
-                v[ia[1]][d] += mm*rij[ll][d];
+                v[ia[1]][d] += mm * rij[ll][d];
             }
-            mm = scaled_lagrange_multiplier[ll]*invmass[j]*invdt;
+            mm = scaled_lagrange_multiplier[ll] * invmass[j] * invdt;
             for (d = 0; d < DIM; d++)
             {
-                v[ia[2]][d] -= mm*rij[ll][d];
+                v[ia[2]][d] -= mm * rij[ll][d];
             }
             /* 16 flops */
         }
@@ -323,10 +323,10 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
             mm = scaled_lagrange_multiplier[ll];
             for (d = 0; d < DIM; d++)
             {
-                tmp = mm*rij[ll][d];
+                tmp = mm * rij[ll][d];
                 for (d2 = 0; d2 < DIM; d2++)
                 {
-                    vir_r_m_dr[d][d2] -= tmp*rij[ll][d2];
+                    vir_r_m_dr[d][d2] -= tmp * rij[ll][d2];
                 }
             }
             /* 21 flops */
@@ -336,7 +336,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
            the reciprocal of the constraint length, so fix that */
         if (bFEP)
         {
-            constraint_distance = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
+            constraint_distance = L1 * ip[type].constr.dA + lambda * ip[type].constr.dB;
         }
         else
         {
@@ -374,8 +374,8 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
                 rvec_sub(prime[ai], prime[aj], dx);
                 dp = norm(dx);
                 fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
-                        ai+1, 1.0/invmass[ai],
-                        aj+1, 1.0/invmass[aj], d, dp, ip[ia[0]].constr.dA);
+                        ai + 1, 1.0 / invmass[ai],
+                        aj + 1, 1.0 / invmass[aj], d, dp, ip[ia[0]].constr.dA);
                 break;
             case econqVeloc:
                 rvec_sub(v[ai], v[aj], dv);
@@ -383,8 +383,8 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
                 rvec_sub(prime[ai], prime[aj], dv);
                 dp = iprod(dx, dv);
                 fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
-                        ai+1, 1.0/invmass[ai],
-                        aj+1, 1.0/invmass[aj], d, dp, 0.);
+                        ai + 1, 1.0 / invmass[ai],
+                        aj + 1, 1.0 / invmass[aj], d, dp, 0.);
                 break;
         }
     }
@@ -406,7 +406,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     fprintf(log, "nblocks=%d, sblock[0]=%d\n", nblocks, sblock[0]);
 #endif
 
-    ncon = idef->il[F_CONSTR].nr/3;
+    ncon = idef->il[F_CONSTR].nr / 3;
 
     for (ll = 0; ll < ncon; ll++)
     {
@@ -416,7 +416,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     iatoms = &(idef->il[F_CONSTR].iatoms[sblock[0]]);
     for (i = 0; (i < nblocks); )
     {
-        blen  = (sblock[i+1]-sblock[i]);
+        blen  = (sblock[i + 1] - sblock[i]);
         blen /= 3;
         n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
@@ -437,9 +437,9 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
             }
             return FALSE;
         }
-        tnit                       += n0*blen;
+        tnit                       += n0 * blen;
         trij                       += blen;
-        iatoms                     += 3*blen; /* Increment pointer! */
+        iatoms                     += 3 * blen; /* Increment pointer! */
         scaled_lagrange_multiplier += blen;
         i++;
     }
@@ -450,11 +450,11 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         {
             real bondA, bondB;
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
-            dt_2 = 1/gmx::square(ir->delta_t);
+            dt_2 = 1 / gmx::square(ir->delta_t);
             dvdl = 0;
             for (ll = 0; ll < ncon; ll++)
             {
-                type  = idef->il[F_CONSTR].iatoms[3*ll];
+                type = idef->il[F_CONSTR].iatoms[3 * ll];
 
                 /* Per equations in the manual, dv/dl = -2 \sum_ll lagrangian_ll * r_ll * (d_B - d_A) */
                 /* The vector scaled_lagrange_multiplier[ll] contains the value -2 r_ll eta_ll (eta_ll is the
@@ -483,7 +483,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     inc_nrnb(nrnb, eNR_SHAKE_RIJ, trij);
     if (v)
     {
-        inc_nrnb(nrnb, eNR_CONSTR_V, trij*2);
+        inc_nrnb(nrnb, eNR_CONSTR_V, trij * 2);
     }
     if (bCalcVir)
     {
@@ -507,13 +507,13 @@ void crattle(int iatom[], int ncon, int *nnit, int maxnit,
      *     second part of rattle algorithm
      */
 
-    int          ll, i, j, i3, j3, l3;
-    int          ix, iy, iz, jx, jy, jz;
-    real         constraint_distance_squared_ll;
-    real         vpijd, vx, vy, vz, acor, fac, im, jm;
-    real         xh, yh, zh, rijx, rijy, rijz;
-    int          nit, error, nconv;
-    real         iconvf;
+    int  ll, i, j, i3, j3, l3;
+    int  ix, iy, iz, jx, jy, jz;
+    real constraint_distance_squared_ll;
+    real vpijd, vx, vy, vz, acor, fac, im, jm;
+    real xh, yh, zh, rijx, rijy, rijz;
+    int  nit, error, nconv;
+    real iconvf;
 
     // TODO nconv is used solely as a boolean, so we should write the
     // code like that
@@ -524,49 +524,49 @@ void crattle(int iatom[], int ncon, int *nnit, int maxnit,
         nconv = 0;
         for (ll = 0; (ll < ncon) && (error == 0); ll++)
         {
-            l3      = 3*ll;
-            rijx    = rij[l3+XX];
-            rijy    = rij[l3+YY];
-            rijz    = rij[l3+ZZ];
-            i       = iatom[l3+1];
-            j       = iatom[l3+2];
-            i3      = 3*i;
-            j3      = 3*j;
-            ix      = i3+XX;
-            iy      = i3+YY;
-            iz      = i3+ZZ;
-            jx      = j3+XX;
-            jy      = j3+YY;
-            jz      = j3+ZZ;
-            vx      = vp[ix]-vp[jx];
-            vy      = vp[iy]-vp[jy];
-            vz      = vp[iz]-vp[jz];
+            l3   = 3 * ll;
+            rijx = rij[l3 + XX];
+            rijy = rij[l3 + YY];
+            rijz = rij[l3 + ZZ];
+            i    = iatom[l3 + 1];
+            j    = iatom[l3 + 2];
+            i3   = 3 * i;
+            j3   = 3 * j;
+            ix   = i3 + XX;
+            iy   = i3 + YY;
+            iz   = i3 + ZZ;
+            jx   = j3 + XX;
+            jy   = j3 + YY;
+            jz   = j3 + ZZ;
+            vx   = vp[ix] - vp[jx];
+            vy   = vp[iy] - vp[jy];
+            vz   = vp[iz] - vp[jz];
 
-            vpijd   = vx*rijx+vy*rijy+vz*rijz;
+            vpijd                          = vx * rijx + vy * rijy + vz * rijz;
             constraint_distance_squared_ll = constraint_distance_squared[ll];
 
             /* iconv is zero when the error is smaller than a bound */
-            iconvf   = fabs(vpijd)*(distance_squared_tolerance[ll]/invdt);
+            iconvf = fabs(vpijd) * (distance_squared_tolerance[ll] / invdt);
 
             if (iconvf > 1)
             {
-                nconv     = static_cast<int>(iconvf);
-                fac       = omega*2.0*m2[ll]/constraint_distance_squared_ll;
-                acor      = -fac*vpijd;
+                nconv                           = static_cast<int>(iconvf);
+                fac                             = omega * 2.0 * m2[ll] / constraint_distance_squared_ll;
+                acor                            = -fac * vpijd;
                 scaled_lagrange_multiplier[ll] += acor;
-                xh        = rijx*acor;
-                yh        = rijy*acor;
-                zh        = rijz*acor;
+                xh                              = rijx * acor;
+                yh                              = rijy * acor;
+                zh                              = rijz * acor;
 
-                im        = invmass[i];
-                jm        = invmass[j];
+                im = invmass[i];
+                jm = invmass[j];
 
-                vp[ix] += xh*im;
-                vp[iy] += yh*im;
-                vp[iz] += zh*im;
-                vp[jx] -= xh*jm;
-                vp[jy] -= yh*jm;
-                vp[jz] -= zh*jm;
+                vp[ix] += xh * im;
+                vp[iy] += yh * im;
+                vp[iz] += zh * im;
+                vp[jx] -= xh * jm;
+                vp[jy] -= yh * jm;
+                vp[jz] -= zh * jm;
             }
         }
     }

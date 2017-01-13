@@ -45,9 +45,9 @@
 
 void cmp_rvec(FILE *fp, const char *s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
 {
-    if (!equal_real(i1[XX], i2[XX], ftol, abstol) ||
-        !equal_real(i1[YY], i2[YY], ftol, abstol) ||
-        !equal_real(i1[ZZ], i2[ZZ], ftol, abstol))
+    if (!equal_real(i1[XX], i2[XX], ftol, abstol)
+        || !equal_real(i1[YY], i2[YY], ftol, abstol)
+        || !equal_real(i1[ZZ], i2[ZZ], ftol, abstol))
     {
         if (index != -1)
         {
@@ -94,15 +94,15 @@ static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, const rvec x1[]
     {
         for (m = 0; m < DIM; m++)
         {
-            rms += x1[i][m]*x1[i][m] + x2[i][m]*x2[i][m];
+            rms += x1[i][m] * x1[i][m] + x2[i][m] * x2[i][m];
         }
     }
-    rms = sqrt(rms/(2*n*DIM));
+    rms = sqrt(rms / (2 * n * DIM));
 
     /* Convert the relative tolerance into an absolute tolerance */
-    if (ftol*rms < abstol)
+    if (ftol * rms < abstol)
     {
-        abstol = ftol*rms;
+        abstol = ftol * rms;
     }
 
     /* And now do the actual comparision */
@@ -126,10 +126,10 @@ void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x
             for (m = 0; m < DIM; m++)
             {
                 d    = x1[i][m] - x2[i][m];
-                ssd += d*d;
+                ssd += d * d;
             }
         }
-        fprintf(fp, "%s RMSD %g\n", title, std::sqrt(ssd/n));
+        fprintf(fp, "%s RMSD %g\n", title, std::sqrt(ssd / n));
     }
     else
     {

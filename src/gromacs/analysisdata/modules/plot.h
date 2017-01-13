@@ -320,7 +320,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
     private:
-        bool                    bWrite_[4];
+        bool bWrite_[4];
 
         // Copy and assign disallowed by base.
 };

@@ -71,21 +71,21 @@
 static void add_object(t_manager *man, eObject eO, int ai, int aj)
 {
     srenew(man->obj, ++man->nobj);
-    man->obj[man->nobj-1].eO    = eO;
-    man->obj[man->nobj-1].eV    = eVNormal;
-    man->obj[man->nobj-1].color = WHITE;
-    man->obj[man->nobj-1].ai    = ai;
-    man->obj[man->nobj-1].aj    = aj;
-    man->obj[man->nobj-1].z     = 0.0;
+    man->obj[man->nobj - 1].eO    = eO;
+    man->obj[man->nobj - 1].eV    = eVNormal;
+    man->obj[man->nobj - 1].color = WHITE;
+    man->obj[man->nobj - 1].ai    = ai;
+    man->obj[man->nobj - 1].aj    = aj;
+    man->obj[man->nobj - 1].z     = 0.0;
 }
 
 static void add_bonds(t_manager *man, t_functype func[],
                       t_ilist *b, bool bB[])
 {
-    bool        *bH = man->bHydro;
-    t_iatom     *ia;
-    t_iatom      type, ai, aj, ak;
-    int          i, delta, ftype;
+    bool *   bH = man->bHydro;
+    t_iatom *ia;
+    t_iatom  type, ai, aj, ak;
+    int      i, delta, ftype;
 
 #ifdef DEBUG
     std::fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
@@ -125,8 +125,8 @@ static void add_bonds(t_manager *man, t_functype func[],
 #ifdef DEBUG
         std::fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
 #endif
-        ia += delta+1;
-        i  += delta+1;
+        ia += delta + 1;
+        i  += delta + 1;
     }
 }
 
@@ -151,7 +151,7 @@ static int which_atom(t_manager *man, int x, int y)
 
     for (i = 0; (i < man->natom); i++)
     {
-        if ((std::abs(ix[i][XX]-x) < DELTA) && (std::abs(ix[i][YY]-y) < DELTA))
+        if ((std::abs(ix[i][XX] - x) < DELTA) && (std::abs(ix[i][YY] - y) < DELTA))
         {
             if (man->bVis[i])
             {
@@ -164,8 +164,8 @@ static int which_atom(t_manager *man, int x, int y)
 
 static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
 {
-    int             ai;
-    unsigned long   col;
+    int           ai;
+    unsigned long col;
 
     if ((ai = which_atom(man, x, y)) != -1)
     {
@@ -186,7 +186,7 @@ static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
             return;
         }
         XSetForeground(x11->disp, x11->gc, col);
-        XDrawString(x11->disp, man->molw->wd.self, x11->gc, x+2, y-2, man->szLab[ai],
+        XDrawString(x11->disp, man->molw->wd.self, x11->gc, x + 2, y - 2, man->szLab[ai],
                     std::strlen(man->szLab[ai]));
         XSetForeground(x11->disp, x11->gc, x11->fg);
     }
@@ -205,11 +205,11 @@ static void hide_label(t_x11 *x11, t_manager *man, int x, int y)
 void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
               const char *status)
 {
-    gmx_atomprop_t    aps;
-    t_tpxheader       sh;
-    t_atoms          *at;
-    bool             *bB;
-    int               i;
+    gmx_atomprop_t aps;
+    t_tpxheader    sh;
+    t_atoms *      at;
+    bool *         bB;
+    int            i;
 
     read_tpxheader(status, &sh, true);
     snew(man->ix, sh.natoms);
@@ -232,9 +232,9 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     read_tpx_top(status, nullptr, man->box, &man->natom, nullptr, nullptr, &man->top);
     man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
-    man->natom =
-        read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
-                     man->box);
+    man->natom
+        = read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
+                       man->box);
     man->trajfile = gmx_strdup(trajectory);
     if (man->natom > man->top.atoms.nr)
     {
@@ -249,7 +249,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     aps             = gmx_atomprop_init();
     for (i = 0; (i < man->natom); i++)
     {
-        char      *aname = *(at->atomname[i]);
+        char *     aname = *(at->atomname[i]);
         t_resinfo *ri    = &at->resinfo[at->atom[i].resind];
 
         man->col[i] = Type2Color(aname);
@@ -309,7 +309,7 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
     for (i = 0; (i < mols->nr); i++)
     {
         m0 = mols->index[i];
-        m1 = mols->index[i+1];
+        m1 = mols->index[i + 1];
 
         clear_rvec(xcm);
         clear_rvec(icm);
@@ -320,7 +320,7 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
         }
         for (m = 0; (m < DIM); m++)
         {
-            xcm[m] /= (m1-m0);
+            xcm[m] /= (m1 - m0);
         }
         for (m = 0; (m < DIM); m++)
         {
@@ -349,8 +349,8 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
 
 static bool step_man(t_manager *man, int *nat)
 {
-    static int      ncount = 0;
-    bool            bEof;
+    static int ncount = 0;
+    bool       bEof;
 
     if (!man->natom)
     {
@@ -410,7 +410,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
         case IDROTX:
         case IDROTY:
         case IDROTZ:
-            rotate_3d(man->view, ID-IDROTX, bPos);
+            rotate_3d(man->view, ID - IDROTX, bPos);
             draw_mol(x11, man);
             break;
         case IDZOOM:
@@ -433,7 +433,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
         case IDTRANSX:
         case IDTRANSY:
         case IDTRANSZ:
-            translate_view(man->view, ID-IDTRANSX, bPos);
+            translate_view(man->view, ID - IDTRANSX, bPos);
             draw_mol(x11, man);
             break;
         case IDREWIND:
@@ -448,7 +448,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
             break;
         case IDSTEP:
         {
-            int      nat;
+            int nat;
 
             nat = 0;
             if (!step_man(man, &nat))
@@ -461,7 +461,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
                 if (nat > 0)
                 {
                     draw_mol(x11, man);
-                    usleep(man->nWait*1000);
+                    usleep(man->nWait * 1000);
                 }
             }
             break;
@@ -568,21 +568,21 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     man->wd.height = height;
 
     /* Move all subwindows, resize only Mol window */
-    x0 = width-EWIDTH-AIR-4*BORDER;           /* Starting of ewin etc. */
+    x0 = width - EWIDTH - AIR - 4 * BORDER;           /* Starting of ewin etc. */
     y0 = AIR;
 
     /* Mol Window */
-    mw = x0-2*AIR-4*BORDER;
-    mh = height-y0-AIR-2*BORDER;
+    mw = x0 - 2 * AIR - 4 * BORDER;
+    mh = height - y0 - AIR - 2 * BORDER;
     XMoveResizeWindow(x11->disp, man->molw->wd.self, AIR, y0, mw, mh);
 
     /* Title Window */
     th = XTextHeight(x11->font);
-    XMoveResizeWindow(x11->disp, man->title.self, 0, 0, mw, th+AIR);
+    XMoveResizeWindow(x11->disp, man->title.self, 0, 0, mw, th + AIR);
 
     /* Legend Window */
     XMoveResizeWindow(x11->disp, man->legw->wd.self, x0, y0, EWIDTH, LEGHEIGHT);
-    y0 += LEGHEIGHT+AIR+2*BORDER;
+    y0 += LEGHEIGHT + AIR + 2 * BORDER;
 
     if (y0 > height)
     {
@@ -590,12 +590,12 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     }
 
     /* Button Box */
-    hb = height-y0-AIR-2*BORDER;
+    hb = height - y0 - AIR - 2 * BORDER;
     XMoveResizeWindow(x11->disp, man->bbox->wd.self, x0, y0, EWIDTH, hb);
 
     /* Video Box */
-    x0 = (mw-man->vbox->wd.width)/2;
-    y0 = (mh-2-AIR-man->vbox->wd.height);
+    x0 = (mw - man->vbox->wd.width) / 2;
+    y0 = (mh - 2 - AIR - man->vbox->wd.height);
     XMoveWindow(x11->disp, man->vbox->wd.self, x0, y0);
 }
 
@@ -653,8 +653,8 @@ t_manager *init_man(t_x11 *x11, Window Parent,
                                        man->wd.width, man->wd.height,
                                        man->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, man->wd.self, Parent, ManCallBack, man);
-    x11->SetInputMask(x11, man->wd.self, StructureNotifyMask |
-                      ExposureMask | ButtonPressMask);
+    x11->SetInputMask(x11, man->wd.self, StructureNotifyMask
+                      | ExposureMask | ButtonPressMask);
 
     /* The order of creating windows is important for the stacking order */
     /* Mol Window */
@@ -701,8 +701,8 @@ void done_man(t_x11 *x11, t_manager *man)
 
 void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
 {
-    int      i;
-    int      j;
+    int i;
+    int j;
 
     for (i = 0; (i < man->natom); i++)
     {
@@ -712,7 +712,7 @@ void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
     {
         if (filter->bShow[i])
         {
-            for (j = filter->grps->index[i]; (j < filter->grps->index[i+1]); j++)
+            for (j = filter->grps->index[i]; (j < filter->grps->index[i + 1]); j++)
             {
                 man->bVis[filter->grps->a[j]] = true;
             }

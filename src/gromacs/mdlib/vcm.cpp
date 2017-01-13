@@ -123,12 +123,12 @@ static void update_tensor(rvec x, real m0, tensor I)
     real xy, xz, yz;
 
     /* Compute inertia tensor contribution due to this atom */
-    xy         = x[XX]*x[YY]*m0;
-    xz         = x[XX]*x[ZZ]*m0;
-    yz         = x[YY]*x[ZZ]*m0;
-    I[XX][XX] += x[XX]*x[XX]*m0;
-    I[YY][YY] += x[YY]*x[YY]*m0;
-    I[ZZ][ZZ] += x[ZZ]*x[ZZ]*m0;
+    xy         = x[XX] * x[YY] * m0;
+    xz         = x[XX] * x[ZZ] * m0;
+    yz         = x[YY] * x[ZZ] * m0;
+    I[XX][XX] += x[XX] * x[XX] * m0;
+    I[YY][YY] += x[YY] * x[YY] * m0;
+    I[ZZ][ZZ] += x[ZZ] * x[ZZ] * m0;
     I[XX][YY] += xy;
     I[YY][XX] += xy;
     I[XX][ZZ] += xz;
@@ -150,7 +150,7 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
             for (int g = 0; g < vcm->size; g++)
             {
                 /* Reset linear momentum */
-                t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
+                t_vcm_thread *vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
                 vcm_t->mass = 0;
                 clear_rvec(vcm_t->p);
                 if (vcm->mode == ecmANGULAR)
@@ -163,7 +163,7 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
             }
 
 #pragma omp for schedule(static)
-            for (int i = start; i < start+homenr; i++)
+            for (int i = start; i < start + homenr; i++)
             {
                 int  g  = 0;
                 real m0 = md->massT[i];
@@ -171,25 +171,25 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                 {
                     g = md->cVCM[i];
                 }
-                t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
+                t_vcm_thread *vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
                 /* Calculate linear momentum */
-                vcm_t->mass  += m0;
+                vcm_t->mass += m0;
                 int m;
                 for (m = 0; (m < DIM); m++)
                 {
-                    vcm_t->p[m] += m0*v[i][m];
+                    vcm_t->p[m] += m0 * v[i][m];
                 }
 
                 if (vcm->mode == ecmANGULAR)
                 {
                     /* Calculate angular momentum */
-                    rvec   j0;
+                    rvec j0;
                     cprod(x[i], v[i], j0);
 
                     for (m = 0; (m < DIM); m++)
                     {
-                        vcm_t->j[m] += m0*j0[m];
-                        vcm_t->x[m] += m0*x[i][m];
+                        vcm_t->j[m] += m0 * j0[m];
+                        vcm_t->x[m] += m0 * x[i][m];
                     }
                     /* Update inertia tensor */
                     update_tensor(x[i], m0, vcm_t->i);
@@ -212,7 +212,7 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
 
             for (int t = 0; t < nthreads; t++)
             {
-                t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
+                t_vcm_thread *vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
                 vcm->group_mass[g] += vcm_t->mass;
                 rvec_inc(vcm->group_p[g], vcm_t->p);
                 if (vcm->mode == ecmANGULAR)
@@ -243,7 +243,7 @@ void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
             {
                 case 1:
 #pragma omp for schedule(static)
-                    for (i = start; i < start+homenr; i++)
+                    for (i = start; i < start + homenr; i++)
                     {
                         if (group_id)
                         {
@@ -254,7 +254,7 @@ void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
                     break;
                 case 2:
 #pragma omp for schedule(static)
-                    for (i = start; i < start+homenr; i++)
+                    for (i = start; i < start + homenr; i++)
                     {
                         if (group_id)
                         {
@@ -266,7 +266,7 @@ void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
                     break;
                 case 3:
 #pragma omp for schedule(static)
-                    for (i = start; i < start+homenr; i++)
+                    for (i = start; i < start + homenr; i++)
                     {
                         if (group_id)
                         {
@@ -280,7 +280,7 @@ void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
             {
                 /* Subtract angular momentum */
 #pragma omp for schedule(static)
-                for (i = start; i < start+homenr; i++)
+                for (i = start; i < start + homenr; i++)
                 {
                     if (group_id)
                     {
@@ -313,12 +313,12 @@ static void get_minv(tensor A, tensor B)
     tmp[ZZ][ZZ] =  A[XX][XX] + A[YY][YY];
 
     /* This is a hack to prevent very large determinants */
-    rfac  = (tmp[XX][XX]+tmp[YY][YY]+tmp[ZZ][ZZ])/3;
+    rfac = (tmp[XX][XX] + tmp[YY][YY] + tmp[ZZ][ZZ]) / 3;
     if (rfac == 0.0)
     {
         gmx_fatal(FARGS, "Can not stop center of mass: maybe 2dimensional system");
     }
-    fac = 1.0/rfac;
+    fac = 1.0 / rfac;
     for (m = 0; (m < DIM); m++)
     {
         for (n = 0; (n < DIM); n++)
@@ -351,7 +351,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
             tm = vcm->group_mass[g];
             if (tm != 0)
             {
-                tm_1 = 1.0/tm;
+                tm_1 = 1.0 / tm;
                 svmul(tm_1, vcm->group_p[g], vcm->group_v[g]);
             }
             /* Else it's zero anyway! */
@@ -363,7 +363,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
                 tm = vcm->group_mass[g];
                 if (tm != 0)
                 {
-                    tm_1 = 1.0/tm;
+                    tm_1 = 1.0 / tm;
 
                     /* Compute center of mass for this group */
                     for (m = 0; (m < DIM); m++)
@@ -377,7 +377,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
                     cprod(vcm->group_x[g], vcm->group_v[g], jcm);
                     for (m = 0; (m < DIM); m++)
                     {
-                        vcm->group_j[g][m] -= tm*jcm[m];
+                        vcm->group_j[g][m] -= tm * jcm[m];
                     }
 
                     /* Subtract the center of mass contribution from the inertia
@@ -402,15 +402,15 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
     }
     for (g = 0; (g < vcm->nr); g++)
     {
-        ekcm    = 0;
+        ekcm = 0;
         if (vcm->group_mass[g] != 0 && vcm->group_ndf[g] > 0)
         {
             for (m = 0; m < vcm->ndim; m++)
             {
                 ekcm += gmx::square(vcm->group_v[g][m]);
             }
-            ekcm   *= 0.5*vcm->group_mass[g];
-            Temp_cm = 2*ekcm/vcm->group_ndf[g];
+            ekcm   *= 0.5 * vcm->group_mass[g];
+            Temp_cm = 2 * ekcm / vcm->group_ndf[g];
 
             if ((Temp_cm > Temp_Max) && fp)
             {
@@ -421,11 +421,11 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
 
             if (vcm->mode == ecmANGULAR)
             {
-                ekrot = 0.5*iprod(vcm->group_j[g], vcm->group_w[g]);
+                ekrot = 0.5 * iprod(vcm->group_j[g], vcm->group_w[g]);
                 if ((ekrot > 1) && fp && !EI_RANDOM(ir->eI))
                 {
                     /* if we have an integrator that may not conserve momenta, skip */
-                    tm    = vcm->group_mass[g];
+                    tm = vcm->group_mass[g];
                     fprintf(fp, "Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
                             vcm->group_name[g], tm, ekrot, det(vcm->group_i[g]));
                     fprintf(fp, "  COM: %12.5f  %12.5f  %12.5f\n",

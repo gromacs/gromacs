@@ -63,11 +63,11 @@ class delta_h_history_t
         //! Vector (size number of intermediate data points) of vector of Hamiltonian differences for each foreign lambda
         std::vector<std::vector<real> > dh;
         //! The start time of these energy diff blocks
-        double                          start_time;
+        double start_time;
         //! Lambda at start time
-        double                          start_lambda;
+        double start_lambda;
         //! Whether the lambda value is set. Here for backward-compatibility.
-        gmx_bool                        start_lambda_set;
+        gmx_bool start_lambda_set;
 
         //! Constructor
         delta_h_history_t() : dh(),

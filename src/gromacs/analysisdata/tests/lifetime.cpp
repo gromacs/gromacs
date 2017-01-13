@@ -85,7 +85,7 @@ class SimpleInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 // Input data with multiple data sets for gmx::AnalysisDataLifetimeModule tests.
@@ -120,7 +120,7 @@ class MultiDataSetInputData
         }
 
     private:
-        AnalysisDataTestInput  data_;
+        AnalysisDataTestInput data_;
 };
 
 

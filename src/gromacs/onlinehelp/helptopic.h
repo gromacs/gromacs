@@ -171,7 +171,7 @@ class AbstractCompositeHelpTopic : public IHelpTopic
          * implementation.
          */
         bool writeSubTopicList(const HelpWriterContext &context,
-                               const std::string       &title) const;
+                               const std::string &      title) const;
 
     private:
         class Impl;

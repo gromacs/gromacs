@@ -131,14 +131,14 @@ class InteractiveTestHelper::Impl
             currentOutput_.clear();
         }
 
-        TestReferenceChecker             checker_;
-        ConstArrayRef<const char *>      inputLines_;
-        bool                             bLastNewline_;
-        size_t                           currentLine_;
-        bool                             bHasOutput_;
-        std::string                      currentOutput_;
-        MockTextInputStream              inputStream_;
-        MockTextOutputStream             outputStream_;
+        TestReferenceChecker        checker_;
+        ConstArrayRef<const char *> inputLines_;
+        bool                        bLastNewline_;
+        size_t                      currentLine_;
+        bool                        bHasOutput_;
+        std::string                 currentOutput_;
+        MockTextInputStream         inputStream_;
+        MockTextOutputStream        outputStream_;
 };
 
 InteractiveTestHelper::InteractiveTestHelper(TestReferenceChecker checker)

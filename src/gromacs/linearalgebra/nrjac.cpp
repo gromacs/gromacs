@@ -79,9 +79,9 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
     for (i = 1; i <= 50; i++)
     {
         sm = 0.0;
-        for (ip = 0; ip < n-1; ip++)
+        for (ip = 0; ip < n - 1; ip++)
         {
-            for (iq = ip+1; iq < n; iq++)
+            for (iq = ip + 1; iq < n; iq++)
             {
                 sm += std::abs(a[ip][iq]);
             }
@@ -94,42 +94,42 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
         }
         if (i < 4)
         {
-            tresh = 0.2*sm/(n*n);
+            tresh = 0.2 * sm / (n * n);
         }
         else
         {
             tresh = 0.0;
         }
-        for (ip = 0; ip < n-1; ip++)
+        for (ip = 0; ip < n - 1; ip++)
         {
-            for (iq = ip+1; iq < n; iq++)
+            for (iq = ip + 1; iq < n; iq++)
             {
-                g = 100.0*std::abs(a[ip][iq]);
-                if (i > 4 && std::abs(d[ip])+g == std::abs(d[ip])
-                    && std::abs(d[iq])+g == std::abs(d[iq]))
+                g = 100.0 * std::abs(a[ip][iq]);
+                if (i > 4 && std::abs(d[ip]) + g == std::abs(d[ip])
+                    && std::abs(d[iq]) + g == std::abs(d[iq]))
                 {
                     a[ip][iq] = 0.0;
                 }
                 else if (std::abs(a[ip][iq]) > tresh)
                 {
-                    h = d[iq]-d[ip];
-                    if (std::abs(h)+g == std::abs(h))
+                    h = d[iq] - d[ip];
+                    if (std::abs(h) + g == std::abs(h))
                     {
-                        t = (a[ip][iq])/h;
+                        t = (a[ip][iq]) / h;
                     }
                     else
                     {
-                        theta = 0.5*h/(a[ip][iq]);
-                        t     = 1.0/(std::abs(theta)+std::sqrt(1.0+theta*theta));
+                        theta = 0.5 * h / (a[ip][iq]);
+                        t     = 1.0 / (std::abs(theta) + std::sqrt(1.0 + theta * theta));
                         if (theta < 0.0)
                         {
                             t = -t;
                         }
                     }
-                    c         = 1.0/std::sqrt(1+t*t);
-                    s         = t*c;
-                    tau       = s/(1.0+c);
-                    h         = t*a[ip][iq];
+                    c         = 1.0 / std::sqrt(1 + t * t);
+                    s         = t * c;
+                    tau       = s / (1.0 + c);
+                    h         = t * a[ip][iq];
                     z[ip]    -= h;
                     z[iq]    += h;
                     d[ip]    -= h;
@@ -139,11 +139,11 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
                     {
                         do_rotate(a, j, ip, j, iq, tau, s);
                     }
-                    for (j = ip+1; j < iq; j++)
+                    for (j = ip + 1; j < iq; j++)
                     {
                         do_rotate(a, ip, j, j, iq, tau, s);
                     }
-                    for (j = iq+1; j < n; j++)
+                    for (j = iq + 1; j < n; j++)
                     {
                         do_rotate(a, ip, j, iq, j, tau, s);
                     }
@@ -194,7 +194,7 @@ int m_inv_gen(real **m, int n, real **minv)
     {
         tol += std::abs(md[i][i]);
     }
-    tol = 1e-6*tol/n;
+    tol = 1e-6 * tol / n;
 
     jacobi(md, n, eig, v, &nrot);
 
@@ -208,7 +208,7 @@ int m_inv_gen(real **m, int n, real **minv)
         }
         else
         {
-            eig[i] = 1.0/eig[i];
+            eig[i] = 1.0 / eig[i];
         }
     }
 
@@ -219,7 +219,7 @@ int m_inv_gen(real **m, int n, real **minv)
             s = 0;
             for (k = 0; k < n; k++)
             {
-                s += eig[k]*v[i][k]*v[j][k];
+                s += eig[k] * v[i][k] * v[j][k];
             }
             minv[i][j] = s;
         }

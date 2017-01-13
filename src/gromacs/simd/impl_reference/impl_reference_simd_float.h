@@ -90,7 +90,7 @@ class SimdFloat
          * the corresponding implementation directory since the type will depend
          * on the architecture.
          */
-        std::array<float, GMX_SIMD_FLOAT_WIDTH>  simdInternal_;
+        std::array<float, GMX_SIMD_FLOAT_WIDTH> simdInternal_;
 };
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
@@ -122,7 +122,7 @@ class SimdFInt32
          * the corresponding implementation directory since the type will depend
          * on the architecture.
          */
-        std::array<std::int32_t, GMX_SIMD_FINT32_WIDTH>  simdInternal_;
+        std::array<std::int32_t, GMX_SIMD_FINT32_WIDTH> simdInternal_;
 };
 
 /*! \libinternal \brief Boolean type for float SIMD data.
@@ -149,7 +149,7 @@ class SimdFBool
          * the corresponding implementation directory since the type will depend
          * on the architecture.
          */
-        std::array<bool, GMX_SIMD_FLOAT_WIDTH>  simdInternal_;
+        std::array<bool, GMX_SIMD_FLOAT_WIDTH> simdInternal_;
 };
 
 /*! \libinternal \brief Boolean type for integer datatypes corresponding to float SIMD.
@@ -176,7 +176,7 @@ class SimdFIBool
          * the corresponding implementation directory since the type will depend
          * on the architecture.
          */
-        std::array<bool, GMX_SIMD_FINT32_WIDTH>  simdInternal_;
+        std::array<bool, GMX_SIMD_FINT32_WIDTH> simdInternal_;
 };
 
 /*! \}
@@ -190,14 +190,13 @@ class SimdFIBool
  * \param m Pointer to memory aligned to the SIMD width.
  * \return SIMD variable with data loaded.
  */
-static inline SimdFloat gmx_simdcall
-simdLoad(const float *m)
+static inline SimdFloat gmx_simdcall simdLoad(const float *m)
 {
     SimdFloat a;
 
-    assert(std::size_t(m) % (a.simdInternal_.size()*sizeof(float)) == 0);
+    assert(std::size_t(m) % (a.simdInternal_.size() * sizeof(float)) == 0);
 
-    std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
+    std::copy(m, m + a.simdInternal_.size(), a.simdInternal_.begin());
     return a;
 }
 
@@ -206,10 +205,9 @@ simdLoad(const float *m)
  * \param[out] m Pointer to memory, aligned to SIMD width.
  * \param a SIMD variable to store
  */
-static inline void gmx_simdcall
-store(float *m, SimdFloat a)
+static inline void gmx_simdcall store(float *m, SimdFloat a)
 {
-    assert(std::size_t(m) % (a.simdInternal_.size()*sizeof(float)) == 0);
+    assert(std::size_t(m) % (a.simdInternal_.size() * sizeof(float)) == 0);
 
     std::copy(a.simdInternal_.begin(), a.simdInternal_.end(), m);
 }
@@ -221,11 +219,10 @@ store(float *m, SimdFloat a)
  * \param m Pointer to memory, no alignment requirement.
  * \return SIMD variable with data loaded.
  */
-static inline SimdFloat gmx_simdcall
-simdLoadU(const float *m)
+static inline SimdFloat gmx_simdcall simdLoadU(const float *m)
 {
     SimdFloat a;
-    std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
+    std::copy(m, m + a.simdInternal_.size(), a.simdInternal_.begin());
     return a;
 }
 
@@ -236,8 +233,7 @@ simdLoadU(const float *m)
  * \param[out] m Pointer to memory, no alignment requirement.
  * \param a SIMD variable to store.
  */
-static inline void gmx_simdcall
-storeU(float *m, SimdFloat a)
+static inline void gmx_simdcall storeU(float *m, SimdFloat a)
 {
     std::copy(a.simdInternal_.begin(), a.simdInternal_.end(), m);
 }
@@ -249,8 +245,7 @@ storeU(float *m, SimdFloat a)
  *
  * \return SIMD 0.0f
  */
-static inline SimdFloat gmx_simdcall
-setZeroF()
+static inline SimdFloat gmx_simdcall setZeroF()
 {
     return SimdFloat(0.0f);
 }
@@ -271,14 +266,13 @@ setZeroF()
  * \param m Pointer to memory, aligned to (float) integer SIMD width.
  * \return SIMD integer variable.
  */
-static inline SimdFInt32 gmx_simdcall
-simdLoadFI(const std::int32_t * m)
+static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t * m)
 {
     SimdFInt32 a;
 
-    assert(std::size_t(m) % (a.simdInternal_.size()*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(m) % (a.simdInternal_.size() * sizeof(std::int32_t)) == 0);
 
-    std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
+    std::copy(m, m + a.simdInternal_.size(), a.simdInternal_.begin());
     return a;
 };
 
@@ -287,10 +281,9 @@ simdLoadFI(const std::int32_t * m)
  * \param m Memory aligned to (float) integer SIMD width.
  * \param a SIMD variable to store.
  */
-static inline void gmx_simdcall
-store(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall store(std::int32_t * m, SimdFInt32 a)
 {
-    assert(std::size_t(m) % (a.simdInternal_.size()*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(m) % (a.simdInternal_.size() * sizeof(std::int32_t)) == 0);
 
     std::copy(a.simdInternal_.begin(), a.simdInternal_.end(), m);
 };
@@ -305,11 +298,10 @@ store(std::int32_t * m, SimdFInt32 a)
  * \param m Pointer to memory, no alignment requirements.
  * \return SIMD integer variable.
  */
-static inline SimdFInt32 gmx_simdcall
-simdLoadUFI(const std::int32_t *m)
+static inline SimdFInt32 gmx_simdcall simdLoadUFI(const std::int32_t *m)
 {
     SimdFInt32 a;
-    std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
+    std::copy(m, m + a.simdInternal_.size(), a.simdInternal_.begin());
     return a;
 }
 
@@ -320,8 +312,7 @@ simdLoadUFI(const std::int32_t *m)
  * \param m Memory pointer, no alignment requirements.
  * \param a SIMD variable to store.
  */
-static inline void gmx_simdcall
-storeU(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall storeU(std::int32_t * m, SimdFInt32 a)
 {
     std::copy(a.simdInternal_.begin(), a.simdInternal_.end(), m);
 }
@@ -333,8 +324,7 @@ storeU(std::int32_t * m, SimdFInt32 a)
  *
  * \return SIMD 0
  */
-static inline SimdFInt32 gmx_simdcall
-setZeroFI()
+static inline SimdFInt32 gmx_simdcall setZeroFI()
 {
     return SimdFInt32(0);
 }
@@ -347,9 +337,8 @@ setZeroFI()
  * \param  a     SIMD variable from which to extract value.
  * \return Single integer from position index in SIMD variable.
  */
-template<int index>
-static inline std::int32_t gmx_simdcall
-extract(SimdFInt32 a)
+template <int index>
+static inline std::int32_t gmx_simdcall extract(SimdFInt32 a)
 {
     return a.simdInternal_[index];
 }
@@ -368,15 +357,14 @@ extract(SimdFInt32 a)
  * \param b data2
  * \return data1 & data2
  */
-static inline SimdFloat gmx_simdcall
-operator&(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator&(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     union
     {
-        float         r;
-        std::int32_t  i;
+        float        r;
+        std::int32_t i;
     }
     conv1, conv2;
 
@@ -398,15 +386,14 @@ operator&(SimdFloat a, SimdFloat b)
  * \param b data2
  * \return (~data1) & data2
  */
-static inline SimdFloat gmx_simdcall
-andNot(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall andNot(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     union
     {
-        float         r;
-        std::int32_t  i;
+        float        r;
+        std::int32_t i;
     }
     conv1, conv2;
 
@@ -428,15 +415,14 @@ andNot(SimdFloat a, SimdFloat b)
  * \param b data2
  * \return data1 | data2
  */
-static inline SimdFloat gmx_simdcall
-operator|(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator|(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     union
     {
-        float         r;
-        std::int32_t  i;
+        float        r;
+        std::int32_t i;
     }
     conv1, conv2;
 
@@ -458,15 +444,14 @@ operator|(SimdFloat a, SimdFloat b)
  * \param b data2
  * \return data1 ^ data2
  */
-static inline SimdFloat gmx_simdcall
-operator^(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator^(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     union
     {
-        float         r;
-        std::int32_t  i;
+        float        r;
+        std::int32_t i;
     }
     conv1, conv2;
 
@@ -492,10 +477,9 @@ operator^(SimdFloat a, SimdFloat b)
  * \param b term2
  * \return a+b
  */
-static inline SimdFloat gmx_simdcall
-operator+(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator+(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -510,10 +494,9 @@ operator+(SimdFloat a, SimdFloat b)
  * \param b term2
  * \return a-b
  */
-static inline SimdFloat gmx_simdcall
-operator-(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator-(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -527,10 +510,9 @@ operator-(SimdFloat a, SimdFloat b)
  * \param a SIMD double precision value
  * \return -a
  */
-static inline SimdFloat gmx_simdcall
-operator-(SimdFloat a)
+static inline SimdFloat gmx_simdcall operator-(SimdFloat a)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -545,10 +527,9 @@ operator-(SimdFloat a)
  * \param b factor2
  * \return a*b.
  */
-static inline SimdFloat gmx_simdcall
-operator*(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall operator*(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -564,10 +545,9 @@ operator*(SimdFloat a, SimdFloat b)
  * \param c term
  * \return a*b+c
  */
-static inline SimdFloat gmx_simdcall
-fma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return a*b+c;
+    return a * b + c;
 }
 
 /*! \brief SIMD float Fused-multiply-subtract. Result is a*b-c.
@@ -577,10 +557,9 @@ fma(SimdFloat a, SimdFloat b, SimdFloat c)
  * \param c term
  * \return a*b-c
  */
-static inline SimdFloat gmx_simdcall
-fms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return a*b-c;
+    return a * b - c;
 }
 
 /*! \brief SIMD float Fused-negated-multiply-add. Result is -a*b+c.
@@ -590,10 +569,9 @@ fms(SimdFloat a, SimdFloat b, SimdFloat c)
  * \param c term
  * \return -a*b+c
  */
-static inline SimdFloat gmx_simdcall
-fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return c-a*b;
+    return c - a * b;
 }
 
 /*! \brief SIMD float Fused-negated-multiply-subtract. Result is -a*b-c.
@@ -603,10 +581,9 @@ fnma(SimdFloat a, SimdFloat b, SimdFloat c)
  * \param c term
  * \return -a*b-c
  */
-static inline SimdFloat gmx_simdcall
-fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return -a*b-c;
+    return -a * b - c;
 }
 
 /*! \brief SIMD float 1.0/sqrt(x) lookup.
@@ -617,10 +594,9 @@ fnms(SimdFloat a, SimdFloat b, SimdFloat c)
  * \param x Argument, x>0
  * \return Approximation of 1/sqrt(x), accuracy is \ref GMX_SIMD_RSQRT_BITS.
  */
-static inline SimdFloat gmx_simdcall
-rsqrt(SimdFloat x)
+static inline SimdFloat gmx_simdcall rsqrt(SimdFloat x)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -637,10 +613,9 @@ rsqrt(SimdFloat x)
  * \param x Argument, x!=0
  * \return Approximation of 1/x, accuracy is \ref GMX_SIMD_RCP_BITS.
  */
-static inline SimdFloat gmx_simdcall
-rcp(SimdFloat x)
+static inline SimdFloat gmx_simdcall rcp(SimdFloat x)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -656,10 +631,9 @@ rcp(SimdFloat x)
  * \param m mask
  * \return a+b where mask is true, a otherwise.
  */
-static inline SimdFloat gmx_simdcall
-maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -675,10 +649,9 @@ maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
  * \param m mask
  * \return a*b where mask is true, 0.0 otherwise.
  */
-static inline SimdFloat gmx_simdcall
-maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -695,10 +668,9 @@ maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
  * \param m mask
  * \return a*b+c where mask is true, 0.0 otherwise.
  */
-static inline SimdFloat gmx_simdcall
-maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -717,10 +689,9 @@ maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
  * \return Approximation of 1/sqrt(x), accuracy is \ref GMX_SIMD_RSQRT_BITS.
  *         The result for masked-out entries will be 0.0.
  */
-static inline SimdFloat gmx_simdcall
-maskzRsqrt(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzRsqrt(SimdFloat x, SimdFBool m)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -739,10 +710,9 @@ maskzRsqrt(SimdFloat x, SimdFBool m)
  * \return Approximation of 1/x, accuracy is \ref GMX_SIMD_RCP_BITS.
  *         The result for masked-out entries will be 0.0.
  */
-static inline SimdFloat gmx_simdcall
-maskzRcp(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzRcp(SimdFloat x, SimdFBool m)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -756,10 +726,9 @@ maskzRcp(SimdFloat x, SimdFBool m)
  * \param a any floating point values
  * \return abs(a) for each element.
  */
-static inline SimdFloat gmx_simdcall
-abs(SimdFloat a)
+static inline SimdFloat gmx_simdcall abs(SimdFloat a)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -774,10 +743,9 @@ abs(SimdFloat a)
  * \param b Any floating-point value
  * \return max(a,b) for each element.
  */
-static inline SimdFloat gmx_simdcall
-max(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall max(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -792,10 +760,9 @@ max(SimdFloat a, SimdFloat b)
  * \param b Any floating-point value
  * \return min(a,b) for each element.
  */
-static inline SimdFloat gmx_simdcall
-min(SimdFloat a, SimdFloat b)
+static inline SimdFloat gmx_simdcall min(SimdFloat a, SimdFloat b)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -809,10 +776,9 @@ min(SimdFloat a, SimdFloat b)
  * \param a Any floating-point value
  * \return The nearest integer, represented in floating-point format.
  */
-static inline SimdFloat gmx_simdcall
-round(SimdFloat a)
+static inline SimdFloat gmx_simdcall round(SimdFloat a)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -830,10 +796,9 @@ round(SimdFloat a)
  * is that truncation is virtually always present as a dedicated hardware
  * instruction, but floor() frequently isn't.
  */
-static inline SimdFloat gmx_simdcall
-trunc(SimdFloat a)
+static inline SimdFloat gmx_simdcall trunc(SimdFloat a)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -848,8 +813,7 @@ trunc(SimdFloat a)
  * \param[out]  exponent  Returned exponent of value, integer SIMD format.
  * \return      Fraction of value, floating-point SIMD format.
  */
-static inline SimdFloat gmx_simdcall
-frexp(SimdFloat value, SimdFInt32 * exponent)
+static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 * exponent)
 {
     SimdFloat fraction;
 
@@ -866,10 +830,9 @@ frexp(SimdFloat value, SimdFInt32 * exponent)
  * \param exponent Integer that will not overflow as 2^exponent.
  * \return value*2^exponent
  */
-static inline SimdFloat gmx_simdcall
-ldexp(SimdFloat value, SimdFInt32 exponent)
+static inline SimdFloat gmx_simdcall ldexp(SimdFloat value, SimdFInt32 exponent)
 {
-    SimdFloat           res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -884,8 +847,7 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
  * \return The sum of all elements in the argument variable.
  *
  */
-static inline float gmx_simdcall
-reduce(SimdFloat a)
+static inline float gmx_simdcall reduce(SimdFloat a)
 {
     float sum = 0.0f;
 
@@ -910,10 +872,9 @@ reduce(SimdFloat a)
  *
  * Beware that exact floating-point comparisons are difficult.
  */
-static inline SimdFBool gmx_simdcall
-operator==(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator==(SimdFloat a, SimdFloat b)
 {
-    SimdFBool         res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -930,10 +891,9 @@ operator==(SimdFloat a, SimdFloat b)
  *
  * Beware that exact floating-point comparisons are difficult.
  */
-static inline SimdFBool gmx_simdcall
-operator!=(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator!=(SimdFloat a, SimdFloat b)
 {
-    SimdFBool         res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -948,10 +908,9 @@ operator!=(SimdFloat a, SimdFloat b)
  * \param b value2
  * \return Each element of the boolean will be set to true if a<b.
  */
-static inline SimdFBool gmx_simdcall
-operator<(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator<(SimdFloat a, SimdFloat b)
 {
-    SimdFBool          res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -966,10 +925,9 @@ operator<(SimdFloat a, SimdFloat b)
  * \param b value2
  * \return Each element of the boolean will be set to true if a<=b.
  */
-static inline SimdFBool gmx_simdcall
-operator<=(SimdFloat a, SimdFloat b)
+static inline SimdFBool gmx_simdcall operator<=(SimdFloat a, SimdFloat b)
 {
-    SimdFBool          res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -987,10 +945,9 @@ operator<=(SimdFloat a, SimdFloat b)
  * \param a value
  * \return Each element of the boolean will be true if any bit in a is nonzero.
  */
-static inline SimdFBool gmx_simdcall
-testBits(SimdFloat a)
+static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
 {
-    SimdFBool         res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1015,10 +972,9 @@ testBits(SimdFloat a)
  * \note This is not necessarily a bitwise operation - the storage format
  * of booleans is implementation-dependent.
  */
-static inline SimdFBool gmx_simdcall
-operator&&(SimdFBool a, SimdFBool b)
+static inline SimdFBool gmx_simdcall operator&&(SimdFBool a, SimdFBool b)
 {
-    SimdFBool         res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1037,10 +993,9 @@ operator&&(SimdFBool a, SimdFBool b)
  * of booleans is implementation-dependent.
  *
  \ */
-static inline SimdFBool gmx_simdcall
-operator||(SimdFBool a, SimdFBool b)
+static inline SimdFBool gmx_simdcall operator||(SimdFBool a, SimdFBool b)
 {
-    SimdFBool         res;
+    SimdFBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1057,8 +1012,7 @@ operator||(SimdFBool a, SimdFBool b)
  * The actual return value for truth will depend on the architecture,
  * so any non-zero value is considered truth.
  */
-static inline bool gmx_simdcall
-anyTrue(SimdFBool a)
+static inline bool gmx_simdcall anyTrue(SimdFBool a)
 {
     bool res = false;
 
@@ -1075,10 +1029,9 @@ anyTrue(SimdFBool a)
  * \param mask Boolean selector
  * \return  For each element, a is selected for true, 0 for false.
  */
-static inline SimdFloat gmx_simdcall
-selectByMask(SimdFloat a, SimdFBool mask)
+static inline SimdFloat gmx_simdcall selectByMask(SimdFloat a, SimdFBool mask)
 {
-    SimdFloat          res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1093,10 +1046,9 @@ selectByMask(SimdFloat a, SimdFBool mask)
  * \param mask Boolean selector
  * \return  For each element, a is selected for false, 0 for true (sic).
  */
-static inline SimdFloat gmx_simdcall
-selectByNotMask(SimdFloat a, SimdFBool mask)
+static inline SimdFloat gmx_simdcall selectByNotMask(SimdFloat a, SimdFBool mask)
 {
-    SimdFloat          res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1112,10 +1064,9 @@ selectByNotMask(SimdFloat a, SimdFBool mask)
  * \param sel Boolean selector
  * \return For each element, select b if sel is true, a otherwise.
  */
-static inline SimdFloat gmx_simdcall
-blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+static inline SimdFloat gmx_simdcall blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
-    SimdFloat         res;
+    SimdFloat res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1141,10 +1092,9 @@ blend(SimdFloat a, SimdFloat b, SimdFBool sel)
  * \param n number of positions to shift left. n<=32.
  * \return shifted values
  */
-static inline SimdFInt32 gmx_simdcall
-operator<<(SimdFInt32 a, int n)
+static inline SimdFInt32 gmx_simdcall operator<<(SimdFInt32 a, int n)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1164,10 +1114,9 @@ operator<<(SimdFInt32 a, int n)
  * \param n number of positions to shift right. n<=32.
  * \return shifted values
  */
-static inline SimdFInt32 gmx_simdcall
-operator>>(SimdFInt32 a, int n)
+static inline SimdFInt32 gmx_simdcall operator>>(SimdFInt32 a, int n)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1188,10 +1137,9 @@ operator>>(SimdFInt32 a, int n)
  * \param b second integer SIMD
  * \return a \& b (bitwise and)
  */
-static inline SimdFInt32 gmx_simdcall
-operator&(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator&(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1212,10 +1160,9 @@ operator&(SimdFInt32 a, SimdFInt32 b)
  * \param b integer SIMD
  * \return (~a) & b
  */
-static inline SimdFInt32 gmx_simdcall
-andNot(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall andNot(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1232,10 +1179,9 @@ andNot(SimdFInt32 a, SimdFInt32 b)
  * \param b second integer SIMD
  * \return a \| b (bitwise or)
  */
-static inline SimdFInt32 gmx_simdcall
-operator|(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator|(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1252,10 +1198,9 @@ operator|(SimdFInt32 a, SimdFInt32 b)
  * \param b second integer SIMD
  * \return a ^ b (bitwise xor)
  */
-static inline SimdFInt32 gmx_simdcall
-operator^(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator^(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1279,10 +1224,9 @@ operator^(SimdFInt32 a, SimdFInt32 b)
  * \param b term2
  * \return a+b
  */
-static inline SimdFInt32 gmx_simdcall
-operator+(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator+(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1300,10 +1244,9 @@ operator+(SimdFInt32 a, SimdFInt32 b)
  * \param b term2
  * \return a-b
  */
-static inline SimdFInt32 gmx_simdcall
-operator-(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator-(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1323,10 +1266,9 @@ operator-(SimdFInt32 a, SimdFInt32 b)
  *
  * \note Only the low 32 bits are retained, so this can overflow.
  */
-static inline SimdFInt32 gmx_simdcall
-operator*(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator*(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1349,10 +1291,9 @@ operator*(SimdFInt32 a, SimdFInt32 b)
  * \param b SIMD integer2
  * \return SIMD integer boolean with true for elements where a==b
  */
-static inline SimdFIBool gmx_simdcall
-operator==(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFIBool gmx_simdcall operator==(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFIBool         res;
+    SimdFIBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1369,10 +1310,9 @@ operator==(SimdFInt32 a, SimdFInt32 b)
  * \param b SIMD integer2
  * \return SIMD integer boolean with true for elements where a<b
  */
-static inline SimdFIBool gmx_simdcall
-operator<(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFIBool gmx_simdcall operator<(SimdFInt32 a, SimdFInt32 b)
 {
-    SimdFIBool         res;
+    SimdFIBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1388,10 +1328,9 @@ operator<(SimdFInt32 a, SimdFInt32 b)
  * \param a SIMD integer
  * \return SIMD integer boolean with true for elements where any bit is set
  */
-static inline SimdFIBool gmx_simdcall
-testBits(SimdFInt32 a)
+static inline SimdFIBool gmx_simdcall testBits(SimdFInt32 a)
 {
-    SimdFIBool         res;
+    SimdFIBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1408,10 +1347,9 @@ testBits(SimdFInt32 a)
  * \param b SIMD boolean 2
  * \return True for elements where both a and b are true.
  */
-static inline SimdFIBool gmx_simdcall
-operator&&(SimdFIBool a, SimdFIBool b)
+static inline SimdFIBool gmx_simdcall operator&&(SimdFIBool a, SimdFIBool b)
 {
-    SimdFIBool        res;
+    SimdFIBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1428,10 +1366,9 @@ operator&&(SimdFIBool a, SimdFIBool b)
  * \param b SIMD boolean 2
  * \return True for elements where both a and b are true.
  */
-static inline SimdFIBool gmx_simdcall
-operator||(SimdFIBool a, SimdFIBool b)
+static inline SimdFIBool gmx_simdcall operator||(SimdFIBool a, SimdFIBool b)
 {
-    SimdFIBool         res;
+    SimdFIBool res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1450,8 +1387,7 @@ operator||(SimdFIBool a, SimdFIBool b)
  * \param a SIMD boolean
  * \return True if any of the elements in a is true, otherwise 0.
  */
-static inline bool gmx_simdcall
-anyTrue(SimdFIBool a)
+static inline bool gmx_simdcall anyTrue(SimdFIBool a)
 {
     bool res = false;
 
@@ -1470,10 +1406,9 @@ anyTrue(SimdFIBool a)
  * \param mask Boolean selector
  * \return Elements from a where sel is true, 0 otherwise.
  */
-static inline SimdFInt32 gmx_simdcall
-selectByMask(SimdFInt32 a, SimdFIBool mask)
+static inline SimdFInt32 gmx_simdcall selectByMask(SimdFInt32 a, SimdFIBool mask)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1490,10 +1425,9 @@ selectByMask(SimdFInt32 a, SimdFIBool mask)
  * \param mask Boolean selector
  * \return Elements from a where sel is false, 0 otherwise (sic).
  */
-static inline SimdFInt32 gmx_simdcall
-selectByNotMask(SimdFInt32 a, SimdFIBool mask)
+static inline SimdFInt32 gmx_simdcall selectByNotMask(SimdFInt32 a, SimdFIBool mask)
 {
-    SimdFInt32         res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1511,10 +1445,9 @@ selectByNotMask(SimdFInt32 a, SimdFIBool mask)
  * \param sel Boolean selector
  * \return For each element, select b if sel is true, a otherwise.
  */
-static inline SimdFInt32 gmx_simdcall
-blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+static inline SimdFInt32 gmx_simdcall blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
-    SimdFInt32        res;
+    SimdFInt32 res;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -1534,10 +1467,9 @@ blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
  * \param a SIMD floating-point
  * \return SIMD integer, rounded to nearest integer.
  */
-static inline SimdFInt32 gmx_simdcall
-cvtR2I(SimdFloat a)
+static inline SimdFInt32 gmx_simdcall cvtR2I(SimdFloat a)
 {
-    SimdFInt32         b;
+    SimdFInt32 b;
 
     for (std::size_t i = 0; i < b.simdInternal_.size(); i++)
     {
@@ -1551,10 +1483,9 @@ cvtR2I(SimdFloat a)
  * \param a SIMD floating-point
  * \return SIMD integer, truncated to nearest integer.
  */
-static inline SimdFInt32 gmx_simdcall
-cvttR2I(SimdFloat a)
+static inline SimdFInt32 gmx_simdcall cvttR2I(SimdFloat a)
 {
-    SimdFInt32         b;
+    SimdFInt32 b;
 
     for (std::size_t i = 0; i < b.simdInternal_.size(); i++)
     {
@@ -1568,10 +1499,9 @@ cvttR2I(SimdFloat a)
  * \param a SIMD integer
  * \return SIMD floating-point
  */
-static inline SimdFloat gmx_simdcall
-cvtI2R(SimdFInt32 a)
+static inline SimdFloat gmx_simdcall cvtI2R(SimdFInt32 a)
 {
-    SimdFloat         b;
+    SimdFloat b;
 
     for (std::size_t i = 0; i < b.simdInternal_.size(); i++)
     {
@@ -1585,10 +1515,9 @@ cvtI2R(SimdFInt32 a)
  * \param a SIMD floating-point boolean
  * \return SIMD integer boolean
  */
-static inline SimdFIBool gmx_simdcall
-cvtB2IB(SimdFBool a)
+static inline SimdFIBool gmx_simdcall cvtB2IB(SimdFBool a)
 {
-    SimdFIBool         b;
+    SimdFIBool b;
 
     for (std::size_t i = 0; i < b.simdInternal_.size(); i++)
     {
@@ -1602,10 +1531,9 @@ cvtB2IB(SimdFBool a)
  * \param a SIMD integer boolean
  * \return SIMD floating-point boolean
  */
-static inline SimdFBool gmx_simdcall
-cvtIB2B(SimdFIBool a)
+static inline SimdFBool gmx_simdcall cvtIB2B(SimdFIBool a)
 {
-    SimdFBool         b;
+    SimdFBool b;
 
     for (std::size_t i = 0; i < b.simdInternal_.size(); i++)
     {

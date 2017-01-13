@@ -105,7 +105,7 @@ typedef struct
     const char *defopt;
     const char *descr;
     int         ntps;
-    const int  *tps;
+    const int * tps;
 } t_deffile;
 
 /* this array should correspond to the enum in filetypes.h */

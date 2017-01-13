@@ -66,7 +66,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
@@ -86,7 +86,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
@@ -103,7 +103,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
@@ -120,7 +120,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
     };
     CommandLine       args(cmdline);
     initManager(args, "g_module");
-    MockModule        mod(nullptr, nullptr);
+    MockModule mod(nullptr, nullptr);
     manager().setSingleModule(&mod);
     using ::testing::_;
     EXPECT_CALL(mod, writeHelp(_));
@@ -137,7 +137,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("test", "Test module");
+    MockModule &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;

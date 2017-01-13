@@ -75,8 +75,7 @@ namespace gmx
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-store(float *m, float a)
+static inline void store(float *m, float a)
 {
     *m = a;
 }
@@ -90,8 +89,7 @@ store(float *m, float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-storeU(float *m, float a)
+static inline void storeU(float *m, float a)
 {
     *m = a;
 }
@@ -110,12 +108,11 @@ storeU(float *m, float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-fma(float a, float b, float c)
+static inline float fma(float a, float b, float c)
 {
     // Note that we purposely do not use the single-rounding std::fma
     // as that can be very slow without hardware support
-    return a*b + c;
+    return a * b + c;
 }
 
 /*! \brief Float Fused-multiply-subtract. Result is a*b - c.
@@ -129,10 +126,9 @@ fma(float a, float b, float c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-fms(float a, float b, float c)
+static inline float fms(float a, float b, float c)
 {
-    return a*b - c;
+    return a * b - c;
 }
 
 /*! \brief Float Fused-negated-multiply-add. Result is -a*b + c.
@@ -146,10 +142,9 @@ fms(float a, float b, float c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-fnma(float a, float b, float c)
+static inline float fnma(float a, float b, float c)
 {
-    return c - a*b;
+    return c - a * b;
 }
 
 /*! \brief Float Fused-negated-multiply-subtract. Result is -a*b - c.
@@ -163,10 +158,9 @@ fnma(float a, float b, float c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-fnms(float a, float b, float c)
+static inline float fnms(float a, float b, float c)
 {
-    return -a*b - c;
+    return -a * b - c;
 }
 
 /*! \brief Add two float variables, masked version.
@@ -180,8 +174,7 @@ fnms(float a, float b, float c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-maskAdd(float a, float b, float m)
+static inline float maskAdd(float a, float b, float m)
 {
     return a + (m ? b : 0.0f);
 }
@@ -197,8 +190,7 @@ maskAdd(float a, float b, float m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-maskzMul(float a, float b, float m)
+static inline float maskzMul(float a, float b, float m)
 {
     return m ? (a * b) : 0.0f;
 }
@@ -215,8 +207,7 @@ maskzMul(float a, float b, float m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-maskzFma(float a, float b, float c, float m)
+static inline float maskzFma(float a, float b, float c, float m)
 {
     return m ? (a * b + c) : 0.0f;
 }
@@ -230,8 +221,7 @@ maskzFma(float a, float b, float c, float m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-abs(float a)
+static inline float abs(float a)
 {
     return std::abs(a);
 }
@@ -246,8 +236,7 @@ abs(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-max(float a, float b)
+static inline float max(float a, float b)
 {
     return std::max(a, b);
 }
@@ -262,8 +251,7 @@ max(float a, float b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-min(float a, float b)
+static inline float min(float a, float b)
 {
     return std::min(a, b);
 }
@@ -277,8 +265,7 @@ min(float a, float b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-round(float a)
+static inline float round(float a)
 {
     return std::round(a);
 }
@@ -292,8 +279,7 @@ round(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-trunc(float a)
+static inline float trunc(float a)
 {
     return std::trunc(a);
 }
@@ -307,8 +293,7 @@ trunc(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-reduce(float a)
+static inline float reduce(float a)
 {
     return a;
 }
@@ -323,8 +308,7 @@ reduce(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-andNot(float a, float b)
+static inline float andNot(float a, float b)
 {
     union
     {
@@ -353,8 +337,7 @@ andNot(float a, float b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline bool
-testBits(float a)
+static inline bool testBits(float a)
 {
     union
     {
@@ -375,8 +358,7 @@ testBits(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline bool
-anyTrue(bool a)
+static inline bool anyTrue(bool a)
 {
     return a;
 }
@@ -391,8 +373,7 @@ anyTrue(bool a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-selectByMask(float a, bool mask)
+static inline float selectByMask(float a, bool mask)
 {
     return mask ? a : 0.0f;
 }
@@ -407,8 +388,7 @@ selectByMask(float a, bool mask)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-selectByNotMask(float a, bool mask)
+static inline float selectByNotMask(float a, bool mask)
 {
     return mask ? 0.0f : a;
 }
@@ -424,8 +404,7 @@ selectByNotMask(float a, bool mask)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-blend(float a, float b, float sel)
+static inline float blend(float a, float b, float sel)
 {
     return sel ? b : a;
 }
@@ -439,8 +418,7 @@ blend(float a, float b, float sel)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-cvtR2I(float a)
+static inline std::int32_t cvtR2I(float a)
 {
     return std::round(a);
 };
@@ -454,8 +432,7 @@ cvtR2I(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-cvttR2I(float a)
+static inline std::int32_t cvttR2I(float a)
 {
     return std::trunc(a);
 };
@@ -473,8 +450,7 @@ cvttR2I(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-cvtI2R(std::int32_t a)
+static inline std::int32_t cvtI2R(std::int32_t a)
 {
     return a;
 }
@@ -492,8 +468,7 @@ cvtI2R(std::int32_t a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-store(double *m, double a)
+static inline void store(double *m, double a)
 {
     *m = a;
 }
@@ -507,8 +482,7 @@ store(double *m, double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-storeU(double *m, double a)
+static inline void storeU(double *m, double a)
 {
     *m = a;
 }
@@ -527,12 +501,11 @@ storeU(double *m, double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-fma(double a, double b, double c)
+static inline double fma(double a, double b, double c)
 {
     // Note that we purposely do not use the single-rounding std::fma
     // as that can be very slow without hardware support
-    return a*b + c;
+    return a * b + c;
 }
 
 /*! \brief double Fused-multiply-subtract. Result is a*b - c.
@@ -546,10 +519,9 @@ fma(double a, double b, double c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-fms(double a, double b, double c)
+static inline double fms(double a, double b, double c)
 {
-    return a*b - c;
+    return a * b - c;
 }
 
 /*! \brief double Fused-negated-multiply-add. Result is - a*b + c.
@@ -563,10 +535,9 @@ fms(double a, double b, double c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-fnma(double a, double b, double c)
+static inline double fnma(double a, double b, double c)
 {
-    return c - a*b;
+    return c - a * b;
 }
 
 /*! \brief double Fused-negated-multiply-subtract. Result is -a*b - c.
@@ -580,10 +551,9 @@ fnma(double a, double b, double c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-fnms(double a, double b, double c)
+static inline double fnms(double a, double b, double c)
 {
-    return -a*b - c;
+    return -a * b - c;
 }
 
 /*! \brief Add two double variables, masked version.
@@ -597,8 +567,7 @@ fnms(double a, double b, double c)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskAdd(double a, double b, double m)
+static inline double maskAdd(double a, double b, double m)
 {
     return a + (m ? b : 0.0);
 }
@@ -614,8 +583,7 @@ maskAdd(double a, double b, double m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskzMul(double a, double b, double m)
+static inline double maskzMul(double a, double b, double m)
 {
     return m ? (a * b) : 0.0;
 }
@@ -632,8 +600,7 @@ maskzMul(double a, double b, double m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskzFma(double a, double b, double c, double m)
+static inline double maskzFma(double a, double b, double c, double m)
 {
     return m ? (a * b + c) : 0.0;
 }
@@ -647,8 +614,7 @@ maskzFma(double a, double b, double c, double m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-abs(double a)
+static inline double abs(double a)
 {
     return std::abs(a);
 }
@@ -663,8 +629,7 @@ abs(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-max(double a, double b)
+static inline double max(double a, double b)
 {
     return std::max(a, b);
 }
@@ -679,8 +644,7 @@ max(double a, double b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-min(double a, double b)
+static inline double min(double a, double b)
 {
     return std::min(a, b);
 }
@@ -694,8 +658,7 @@ min(double a, double b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-round(double a)
+static inline double round(double a)
 {
     return std::round(a);
 }
@@ -709,8 +672,7 @@ round(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-trunc(double a)
+static inline double trunc(double a)
 {
     return std::trunc(a);
 }
@@ -724,8 +686,7 @@ trunc(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-reduce(double a)
+static inline double reduce(double a)
 {
     return a;
 }
@@ -740,8 +701,7 @@ reduce(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-andNot(double a, double b)
+static inline double andNot(double a, double b)
 {
     union
     {
@@ -770,13 +730,12 @@ andNot(double a, double b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline bool
-testBits(double a)
+static inline bool testBits(double a)
 {
     union
     {
-        std::uint64_t  i;
-        double         f;
+        std::uint64_t i;
+        double        f;
     } conv;
 
     conv.f = a;
@@ -793,8 +752,7 @@ testBits(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-selectByMask(double a, bool mask)
+static inline double selectByMask(double a, bool mask)
 {
     return mask ? a : 0.0;
 }
@@ -809,8 +767,7 @@ selectByMask(double a, bool mask)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-selectByNotMask(double a, bool mask)
+static inline double selectByNotMask(double a, bool mask)
 {
     return mask ? 0.0 : a;
 }
@@ -826,8 +783,7 @@ selectByNotMask(double a, bool mask)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-blend(double a, double b, double sel)
+static inline double blend(double a, double b, double sel)
 {
     return sel ? b : a;
 }
@@ -841,8 +797,7 @@ blend(double a, double b, double sel)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-cvtR2I(double a)
+static inline std::int32_t cvtR2I(double a)
 {
     return std::round(a);
 };
@@ -856,8 +811,7 @@ cvtR2I(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-cvttR2I(double a)
+static inline std::int32_t cvttR2I(double a)
 {
     return std::trunc(a);
 };
@@ -876,8 +830,7 @@ cvttR2I(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-cvtF2D(float a)
+static inline double cvtF2D(float a)
 {
     return a;
 }
@@ -891,8 +844,7 @@ cvtF2D(float a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-cvtD2F(double a)
+static inline float cvtD2F(double a)
 {
     return a;
 }
@@ -910,8 +862,7 @@ cvtD2F(double a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-store(std::int32_t *m, std::int32_t a)
+static inline void store(std::int32_t *m, std::int32_t a)
 {
     *m = a;
 }
@@ -925,8 +876,7 @@ store(std::int32_t *m, std::int32_t a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-storeU(std::int32_t *m, std::int32_t a)
+static inline void storeU(std::int32_t *m, std::int32_t a)
 {
     *m = a;
 }
@@ -941,8 +891,7 @@ storeU(std::int32_t *m, std::int32_t a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-andNot(std::int32_t a, std::int32_t b)
+static inline std::int32_t andNot(std::int32_t a, std::int32_t b)
 {
     return ~a & b;
 }
@@ -959,8 +908,7 @@ andNot(std::int32_t a, std::int32_t b)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline bool
-testBits(std::int32_t a)
+static inline bool testBits(std::int32_t a)
 {
     return (a != 0);
 }
@@ -975,8 +923,7 @@ testBits(std::int32_t a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-selectByMask(std::int32_t a, bool mask)
+static inline std::int32_t selectByMask(std::int32_t a, bool mask)
 {
     return mask ? a : 0;
 }
@@ -991,8 +938,7 @@ selectByMask(std::int32_t a, bool mask)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-selectByNotMask(std::int32_t a, bool mask)
+static inline std::int32_t selectByNotMask(std::int32_t a, bool mask)
 {
     return mask ? 0 : a;
 }
@@ -1008,8 +954,7 @@ selectByNotMask(std::int32_t a, bool mask)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline std::int32_t
-blend(std::int32_t a, std::int32_t b, float sel)
+static inline std::int32_t blend(std::int32_t a, std::int32_t b, float sel)
 {
     return sel ? b : a;
 }
@@ -1023,8 +968,7 @@ blend(std::int32_t a, std::int32_t b, float sel)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline bool
-cvtB2IB(bool a)
+static inline bool cvtB2IB(bool a)
 {
     return a;
 }
@@ -1038,8 +982,7 @@ cvtB2IB(bool a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline bool
-cvtIB2B(bool a)
+static inline bool cvtIB2B(bool a)
 {
     return a;
 }

@@ -41,7 +41,8 @@
 #include "x11.h"
 #include "xutil.h"
 
-typedef struct {
+typedef struct
+{
     XFontStruct *bigfont;
     XFontStruct *smallfont;
     t_windata    wd;

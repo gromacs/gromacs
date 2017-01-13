@@ -57,30 +57,33 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     char *name;
     char *def;
 } t_define;
 
-static int        ndef   = 0;
-static t_define  *defs   = nullptr;
-static int        nincl  = 0;
-static char     **incl   = nullptr;
+static int       ndef  = 0;
+static t_define *defs  = nullptr;
+static int       nincl = 0;
+static char **   incl  = nullptr;
 
 /* enum used for handling ifdefs */
-enum {
+enum
+{
     eifTRUE, eifFALSE, eifIGNORE, eifNR
 };
 
-typedef struct gmx_cpp {
-    FILE             *fp;
-    char             *path, *cwd;
-    char             *fn;
+typedef struct gmx_cpp
+{
+    FILE *            fp;
+    char *            path, *cwd;
+    char *            fn;
     int               line_len;
-    char             *line;
+    char *            line;
     int               line_nr;
     int               nifdef;
-    int              *ifdefs;
+    int *             ifdefs;
     struct   gmx_cpp *child, *parent;
 } gmx_cpp;
 
@@ -96,9 +99,9 @@ static const char *strstrw(const char *buf, const char *word)
     while ((ptr = strstr(buf, word)) != nullptr)
     {
         /* Check if we did not find part of a longer word */
-        if (ptr &&
-            is_word_end(ptr[strlen(word)]) &&
-            (((ptr > buf) && is_word_end(ptr[-1])) || (ptr == buf)))
+        if (ptr
+            && is_word_end(ptr[strlen(word)])
+            && (((ptr > buf) && is_word_end(ptr[-1])) || (ptr == buf)))
         {
             return ptr;
         }
@@ -149,7 +152,7 @@ static gmx_bool find_directive(char *buf, char **name, char **val)
 
 static gmx_bool is_ifdeffed_out(gmx_cpp_t handle)
 {
-    return ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE));
+    return ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef - 1] != eifTRUE));
 }
 
 static void add_include(const char *include)
@@ -172,7 +175,7 @@ static void add_include(const char *include)
     {
         nincl++;
         srenew(incl, nincl);
-        incl[nincl-1] = gmx_strdup(include);
+        incl[nincl - 1] = gmx_strdup(include);
     }
 }
 
@@ -190,7 +193,7 @@ static void done_includes()
 
 static void add_define(const char *name, const char *value)
 {
-    int  i;
+    int i;
 
     for (i = 0; (i < ndef); i++)
     {
@@ -216,11 +219,11 @@ static void add_define(const char *name, const char *value)
     }
     if (value && strlen(value) > 0)
     {
-        defs[i].def  = gmx_strdup(value);
+        defs[i].def = gmx_strdup(value);
     }
     else
     {
-        defs[i].def  = nullptr;
+        defs[i].def = nullptr;
     }
 }
 
@@ -241,21 +244,21 @@ static void done_defines()
    info for the cpp emulator. Return integer status */
 int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
 {
-    gmx_cpp_t    cpp;
-    char        *buf;
-    char        *ptr, *ptr2;
-    int          i;
+    gmx_cpp_t cpp;
+    char *    buf;
+    char *    ptr, *ptr2;
+    int       i;
 
     /* First process options, they might be necessary for opening files
        (especially include statements). */
-    i  = 0;
+    i = 0;
     if (cppopts)
     {
         while (cppopts[i])
         {
             if (strstr(cppopts[i], "-I") == cppopts[i])
             {
-                add_include(cppopts[i]+2);
+                add_include(cppopts[i] + 2);
             }
             if (strstr(cppopts[i], "-D") == cppopts[i])
             {
@@ -281,8 +284,8 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     }
 
     snew(cpp, 1);
-    *handle      = cpp;
-    cpp->fn      = nullptr;
+    *handle = cpp;
+    cpp->fn = nullptr;
     /* Find the file. First check whether it is in the current directory. */
     if (gmx_fexist(filenm))
     {
@@ -336,7 +339,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     {
         cpp->path = cpp->fn;
         *ptr      = '\0';
-        cpp->fn   = gmx_strdup(ptr+1);
+        cpp->fn   = gmx_strdup(ptr + 1);
         snew(cpp->cwd, STRLEN);
 
         gmx_getcwd(cpp->cwd, STRLEN);
@@ -378,14 +381,13 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     return eCPP_OK;
 }
 
-static int
-process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
+static int process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
 {
     gmx_cpp_t    handle = (gmx_cpp_t)*handlep;
     int          i, i0, len, status;
     unsigned int i1;
-    char        *inc_fn, *name;
-    const char  *ptr;
+    char *       inc_fn, *name;
+    const char * ptr;
     int          bIfdef, bIfndef;
 
     /* #ifdef or ifndef statement */
@@ -393,15 +395,15 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     bIfndef = (strcmp(dname, "ifndef") == 0);
     if (bIfdef || bIfndef)
     {
-        if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE))
+        if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef - 1] != eifTRUE))
         {
             handle->nifdef++;
             srenew(handle->ifdefs, handle->nifdef);
-            handle->ifdefs[handle->nifdef-1] = eifIGNORE;
+            handle->ifdefs[handle->nifdef - 1] = eifIGNORE;
         }
         else
         {
-            snew(name, strlen(dval)+1);
+            snew(name, strlen(dval) + 1);
             sscanf(dval, "%s", name);
             for (i = 0; (i < ndef); i++)
             {
@@ -414,11 +416,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
             srenew(handle->ifdefs, handle->nifdef);
             if ((bIfdef && (i < ndef)) || (bIfndef && (i == ndef)))
             {
-                handle->ifdefs[handle->nifdef-1] = eifTRUE;
+                handle->ifdefs[handle->nifdef - 1] = eifTRUE;
             }
             else
             {
-                handle->ifdefs[handle->nifdef-1] = eifFALSE;
+                handle->ifdefs[handle->nifdef - 1] = eifFALSE;
             }
             sfree(name);
         }
@@ -432,13 +434,13 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         {
             return eCPP_SYNTAX;
         }
-        if (handle->ifdefs[handle->nifdef-1] == eifTRUE)
+        if (handle->ifdefs[handle->nifdef - 1] == eifTRUE)
         {
-            handle->ifdefs[handle->nifdef-1] = eifFALSE;
+            handle->ifdefs[handle->nifdef - 1] = eifFALSE;
         }
-        else if (handle->ifdefs[handle->nifdef-1] == eifFALSE)
+        else if (handle->ifdefs[handle->nifdef - 1] == eifFALSE)
         {
-            handle->ifdefs[handle->nifdef-1] = eifTRUE;
+            handle->ifdefs[handle->nifdef - 1] = eifTRUE;
         }
         return eCPP_OK;
     }
@@ -473,7 +475,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
             {
                 if (len == -1)
                 {
-                    i0  = i1+1;
+                    i0  = i1 + 1;
                     len = 0;
                 }
                 else
@@ -490,8 +492,8 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
         {
             return eCPP_SYNTAX;
         }
-        snew(inc_fn, len+1);
-        strncpy(inc_fn, dval+i0, len);
+        snew(inc_fn, len + 1);
+        strncpy(inc_fn, dval + i0, len);
         inc_fn[len] = '\0';
 
         if (debug)
@@ -537,7 +539,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
     /* #undef statement */
     if (strcmp(dname, "undef") == 0)
     {
-        snew(name, strlen(dval)+1);
+        snew(name, strlen(dval) + 1);
         sscanf(dval, "%s", name);
         for (i = 0; (i < ndef); i++)
         {
@@ -549,10 +551,10 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
             }
         }
         sfree(name);
-        for (; (i < ndef-1); i++)
+        for (; (i < ndef - 1); i++)
         {
-            defs[i].name = defs[i+1].name;
-            defs[i].def  = defs[i+1].def;
+            defs[i].name = defs[i + 1].name;
+            defs[i].def  = defs[i + 1].def;
         }
         ndef--;
 
@@ -573,8 +575,8 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
     gmx_cpp_t   handle = (gmx_cpp_t)*handlep;
     int         i, nn, len, status;
     const char *ptr, *ptr2;
-    char       *name;
-    char       *dname, *dval;
+    char *      name;
+    char *      dname, *dval;
     gmx_bool    bEOF;
 
     if (!handle)
@@ -590,7 +592,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
     if (!bEOF)
     {
         /* Read the actual line now. */
-        if (fgets2(buf, n-1, handle->fp) == nullptr)
+        if (fgets2(buf, n - 1, handle->fp) == nullptr)
         {
             /* Recheck EOF, since we could have been at the end before
              * the fgets2 call, but we need to read past the end to know.
@@ -672,12 +674,12 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
             {
                 size_t four = 4;
 
-                len = strlen(buf) + nn*std::max(four, four+strlen(defs[i].def)-strlen(defs[i].name));
+                len = strlen(buf) + nn * std::max(four, four + strlen(defs[i].def) - strlen(defs[i].name));
                 snew(name, len);
                 ptr = buf;
                 while ((ptr2 = strstrw(ptr, defs[i].name)) != nullptr)
                 {
-                    strncat(name, ptr, (int)(ptr2-ptr));
+                    strncat(name, ptr, (int)(ptr2 - ptr));
                     strcat(name, defs[i].def);
                     ptr = ptr2 + strlen(defs[i].name);
                 }

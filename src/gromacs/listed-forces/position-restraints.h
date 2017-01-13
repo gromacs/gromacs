@@ -67,34 +67,34 @@ struct t_pbc;
 
 /*! \brief Helper function that wraps calls to posres */
 void
-posres_wrapper(t_nrnb             *nrnb,
-               const t_idef       *idef,
+posres_wrapper(t_nrnb *            nrnb,
+               const t_idef *      idef,
                const struct t_pbc *pbc,
                const rvec          x[],
-               gmx_enerdata_t     *enerd,
-               real               *lambda,
-               t_forcerec         *fr);
+               gmx_enerdata_t *    enerd,
+               real *              lambda,
+               t_forcerec *        fr);
 
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
 void
 posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
-                      const t_lambda       *fepvals,
-                      const t_idef         *idef,
-                      const struct t_pbc   *pbc,
+                      const t_lambda *      fepvals,
+                      const t_idef *        idef,
+                      const struct t_pbc *  pbc,
                       const rvec            x[],
-                      gmx_enerdata_t       *enerd,
-                      real                 *lambda,
-                      t_forcerec           *fr);
+                      gmx_enerdata_t *      enerd,
+                      real *                lambda,
+                      t_forcerec *          fr);
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb             *nrnb,
-                      const t_idef       *idef,
+void fbposres_wrapper(t_nrnb *            nrnb,
+                      const t_idef *      idef,
                       const struct t_pbc *pbc,
                       const rvec          x[],
-                      gmx_enerdata_t     *enerd,
-                      t_forcerec         *fr);
+                      gmx_enerdata_t *    enerd,
+                      t_forcerec *        fr);
 
 #ifdef __cplusplus
 }

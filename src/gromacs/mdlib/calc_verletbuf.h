@@ -48,8 +48,8 @@ extern "C" {
 
 typedef struct
 {
-    int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
-    int  cluster_size_j;  /* Cluster pair-list j-cluster size atom count */
+    int cluster_size_i;   /* Cluster pair-list i-cluster size atom count */
+    int cluster_size_j;   /* Cluster pair-list j-cluster size atom count */
 } verletbuf_list_setup_t;
 
 

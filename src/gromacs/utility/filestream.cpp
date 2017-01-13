@@ -150,9 +150,9 @@ class FileStreamImpl
 
     private:
         //! File handle for this object (NULL if the stream has been closed).
-        FILE  *fp_;
+        FILE *fp_;
         //! Whether \p fp_ should be closed by this object.
-        bool   bClose_;
+        bool bClose_;
 };
 
 }   // namespace internal

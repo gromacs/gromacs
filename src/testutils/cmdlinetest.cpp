@@ -81,9 +81,9 @@ class CommandLine::Impl
         Impl(const char *const cmdline[], size_t count);
         ~Impl();
 
-        std::vector<char *>     args_;
-        std::vector<char *>     argv_;
-        int                     argc_;
+        std::vector<char *> args_;
+        std::vector<char *> argv_;
+        int                 argc_;
 };
 
 CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
@@ -263,9 +263,9 @@ class CommandLineTestHelper::Impl
                 return *this;
             }
 
-            std::string              option;
-            std::string              path;
-            TextBlockMatcherPointer  matcher;
+            std::string             option;
+            std::string             path;
+            TextBlockMatcherPointer matcher;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -304,8 +304,8 @@ int CommandLineTestHelper::runModuleDirect(
 
 // static
 int CommandLineTestHelper::runModuleFactory(
-        std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
-        CommandLine                                                 *commandLine)
+        std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory,
+        CommandLine *                                               commandLine)
 {
     return runModuleDirect(factory(), commandLine);
 }
@@ -337,7 +337,7 @@ void CommandLineTestHelper::setInputFileContents(
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
-    TextWriter  file(fullFilename);
+    TextWriter                                  file(fullFilename);
     ConstArrayRef<const char *>::const_iterator i;
     for (i = contents.begin(); i != contents.end(); ++i)
     {
@@ -365,7 +365,7 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
 {
     if (!impl_->outputFiles_.empty())
     {
-        TestReferenceChecker                 outputChecker(
+        TestReferenceChecker outputChecker(
                 checker.checkCompound("OutputFiles", "Files"));
         Impl::OutputFileList::const_iterator outfile;
         for (outfile = impl_->outputFiles_.begin();
@@ -374,7 +374,7 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
         {
             TestReferenceChecker fileChecker(
                     outputChecker.checkCompound("File", outfile->option.c_str()));
-            TextInputFile        stream(outfile->path);
+            TextInputFile stream(outfile->path);
             outfile->matcher->checkStream(&stream, &fileChecker);
             stream.close();
         }
@@ -462,7 +462,7 @@ void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)
     CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, nullptr, "test");
     context.setModuleDisplayName(formatString("%s %s", "test", module->name()));
     module->writeHelp(context);
-    TestReferenceChecker   checker(rootChecker());
+    TestReferenceChecker checker(rootChecker());
     checker.checkTextBlock(stream.toString(), "HelpOutput");
 }
 

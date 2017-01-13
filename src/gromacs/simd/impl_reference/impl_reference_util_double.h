@@ -102,18 +102,17 @@ namespace gmx
  *       done internally by using the alignment template parameter instead.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double  *        base,
-                    const std::int32_t     offset[],
-                    SimdDouble *           v0,
-                    SimdDouble *           v1,
-                    SimdDouble *           v2,
-                    SimdDouble *           v3)
+static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble *       v0,
+                                                    SimdDouble *       v1,
+                                                    SimdDouble *       v2,
+                                                    SimdDouble *       v3)
 {
     // Offset list must be aligned for SIMD DINT32
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
     // Base pointer must be aligned to the smaller of 4 elements and double SIMD width
-    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4)*sizeof(double)) == 0);
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
     // align parameter must also be a multiple of the above alignment requirement
     assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 4) == 0);
 
@@ -150,16 +149,15 @@ gatherLoadTranspose(const double  *        base,
  *       done internally by using the alignment template parameter instead.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double  *        base,
-                    const std::int32_t     offset[],
-                    SimdDouble *           v0,
-                    SimdDouble *           v1)
+static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble *       v0,
+                                                    SimdDouble *       v1)
 {
     // Offset list must be aligned for SIMD DINT32
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
     // Base pointer must be aligned to the smaller of 2 elements and double SIMD width
-    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2)*sizeof(double)) == 0);
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
     // align parameter must also be a multiple of the above alignment requirement
     assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 2) == 0);
 
@@ -218,15 +216,14 @@ static const int c_simdBestPairAlignmentDouble = 2;
  *       allocation routines this will always be the case.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUTranspose(const double  *        base,
-                     const std::int32_t     offset[],
-                     SimdDouble *           v0,
-                     SimdDouble *           v1,
-                     SimdDouble *           v2)
+static inline void gmx_simdcall gatherLoadUTranspose(const double *     base,
+                                                     const std::int32_t offset[],
+                                                     SimdDouble *       v0,
+                                                     SimdDouble *       v1,
+                                                     SimdDouble *       v2)
 {
     // Offset list must be aligned for SIMD DINT32
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     for (std::size_t i = 0; i < v0->simdInternal_.size(); i++)
     {
@@ -271,15 +268,14 @@ gatherLoadUTranspose(const double  *        base,
  *       is faster even when a SIMD integer datatype is present.
  */
 template <int align>
-static inline void gmx_simdcall
-transposeScatterStoreU(double  *              base,
-                       const std::int32_t     offset[],
-                       SimdDouble             v0,
-                       SimdDouble             v1,
-                       SimdDouble             v2)
+static inline void gmx_simdcall transposeScatterStoreU(double *           base,
+                                                       const std::int32_t offset[],
+                                                       SimdDouble         v0,
+                                                       SimdDouble         v1,
+                                                       SimdDouble         v2)
 {
     // Offset list must be aligned for SIMD DINT32
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     for (std::size_t i = 0; i < v0.simdInternal_.size(); i++)
     {
@@ -331,15 +327,14 @@ transposeScatterStoreU(double  *              base,
  *       allocation routines this will always be the case.
  */
 template <int align>
-static inline void gmx_simdcall
-transposeScatterIncrU(double  *              base,
-                      const std::int32_t     offset[],
-                      SimdDouble             v0,
-                      SimdDouble             v1,
-                      SimdDouble             v2)
+static inline void gmx_simdcall transposeScatterIncrU(double *           base,
+                                                      const std::int32_t offset[],
+                                                      SimdDouble         v0,
+                                                      SimdDouble         v1,
+                                                      SimdDouble         v2)
 {
     // Offset list must be aligned for SIMD DINT32
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     for (std::size_t i = 0; i < v0.simdInternal_.size(); i++)
     {
@@ -390,15 +385,14 @@ transposeScatterIncrU(double  *              base,
  *       allocation routines this will always be the case.
  */
 template <int align>
-static inline void gmx_simdcall
-transposeScatterDecrU(double  *              base,
-                      const std::int32_t     offset[],
-                      SimdDouble             v0,
-                      SimdDouble             v1,
-                      SimdDouble             v2)
+static inline void gmx_simdcall transposeScatterDecrU(double *           base,
+                                                      const std::int32_t offset[],
+                                                      SimdDouble         v0,
+                                                      SimdDouble         v1,
+                                                      SimdDouble         v2)
 {
     // Offset list must be aligned for SIMD DINT32
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     for (std::size_t i = 0; i < v0.simdInternal_.size(); i++)
     {
@@ -429,11 +423,10 @@ transposeScatterDecrU(double  *              base,
  * first, second and third pair of SIMD variables, and store the three
  * results back into a suitable vector-format array.
  */
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdDouble    scalar,
-                        SimdDouble *  triplets0,
-                        SimdDouble *  triplets1,
-                        SimdDouble *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
+                                                        SimdDouble * triplets0,
+                                                        SimdDouble * triplets1,
+                                                        SimdDouble * triplets2)
 {
     for (std::size_t i = 0; i < scalar.simdInternal_.size(); i++)
     {
@@ -471,16 +464,15 @@ expandScalarsToTriplets(SimdDouble    scalar,
  *       is present in a SIMD register just before calling this routine.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double *       base,
-                             SimdDInt32           offset,
-                             SimdDouble *         v0,
-                             SimdDouble *         v1,
-                             SimdDouble *         v2,
-                             SimdDouble *         v3)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
+                                                             SimdDInt32     offset,
+                                                             SimdDouble *   v0,
+                                                             SimdDouble *   v1,
+                                                             SimdDouble *   v2,
+                                                             SimdDouble *   v3)
 {
     // Base pointer must be aligned to the smaller of 4 elements and double SIMD width
-    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4)*sizeof(double)) == 0);
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
     // align parameter must also be a multiple of the above alignment requirement
     assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 4) == 0);
 
@@ -519,11 +511,10 @@ gatherLoadBySimdIntTranspose(const double *       base,
  *       is present in a SIMD register just before calling this routine.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const double *       base,
-                              SimdDInt32           offset,
-                              SimdDouble *         v0,
-                              SimdDouble *         v1)
+static inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double * base,
+                                                              SimdDInt32     offset,
+                                                              SimdDouble *   v0,
+                                                              SimdDouble *   v1)
 {
     for (std::size_t i = 0; i < v0->simdInternal_.size(); i++)
     {
@@ -557,14 +548,13 @@ gatherLoadUBySimdIntTranspose(const double *       base,
  *       is present in a SIMD register just before calling this routine.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double *       base,
-                             SimdDInt32           offset,
-                             SimdDouble *         v0,
-                             SimdDouble *         v1)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
+                                                             SimdDInt32     offset,
+                                                             SimdDouble *   v0,
+                                                             SimdDouble *   v1)
 {
     // Base pointer must be aligned to the smaller of 2 elements and double SIMD width
-    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2)*sizeof(double)) == 0);
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
     // align parameter must also be a multiple of the above alignment requirement
     assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 2) == 0);
 
@@ -601,17 +591,16 @@ gatherLoadBySimdIntTranspose(const double *       base,
  * do not need these, this extra code will be optimized away completely if you
  * just ignore the return value (Checked with gcc-4.9.1 and clang-3.6 for AVX).
  */
-static inline double gmx_simdcall
-reduceIncr4ReturnSum(double *           m,
-                     SimdDouble         v0,
-                     SimdDouble         v1,
-                     SimdDouble         v2,
-                     SimdDouble         v3)
+static inline double gmx_simdcall reduceIncr4ReturnSum(double *   m,
+                                                       SimdDouble v0,
+                                                       SimdDouble v1,
+                                                       SimdDouble v2,
+                                                       SimdDouble v3)
 {
     double sum[4]; // Note that the 4 here corresponds to the 4 m-elements, not any SIMD width
 
     // Make sure the memory pointer is aligned to the smaller of 4 elements and double SIMD width
-    assert(std::size_t(m) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4)*sizeof(double)) == 0);
+    assert(std::size_t(m) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
 
     sum[0] = reduce(v0);
     sum[1] = reduce(v1);
@@ -647,20 +636,19 @@ reduceIncr4ReturnSum(double *           m,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline SimdDouble gmx_simdcall
-loadDualHsimd(const double *  m0,
-              const double *  m1)
+static inline SimdDouble gmx_simdcall loadDualHsimd(const double * m0,
+                                                    const double * m1)
 {
-    SimdDouble        a;
+    SimdDouble a;
 
     // Make sure the memory pointers are aligned to half double SIMD width
-    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
-    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
+    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
+    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
 
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
-        a.simdInternal_[i]                            = m0[i];
-        a.simdInternal_[a.simdInternal_.size()/2 + i] = m1[i];
+        a.simdInternal_[i]                              = m0[i];
+        a.simdInternal_[a.simdInternal_.size() / 2 + i] = m1[i];
     }
     return a;
 }
@@ -673,18 +661,17 @@ loadDualHsimd(const double *  m0,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline SimdDouble gmx_simdcall
-loadDuplicateHsimd(const double *  m)
+static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double * m)
 {
-    SimdDouble        a;
+    SimdDouble a;
 
     // Make sure the memory pointer is aligned
-    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
+    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
 
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
-        a.simdInternal_[i]                            = m[i];
-        a.simdInternal_[a.simdInternal_.size()/2 + i] = a.simdInternal_[i];
+        a.simdInternal_[i]                              = m[i];
+        a.simdInternal_[a.simdInternal_.size() / 2 + i] = a.simdInternal_[i];
     }
     return a;
 }
@@ -702,15 +689,14 @@ loadDuplicateHsimd(const double *  m)
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline SimdDouble gmx_simdcall
-load1DualHsimd(const double *  m)
+static inline SimdDouble gmx_simdcall load1DualHsimd(const double * m)
 {
-    SimdDouble        a;
+    SimdDouble a;
 
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
-        a.simdInternal_[i]                            = m[0];
-        a.simdInternal_[a.simdInternal_.size()/2 + i] = m[1];
+        a.simdInternal_[i]                              = m[0];
+        a.simdInternal_[a.simdInternal_.size() / 2 + i] = m[1];
     }
     return a;
 }
@@ -724,19 +710,18 @@ load1DualHsimd(const double *  m)
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline void gmx_simdcall
-storeDualHsimd(double *           m0,
-               double *           m1,
-               SimdDouble         a)
+static inline void gmx_simdcall storeDualHsimd(double *   m0,
+                                               double *   m1,
+                                               SimdDouble a)
 {
     // Make sure the memory pointers are aligned to half double SIMD width
-    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
-    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
+    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
+    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
 
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
         m0[i] = a.simdInternal_[i];
-        m1[i] = a.simdInternal_[a.simdInternal_.size()/2 + i];
+        m1[i] = a.simdInternal_[a.simdInternal_.size() / 2 + i];
     }
 }
 
@@ -753,22 +738,21 @@ storeDualHsimd(double *           m0,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline void gmx_simdcall
-incrDualHsimd(double *           m0,
-              double *           m1,
-              SimdDouble         a)
+static inline void gmx_simdcall incrDualHsimd(double *   m0,
+                                              double *   m1,
+                                              SimdDouble a)
 {
     // Make sure the memory pointer is aligned to half double SIMD width
-    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
-    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
+    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
+    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
 
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
         m0[i] += a.simdInternal_[i];
     }
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
-        m1[i] += a.simdInternal_[a.simdInternal_.size()/2 + i];
+        m1[i] += a.simdInternal_[a.simdInternal_.size() / 2 + i];
     }
 }
 
@@ -785,16 +769,15 @@ incrDualHsimd(double *           m0,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline void gmx_simdcall
-decrHsimd(double *           m,
-          SimdDouble         a)
+static inline void gmx_simdcall decrHsimd(double *   m,
+                                          SimdDouble a)
 {
     // Make sure the memory pointer is aligned to half double SIMD width
-    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH/2*sizeof(double)) == 0);
+    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
 
-    for (std::size_t i = 0; i < a.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
     {
-        m[i] -= a.simdInternal_[i] + a.simdInternal_[a.simdInternal_.size()/2 + i];
+        m[i] -= a.simdInternal_[i] + a.simdInternal_[a.simdInternal_.size() / 2 + i];
     }
 }
 
@@ -834,27 +817,26 @@ decrHsimd(double *           m,
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTransposeHsimd(const double  *       base0,
-                         const double  *       base1,
-                         std::int32_t          offset[],
-                         SimdDouble *          v0,
-                         SimdDouble *          v1)
+static inline void gmx_simdcall gatherLoadTransposeHsimd(const double * base0,
+                                                         const double * base1,
+                                                         std::int32_t   offset[],
+                                                         SimdDouble *   v0,
+                                                         SimdDouble *   v1)
 {
     // Offset list must be aligned for half SIMD DINT32 width
-    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH/2*sizeof(std::int32_t)) == 0);
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH / 2 * sizeof(std::int32_t)) == 0);
     // base pointers must be aligned to the smaller of 2 elements and double SIMD width
-    assert(std::size_t(base0) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2)*sizeof(double)) == 0);
-    assert(std::size_t(base1) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2)*sizeof(double)) == 0);
+    assert(std::size_t(base0) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
+    assert(std::size_t(base1) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
     // alignment parameter must be also be multiple of the above required alignment
     assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 2) == 0);
 
-    for (std::size_t i = 0; i < v0->simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < v0->simdInternal_.size() / 2; i++)
     {
-        v0->simdInternal_[i] = base0[align * offset[i]];
-        v1->simdInternal_[i] = base0[align * offset[i] + 1];
-        v0->simdInternal_[v0->simdInternal_.size()/2 + i] = base1[align * offset[i]];
-        v1->simdInternal_[v1->simdInternal_.size()/2 + i] = base1[align * offset[i] + 1];
+        v0->simdInternal_[i]                                = base0[align * offset[i]];
+        v1->simdInternal_[i]                                = base0[align * offset[i] + 1];
+        v0->simdInternal_[v0->simdInternal_.size() / 2 + i] = base1[align * offset[i]];
+        v1->simdInternal_[v1->simdInternal_.size() / 2 + i] = base1[align * offset[i] + 1];
     }
 }
 
@@ -878,24 +860,23 @@ gatherLoadTransposeHsimd(const double  *       base0,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline double gmx_simdcall
-reduceIncr4ReturnSumHsimd(double *           m,
-                          SimdDouble         v0,
-                          SimdDouble         v1)
+static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double *   m,
+                                                            SimdDouble v0,
+                                                            SimdDouble v1)
 {
     // The 4 here corresponds to the 4 elements in memory, not any SIMD width
     double sum[4] = { 0.0, 0.0, 0.0, 0.0 };
 
-    for (std::size_t i = 0; i < v0.simdInternal_.size()/2; i++)
+    for (std::size_t i = 0; i < v0.simdInternal_.size() / 2; i++)
     {
         sum[0] += v0.simdInternal_[i];
-        sum[1] += v0.simdInternal_[v0.simdInternal_.size()/2 + i];
+        sum[1] += v0.simdInternal_[v0.simdInternal_.size() / 2 + i];
         sum[2] += v1.simdInternal_[i];
-        sum[3] += v1.simdInternal_[v1.simdInternal_.size()/2 + i];
+        sum[3] += v1.simdInternal_[v1.simdInternal_.size() / 2 + i];
     }
 
     // Make sure the memory pointer is aligned to the smaller of 4 elements and double SIMD width
-    assert(std::size_t(m) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4)*sizeof(double)) == 0);
+    assert(std::size_t(m) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
 
     m[0] += sum[0];
     m[1] += sum[1];

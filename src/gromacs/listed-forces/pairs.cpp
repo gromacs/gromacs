@@ -69,8 +69,7 @@
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /*! \brief Issue a warning if a listed interaction is beyond a table limit */
-static void
-warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
+static void warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
 {
     gmx_warning("Listed nonbonded interaction between particles %d and %d\n"
                 "at distance %.3f which is larger than the table limit %.3f nm.\n\n"
@@ -94,64 +93,62 @@ warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, r
 }
 
 /*! \brief Compute the energy and force for a single pair interaction */
-real
-evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
-                real qq, real c6, real c12, real *velec, real *vvdw)
+real evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
+                     real qq, real c6, real c12, real *velec, real *vvdw)
 {
-    real       rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
-    int        ntab;
+    real rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
+    int  ntab;
 
     /* Do the tabulated interactions - first table lookup */
-    rinv             = gmx::invsqrt(r2);
-    r                = r2*rinv;
-    rtab             = r*tabscale;
-    ntab             = static_cast<int>(rtab);
-    eps              = rtab-ntab;
-    eps2             = eps*eps;
-    ntab             = tableStride*ntab;
+    rinv = gmx::invsqrt(r2);
+    r    = r2 * rinv;
+    rtab = r * tabscale;
+    ntab = static_cast<int>(rtab);
+    eps  = rtab - ntab;
+    eps2 = eps * eps;
+    ntab = tableStride * ntab;
     /* Electrostatics */
-    Y                = vftab[ntab];
-    F                = vftab[ntab+1];
-    Geps             = eps*vftab[ntab+2];
-    Heps2            = eps2*vftab[ntab+3];
-    Fp               = F+Geps+Heps2;
-    VVe              = Y+eps*Fp;
-    FFe              = Fp+Geps+2.0*Heps2;
+    Y     = vftab[ntab];
+    F     = vftab[ntab + 1];
+    Geps  = eps * vftab[ntab + 2];
+    Heps2 = eps2 * vftab[ntab + 3];
+    Fp    = F + Geps + Heps2;
+    VVe   = Y + eps * Fp;
+    FFe   = Fp + Geps + 2.0 * Heps2;
     /* Dispersion */
-    Y                = vftab[ntab+4];
-    F                = vftab[ntab+5];
-    Geps             = eps*vftab[ntab+6];
-    Heps2            = eps2*vftab[ntab+7];
-    Fp               = F+Geps+Heps2;
-    VVd              = Y+eps*Fp;
-    FFd              = Fp+Geps+2.0*Heps2;
+    Y     = vftab[ntab + 4];
+    F     = vftab[ntab + 5];
+    Geps  = eps * vftab[ntab + 6];
+    Heps2 = eps2 * vftab[ntab + 7];
+    Fp    = F + Geps + Heps2;
+    VVd   = Y + eps * Fp;
+    FFd   = Fp + Geps + 2.0 * Heps2;
     /* Repulsion */
-    Y                = vftab[ntab+8];
-    F                = vftab[ntab+9];
-    Geps             = eps*vftab[ntab+10];
-    Heps2            = eps2*vftab[ntab+11];
-    Fp               = F+Geps+Heps2;
-    VVr              = Y+eps*Fp;
-    FFr              = Fp+Geps+2.0*Heps2;
+    Y     = vftab[ntab + 8];
+    F     = vftab[ntab + 9];
+    Geps  = eps * vftab[ntab + 10];
+    Heps2 = eps2 * vftab[ntab + 11];
+    Fp    = F + Geps + Heps2;
+    VVr   = Y + eps * Fp;
+    FFr   = Fp + Geps + 2.0 * Heps2;
 
-    *velec           = qq*VVe;
-    *vvdw            = c6*VVd+c12*VVr;
+    *velec = qq * VVe;
+    *vvdw  = c6 * VVd + c12 * VVr;
 
-    fscal            = -(qq*FFe+c6*FFd+c12*FFr)*tabscale*rinv;
+    fscal = -(qq * FFe + c6 * FFd + c12 * FFr) * tabscale * rinv;
 
     return fscal;
 }
 
 /*! \brief Compute the energy and force for a single pair interaction under FEP */
-real
-free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
-                            real alpha_vdw, real tabscale, real *vftab, real tableStride,
-                            real qqA, real c6A, real c12A, real qqB,
-                            real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
-                            real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
-                            real dlfac_vdw[2], real sigma6_def, real sigma6_min,
-                            real sigma2_def, real sigma2_min,
-                            real *velectot, real *vvdwtot, real *dvdl)
+real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
+                                 real alpha_vdw, real tabscale, real *vftab, real tableStride,
+                                 real qqA, real c6A, real c12A, real qqB,
+                                 real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
+                                 real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
+                                 real dlfac_vdw[2], real sigma6_def, real sigma6_min,
+                                 real sigma2_def, real sigma2_min,
+                                 real *velectot, real *vvdwtot, real *dvdl)
 {
     real       rp, rpm2, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
     real       qq[2], c6[2], c12[2], sigma6[2], sigma2[2], sigma_pow[2];
@@ -167,30 +164,30 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
     const real six         = 6.0;
     const real fourtyeight = 48.0;
 
-    qq[0]    = qqA;
-    qq[1]    = qqB;
-    c6[0]    = c6A;
-    c6[1]    = c6B;
-    c12[0]   = c12A;
-    c12[1]   = c12B;
+    qq[0]  = qqA;
+    qq[1]  = qqB;
+    c6[0]  = c6A;
+    c6[1]  = c6B;
+    c12[0] = c12A;
+    c12[1] = c12B;
 
     if (sc_r_power == six)
     {
-        rpm2             = r2*r2;   /* r4 */
-        rp               = rpm2*r2; /* r6 */
+        rpm2 = r2 * r2;             /* r4 */
+        rp   = rpm2 * r2;           /* r6 */
     }
     else if (sc_r_power == fourtyeight)
     {
-        rp               = r2*r2*r2; /* r6 */
-        rp               = rp*rp;    /* r12 */
-        rp               = rp*rp;    /* r24 */
-        rp               = rp*rp;    /* r48 */
-        rpm2             = rp/r2;    /* r46 */
+        rp   = r2 * r2 * r2;         /* r6 */
+        rp   = rp * rp;              /* r12 */
+        rp   = rp * rp;              /* r24 */
+        rp   = rp * rp;              /* r48 */
+        rpm2 = rp / r2;              /* r46 */
     }
     else
     {
-        rp             = std::pow(r2, half * sc_r_power);  /* not currently supported as input, but can handle it */
-        rpm2           = rp/r2;
+        rp   = std::pow(r2, half * sc_r_power);            /* not currently supported as input, but can handle it */
+        rpm2 = rp / r2;
     }
 
     /* Loop over state A(0) and B(1) */
@@ -201,8 +198,8 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
             /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
              * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
              */
-            sigma6[i]       = half*c12[i]/c6[i];
-            sigma2[i]       = std::cbrt(half*c12[i]/c6[i]);
+            sigma6[i] = half * c12[i] / c6[i];
+            sigma2[i] = std::cbrt(half * c12[i] / c6[i]);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                what data to store externally.  Can't be fixed without larger scale changes, so not 5.0 */
             if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
@@ -213,35 +210,35 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
         }
         else
         {
-            sigma6[i]       = sigma6_def;
-            sigma2[i]       = sigma2_def;
+            sigma6[i] = sigma6_def;
+            sigma2[i] = sigma2_def;
         }
         if (sc_r_power == six)
         {
-            sigma_pow[i]    = sigma6[i];
+            sigma_pow[i] = sigma6[i];
         }
         else if (sc_r_power == fourtyeight)
         {
-            sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
-            sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
-            sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
+            sigma_pow[i] = sigma6[i] * sigma6[i];        /* sigma^12 */
+            sigma_pow[i] = sigma_pow[i] * sigma_pow[i];  /* sigma^24 */
+            sigma_pow[i] = sigma_pow[i] * sigma_pow[i];  /* sigma^48 */
         }
         else
         {       /* not really supported as input, but in here for testing the general case*/
-            sigma_pow[i]    = std::pow(sigma2[i], sc_r_power/2);
+            sigma_pow[i] = std::pow(sigma2[i], sc_r_power / 2);
         }
     }
 
     /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
     if ((c12[0] > 0) && (c12[1] > 0))
     {
-        alpha_vdw_eff    = 0;
-        alpha_coul_eff   = 0;
+        alpha_vdw_eff  = 0;
+        alpha_coul_eff = 0;
     }
     else
     {
-        alpha_vdw_eff    = alpha_vdw;
-        alpha_coul_eff   = alpha_coul;
+        alpha_vdw_eff  = alpha_vdw;
+        alpha_coul_eff = alpha_coul;
     }
 
     /* Loop over A and B states again */
@@ -256,57 +253,57 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
         if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
         {
             /* Coulomb */
-            rpinv            = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-            r_coul           = std::pow(rpinv, minusOne / sc_r_power);
+            rpinv  = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
+            r_coul = std::pow(rpinv, minusOne / sc_r_power);
 
             /* Electrostatics table lookup data */
-            rtab             = r_coul*tabscale;
-            ntab             = static_cast<int>(rtab);
-            eps              = rtab-ntab;
-            eps2             = eps*eps;
-            ntab             = tableStride*ntab;
+            rtab = r_coul * tabscale;
+            ntab = static_cast<int>(rtab);
+            eps  = rtab - ntab;
+            eps2 = eps * eps;
+            ntab = tableStride * ntab;
             /* Electrostatics */
-            Y                = vftab[ntab];
-            F                = vftab[ntab+1];
-            Geps             = eps*vftab[ntab+2];
-            Heps2            = eps2*vftab[ntab+3];
-            Fp               = F+Geps+Heps2;
-            VV               = Y+eps*Fp;
-            FF               = Fp+Geps+two*Heps2;
-            velec[i]         = qq[i]*VV;
-            fscal_elec[i]    = -qq[i]*FF*r_coul*rpinv*tabscale;
+            Y             = vftab[ntab];
+            F             = vftab[ntab + 1];
+            Geps          = eps * vftab[ntab + 2];
+            Heps2         = eps2 * vftab[ntab + 3];
+            Fp            = F + Geps + Heps2;
+            VV            = Y + eps * Fp;
+            FF            = Fp + Geps + two * Heps2;
+            velec[i]      = qq[i] * VV;
+            fscal_elec[i] = -qq[i] * FF * r_coul * rpinv * tabscale;
 
             /* Vdw */
-            rpinv            = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-            r_vdw            = std::pow(rpinv, minusOne / sc_r_power);
+            rpinv = one / (alpha_vdw_eff * lfac_vdw[i] * sigma_pow[i] + rp);
+            r_vdw = std::pow(rpinv, minusOne / sc_r_power);
             /* Vdw table lookup data */
-            rtab             = r_vdw*tabscale;
-            ntab             = static_cast<int>(rtab);
-            eps              = rtab-ntab;
-            eps2             = eps*eps;
-            ntab             = 12*ntab;
+            rtab = r_vdw * tabscale;
+            ntab = static_cast<int>(rtab);
+            eps  = rtab - ntab;
+            eps2 = eps * eps;
+            ntab = 12 * ntab;
             /* Dispersion */
-            Y                = vftab[ntab+4];
-            F                = vftab[ntab+5];
-            Geps             = eps*vftab[ntab+6];
-            Heps2            = eps2*vftab[ntab+7];
-            Fp               = F+Geps+Heps2;
-            VV               = Y+eps*Fp;
-            FF               = Fp+Geps+two*Heps2;
-            vvdw[i]          = c6[i]*VV;
-            fscal_vdw[i]     = -c6[i]*FF;
+            Y            = vftab[ntab + 4];
+            F            = vftab[ntab + 5];
+            Geps         = eps * vftab[ntab + 6];
+            Heps2        = eps2 * vftab[ntab + 7];
+            Fp           = F + Geps + Heps2;
+            VV           = Y + eps * Fp;
+            FF           = Fp + Geps + two * Heps2;
+            vvdw[i]      = c6[i] * VV;
+            fscal_vdw[i] = -c6[i] * FF;
 
             /* Repulsion */
-            Y                = vftab[ntab+8];
-            F                = vftab[ntab+9];
-            Geps             = eps*vftab[ntab+10];
-            Heps2            = eps2*vftab[ntab+11];
-            Fp               = F+Geps+Heps2;
-            VV               = Y+eps*Fp;
-            FF               = Fp+Geps+two*Heps2;
-            vvdw[i]         += c12[i]*VV;
-            fscal_vdw[i]    -= c12[i]*FF;
-            fscal_vdw[i]    *= r_vdw*rpinv*tabscale;
+            Y             = vftab[ntab + 8];
+            F             = vftab[ntab + 9];
+            Geps          = eps * vftab[ntab + 10];
+            Heps2         = eps2 * vftab[ntab + 11];
+            Fp            = F + Geps + Heps2;
+            VV            = Y + eps * Fp;
+            FF            = Fp + Geps + two * Heps2;
+            vvdw[i]      += c12[i] * VV;
+            fscal_vdw[i] -= c12[i] * FF;
+            fscal_vdw[i] *= r_vdw * rpinv * tabscale;
         }
     }
     /* Now we have velec[i], vvdw[i], and fscal[i] for both states */
@@ -318,49 +315,48 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
     fscal     = 0;
     for (i = 0; i < 2; i++)
     {
-        velecsum      += LFC[i]*velec[i];
-        vvdwsum       += LFV[i]*vvdw[i];
+        velecsum += LFC[i] * velec[i];
+        vvdwsum  += LFV[i] * vvdw[i];
 
-        fscal         += (LFC[i]*fscal_elec[i]+LFV[i]*fscal_vdw[i])*rpm2;
+        fscal += (LFC[i] * fscal_elec[i] + LFV[i] * fscal_vdw[i]) * rpm2;
 
-        dvdl_coul     += velec[i]*DLF[i] + LFC[i]*alpha_coul_eff*dlfac_coul[i]*fscal_elec[i]*sigma_pow[i];
-        dvdl_vdw      += vvdw[i]*DLF[i] + LFV[i]*alpha_vdw_eff*dlfac_vdw[i]*fscal_vdw[i]*sigma_pow[i];
+        dvdl_coul += velec[i] * DLF[i] + LFC[i] * alpha_coul_eff * dlfac_coul[i] * fscal_elec[i] * sigma_pow[i];
+        dvdl_vdw  += vvdw[i] * DLF[i] + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
     }
 
-    dvdl[efptCOUL]     += dvdl_coul;
-    dvdl[efptVDW]      += dvdl_vdw;
+    dvdl[efptCOUL] += dvdl_coul;
+    dvdl[efptVDW]  += dvdl_vdw;
 
-    *velectot           = velecsum;
-    *vvdwtot            = vvdwsum;
+    *velectot = velecsum;
+    *vvdwtot  = vvdwsum;
 
     return fscal;
 }
 
 /*! \brief Calculate pair interactions, supports all types and conditions. */
-static real
-do_pairs_general(int ftype, int nbonds,
-                 const t_iatom iatoms[], const t_iparams iparams[],
-                 const rvec x[], rvec4 f[], rvec fshift[],
-                 const struct t_pbc *pbc, const struct t_graph *g,
-                 real *lambda, real *dvdl,
-                 const t_mdatoms *md,
-                 const t_forcerec *fr, gmx_grppairener_t *grppener,
-                 int *global_atom_index)
+static real do_pairs_general(int ftype, int nbonds,
+                             const t_iatom iatoms[], const t_iparams iparams[],
+                             const rvec x[], rvec4 f[], rvec fshift[],
+                             const struct t_pbc *pbc, const struct t_graph *g,
+                             real *lambda, real *dvdl,
+                             const t_mdatoms *md,
+                             const t_forcerec *fr, gmx_grppairener_t *grppener,
+                             int *global_atom_index)
 {
-    real             qq, c6, c12;
-    rvec             dx;
-    ivec             dt;
-    int              i, itype, ai, aj, gid;
-    int              fshift_index;
-    real             r2;
-    real             fscal, velec, vvdw;
-    real *           energygrp_elec;
-    real *           energygrp_vdw;
-    static gmx_bool  warned_rlimit = FALSE;
+    real            qq, c6, c12;
+    rvec            dx;
+    ivec            dt;
+    int             i, itype, ai, aj, gid;
+    int             fshift_index;
+    real            r2;
+    real            fscal, velec, vvdw;
+    real *          energygrp_elec;
+    real *          energygrp_vdw;
+    static gmx_bool warned_rlimit = FALSE;
     /* Free energy stuff */
-    gmx_bool         bFreeEnergy;
-    real             LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
-    real             qqB, c6B, c12B, sigma2_def, sigma2_min;
+    gmx_bool bFreeEnergy;
+    real     LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
+    real     qqB, c6B, c12B, sigma2_def, sigma2_min;
 
     switch (ftype)
     {
@@ -398,10 +394,10 @@ do_pairs_general(int ftype, int nbonds,
 
         for (i = 0; i < 2; i++)
         {
-            lfac_coul[i]  = (fr->sc_power == 2 ? (1-LFC[i])*(1-LFC[i]) : (1-LFC[i]));
-            dlfac_coul[i] = DLF[i]*fr->sc_power/fr->sc_r_power*(fr->sc_power == 2 ? (1-LFC[i]) : 1);
-            lfac_vdw[i]   = (fr->sc_power == 2 ? (1-LFV[i])*(1-LFV[i]) : (1-LFV[i]));
-            dlfac_vdw[i]  = DLF[i]*fr->sc_power/fr->sc_r_power*(fr->sc_power == 2 ? (1-LFV[i]) : 1);
+            lfac_coul[i]  = (fr->sc_power == 2 ? (1 - LFC[i]) * (1 - LFC[i]) : (1 - LFC[i]));
+            dlfac_coul[i] = DLF[i] * fr->sc_power / fr->sc_r_power * (fr->sc_power == 2 ? (1 - LFC[i]) : 1);
+            lfac_vdw[i]   = (fr->sc_power == 2 ? (1 - LFV[i]) * (1 - LFV[i]) : (1 - LFV[i]));
+            dlfac_vdw[i]  = DLF[i] * fr->sc_power / fr->sc_r_power * (fr->sc_power == 2 ? (1 - LFV[i]) : 1);
         }
     }
     else
@@ -428,24 +424,24 @@ do_pairs_general(int ftype, int nbonds,
         switch (ftype)
         {
             case F_LJ14:
-                bFreeEnergy =
-                    (fr->efep != efepNO &&
-                     ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
-                      iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
-                      iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
-                qq               = md->chargeA[ai]*md->chargeA[aj]*fr->epsfac*fr->fudgeQQ;
-                c6               = iparams[itype].lj14.c6A;
-                c12              = iparams[itype].lj14.c12A;
+                bFreeEnergy
+                    = (fr->efep != efepNO
+                       && ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj]))
+                           || iparams[itype].lj14.c6A != iparams[itype].lj14.c6B
+                           || iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
+                qq  = md->chargeA[ai] * md->chargeA[aj] * fr->epsfac * fr->fudgeQQ;
+                c6  = iparams[itype].lj14.c6A;
+                c12 = iparams[itype].lj14.c12A;
                 break;
             case F_LJC14_Q:
-                qq               = iparams[itype].ljc14.qi*iparams[itype].ljc14.qj*fr->epsfac*iparams[itype].ljc14.fqq;
-                c6               = iparams[itype].ljc14.c6;
-                c12              = iparams[itype].ljc14.c12;
+                qq  = iparams[itype].ljc14.qi * iparams[itype].ljc14.qj * fr->epsfac * iparams[itype].ljc14.fqq;
+                c6  = iparams[itype].ljc14.c6;
+                c12 = iparams[itype].ljc14.c12;
                 break;
             case F_LJC_PAIRS_NB:
-                qq               = iparams[itype].ljcnb.qi*iparams[itype].ljcnb.qj*fr->epsfac;
-                c6               = iparams[itype].ljcnb.c6;
-                c12              = iparams[itype].ljcnb.c12;
+                qq  = iparams[itype].ljcnb.qi * iparams[itype].ljcnb.qj * fr->epsfac;
+                c6  = iparams[itype].ljcnb.c6;
+                c12 = iparams[itype].ljcnb.c12;
                 break;
             default:
                 /* Cannot happen since we called gmx_fatal() above in this case */
@@ -471,9 +467,9 @@ do_pairs_general(int ftype, int nbonds,
             fshift_index = CENTRAL;
             rvec_sub(x[ai], x[aj], dx);
         }
-        r2           = norm2(dx);
+        r2 = norm2(dx);
 
-        if (r2 >= fr->pairsTable->r*fr->pairsTable->r)
+        if (r2 >= fr->pairsTable->r * fr->pairsTable->r)
         {
             /* This check isn't race free. But it doesn't matter because if a race occurs the only
              * disadvantage is that the warning is printed twice */
@@ -488,25 +484,25 @@ do_pairs_general(int ftype, int nbonds,
         if (bFreeEnergy)
         {
             /* Currently free energy is only supported for F_LJ14, so no need to check for that if we got here */
-            qqB              = md->chargeB[ai]*md->chargeB[aj]*fr->epsfac*fr->fudgeQQ;
-            c6B              = iparams[itype].lj14.c6B*6.0;
-            c12B             = iparams[itype].lj14.c12B*12.0;
+            qqB  = md->chargeB[ai] * md->chargeB[aj] * fr->epsfac * fr->fudgeQQ;
+            c6B  = iparams[itype].lj14.c6B * 6.0;
+            c12B = iparams[itype].lj14.c12B * 12.0;
 
-            fscal            = free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
-                                                           fr->pairsTable->scale, fr->pairsTable->data, fr->pairsTable->stride,
-                                                           qq, c6, c12, qqB, c6B, c12B,
-                                                           LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
-                                                           fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
+            fscal = free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
+                                                fr->pairsTable->scale, fr->pairsTable->data, fr->pairsTable->stride,
+                                                qq, c6, c12, qqB, c6B, c12B,
+                                                LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
+                                                fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
         }
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal            = evaluate_single(r2, fr->pairsTable->scale, fr->pairsTable->data, fr->pairsTable->stride,
-                                               qq, c6, c12, &velec, &vvdw);
+            fscal = evaluate_single(r2, fr->pairsTable->scale, fr->pairsTable->data, fr->pairsTable->stride,
+                                    qq, c6, c12, &velec, &vvdw);
         }
 
-        energygrp_elec[gid]  += velec;
-        energygrp_vdw[gid]   += vvdw;
+        energygrp_elec[gid] += velec;
+        energygrp_vdw[gid]  += vvdw;
         svmul(fscal, dx, dx);
 
         /* Add the forces */
@@ -532,30 +528,29 @@ do_pairs_general(int ftype, int nbonds,
  *
  * This function is templated for real/SimdReal and for optimization.
  */
-template<typename T, int pack_size,
-         typename pbc_type>
-static void
-do_pairs_simple(int nbonds,
-                const t_iatom iatoms[], const t_iparams iparams[],
-                const rvec x[], rvec4 f[],
-                const pbc_type pbc,
-                const t_mdatoms *md,
-                const real scale_factor)
+template <typename T, int pack_size,
+          typename pbc_type>
+static void do_pairs_simple(int nbonds,
+                            const t_iatom iatoms[], const t_iparams iparams[],
+                            const rvec x[], rvec4 f[],
+                            const pbc_type pbc,
+                            const t_mdatoms *md,
+                            const real scale_factor)
 {
     const int nfa1 = 1 + 2;
 
-    T         six(6);
-    T         twelve(12);
-    T         ef(scale_factor);
+    T six(6);
+    T twelve(12);
+    T ef(scale_factor);
 
     const int align = 16;
     GMX_ASSERT(pack_size <= align, "align should be increased");
     GMX_ALIGNED(int,  align)  ai[pack_size];
     GMX_ALIGNED(int,  align)  aj[pack_size];
-    GMX_ALIGNED(real, align)  coeff[3*pack_size];
+    GMX_ALIGNED(real, align)  coeff[3 * pack_size];
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
-    for (int i = 0; i < nbonds; i += pack_size*nfa1)
+    for (int i = 0; i < nbonds; i += pack_size * nfa1)
     {
         /* Collect atoms for pack_size pairs.
          * iu indexes into iatoms, we should not let iu go beyond nbonds.
@@ -564,14 +559,14 @@ do_pairs_simple(int nbonds,
         for (int s = 0; s < pack_size; s++)
         {
             int itype = iatoms[iu];
-            ai[s]     = iatoms[iu + 1];
-            aj[s]     = iatoms[iu + 2];
+            ai[s] = iatoms[iu + 1];
+            aj[s] = iatoms[iu + 2];
 
-            if (i + s*nfa1 < nbonds)
+            if (i + s * nfa1 < nbonds)
             {
-                coeff[0*pack_size + s] = iparams[itype].lj14.c6A;
-                coeff[1*pack_size + s] = iparams[itype].lj14.c12A;
-                coeff[2*pack_size + s] = md->chargeA[ai[s]]*md->chargeA[aj[s]];
+                coeff[0 * pack_size + s] = iparams[itype].lj14.c6A;
+                coeff[1 * pack_size + s] = iparams[itype].lj14.c12A;
+                coeff[2 * pack_size + s] = md->chargeA[ai[s]] * md->chargeA[aj[s]];
 
                 /* Avoid indexing the iatoms array out of bounds.
                  * We pad the coordinate indices with the last atom pair.
@@ -584,9 +579,9 @@ do_pairs_simple(int nbonds,
             else
             {
                 /* Pad the coefficient arrays with zeros to get zero forces */
-                coeff[0*pack_size + s] = 0;
-                coeff[1*pack_size + s] = 0;
-                coeff[2*pack_size + s] = 0;
+                coeff[0 * pack_size + s] = 0;
+                coeff[1 * pack_size + s] = 0;
+                coeff[2 * pack_size + s] = 0;
             }
         }
 
@@ -595,32 +590,32 @@ do_pairs_simple(int nbonds,
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi[XX], &xi[YY], &xi[ZZ]);
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj[XX], &xj[YY], &xj[ZZ]);
 
-        T c6    = load(coeff + 0*pack_size);
-        T c12   = load(coeff + 1*pack_size);
-        T qq    = load(coeff + 2*pack_size);
+        T c6  = load(coeff + 0 * pack_size);
+        T c12 = load(coeff + 1 * pack_size);
+        T qq  = load(coeff + 2 * pack_size);
 
         /* We could save these operations by storing 6*C6,12*C12 */
-        c6             = six*c6;
-        c12            = twelve*c12;
+        c6  = six * c6;
+        c12 = twelve * c12;
 
         T dr[DIM];
         pbc_dx_aiuc(pbc, xi, xj, dr);
 
-        T rsq   = dr[XX]*dr[XX] + dr[YY]*dr[YY] + dr[ZZ]*dr[ZZ];
+        T rsq   = dr[XX] * dr[XX] + dr[YY] * dr[YY] + dr[ZZ] * dr[ZZ];
         T rinv  = invsqrt(rsq);
-        T rinv2 = rinv*rinv;
-        T rinv6 = rinv2*rinv2*rinv2;
+        T rinv2 = rinv * rinv;
+        T rinv6 = rinv2 * rinv2 * rinv2;
 
         /* Calculate the Coulomb force * r */
-        T cfr   = ef*qq*rinv;
+        T cfr = ef * qq * rinv;
 
         /* Calculate the LJ force * r and add it to the Coulomb part */
-        T fr    = gmx::fma(fms(c12, rinv6, c6), rinv6, cfr);
+        T fr = gmx::fma(fms(c12, rinv6, c6), rinv6, cfr);
 
-        T finvr = fr*rinv2;
-        T fx    = finvr*dr[XX];
-        T fy    = finvr*dr[YY];
-        T fz    = finvr*dr[ZZ];
+        T finvr = fr * rinv2;
+        T fx    = finvr * dr[XX];
+        T fy    = finvr * dr[YY];
+        T fz    = finvr * dr[ZZ];
 
         /* Add the pair forces to the force array.
          * Note that here we might add multiple force components for some atoms
@@ -632,20 +627,19 @@ do_pairs_simple(int nbonds,
 }
 
 /*! \brief Calculate all listed pair interactions */
-void
-do_pairs(int ftype, int nbonds,
-         const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec4 f[], rvec fshift[],
-         const struct t_pbc *pbc, const struct t_graph *g,
-         real *lambda, real *dvdl,
-         const t_mdatoms *md,
-         const t_forcerec *fr,
-         gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
-         int *global_atom_index)
+void do_pairs(int ftype, int nbonds,
+              const t_iatom iatoms[], const t_iparams iparams[],
+              const rvec x[], rvec4 f[], rvec fshift[],
+              const struct t_pbc *pbc, const struct t_graph *g,
+              real *lambda, real *dvdl,
+              const t_mdatoms *md,
+              const t_forcerec *fr,
+              gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
+              int *global_atom_index)
 {
-    if (ftype == F_LJ14 &&
-        fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype) &&
-        !bCalcEnergyAndVirial && fr->efep == efepNO)
+    if (ftype == F_LJ14
+        && fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype)
+        && !bCalcEnergyAndVirial && fr->efep == efepNO)
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
          *
@@ -656,13 +650,13 @@ do_pairs(int ftype, int nbonds,
          * at once for the angles and dihedrals as well.
          */
 #if GMX_SIMD
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
         set_pbc_simd(pbc, pbc_simd);
 
         do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
                         const real *>(nbonds, iatoms, iparams,
                                       x, f, pbc_simd,
-                                      md, fr->epsfac*fr->fudgeQQ);
+                                      md, fr->epsfac * fr->fudgeQQ);
 #else
         /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
         t_pbc        pbc_no;
@@ -670,18 +664,18 @@ do_pairs(int ftype, int nbonds,
 
         if (pbc != nullptr)
         {
-            pbc_nonnull   = pbc;
+            pbc_nonnull = pbc;
         }
         else
         {
             set_pbc(&pbc_no, epbcNONE, nullptr);
-            pbc_nonnull   = &pbc_no;
+            pbc_nonnull = &pbc_no;
         }
 
         do_pairs_simple<real, 1,
                         const t_pbc *>(nbonds, iatoms, iparams,
                                        x, f, pbc_nonnull,
-                                       md, fr->epsfac*fr->fudgeQQ);
+                                       md, fr->epsfac * fr->fudgeQQ);
 #endif
     }
     else

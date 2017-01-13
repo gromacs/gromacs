@@ -54,13 +54,12 @@ namespace gmx
 {
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double  *       base,
-                    const std::int32_t    offset[],
-                    SimdDouble *          v0,
-                    SimdDouble *          v1,
-                    SimdDouble *          v2,
-                    SimdDouble *          v3)
+static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble *       v0,
+                                                    SimdDouble *       v1,
+                                                    SimdDouble *       v2,
+                                                    SimdDouble *       v3)
 {
     v0->simdInternal_ = vec_ld(0, const_cast<double *>(base + align * offset[0]) );
     v1->simdInternal_ = vec_ld(0, const_cast<double *>(base + align * offset[1]) );
@@ -78,11 +77,10 @@ gatherLoadTranspose(const double  *       base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double *       base,
-                    const std::int32_t   offset[],
-                    SimdDouble *         v0,
-                    SimdDouble *         v1)
+static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble *       v0,
+                                                    SimdDouble *       v1)
 {
     vector4double t0, t1, t2, t3;
 
@@ -99,14 +97,13 @@ gatherLoadTranspose(const double *       base,
 static const int c_simdBestPairAlignmentDouble = 2;
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadUTranspose(const double  *       base,
-                     const std::int32_t    offset[],
-                     SimdDouble *          v0,
-                     SimdDouble *          v1,
-                     SimdDouble *          v2)
+static inline void gmx_simdcall gatherLoadUTranspose(const double *     base,
+                                                     const std::int32_t offset[],
+                                                     SimdDouble *       v0,
+                                                     SimdDouble *       v1,
+                                                     SimdDouble *       v2)
 {
-    vector4double             t1, t2, t3, t4, t5, t6, t7, t8;
+    vector4double t1, t2, t3, t4, t5, t6, t7, t8;
 
     if (align % 4 == 0)
     {
@@ -115,15 +112,15 @@ gatherLoadUTranspose(const double  *       base,
     }
     else
     {
-        t1  = vec_perm(vec_splats(base[align * offset[0]]), vec_splats(base[align * offset[0] + 1]), vec_gpci(00415));
-        t2  = vec_perm(vec_splats(base[align * offset[1]]), vec_splats(base[align * offset[1] + 1]), vec_gpci(00415));
-        t3  = vec_perm(vec_splats(base[align * offset[2]]), vec_splats(base[align * offset[2] + 1]), vec_gpci(00415));
-        t4  = vec_perm(vec_splats(base[align * offset[3]]), vec_splats(base[align * offset[3] + 1]), vec_gpci(00415));
+        t1 = vec_perm(vec_splats(base[align * offset[0]]), vec_splats(base[align * offset[0] + 1]), vec_gpci(00415));
+        t2 = vec_perm(vec_splats(base[align * offset[1]]), vec_splats(base[align * offset[1] + 1]), vec_gpci(00415));
+        t3 = vec_perm(vec_splats(base[align * offset[2]]), vec_splats(base[align * offset[2] + 1]), vec_gpci(00415));
+        t4 = vec_perm(vec_splats(base[align * offset[3]]), vec_splats(base[align * offset[3] + 1]), vec_gpci(00415));
 
-        t5  = vec_splats( *(base + align * offset[0] + 2) );
-        t6  = vec_splats( *(base + align * offset[1] + 2) );
-        t7  = vec_splats( *(base + align * offset[2] + 2) );
-        t8  = vec_splats( *(base + align * offset[3] + 2) );
+        t5 = vec_splats( *(base + align * offset[0] + 2) );
+        t6 = vec_splats( *(base + align * offset[1] + 2) );
+        t7 = vec_splats( *(base + align * offset[2] + 2) );
+        t8 = vec_splats( *(base + align * offset[3] + 2) );
 
         t1                = vec_perm(t1, t2, vec_gpci(00415));
         t3                = vec_perm(t3, t4, vec_gpci(00415));
@@ -136,12 +133,11 @@ gatherLoadUTranspose(const double  *       base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterStoreU(double  *             base,
-                       const std::int32_t    offset[],
-                       SimdDouble            v0,
-                       SimdDouble            v1,
-                       SimdDouble            v2)
+static inline void gmx_simdcall transposeScatterStoreU(double *           base,
+                                                       const std::int32_t offset[],
+                                                       SimdDouble         v0,
+                                                       SimdDouble         v1,
+                                                       SimdDouble         v2)
 {
     GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m0[GMX_SIMD_DOUBLE_WIDTH];
     GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)   m1[GMX_SIMD_DOUBLE_WIDTH];
@@ -166,12 +162,11 @@ transposeScatterStoreU(double  *             base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterIncrU(double  *             base,
-                      const std::int32_t    offset[],
-                      SimdDouble            v0,
-                      SimdDouble            v1,
-                      SimdDouble            v2)
+static inline void gmx_simdcall transposeScatterIncrU(double *           base,
+                                                      const std::int32_t offset[],
+                                                      SimdDouble         v0,
+                                                      SimdDouble         v1,
+                                                      SimdDouble         v2)
 {
     if (align % 4 == 0)
     {
@@ -186,10 +181,10 @@ transposeScatterIncrU(double  *             base,
         v2.simdInternal_ = vec_perm(t1, t3, vec_gpci(00415));
         v3.simdInternal_ = vec_perm(t1, t3, vec_gpci(02637));
         // increment
-        store(base + align*offset[0], simdLoad(base + align*offset[0]) + v0);
-        store(base + align*offset[1], simdLoad(base + align*offset[1]) + v1);
-        store(base + align*offset[2], simdLoad(base + align*offset[2]) + v2);
-        store(base + align*offset[3], simdLoad(base + align*offset[3]) + v3);
+        store(base + align * offset[0], simdLoad(base + align * offset[0]) + v0);
+        store(base + align * offset[1], simdLoad(base + align * offset[1]) + v1);
+        store(base + align * offset[2], simdLoad(base + align * offset[2]) + v2);
+        store(base + align * offset[3], simdLoad(base + align * offset[3]) + v3);
     }
     else
     {
@@ -217,12 +212,11 @@ transposeScatterIncrU(double  *             base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-transposeScatterDecrU(double  *             base,
-                      const std::int32_t    offset[],
-                      SimdDouble            v0,
-                      SimdDouble            v1,
-                      SimdDouble            v2)
+static inline void gmx_simdcall transposeScatterDecrU(double *           base,
+                                                      const std::int32_t offset[],
+                                                      SimdDouble         v0,
+                                                      SimdDouble         v1,
+                                                      SimdDouble         v2)
 {
     if (align % 4 == 0)
     {
@@ -237,10 +231,10 @@ transposeScatterDecrU(double  *             base,
         v2.simdInternal_ = vec_perm(t1, t3, vec_gpci(00415));
         v3.simdInternal_ = vec_perm(t1, t3, vec_gpci(02637));
         // decrement
-        store(base + align*offset[0], simdLoad(base + align*offset[0]) - v0);
-        store(base + align*offset[1], simdLoad(base + align*offset[1]) - v1);
-        store(base + align*offset[2], simdLoad(base + align*offset[2]) - v2);
-        store(base + align*offset[3], simdLoad(base + align*offset[3]) - v3);
+        store(base + align * offset[0], simdLoad(base + align * offset[0]) - v0);
+        store(base + align * offset[1], simdLoad(base + align * offset[1]) - v1);
+        store(base + align * offset[2], simdLoad(base + align * offset[2]) - v2);
+        store(base + align * offset[3], simdLoad(base + align * offset[3]) - v3);
     }
     else
     {
@@ -267,11 +261,10 @@ transposeScatterDecrU(double  *             base,
     }
 }
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdDouble    scalar,
-                        SimdDouble *  triplets0,
-                        SimdDouble *  triplets1,
-                        SimdDouble *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
+                                                        SimdDouble * triplets0,
+                                                        SimdDouble * triplets1,
+                                                        SimdDouble * triplets2)
 {
     triplets0->simdInternal_ = vec_perm(scalar.simdInternal_, scalar.simdInternal_, vec_gpci(00001));
     triplets1->simdInternal_ = vec_perm(scalar.simdInternal_, scalar.simdInternal_, vec_gpci(01122));
@@ -279,13 +272,12 @@ expandScalarsToTriplets(SimdDouble    scalar,
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double  *  base,
-                             SimdDInt32       simdoffset,
-                             SimdDouble *     v0,
-                             SimdDouble *     v1,
-                             SimdDouble *     v2,
-                             SimdDouble *     v3)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
+                                                             SimdDInt32     simdoffset,
+                                                             SimdDouble *   v0,
+                                                             SimdDouble *   v1,
+                                                             SimdDouble *   v2,
+                                                             SimdDouble *   v3)
 {
     GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
@@ -294,11 +286,10 @@ gatherLoadBySimdIntTranspose(const double  *  base,
 }
 
 template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double  *  base,
-                             SimdDInt32       simdoffset,
-                             SimdDouble *     v0,
-                             SimdDouble *     v1)
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
+                                                             SimdDInt32     simdoffset,
+                                                             SimdDouble *   v0,
+                                                             SimdDouble *   v1)
 {
     GMX_ALIGNED(int, GMX_SIMD_DOUBLE_WIDTH)   ioffset[GMX_SIMD_DOUBLE_WIDTH];
 
@@ -306,12 +297,11 @@ gatherLoadBySimdIntTranspose(const double  *  base,
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
 
-static inline double gmx_simdcall
-reduceIncr4ReturnSum(double  *   m,
-                     SimdDouble  v0,
-                     SimdDouble  v1,
-                     SimdDouble  v2,
-                     SimdDouble  v3)
+static inline double gmx_simdcall reduceIncr4ReturnSum(double *   m,
+                                                       SimdDouble v0,
+                                                       SimdDouble v1,
+                                                       SimdDouble v2,
+                                                       SimdDouble v3)
 {
     vector4double t0 = vec_perm(v0.simdInternal_, v2.simdInternal_, vec_gpci(00415));
     vector4double t1 = vec_perm(v0.simdInternal_, v2.simdInternal_, vec_gpci(02637));

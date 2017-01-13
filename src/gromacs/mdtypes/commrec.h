@@ -46,23 +46,25 @@
 
 struct gmx_domdec_t;
 
-typedef struct {
+typedef struct
+{
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
-    int             *ibuf; /* for ints */
-    int              ibuf_alloc;
+    int *ibuf;             /* for ints */
+    int  ibuf_alloc;
 
-    gmx_int64_t     *libuf;
-    int              libuf_alloc;
+    gmx_int64_t *libuf;
+    int          libuf_alloc;
 
-    float           *fbuf; /* for floats */
-    int              fbuf_alloc;
+    float *fbuf;           /* for floats */
+    int    fbuf_alloc;
 
-    double          *dbuf; /* for doubles */
-    int              dbuf_alloc;
+    double *dbuf;          /* for doubles */
+    int     dbuf_alloc;
 } mpi_in_place_buf_t;
 
-struct gmx_multisim_t {
+struct gmx_multisim_t
+{
     int       nsim;
     int       sim;
     MPI_Group mpi_group_masters;
@@ -72,10 +74,11 @@ struct gmx_multisim_t {
     mpi_in_place_buf_t *mpb;
 };
 
-#define DUTY_PP  (1<<0)
-#define DUTY_PME (1<<1)
+#define DUTY_PP  (1 << 0)
+#define DUTY_PME (1 << 1)
 
-typedef struct {
+typedef struct
+{
     int      bUse;
     MPI_Comm comm_intra;
     int      rank_intra;
@@ -83,7 +86,8 @@ typedef struct {
 
 } gmx_nodecomm_t;
 
-struct t_commrec {
+struct t_commrec
+{
     /* The nodeids in one sim are numbered sequentially from 0.
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
@@ -98,10 +102,10 @@ struct t_commrec {
     MPI_Comm mpi_comm_mygroup;
 
     /* MPI ranks within a physical node for hardware access */
-    int            nrank_intranode;    /* nr of ranks on this physical node */
-    int            rank_intranode;     /* our rank on this physical node */
-    int            nrank_pp_intranode; /* as nrank_intranode, for particle-particle only */
-    int            rank_pp_intranode;  /* as rank_intranode, for particle-particle only */
+    int nrank_intranode;               /* nr of ranks on this physical node */
+    int rank_intranode;                /* our rank on this physical node */
+    int nrank_pp_intranode;            /* as nrank_intranode, for particle-particle only */
+    int rank_pp_intranode;             /* as rank_intranode, for particle-particle only */
 
     gmx_nodecomm_t nc;
 
@@ -109,9 +113,9 @@ struct t_commrec {
     gmx_domdec_t *dd;
 
     /* The duties of this node, see the defines above */
-    int                    duty;
+    int duty;
 
-    gmx_multisim_t        *ms;
+    gmx_multisim_t *ms;
 
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/

@@ -52,7 +52,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/txtdump.h"
 
-const char *gtypes[egcNR+1] = {
+const char *gtypes[egcNR + 1] = {
     "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
     "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", nullptr
 };
@@ -424,9 +424,9 @@ static void cmp_ilist(FILE *fp, int ftype, const t_ilist *il1, const t_ilist *il
     sprintf(buf, "%s->nr", interaction_function[ftype].name);
     cmp_int(fp, buf, -1, il1->nr, il2->nr);
     sprintf(buf, "%s->iatoms", interaction_function[ftype].name);
-    if (((il1->nr > 0) && (!il1->iatoms)) ||
-        ((il2->nr > 0) && (!il2->iatoms)) ||
-        ((il1->nr != il2->nr)))
+    if (((il1->nr > 0) && (!il1->iatoms))
+        || ((il2->nr > 0) && (!il2->iatoms))
+        || ((il1->nr != il2->nr)))
     {
         fprintf(fp, "Comparing radically different topologies - %s is different\n",
                 buf);
@@ -483,7 +483,7 @@ static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
     bDiff = FALSE;
     for (i = 0; i < nrfpB && !bDiff; i++)
     {
-        bDiff = !equal_real(ip1.generic.buf[p0+i], ip1.generic.buf[nrfpA+i], ftol, abstol);
+        bDiff = !equal_real(ip1.generic.buf[p0 + i], ip1.generic.buf[nrfpA + i], ftol, abstol);
     }
     if (bDiff)
     {
@@ -496,8 +496,8 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
 {
     cmp_int(fp, "cmap ngrid", -1, cmap1->ngrid, cmap2->ngrid);
     cmp_int(fp, "cmap grid_spacing", -1, cmap1->grid_spacing, cmap2->grid_spacing);
-    if (cmap1->ngrid == cmap2->ngrid &&
-        cmap1->grid_spacing == cmap2->grid_spacing)
+    if (cmap1->ngrid == cmap2->ngrid
+        && cmap1->grid_spacing == cmap2->grid_spacing)
     {
         int g;
 
@@ -507,7 +507,7 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
 
             fprintf(fp, "comparing cmap %d\n", g);
 
-            for (i = 0; i < 4*cmap1->grid_spacing*cmap1->grid_spacing; i++)
+            for (i = 0; i < 4 * cmap1->grid_spacing * cmap1->grid_spacing; i++)
             {
                 cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], ftol, abstol);
             }
@@ -611,8 +611,8 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
             }
         }
         cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);
-        if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
-            (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
+        if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1
+            && (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
         {
             for (j = 0; j < natoms0; j++)
             {

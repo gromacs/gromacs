@@ -104,9 +104,8 @@ static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER
 static gmx_bool            nonbonded_setup_done  = FALSE;
 
 
-void
-gmx_nonbonded_setup(t_forcerec *   fr,
-                    gmx_bool       bGenericKernelOnly)
+void gmx_nonbonded_setup(t_forcerec * fr,
+                         gmx_bool     bGenericKernelOnly)
 {
     tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
     /* Here we are guaranteed only one thread made it. */
@@ -162,20 +161,19 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 
 
 
-void
-gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
+void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
 {
-    const char *     elec;
-    const char *     elec_mod;
-    const char *     vdw;
-    const char *     vdw_mod;
-    const char *     geom;
-    const char *     other;
+    const char * elec;
+    const char * elec_mod;
+    const char * vdw;
+    const char * vdw_mod;
+    const char * geom;
+    const char * other;
 
     struct
     {
-        const char *  arch;
-        int           simd_padding_width;
+        const char * arch;
+        int          simd_padding_width;
     }
     arch_and_padding[] =
     {
@@ -217,8 +215,8 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 #endif
         { "c", 1 },
     };
-    int              narch = asize(arch_and_padding);
-    int              i;
+    int narch = asize(arch_and_padding);
+    int i;
 
     if (nonbonded_setup_done == FALSE)
     {
@@ -286,9 +284,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
          * so this is mostly a safe-guard to make sure we call the generic kernel if the
          * tables are disabled.
          */
-        if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH) &&
-            (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH) &&
-            bElecAndVdwSwitchDiffers)
+        if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH)
+            && (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH)
+            && bElecAndVdwSwitchDiffers)
         {
             nl->kernelptr_vf = nullptr;
             nl->kernelptr_f  = nullptr;
@@ -322,17 +320,17 @@ void do_nonbonded(t_forcerec *fr,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
 {
-    t_nblist *        nlist;
-    int               n, n0, n1, i, i0, i1;
-    t_nblists *       nblists;
-    nb_kernel_data_t  kernel_data;
-    nb_kernel_t *     kernelptr = nullptr;
-    rvec *            f;
+    t_nblist *       nlist;
+    int              n, n0, n1, i, i0, i1;
+    t_nblists *      nblists;
+    nb_kernel_data_t kernel_data;
+    nb_kernel_t *    kernelptr = nullptr;
+    rvec *           f;
 
-    kernel_data.flags                   = flags;
-    kernel_data.exclusions              = excl;
-    kernel_data.lambda                  = lambda;
-    kernel_data.dvdl                    = dvdl;
+    kernel_data.flags      = flags;
+    kernel_data.exclusions = excl;
+    kernel_data.lambda     = lambda;
+    kernel_data.dvdl       = dvdl;
 
     if (fr->bAllvsAll)
     {
@@ -343,7 +341,7 @@ void do_nonbonded(t_forcerec *fr,
     if (eNL >= 0)
     {
         i0 = eNL;
-        i1 = i0+1;
+        i1 = i0 + 1;
     }
     else
     {
@@ -354,7 +352,7 @@ void do_nonbonded(t_forcerec *fr,
     if (nls >= 0)
     {
         n0 = nls;
-        n1 = nls+1;
+        n1 = nls + 1;
     }
     else
     {
@@ -375,9 +373,9 @@ void do_nonbonded(t_forcerec *fr,
         /* cppcheck-suppress duplicateExpression */
         assert(etiNR == 3);
 
-        kernel_data.table_elec              = nblists->table_elec;
-        kernel_data.table_vdw               = nblists->table_vdw;
-        kernel_data.table_elec_vdw          = nblists->table_elec_vdw;
+        kernel_data.table_elec     = nblists->table_elec;
+        kernel_data.table_vdw      = nblists->table_vdw;
+        kernel_data.table_elec_vdw = nblists->table_elec_vdw;
 
         {
             {
@@ -386,11 +384,11 @@ void do_nonbonded(t_forcerec *fr,
                 {
                     continue;
                 }
-                kernel_data.energygrp_elec          = grppener->ener[egCOULSR];
-                kernel_data.energygrp_vdw           = grppener->ener[fr->bBHAM ? egBHAMSR : egLJSR];
-                kernel_data.energygrp_polarization  = grppener->ener[egGB];
-                nlist = nblists->nlist_sr;
-                f                                   = f_shortrange;
+                kernel_data.energygrp_elec         = grppener->ener[egCOULSR];
+                kernel_data.energygrp_vdw          = grppener->ener[fr->bBHAM ? egBHAMSR : egLJSR];
+                kernel_data.energygrp_polarization = grppener->ener[egGB];
+                nlist                              = nblists->nlist_sr;
+                f                                  = f_shortrange;
             }
 
             for (i = i0; (i < i1); i++)

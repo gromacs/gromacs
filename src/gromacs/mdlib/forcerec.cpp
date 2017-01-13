@@ -99,7 +99,7 @@
 
 #include "nbnxn_gpu_jit_support.h"
 
-const char *egrp_nm[egNR+1] = {
+const char *egrp_nm[egNR + 1] = {
     "Coul-SR", "LJ-SR", "Buck-SR",
     "Coul-14", "LJ-14", nullptr
 };
@@ -126,12 +126,12 @@ static void pr_nbfp(FILE *fp, real *nbfp, gmx_bool bBHAM, int atnr)
             if (bBHAM)
             {
                 fprintf(fp, "  a=%10g, b=%10g, c=%10g\n", BHAMA(nbfp, atnr, i, j),
-                        BHAMB(nbfp, atnr, i, j), BHAMC(nbfp, atnr, i, j)/6.0);
+                        BHAMB(nbfp, atnr, i, j), BHAMC(nbfp, atnr, i, j) / 6.0);
             }
             else
             {
-                fprintf(fp, "  c6=%10g, c12=%10g\n", C6(nbfp, atnr, i, j)/6.0,
-                        C12(nbfp, atnr, i, j)/12.0);
+                fprintf(fp, "  c6=%10g, c12=%10g\n", C6(nbfp, atnr, i, j) / 6.0,
+                        C12(nbfp, atnr, i, j) / 12.0);
             }
         }
     }
@@ -146,7 +146,7 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
     atnr = idef->atnr;
     if (bBHAM)
     {
-        snew(nbfp, 3*atnr*atnr);
+        snew(nbfp, 3 * atnr * atnr);
         for (i = k = 0; (i < atnr); i++)
         {
             for (j = 0; (j < atnr); j++, k++)
@@ -154,20 +154,20 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
                 BHAMA(nbfp, atnr, i, j) = idef->iparams[k].bham.a;
                 BHAMB(nbfp, atnr, i, j) = idef->iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
-                BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c*6.0;
+                BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c * 6.0;
             }
         }
     }
     else
     {
-        snew(nbfp, 2*atnr*atnr);
+        snew(nbfp, 2 * atnr * atnr);
         for (i = k = 0; (i < atnr); i++)
         {
             for (j = 0; (j < atnr); j++, k++)
             {
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                C6(nbfp, atnr, i, j)   = idef->iparams[k].lj.c6*6.0;
-                C12(nbfp, atnr, i, j)  = idef->iparams[k].lj.c12*12.0;
+                C6(nbfp, atnr, i, j)  = idef->iparams[k].lj.c6 * 6.0;
+                C12(nbfp, atnr, i, j) = idef->iparams[k].lj.c12 * 12.0;
             }
         }
     }
@@ -177,9 +177,9 @@ static real *mk_nbfp(const gmx_ffparams_t *idef, gmx_bool bBHAM)
 
 static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
 {
-    int        i, j, k, atnr;
-    real       c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-    real      *grid;
+    int   i, j, k, atnr;
+    real  c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real *grid;
 
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
@@ -187,15 +187,15 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
      */
 
     atnr = idef->atnr;
-    snew(grid, 2*atnr*atnr);
+    snew(grid, 2 * atnr * atnr);
     for (i = k = 0; (i < atnr); i++)
     {
         for (j = 0; (j < atnr); j++, k++)
         {
-            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
-            c12i = idef->iparams[i*(atnr+1)].lj.c12;
-            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
-            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6i  = idef->iparams[i * (atnr + 1)].lj.c6;
+            c12i = idef->iparams[i * (atnr + 1)].lj.c12;
+            c6j  = idef->iparams[j * (atnr + 1)].lj.c6;
+            c12j = idef->iparams[j * (atnr + 1)].lj.c12;
             c6   = std::sqrt(c6i * c6j);
             if (fr->ljpme_combination_rule == eljpmeLB
                 && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
@@ -204,12 +204,12 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
                 sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
             }
             /* Store the elements at the same relative positions as C6 in nbfp in order
              * to simplify access in the kernels
              */
-            grid[2*(atnr*i+j)] = c6*6.0;
+            grid[2 * (atnr * i + j)] = c6 * 6.0;
         }
     }
     return grid;
@@ -217,21 +217,21 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
 
 static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 {
-    real      *nbfp;
-    int        i, j, atnr;
-    real       c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-    real       c6, c12;
+    real *nbfp;
+    int   i, j, atnr;
+    real  c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
+    real  c6, c12;
 
     atnr = idef->atnr;
-    snew(nbfp, 2*atnr*atnr);
+    snew(nbfp, 2 * atnr * atnr);
     for (i = 0; i < atnr; ++i)
     {
         for (j = 0; j < atnr; ++j)
         {
-            c6i  = idef->iparams[i*(atnr+1)].lj.c6;
-            c12i = idef->iparams[i*(atnr+1)].lj.c12;
-            c6j  = idef->iparams[j*(atnr+1)].lj.c6;
-            c12j = idef->iparams[j*(atnr+1)].lj.c12;
+            c6i  = idef->iparams[i * (atnr + 1)].lj.c6;
+            c12i = idef->iparams[i * (atnr + 1)].lj.c12;
+            c6j  = idef->iparams[j * (atnr + 1)].lj.c6;
+            c12j = idef->iparams[j * (atnr + 1)].lj.c12;
             c6   = std::sqrt(c6i  * c6j);
             c12  = std::sqrt(c12i * c12j);
             if (comb_rule == eCOMB_ARITHMETIC
@@ -241,11 +241,11 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
                 sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
-                c12    = std::sqrt(epsi * epsj) * gmx::power12(0.5*(sigmai+sigmaj));
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
+                c12    = std::sqrt(epsi * epsj) * gmx::power12(0.5 * (sigmai + sigmaj));
             }
-            C6(nbfp, atnr, i, j)   = c6*6.0;
-            C12(nbfp, atnr, i, j)  = c12*12.0;
+            C6(nbfp, atnr, i, j)  = c6 * 6.0;
+            C12(nbfp, atnr, i, j) = c12 * 12.0;
         }
     }
     return nbfp;
@@ -268,25 +268,24 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 
 typedef struct
 {
-    int    model;
-    int    count;
-    int    vdwtype[4];
-    real   charge[4];
+    int  model;
+    int  count;
+    int  vdwtype[4];
+    real charge[4];
 } solvent_parameters_t;
 
-static void
-check_solvent_cg(const gmx_moltype_t    *molt,
-                 int                     cg0,
-                 int                     nmol,
-                 const unsigned char    *qm_grpnr,
-                 const t_grps           *qm_grps,
-                 t_forcerec   *          fr,
-                 int                    *n_solvent_parameters,
-                 solvent_parameters_t  **solvent_parameters_p,
-                 int                     cginfo,
-                 int                    *cg_sp)
+static void check_solvent_cg(const gmx_moltype_t *  molt,
+                             int                    cg0,
+                             int                    nmol,
+                             const unsigned char *  qm_grpnr,
+                             const t_grps *         qm_grps,
+                             t_forcerec *           fr,
+                             int *                  n_solvent_parameters,
+                             solvent_parameters_t **solvent_parameters_p,
+                             int                    cginfo,
+                             int *                  cg_sp)
 {
-    t_atom               *atom;
+    t_atom *              atom;
     int                   j, k;
     int                   j0, j1, nj;
     gmx_bool              perturbed;
@@ -319,18 +318,18 @@ check_solvent_cg(const gmx_moltype_t    *molt,
      * and all atoms inside the charge group excluded.
      * We only have 3 or 4 atom solvent loops.
      */
-    if (GET_CGINFO_EXCL_INTER(cginfo) ||
-        !GET_CGINFO_EXCL_INTRA(cginfo))
+    if (GET_CGINFO_EXCL_INTER(cginfo)
+        || !GET_CGINFO_EXCL_INTRA(cginfo))
     {
         return;
     }
 
     /* Get the indices of the first atom in this charge group */
-    j0     = molt->cgs.index[cg0];
-    j1     = molt->cgs.index[cg0+1];
+    j0 = molt->cgs.index[cg0];
+    j1 = molt->cgs.index[cg0 + 1];
 
     /* Number of atoms in our molecule */
-    nj     = j1 - j0;
+    nj = j1 - j0;
 
     if (debug)
     {
@@ -388,8 +387,8 @@ check_solvent_cg(const gmx_moltype_t    *molt,
      */
     for (j = 0; j < nj; j++)
     {
-        tmp_vdwtype[j] = atom[j0+j].type;
-        tmp_charge[j]  = atom[j0+j].q;
+        tmp_vdwtype[j] = atom[j0 + j].type;
+        tmp_charge[j]  = atom[j0 + j].q;
     }
 
     /* Does it match any previous solvent type? */
@@ -399,8 +398,8 @@ check_solvent_cg(const gmx_moltype_t    *molt,
 
 
         /* We can only match SPC with 3 atoms and TIP4p with 4 atoms */
-        if ( (solvent_parameters[k].model == esolSPC   && nj != 3)  ||
-             (solvent_parameters[k].model == esolTIP4P && nj != 4) )
+        if ( (solvent_parameters[k].model == esolSPC   && nj != 3)
+             || (solvent_parameters[k].model == esolTIP4P && nj != 4) )
         {
             match = FALSE;
         }
@@ -422,7 +421,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
             /* Congratulations! We have a matched solvent.
              * Flag it with this type for later processing.
              */
-            *cg_sp = k;
+            *cg_sp                       = k;
             solvent_parameters[k].count += nmol;
 
             /* We are done with this charge group */
@@ -450,17 +449,17 @@ check_solvent_cg(const gmx_moltype_t    *molt,
              */
             if (fr->bBHAM)
             {
-                has_vdw[j] = (has_vdw[j] ||
-                              (BHAMA(fr->nbfp, fr->ntype, tjA, k) != 0.0) ||
-                              (BHAMB(fr->nbfp, fr->ntype, tjA, k) != 0.0) ||
-                              (BHAMC(fr->nbfp, fr->ntype, tjA, k) != 0.0));
+                has_vdw[j] = (has_vdw[j]
+                              || (BHAMA(fr->nbfp, fr->ntype, tjA, k) != 0.0)
+                              || (BHAMB(fr->nbfp, fr->ntype, tjA, k) != 0.0)
+                              || (BHAMC(fr->nbfp, fr->ntype, tjA, k) != 0.0));
             }
             else
             {
                 /* Standard LJ */
-                has_vdw[j] = (has_vdw[j] ||
-                              (C6(fr->nbfp, fr->ntype, tjA, k)  != 0.0) ||
-                              (C12(fr->nbfp, fr->ntype, tjA, k) != 0.0));
+                has_vdw[j] = (has_vdw[j]
+                              || (C6(fr->nbfp, fr->ntype, tjA, k)  != 0.0)
+                              || (C12(fr->nbfp, fr->ntype, tjA, k) != 0.0));
             }
         }
     }
@@ -473,13 +472,13 @@ check_solvent_cg(const gmx_moltype_t    *molt,
          * the charges on atom 2 & 3 should be the same, and only
          * atom 1 might have VdW.
          */
-        if (has_vdw[1] == FALSE &&
-            has_vdw[2] == FALSE &&
-            tmp_charge[0]  != 0 &&
-            tmp_charge[1]  != 0 &&
-            tmp_charge[2]  == tmp_charge[1])
+        if (has_vdw[1] == FALSE
+            && has_vdw[2] == FALSE
+            && tmp_charge[0]  != 0
+            && tmp_charge[1]  != 0
+            && tmp_charge[2]  == tmp_charge[1])
         {
-            srenew(solvent_parameters, *n_solvent_parameters+1);
+            srenew(solvent_parameters, *n_solvent_parameters + 1);
             solvent_parameters[*n_solvent_parameters].model = esolSPC;
             solvent_parameters[*n_solvent_parameters].count = nmol;
             for (k = 0; k < 3; k++)
@@ -498,15 +497,15 @@ check_solvent_cg(const gmx_moltype_t    *molt,
          * For this we require thatn atoms 2,3,4 have charge, but not atom 1.
          * Only atom 1 mght have VdW.
          */
-        if (has_vdw[1] == FALSE &&
-            has_vdw[2] == FALSE &&
-            has_vdw[3] == FALSE &&
-            tmp_charge[0]  == 0 &&
-            tmp_charge[1]  != 0 &&
-            tmp_charge[2]  == tmp_charge[1] &&
-            tmp_charge[3]  != 0)
+        if (has_vdw[1] == FALSE
+            && has_vdw[2] == FALSE
+            && has_vdw[3] == FALSE
+            && tmp_charge[0]  == 0
+            && tmp_charge[1]  != 0
+            && tmp_charge[2]  == tmp_charge[1]
+            && tmp_charge[3]  != 0)
         {
-            srenew(solvent_parameters, *n_solvent_parameters+1);
+            srenew(solvent_parameters, *n_solvent_parameters + 1);
             solvent_parameters[*n_solvent_parameters].model = esolTIP4P;
             solvent_parameters[*n_solvent_parameters].count = nmol;
             for (k = 0; k < 4; k++)
@@ -523,18 +522,17 @@ check_solvent_cg(const gmx_moltype_t    *molt,
     *solvent_parameters_p = solvent_parameters;
 }
 
-static void
-check_solvent(FILE  *                fp,
-              const gmx_mtop_t  *    mtop,
-              t_forcerec  *          fr,
-              cginfo_mb_t           *cginfo_mb)
+static void check_solvent(FILE *             fp,
+                          const gmx_mtop_t * mtop,
+                          t_forcerec *       fr,
+                          cginfo_mb_t *      cginfo_mb)
 {
-    const t_block     *   cgs;
-    const gmx_moltype_t  *molt;
+    const t_block *       cgs;
+    const gmx_moltype_t * molt;
     int                   mb, mol, cg_mol, at_offset, am, cgm, i, nmol_ch, nmol;
     int                   n_solvent_parameters;
     solvent_parameters_t *solvent_parameters;
-    int                 **cg_sp;
+    int **                cg_sp;
     int                   bestsp, bestsol;
 
     if (debug)
@@ -556,22 +554,22 @@ check_solvent(FILE  *                fp,
          * because we need to check for QMMM particles.
          */
         snew(cg_sp[mb], cginfo_mb[mb].cg_mod);
-        nmol_ch = cginfo_mb[mb].cg_mod/cgs->nr;
-        nmol    = mtop->molblock[mb].nmol/nmol_ch;
+        nmol_ch = cginfo_mb[mb].cg_mod / cgs->nr;
+        nmol    = mtop->molblock[mb].nmol / nmol_ch;
         for (mol = 0; mol < nmol_ch; mol++)
         {
-            cgm = mol*cgs->nr;
-            am  = mol*cgs->index[cgs->nr];
+            cgm = mol * cgs->nr;
+            am  = mol * cgs->index[cgs->nr];
             for (cg_mol = 0; cg_mol < cgs->nr; cg_mol++)
             {
                 check_solvent_cg(molt, cg_mol, nmol,
-                                 mtop->groups.grpnr[egcQMMM] ?
-                                 mtop->groups.grpnr[egcQMMM]+at_offset+am : nullptr,
+                                 mtop->groups.grpnr[egcQMMM]
+                                 ? mtop->groups.grpnr[egcQMMM] + at_offset + am : nullptr,
                                  &mtop->groups.grps[egcQMMM],
                                  fr,
                                  &n_solvent_parameters, &solvent_parameters,
-                                 cginfo_mb[mb].cginfo[cgm+cg_mol],
-                                 &cg_sp[mb][cgm+cg_mol]);
+                                 cginfo_mb[mb].cginfo[cgm + cg_mol],
+                                 &cg_sp[mb][cgm + cg_mol]);
             }
         }
         at_offset += cgs->index[cgs->nr];
@@ -585,8 +583,8 @@ check_solvent(FILE  *                fp,
     bestsp = -2;
     for (i = 0; i < n_solvent_parameters; i++)
     {
-        if (bestsp == -2 ||
-            solvent_parameters[i].count > solvent_parameters[bestsp].count)
+        if (bestsp == -2
+            || solvent_parameters[i].count > solvent_parameters[bestsp].count)
         {
             bestsp = i;
         }
@@ -605,7 +603,7 @@ check_solvent(FILE  *                fp,
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         cgs  = &mtop->moltype[mtop->molblock[mb].type].cgs;
-        nmol = (mtop->molblock[mb].nmol*cgs->nr)/cginfo_mb[mb].cg_mod;
+        nmol = (mtop->molblock[mb].nmol * cgs->nr) / cginfo_mb[mb].cg_mod;
         for (i = 0; i < cginfo_mb[mb].cg_mod; i++)
         {
             if (cg_sp[mb][i] == bestsp)
@@ -633,7 +631,8 @@ check_solvent(FILE  *                fp,
     fr->solvent_opt = bestsol;
 }
 
-enum {
+enum
+{
     acNONE = 0, acCONSTRAINT, acSETTLE
 };
 
@@ -642,16 +641,16 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                                    gmx_bool *bFEP_NonBonded,
                                    gmx_bool *bExcl_IntraCGAll_InterCGNone)
 {
-    const t_block        *cgs;
-    const t_blocka       *excl;
-    const gmx_moltype_t  *molt;
+    const t_block *       cgs;
+    const t_blocka *      excl;
+    const gmx_moltype_t * molt;
     const gmx_molblock_t *molb;
-    cginfo_mb_t          *cginfo_mb;
-    gmx_bool             *type_VDW;
-    int                  *cginfo;
+    cginfo_mb_t *         cginfo_mb;
+    gmx_bool *            type_VDW;
+    int *                 cginfo;
     int                   cg_offset, a_offset;
     int                   mb, m, cg, a0, a1, gid, ai, j, aj, excl_nalloc;
-    int                  *a_con;
+    int *                 a_con;
     int                   ftype;
     int                   ia;
     gmx_bool              bId, *bExcl, bExclIntraAll, bExclInter, bHaveVDW, bHaveQ, bHavePerturbedAtoms;
@@ -664,10 +663,10 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         type_VDW[ai] = FALSE;
         for (j = 0; j < fr->ntype; j++)
         {
-            type_VDW[ai] = type_VDW[ai] ||
-                fr->bBHAM ||
-                C6(fr->nbfp, fr->ntype, ai, j) != 0 ||
-                C12(fr->nbfp, fr->ntype, ai, j) != 0;
+            type_VDW[ai] = type_VDW[ai]
+                || fr->bBHAM
+                || C6(fr->nbfp, fr->ntype, ai, j) != 0
+                || C12(fr->nbfp, fr->ntype, ai, j) != 0;
         }
     }
 
@@ -692,13 +691,13 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         bId = TRUE;
         for (m = 0; m < molb->nmol; m++)
         {
-            int am = m*cgs->index[cgs->nr];
+            int am = m * cgs->index[cgs->nr];
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 a0 = cgs->index[cg];
-                a1 = cgs->index[cg+1];
-                if (ggrpnr(&mtop->groups, egcENER, a_offset+am+a0) !=
-                    ggrpnr(&mtop->groups, egcENER, a_offset   +a0))
+                a1 = cgs->index[cg + 1];
+                if (ggrpnr(&mtop->groups, egcENER, a_offset + am + a0)
+                    != ggrpnr(&mtop->groups, egcENER, a_offset   + a0))
                 {
                     bId = FALSE;
                 }
@@ -706,8 +705,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 {
                     for (ai = a0; ai < a1; ai++)
                     {
-                        if (mtop->groups.grpnr[egcQMMM][a_offset+am+ai] !=
-                            mtop->groups.grpnr[egcQMMM][a_offset   +ai])
+                        if (mtop->groups.grpnr[egcQMMM][a_offset + am + ai]
+                            != mtop->groups.grpnr[egcQMMM][a_offset   + ai])
                         {
                             bId = FALSE;
                         }
@@ -717,8 +716,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         }
 
         cginfo_mb[mb].cg_start = cg_offset;
-        cginfo_mb[mb].cg_end   = cg_offset + molb->nmol*cgs->nr;
-        cginfo_mb[mb].cg_mod   = (bId ? 1 : molb->nmol)*cgs->nr;
+        cginfo_mb[mb].cg_end   = cg_offset + molb->nmol * cgs->nr;
+        cginfo_mb[mb].cg_mod   = (bId ? 1 : molb->nmol) * cgs->nr;
         snew(cginfo_mb[mb].cginfo, cginfo_mb[mb].cg_mod);
         cginfo = cginfo_mb[mb].cginfo;
 
@@ -731,14 +730,14 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 int nral;
 
                 nral = NRAL(ftype);
-                for (ia = 0; ia < molt->ilist[ftype].nr; ia += 1+nral)
+                for (ia = 0; ia < molt->ilist[ftype].nr; ia += 1 + nral)
                 {
                     int a;
 
                     for (a = 0; a < nral; a++)
                     {
-                        a_con[molt->ilist[ftype].iatoms[ia+1+a]] =
-                            (ftype == F_SETTLE ? acSETTLE : acCONSTRAINT);
+                        a_con[molt->ilist[ftype].iatoms[ia + 1 + a]]
+                            = (ftype == F_SETTLE ? acSETTLE : acCONSTRAINT);
                     }
                 }
             }
@@ -746,19 +745,19 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
 
         for (m = 0; m < (bId ? 1 : molb->nmol); m++)
         {
-            int cgm = m*cgs->nr;
-            int am  = m*cgs->index[cgs->nr];
+            int cgm = m * cgs->nr;
+            int am  = m * cgs->index[cgs->nr];
             for (cg = 0; cg < cgs->nr; cg++)
             {
                 a0 = cgs->index[cg];
-                a1 = cgs->index[cg+1];
+                a1 = cgs->index[cg + 1];
 
                 /* Store the energy group in cginfo */
-                gid = ggrpnr(&mtop->groups, egcENER, a_offset+am+a0);
-                SET_CGINFO_GID(cginfo[cgm+cg], gid);
+                gid = ggrpnr(&mtop->groups, egcENER, a_offset + am + a0);
+                SET_CGINFO_GID(cginfo[cgm + cg], gid);
 
                 /* Check the intra/inter charge group exclusions */
-                if (a1-a0 > excl_nalloc)
+                if (a1 - a0 > excl_nalloc)
                 {
                     excl_nalloc = a1 - a0;
                     srenew(bExcl, excl_nalloc);
@@ -774,20 +773,20 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 for (ai = a0; ai < a1; ai++)
                 {
                     /* Check VDW and electrostatic interactions */
-                    bHaveVDW = bHaveVDW || (type_VDW[molt->atoms.atom[ai].type] ||
-                                            type_VDW[molt->atoms.atom[ai].typeB]);
-                    bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
-                                            molt->atoms.atom[ai].qB != 0);
+                    bHaveVDW = bHaveVDW || (type_VDW[molt->atoms.atom[ai].type]
+                                            || type_VDW[molt->atoms.atom[ai].typeB]);
+                    bHaveQ = bHaveQ    || (molt->atoms.atom[ai].q != 0
+                                           || molt->atoms.atom[ai].qB != 0);
 
                     bHavePerturbedAtoms = bHavePerturbedAtoms || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
                     /* Clear the exclusion list for atom ai */
                     for (aj = a0; aj < a1; aj++)
                     {
-                        bExcl[aj-a0] = FALSE;
+                        bExcl[aj - a0] = FALSE;
                     }
                     /* Loop over all the exclusions of atom ai */
-                    for (j = excl->index[ai]; j < excl->index[ai+1]; j++)
+                    for (j = excl->index[ai]; j < excl->index[ai + 1]; j++)
                     {
                         aj = excl->a[j];
                         if (aj < a0 || aj >= a1)
@@ -796,13 +795,13 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                         }
                         else
                         {
-                            bExcl[aj-a0] = TRUE;
+                            bExcl[aj - a0] = TRUE;
                         }
                     }
                     /* Check if ai excludes a0 to a1 */
                     for (aj = a0; aj < a1; aj++)
                     {
-                        if (!bExcl[aj-a0])
+                        if (!bExcl[aj - a0])
                         {
                             bExclIntraAll = FALSE;
                         }
@@ -811,10 +810,10 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     switch (a_con[ai])
                     {
                         case acCONSTRAINT:
-                            SET_CGINFO_CONSTR(cginfo[cgm+cg]);
+                            SET_CGINFO_CONSTR(cginfo[cgm + cg]);
                             break;
                         case acSETTLE:
-                            SET_CGINFO_SETTLE(cginfo[cgm+cg]);
+                            SET_CGINFO_SETTLE(cginfo[cgm + cg]);
                             break;
                         default:
                             break;
@@ -822,32 +821,32 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 }
                 if (bExclIntraAll)
                 {
-                    SET_CGINFO_EXCL_INTRA(cginfo[cgm+cg]);
+                    SET_CGINFO_EXCL_INTRA(cginfo[cgm + cg]);
                 }
                 if (bExclInter)
                 {
-                    SET_CGINFO_EXCL_INTER(cginfo[cgm+cg]);
+                    SET_CGINFO_EXCL_INTER(cginfo[cgm + cg]);
                 }
                 if (a1 - a0 > MAX_CHARGEGROUP_SIZE)
                 {
                     /* The size in cginfo is currently only read with DD */
-                    gmx_fatal(FARGS, "A charge group has size %d which is larger than the limit of %d atoms", a1-a0, MAX_CHARGEGROUP_SIZE);
+                    gmx_fatal(FARGS, "A charge group has size %d which is larger than the limit of %d atoms", a1 - a0, MAX_CHARGEGROUP_SIZE);
                 }
                 if (bHaveVDW)
                 {
-                    SET_CGINFO_HAS_VDW(cginfo[cgm+cg]);
+                    SET_CGINFO_HAS_VDW(cginfo[cgm + cg]);
                 }
                 if (bHaveQ)
                 {
-                    SET_CGINFO_HAS_Q(cginfo[cgm+cg]);
+                    SET_CGINFO_HAS_Q(cginfo[cgm + cg]);
                 }
                 if (bHavePerturbedAtoms && fr->efep != efepNO)
                 {
-                    SET_CGINFO_FEP(cginfo[cgm+cg]);
+                    SET_CGINFO_FEP(cginfo[cgm + cg]);
                     *bFEP_NonBonded = TRUE;
                 }
                 /* Store the charge group size */
-                SET_CGINFO_NATOMS(cginfo[cgm+cg], a1-a0);
+                SET_CGINFO_NATOMS(cginfo[cgm + cg], a1 - a0);
 
                 if (!bExclIntraAll || bExclInter)
                 {
@@ -858,8 +857,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
 
         sfree(a_con);
 
-        cg_offset += molb->nmol*cgs->nr;
-        a_offset  += molb->nmol*cgs->index[cgs->nr];
+        cg_offset += molb->nmol * cgs->nr;
+        a_offset  += molb->nmol * cgs->index[cgs->nr];
     }
     sfree(bExcl);
 
@@ -902,7 +901,7 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
     int  ncg, mb, cg;
     int *cginfo;
 
-    ncg = cgi_mb[nmb-1].cg_end;
+    ncg = cgi_mb[nmb - 1].cg_end;
     snew(cginfo, ncg);
     mb = 0;
     for (cg = 0; cg < ncg; cg++)
@@ -911,8 +910,8 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
         {
             mb++;
         }
-        cginfo[cg] =
-            cgi_mb[mb].cginfo[(cg - cgi_mb[mb].cg_start) % cgi_mb[mb].cg_mod];
+        cginfo[cg]
+            = cgi_mb[mb].cginfo[(cg - cgi_mb[mb].cg_start) % cgi_mb[mb].cg_mod];
     }
 
     return cginfo;
@@ -925,53 +924,53 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
     int            mb, nmol, i;
     const t_atoms *atoms;
 
-    qsum   = 0;
-    q2sum  = 0;
-    c6sum  = 0;
+    qsum  = 0;
+    q2sum = 0;
+    c6sum = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         nmol  = mtop->molblock[mb].nmol;
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
         for (i = 0; i < atoms->nr; i++)
         {
-            q       = atoms->atom[i].q;
-            qsum   += nmol*q;
-            q2sum  += nmol*q*q;
-            c6      = mtop->ffparams.iparams[atoms->atom[i].type*(mtop->ffparams.atnr+1)].lj.c6;
-            c6sum  += nmol*c6;
+            q      = atoms->atom[i].q;
+            qsum  += nmol * q;
+            q2sum += nmol * q * q;
+            c6     = mtop->ffparams.iparams[atoms->atom[i].type * (mtop->ffparams.atnr + 1)].lj.c6;
+            c6sum += nmol * c6;
         }
     }
-    fr->qsum[0]   = qsum;
-    fr->q2sum[0]  = q2sum;
-    fr->c6sum[0]  = c6sum;
+    fr->qsum[0]  = qsum;
+    fr->q2sum[0] = q2sum;
+    fr->c6sum[0] = c6sum;
 
     if (fr->efep != efepNO)
     {
-        qsum   = 0;
-        q2sum  = 0;
-        c6sum  = 0;
+        qsum  = 0;
+        q2sum = 0;
+        c6sum = 0;
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             nmol  = mtop->molblock[mb].nmol;
             atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
             for (i = 0; i < atoms->nr; i++)
             {
-                q       = atoms->atom[i].qB;
-                qsum   += nmol*q;
-                q2sum  += nmol*q*q;
-                c6      = mtop->ffparams.iparams[atoms->atom[i].typeB*(mtop->ffparams.atnr+1)].lj.c6;
-                c6sum  += nmol*c6;
+                q      = atoms->atom[i].qB;
+                qsum  += nmol * q;
+                q2sum += nmol * q * q;
+                c6     = mtop->ffparams.iparams[atoms->atom[i].typeB * (mtop->ffparams.atnr + 1)].lj.c6;
+                c6sum += nmol * c6;
             }
-            fr->qsum[1]   = qsum;
-            fr->q2sum[1]  = q2sum;
-            fr->c6sum[1]  = c6sum;
+            fr->qsum[1]  = qsum;
+            fr->q2sum[1] = q2sum;
+            fr->c6sum[1] = c6sum;
         }
     }
     else
     {
-        fr->qsum[1]   = fr->qsum[0];
-        fr->q2sum[1]  = fr->q2sum[0];
-        fr->c6sum[1]  = fr->c6sum[0];
+        fr->qsum[1]  = fr->qsum[0];
+        fr->q2sum[1] = fr->q2sum[0];
+        fr->c6sum[1] = fr->c6sum[0];
     }
     if (log)
     {
@@ -999,15 +998,15 @@ void update_forcerec(t_forcerec *fr, matrix box)
 
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 {
-    const t_atoms  *atoms, *atoms_tpi;
+    const t_atoms * atoms, *atoms_tpi;
     const t_blocka *excl;
     int             mb, nmol, nmolc, i, j, tpi, tpj, j1, j2, k, nexcl, q;
     gmx_int64_t     npair, npair_ij, tmpi, tmpj;
     double          csix, ctwelve;
     int             ntp, *typecount;
     gmx_bool        bBHAM;
-    real           *nbfp;
-    real           *nbfp_comb = nullptr;
+    real *          nbfp;
+    real *          nbfp_comb = nullptr;
 
     ntp   = fr->ntype;
     bBHAM = fr->bBHAM;
@@ -1025,8 +1024,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         {
             for (tpj = 0; tpj < ntp; ++tpj)
             {
-                C6(nbfp_comb, ntp, tpi, tpj) =
-                    C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
+                C6(nbfp_comb, ntp, tpi, tpj)
+                                              = C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
                 C12(nbfp_comb, ntp, tpi, tpj) = C12(nbfp, ntp, tpi, tpj);
             }
         }
@@ -1052,22 +1051,22 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                     tmpj = typecount[tpj];
                     if (tpi != tpj)
                     {
-                        npair_ij = tmpi*tmpj;
+                        npair_ij = tmpi * tmpj;
                     }
                     else
                     {
-                        npair_ij = tmpi*(tmpi - 1)/2;
+                        npair_ij = tmpi * (tmpi - 1) / 2;
                     }
                     if (bBHAM)
                     {
                         /* nbfp now includes the 6.0 derivative prefactor */
-                        csix    += npair_ij*BHAMC(nbfp, ntp, tpi, tpj)/6.0;
+                        csix += npair_ij * BHAMC(nbfp, ntp, tpi, tpj) / 6.0;
                     }
                     else
                     {
                         /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                        csix    += npair_ij*   C6(nbfp, ntp, tpi, tpj)/6.0;
-                        ctwelve += npair_ij*  C12(nbfp, ntp, tpi, tpj)/12.0;
+                        csix    += npair_ij *   C6(nbfp, ntp, tpi, tpj) / 6.0;
+                        ctwelve += npair_ij *  C12(nbfp, ntp, tpi, tpj) / 12.0;
                     }
                     npair += npair_ij;
                 }
@@ -1094,8 +1093,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                     {
                         tpi = atoms->atom[i].typeB;
                     }
-                    j1  = excl->index[i];
-                    j2  = excl->index[i+1];
+                    j1 = excl->index[i];
+                    j2 = excl->index[i + 1];
                     for (j = j1; j < j2; j++)
                     {
                         k = excl->a[j];
@@ -1112,13 +1111,13 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                             if (bBHAM)
                             {
                                 /* nbfp now includes the 6.0 derivative prefactor */
-                                csix -= nmol*BHAMC(nbfp, ntp, tpi, tpj)/6.0;
+                                csix -= nmol * BHAMC(nbfp, ntp, tpi, tpj) / 6.0;
                             }
                             else
                             {
                                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                                csix    -= nmol*C6 (nbfp, ntp, tpi, tpj)/6.0;
-                                ctwelve -= nmol*C12(nbfp, ntp, tpi, tpj)/12.0;
+                                csix    -= nmol * C6 (nbfp, ntp, tpi, tpj) / 6.0;
+                                ctwelve -= nmol * C12(nbfp, ntp, tpi, tpj) / 12.0;
                             }
                             nexcl += nmol;
                         }
@@ -1131,8 +1130,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
             /* Only correct for the interaction of the test particle
              * with the rest of the system.
              */
-            atoms_tpi =
-                &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].atoms;
+            atoms_tpi
+                = &mtop->moltype[mtop->molblock[mtop->nmolblock - 1].type].atoms;
 
             npair = 0;
             for (mb = 0; mb < mtop->nmolblock; mb++)
@@ -1145,7 +1144,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                     /* Remove the interaction of the test charge group
                      * with itself.
                      */
-                    if (mb == mtop->nmolblock-1)
+                    if (mb == mtop->nmolblock - 1)
                     {
                         nmolc--;
 
@@ -1175,13 +1174,13 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                         if (bBHAM)
                         {
                             /* nbfp now includes the 6.0 derivative prefactor */
-                            csix    += nmolc*BHAMC(nbfp, ntp, tpi, tpj)/6.0;
+                            csix += nmolc * BHAMC(nbfp, ntp, tpi, tpj) / 6.0;
                         }
                         else
                         {
                             /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                            csix    += nmolc*C6 (nbfp, ntp, tpi, tpj)/6.0;
-                            ctwelve += nmolc*C12(nbfp, ntp, tpi, tpj)/12.0;
+                            csix    += nmolc * C6 (nbfp, ntp, tpi, tpj) / 6.0;
+                            ctwelve += nmolc * C12(nbfp, ntp, tpi, tpj) / 12.0;
                         }
                         npair += nmolc;
                     }
@@ -1191,8 +1190,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         if (npair - nexcl <= 0 && fplog)
         {
             fprintf(fplog, "\nWARNING: There are no atom pairs for dispersion correction\n\n");
-            csix     = 0;
-            ctwelve  = 0;
+            csix    = 0;
+            ctwelve = 0;
         }
         else
         {
@@ -1216,8 +1215,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
 
     if (fplog != nullptr)
     {
-        if (fr->eDispCorr == edispcAllEner ||
-            fr->eDispCorr == edispcAllEnerPres)
+        if (fr->eDispCorr == edispcAllEner
+            || fr->eDispCorr == edispcAllEnerPres)
         {
             fprintf(fplog, "Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
                     fr->avcsix[0], fr->avctwelve[0]);
@@ -1236,7 +1235,7 @@ static void set_bham_b_max(FILE *fplog, t_forcerec *fr,
     const t_atoms *at1, *at2;
     int            mt1, mt2, i, j, tpi, tpj, ntypes;
     real           b, bmin;
-    real          *nbfp;
+    real *         nbfp;
 
     if (fplog)
     {
@@ -1329,7 +1328,7 @@ static void make_nbf_tables(FILE *fp,
     nbl->table_elec->formatsize    = nbl->table_elec_vdw->formatsize;
     nbl->table_elec->ninteractions = 1;
     nbl->table_elec->stride        = nbl->table_elec->formatsize * nbl->table_elec->ninteractions;
-    snew_aligned(nbl->table_elec->data, nbl->table_elec->stride*(nbl->table_elec->n+1), 32);
+    snew_aligned(nbl->table_elec->data, nbl->table_elec->stride * (nbl->table_elec->n + 1), 32);
 
     snew(nbl->table_vdw, 1);
     nbl->table_vdw->interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
@@ -1340,17 +1339,17 @@ static void make_nbf_tables(FILE *fp,
     nbl->table_vdw->formatsize    = nbl->table_elec_vdw->formatsize;
     nbl->table_vdw->ninteractions = 2;
     nbl->table_vdw->stride        = nbl->table_vdw->formatsize * nbl->table_vdw->ninteractions;
-    snew_aligned(nbl->table_vdw->data, nbl->table_vdw->stride*(nbl->table_vdw->n+1), 32);
+    snew_aligned(nbl->table_vdw->data, nbl->table_vdw->stride * (nbl->table_vdw->n + 1), 32);
 
     for (i = 0; i <= nbl->table_elec_vdw->n; i++)
     {
         for (j = 0; j < 4; j++)
         {
-            nbl->table_elec->data[4*i+j] = nbl->table_elec_vdw->data[12*i+j];
+            nbl->table_elec->data[4 * i + j] = nbl->table_elec_vdw->data[12 * i + j];
         }
         for (j = 0; j < 8; j++)
         {
-            nbl->table_vdw->data[8*i+j] = nbl->table_elec_vdw->data[12*i+4+j];
+            nbl->table_vdw->data[8 * i + j] = nbl->table_elec_vdw->data[12 * i + 4 + j];
         }
     }
 }
@@ -1372,7 +1371,7 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                          int *ncount, int **count)
 {
     const gmx_moltype_t *molt;
-    const t_ilist       *il;
+    const t_ilist *      il;
     int                  mt, ftype, stride, i, j, tabnr;
 
     // Loop over all moleculetypes
@@ -1399,12 +1398,12 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                     // Make room for this index in the data structure
                     if (tabnr >= *ncount)
                     {
-                        srenew(*count, tabnr+1);
-                        for (j = *ncount; j < tabnr+1; j++)
+                        srenew(*count, tabnr + 1);
+                        for (j = *ncount; j < tabnr + 1; j++)
                         {
                             (*count)[j] = 0;
                         }
-                        *ncount = tabnr+1;
+                        *ncount = tabnr + 1;
                     }
                     // Record that this table index is used and must have a valid file
                     (*count)[tabnr]++;
@@ -1460,7 +1459,7 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
                     if (gmx::endsWith(filename, patternToFind))
                     {
                         // Finally read the table from the file found
-                        tab[i]    = make_bonded_table(fplog, tabbfnm->fns[j], NRAL(ftype1)-2);
+                        tab[i]    = make_bonded_table(fplog, tabbfnm->fns[j], NRAL(ftype1) - 2);
                         madeTable = true;
                     }
                 }
@@ -1523,21 +1522,21 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 {
     gmx_bool bAllvsAll;
 
-    bAllvsAll =
-        (
-            ir->rlist == 0            &&
-            ir->rcoulomb == 0         &&
-            ir->rvdw == 0             &&
-            ir->ePBC == epbcNONE      &&
-            ir->vdwtype == evdwCUT    &&
-            ir->coulombtype == eelCUT &&
-            ir->efep == efepNO        &&
-            (ir->implicit_solvent == eisNO ||
-             (ir->implicit_solvent == eisGBSA && (ir->gb_algorithm == egbSTILL ||
-                                                  ir->gb_algorithm == egbHCT   ||
-                                                  ir->gb_algorithm == egbOBC))) &&
-            getenv("GMX_NO_ALLVSALL") == nullptr
-        );
+    bAllvsAll
+        = (
+                ir->rlist == 0
+                && ir->rcoulomb == 0
+                && ir->rvdw == 0
+                && ir->ePBC == epbcNONE
+                && ir->vdwtype == evdwCUT
+                && ir->coulombtype == eelCUT
+                && ir->efep == efepNO
+                && (ir->implicit_solvent == eisNO
+                    || (ir->implicit_solvent == eisGBSA && (ir->gb_algorithm == egbSTILL
+                                                            || ir->gb_algorithm == egbHCT
+                                                            || ir->gb_algorithm == egbOBC)))
+                && getenv("GMX_NO_ALLVSALL") == nullptr
+                );
 
     if (bAllvsAll && ir->opts.ngener > 1)
     {
@@ -1563,7 +1562,7 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 
 
 gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
-                                          const t_inputrec    *ir,
+                                          const t_inputrec *   ir,
                                           gmx_bool             bRerunMD)
 {
     if (bRerunMD && ir->opts.ngener > 1)
@@ -1584,7 +1583,7 @@ gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
 }
 
 gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
-                              const t_inputrec    *ir)
+                              const t_inputrec *   ir)
 {
     if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
     {
@@ -1600,8 +1599,8 @@ gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
 
 
 static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
-                                  int                         *kernel_type,
-                                  int                         *ewald_excl)
+                                  int *                        kernel_type,
+                                  int *                        ewald_excl)
 {
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
@@ -1635,8 +1634,8 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 
 #if !GMX_SIMD_HAVE_FMA
-        if (EEL_PME_EWALD(ir->coulombtype) ||
-            EVDW_PME(ir->vdwtype))
+        if (EEL_PME_EWALD(ir->coulombtype)
+            || EVDW_PME(ir->vdwtype))
         {
             /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
              * There are enough instructions to make 2x(4+4) efficient.
@@ -1672,8 +1671,8 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * On BlueGene/Q, this is faster regardless of precision.
          * In single precision, this is faster on Bulldozer.
          */
-#if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
+#if GMX_SIMD_REAL_WIDTH >= 8    \
+        || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
@@ -1721,14 +1720,14 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
     return returnvalue;
 };
 
-static void pick_nbnxn_kernel(FILE                *fp,
+static void pick_nbnxn_kernel(FILE *               fp,
                               const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
                               gmx_bool             bEmulateGPU,
-                              const t_inputrec    *ir,
-                              int                 *kernel_type,
-                              int                 *ewald_excl,
+                              const t_inputrec *   ir,
+                              int *                kernel_type,
+                              int *                ewald_excl,
                               gmx_bool             bDoNonbonded)
 {
     assert(kernel_type);
@@ -1752,8 +1751,8 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
     if (*kernel_type == nbnxnkNotSet)
     {
-        if (use_simd_kernels &&
-            nbnxn_simd_supported(mdlog, ir))
+        if (use_simd_kernels
+            && nbnxn_simd_supported(mdlog, ir))
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1770,8 +1769,8 @@ static void pick_nbnxn_kernel(FILE                *fp,
                 nbnxn_kernel_to_cluster_i_size(*kernel_type),
                 nbnxn_kernel_to_cluster_j_size(*kernel_type));
 
-        if (nbnxnk4x4_PlainC == *kernel_type ||
-            nbnxnk8x8x8_PlainC == *kernel_type)
+        if (nbnxnk4x4_PlainC == *kernel_type
+            || nbnxnk8x8x8_PlainC == *kernel_type)
         {
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "WARNING: Using the slow %s kernels. This should\n"
@@ -1782,11 +1781,11 @@ static void pick_nbnxn_kernel(FILE                *fp,
 }
 
 static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
-                                 const t_commrec     *cr,
+                                 const t_commrec *    cr,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
-                                 gmx_bool            *bUseGPU,
-                                 gmx_bool            *bEmulateGPU,
+                                 gmx_bool *           bUseGPU,
+                                 gmx_bool *           bEmulateGPU,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
     gmx_bool bEmulateGPUEnvVarSet;
@@ -1807,8 +1806,8 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
      * if mdrun is compiled without GPU acceleration support.
      * Note that you should freezing the system as otherwise it will explode.
      */
-    *bEmulateGPU = (bEmulateGPUEnvVarSet ||
-                    (!bDoNonbonded && gpu_opt->n_dev_use > 0));
+    *bEmulateGPU = (bEmulateGPUEnvVarSet
+                    || (!bDoNonbonded && gpu_opt->n_dev_use > 0));
 
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
      */
@@ -1877,7 +1876,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
     {
         maxr = std::max(ic->rcoulomb, rtab);
     }
-    ic->tabq_size  = static_cast<int>(maxr*ic->tabq_scale) + 2;
+    ic->tabq_size = static_cast<int>(maxr * ic->tabq_scale) + 2;
 
     sfree_aligned(ic->tabq_coul_FDV0);
     sfree_aligned(ic->tabq_coul_F);
@@ -1890,24 +1889,24 @@ static void init_ewald_f_table(interaction_const_t *ic,
     if (EEL_PME_EWALD(ic->eeltype))
     {
         /* Create the original table data in FDV0 */
-        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size * 4, 32);
         snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
         snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
         table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+                                    ic->tabq_size, 1 / ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
     }
 
     if (EVDW_PME(ic->vdwtype))
     {
-        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
+        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size * 4, 32);
         snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
         snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
         table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+                                    ic->tabq_size, 1 / ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
     }
 }
 
-void init_interaction_const_tables(FILE                *fp,
+void init_interaction_const_tables(FILE *               fp,
                                    interaction_const_t *ic,
                                    real                 rtab)
 {
@@ -1918,7 +1917,7 @@ void init_interaction_const_tables(FILE                *fp,
         if (fp != nullptr)
         {
             fprintf(fp, "Initialized non-bonded Ewald correction tables, spacing: %.2e size: %d\n\n",
-                    1/ic->tabq_scale, ic->tabq_size);
+                    1 / ic->tabq_scale, ic->tabq_size);
         }
     }
 }
@@ -1942,9 +1941,9 @@ static void force_switch_constants(real p,
      * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
      * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
      */
-    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*gmx::square(rc - rsw));
-    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*gmx::power3(rc - rsw));
-    sc->cpot = -pow(rc, -p) + p*sc->c2/3*gmx::power3(rc - rsw) + p*sc->c3/4*gmx::power4(rc - rsw);
+    sc->c2   =  ((p + 1) * rsw - (p + 4) * rc) / (pow(rc, p + 2) * gmx::square(rc - rsw));
+    sc->c3   = -((p + 1) * rsw - (p + 3) * rc) / (pow(rc, p + 2) * gmx::power3(rc - rsw));
+    sc->cpot = -pow(rc, -p) + p * sc->c2 / 3 * gmx::power3(rc - rsw) + p * sc->c3 / 4 * gmx::power4(rc - rsw);
 }
 
 static void potential_switch_constants(real rsw, real rc,
@@ -1958,9 +1957,9 @@ static void potential_switch_constants(real rsw, real rc,
      * force      = force*dsw - potential*sw
      * potential *= sw
      */
-    sc->c3 = -10/gmx::power3(rc - rsw);
-    sc->c4 =  15/gmx::power4(rc - rsw);
-    sc->c5 =  -6/gmx::power5(rc - rsw);
+    sc->c3 = -10 / gmx::power3(rc - rsw);
+    sc->c4 =  15 / gmx::power4(rc - rsw);
+    sc->c5 =  -6 / gmx::power5(rc - rsw);
 }
 
 /*! \brief Construct interaction constants
@@ -1969,23 +1968,22 @@ static void potential_switch_constants(real rsw, real rc,
  * short-range interactions. Many of these are constant for the whole
  * simulation; some are constant only after PME tuning completes.
  */
-static void
-init_interaction_const(FILE                       *fp,
-                       interaction_const_t       **interaction_const,
-                       const t_forcerec           *fr)
+static void init_interaction_const(FILE *                fp,
+                                   interaction_const_t **interaction_const,
+                                   const t_forcerec *    fr)
 {
     interaction_const_t *ic;
 
     snew(ic, 1);
 
-    ic->cutoff_scheme   = fr->cutoff_scheme;
+    ic->cutoff_scheme = fr->cutoff_scheme;
 
     /* Just allocate something so we can free it */
     snew_aligned(ic->tabq_coul_FDV0, 16, 32);
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlist           = fr->rlist;
+    ic->rlist = fr->rlist;
 
     /* Lennard-Jones */
     ic->vdwtype         = fr->vdwtype;
@@ -2002,14 +2000,14 @@ init_interaction_const(FILE                       *fp,
     {
         case eintmodPOTSHIFT:
             /* Only shift the potential, don't touch the force */
-            ic->dispersion_shift.cpot = -1.0/gmx::power6(ic->rvdw);
-            ic->repulsion_shift.cpot  = -1.0/gmx::power12(ic->rvdw);
+            ic->dispersion_shift.cpot = -1.0 / gmx::power6(ic->rvdw);
+            ic->repulsion_shift.cpot  = -1.0 / gmx::power12(ic->rvdw);
             if (EVDW_PME(ic->vdwtype))
             {
                 real crc2;
 
-                crc2            = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
-                ic->sh_lj_ewald = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
+                crc2            = gmx::square(ic->ewaldcoeff_lj * ic->rvdw);
+                ic->sh_lj_ewald = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1) / gmx::power6(ic->rvdw);
             }
             break;
         case eintmodFORCESWITCH:
@@ -2044,7 +2042,7 @@ init_interaction_const(FILE                       *fp,
 
     if (fr->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q * ic->rcoulomb);
     }
     else
     {
@@ -2065,11 +2063,11 @@ init_interaction_const(FILE                       *fp,
         ic->k_rf       = 0;
         if (fr->coulomb_modifier == eintmodPOTSHIFT)
         {
-            ic->c_rf   = 1/ic->rcoulomb;
+            ic->c_rf = 1 / ic->rcoulomb;
         }
         else
         {
-            ic->c_rf   = 0;
+            ic->c_rf = 0;
         }
     }
 
@@ -2099,22 +2097,22 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
-static void init_nb_verlet(FILE                *fp,
+static void init_nb_verlet(FILE *               fp,
                            const gmx::MDLogger &mdlog,
                            nonbonded_verlet_t **nb_verlet,
                            gmx_bool             bFEP_NonBonded,
-                           const t_inputrec    *ir,
-                           const t_forcerec    *fr,
-                           const t_commrec     *cr,
-                           const char          *nbpu_opt)
+                           const t_inputrec *   ir,
+                           const t_forcerec *   fr,
+                           const t_commrec *    cr,
+                           const char *         nbpu_opt)
 {
     nonbonded_verlet_t *nbv;
     int                 i;
-    char               *env;
+    char *              env;
     gmx_bool            bEmulateGPU, bHybridGPURun = FALSE;
 
-    nbnxn_alloc_t      *nb_alloc;
-    nbnxn_free_t       *nb_free;
+    nbnxn_alloc_t *nb_alloc;
+    nbnxn_free_t * nb_free;
 
     snew(nbv, 1);
 
@@ -2181,18 +2179,18 @@ static void init_nb_verlet(FILE                *fp,
                                 !nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
                                 nb_alloc, nb_free);
 
-        if (i == 0 ||
-            nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
+        if (i == 0
+            || nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
         {
             gmx_bool bSimpleList;
             int      enbnxninitcombrule;
 
             bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
 
-            if (fr->vdwtype == evdwCUT &&
-                (fr->vdw_modifier == eintmodNONE ||
-                 fr->vdw_modifier == eintmodPOTSHIFT) &&
-                getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
+            if (fr->vdwtype == evdwCUT
+                && (fr->vdw_modifier == eintmodNONE
+                    || fr->vdw_modifier == eintmodPOTSHIFT)
+                && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
             {
                 /* Plain LJ cut-off: we can optimize with combination rules */
                 enbnxninitcombrule = enbnxninitcombruleDETECT;
@@ -2300,30 +2298,30 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != nullptr && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE                *fp,
+void init_forcerec(FILE *               fp,
                    const gmx::MDLogger &mdlog,
-                   t_forcerec          *fr,
-                   t_fcdata            *fcd,
-                   const t_inputrec    *ir,
-                   const gmx_mtop_t    *mtop,
-                   const t_commrec     *cr,
+                   t_forcerec *         fr,
+                   t_fcdata *           fcd,
+                   const t_inputrec *   ir,
+                   const gmx_mtop_t *   mtop,
+                   const t_commrec *    cr,
                    matrix               box,
-                   const char          *tabfn,
-                   const char          *tabpfn,
-                   const t_filenm      *tabbfnm,
-                   const char          *nbpu_opt,
+                   const char *         tabfn,
+                   const char *         tabpfn,
+                   const t_filenm *     tabbfnm,
+                   const char *         nbpu_opt,
                    gmx_bool             bNoSolvOpt,
                    real                 print_force)
 {
     int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
-    char          *env;
+    char *         env;
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
-    int           *nm_ind, egp_flags;
+    int *          nm_ind, egp_flags;
 
     if (fr->hwinfo == nullptr)
     {
@@ -2351,9 +2349,9 @@ void init_forcerec(FILE                *fp,
         /* Because of old style topologies, we have to use the last cg
          * instead of the last molecule type.
          */
-        cgs       = &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].cgs;
-        fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
-        if (fr->n_tpi != mtop->mols.index[mtop->mols.nr] - mtop->mols.index[mtop->mols.nr-1])
+        cgs       = &mtop->moltype[mtop->molblock[mtop->nmolblock - 1].type].cgs;
+        fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr - 1];
+        if (fr->n_tpi != mtop->mols.index[mtop->mols.nr] - mtop->mols.index[mtop->mols.nr - 1])
         {
             gmx_fatal(FARGS, "The molecule to insert can not consist of multiple charge groups.\nMake it a single charge group.");
         }
@@ -2449,7 +2447,7 @@ void init_forcerec(FILE                *fp,
 
     if (bGenericKernelOnly == TRUE)
     {
-        bNoSolvOpt         = TRUE;
+        bNoSolvOpt = TRUE;
     }
 
     if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) )
@@ -2475,7 +2473,7 @@ void init_forcerec(FILE                *fp,
      * See Redmine #1249. */
     if (fr->bAllvsAll)
     {
-        fr->bAllvsAll            = FALSE;
+        fr->bAllvsAll = FALSE;
         if (fp != nullptr)
         {
             fprintf(fp,
@@ -2517,17 +2515,17 @@ void init_forcerec(FILE                *fp,
         {
             gmx_bool bSHAKE;
 
-            bSHAKE = (ir->eConstrAlg == econtSHAKE &&
-                      (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0));
+            bSHAKE = (ir->eConstrAlg == econtSHAKE
+                      && (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0
+                          || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0));
 
             /* The group cut-off scheme and SHAKE assume charge groups
              * are whole, but not using molpbc is faster in most cases.
              * With intermolecular interactions we need PBC for calculating
              * distances between atoms in different molecules.
              */
-            if ((fr->cutoff_scheme == ecutsGROUP || bSHAKE) &&
-                !mtop->bIntermolecularInteractions)
+            if ((fr->cutoff_scheme == ecutsGROUP || bSHAKE)
+                && !mtop->bIntermolecularInteractions)
             {
                 fr->bMolPBC = ir->bPeriodicMols;
 
@@ -2570,10 +2568,10 @@ void init_forcerec(FILE                *fp,
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com, fr->posres_com);
     copy_rvec(ir->posres_comB, fr->posres_comB);
-    fr->rlist                    = cutoff_inf(ir->rlist);
-    fr->eeltype                  = ir->coulombtype;
-    fr->vdwtype                  = ir->vdwtype;
-    fr->ljpme_combination_rule   = ir->ljpme_combination_rule;
+    fr->rlist                  = cutoff_inf(ir->rlist);
+    fr->eeltype                = ir->coulombtype;
+    fr->vdwtype                = ir->vdwtype;
+    fr->ljpme_combination_rule = ir->ljpme_combination_rule;
 
     fr->coulomb_modifier = ir->coulomb_modifier;
     fr->vdw_modifier     = ir->vdw_modifier;
@@ -2646,36 +2644,36 @@ void init_forcerec(FILE                *fp,
     }
 
     /* These start out identical to ir, but might be altered if we e.g. tabulate the interaction in the kernel */
-    fr->nbkernel_elec_modifier    = fr->coulomb_modifier;
-    fr->nbkernel_vdw_modifier     = fr->vdw_modifier;
+    fr->nbkernel_elec_modifier = fr->coulomb_modifier;
+    fr->nbkernel_vdw_modifier  = fr->vdw_modifier;
 
-    fr->rvdw             = cutoff_inf(ir->rvdw);
-    fr->rvdw_switch      = ir->rvdw_switch;
-    fr->rcoulomb         = cutoff_inf(ir->rcoulomb);
-    fr->rcoulomb_switch  = ir->rcoulomb_switch;
+    fr->rvdw            = cutoff_inf(ir->rvdw);
+    fr->rvdw_switch     = ir->rvdw_switch;
+    fr->rcoulomb        = cutoff_inf(ir->rcoulomb);
+    fr->rcoulomb_switch = ir->rcoulomb_switch;
 
-    fr->bEwald     = EEL_PME_EWALD(fr->eeltype);
+    fr->bEwald = EEL_PME_EWALD(fr->eeltype);
 
-    fr->reppow     = mtop->ffparams.reppow;
+    fr->reppow = mtop->ffparams.reppow;
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
-        fr->bvdwtab    = ((fr->vdwtype != evdwCUT || !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
-                          && !EVDW_PME(fr->vdwtype));
+        fr->bvdwtab = ((fr->vdwtype != evdwCUT || !gmx_within_tol(fr->reppow, 12.0, 10 * GMX_DOUBLE_EPS))
+                       && !EVDW_PME(fr->vdwtype));
         /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
-        fr->bcoultab   = !(fr->eeltype == eelCUT ||
-                           fr->eeltype == eelEWALD ||
-                           fr->eeltype == eelPME ||
-                           fr->eeltype == eelRF ||
-                           fr->eeltype == eelRF_ZERO);
+        fr->bcoultab = !(fr->eeltype == eelCUT
+                         || fr->eeltype == eelEWALD
+                         || fr->eeltype == eelPME
+                         || fr->eeltype == eelRF
+                         || fr->eeltype == eelRF_ZERO);
 
         /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
          * going to be faster to tabulate the interaction than calling the generic kernel.
          * However, if generic kernels have been requested we keep things analytically.
          */
-        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH &&
-            fr->nbkernel_vdw_modifier == eintmodPOTSWITCH &&
-            bGenericKernelOnly == FALSE)
+        if (fr->nbkernel_elec_modifier == eintmodPOTSWITCH
+            && fr->nbkernel_vdw_modifier == eintmodPOTSWITCH
+            && bGenericKernelOnly == FALSE)
         {
             if ((fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw))
             {
@@ -2685,10 +2683,10 @@ void init_forcerec(FILE                *fp,
                  */
             }
         }
-        else if ((fr->nbkernel_elec_modifier == eintmodPOTSHIFT && fr->nbkernel_vdw_modifier == eintmodPOTSHIFT) ||
-                 ((fr->nbkernel_elec_interaction == GMX_NBKERNEL_ELEC_REACTIONFIELD &&
-                   fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF &&
-                   (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
+        else if ((fr->nbkernel_elec_modifier == eintmodPOTSHIFT && fr->nbkernel_vdw_modifier == eintmodPOTSHIFT)
+                 || ((fr->nbkernel_elec_interaction == GMX_NBKERNEL_ELEC_REACTIONFIELD
+                      && fr->nbkernel_elec_modifier == eintmodEXACTCUTOFF
+                      && (fr->nbkernel_vdw_modifier == eintmodPOTSWITCH || fr->nbkernel_vdw_modifier == eintmodPOTSHIFT))))
         {
             if ((fr->rcoulomb != fr->rvdw) && (bGenericKernelOnly == FALSE))
             {
@@ -2733,7 +2731,7 @@ void init_forcerec(FILE                *fp,
 
     if (ir->cutoff_scheme == ecutsVERLET)
     {
-        if (!gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
+        if (!gmx_within_tol(fr->reppow, 12.0, 10 * GMX_DOUBLE_EPS))
         {
             gmx_fatal(FARGS, "Cut-off scheme %S only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
         }
@@ -2765,8 +2763,8 @@ void init_forcerec(FILE                *fp,
 
             if (ir->ewald_geometry == eewg3DC)
             {
-                bool haveNetCharge = (fabs(fr->qsum[0]) > 1e-4 ||
-                                      fabs(fr->qsum[1]) > 1e-4);
+                bool haveNetCharge = (fabs(fr->qsum[0]) > 1e-4
+                                      || fabs(fr->qsum[1]) > 1e-4);
                 if (fp)
                 {
                     fprintf(fp, "Using the Ewald3DC correction for systems with a slab geometry%s.\n",
@@ -2784,7 +2782,7 @@ void init_forcerec(FILE                *fp,
         if (fp)
         {
             fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n",
-                    1/fr->ewaldcoeff_q);
+                    1 / fr->ewaldcoeff_q);
         }
     }
 
@@ -2799,14 +2797,14 @@ void init_forcerec(FILE                *fp,
         if (fp)
         {
             fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for LJ Ewald\n",
-                    1/fr->ewaldcoeff_lj);
+                    1 / fr->ewaldcoeff_lj);
         }
     }
 
     /* Electrostatics */
-    fr->epsilon_r       = ir->epsilon_r;
-    fr->epsilon_rf      = ir->epsilon_rf;
-    fr->fudgeQQ         = mtop->ffparams.fudgeQQ;
+    fr->epsilon_r  = ir->epsilon_r;
+    fr->epsilon_rf = ir->epsilon_rf;
+    fr->fudgeQQ    = mtop->ffparams.fudgeQQ;
 
     /* Parameters for generalized RF */
     fr->zsquare = 0.0;
@@ -2817,9 +2815,9 @@ void init_forcerec(FILE                *fp,
         init_generalized_rf(fp, mtop, ir, fr);
     }
 
-    fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
-                       gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
+    fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)
+                       || gmx_mtop_ftype_count(mtop, F_POSRES) > 0
+                       || gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
 
     /* Initialization call after setting bF_NoVirSum,
      * since it efield->initForcerec also sets this to true.
@@ -2831,8 +2829,8 @@ void init_forcerec(FILE                *fp,
         fr->forceBufferNoVirialSummation = new PaddedRVecVector;
     }
 
-    if (fr->cutoff_scheme == ecutsGROUP &&
-        ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
+    if (fr->cutoff_scheme == ecutsGROUP
+        && ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
     {
         /* Count the total number of charge groups */
         fr->cg_nalloc = ncg_mtop(mtop);
@@ -2854,7 +2852,7 @@ void init_forcerec(FILE                *fp,
         fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
         if (EVDW_PME(fr->vdwtype))
         {
-            fr->ljpme_c6grid  = make_ljpme_c6grid(&mtop->ffparams, fr);
+            fr->ljpme_c6grid = make_ljpme_c6grid(&mtop->ffparams, fr);
         }
     }
 
@@ -2898,7 +2896,7 @@ void init_forcerec(FILE                *fp,
                 fr->rlist, fr->rcoulomb, fr->bBHAM ? "BHAM" : "LJ", fr->rvdw);
     }
 
-    fr->eDispCorr = ir->eDispCorr;
+    fr->eDispCorr                       = ir->eDispCorr;
     fr->numAtomsForDispersionCorrection = mtop->natoms;
     if (ir->eDispCorr != edispcNO)
     {
@@ -2969,7 +2967,7 @@ void init_forcerec(FILE                *fp,
     /* Set the charge scaling */
     if (fr->epsilon_r != 0)
     {
-        fr->epsfac = ONE_4PI_EPS0/fr->epsilon_r;
+        fr->epsfac = ONE_4PI_EPS0 / fr->epsilon_r;
     }
     else
     {
@@ -2989,8 +2987,8 @@ void init_forcerec(FILE                *fp,
      * make both vdw and coul tables sometimes, but what the
      * heck. Note that both cutoff schemes construct Ewald tables in
      * init_interaction_const_tables. */
-    needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP &&
-                             (fr->bcoultab || fr->bvdwtab));
+    needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP
+                             && (fr->bcoultab || fr->bvdwtab));
 
     negp_pp   = ir->opts.ngener - ir->nwall;
     negptable = 0;
@@ -3030,7 +3028,7 @@ void init_forcerec(FILE                *fp,
         }
         if (fr->nnblists > 1)
         {
-            snew(fr->gid2nblists, ir->opts.ngener*ir->opts.ngener);
+            snew(fr->gid2nblists, ir->opts.ngener * ir->opts.ngener);
         }
     }
 
@@ -3096,9 +3094,9 @@ void init_forcerec(FILE                *fp,
     /* We want to use unmodified tables for 1-4 coulombic
      * interactions, so we must in general have an extra set of
      * tables. */
-    if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-        gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
-        gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
+    if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0
+        || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0
+        || gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
     {
         fr->pairsTable = make_tables(fp, fr, tabpfn, rtab,
                                      GMX_MAKETABLES_14ONLY);
@@ -3117,15 +3115,15 @@ void init_forcerec(FILE                *fp,
         // TODO Don't need to catch this here, when merging with master branch
         try
         {
-            fcd->bondtab  = make_bonded_tables(fp,
-                                               F_TABBONDS, F_TABBONDSNC,
-                                               mtop, tabbfnm, "b");
+            fcd->bondtab = make_bonded_tables(fp,
+                                              F_TABBONDS, F_TABBONDSNC,
+                                              mtop, tabbfnm, "b");
             fcd->angletab = make_bonded_tables(fp,
                                                F_TABANGLES, -1,
                                                mtop, tabbfnm, "a");
-            fcd->dihtab   = make_bonded_tables(fp,
-                                               F_TABDIHS, -1,
-                                               mtop, tabbfnm, "d");
+            fcd->dihtab = make_bonded_tables(fp,
+                                             F_TABDIHS, -1,
+                                             mtop, tabbfnm, "d");
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -3144,8 +3142,8 @@ void init_forcerec(FILE                *fp,
         fprintf(stderr, "QM/MM calculation requested.\n");
     }
 
-    fr->bQMMM      = ir->bQMMM;
-    fr->qr         = mk_QMMMrec();
+    fr->bQMMM = ir->bQMMM;
+    fr->qr    = mk_QMMMrec();
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp, mtop, fr, bNoSolvOpt,
@@ -3246,10 +3244,10 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
  * in this run because the PME ranks have no knowledge of whether GPUs
  * are used or not, but all ranks need to enter the barrier below.
  */
-void free_gpu_resources(const t_forcerec     *fr,
-                        const t_commrec      *cr,
+void free_gpu_resources(const t_forcerec *    fr,
+                        const t_commrec *     cr,
                         const gmx_gpu_info_t *gpu_info,
-                        const gmx_gpu_opt_t  *gpu_opt)
+                        const gmx_gpu_opt_t * gpu_opt)
 {
     gmx_bool bIsPPrankUsingGPU;
     char     gpu_err_str[STRLEN];

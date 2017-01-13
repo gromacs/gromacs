@@ -58,8 +58,7 @@
 #include "selelem.h"
 
 //! Error handler needed by Bison.
-static void
-yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
+static void yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 {
     try
     {
@@ -89,8 +88,8 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
         }                                                        \
         else                                                     \
         {                                                        \
-            (Current).startIndex = (Current).endIndex =          \
-                    YYRHSLOC(Rhs, 0).endIndex;                   \
+            (Current).startIndex = (Current).endIndex            \
+                                 = YYRHSLOC(Rhs, 0).endIndex;                   \
         }                                                        \
         _gmx_sel_lexer_set_current_location(scanner, (Current)); \
     } while (0)

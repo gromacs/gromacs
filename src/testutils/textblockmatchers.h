@@ -90,7 +90,7 @@ class ITextBlockMatcher
          * The caller is responsible of providing a checker where such state
          * changes do not matter.
          */
-        virtual void checkStream(TextInputStream      *stream,
+        virtual void checkStream(TextInputStream *     stream,
                                  TestReferenceChecker *checker) = 0;
 };
 

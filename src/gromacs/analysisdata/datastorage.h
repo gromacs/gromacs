@@ -220,17 +220,17 @@ class AnalysisDataStorageFrame
         //! Implementation data.
         internal::AnalysisDataStorageFrameData *data_;
         //! Values for the currently in-progress point set.
-        std::vector<AnalysisDataValue>          values_;
+        std::vector<AnalysisDataValue> values_;
 
         //! Index of the currently active dataset.
-        int                                     currentDataSet_;
+        int currentDataSet_;
         //! Offset of the first value in \a values_ for the current data set.
-        int                                     currentOffset_;
+        int currentOffset_;
         //! Number of columns in the current data set.
-        int                                     columnCount_;
+        int columnCount_;
 
         //! Whether any values have been set in the current point set.
-        bool                                    bPointSetInProgress_;
+        bool bPointSetInProgress_;
 
         //! Needed for access to the constructor.
         friend class internal::AnalysisDataStorageImpl;
@@ -328,7 +328,7 @@ class AnalysisDataStorage
          * Calls AnalysisDataModuleManager::notifyDataStart(), and throws any
          * exceptions this method throws.
          */
-        void startDataStorage(AbstractAnalysisData      *data,
+        void startDataStorage(AbstractAnalysisData *     data,
                               AnalysisDataModuleManager *modules);
         /*! \brief
          * Start storing data in parallel.
@@ -348,8 +348,8 @@ class AnalysisDataStorage
          * throws any exceptions this method throws.
          */
         void startParallelDataStorage(
-            AbstractAnalysisData              *data,
-            AnalysisDataModuleManager         *modules,
+            AbstractAnalysisData *             data,
+            AnalysisDataModuleManager *        modules,
             const AnalysisDataParallelOptions &options);
         /*! \brief
          * Starts storing a new frame.

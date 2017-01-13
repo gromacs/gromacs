@@ -44,18 +44,20 @@
 #include "gromacs/utility/basedefinitions.h"
 
 /* This is a running averaging structure ('energy bin') for use during mdrun. */
-typedef struct {
-    int             nener;
-    gmx_enxnm_t    *enm;
-    gmx_int64_t     nsteps;
-    gmx_int64_t     nsum;
-    t_energy       *e;
-    gmx_int64_t     nsteps_sim;
-    gmx_int64_t     nsum_sim;
-    t_energy       *e_sim;
+typedef struct
+{
+    int          nener;
+    gmx_enxnm_t *enm;
+    gmx_int64_t  nsteps;
+    gmx_int64_t  nsum;
+    t_energy *   e;
+    gmx_int64_t  nsteps_sim;
+    gmx_int64_t  nsum_sim;
+    t_energy *   e_sim;
 } t_ebin;
 
-enum {
+enum
+{
     eprNORMAL, eprAVER, eprRMS, eprNR
 };
 

@@ -52,13 +52,12 @@
 #include <fenv.h>
 #endif
 
-int
-gmx_within_tol(double   f1,
-               double   f2,
-               double   tol)
+int gmx_within_tol(double f1,
+                   double f2,
+                   double tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if (fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
+    if (fabs(f1 - f2) <= tol * 0.5 * (fabs(f1) + fabs(f2)) )
     {
         return 1;
     }
@@ -68,17 +67,15 @@ gmx_within_tol(double   f1,
     }
 }
 
-int
-gmx_numzero(double a)
+int gmx_numzero(double a)
 {
-    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
+    return gmx_within_tol(a, 0.0, GMX_REAL_MIN / GMX_REAL_EPS);
 }
 
 
-gmx_bool
-check_int_multiply_for_overflow(gmx_int64_t  a,
-                                gmx_int64_t  b,
-                                gmx_int64_t *result)
+gmx_bool check_int_multiply_for_overflow(gmx_int64_t  a,
+                                         gmx_int64_t  b,
+                                         gmx_int64_t *result)
 {
     gmx_int64_t sign = 1;
     if ((0 == a) || (0 == b))

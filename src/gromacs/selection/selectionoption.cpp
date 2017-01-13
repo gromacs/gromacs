@@ -63,7 +63,7 @@ namespace gmx
  * SelectionOptionStorage
  */
 
-SelectionOptionStorage::SelectionOptionStorage(const SelectionOption  &settings,
+SelectionOptionStorage::SelectionOptionStorage(const SelectionOption & settings,
                                                SelectionOptionManager *manager)
     : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
              | efOption_DontCheckMinimumCount),
@@ -260,8 +260,7 @@ void SelectionOptionInfo::setDynamicMask(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStorage *
-SelectionOption::createStorage(const OptionManagerContainer &managers) const
+AbstractOptionStorage *SelectionOption::createStorage(const OptionManagerContainer &managers) const
 {
     return new SelectionOptionStorage(
             *this, managers.get<SelectionOptionManager>());
@@ -327,8 +326,7 @@ SelectionFileOption::SelectionFileOption(const char *name)
     setDescription("Provide selections from files");
 }
 
-AbstractOptionStorage *
-SelectionFileOption::createStorage(const OptionManagerContainer &managers) const
+AbstractOptionStorage *SelectionFileOption::createStorage(const OptionManagerContainer &managers) const
 {
     return new SelectionFileOptionStorage(
             *this, managers.get<SelectionOptionManager>());

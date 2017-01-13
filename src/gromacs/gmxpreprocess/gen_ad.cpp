@@ -63,7 +63,7 @@
 #define DIHEDRAL_WAS_SET_IN_RTP 0
 static gmx_bool was_dihedral_set_in_rtp(const t_param *dih)
 {
-    return dih->c[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
+    return dih->c[MAXFORCEPARAM - 1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
 typedef gmx_bool (*peq)(t_param *p1, t_param *p2);
@@ -75,17 +75,17 @@ static int acomp(const void *a1, const void *a2)
 
     p1 = static_cast<const t_param *>(a1);
     p2 = static_cast<const t_param *>(a2);
-    if ((ac = (p1->aj()-p2->aj())) != 0)
+    if ((ac = (p1->aj() - p2->aj())) != 0)
     {
         return ac;
     }
-    else if ((ac = (p1->ai()-p2->ai())) != 0)
+    else if ((ac = (p1->ai() - p2->ai())) != 0)
     {
         return ac;
     }
     else
     {
-        return (p1->ak()-p2->ak());
+        return (p1->ak() - p2->ak());
     }
 }
 
@@ -96,13 +96,13 @@ static int pcomp(const void *a1, const void *a2)
 
     p1 = static_cast<const t_param *>(a1);
     p2 = static_cast<const t_param *>(a2);
-    if ((pc = (p1->ai()-p2->ai())) != 0)
+    if ((pc = (p1->ai() - p2->ai())) != 0)
     {
         return pc;
     }
     else
     {
-        return (p1->aj()-p2->aj());
+        return (p1->aj() - p2->aj());
     }
 }
 
@@ -114,41 +114,41 @@ static int dcomp(const void *d1, const void *d2)
     p1 = static_cast<const t_param *>(d1);
     p2 = static_cast<const t_param *>(d2);
     /* First sort by J & K (the two central) atoms */
-    if ((dc = (p1->aj()-p2->aj())) != 0)
+    if ((dc = (p1->aj() - p2->aj())) != 0)
     {
         return dc;
     }
-    else if ((dc = (p1->ak()-p2->ak())) != 0)
+    else if ((dc = (p1->ak() - p2->ak())) != 0)
     {
         return dc;
     }
     /* Then make sure to put rtp dihedrals before generated ones */
-    else if (was_dihedral_set_in_rtp(p1) &&
-             !was_dihedral_set_in_rtp(p2))
+    else if (was_dihedral_set_in_rtp(p1)
+             && !was_dihedral_set_in_rtp(p2))
     {
         return -1;
     }
-    else if (!was_dihedral_set_in_rtp(p1) &&
-             was_dihedral_set_in_rtp(p2))
+    else if (!was_dihedral_set_in_rtp(p1)
+             && was_dihedral_set_in_rtp(p2))
     {
         return 1;
     }
     /* Finally, sort by I and J (two outer) atoms */
-    else if ((dc = (p1->ai()-p2->ai())) != 0)
+    else if ((dc = (p1->ai() - p2->ai())) != 0)
     {
         return dc;
     }
     else
     {
-        return (p1->al()-p2->al());
+        return (p1->al() - p2->al());
     }
 }
 
 
 static gmx_bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 {
-    if (((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
-        ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj())))
+    if (((p1->aj() == p2->aj()) && (p1->ak() == p2->ak()))
+        || ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj())))
     {
         return TRUE;
     }
@@ -186,7 +186,7 @@ static void rm2par(t_param p[], int *np, peq eq)
     index[nind++] = 0;
     for (i = 1; (i < (*np)); i++)
     {
-        if (!eq(&p[i], &p[i-1]))
+        if (!eq(&p[i], &p[i - 1]))
         {
             index[nind++] = i;
         }
@@ -311,21 +311,21 @@ static int idcomp(const void *a, const void *b)
 
     pa = static_cast<const t_param *>(a);
     pb = static_cast<const t_param *>(b);
-    if ((d = (pa->a[0]-pb->a[0])) != 0)
+    if ((d = (pa->a[0] - pb->a[0])) != 0)
     {
         return d;
     }
-    else if ((d = (pa->a[3]-pb->a[3])) != 0)
+    else if ((d = (pa->a[3] - pb->a[3])) != 0)
     {
         return d;
     }
-    else if ((d = (pa->a[1]-pb->a[1])) != 0)
+    else if ((d = (pa->a[1] - pb->a[1])) != 0)
     {
         return d;
     }
     else
     {
-        return (int) (pa->a[2]-pb->a[2]);
+        return (int) (pa->a[2] - pb->a[2]);
     }
 }
 
@@ -380,12 +380,12 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
                       t_atoms *atoms, gmx_bool bKeepAllGeneratedDihedrals,
                       gmx_bool bRemoveDihedralIfWithImproper)
 {
-    int   i, j, k, l;
-    int  *index, nind;
+    int  i, j, k, l;
+    int *index, nind;
 
     /* Construct the list of the indices of the dihedrals
      * (i.e. generated or read) that might be kept. */
-    snew(index, *ndih+1);
+    snew(index, *ndih + 1);
     if (bKeepAllGeneratedDihedrals)
     {
         fprintf(stderr, "Keeping all generated dihedrals\n");
@@ -409,9 +409,9 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
             /* Keep the dihedrals that were defined in the .rtp file,
              * and the dihedrals that were generated and different
              * from the last one (whether it was generated or not). */
-            if (was_dihedral_set_in_rtp(&dih[i]) ||
-                0 == i ||
-                !is_dihedral_on_same_bond(&dih[i], &dih[i-1]))
+            if (was_dihedral_set_in_rtp(&dih[i])
+                || 0 == i
+                || !is_dihedral_on_same_bond(&dih[i], &dih[i - 1]))
             {
                 index[nind++] = i;
             }
@@ -449,8 +449,8 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
                 /* Minimum number of hydrogens for i and l atoms */
                 int minh = 2;
                 for (l = index[i];
-                     (l < index[i+1] &&
-                      is_dihedral_on_same_bond(&dih[index[i]], &dih[l]));
+                     (l < index[i + 1]
+                      && is_dihedral_on_same_bond(&dih[index[i]], &dih[l]));
                      l++)
                 {
                     int nh = n_hydro(dih[l].a, atoms->atomname);
@@ -485,10 +485,10 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
 static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                          gmx_bool bAllowMissing)
 {
-    t_rbondeds   *impropers;
-    int           nimproper, i, j, k, start, ninc, nalloc;
-    int           ai[MAXATOMLIST];
-    gmx_bool      bStop;
+    t_rbondeds *impropers;
+    int         nimproper, i, j, k, start, ninc, nalloc;
+    int         ai[MAXATOMLIST];
+    gmx_bool    bStop;
 
     ninc   = 500;
     nalloc = ninc;
@@ -600,13 +600,13 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     int         a, astart, i1, i2, itmp;
     t_rbondeds *hbexcl;
     int         e;
-    char       *anm;
+    char *      anm;
 
     astart = 0;
     for (a = 0; a < atoms->nr; a++)
     {
         r = atoms->atom[a].resind;
-        if (a == atoms->nr-1 || atoms->atom[a+1].resind != r)
+        if (a == atoms->nr - 1 || atoms->atom[a + 1].resind != r)
         {
             hbexcl = &hb[r].rb[ebtsEXCLS];
 
@@ -626,13 +626,13 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
                         i1   = i2;
                         i2   = itmp;
                     }
-                    srenew(excls[i1].e, excls[i1].nr+1);
+                    srenew(excls[i1].e, excls[i1].nr + 1);
                     excls[i1].e[excls[i1].nr] = i2;
                     excls[i1].nr++;
                 }
             }
 
-            astart = a+1;
+            astart = a + 1;
         }
     }
 
@@ -649,9 +649,9 @@ static void remove_excl(t_excls *excls, int remove)
 {
     int i;
 
-    for (i = remove+1; i < excls->nr; i++)
+    for (i = remove + 1; i < excls->nr; i++)
     {
-        excls->e[i-1] = excls->e[i];
+        excls->e[i - 1] = excls->e[i];
     }
 
     excls->nr--;
@@ -753,9 +753,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
              gmx_bool bAllowMissing)
 {
-    t_param    *ang, *dih, *pai, *improper;
+    t_param *   ang, *dih, *pai, *improper;
     t_rbondeds *hbang, *hbdih;
-    char      **anm;
+    char **     anm;
     const char *p;
     int         res, minres, maxres;
     int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
@@ -837,10 +837,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 minres = std::min(minres, atoms->atom[ang[nang].a[m]].resind);
                                 maxres = std::max(maxres, atoms->atom[ang[nang].a[m]].resind);
                             }
-                            res = 2*minres-maxres;
+                            res = 2 * minres - maxres;
                             do
                             {
-                                res += maxres-minres;
+                                res += maxres - minres;
                                 get_atomnames_min(3, anm, res, atoms, ang[nang].a);
                                 hbang = &hb[res].rb[ebtsANGLES];
                                 for (l = 0; (l < hbang->nb); l++)
@@ -850,9 +850,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                         bFound = FALSE;
                                         for (m = 0; m < 3; m += 2)
                                         {
-                                            bFound = (bFound ||
-                                                      ((strcmp(anm[m], hbang->b[l].ai()) == 0) &&
-                                                       (strcmp(anm[2-m], hbang->b[l].ak()) == 0)));
+                                            bFound = (bFound
+                                                      || ((strcmp(anm[m], hbang->b[l].ai()) == 0)
+                                                          && (strcmp(anm[2 - m], hbang->b[l].ak()) == 0)));
                                         }
                                         if (bFound)
                                         {
@@ -862,8 +862,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                         }
                                     }
                                 }
-                            }
-                            while (res < maxres);
+                            } while (res < maxres);
                         }
                         nang++;
                     }
@@ -901,10 +900,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                         minres = std::min(minres, atoms->atom[dih[ndih].a[m]].resind);
                                         maxres = std::max(maxres, atoms->atom[dih[ndih].a[m]].resind);
                                     }
-                                    res = 2*minres-maxres;
+                                    res = 2 * minres - maxres;
                                     do
                                     {
-                                        res += maxres-minres;
+                                        res += maxres - minres;
                                         get_atomnames_min(4, anm, res, atoms, dih[ndih].a);
                                         hbdih = &hb[res].rb[ebtsPDIHS];
                                         for (n = 0; (n < hbdih->nb); n++)
@@ -912,11 +911,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                             bFound = FALSE;
                                             for (m = 0; m < 2; m++)
                                             {
-                                                bFound = (bFound ||
-                                                          ((strcmp(anm[3*m],  hbdih->b[n].ai()) == 0) &&
-                                                           (strcmp(anm[1+m],  hbdih->b[n].aj()) == 0) &&
-                                                           (strcmp(anm[2-m],  hbdih->b[n].ak()) == 0) &&
-                                                           (strcmp(anm[3-3*m], hbdih->b[n].al()) == 0)));
+                                                bFound = (bFound
+                                                          || ((strcmp(anm[3 * m],  hbdih->b[n].ai()) == 0)
+                                                              && (strcmp(anm[1 + m],  hbdih->b[n].aj()) == 0)
+                                                              && (strcmp(anm[2 - m],  hbdih->b[n].ak()) == 0)
+                                                              && (strcmp(anm[3 - 3 * m], hbdih->b[n].al()) == 0)));
                                             }
                                             if (bFound)
                                             {
@@ -927,7 +926,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 /* Set the last parameter to be able to see
                                                    if the dihedral was in the rtp list.
                                                  */
-                                                dih[ndih].c[MAXFORCEPARAM-1] = DIHEDRAL_WAS_SET_IN_RTP;
+                                                dih[ndih].c[MAXFORCEPARAM - 1] = DIHEDRAL_WAS_SET_IN_RTP;
                                                 nFound++;
                                                 ndih++;
                                                 /* Set the next direct in case the rtp contains
@@ -948,8 +947,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 }
                                             }
                                         }
-                                    }
-                                    while (res < maxres);
+                                    } while (res < maxres);
                                 }
                                 if (nFound == 0)
                                 {
@@ -973,7 +971,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 nbd = nb_dist(nnb, i, l1);
                                 if (debug)
                                 {
-                                    fprintf(debug, "Distance (%d-%d) = %d\n", i+1, l1+1, nbd);
+                                    fprintf(debug, "Distance (%d-%d) = %d\n", i + 1, l1 + 1, nbd);
                                 }
                                 if (nbd == 3)
                                 {
@@ -986,8 +984,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                     }
                                     if (!bExcl)
                                     {
-                                        if (rtp[0].bGenerateHH14Interactions ||
-                                            !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
+                                        if (rtp[0].bGenerateHH14Interactions
+                                            || !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
                                         {
                                             if (npai == maxpai)
                                             {

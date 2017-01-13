@@ -64,9 +64,9 @@
 #define GMX_RELEASE_ASSERT(condition, msg)
 #else
 #define GMX_RELEASE_ASSERT(condition, msg) \
-    ((void) ((condition) ? (void)0 : \
-             ::gmx::internal::assertHandler(#condition, msg, \
-                                            GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
+    ((void) ((condition) ? (void)0   \
+             : ::gmx::internal::assertHandler(#condition, msg, \
+                                              GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
 #endif
 /*! \def GMX_ASSERT
  * \brief

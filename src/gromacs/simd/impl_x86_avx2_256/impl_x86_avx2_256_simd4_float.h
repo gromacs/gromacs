@@ -45,32 +45,28 @@
 namespace gmx
 {
 
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                _mm_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)

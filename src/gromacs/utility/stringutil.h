@@ -500,19 +500,19 @@ class TextLineWrapperSettings
 
     private:
         //! Maximum length of output lines, or <= 0 if no limit.
-        int                     maxLength_;
+        int maxLength_;
         //! Number of spaces to indent each output line with.
-        int                     indent_;
+        int indent_;
         /*! \brief
          * Number of spaces to indent the first line after a newline.
          *
          * If -1, \a indent_ is used.
          */
-        int                     firstLineIndent_;
+        int firstLineIndent_;
         //! Whether to keep spaces at end of input.
-        bool                    bKeepFinalSpaces_;
+        bool bKeepFinalSpaces_;
         //! If not \c '\0', mark each wrapping point with this character.
-        char                    continuationChar_;
+        char continuationChar_;
 
         //! Needed to access the members.
         friend class TextLineWrapper;

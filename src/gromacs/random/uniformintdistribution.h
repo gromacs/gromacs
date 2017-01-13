@@ -68,7 +68,7 @@ namespace gmx
  *
  * \tparam IntType Integer type, int by default.
  */
-template<class IntType = int>
+template <class IntType = int>
 class UniformIntDistribution
 {
     public:
@@ -79,9 +79,9 @@ class UniformIntDistribution
         class param_type
         {
             /*! \brief Lower end of range (inclusive) */
-            result_type  a_;
+            result_type a_;
             /*! \brief Upper end of range (inclusive) */
-            result_type  b_;
+            result_type b_;
 
             public:
                 /*! \brief Reference back to the distribution class */
@@ -107,8 +107,7 @@ class UniformIntDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator==(const param_type &x) const
+                bool operator==(const param_type &x) const
                 {
                     // rangeBits is a function of a & b, so it does not have to be tested
                     return a_ == x.a_ && b_ == x.b_;
@@ -118,8 +117,7 @@ class UniformIntDistribution
                  *
                  * \param x  Instance to compare with.
                  */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
+                bool operator!=(const param_type &x) const { return !operator==(x); }
         };
 
     public:
@@ -140,8 +138,7 @@ class UniformIntDistribution
             : param_(param), savedRandomBits_(0), savedRandomBitsLeft_(0) {}
 
         /*! \brief Flush all internal saved values  */
-        void
-        reset() { savedRandomBitsLeft_ = 0; }
+        void reset() { savedRandomBitsLeft_ = 0; }
 
         /*! \brief Return values from uniform int distribution with internal parameters
          *
@@ -149,9 +146,8 @@ class UniformIntDistribution
          *
          * \param  g    Random engine
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
+        template <class Rng>
+        result_type operator()(Rng &g) { return (*this)(g, param_); }
 
         /*! \brief Return value from uniform int distribution with given parameters
          *
@@ -160,9 +156,8 @@ class UniformIntDistribution
          * \param  g     Random engine
          * \param  param Parameters to use
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        template <class Rng>
+        result_type operator()(Rng &g, const param_type &param)
         {
             static_assert(sizeof(typename Rng::result_type) >= sizeof(gmx_uint32_t),
                           "The random engine result_type should be 32 or 64 bits");
@@ -206,58 +201,51 @@ class UniformIntDistribution
                         savedRandomBitsLeft_ += std::numeric_limits<gmx_uint32_t>::digits;
                     }
                 }
-                result                   = savedRandomBits_;
-                savedRandomBits_       >>= rangeBits;
-                result                   = result - (savedRandomBits_ << rangeBits);
-                savedRandomBitsLeft_    -= rangeBits;
-            }
-            while (result > range);
+                result                = savedRandomBits_;
+                savedRandomBits_    >>= rangeBits;
+                result                = result - (savedRandomBits_ << rangeBits);
+                savedRandomBitsLeft_ -= rangeBits;
+            } while (result > range);
 
             return result + param.a();
         }
 
         /*! \brief Return the lower range uniform int distribution */
-        result_type
-        a() const { return param_.a(); }
+        result_type a() const { return param_.a(); }
 
         /*! \brief Return the upper range of the uniform int distribution */
-        result_type
-        b() const { return param_.b(); }
+        result_type b() const { return param_.b(); }
 
         /*! \brief Return the full parameter class of the uniform int distribution */
         param_type param() const { return param_; }
 
         /*! \brief Smallest value that can be returned from uniform int distribution */
-        result_type
-        min() const { return a(); }
+        result_type min() const { return a(); }
 
         /*! \brief Largest value that can be returned from uniform int distribution */
-        result_type
-        max() const { return b(); }
+        result_type max() const { return b(); }
 
         /*! \brief True if two uniform int distributions will produce the same values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator==(const UniformIntDistribution &x) const
+        bool operator==(const UniformIntDistribution &x) const
         { return param_ == x.param_; }
 
         /*! \brief True if two uniform int distributions will produce different values.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator!=(const UniformIntDistribution &x) const
+        bool operator!=(const UniformIntDistribution &x) const
         { return !operator==(x); }
 
     private:
         /*! \brief Internal value for parameters, can be overridden at generation time. */
-        param_type      param_;
+        param_type param_;
         /*! \brief Saved output from random engine, shifted tableBits right each time */
-        gmx_uint64_t    savedRandomBits_;
+        gmx_uint64_t savedRandomBits_;
         /*! \brief Number of valid bits remaining i savedRandomBits_ */
-        unsigned int    savedRandomBitsLeft_;
+        unsigned int savedRandomBitsLeft_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(UniformIntDistribution);
 };

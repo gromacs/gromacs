@@ -83,9 +83,9 @@ class OptionValueStorePlain : public IOptionValueStore<T>
         }
 
     private:
-        int                          count_;
-        T                           *store_;
-        int                         *storeCount_;
+        int  count_;
+        T *  store_;
+        int *storeCount_;
 };
 
 template <typename T>

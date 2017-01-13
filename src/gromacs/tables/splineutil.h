@@ -77,8 +77,8 @@ namespace internal
  *  \note The function/derivative are always double-valued to avoid accuracy loss.
  */
 void
-throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)>  &function,
-                                              const std::function<double(double)>  &derivative,
+throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)> &function,
+                                              const std::function<double(double)> &derivative,
                                               const std::pair<real, real>          &range);
 
 /*! \brief Ensure vector of derivative values is the derivative of function vector.
@@ -104,9 +104,9 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
  *        to avoid accuracy loss.
  */
 void
-throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double>         function,
-                                              ConstArrayRef<double>         derivative,
-                                              double                        inputSpacing,
+throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double> function,
+                                              ConstArrayRef<double> derivative,
+                                              double inputSpacing,
                                               const std::pair<real, real>  &range);
 
 
@@ -141,7 +141,7 @@ throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double>         func
  *  \note The function is always double-valued to avoid accuracy loss.
  */
 real
-findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)>  &f,
+findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)> &f,
                                                   const std::pair<real, real>          &range);
 
 
@@ -175,8 +175,8 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
  *        avoid accuracy loss.
  */
 real
-findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double>         function,
-                                                  double                        inputSpacing,
+findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> function,
+                                                  double inputSpacing,
                                                   const std::pair<real, real>  &range);
 
 
@@ -212,7 +212,7 @@ findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double>         
  *  \note The function is always double-valued to avoid accuracy loss.
  */
 real
-findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)>  &f,
+findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)> &f,
                                                  const std::pair<real, real>          &range);
 
 
@@ -245,8 +245,8 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
  *        avoid accuracy loss.
  */
 real
-findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double>         function,
-                                                 double                        inputSpacing,
+findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double> function,
+                                                 double inputSpacing,
                                                  const std::pair<real, real>  &range);
 
 
@@ -264,8 +264,8 @@ findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double>         f
  *       accuracy loss (since differentiation can be numerically fragile).
  */
 std::vector<double>
-vectorSecondDerivative(ConstArrayRef<double>        f,
-                       double                       spacing);
+vectorSecondDerivative(ConstArrayRef<double> f,
+                       double                spacing);
 
 
 /*! \brief Copy (temporary) table data into aligned multiplexed vector
@@ -289,13 +289,12 @@ vectorSecondDerivative(ConstArrayRef<double>        f,
  *        sometimes uses an aligned allocator so the data can be loaded efficiently
  *        in the GROMACS nonbonded kernels.
  */
-template<class T, class U>
-void
-fillMultiplexedTableData(const T           inputData,
-                         U *               multiplexedOutputData,
-                         std::size_t       valuesPerTablePoint,
-                         std::size_t       numTables,
-                         std::size_t       thisTableIndex)
+template <class T, class U>
+void fillMultiplexedTableData(const T     inputData,
+                              U *         multiplexedOutputData,
+                              std::size_t valuesPerTablePoint,
+                              std::size_t numTables,
+                              std::size_t thisTableIndex)
 {
     if (multiplexedOutputData->size() == 0)
     {

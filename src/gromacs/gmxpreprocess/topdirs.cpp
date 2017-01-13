@@ -46,7 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Must correspond to the directive enum in grompp-impl.h */
-static const char *directive_names[d_maxdir+1] = {
+static const char *directive_names[d_maxdir + 1] = {
     "defaults",
     "atomtypes",
     "bondtypes",
@@ -312,7 +312,7 @@ directive str2dir (char *dstr)
     /* Hack to be able to read old topologies */
     if (gmx_strncasecmp_min(dstr, "dummies", 7) == 0)
     {
-        sprintf(buf, "virtual_sites%s", dstr+7);
+        sprintf(buf, "virtual_sites%s", dstr + 7);
         ptr = buf;
     }
     else
@@ -345,9 +345,8 @@ static void set_nec(directive **n, ...)
     {
         d = (directive)va_arg(ap, int);
         srenew(*n, ++ind);
-        (*n)[ind-1] = d;
-    }
-    while (d != d_none);
+        (*n)[ind - 1] = d;
+    } while (d != d_none);
     va_end(ap);
 }
 
@@ -414,8 +413,7 @@ void DS_Init(DirStack **DS)
                     {
                         fprintf(debug, "%20s  ", dir2str(d));
                     }
-                }
-                while (d != d_none);
+                } while (d != d_none);
             }
             if (debug)
             {
@@ -487,8 +485,7 @@ int DS_Check_Order(DirStack *DS, directive d)
             {
                 return TRUE;
             }
-        }
-        while (d0 != d_none);
+        } while (d0 != d_none);
     }
     return FALSE;
 }

@@ -80,9 +80,8 @@ namespace gmx
  *
  * \note The SIMD part is that we calculate many scalar products in one call.
  */
-static inline SimdFloat gmx_simdcall
-iprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
-      SimdFloat bx, SimdFloat by, SimdFloat bz)
+static inline SimdFloat gmx_simdcall iprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
+                                           SimdFloat bx, SimdFloat by, SimdFloat bz)
 {
     SimdFloat ret;
 
@@ -104,8 +103,7 @@ iprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
  * \note This corresponds to the scalar product of the vector with itself, but
  * the compiler might be able to optimize it better with identical vectors.
  */
-static inline SimdFloat gmx_simdcall
-norm2(SimdFloat ax, SimdFloat ay, SimdFloat az)
+static inline SimdFloat gmx_simdcall norm2(SimdFloat ax, SimdFloat ay, SimdFloat az)
 {
     SimdFloat ret;
 
@@ -134,10 +132,9 @@ norm2(SimdFloat ax, SimdFloat ay, SimdFloat az)
  * The arguments x/y/z denotes the different components, and each element
  * corresponds to a separate vector.
  */
-static inline void gmx_simdcall
-cprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
-      SimdFloat bx, SimdFloat by, SimdFloat bz,
-      SimdFloat *cx, SimdFloat *cy, SimdFloat *cz)
+static inline void gmx_simdcall cprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
+                                      SimdFloat bx, SimdFloat by, SimdFloat bz,
+                                      SimdFloat *cx, SimdFloat *cy, SimdFloat *cz)
 {
     *cx = ay * bz;
     *cx = *cx - az * by;
@@ -164,9 +161,8 @@ cprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
  *
  * \note The SIMD part is that we calculate many scalar products in one call.
  */
-static inline SimdDouble gmx_simdcall
-iprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
-      SimdDouble bx, SimdDouble by, SimdDouble bz)
+static inline SimdDouble gmx_simdcall iprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
+                                            SimdDouble bx, SimdDouble by, SimdDouble bz)
 {
     SimdDouble ret;
 
@@ -188,8 +184,7 @@ iprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
  * \note This corresponds to the scalar product of the vector with itself, but
  * the compiler might be able to optimize it better with identical vectors.
  */
-static inline SimdDouble gmx_simdcall
-norm2(SimdDouble ax, SimdDouble ay, SimdDouble az)
+static inline SimdDouble gmx_simdcall norm2(SimdDouble ax, SimdDouble ay, SimdDouble az)
 {
     SimdDouble ret;
 
@@ -218,10 +213,9 @@ norm2(SimdDouble ax, SimdDouble ay, SimdDouble az)
  * The arguments x/y/z denotes the different components, and each element
  * corresponds to a separate vector.
  */
-static inline void gmx_simdcall
-cprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
-      SimdDouble bx, SimdDouble by, SimdDouble bz,
-      SimdDouble *cx, SimdDouble *cy, SimdDouble *cz)
+static inline void gmx_simdcall cprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
+                                      SimdDouble bx, SimdDouble by, SimdDouble bz,
+                                      SimdDouble *cx, SimdDouble *cy, SimdDouble *cz)
 {
     *cx = ay * bz;
     *cx = *cx - az * by;
@@ -247,8 +241,7 @@ cprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
  * \note This corresponds to the scalar product of the vector with itself, but
  * the compiler might be able to optimize it better with identical vectors.
  */
-static inline Simd4Float gmx_simdcall
-norm2(Simd4Float ax, Simd4Float ay, Simd4Float az)
+static inline Simd4Float gmx_simdcall norm2(Simd4Float ax, Simd4Float ay, Simd4Float az)
 {
     Simd4Float ret;
 
@@ -273,8 +266,7 @@ norm2(Simd4Float ax, Simd4Float ay, Simd4Float az)
  * \note This corresponds to the scalar product of the vector with itself, but
  * the compiler might be able to optimize it better with identical vectors.
  */
-static inline Simd4Double gmx_simdcall
-norm2(Simd4Double ax, Simd4Double ay, Simd4Double az)
+static inline Simd4Double gmx_simdcall norm2(Simd4Double ax, Simd4Double ay, Simd4Double az)
 {
     Simd4Double ret;
 

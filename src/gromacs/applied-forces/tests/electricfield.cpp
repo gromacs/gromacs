@@ -84,14 +84,14 @@ class ElectricFieldTest : public ::testing::Test
         {
             gmx::test::FloatingPointTolerance tolerance(
                     gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
-            gmx::MDModules                    module;
-            t_inputrec *inputrec = module.inputrec();
+            gmx::MDModules module;
+            t_inputrec *   inputrec = module.inputrec();
 
             // Prepare MDP inputs
             const char *dimXYZ[3] = { "x", "y", "z" };
             GMX_RELEASE_ASSERT((dim >= 0 && dim < 3), "Dimension should be 0, 1 or 2");
 
-            gmx::KeyValueTreeBuilder     mdpValues;
+            gmx::KeyValueTreeBuilder mdpValues;
             mdpValues.rootObject().addValue(gmx::formatString("E%s", dimXYZ[dim]),
                                             gmx::formatString("1 %g 0", E0));
             mdpValues.rootObject().addValue(gmx::formatString("E%s-t", dimXYZ[dim]),
@@ -101,9 +101,9 @@ class ElectricFieldTest : public ::testing::Test
             transform.rules()->addRule()
                 .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
             inputrec->efield->initMdpTransform(transform.rules());
-            gmx::Options                 options;
+            gmx::Options options;
             inputrec->efield->initMdpOptions(&options);
-            auto                         result = transform.transform(mdpValues.build(), nullptr);
+            auto result = transform.transform(mdpValues.build(), nullptr);
             gmx::assignOptionsFromKeyValueTree(&options, result.object(), nullptr);
 
             t_mdatoms        md;
@@ -112,7 +112,7 @@ class ElectricFieldTest : public ::testing::Test
             snew(md.chargeA, md.homenr);
             md.chargeA[0] = 1;
 
-            t_commrec  *cr       = init_commrec();
+            t_commrec * cr       = init_commrec();
             t_forcerec *forcerec = mk_forcerec();
             inputrec->efield->initForcerec(forcerec);
             forcerec->efield->calculateForces(cr, &md, &f, 0);

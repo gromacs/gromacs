@@ -73,14 +73,14 @@ class XvgMatcher : public ITextBlockMatcher
         {
         }
 
-        virtual void checkStream(TextInputStream      *stream,
+        virtual void checkStream(TextInputStream *     stream,
                                  TestReferenceChecker *checker)
         {
             checkXvgFile(stream, checker, settings_);
         }
 
     private:
-        XvgMatchSettings  settings_;
+        XvgMatchSettings settings_;
 };
 
 //! Helper function to identify which @ lines in xvg files should be tested.
@@ -101,8 +101,8 @@ void checkXvgDataPoint(TestReferenceChecker *checker, const std::string &value)
 
 }       // namespace
 
-void checkXvgFile(TextInputStream        *input,
-                  TestReferenceChecker   *checker,
+void checkXvgFile(TextInputStream *       input,
+                  TestReferenceChecker *  checker,
                   const XvgMatchSettings &settings)
 {
     TestReferenceChecker legendChecker(checker->checkCompound("XvgLegend", "Legend"));

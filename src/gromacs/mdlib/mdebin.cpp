@@ -94,51 +94,51 @@ static const char *boxvel_nm[] = {
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
-                      FILE             *fp_dhdl)
+                      FILE *            fp_dhdl)
 {
-    const char         *ener_nm[F_NRE];
-    static const char  *vir_nm[] = {
+    const char *       ener_nm[F_NRE];
+    static const char *vir_nm[] = {
         "Vir-XX", "Vir-XY", "Vir-XZ",
         "Vir-YX", "Vir-YY", "Vir-YZ",
         "Vir-ZX", "Vir-ZY", "Vir-ZZ"
     };
-    static const char  *sv_nm[] = {
+    static const char *sv_nm[] = {
         "ShakeVir-XX", "ShakeVir-XY", "ShakeVir-XZ",
         "ShakeVir-YX", "ShakeVir-YY", "ShakeVir-YZ",
         "ShakeVir-ZX", "ShakeVir-ZY", "ShakeVir-ZZ"
     };
-    static const char  *fv_nm[] = {
+    static const char *fv_nm[] = {
         "ForceVir-XX", "ForceVir-XY", "ForceVir-XZ",
         "ForceVir-YX", "ForceVir-YY", "ForceVir-YZ",
         "ForceVir-ZX", "ForceVir-ZY", "ForceVir-ZZ"
     };
-    static const char  *pres_nm[] = {
+    static const char *pres_nm[] = {
         "Pres-XX", "Pres-XY", "Pres-XZ",
         "Pres-YX", "Pres-YY", "Pres-YZ",
         "Pres-ZX", "Pres-ZY", "Pres-ZZ"
     };
-    static const char  *surft_nm[] = {
+    static const char *surft_nm[] = {
         "#Surf*SurfTen"
     };
-    static const char  *mu_nm[] = {
+    static const char *mu_nm[] = {
         "Mu-X", "Mu-Y", "Mu-Z"
     };
-    static const char  *vcos_nm[] = {
+    static const char *vcos_nm[] = {
         "2CosZ*Vel-X"
     };
-    static const char  *visc_nm[] = {
+    static const char *visc_nm[] = {
         "1/Viscosity"
     };
-    static const char  *baro_nm[] = {
+    static const char *baro_nm[] = {
         "Barostat"
     };
 
-    char              **grpnms;
+    char **             grpnms;
     const gmx_groups_t *groups;
-    char              **gnm;
+    char **             gnm;
     char                buf[256];
-    const char         *bufi;
-    t_mdebin           *md;
+    const char *        bufi;
+    t_mdebin *          md;
     int                 i, j, ni, nj, n, k, kk, ncon, nset;
     gmx_bool            bBHAM, b14;
 
@@ -156,8 +156,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     groups = &mtop->groups;
 
     bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
-    b14   = (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-             gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
+    b14   = (gmx_mtop_ftype_count(mtop, F_LJ14) > 0
+             || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
 
     ncon           = gmx_mtop_ftype_count(mtop, F_CONSTR);
     nset           = gmx_mtop_ftype_count(mtop, F_SETTLE);
@@ -221,17 +221,17 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             md->bEner[i] = FALSE;
         }
-        else if ((i == F_DVDL_COUL && ir->fepvals->separate_dvdl[efptCOUL]) ||
-                 (i == F_DVDL_VDW  && ir->fepvals->separate_dvdl[efptVDW]) ||
-                 (i == F_DVDL_BONDED && ir->fepvals->separate_dvdl[efptBONDED]) ||
-                 (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT]) ||
-                 (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS]) ||
-                 (i == F_DVDL && ir->fepvals->separate_dvdl[efptFEP]))
+        else if ((i == F_DVDL_COUL && ir->fepvals->separate_dvdl[efptCOUL])
+                 || (i == F_DVDL_VDW  && ir->fepvals->separate_dvdl[efptVDW])
+                 || (i == F_DVDL_BONDED && ir->fepvals->separate_dvdl[efptBONDED])
+                 || (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT])
+                 || (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS])
+                 || (i == F_DVDL && ir->fepvals->separate_dvdl[efptFEP]))
         {
             md->bEner[i] = (ir->efep != efepNO);
         }
-        else if ((interaction_function[i].flags & IF_VSITE) ||
-                 (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
+        else if ((interaction_function[i].flags & IF_VSITE)
+                 || (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
         {
             md->bEner[i] = FALSE;
         }
@@ -277,8 +277,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
         else if (i == F_ECONSERVED)
         {
-            md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
-                            (ir->epc == epcNO || ir->epc == epcMTTK));
+            md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE)
+                            && (ir->epc == epcNO || ir->epc == epcMTTK));
         }
         else
         {
@@ -298,7 +298,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     md->epc            = ir->epc;
     md->bDiagPres      = !TRICLINIC(ir->ref_p);
-    md->ref_p          = (ir->ref_p[XX][XX]+ir->ref_p[YY][YY]+ir->ref_p[ZZ][ZZ])/DIM;
+    md->ref_p          = (ir->ref_p[XX][XX] + ir->ref_p[YY][YY] + ir->ref_p[ZZ][ZZ]) / DIM;
     md->bTricl         = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox        = inputrecDynamicBox(ir);
     md->etc            = ir->etc;
@@ -307,11 +307,11 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     md->bMTTK          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir));
     md->bMu            = inputrecNeedMutot(ir);
 
-    md->ebin  = mk_ebin();
+    md->ebin = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
      * for interaction_function[i].longname
      */
-    md->ie    = get_ebin_space(md->ebin, md->f_nre, ener_nm, nullptr);
+    md->ie = get_ebin_space(md->ebin, md->f_nre, ener_nm, nullptr);
     if (md->nCrmsd)
     {
         /* This should be called directly after the call for md->ie,
@@ -321,10 +321,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     if (md->bDynBox)
     {
-        md->ib    = get_ebin_space(md->ebin,
-                                   md->bTricl ? NTRICLBOXS : NBOXS,
-                                   md->bTricl ? tricl_boxs_nm : boxs_nm,
-                                   unit_length);
+        md->ib = get_ebin_space(md->ebin,
+                                md->bTricl ? NTRICLBOXS : NBOXS,
+                                md->bTricl ? tricl_boxs_nm : boxs_nm,
+                                unit_length);
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
         if (md->bDiagPres)
@@ -349,7 +349,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     if (md->bMu)
     {
-        md->imu    = get_ebin_space(md->ebin, asize(mu_nm), mu_nm, unit_dipole_D);
+        md->imu = get_ebin_space(md->ebin, asize(mu_nm), mu_nm, unit_dipole_D);
     }
     if (ir->cos_accel != 0)
     {
@@ -387,7 +387,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     n       = groups->grps[egcENER].nr;
     md->nEg = n;
-    md->nE  = (n*(n+1))/2;
+    md->nE  = (n * (n + 1)) / 2;
 
     snew(md->igrp, md->nE);
     if (md->nE > 1)
@@ -445,15 +445,15 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         if (md->bNHC_trotter)
         {
-            md->mde_n = 2*md->nNHC*md->nTC;
+            md->mde_n = 2 * md->nNHC * md->nTC;
         }
         else
         {
-            md->mde_n = 2*md->nTC;
+            md->mde_n = 2 * md->nTC;
         }
         if (md->epc == epcMTTK)
         {
-            md->mdeb_n = 2*md->nNHC*md->nTCP;
+            md->mdeb_n = 2 * md->nNHC * md->nTCP;
         }
     }
     else
@@ -489,9 +489,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     for (j = 0; (j < md->nNHC); j++)
                     {
                         sprintf(buf, "Xi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
+                        grpnms[2 * (i * md->nNHC + j)] = gmx_strdup(buf);
                         sprintf(buf, "vXi-%d-%s", j, bufi);
-                        grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
+                        grpnms[2 * (i * md->nNHC + j) + 1] = gmx_strdup(buf);
                     }
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
@@ -504,9 +504,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                         for (j = 0; (j < md->nNHC); j++)
                         {
                             sprintf(buf, "Xi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
+                            grpnms[2 * (i * md->nNHC + j)] = gmx_strdup(buf);
                             sprintf(buf, "vXi-%d-%s", j, bufi);
-                            grpnms[2*(i*md->nNHC+j)+1] = gmx_strdup(buf);
+                            grpnms[2 * (i * md->nNHC + j) + 1] = gmx_strdup(buf);
                         }
                     }
                     md->itcb = get_ebin_space(md->ebin, md->mdeb_n,
@@ -520,17 +520,17 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                     ni   = groups->grps[egcTC].nm_ind[i];
                     bufi = *(groups->grpname[ni]);
                     sprintf(buf, "Xi-%s", bufi);
-                    grpnms[2*i] = gmx_strdup(buf);
+                    grpnms[2 * i] = gmx_strdup(buf);
                     sprintf(buf, "vXi-%s", bufi);
-                    grpnms[2*i+1] = gmx_strdup(buf);
+                    grpnms[2 * i + 1] = gmx_strdup(buf);
                 }
                 md->itc = get_ebin_space(md->ebin, md->mde_n,
                                          (const char **)grpnms, unit_invtime);
             }
         }
     }
-    else if (md->etc == etcBERENDSEN || md->etc == etcYES ||
-             md->etc == etcVRESCALE)
+    else if (md->etc == etcBERENDSEN || md->etc == etcYES
+             || md->etc == etcVRESCALE)
     {
         for (i = 0; (i < md->nTC); i++)
         {
@@ -547,18 +547,18 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     md->nU = groups->grps[egcACC].nr;
     if (md->nU > 1)
     {
-        snew(grpnms, 3*md->nU);
+        snew(grpnms, 3 * md->nU);
         for (i = 0; (i < md->nU); i++)
         {
             ni = groups->grps[egcACC].nm_ind[i];
             sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
-            grpnms[3*i+XX] = gmx_strdup(buf);
+            grpnms[3 * i + XX] = gmx_strdup(buf);
             sprintf(buf, "Uy-%s", *(groups->grpname[ni]));
-            grpnms[3*i+YY] = gmx_strdup(buf);
+            grpnms[3 * i + YY] = gmx_strdup(buf);
             sprintf(buf, "Uz-%s", *(groups->grpname[ni]));
-            grpnms[3*i+ZZ] = gmx_strdup(buf);
+            grpnms[3 * i + ZZ] = gmx_strdup(buf);
         }
-        md->iu = get_ebin_space(md->ebin, 3*md->nU, (const char **)grpnms, unit_vel);
+        md->iu = get_ebin_space(md->ebin, 3 * md->nU, (const char **)grpnms, unit_vel);
         sfree(grpnms);
     }
 
@@ -610,8 +610,8 @@ static void print_lambda_vector(t_lambda *fep, int i,
                                 gmx_bool get_native_lambda, gmx_bool get_names,
                                 char *str)
 {
-    int    j, k = 0;
-    int    Nsep = 0;
+    int j, k = 0;
+    int Nsep = 0;
 
     for (j = 0; j < efptNR; j++)
     {
@@ -645,7 +645,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
                 str += sprintf(str, "%s", efpt_singular_names[j]);
             }
             /* print comma for the next item */
-            if (k < Nsep-1)
+            if (k < Nsep - 1)
             {
                 str += sprintf(str, ", ");
             }
@@ -663,22 +663,22 @@ static void print_lambda_vector(t_lambda *fep, int i,
 extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                        const gmx_output_env_t *oenv)
 {
-    FILE       *fp;
+    FILE *      fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
     *lambdastate     = "\\lambda state";
     char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
     int         i, nps, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
-    t_lambda   *fep            = ir->fepvals; /* for simplicity */
+    t_lambda *  fep            = ir->fepvals; /* for simplicity */
     t_expanded *expand         = ir->expandedvals;
-    char      **setname;
+    char **     setname;
     char        buf[STRLEN], lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
     int         bufplace = 0;
 
-    int         nsets_dhdl = 0;
-    int         s          = 0;
-    int         nsetsextend;
-    gmx_bool    write_pV = FALSE;
+    int      nsets_dhdl = 0;
+    int      s          = 0;
+    int      nsetsextend;
+    gmx_bool write_pV = FALSE;
 
     /* count the number of different lambda terms */
     for (i = 0; i < efptNR; i++)
@@ -854,7 +854,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
             {
                 /* print the temperature for this state if doing simulated annealing */
                 sprintf(&buf[nps], "T = %g (%s)",
-                        ir->simtempvals->temperatures[s-(nsetsbegin)],
+                        ir->simtempvals->temperatures[s - (nsetsbegin)],
                         unit_temp_K);
             }
             setname[s] = gmx_strdup(buf);
@@ -863,8 +863,8 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         if (write_pV)
         {
             sprintf(buf, "pV (%s)", unit_energy);
-            setname[nsetsextend-1] = gmx_strdup(buf);  /* the first entry after
-                                                          nsets */
+            setname[nsetsextend - 1] = gmx_strdup(buf);  /* the first entry after
+                                                            nsets */
         }
 
         xvgr_legend(fp, nsetsextend, (const char **)setname, oenv);
@@ -896,15 +896,15 @@ static void copy_energy(t_mdebin *md, real e[], real ecpy[])
     }
 }
 
-void upd_mdebin(t_mdebin       *md,
+void upd_mdebin(t_mdebin *      md,
                 gmx_bool        bDoDHDL,
                 gmx_bool        bSum,
                 double          time,
                 real            tmass,
                 gmx_enerdata_t *enerd,
-                t_state        *state,
-                t_lambda       *fep,
-                t_expanded     *expand,
+                t_state *       state,
+                t_lambda *      fep,
+                t_expanded *    expand,
                 matrix          box,
                 tensor          svir,
                 tensor          fvir,
@@ -954,8 +954,8 @@ void upd_mdebin(t_mdebin       *md,
             bs[2] = box[ZZ][ZZ];
             nboxs = NBOXS;
         }
-        vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-        dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
+        vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+        dens = (tmass * AMU) / (vol * NANO * NANO * NANO);
         add_ebin(md->ebin, md->ib, nboxs, bs, bSum);
         add_ebin(md->ebin, md->ivol, 1, &vol, bSum);
         add_ebin(md->ebin, md->idens, 1, &dens, bSum);
@@ -964,7 +964,7 @@ void upd_mdebin(t_mdebin       *md,
         {
             /* This is pV (in kJ/mol).  The pressure is the reference pressure,
                not the instantaneous pressure */
-            pv = vol*md->ref_p/PRESFAC;
+            pv = vol * md->ref_p / PRESFAC;
 
             add_ebin(md->ebin, md->ipv, 1, &pv, bSum);
             enthalpy = pv + enerd->term[F_ETOT];
@@ -978,7 +978,7 @@ void upd_mdebin(t_mdebin       *md,
     }
     add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
     add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
-    tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+    tmp = (pres[ZZ][ZZ] - (pres[XX][XX] + pres[YY][YY]) * 0.5) * box[ZZ][ZZ];
     add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
@@ -996,12 +996,12 @@ void upd_mdebin(t_mdebin       *md,
     }
     if (ekind && ekind->cosacc.cos_accel != 0)
     {
-        vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-        dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
+        vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+        dens = (tmass * AMU) / (vol * NANO * NANO * NANO);
         add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
-        tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *dens*gmx::square(box[ZZ][ZZ]*NANO/(2*M_PI)));
+        tmp = 1 / (ekind->cosacc.cos_accel / (ekind->cosacc.vcos * PICO)
+                   * dens * gmx::square(box[ZZ][ZZ] * NANO / (2 * M_PI)));
         add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
     }
     if (md->nE > 1)
@@ -1044,9 +1044,9 @@ void upd_mdebin(t_mdebin       *md,
                     {
                         for (j = 0; j < md->nNHC; j++)
                         {
-                            k                = i*md->nNHC+j;
-                            md->tmp_r[2*k]   = state->nosehoover_xi[k];
-                            md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                            k                    = i * md->nNHC + j;
+                            md->tmp_r[2 * k]     = state->nosehoover_xi[k];
+                            md->tmp_r[2 * k + 1] = state->nosehoover_vxi[k];
                         }
                     }
                     add_ebin(md->ebin, md->itc, md->mde_n, md->tmp_r, bSum);
@@ -1057,9 +1057,9 @@ void upd_mdebin(t_mdebin       *md,
                         {
                             for (j = 0; j < md->nNHC; j++)
                             {
-                                k                = i*md->nNHC+j;
-                                md->tmp_r[2*k]   = state->nhpres_xi[k];
-                                md->tmp_r[2*k+1] = state->nhpres_vxi[k];
+                                k                    = i * md->nNHC + j;
+                                md->tmp_r[2 * k]     = state->nhpres_xi[k];
+                                md->tmp_r[2 * k + 1] = state->nhpres_vxi[k];
                             }
                         }
                         add_ebin(md->ebin, md->itcb, md->mdeb_n, md->tmp_r, bSum);
@@ -1069,15 +1069,15 @@ void upd_mdebin(t_mdebin       *md,
                 {
                     for (i = 0; (i < md->nTC); i++)
                     {
-                        md->tmp_r[2*i]   = state->nosehoover_xi[i];
-                        md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
+                        md->tmp_r[2 * i]     = state->nosehoover_xi[i];
+                        md->tmp_r[2 * i + 1] = state->nosehoover_vxi[i];
                     }
                     add_ebin(md->ebin, md->itc, md->mde_n, md->tmp_r, bSum);
                 }
             }
         }
-        else if (md->etc == etcBERENDSEN || md->etc == etcYES ||
-                 md->etc == etcVRESCALE)
+        else if (md->etc == etcBERENDSEN || md->etc == etcYES
+                 || md->etc == etcVRESCALE)
         {
             for (i = 0; (i < md->nTC); i++)
             {
@@ -1093,7 +1093,7 @@ void upd_mdebin(t_mdebin       *md,
         {
             copy_rvec(ekind->grpstat[i].u, md->tmp_v[i]);
         }
-        add_ebin(md->ebin, md->iu, 3*md->nU, md->tmp_v[0], bSum);
+        add_ebin(md->ebin, md->iu, 3 * md->nU, md->tmp_v[0], bSum);
     }
 
     ebin_increase_count(md->ebin, bSum);
@@ -1101,17 +1101,17 @@ void upd_mdebin(t_mdebin       *md,
     /* BAR + thermodynamic integration values */
     if ((md->fp_dhdl || md->dhc) && bDoDHDL)
     {
-        for (i = 0; i < enerd->n_lambda-1; i++)
+        for (i = 0; i < enerd->n_lambda - 1; i++)
         {
             /* zero for simulated tempering */
-            md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
+            md->dE[i] = enerd->enerpart_lambda[i + 1] - enerd->enerpart_lambda[0];
             if (md->temperatures != nullptr)
             {
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
-                md->dE[i] += (md->temperatures[i]/
-                              md->temperatures[state->fep_state]-1.0)*
-                    enerd->term[F_EKIN];
+                md->dE[i] += (md->temperatures[i]
+                              / md->temperatures[state->fep_state] - 1.0)
+                    * enerd->term[F_EKIN];
             }
         }
 
@@ -1149,7 +1149,7 @@ void upd_mdebin(t_mdebin       *md,
                     if (fep->separate_dvdl[i])
                     {
                         /* assumes F_DVDL is first */
-                        fprintf(md->fp_dhdl, " %#.8g", enerd->term[F_DVDL+i]);
+                        fprintf(md->fp_dhdl, " %#.8g", enerd->term[F_DVDL + i]);
                     }
                 }
             }
@@ -1157,11 +1157,11 @@ void upd_mdebin(t_mdebin       *md,
             {
                 fprintf(md->fp_dhdl, " %#.8g", md->dE[i]);
             }
-            if (md->bDynBox &&
-                md->bDiagPres &&
-                (md->epc != epcNO) &&
-                (enerd->n_lambda > 0) &&
-                (fep->init_lambda < 0))
+            if (md->bDynBox
+                && md->bDiagPres
+                && (md->epc != epcNO)
+                && (enerd->n_lambda > 0)
+                && (fep->init_lambda < 0))
             {
                 fprintf(md->fp_dhdl, " %#.8g", pv);  /* PV term only needed when
                                                         there are alternate state
@@ -1179,7 +1179,7 @@ void upd_mdebin(t_mdebin       *md,
                 if (fep->separate_dvdl[i])
                 {
                     /* assumes F_DVDL is first */
-                    store_dhdl[idhdl] = enerd->term[F_DVDL+i];
+                    store_dhdl[idhdl] = enerd->term[F_DVDL + i];
                     idhdl            += 1;
                 }
             }
@@ -1248,33 +1248,33 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 gmx_groups_t *groups, t_grpopts *opts)
 {
     /*static char **grpnms=NULL;*/
-    char         buf[246];
-    int          i, j, n, ni, nj, b;
-    int          ndisre = 0;
-    real        *disre_rm3tav, *disre_rt;
+    char  buf[246];
+    int   i, j, n, ni, nj, b;
+    int   ndisre = 0;
+    real *disre_rm3tav, *disre_rt;
 
     /* these are for the old-style blocks (1 subblock, only reals), because
        there can be only one per ID for these */
-    int          nr[enxNR];
-    int          id[enxNR];
-    real        *block[enxNR];
+    int   nr[enxNR];
+    int   id[enxNR];
+    real *block[enxNR];
 
-    t_enxframe   fr;
+    t_enxframe fr;
 
     switch (mode)
     {
         case eprNORMAL:
             init_enxframe(&fr);
-            fr.t            = time;
-            fr.step         = step;
-            fr.nsteps       = md->ebin->nsteps;
-            fr.dt           = md->delta_t;
-            fr.nsum         = md->ebin->nsum;
-            fr.nre          = (bEne) ? md->ebin->nener : 0;
-            fr.ener         = md->ebin->e;
-            ndisre          = bDR ? fcd->disres.npair : 0;
-            disre_rm3tav    = fcd->disres.rm3tav;
-            disre_rt        = fcd->disres.rt;
+            fr.t         = time;
+            fr.step      = step;
+            fr.nsteps    = md->ebin->nsteps;
+            fr.dt        = md->delta_t;
+            fr.nsum      = md->ebin->nsum;
+            fr.nre       = (bEne) ? md->ebin->nener : 0;
+            fr.ener      = md->ebin->e;
+            ndisre       = bDR ? fcd->disres.npair : 0;
+            disre_rm3tav = fcd->disres.rm3tav;
+            disre_rt     = fcd->disres.rt;
             /* Optional additional old-style (real-only) blocks. */
             for (i = 0; i < enxNR; i++)
             {
@@ -1283,14 +1283,14 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             if (fcd->orires.nr > 0 && bOR)
             {
                 diagonalize_orires_tensors(&(fcd->orires));
-                nr[enxOR]     = fcd->orires.nr;
-                block[enxOR]  = fcd->orires.otav;
-                id[enxOR]     = enxOR;
-                nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ?
-                    fcd->orires.nr : 0;
+                nr[enxOR]    = fcd->orires.nr;
+                block[enxOR] = fcd->orires.otav;
+                id[enxOR]    = enxOR;
+                nr[enxORI]   = (fcd->orires.oinsl != fcd->orires.otav)
+                    ? fcd->orires.nr : 0;
                 block[enxORI] = fcd->orires.oinsl;
                 id[enxORI]    = enxORI;
-                nr[enxORT]    = fcd->orires.nex*12;
+                nr[enxORT]    = fcd->orires.nex * 12;
                 block[enxORT] = fcd->orires.eig;
                 id[enxORT]    = enxORT;
             }
@@ -1402,7 +1402,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             print_orires_log(log, &(fcd->orires));
         }
         fprintf(log, "   Energies (%s)\n", unit_energy);
-        pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, mode, TRUE);
+        pr_ebin(log, md->ebin, md->ie, md->f_nre + md->nCrmsd, 5, mode, TRUE);
         fprintf(log, "\n");
 
         if (mode == eprAVER)
@@ -1484,7 +1484,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 {
                     ni = groups->grps[egcACC].nm_ind[i];
                     fprintf(log, "%15s", *groups->grpname[ni]);
-                    pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, mode, FALSE);
+                    pr_ebin(log, md->ebin, md->iu + 3 * i, 3, 3, mode, FALSE);
                 }
                 fprintf(log, "\n");
             }
@@ -1531,13 +1531,13 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
     }
 }
 
-void restore_energyhistory_from_state(t_mdebin        * mdebin,
+void restore_energyhistory_from_state(t_mdebin *        mdebin,
                                       energyhistory_t * enerhist)
 {
     unsigned int nener = static_cast<unsigned int>(mdebin->ebin->nener);
 
-    if ((enerhist->nsum     > 0 && nener != enerhist->ener_sum.size()) ||
-        (enerhist->nsum_sim > 0 && nener != enerhist->ener_sum_sim.size()))
+    if ((enerhist->nsum     > 0 && nener != enerhist->ener_sum.size())
+        || (enerhist->nsum_sim > 0 && nener != enerhist->ener_sum_sim.size()))
     {
         gmx_fatal(FARGS, "Mismatch between number of energies in run input (%d) and checkpoint file (%u or %u).",
                   nener, enerhist->ener_sum.size(), enerhist->ener_sum_sim.size());
@@ -1550,12 +1550,12 @@ void restore_energyhistory_from_state(t_mdebin        * mdebin,
 
     for (int i = 0; i < mdebin->ebin->nener; i++)
     {
-        mdebin->ebin->e[i].eav  =
-            (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
-        mdebin->ebin->e[i].esum =
-            (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
-        mdebin->ebin->e_sim[i].esum =
-            (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
+        mdebin->ebin->e[i].eav
+            = (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
+        mdebin->ebin->e[i].esum
+            = (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
+        mdebin->ebin->e_sim[i].esum
+            = (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
     }
     if (mdebin->dhc)
     {

@@ -130,17 +130,16 @@ static const char * kernel_VdW_family_definitions[] =
  *
  * \throws std::bad_alloc if out of memory
  */
-static std::string
-makeDefinesForKernelTypes(bool bFastGen,
-                          int  eeltype,
-                          int  vdwtype)
+static std::string makeDefinesForKernelTypes(bool bFastGen,
+                                             int  eeltype,
+                                             int  vdwtype)
 {
     std::string defines_for_kernel_types;
 
     if (bFastGen)
     {
-        bool bIsEwaldSingleCutoff = (eeltype == eelOclEWALD_TAB ||
-                                     eeltype == eelOclEWALD_ANA);
+        bool bIsEwaldSingleCutoff = (eeltype == eelOclEWALD_TAB
+                                     || eeltype == eelOclEWALD_ANA);
 
         if (bIsEwaldSingleCutoff)
         {
@@ -173,11 +172,10 @@ makeDefinesForKernelTypes(bool bFastGen,
  *
  * Does not throw
  */
-void
-nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
+void nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
 {
-    gmx_bool                  bFastGen = TRUE;
-    cl_program                program  = nullptr;
+    gmx_bool   bFastGen = TRUE;
+    cl_program program  = nullptr;
 
     if (getenv("GMX_OCL_NOFASTGEN") != NULL)
     {

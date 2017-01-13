@@ -75,7 +75,7 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
     }
 #endif
     // Add buffer size to the arrays.
-    size_t nfft = (3*ndata/2) + 1;
+    size_t nfft = (3 * ndata / 2) + 1;
     // Pad arrays with zeros
     for (auto &i : *c)
     {
@@ -88,32 +88,32 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
             gmx_fft_t         fft1;
             std::vector<real> in, out;
 
-            int               nthreads  = gmx_omp_get_max_threads();
-            int               thread_id = gmx_omp_get_thread_num();
-            int               i0        = (thread_id*nfunc)/nthreads;
-            int               i1        = std::min(nfunc, ((thread_id+1)*nfunc)/nthreads);
+            int nthreads  = gmx_omp_get_max_threads();
+            int thread_id = gmx_omp_get_thread_num();
+            int i0        = (thread_id * nfunc) / nthreads;
+            int i1        = std::min(nfunc, ((thread_id + 1) * nfunc) / nthreads);
 
             gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
             /* Allocate temporary arrays */
-            in.resize(2*nfft, 0);
-            out.resize(2*nfft, 0);
+            in.resize(2 * nfft, 0);
+            out.resize(2 * nfft, 0);
             for (int i = i0; (i < i1); i++)
             {
                 for (size_t j = 0; j < ndata; j++)
                 {
-                    in[2*j+0] = (*c)[i][j];
-                    in[2*j+1] = 0;
+                    in[2 * j + 0] = (*c)[i][j];
+                    in[2 * j + 1] = 0;
                 }
                 gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in.data(), (void *)out.data());
                 for (size_t j = 0; j < nfft; j++)
                 {
-                    in[2*j+0] = (out[2*j+0]*out[2*j+0] + out[2*j+1]*out[2*j+1])/nfft;
-                    in[2*j+1] = 0;
+                    in[2 * j + 0] = (out[2 * j + 0] * out[2 * j + 0] + out[2 * j + 1] * out[2 * j + 1]) / nfft;
+                    in[2 * j + 1] = 0;
                 }
                 gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in.data(), (void *)out.data());
                 for (size_t j = 0; (j < nfft); j++)
                 {
-                    (*c)[i][j] = out[2*j+0];
+                    (*c)[i][j] = out[2 * j + 0];
                 }
             }
             /* Free the memory */

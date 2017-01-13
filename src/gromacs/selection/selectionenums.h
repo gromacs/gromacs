@@ -67,17 +67,17 @@ namespace gmx
  */
 enum SelectionFlag
 {
-    efSelection_OnlyStatic              = 1<<0,
-    efSelection_OnlyAtoms               = 1<<1,
-    efSelection_OnlySorted              = 1<<2,
+    efSelection_OnlyStatic = 1 << 0,
+    efSelection_OnlyAtoms  = 1 << 1,
+    efSelection_OnlySorted = 1 << 2,
     //! Whether ::POS_MASKONLY should be used for output position evaluation.
-    efSelection_DynamicMask             = 1<<3,
+    efSelection_DynamicMask = 1 << 3,
     //! If set, unconditionally empty selections result in compilation errors.
-    efSelection_DisallowEmpty           = 1<<4,
+    efSelection_DisallowEmpty = 1 << 4,
     //! Whether velocities of output positions should be evaluated.
-    efSelection_EvaluateVelocities      = 1<<5,
+    efSelection_EvaluateVelocities = 1 << 5,
     //! Whether forces on output positions should be evaluated.
-    efSelection_EvaluateForces          = 1<<6,
+    efSelection_EvaluateForces = 1 << 6,
 };
 
 //! Holds a collection of ::SelectionFlag values.

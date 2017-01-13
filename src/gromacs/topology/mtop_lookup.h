@@ -65,12 +65,11 @@ struct t_atom;
  * \param[out]    moleculeIndex        The index of the molecule in the block, can be NULL
  * \param[out]    atomIndexInMolecule  The atom index in the molecule, can be NULL
  */
-static inline void
-mtopGetMolblockIndex(const gmx_mtop_t *mtop,
-                     int               globalAtomIndex,
-                     int              *moleculeBlock,
-                     int              *moleculeIndex,
-                     int              *atomIndexInMolecule)
+static inline void mtopGetMolblockIndex(const gmx_mtop_t *mtop,
+                                        int               globalAtomIndex,
+                                        int *             moleculeBlock,
+                                        int *             moleculeIndex,
+                                        int *             atomIndexInMolecule)
 {
     GMX_ASSERT(globalAtomIndex >= 0 && globalAtomIndex < mtop->natoms, "The atom index to look up should be within range");
     GMX_ASSERT(moleculeBlock != nullptr, "molBlock can not be NULL");
@@ -106,7 +105,7 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
     }
     if (atomIndexInMolecule != nullptr)
     {
-        *atomIndexInMolecule = globalAtomIndex - globalAtomStart - molIndex*mtop->molblock[*moleculeBlock].natoms_mol;
+        *atomIndexInMolecule = globalAtomIndex - globalAtomStart - molIndex * mtop->molblock[*moleculeBlock].natoms_mol;
     }
 }
 
@@ -122,10 +121,9 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline const t_atom &
-mtopGetAtomParameters(const gmx_mtop_t  *mtop,
-                      int                globalAtomIndex,
-                      int               *moleculeBlock)
+static inline const t_atom &mtopGetAtomParameters(const gmx_mtop_t *mtop,
+                                                  int               globalAtomIndex,
+                                                  int *             moleculeBlock)
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
@@ -147,10 +145,9 @@ mtopGetAtomParameters(const gmx_mtop_t  *mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline real
-mtopGetAtomMass(const gmx_mtop_t  *mtop,
-                int                globalAtomIndex,
-                int               *moleculeBlock)
+static inline real mtopGetAtomMass(const gmx_mtop_t *mtop,
+                                   int               globalAtomIndex,
+                                   int *             moleculeBlock)
 {
     const t_atom &atom = mtopGetAtomParameters(mtop, globalAtomIndex, moleculeBlock);
     return atom.m;
@@ -175,14 +172,13 @@ mtopGetAtomMass(const gmx_mtop_t  *mtop,
  * \param[out]    residueName         The residue name, input can be NULL
  * \param[out]    globalResidueIndex  The gobal residue index, input can be NULL
  */
-static inline void
-mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
-                          int                globalAtomIndex,
-                          int               *moleculeBlock,
-                          const char       **atomName,
-                          int               *residueNumber,
-                          const char       **residueName,
-                          int               *globalResidueIndex)
+static inline void mtopGetAtomAndResidueName(const gmx_mtop_t *mtop,
+                                             int               globalAtomIndex,
+                                             int *             moleculeBlock,
+                                             const char **     atomName,
+                                             int *             residueNumber,
+                                             const char **     residueName,
+                                             int *             globalResidueIndex)
 {
     int moleculeIndex;
     int atomIndexInMolecule;
@@ -190,7 +186,7 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
                          &moleculeIndex, &atomIndexInMolecule);
 
     const gmx_molblock_t &molb  = mtop->molblock[*moleculeBlock];
-    const t_atoms        &atoms = mtop->moltype[molb.type].atoms;
+    const t_atoms &       atoms = mtop->moltype[molb.type].atoms;
     if (atomName != nullptr)
     {
         *atomName = *(atoms.atomname[atomIndexInMolecule]);
@@ -204,7 +200,7 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
         else
         {
             /* Single residue molecule, keep counting */
-            *residueNumber = molb.residueNumberStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+            *residueNumber = molb.residueNumberStart + moleculeIndex * atoms.nres + atoms.atom[atomIndexInMolecule].resind;
         }
     }
     if (residueName != nullptr)
@@ -213,7 +209,7 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
     }
     if (globalResidueIndex != nullptr)
     {
-        *globalResidueIndex = molb.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
+        *globalResidueIndex = molb.globalResidueStart + moleculeIndex * atoms.nres + atoms.atom[atomIndexInMolecule].resind;
     }
 }
 
@@ -229,10 +225,9 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline const t_resinfo &
-mtopGetResidueInfo(const gmx_mtop_t  *mtop,
-                   int                globalAtomIndex,
-                   int               *moleculeBlock)
+static inline const t_resinfo &mtopGetResidueInfo(const gmx_mtop_t *mtop,
+                                                  int               globalAtomIndex,
+                                                  int *             moleculeBlock)
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
@@ -254,10 +249,9 @@ mtopGetResidueInfo(const gmx_mtop_t  *mtop,
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
  */
-static inline const t_pdbinfo &
-mtopGetAtomPdbInfo(const gmx_mtop_t  *mtop,
-                   int                globalAtomIndex,
-                   int               *moleculeBlock)
+static inline const t_pdbinfo &mtopGetAtomPdbInfo(const gmx_mtop_t *mtop,
+                                                  int               globalAtomIndex,
+                                                  int *             moleculeBlock)
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,

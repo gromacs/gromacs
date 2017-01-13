@@ -78,9 +78,9 @@ class DefaultProgramContext : public IProgramContext
 };
 
 //! Global program info; stores the object set with setProgramContext().
-const IProgramContext         *g_programContext;
+const IProgramContext *g_programContext;
 //! Default program context if nothing is set.
-const DefaultProgramContext    g_defaultContext;
+const DefaultProgramContext g_defaultContext;
 
 //! \}
 

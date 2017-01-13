@@ -127,7 +127,7 @@ TEST(InvertBoxMatrixTest, ComputesInverseInPlace)
     matrix in       = {{1, 0, 0}, {-1, real(2.5), 0}, {10, -2, real(1.2)}};
     matrix expected = {{1, 0, 0},
                        {real(0.4), real(0.4), 0},
-                       {real(-23.0/3.0), real(2.0/3.0), real(5.0/6.0)}};
+                       {real(-23.0 / 3.0), real(2.0 / 3.0), real(5.0 / 6.0)}};
 
     invertBoxMatrix(in, in);
 

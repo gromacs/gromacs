@@ -124,7 +124,7 @@ typedef int (*finifunc)(void);
 
 static int register_cb(void *v, vmdplugin_t *p)
 {
-    const char      *key       = p->name;
+    const char *     key       = p->name;
     gmx_vmdplugin_t *vmdplugin = static_cast<gmx_vmdplugin_t *>(v);
 
     if (strcmp(key, vmdplugin->filetype) == 0)
@@ -189,10 +189,10 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
     fr->bV = vmdplugin->bV;
 
 #if GMX_DOUBLE
-    snew(ts.coords, fr->natoms*3);
+    snew(ts.coords, fr->natoms * 3);
     if (fr->bV)
     {
-        snew(ts.velocities, fr->natoms*3);
+        snew(ts.velocities, fr->natoms * 3);
     }
 #else
     ts.coords = (float*)fr->x;
@@ -217,14 +217,14 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
 #if GMX_DOUBLE
     for (i = 0; i < fr->natoms; i++)
     {
-        fr->x[i][0] = .1*ts.coords[i*3];
-        fr->x[i][1] = .1*ts.coords[i*3+1];
-        fr->x[i][2] = .1*ts.coords[i*3+2];
+        fr->x[i][0] = .1 * ts.coords[i * 3];
+        fr->x[i][1] = .1 * ts.coords[i * 3 + 1];
+        fr->x[i][2] = .1 * ts.coords[i * 3 + 2];
         if (fr->bV)
         {
-            fr->v[i][0] = .1*ts.velocities[i*3];
-            fr->v[i][1] = .1*ts.velocities[i*3+1];
-            fr->v[i][2] = .1*ts.velocities[i*3+2];
+            fr->v[i][0] = .1 * ts.velocities[i * 3];
+            fr->v[i][1] = .1 * ts.velocities[i * 3 + 1];
+            fr->v[i][2] = .1 * ts.velocities[i * 3 + 2];
         }
     }
     sfree(ts.coords);
@@ -245,7 +245,7 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
 
     fr->bX   = 1;
     fr->bBox = 1;
-    vec[0]   = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
+    vec[0]   = .1 * ts.A; vec[1] = .1 * ts.B; vec[2] = .1 * ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma;
     matrix_convert(fr->box, vec, angle);
     if (vmdplugin->api->abiversion > 10)
@@ -264,21 +264,21 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
 
 static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 {
-    char            pathname[GMX_PATH_MAX];
-    const char     *pathenv;
-    const char     *err;
-    int             ret = 0;
-    char            pathenv_buffer[GMX_PATH_MAX];
+    char        pathname[GMX_PATH_MAX];
+    const char *pathenv;
+    const char *err;
+    int         ret = 0;
+    char        pathenv_buffer[GMX_PATH_MAX];
 #if !GMX_NATIVE_WINDOWS
-    glob_t          globbuf;
-    const char     *defpath_suffix = "/plugins/*/molfile";
-    const char     *defpathenv     = GMX_VMD_PLUGIN_PATH;
+    glob_t      globbuf;
+    const char *defpath_suffix = "/plugins/*/molfile";
+    const char *defpathenv     = GMX_VMD_PLUGIN_PATH;
 #else
     WIN32_FIND_DATA ffd;
     HANDLE          hFind = INVALID_HANDLE_VALUE;
     char            progfolder[GMX_PATH_MAX];
     char            defpathenv[GMX_PATH_MAX];
-    const char     *defpath_suffix = "\\plugins\\WIN32\\molfile";
+    const char *    defpath_suffix = "\\plugins\\WIN32\\molfile";
     SHGetFolderPath(NULL, CSIDL_PROGRAM_FILES, NULL, SHGFP_TYPE_CURRENT, progfolder);
     sprintf(defpathenv, "%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile", progfolder);
 #endif
@@ -352,8 +352,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
         char filename[GMX_PATH_MAX];
         sprintf(filename, "%s\\%s", pathenv, ffd.cFileName);
         ret |= load_sharedlibrary_plugins(filename, vmdplugin);
-    }
-    while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL);
+    } while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL);
     FindClose(hFind);
 #endif
 
@@ -393,7 +392,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr)
 {
     molfile_timestep_metadata_t *metadata = nullptr;
-    gmx_vmdplugin_t             *vmdplugin;
+    gmx_vmdplugin_t *            vmdplugin;
 
     snew(vmdplugin, 1);
     *vmdpluginp = vmdplugin;

@@ -48,8 +48,9 @@
 
 #include "buttons.h"
 
-typedef struct {
-    const char    *tp;
+typedef struct
+{
+    const char *   tp;
     unsigned long *col;
     t_rgb          rgb;
 } t_atomcolor;
@@ -125,21 +126,21 @@ void DrawLegend(t_x11 *x11, t_windata *Win)
 
     XClearWindow(x11->disp, Win->self);
     w   = Win->width;
-    h_2 = Win->height/(2.0*NLAB/COLS);
-    dh  = h_2-2;
+    h_2 = Win->height / (2.0 * NLAB / COLS);
+    dh  = h_2 - 2;
     dw  = dh;
 
     for (i = 0; (i < NLAB); i++)
     {
-        i0   = i % (NLAB/COLS);
-        x0   = (i / (NLAB/COLS))*(Win->width/COLS)+AIR;
-        x1   = x0+2*dw+AIR;
+        i0   = i % (NLAB / COLS);
+        x0   = (i / (NLAB / COLS)) * (Win->width / COLS) + AIR;
+        x1   = x0 + 2 * dw + AIR;
         cind = Type2Color(lab[i]);
         XSetForeground(x11->disp, x11->gc, cind);
-        y = ((2*i0+1)*h_2);
-        XFillRectangle (x11->disp, Win->self, x11->gc, x0, y-dh, 2*dw, 2*dh);
+        y = ((2 * i0 + 1) * h_2);
+        XFillRectangle (x11->disp, Win->self, x11->gc, x0, y - dh, 2 * dw, 2 * dh);
         XSetForeground(x11->disp, x11->gc, WHITE);
-        TextInRect(x11, Win->self, lab[i], x1, y-dh, w-x1, 2*dh,
+        TextInRect(x11, Win->self, lab[i], x1, y - dh, w - x1, 2 * dh,
                    eXLeft, eYCenter);
     }
     XSetForeground(x11->disp, x11->gc, x11->fg);

@@ -94,13 +94,13 @@ class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
         //! Test that mdrun -maxh and restart works
         void runMaxhTest();
         //! Number of MPI ranks
-        int                size_;
+        int size_;
         //! MPI rank of this process
-        int                rank_;
+        int rank_;
         //! Object for building the mdrun command line
         CommandLinePointer mdrunCaller_;
         //! Name of .tpr file to be used by mdrun
-        std::string        mdrunTprFileName_;
+        std::string mdrunTprFileName_;
 };
 
 } // namespace

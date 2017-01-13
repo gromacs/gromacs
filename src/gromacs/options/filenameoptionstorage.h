@@ -67,7 +67,7 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
          * \param[in] settings   Storage settings.
          * \param     manager    Manager for this object (can be NULL).
          */
-        FileNameOptionStorage(const FileNameOption  &settings,
+        FileNameOptionStorage(const FileNameOption & settings,
                               FileNameOptionManager *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }
@@ -104,14 +104,14 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
         virtual std::string processValue(const std::string &value) const;
         virtual void processAll();
 
-        FileNameOptionInfo      info_;
-        FileNameOptionManager  *manager_;
-        int                     fileType_;
-        const char             *defaultExtension_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
-        bool                    bAllowMissing_;
+        FileNameOptionInfo     info_;
+        FileNameOptionManager *manager_;
+        int                    fileType_;
+        const char *           defaultExtension_;
+        bool                   bRead_;
+        bool                   bWrite_;
+        bool                   bLibrary_;
+        bool                   bAllowMissing_;
 };
 
 } // namespace gmx

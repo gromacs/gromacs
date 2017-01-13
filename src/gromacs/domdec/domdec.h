@@ -130,35 +130,35 @@ int dd_pme_maxshift_x(const gmx_domdec_t *dd);
 int dd_pme_maxshift_y(const gmx_domdec_t *dd);
 
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
-gmx_domdec_t *init_domain_decomposition(FILE             *fplog,
-                                        t_commrec        *cr,
+gmx_domdec_t *init_domain_decomposition(FILE *            fplog,
+                                        t_commrec *       cr,
                                         unsigned long     Flags,
                                         ivec              nc,
                                         int               nPmeRanks,
                                         int               dd_node_order,
                                         real              comm_distance_min,
                                         real              rconstr,
-                                        const char       *dlb_opt,
+                                        const char *      dlb_opt,
                                         real              dlb_scale,
-                                        const char       *sizex,
-                                        const char       *sizey,
-                                        const char       *sizez,
+                                        const char *      sizex,
+                                        const char *      sizey,
+                                        const char *      sizez,
                                         const gmx_mtop_t *mtop,
                                         const t_inputrec *ir,
                                         matrix            box,
-                                        rvec             *x,
-                                        gmx_ddbox_t      *ddbox,
-                                        int              *npme_x,
-                                        int              *npme_y);
+                                        rvec *            x,
+                                        gmx_ddbox_t *     ddbox,
+                                        int *             npme_x,
+                                        int *             npme_y);
 
 /*! \brief Initialize data structures for bonded interactions */
-void dd_init_bondeds(FILE              *fplog,
-                     gmx_domdec_t      *dd,
-                     const gmx_mtop_t  *mtop,
+void dd_init_bondeds(FILE *             fplog,
+                     gmx_domdec_t *     dd,
+                     const gmx_mtop_t * mtop,
                      const gmx_vsite_t *vsite,
-                     const t_inputrec  *ir,
+                     const t_inputrec * ir,
                      gmx_bool           bBCheck,
-                     cginfo_mb_t       *cginfo_mb);
+                     cginfo_mb_t *      cginfo_mb);
 
 /*! \brief Returns if we need to do pbc for calculating bonded interactions */
 gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
@@ -201,9 +201,9 @@ void dd_dlb_unlock(struct gmx_domdec_t *dd);
  * GPU finish. Therefore there wait times need to be averaged over the ranks
  * sharing the same GPU. This function sets up the communication for that.
  */
-void dd_setup_dlb_resource_sharing(struct t_commrec           *cr,
-                                   const gmx_hw_info_t        *hwinfo,
-                                   const gmx_hw_opt_t         *hw_opt);
+void dd_setup_dlb_resource_sharing(struct t_commrec *   cr,
+                                   const gmx_hw_info_t *hwinfo,
+                                   const gmx_hw_opt_t * hw_opt);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
 void dd_collect_vec(struct gmx_domdec_t *dd,
@@ -218,7 +218,8 @@ void dd_collect_state(struct gmx_domdec_t *dd,
                       t_state *state_local, t_state *state);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */
-enum {
+enum
+{
     ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME, ddCyclNr
 };
 
@@ -260,24 +261,24 @@ void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
-void dd_partition_system(FILE                *fplog,
-                         gmx_int64_t          step,
-                         t_commrec           *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         t_mdatoms           *mdatoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx_constr_t         constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle_t      wcycle,
-                         gmx_bool             bVerbose);
+void dd_partition_system(FILE *            fplog,
+                         gmx_int64_t       step,
+                         t_commrec *       cr,
+                         gmx_bool          bMasterState,
+                         int               nstglobalcomm,
+                         t_state *         state_global,
+                         const gmx_mtop_t *top_global,
+                         const t_inputrec *ir,
+                         t_state *         state_local,
+                         PaddedRVecVector *f,
+                         t_mdatoms *       mdatoms,
+                         gmx_localtop_t *  top_local,
+                         t_forcerec *      fr,
+                         gmx_vsite_t *     vsite,
+                         gmx_constr_t      constr,
+                         t_nrnb *          nrnb,
+                         gmx_wallcycle_t   wcycle,
+                         gmx_bool          bVerbose);
 
 /*! \brief Reset all the statistics and counters for total run counting */
 void reset_dd_statistics_counters(struct gmx_domdec_t *dd);

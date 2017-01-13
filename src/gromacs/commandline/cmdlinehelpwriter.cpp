@@ -132,24 +132,24 @@ class OptionsFilter : public OptionsVisitor
         }
 
         //! Formats selected options using the formatter.
-        void formatSelected(FilterType                 type,
-                            IOptionsFormatter         *formatter,
-                            const Options             &options);
+        void formatSelected(FilterType         type,
+                            IOptionsFormatter *formatter,
+                            const Options &    options);
 
         virtual void visitSection(const OptionSectionInfo &section);
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        IOptionsFormatter              *formatter_;
-        FilterType                      filterType_;
-        bool                            bShowHidden_;
+        IOptionsFormatter *formatter_;
+        FilterType         filterType_;
+        bool               bShowHidden_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsFilter);
 };
 
-void OptionsFilter::formatSelected(FilterType                 type,
-                                   IOptionsFormatter         *formatter,
-                                   const Options             &options)
+void OptionsFilter::formatSelected(FilterType         type,
+                                   IOptionsFormatter *formatter,
+                                   const Options &    options)
 {
     formatter_  = formatter;
     filterType_ = type;
@@ -213,7 +213,7 @@ class CommonFormatterData
         {
         }
 
-        const char             *timeUnit;
+        const char *timeUnit;
 };
 
 /********************************************************************
@@ -254,8 +254,7 @@ std::string defaultOptionValue(const OptionInfo &option)
 }
 
 //! Formats the flags for a file option as a string.
-std::string
-fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
+std::string fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
 {
     std::string type;
     if (!option.isRequired())
@@ -274,13 +273,12 @@ fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
 }
 
 //! Formats the description for an option as a string.
-std::string
-descriptionWithOptionDetails(const CommonFormatterData &common,
-                             const OptionInfo          &option)
+std::string descriptionWithOptionDetails(const CommonFormatterData &common,
+                                         const OptionInfo &         option)
 {
-    std::string             description(option.formatDescription());
+    std::string description(option.formatDescription());
 
-    const FloatOptionInfo  *floatOption  = option.toType<FloatOptionInfo>();
+    const FloatOptionInfo * floatOption  = option.toType<FloatOptionInfo>();
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if ((floatOption != nullptr && floatOption->isTime())
         || (doubleOption != nullptr && doubleOption->isTime()))
@@ -392,9 +390,9 @@ class OptionsListFormatter : public IOptionsFormatter
 {
     public:
         //! Creates a helper object for formatting options.
-        OptionsListFormatter(const HelpWriterContext   &context,
+        OptionsListFormatter(const HelpWriterContext &  context,
                              const CommonFormatterData &common,
-                             const char                *title);
+                             const char *               title);
 
         //! Initiates a new section in the options list.
         void startSection(const char *header)
@@ -434,19 +432,19 @@ class OptionsListFormatter : public IOptionsFormatter
             bDidOutput_ = true;
         }
 
-        const HelpWriterContext               &context_;
-        const CommonFormatterData             &common_;
-        const char                            *title_;
-        const char                            *header_;
-        bool                                   bDidOutput_;
+        const HelpWriterContext &  context_;
+        const CommonFormatterData &common_;
+        const char *               title_;
+        const char *               header_;
+        bool                       bDidOutput_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsListFormatter);
 };
 
 OptionsListFormatter::OptionsListFormatter(
-        const HelpWriterContext   &context,
+        const HelpWriterContext &  context,
         const CommonFormatterData &common,
-        const char                *title)
+        const char *               title)
     : context_(context), common_(common),
       title_(title), header_(nullptr), bDidOutput_(false)
 {
@@ -455,7 +453,7 @@ OptionsListFormatter::OptionsListFormatter(
 void OptionsListFormatter::formatOption(const OptionInfo &option)
 {
     writeSectionStartIfNecessary();
-    std::string               name, value;
+    std::string name, value;
     formatOptionNameAndValue(option, &name, &value);
     std::string               defaultValue(defaultOptionValue(option));
     std::string               info;
@@ -495,11 +493,11 @@ class CommandLineHelpWriter::Impl
         void formatBugs(const HelpWriterContext &context);
 
         //! Options object to use for generating help.
-        const Options               &options_;
+        const Options &options_;
         //! Help text.
-        std::string                  helpText_;
+        std::string helpText_;
         //! List of bugs/knows issues.
-        ConstArrayRef<const char *>  bugs_;
+        ConstArrayRef<const char *> bugs_;
 };
 
 void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
@@ -512,7 +510,7 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
     ConstArrayRef<const char *>::const_iterator i;
     for (i = bugs_.begin(); i != bugs_.end(); ++i)
     {
-        const char *const       bug = *i;
+        const char *const bug = *i;
         context.writeTextBlock(formatString("* %s", bug));
     }
 }
@@ -531,22 +529,19 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-CommandLineHelpWriter &
-CommandLineHelpWriter::setHelpText(const std::string &help)
+CommandLineHelpWriter &CommandLineHelpWriter::setHelpText(const std::string &help)
 {
     impl_->helpText_ = help;
     return *this;
 }
 
-CommandLineHelpWriter &
-CommandLineHelpWriter::setHelpText(const ConstArrayRef<const char *> &help)
+CommandLineHelpWriter &CommandLineHelpWriter::setHelpText(const ConstArrayRef<const char *> &help)
 {
     impl_->helpText_ = joinStrings(help, "\n");
     return *this;
 }
 
-CommandLineHelpWriter &
-CommandLineHelpWriter::setKnownIssues(const ConstArrayRef<const char *> &bugs)
+CommandLineHelpWriter &CommandLineHelpWriter::setKnownIssues(const ConstArrayRef<const char *> &bugs)
 {
     impl_->bugs_ = bugs;
     return *this;
@@ -584,8 +579,8 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
         writerContext.writeTitle("Description");
         writerContext.writeTextBlock(impl_->helpText_);
     }
-    CommonFormatterData    common(TimeUnitManager().timeUnitAsString());
-    OptionsListFormatter   formatter(writerContext, common, "Options");
+    CommonFormatterData  common(TimeUnitManager().timeUnitAsString());
+    OptionsListFormatter formatter(writerContext, common, "Options");
     formatter.startSection("Options to specify input files:");
     filter.formatSelected(OptionsFilter::eSelectInputFileOptions,
                           &formatter, impl_->options_);

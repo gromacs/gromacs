@@ -54,18 +54,19 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     char *ai, *aj;
     real  e_diss;
 } t_2morse;
 
 static t_2morse *read_dissociation_energies(int *n2morse)
 {
-    FILE       *fp;
+    FILE *      fp;
     char        ai[32], aj[32];
     double      e_diss;
     const char *fn     = "edissoc.dat";
-    t_2morse   *t2m    = nullptr;
+    t_2morse *  t2m    = nullptr;
     int         maxn2m = 0, n2m = 0;
     int         nread;
 
@@ -92,8 +93,7 @@ static t_2morse *read_dissociation_energies(int *n2morse)
             n2m++;
         }
         /* If we did not read three items, quit reading */
-    }
-    while (nread == 3);
+    } while (nread == 3);
     gmx_ffclose(fp);
 
     /* Set the return values */
@@ -136,8 +136,8 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
     for (i = 0; (i < n2m); i++)
     {
         /* Check for a perfect match */
-        if (((gmx_strcasecmp(t2m[i].ai, ai) == 0) && (gmx_strcasecmp(t2m[i].aj, aj) == 0)) ||
-            ((gmx_strcasecmp(t2m[i].aj, ai) == 0) && (gmx_strcasecmp(t2m[i].ai, aj) == 0)))
+        if (((gmx_strcasecmp(t2m[i].ai, ai) == 0) && (gmx_strcasecmp(t2m[i].aj, aj) == 0))
+            || ((gmx_strcasecmp(t2m[i].aj, ai) == 0) && (gmx_strcasecmp(t2m[i].ai, aj) == 0)))
         {
             ibest = i;
             break;
@@ -149,8 +149,8 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
              */
             nii = nequal(t2m[i].ai, ai);
             njj = nequal(t2m[i].aj, aj);
-            if (((nii >  nbstii) && (njj >= nbstjj)) ||
-                ((nii >= nbstii) && (njj >  nbstjj)))
+            if (((nii >  nbstii) && (njj >= nbstjj))
+                || ((nii >= nbstii) && (njj >  nbstjj)))
             {
                 if ((nii > 0) && (njj > 0))
                 {
@@ -164,8 +164,8 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
                 /* Swap ai and aj (at least in counting the number of equal chars) */
                 nii = nequal(t2m[i].ai, aj);
                 njj = nequal(t2m[i].aj, ai);
-                if (((nii >  nbstii) && (njj >= nbstjj)) ||
-                    ((nii >= nbstii) && (njj >  nbstjj)))
+                if (((nii >  nbstii) && (njj >= nbstjj))
+                    || ((nii >= nbstii) && (njj >  nbstjj)))
                 {
                     if ((nii > 0) && (njj > 0))
                     {
@@ -233,25 +233,25 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
         {
             if ((interaction_function[bb].flags & IF_BTYPE) && (bb != F_MORSE))
             {
-                nrharm  = mols[i].plist[bb].nr;
+                nrharm = mols[i].plist[bb].nr;
                 pr_alloc(nrharm, &(mols[i].plist[F_MORSE]));
                 snew(bRemoveHarm, nrharm);
 
                 /* Now loop over the harmonics, trying to convert them */
                 for (j = 0; (j < nrharm); j++)
                 {
-                    ni   = mols[i].plist[bb].param[j].ai();
-                    nj   = mols[i].plist[bb].param[j].aj();
-                    edis =
-                        search_e_diss(n2m, t2m,
-                                      get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
-                                      get_atomtype_name(mols[i].atoms.atom[nj].type, atype));
+                    ni = mols[i].plist[bb].param[j].ai();
+                    nj = mols[i].plist[bb].param[j].aj();
+                    edis
+                        = search_e_diss(n2m, t2m,
+                                        get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
+                                        get_atomtype_name(mols[i].atoms.atom[nj].type, atype));
                     if (edis != 0)
                     {
-                        bRemoveHarm[j] = TRUE;
-                        b0             = mols[i].plist[bb].param[j].c[0];
-                        kb             = mols[i].plist[bb].param[j].c[1];
-                        beta           = std::sqrt(kb/(2*edis));
+                        bRemoveHarm[j]                             = TRUE;
+                        b0                                         = mols[i].plist[bb].param[j].c[0];
+                        kb                                         = mols[i].plist[bb].param[j].c[1];
+                        beta                                       = std::sqrt(kb / (2 * edis));
                         mols[i].plist[F_MORSE].param[nrmorse].a[0] = ni;
                         mols[i].plist[F_MORSE].param[nrmorse].a[1] = nj;
                         mols[i].plist[F_MORSE].param[nrmorse].c[0] = b0;
@@ -270,20 +270,20 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                         /* Copy it to the last position */
                         for (k = 0; (k < MAXATOMLIST); k++)
                         {
-                            mols[i].plist[bb].param[last].a[k] =
-                                mols[i].plist[bb].param[j].a[k];
+                            mols[i].plist[bb].param[last].a[k]
+                                = mols[i].plist[bb].param[j].a[k];
                         }
                         for (k = 0; (k < MAXFORCEPARAM); k++)
                         {
-                            mols[i].plist[bb].param[last].c[k] =
-                                mols[i].plist[bb].param[j].c[k];
+                            mols[i].plist[bb].param[last].c[k]
+                                = mols[i].plist[bb].param[j].c[k];
                         }
                         last++;
                     }
                 }
                 sfree(bRemoveHarm);
                 fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
-                        nrharm-last, nrharm, interaction_function[bb].name, i);
+                        nrharm - last, nrharm, interaction_function[bb].name, i);
                 mols[i].plist[bb].nr = last;
             }
         }

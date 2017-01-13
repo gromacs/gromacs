@@ -94,10 +94,10 @@ class IndexBlockTest : public ::testing::Test
 
         void checkBlocka();
 
-        gmx::test::TestReferenceData    data_;
-        gmx::test::TopologyManager      topManager_;
-        gmx_ana_index_t                 g_;
-        t_blocka                        blocka_;
+        gmx::test::TestReferenceData data_;
+        gmx::test::TopologyManager   topManager_;
+        gmx_ana_index_t              g_;
+        t_blocka                     blocka_;
 };
 
 IndexBlockTest::IndexBlockTest()
@@ -133,7 +133,7 @@ void IndexBlockTest::checkBlocka()
         gmx::test::TestReferenceChecker blockCompound(
                 compound.checkCompound("Block", nullptr));
         blockCompound.checkSequence(&blocka_.a[blocka_.index[i]],
-                                    &blocka_.a[blocka_.index[i+1]],
+                                    &blocka_.a[blocka_.index[i + 1]],
                                     "Atoms");
     }
 }
@@ -395,7 +395,7 @@ class IndexMapTest : public ::testing::Test
         gmx_ana_indexmap_t              map_;
 
     private:
-        gmx_ana_index_t                 initGroup_;
+        gmx_ana_index_t initGroup_;
 };
 
 IndexMapTest::IndexMapTest()
@@ -466,7 +466,7 @@ void IndexMapTest::checkMapping(int atomCount, const int atoms[],
         gmx::test::TestReferenceChecker blockCompound(
                 compound.checkCompound("Block", nullptr));
         blockCompound.checkSequence(&atoms[map_.mapb.index[i]],
-                                    &atoms[map_.mapb.index[i+1]],
+                                    &atoms[map_.mapb.index[i + 1]],
                                     "Atoms");
         blockCompound.checkInteger(map_.refid[i], "RefId");
         blockCompound.checkInteger(map_.mapid[i], "MapId");

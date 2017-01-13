@@ -64,7 +64,7 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
                      "an interaction of type %s in that entry is not found in the\n"
                      "input file. Perhaps your atom and/or residue naming needs to be\n"
                      "fixed.\n",
-                     resind+1, resname, atomname, bondtype);
+                     resind + 1, resname, atomname, bondtype);
         }
         else
         {
@@ -73,7 +73,7 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
                      "to an entry in the topology database, but the atom %s used in\n"
                      "that entry is not found in the input file. Perhaps your atom\n"
                      "and/or residue naming needs to be fixed.\n",
-                     resind+1, resname, atomname);
+                     resind + 1, resname, atomname);
         }
         if (bAllowMissing)
         {
@@ -93,7 +93,7 @@ int search_atom(const char *type, int start,
     int             i, resind = -1;
     gmx_bool        bPrevious, bNext;
     int             natoms = atoms->nr;
-    t_atom         *at     = atoms->atom;
+    t_atom *        at     = atoms->atom;
     char ** const * anm    = atoms->atomname;
 
     bPrevious = (strchr(type, '-') != nullptr);
@@ -123,7 +123,7 @@ int search_atom(const char *type, int start,
                 return (int) i;
             }
         }
-        if (!(bNext && at[start].resind == at[natoms-1].resind))
+        if (!(bNext && at[start].resind == at[natoms - 1].resind))
         {
             atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
         }
@@ -134,9 +134,9 @@ int search_atom(const char *type, int start,
         type++;
         if (start > 0)
         {
-            resind = at[start-1].resind;
+            resind = at[start - 1].resind;
         }
-        for (i = start-1; (i >= 0) /*&& (at[i].resind == resind)*/; i--)
+        for (i = start - 1; (i >= 0) /*&& (at[i].resind == resind)*/; i--)
         {
             if (gmx_strcasecmp(type, *(anm[i])) == 0)
             {
@@ -151,10 +151,9 @@ int search_atom(const char *type, int start,
     return -1;
 }
 
-int
-search_res_atom(const char *type, int resind,
-                t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing)
+int search_res_atom(const char *type, int resind,
+                    t_atoms *atoms,
+                    const char *bondtype, gmx_bool bAllowMissing)
 {
     int i;
 

@@ -60,7 +60,8 @@ typedef enum
 } time_unit_t;
 /* the time units. For the time being, ps means no conversion. */
 
-typedef enum {
+typedef enum
+{
     exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE
 } xvg_format_t;
 /* the xvg output formattings */

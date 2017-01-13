@@ -66,7 +66,7 @@ namespace gmx
 {
 
 SimulationSignaller::SimulationSignaller(SimulationSignals *signals,
-                                         const t_commrec   *cr,
+                                         const t_commrec *  cr,
                                          bool               doInterSim,
                                          bool               doIntraSim)
     : signals_(signals), cr_(cr),
@@ -91,8 +91,7 @@ SimulationSignaller::getCommunicationBuffer()
     }
 }
 
-void
-SimulationSignaller::signalInterSim()
+void SimulationSignaller::signalInterSim()
 {
     if (!doInterSim_)
     {
@@ -109,7 +108,7 @@ SimulationSignaller::signalInterSim()
         gmx_sum_sim(eglsNR, mpiBuffer_.data(), cr_->ms);
     }
     // Communicate the signals from the master to the others.
-    gmx_bcast(eglsNR*sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);
+    gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);
 }
 
 void SimulationSignaller::setSignals()

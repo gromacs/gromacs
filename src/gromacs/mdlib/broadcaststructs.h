@@ -87,7 +87,7 @@ static void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
     {
         v->resize(numElements);
     }
-    gmx_bcast(numElements*sizeof(T), v->data(), cr);
+    gmx_bcast(numElements * sizeof(T), v->data(), cr);
 }
 
 #endif

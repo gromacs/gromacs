@@ -113,8 +113,8 @@ class BinaryInformationSettings
  * \param     fp             Where to print the information to.
  * \param[in] programContext Program information object to use.
  */
-void printBinaryInformation(FILE                          *fp,
-                            const IProgramContext         &programContext);
+void printBinaryInformation(FILE *                 fp,
+                            const IProgramContext &programContext);
 /*! \brief
  * Print basic information about the executable with custom settings.
  *
@@ -124,8 +124,8 @@ void printBinaryInformation(FILE                          *fp,
  *
  * \see BinaryInformationSettings
  */
-void printBinaryInformation(FILE                            *fp,
-                            const IProgramContext           &programContext,
+void printBinaryInformation(FILE *                           fp,
+                            const IProgramContext &          programContext,
                             const BinaryInformationSettings &settings);
 
 }     // namespace gmx

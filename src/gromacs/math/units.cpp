@@ -45,27 +45,27 @@ double convert2gmx(double x, int unit)
     switch (unit)
     {
         case eg2cAngstrom:
-            return x*A2NM;
+            return x * A2NM;
         case eg2cNm:
             return x;
         case eg2cBohr:
-            return x*BOHR2NM;
+            return x * BOHR2NM;
         case eg2cKcal_Mole:
-            return x/CAL2JOULE;
+            return x / CAL2JOULE;
         case eg2cHartree:
-            return x*ONE_4PI_EPS0/BOHR2NM;
+            return x * ONE_4PI_EPS0 / BOHR2NM;
         case eg2cHartree_e:
-            return x*ONE_4PI_EPS0/BOHR2NM;
+            return x * ONE_4PI_EPS0 / BOHR2NM;
         case eg2cAngstrom3:
-            return x*A2NM*A2NM*A2NM;
+            return x * A2NM * A2NM * A2NM;
         case eg2cCoulomb:
-            return x/E_CHARGE;
+            return x / E_CHARGE;
         case eg2cDebye:
-            return x*DEBYE2ENM;
+            return x * DEBYE2ENM;
         case eg2cElectron:
             return x;
         case eg2cBuckingham:
-            return x*A2NM*DEBYE2ENM;
+            return x * A2NM * DEBYE2ENM;
         default:
             fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
     }
@@ -77,27 +77,27 @@ double gmx2convert(double x, int unit)
     switch (unit)
     {
         case eg2cAngstrom:
-            return x/A2NM;
+            return x / A2NM;
         case eg2cNm:
             return x;
         case eg2cBohr:
-            return x/BOHR2NM;
+            return x / BOHR2NM;
         case eg2cKcal_Mole:
-            return x*CAL2JOULE;
+            return x * CAL2JOULE;
         case eg2cHartree:
-            return x/(ONE_4PI_EPS0/BOHR2NM);
+            return x / (ONE_4PI_EPS0 / BOHR2NM);
         case eg2cHartree_e:
-            return x/(ONE_4PI_EPS0/BOHR2NM);
+            return x / (ONE_4PI_EPS0 / BOHR2NM);
         case eg2cAngstrom3:
-            return x/(A2NM*A2NM*A2NM);
+            return x / (A2NM * A2NM * A2NM);
         case eg2cCoulomb:
-            return x*E_CHARGE;
+            return x * E_CHARGE;
         case eg2cDebye:
-            return x/DEBYE2ENM;
+            return x / DEBYE2ENM;
         case eg2cElectron:
             return x;
         case eg2cBuckingham:
-            return x/(A2NM*DEBYE2ENM);
+            return x / (A2NM * DEBYE2ENM);
         default:
             fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
     }

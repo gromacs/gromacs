@@ -69,16 +69,16 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
                              warninp_t wi)
 {
     int         ninp, g, m;
-    t_inpfile  *inp;
+    t_inpfile * inp;
     const char *tmp;
-    char      **grpbuf;
+    char **     grpbuf;
     char        buf[STRLEN];
     char        warn_buf[STRLEN];
     dvec        vec;
-    t_rotgrp   *rotg;
+    t_rotgrp *  rotg;
 
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    ninp = *ninp_p;
+    inp  = *inp_p;
 
     /* read rotation parameters */
     CTYPE("Output frequency for angle, torque and rotation potential energy for the whole group");
@@ -120,7 +120,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         /* Normalize the rotation vector */
         if (dnorm(vec) != 0)
         {
-            dsvmul(1.0/dnorm(vec), vec, vec);
+            dsvmul(1.0 / dnorm(vec), vec, vec);
         }
         else
         {
@@ -202,8 +202,8 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         RTYPE(buf, rotg->PotAngle_step, 0.25);
     }
 
-    *ninp_p   = ninp;
-    *inp_p    = inp;
+    *ninp_p = ninp;
+    *inp_p  = inp;
 
     return grpbuf;
 }
@@ -244,18 +244,18 @@ extern void set_reference_positions(
         const char *fn, gmx_bool bSet, warninp_t wi)
 {
     int              g, i, ii;
-    t_rotgrp        *rotg;
+    t_rotgrp *       rotg;
     gmx_trr_header_t header;    /* Header information of reference file */
     char             base[STRLEN], extension[STRLEN], reffile[STRLEN];
-    char            *extpos;
+    char *           extpos;
     rvec             f_box[3]; /* Box from reference file */
 
 
     /* Base name and extension of the reference file: */
     strncpy(base, fn, STRLEN - 1);
-    base[STRLEN-1] = '\0';
-    extpos         = strrchr(base, '.');
-    strcpy(extension, extpos+1);
+    base[STRLEN - 1] = '\0';
+    extpos           = strrchr(base, '.');
+    strcpy(extension, extpos + 1);
     *extpos = '\0';
 
 
@@ -315,7 +315,7 @@ extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps, c
     {
         rotg      = &rot->grp[g];
         ig        = search_string(rotgnames[g], grps->nr, gnames);
-        rotg->nat = grps->index[ig+1] - grps->index[ig];
+        rotg->nat = grps->index[ig + 1] - grps->index[ig];
 
         if (rotg->nat > 0)
         {
@@ -323,7 +323,7 @@ extern void make_rotation_groups(t_rot *rot, char **rotgnames, t_blocka *grps, c
             snew(rotg->ind, rotg->nat);
             for (i = 0; i < rotg->nat; i++)
             {
-                rotg->ind[i] = grps->a[grps->index[ig]+i];
+                rotg->ind[i] = grps->a[grps->index[ig] + i];
             }
         }
         else

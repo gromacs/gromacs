@@ -64,7 +64,7 @@ namespace gmx
  *
  * \see AnalysisDataFrameLocalData
  */
-template<typename ValueType>
+template <typename ValueType>
 class AnalysisDataFrameLocalDataSetHandle
 {
     public:
@@ -89,7 +89,7 @@ class AnalysisDataFrameLocalDataSetHandle
         }
 
     private:
-        ArrayRef<ValueType>  values_;
+        ArrayRef<ValueType> values_;
 };
 
 /*! \internal
@@ -100,7 +100,7 @@ class AnalysisDataFrameLocalDataSetHandle
  *
  * \see AnalysisDataFrameLocalData
  */
-template<typename ValueType>
+template <typename ValueType>
 class AnalysisDataFrameLocalDataHandle
 {
     public:
@@ -111,7 +111,7 @@ class AnalysisDataFrameLocalDataHandle
 
         //! Constructs a handle from specified frame data.
         AnalysisDataFrameLocalDataHandle(const std::vector<int> *dataSetIndices,
-                                         ValueArray             *values)
+                                         ValueArray *            values)
             : dataSetIndices_(dataSetIndices), values_(values)
         {
         }
@@ -145,14 +145,14 @@ class AnalysisDataFrameLocalDataHandle
                        "Invalid data set index");
             const int firstIndex = (*dataSetIndices_)[dataSet];
             GMX_ASSERT(column >= 0
-                       && column < (*dataSetIndices_)[dataSet+1] - firstIndex,
+                       && column < (*dataSetIndices_)[dataSet + 1] - firstIndex,
                        "Invalid column index");
             return (*values_)[firstIndex + column];
         }
 
     private:
         const std::vector<int> *dataSetIndices_;
-        ValueArray             *values_;
+        ValueArray *            values_;
 };
 
 /*! \internal \brief
@@ -186,7 +186,7 @@ class AnalysisDataFrameLocalDataHandle
  *
  * \see AnalysisDataFrameLocalData
  */
-template<typename ValueType>
+template <typename ValueType>
 class AnalysisDataFrameLocalData
 {
     public:
@@ -289,7 +289,7 @@ class AnalysisDataFrameLocalData
          * indices of the first column for that data set in the per-frame
          * arrays in `values_`.
          */
-        std::vector<int>         dataSetColumns_;
+        std::vector<int> dataSetColumns_;
         /*! \brief
          * Data array for each frame.
          *
@@ -298,7 +298,7 @@ class AnalysisDataFrameLocalData
          * values, where the individual data sets are indexed with
          * `dataSetColumns_`.
          */
-        std::vector<ValueArray>  values_;
+        std::vector<ValueArray> values_;
 };
 
 //! \}

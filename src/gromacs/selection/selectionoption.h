@@ -160,8 +160,8 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
-        const char             *defaultText_;
-        SelectionFlags          selectionFlags_;
+        const char *   defaultText_;
+        SelectionFlags selectionFlags_;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without

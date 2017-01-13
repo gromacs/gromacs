@@ -104,7 +104,7 @@ const int c_TabulatedNormalDistributionDefaultBits = 14;
  *        return arbitrarily small/large values, but with e.g. 14 bits
  *        the results are limited to roughly +/- 4 standard deviations.
  */
-template<class RealType = real, unsigned int tableBits = c_TabulatedNormalDistributionDefaultBits>
+template <class RealType = real, unsigned int tableBits = c_TabulatedNormalDistributionDefaultBits>
 class TabulatedNormalDistribution
 {
     static_assert(tableBits <= 24, "Normal distribution table is limited to 24bits (64MB in single precision)");
@@ -130,19 +130,16 @@ class TabulatedNormalDistribution
                     : mean_(mean), stddev_(stddev) {}
 
                 /*! \brief Return mean parameter of normal distribution */
-                result_type
-                mean() const { return mean_; }
+                result_type mean() const { return mean_; }
 
                 /*! \brief Return standard deviation parameter of normal distribution */
-                result_type
-                stddev() const { return stddev_; }
+                result_type stddev() const { return stddev_; }
 
                 /*! \brief True if two sets of normal distributions parameters are identical
                  *
                  * \param x Instance to compare with.
                  */
-                bool
-                operator==(const param_type &x) const
+                bool operator==(const param_type &x) const
                 {
                     return (mean_ == x.mean_ && stddev_ == x.stddev_);
                 }
@@ -151,8 +148,7 @@ class TabulatedNormalDistribution
                  *
                  * \param x Instance to compare with.
                  */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
+                bool operator!=(const param_type &x) const { return !operator==(x); }
 
             private:
                 /*! \brief Internal storage for mean of normal distribution */
@@ -179,20 +175,20 @@ class TabulatedNormalDistribution
              * We avoid integrating a gaussian numerically, since that leads to
              * some loss-of-precision which also accumulates so it is worse for
              * larger indices in the table. */
-            std::size_t            tableSize        = 1 << tableBits;
-            std::size_t            halfSize         = tableSize/2;
-            double                 invHalfSize      = 1.0/halfSize;
+            std::size_t tableSize   = 1 << tableBits;
+            std::size_t halfSize    = tableSize / 2;
+            double      invHalfSize = 1.0 / halfSize;
 
-            std::vector<RealType>  table(tableSize);
+            std::vector<RealType> table(tableSize);
 
             // Fill in all but the extremal entries of the table
-            for (std::size_t i = 0; i < halfSize-1; i++)
+            for (std::size_t i = 0; i < halfSize - 1; i++)
             {
                 double r = (i + 0.5) * invHalfSize;
                 double x = std::sqrt(2.0) * erfinv(r);
 
-                table.at(halfSize-1-i) = -x;
-                table.at(halfSize+i)   =  x;
+                table.at(halfSize - 1 - i) = -x;
+                table.at(halfSize + i)     =  x;
             }
             // We want to fill in the extremal table entries with
             // values that make the total variance equal to 1, so
@@ -205,9 +201,9 @@ class TabulatedNormalDistribution
                 double value = table.at(i);
                 sumOfSquares += value * value;
             }
-            double missingVariance = 1.0 - 2.0*sumOfSquares/tableSize;
+            double missingVariance = 1.0 - 2.0 * sumOfSquares / tableSize;
             GMX_RELEASE_ASSERT(missingVariance > 0, "Incorrect computation of tabulated normal distribution");
-            double extremalValue   = std::sqrt(0.5*missingVariance*tableSize);
+            double extremalValue = std::sqrt(0.5 * missingVariance * tableSize);
             table.at(0)  = -extremalValue;
             table.back() = extremalValue;
 
@@ -241,8 +237,7 @@ class TabulatedNormalDistribution
          *       depends on the table resolution. With 14 bits, this is roughly
          *       four standard deviations below the mean.
          */
-        result_type
-        min() const
+        result_type min() const
         {
             return c_table_[0];
         }
@@ -253,37 +248,32 @@ class TabulatedNormalDistribution
          *       depends on the table resolution. With 14 bits, this is roughly
          *       four standard deviations above the mean.
          */
-        result_type
-        max() const
+        result_type max() const
         {
-            return c_table_[c_table_.size()-1];
+            return c_table_[c_table_.size() - 1];
         }
 
         /*! \brief Mean of the present normal distribution */
-        result_type
-        mean() const
+        result_type mean() const
         {
             return param_.mean();
         }
 
         /*! \brief Standard deviation of the present normal distribution */
 
-        result_type
-        stddev() const
+        result_type stddev() const
         {
             return param_.stddev();
         }
 
         /*! \brief The parameter class (mean & stddev) of the normal distribution */
-        param_type
-        param() const
+        param_type param() const
         {
             return param_;
         }
 
         /*! \brief Clear all internal saved random bits from the random engine */
-        void
-        reset()
+        void reset()
         {
             savedRandomBitsLeft_ = 0;
         }
@@ -294,9 +284,8 @@ class TabulatedNormalDistribution
          * \param  g     Random engine of class Rng. For normal GROMACS usage
          *               you likely want to use ThreeFry2x64.
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g)
+        template <class Rng>
+        result_type operator()(Rng &g)
         {
             return (*this)(g, param_);
         }
@@ -308,9 +297,8 @@ class TabulatedNormalDistribution
          *               you likely want to use ThreeFry2x64.
          * \param  param Parameters used to specify normal distribution.
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        template <class Rng>
+        result_type operator()(Rng &g, const param_type &param)
         {
             if (savedRandomBitsLeft_ < tableBits)
             {
@@ -328,9 +316,9 @@ class TabulatedNormalDistribution
                 savedRandomBits_     = static_cast<gmx_uint64_t>(g());
                 savedRandomBitsLeft_ = std::numeric_limits<typename Rng::result_type>::digits;
             }
-            result_type value        = c_table_[savedRandomBits_ & ( (1ULL << tableBits) - 1 ) ];
-            savedRandomBits_       >>= tableBits;
-            savedRandomBitsLeft_    -= tableBits;
+            result_type value = c_table_[savedRandomBits_ & ( (1ULL << tableBits) - 1 ) ];
+            savedRandomBits_    >>= tableBits;
+            savedRandomBitsLeft_ -= tableBits;
             return param.mean() + value * param.stddev();
         }
 
@@ -338,33 +326,31 @@ class TabulatedNormalDistribution
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator==(const TabulatedNormalDistribution<RealType, tableBits> &x) const
+        bool operator==(const TabulatedNormalDistribution<RealType, tableBits> &x) const
         {
-            return (param_ == x.param_ &&
-                    savedRandomBits_ == x.savedRandomBits_ &&
-                    savedRandomBitsLeft_ == x.savedRandomBitsLeft_);
+            return (param_ == x.param_
+                    && savedRandomBits_ == x.savedRandomBits_
+                    && savedRandomBitsLeft_ == x.savedRandomBitsLeft_);
         }
 
         /*!\brief Check if two tabulated normal distributions have different states.
          *
          * \param  x     Instance to compare with.
          */
-        bool
-        operator!=(const TabulatedNormalDistribution<RealType, tableBits> &x) const
+        bool operator!=(const TabulatedNormalDistribution<RealType, tableBits> &x) const
         {
             return !operator==(x);
         }
 
     private:
         /*! \brief Parameters of normal distribution (mean and stddev) */
-        param_type                                                   param_;
+        param_type param_;
         /*! \brief Array with tabluated values of normal distribution */
-        static const std::vector<RealType>                           c_table_;
+        static const std::vector<RealType> c_table_;
         /*! \brief Saved output from random engine, shifted tableBits right each time */
-        gmx_uint64_t                                                 savedRandomBits_;
+        gmx_uint64_t savedRandomBits_;
         /*! \brief Number of valid bits remaining i savedRandomBits_ */
-        unsigned int                                                 savedRandomBitsLeft_;
+        unsigned int savedRandomBitsLeft_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TabulatedNormalDistribution);
 };
@@ -375,7 +361,7 @@ class TabulatedNormalDistribution
 // scripts), so to avoid confusion we hide it from doxygen too.
 #if !defined(_MSC_VER) && !defined(DOXYGEN)
 // Declaration of template specialization
-template<>
+template <>
 const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 
 extern template
@@ -383,7 +369,7 @@ const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistr
 #endif
 
 // Instantiation for all tables without specialization
-template<class RealType, unsigned int tableBits>
+template <class RealType, unsigned int tableBits>
 const std::vector<RealType> TabulatedNormalDistribution<RealType, tableBits>::c_table_ = TabulatedNormalDistribution<RealType, tableBits>::makeTable();
 
 }      // namespace gmx

@@ -40,7 +40,8 @@
 
 #include "xutil.h"
 
-enum {
+enum
+{
     IDROTX, IDROTY, IDROTZ, IDTRANSX, IDTRANSY, IDTRANSZ, IDZOOM, IDBUTNR,
     IDREWIND, IDSTEP, IDFF, IDSTOP_ANI, IDNR,
     IDDRAWMOL, IDLABEL
@@ -51,15 +52,17 @@ enum {
 
 #define EnterLeave (EnterWindowMask | LeaveWindowMask)
 
-typedef struct {
+typedef struct
+{
     t_windata wd;
     int       ID;
 } t_mwbut;
 
-typedef struct {
-    t_windata  wd;
-    int        nbut;
-    t_mwbut   *b;
+typedef struct
+{
+    t_windata wd;
+    int       nbut;
+    t_mwbut * b;
 } t_butbox;
 
 extern t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo,

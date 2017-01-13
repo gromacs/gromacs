@@ -108,7 +108,7 @@ const char *TimeUnitManager::timeUnitAsString() const
 double TimeUnitManager::timeScaleFactor() const
 {
     GMX_RELEASE_ASSERT(timeUnit_ >= 0
-                       && (size_t)timeUnit_ < sizeof(g_timeScaleFactors)/sizeof(g_timeScaleFactors[0]),
+                       && (size_t)timeUnit_ < sizeof(g_timeScaleFactors) / sizeof(g_timeScaleFactors[0]),
                        "Time unit index has become out-of-range");
     return g_timeScaleFactors[timeUnit_];
 }
@@ -150,8 +150,8 @@ void TimeUnitBehavior::setTimeUnitFromEnvironment()
     if (value != nullptr)
     {
         ConstArrayRef<const char *>                 timeUnits(g_timeUnits);
-        ConstArrayRef<const char *>::const_iterator i =
-            std::find(timeUnits.begin(), timeUnits.end(), std::string(value));
+        ConstArrayRef<const char *>::const_iterator i
+            = std::find(timeUnits.begin(), timeUnits.end(), std::string(value));
         if (i == timeUnits.end())
         {
             std::string message = formatString(
@@ -206,7 +206,7 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
         }
 
     private:
-        double                  factor_;
+        double factor_;
 };
 
 }   // namespace

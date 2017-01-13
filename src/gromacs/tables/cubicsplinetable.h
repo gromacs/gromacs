@@ -144,8 +144,7 @@ class CubicSplineTable
          *          once-in-a-blue-moon with some algorithms.
          */
         template <typename T>
-        void
-        rangeCheck(T gmx_unused r) const
+        void rangeCheck(T gmx_unused r) const
         {
 #ifndef NDEBUG
             // Check that all values fall in range when debugging
@@ -211,7 +210,7 @@ class CubicSplineTable
          * \throws gmx::ToleranceError if the requested tolerance cannot be achieved,
          *         and gmx::APIError for other incorrect input.
          */
-        CubicSplineTable(std::initializer_list<AnalyticalSplineTableInput>  analyticalInputList,
+        CubicSplineTable(std::initializer_list<AnalyticalSplineTableInput> analyticalInputList,
                          const std::pair<real, real>                       &range,
                          real                                               tolerance = defaultTolerance);
 
@@ -255,7 +254,7 @@ class CubicSplineTable
          *       since you would both waste a huge amount of memory and incur
          *       truncation errors when calculating the index.
          */
-        CubicSplineTable(std::initializer_list<NumericalSplineTableInput>  numericalInputList,
+        CubicSplineTable(std::initializer_list<NumericalSplineTableInput> numericalInputList,
                          const std::pair<real, real>                      &range,
                          real                                              tolerance = defaultTolerance);
 
@@ -279,25 +278,24 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 1, int funcIndex = 0, typename T>
-        void
-        evaluateFunctionAndDerivative(T     r,
-                                      T *   functionValue,
-                                      T *   derivativeValue) const
+        void evaluateFunctionAndDerivative(T   r,
+                                           T * functionValue,
+                                           T * derivativeValue) const
         {
             rangeCheck(r);
             GMX_ASSERT(numFuncInTable == numFuncInTable_, "Evaluation method not matching number of functions in table");
             GMX_ASSERT(funcIndex < numFuncInTable, "Function index not in range of the number of tables");
 
-            T     rTable   = r * T(tableScale_);
-            auto  tabIndex = cvttR2I(rTable); // type is either std::int32_t or SimdInt32
-            T     eps      = rTable - trunc(rTable);
-            T     Y, F, G, H;
+            T    rTable   = r * T(tableScale_);
+            auto tabIndex = cvttR2I(rTable);  // type is either std::int32_t or SimdInt32
+            T    eps      = rTable - trunc(rTable);
+            T    Y, F, G, H;
 
             // Load Derivative, Delta, Function, and Zero values for each table point.
             // The 4 refers to these four values - not any SIMD width.
-            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4*funcIndex, tabIndex, &Y, &F, &G, &H);
+            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex, tabIndex, &Y, &F, &G, &H);
             *functionValue   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
-            *derivativeValue = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
         }
 
         /*! \brief Evaluate function value only, single table function
@@ -314,11 +312,10 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 1, int funcIndex = 0, typename T>
-        void
-        evaluateFunction(T     r,
-                         T *   functionValue) const
+        void evaluateFunction(T   r,
+                              T * functionValue) const
         {
-            T     der gmx_unused;
+            T der gmx_unused;
 
             evaluateFunctionAndDerivative<numFuncInTable, funcIndex>(r, functionValue, &der);
         }
@@ -337,23 +334,22 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 1, int funcIndex = 0, typename T>
-        void
-        evaluateDerivative(T     r,
-                           T *   derivativeValue) const
+        void evaluateDerivative(T   r,
+                                T * derivativeValue) const
         {
             rangeCheck(r);
             GMX_ASSERT(numFuncInTable == numFuncInTable_, "Evaluation method not matching number of functions in table");
             GMX_ASSERT(funcIndex < numFuncInTable, "Function index not in range of the number of tables");
 
-            T     rTable   = r * T(tableScale_);
-            auto  tabIndex = cvttR2I(rTable); // type is either std::int32_t or SimdInt32
-            T     eps      = rTable - trunc(rTable);
-            T     Y, F, G, H;
+            T    rTable   = r * T(tableScale_);
+            auto tabIndex = cvttR2I(rTable);  // type is either std::int32_t or SimdInt32
+            T    eps      = rTable - trunc(rTable);
+            T    Y, F, G, H;
 
             // Load Derivative, Delta, Function, and Zero values for each table point.
             // The 4 refers to these four values - not any SIMD width.
             gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex, tabIndex, &Y, &F, &G, &H);
-            *derivativeValue = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
         }
 
         /************************************************************
@@ -378,31 +374,30 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 2, int funcIndex0 = 0, int funcIndex1 = 1, typename T>
-        void
-        evaluateFunctionAndDerivative(T     r,
-                                      T *   functionValue0,
-                                      T *   derivativeValue0,
-                                      T *   functionValue1,
-                                      T *   derivativeValue1) const
+        void evaluateFunctionAndDerivative(T   r,
+                                           T * functionValue0,
+                                           T * derivativeValue0,
+                                           T * functionValue1,
+                                           T * derivativeValue1) const
         {
             rangeCheck(r);
             GMX_ASSERT(numFuncInTable == numFuncInTable_, "Evaluation method not matching number of functions in table");
             GMX_ASSERT(funcIndex0 < numFuncInTable && funcIndex1 < numFuncInTable, "Function index not in range of the number of tables");
 
-            T     rTable   = r * T(tableScale_);
-            auto  tabIndex = cvttR2I(rTable); // type is either std::int32_t or SimdInt32
-            T     eps      = rTable - trunc(rTable);
-            T     Y, F, G, H;
+            T    rTable   = r * T(tableScale_);
+            auto tabIndex = cvttR2I(rTable);  // type is either std::int32_t or SimdInt32
+            T    eps      = rTable - trunc(rTable);
+            T    Y, F, G, H;
 
             // Load Derivative, Delta, Function, and Zero values for each table point.
             // The 4 refers to these four values - not any SIMD width.
-            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4*funcIndex0, tabIndex, &Y, &F, &G, &H);
+            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex0, tabIndex, &Y, &F, &G, &H);
             *functionValue0   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
-            *derivativeValue0 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue0 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
 
-            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4*funcIndex1, tabIndex, &Y, &F, &G, &H);
+            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex1, tabIndex, &Y, &F, &G, &H);
             *functionValue1   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
-            *derivativeValue1 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue1 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
         }
 
         /*! \brief Evaluate function value only, two table functions
@@ -421,13 +416,12 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 2, int funcIndex0 = 0, int funcIndex1 = 1, typename T>
-        void
-        evaluateFunction(T     r,
-                         T *   functionValue0,
-                         T *   functionValue1) const
+        void evaluateFunction(T   r,
+                              T * functionValue0,
+                              T * functionValue1) const
         {
-            T     der0 gmx_unused;
-            T     der1 gmx_unused;
+            T der0 gmx_unused;
+            T der1 gmx_unused;
 
             evaluateFunctionAndDerivative<numFuncInTable, funcIndex0, funcIndex1>(r, functionValue0, &der0, functionValue1, &der1);
         }
@@ -448,27 +442,26 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 2, int funcIndex0 = 0, int funcIndex1 = 1, typename T>
-        void
-        evaluateDerivative(T     r,
-                           T *   derivativeValue0,
-                           T *   derivativeValue1) const
+        void evaluateDerivative(T   r,
+                                T * derivativeValue0,
+                                T * derivativeValue1) const
         {
             rangeCheck(r);
             GMX_ASSERT(numFuncInTable == numFuncInTable_, "Evaluation method not matching number of functions in table");
             GMX_ASSERT(funcIndex0 < numFuncInTable && funcIndex1 < numFuncInTable, "Function index not in range of the number of tables");
 
-            T     rTable   = r * T(tableScale_);
-            auto  tabIndex = cvttR2I(rTable); // type is either std::int32_t or SimdInt32
-            T     eps      = rTable - trunc(rTable);
-            T     Y, F, G, H;
+            T    rTable   = r * T(tableScale_);
+            auto tabIndex = cvttR2I(rTable);  // type is either std::int32_t or SimdInt32
+            T    eps      = rTable - trunc(rTable);
+            T    Y, F, G, H;
 
             // Load Derivative, Delta, Function, and Zero values for each table point.
             // The 4 refers to these four values - not any SIMD width.
             gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex0, tabIndex, &Y, &F, &G, &H);
-            *derivativeValue0 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue0 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
 
             gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex1, tabIndex, &Y, &F, &G, &H);
-            *derivativeValue1 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue1 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
         }
 
         /************************************************************
@@ -497,37 +490,36 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 3, int funcIndex0 = 0, int funcIndex1 = 1, int funcIndex2 = 2, typename T>
-        void
-        evaluateFunctionAndDerivative(T     r,
-                                      T *   functionValue0,
-                                      T *   derivativeValue0,
-                                      T *   functionValue1,
-                                      T *   derivativeValue1,
-                                      T *   functionValue2,
-                                      T *   derivativeValue2) const
+        void evaluateFunctionAndDerivative(T   r,
+                                           T * functionValue0,
+                                           T * derivativeValue0,
+                                           T * functionValue1,
+                                           T * derivativeValue1,
+                                           T * functionValue2,
+                                           T * derivativeValue2) const
         {
             rangeCheck(r);
             GMX_ASSERT(numFuncInTable == numFuncInTable_, "Evaluation method not matching number of functions in table");
             GMX_ASSERT(funcIndex0 < numFuncInTable && funcIndex1 < numFuncInTable && funcIndex2 < numFuncInTable, "Function index not in range of the number of tables");
 
-            T     rTable   = r * T(tableScale_);
-            auto  tabIndex = cvttR2I(rTable); // type is either std::int32_t or SimdInt32
-            T     eps      = rTable - trunc(rTable);
-            T     Y, F, G, H;
+            T    rTable   = r * T(tableScale_);
+            auto tabIndex = cvttR2I(rTable);  // type is either std::int32_t or SimdInt32
+            T    eps      = rTable - trunc(rTable);
+            T    Y, F, G, H;
 
             // Load Derivative, Delta, Function, and Zero values for each table point.
             // The 4 refers to these four values - not any SIMD width.
-            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4*funcIndex0, tabIndex, &Y, &F, &G, &H);
+            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex0, tabIndex, &Y, &F, &G, &H);
             *functionValue0   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
-            *derivativeValue0 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue0 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
 
-            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4*funcIndex1, tabIndex, &Y, &F, &G, &H);
+            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex1, tabIndex, &Y, &F, &G, &H);
             *functionValue1   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
-            *derivativeValue1 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue1 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
 
-            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4*funcIndex2, tabIndex, &Y, &F, &G, &H);
+            gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex2, tabIndex, &Y, &F, &G, &H);
             *functionValue2   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
-            *derivativeValue2 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue2 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
         }
 
         /*! \brief Evaluate function value only, three table functions
@@ -548,15 +540,14 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 3, int funcIndex0 = 0, int funcIndex1 = 1, int funcIndex2 = 2, typename T>
-        void
-        evaluateFunction(T     r,
-                         T *   functionValue0,
-                         T *   functionValue1,
-                         T *   functionValue2) const
+        void evaluateFunction(T   r,
+                              T * functionValue0,
+                              T * functionValue1,
+                              T * functionValue2) const
         {
-            T     der0 gmx_unused;
-            T     der1 gmx_unused;
-            T     der2 gmx_unused;
+            T der0 gmx_unused;
+            T der1 gmx_unused;
+            T der2 gmx_unused;
 
             evaluateFunctionAndDerivative<numFuncInTable, funcIndex0, funcIndex1, funcIndex2>(r, functionValue0, &der0, functionValue1, &der1, functionValue2, &der2);
         }
@@ -579,31 +570,30 @@ class CubicSplineTable
          *  specified when constructing the table.
          */
         template <int numFuncInTable = 3, int funcIndex0 = 0, int funcIndex1 = 1, int funcIndex2 = 2, typename T>
-        void
-        evaluateDerivative(T     r,
-                           T *   derivativeValue0,
-                           T *   derivativeValue1,
-                           T *   derivativeValue2) const
+        void evaluateDerivative(T   r,
+                                T * derivativeValue0,
+                                T * derivativeValue1,
+                                T * derivativeValue2) const
         {
             rangeCheck(r);
             GMX_ASSERT(numFuncInTable == numFuncInTable_, "Evaluation method not matching number of functions in table");
             GMX_ASSERT(funcIndex0 < numFuncInTable && funcIndex1 < numFuncInTable && funcIndex2 < numFuncInTable, "Function index not in range of the number of tables");
 
-            T     rTable   = r * T(tableScale_);
-            auto  tabIndex = cvttR2I(rTable); // type is either std::int32_t or SimdInt32
-            T     eps      = rTable - trunc(rTable);
-            T     Y, F, G, H;
+            T    rTable   = r * T(tableScale_);
+            auto tabIndex = cvttR2I(rTable);  // type is either std::int32_t or SimdInt32
+            T    eps      = rTable - trunc(rTable);
+            T    Y, F, G, H;
 
             // Load Derivative, Delta, Function, and Zero values for each table point.
             // The 4 refers to these four values - not any SIMD width.
             gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex0, tabIndex, &Y, &F, &G, &H);
-            *derivativeValue0 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue0 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
 
             gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex1, tabIndex, &Y, &F, &G, &H);
-            *derivativeValue1 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue1 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
 
             gatherLoadBySimdIntTranspose<4*numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex2, tabIndex, &Y, &F, &G, &H);
-            *derivativeValue2 = tableScale_ * fma(fma(T(3.0)*H, eps, T(2.0)*G), eps, F);
+            *derivativeValue2 = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
         }
 
         /*! \brief Return the table spacing (distance between points)
@@ -614,14 +604,13 @@ class CubicSplineTable
          *
          *  \return table spacing.
          */
-        real
-        tableSpacing() const { return 1.0 / tableScale_; }
+        real tableSpacing() const { return 1.0 / tableScale_; }
 
     private:
 
-        std::size_t             numFuncInTable_; //!< Number of separate tabluated functions
-        std::pair<real, real>   range_;          //!< Range for which table evaluation is allowed
-        real                    tableScale_;     //!< Table scale (inverse of spacing between points)
+        std::size_t           numFuncInTable_;   //!< Number of separate tabluated functions
+        std::pair<real, real> range_;            //!< Range for which table evaluation is allowed
+        real                  tableScale_;       //!< Table scale (inverse of spacing between points)
 
         /*! \brief Vector with combined table data to save calculations after lookup.
          *
@@ -633,7 +622,7 @@ class CubicSplineTable
          *  To allow aligned SIMD loads we need to use an aligned allocator for
          *  this container.
          */
-        std::vector<real, AlignedAllocator<real> >  yfghMultiTableData_;
+        std::vector<real, AlignedAllocator<real> > yfghMultiTableData_;
 
         // There should never be any reason to copy the table since it is read-only
         GMX_DISALLOW_COPY_AND_ASSIGN(CubicSplineTable);

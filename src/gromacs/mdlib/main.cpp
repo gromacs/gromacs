@@ -71,7 +71,7 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
                      const char *name,
                      gmx_bool bQuiet)
 {
-    int     *ibuf, p;
+    int *    ibuf, p;
     gmx_bool bCompatible;
 
     if (nullptr != log && !bQuiet)
@@ -92,7 +92,7 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     bCompatible = TRUE;
     for (p = 1; p < ms->nsim; p++)
     {
-        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+        bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
     }
 
     if (bCompatible)
@@ -123,9 +123,9 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
                        gmx_int64_t val, const char *name,
                        gmx_bool bQuiet)
 {
-    gmx_int64_t      *ibuf;
-    int               p;
-    gmx_bool          bCompatible;
+    gmx_int64_t *ibuf;
+    int          p;
+    gmx_bool     bCompatible;
 
     if (nullptr != log && !bQuiet)
     {
@@ -145,7 +145,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     bCompatible = TRUE;
     for (p = 1; p < ms->nsim; p++)
     {
-        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+        bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
     }
 
     if (bCompatible)
@@ -181,10 +181,10 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 void gmx_log_open(const char *lognm, const t_commrec *cr,
                   gmx_bool bAppendFiles, FILE** fplog)
 {
-    int    pid;
-    char   host[256];
-    char   timebuf[STRLEN];
-    FILE  *fp = *fplog;
+    int   pid;
+    char  host[256];
+    char  timebuf[STRLEN];
+    FILE *fp = *fplog;
 
     if (!bAppendFiles)
     {
@@ -244,8 +244,8 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     gmx_multisim_t *ms;
     int             nnodes, nnodpersim, sim, i;
 #if GMX_MPI
-    MPI_Group       mpi_group_world;
-    int            *rank;
+    MPI_Group mpi_group_world;
+    int *     rank;
 #endif
 
 #if !GMX_MPI
@@ -255,14 +255,14 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     }
 #endif
 
-    nnodes  = cr->nnodes;
+    nnodes = cr->nnodes;
     if (nnodes % nsim != 0)
     {
         gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%d)", nnodes, nsim);
     }
 
-    nnodpersim = nnodes/nsim;
-    sim        = cr->nodeid/nnodpersim;
+    nnodpersim = nnodes / nsim;
+    sim        = cr->nodeid / nnodpersim;
 
     if (debug)
     {
@@ -278,7 +278,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     snew(rank, ms->nsim);
     for (i = 0; i < ms->nsim; i++)
     {
-        rank[i] = i*nnodpersim;
+        rank[i] = i * nnodpersim;
     }
     MPI_Comm_group(MPI_COMM_WORLD, &mpi_group_world);
     MPI_Group_incl(mpi_group_world, nsim, rank, &ms->mpi_group_masters);
@@ -339,9 +339,9 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
             {
                 /* Because of possible multiple extensions per type we must look
                  * at the actual file name for rerun. */
-                if (is_output(&fnm[i]) ||
-                    fnm[i].ftp == efTPR || fnm[i].ftp == efCPT ||
-                    strcmp(fnm[i].opt, "-rerun") == 0)
+                if (is_output(&fnm[i])
+                    || fnm[i].ftp == efTPR || fnm[i].ftp == efCPT
+                    || strcmp(fnm[i].opt, "-rerun") == 0)
                 {
                     std::string newFileName = gmx::Path::concatenateBeforeExtension(fnm[i].fns[0], rankString);
                     sfree(fnm[i].fns[0]);

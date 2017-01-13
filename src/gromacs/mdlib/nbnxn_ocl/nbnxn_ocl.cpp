@@ -196,14 +196,14 @@ static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
  *  OpenCL kernel objects are cached in nb. If the requested kernel is not
  *  found in the cache, it will be created and the cache will be updated.
  */
-static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
-                                            int                eeltype,
-                                            int                evdwtype,
-                                            bool               bDoEne,
-                                            bool               bDoPrune)
+static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t *nb,
+                                            int              eeltype,
+                                            int              evdwtype,
+                                            bool             bDoEne,
+                                            bool             bDoPrune)
 {
     const char* kernel_name_to_run;
-    cl_kernel  *kernel_ptr;
+    cl_kernel * kernel_ptr;
     cl_int      cl_error;
 
     assert(eeltype  < eelOclNR);
@@ -256,7 +256,7 @@ static inline int calc_shmem_required(int  vdwType,
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem  = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
+    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4;  /* xqib */
     /* cj in shared memory, for both warps separately */
     shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);           /* cjs  */
     if (bPrefetchLjParam)
@@ -264,7 +264,7 @@ static inline int calc_shmem_required(int  vdwType,
         if (useLjCombRule(vdwType))
         {
             /* i-atom LJ combination parameters in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * 2*sizeof(float); /* atib abused for ljcp, float2 */
+            shmem += c_numClPerSupercl * c_clSize * 2 * sizeof(float); /* atib abused for ljcp, float2 */
         }
         else
         {
@@ -285,7 +285,7 @@ static inline int calc_shmem_required(int  vdwType,
  *  - OpenCL restrictions (pointers are not accepted inside data structures)
  *  - some host side fields are not needed for the OpenCL kernels.
  */
-static void fillin_ocl_structures(cl_nbparam_t        *nbp,
+static void fillin_ocl_structures(cl_nbparam_t *       nbp,
                                   cl_nbparam_params_t *nbparams_params)
 {
     nbparams_params->coulomb_tab_scale = nbp->coulomb_tab_scale;
@@ -404,33 +404,33 @@ double ocl_event_elapsed_ms(cl_event *ocl_event)
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
+void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t *              nb,
                              const struct nbnxn_atomdata_t *nbatom,
                              int                            flags,
                              int                            iloc)
 {
-    cl_int               cl_error;
-    int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
+    cl_int cl_error;
+    int    adat_begin, adat_len;               /* local/nonlocal offset and length used for xq and f */
     /* OpenCL kernel launch-related stuff */
-    int                  shmem;
-    size_t               local_work_size[3], global_work_size[3];
-    cl_kernel            nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+    int       shmem;
+    size_t    local_work_size[3], global_work_size[3];
+    cl_kernel nb_kernel = NULL;            /* fn pointer to the nonbonded kernel */
 
-    cl_atomdata_t       *adat    = nb->atdat;
-    cl_nbparam_t        *nbp     = nb->nbparam;
-    cl_plist_t          *plist   = nb->plist[iloc];
-    cl_timers_t         *t       = nb->timers;
-    cl_command_queue     stream  = nb->stream[iloc];
+    cl_atomdata_t *  adat   = nb->atdat;
+    cl_nbparam_t *   nbp    = nb->nbparam;
+    cl_plist_t *     plist  = nb->plist[iloc];
+    cl_timers_t *    t      = nb->timers;
+    cl_command_queue stream = nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
-    int                  bCalcFshift = flags & GMX_FORCE_VIRIAL;
-    bool                 bDoTime     = nb->bDoTime;
-    cl_uint              arg_no;
+    bool    bCalcEner   = flags & GMX_FORCE_ENERGY;
+    int     bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool    bDoTime     = nb->bDoTime;
+    cl_uint arg_no;
 
-    cl_nbparam_params_t  nbparams_params;
+    cl_nbparam_params_t nbparams_params;
 #ifdef DEBUG_OCL
-    float              * debug_buffer_h;
-    size_t               debug_buffer_size;
+    float * debug_buffer_h;
+    size_t  debug_buffer_size;
 #endif
 
     /* turn energy calculation always on/off (for debugging/testing only) */
@@ -453,19 +453,19 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     /* calculate the atom data index range based on locality */
     if (LOCAL_I(iloc))
     {
-        adat_begin  = 0;
-        adat_len    = adat->natoms_local;
+        adat_begin = 0;
+        adat_len   = adat->natoms_local;
     }
     else
     {
-        adat_begin  = adat->natoms_local;
-        adat_len    = adat->natoms - adat->natoms_local;
+        adat_begin = adat->natoms_local;
+        adat_len   = adat->natoms - adat->natoms_local;
     }
 
     /* beginning of timed HtoD section */
 
     /* HtoD x, q */
-    ocl_copy_H2D_async(adat->xq, nbatom->x + adat_begin * 4, adat_begin*sizeof(float)*4,
+    ocl_copy_H2D_async(adat->xq, nbatom->x + adat_begin * 4, adat_begin * sizeof(float) * 4,
                        adat_len * sizeof(float) * 4, stream, bDoTime ? (&(t->nb_h2d[iloc])) : NULL);
 
     /* When we get here all misc operations issues in the local stream as well as
@@ -523,7 +523,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     validate_global_work_size(global_work_size, 3, nb->dev_info);
 
-    shmem     = calc_shmem_required(nbp->vdwtype, nb->bPrefetchLjParam);
+    shmem = calc_shmem_required(nbp->vdwtype, nb->bPrefetchLjParam);
 
 #ifdef DEBUG_OCL
     {
@@ -552,17 +552,17 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         fprintf(debug, "GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
-                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*c_numClPerSupercl,
+                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci * c_numClPerSupercl,
                 c_numClPerSupercl, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    arg_no    = 0;
-    cl_error  = CL_SUCCESS;
+    arg_no   = 0;
+    cl_error = CL_SUCCESS;
     if (!useLjCombRule(nb->nbparam->vdwtype))
     {
-        cl_error  = clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &(adat->ntypes));
+        cl_error = clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &(adat->ntypes));
     }
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(nbparams_params), &(nbparams_params));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->xq));
@@ -658,7 +658,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
+void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t *              nb,
                               const struct nbnxn_atomdata_t *nbatom,
                               int                            flags,
                               int                            aloc)
@@ -685,13 +685,13 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
         gmx_incons(stmp);
     }
 
-    cl_atomdata_t   *adat    = nb->atdat;
-    cl_timers_t     *t       = nb->timers;
+    cl_atomdata_t *  adat    = nb->atdat;
+    cl_timers_t *    t       = nb->timers;
     bool             bDoTime = nb->bDoTime;
     cl_command_queue stream  = nb->stream[iloc];
 
-    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
-    int              bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool bCalcEner   = flags & GMX_FORCE_ENERGY;
+    int  bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
 
     /* don't launch non-local copy-back if there was no non-local work to do */
@@ -712,13 +712,13 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
     {
-        adat_begin  = 0;
-        adat_len    = adat->natoms_local;
+        adat_begin = 0;
+        adat_len   = adat->natoms_local;
     }
     else
     {
-        adat_begin  = adat->natoms_local;
-        adat_len    = adat->natoms - adat->natoms_local;
+        adat_begin = adat->natoms_local;
+        adat_len   = adat->natoms - adat->natoms_local;
     }
 
     /* beginning of timed D2H section */
@@ -731,8 +731,8 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* DtoH f */
-    ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
-                       (adat_len)* adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
+    ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin * 3 * sizeof(float),
+                       (adat_len) * adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
 
     /* kick off work */
     cl_error = clFlush(stream);
@@ -784,8 +784,8 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
                             real *e_lj, real *e_el, rvec *fshift)
 {
     /* NOTE:  only implemented for single-precision at this time */
-    cl_int gmx_unused      cl_error;
-    int                    i, iloc = -1;
+    cl_int gmx_unused cl_error;
+    int               i, iloc = -1;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -804,13 +804,13 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         gmx_incons(stmp);
     }
 
-    cl_plist_t                 *plist    = nb->plist[iloc];
-    cl_timers_t                *timers   = nb->timers;
-    struct gmx_wallclock_gpu_t *timings  = nb->timings;
-    cl_nb_staging               nbst     = nb->nbst;
+    cl_plist_t *                plist   = nb->plist[iloc];
+    cl_timers_t *               timers  = nb->timers;
+    struct gmx_wallclock_gpu_t *timings = nb->timings;
+    cl_nb_staging               nbst    = nb->nbst;
 
-    bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
-    int                         bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool bCalcEner   = flags & GMX_FORCE_ENERGY;
+    int  bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
@@ -843,8 +843,8 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
 
         /* kernel timings */
 
-        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
-            ocl_event_elapsed_ms(timers->nb_k + iloc);
+        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t
+            += ocl_event_elapsed_ms(timers->nb_k + iloc);
 
         /* X/q H2D and F D2H timings */
         timings->nb_h2d_t += ocl_event_elapsed_ms(timers->nb_h2d        + iloc);
@@ -863,10 +863,10 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
                 timings->pl_h2d_t += ocl_event_elapsed_ms(&(timers->atdat));
             }
 
-            timings->pl_h2d_t +=
-                ocl_event_elapsed_ms(timers->pl_h2d_sci     + iloc) +
-                ocl_event_elapsed_ms(timers->pl_h2d_cj4     + iloc) +
-                ocl_event_elapsed_ms(timers->pl_h2d_excl    + iloc);
+            timings->pl_h2d_t
+                += ocl_event_elapsed_ms(timers->pl_h2d_sci     + iloc)
+                    + ocl_event_elapsed_ms(timers->pl_h2d_cj4     + iloc)
+                    + ocl_event_elapsed_ms(timers->pl_h2d_excl    + iloc);
 
         }
     }

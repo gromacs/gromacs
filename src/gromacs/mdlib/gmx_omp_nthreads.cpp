@@ -56,8 +56,8 @@
  *  algorithmic module in mdrun. */
 typedef struct
 {
-    int      gnth;          /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
-    int      gnth_pme;      /**< Global num. of threads per PME only process/tMPI thread. */
+    int gnth;               /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
+    int gnth_pme;           /**< Global num. of threads per PME only process/tMPI thread. */
 
     int      nth[emntNR];   /**< Number of threads for each module, indexed with module_nth_t */
     gmx_bool initialized;   /**< TRUE if the module as been initialized. */
@@ -111,8 +111,8 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
                                  gmx_bool bFullOmpSupport,
                                  gmx_bool bSepPME)
 {
-    char      *env;
-    int        nth;
+    char *env;
+    int   nth;
 
     const bool bOMP = GMX_OPENMP;
 
@@ -175,10 +175,10 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     gmx_omp_nthreads_set(m, nth);
 }
 
-void gmx_omp_nthreads_read_env(int     *nthreads_omp,
+void gmx_omp_nthreads_read_env(int *    nthreads_omp,
                                gmx_bool bIsSimMaster)
 {
-    char    *env;
+    char *   env;
     gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
     char     buffer[STRLEN];
 
@@ -228,7 +228,7 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
     of OpenMP threads to use in various modules and deciding what to
     do about it. */
 static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
-                                            const t_commrec     *cr,
+                                            const t_commrec *    cr,
                                             bool                 bOMP,
                                             int                  nthreads_hw_avail,
                                             int                  omp_nthreads_req,
@@ -238,8 +238,8 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
                                             int                  nppn,
                                             gmx_bool             bSepPME)
 {
-    int      nth;
-    char    *env;
+    int   nth;
+    char *env;
 
 #if GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety, the
@@ -382,19 +382,18 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
 }
 
 /*! \brief Report on the OpenMP settings that will be used */
-static void
-reportOpenmpSettings(const gmx::MDLogger &mdlog,
-                     const t_commrec     *cr,
-                     gmx_bool             bOMP,
-                     gmx_bool             bFullOmpSupport,
-                     gmx_bool             bSepPME)
+static void reportOpenmpSettings(const gmx::MDLogger &mdlog,
+                                 const t_commrec *    cr,
+                                 gmx_bool             bOMP,
+                                 gmx_bool             bFullOmpSupport,
+                                 gmx_bool             bSepPME)
 {
 #if GMX_THREAD_MPI
     const char *mpi_str = "per tMPI thread";
 #else
     const char *mpi_str = "per MPI process";
 #endif
-    int         nth_min, nth_max, nth_pme_min, nth_pme_max;
+    int nth_min, nth_max, nth_pme_min, nth_pme_max;
 
     /* inform the user about the settings */
     if (!bOMP)
@@ -471,12 +470,11 @@ reportOpenmpSettings(const gmx::MDLogger &mdlog,
  * to OpenMP, and only needs modth.gnth.
  *
  * \todo Enable this for separate PME nodes as well! */
-static void
-issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
-                             const t_commrec     *cr,
-                             int                  nthreads_hw_avail,
-                             int                  nppn,
-                             gmx_bool             bSepPME)
+static void issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
+                                         const t_commrec *    cr,
+                                         int                  nthreads_hw_avail,
+                                         int                  nppn,
+                                         gmx_bool             bSepPME)
 {
     char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
 
@@ -485,7 +483,7 @@ issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
         return;
     }
 
-    if (modth.gnth*nppn > nthreads_hw_avail)
+    if (modth.gnth * nppn > nthreads_hw_avail)
     {
         sprintf(sbuf, "threads");
         sbuf1[0] = '\0';
@@ -505,7 +503,7 @@ issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
                 "         This will cause considerable performance loss!",
-                sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
+                sbuf2, nthreads_hw_avail, sbuf1, nppn * modth.gnth, sbuf);
     }
 }
 
@@ -516,16 +514,16 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int        nppn;
-    gmx_bool   bSepPME;
+    int      nppn;
+    gmx_bool bSepPME;
 
     const bool bOMP = GMX_OPENMP;
 
     /* number of MPI processes/threads per physical node */
     nppn = cr->nrank_intranode;
 
-    bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
-        (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+    bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME))
+        || (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
 
     manage_number_of_openmp_threads(mdlog, cr, bOMP,
                                     nthreads_hw_avail,
@@ -559,8 +557,7 @@ int gmx_omp_nthreads_get(int mod)
     }
 }
 
-void
-gmx_omp_nthreads_set(int mod, int nthreads)
+void gmx_omp_nthreads_set(int mod, int nthreads)
 {
     /* Catch an attempt to set the number of threads on an invalid
      * OpenMP module. */

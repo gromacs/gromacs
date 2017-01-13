@@ -74,17 +74,17 @@ class ShellCompletionWriter
     public:
         typedef std::vector<std::string> ModuleNameList;
 
-        ShellCompletionWriter(const std::string     &binaryName,
-                              ShellCompletionFormat  format);
+        ShellCompletionWriter(const std::string &   binaryName,
+                              ShellCompletionFormat format);
         ~ShellCompletionWriter();
 
         TextWriter &outputWriter();
 
         void startCompletions();
-        void writeModuleCompletions(const char    *moduleName,
+        void writeModuleCompletions(const char *   moduleName,
                                     const Options &options);
         void writeWrapperCompletions(const ModuleNameList &modules,
-                                     const Options        &options);
+                                     const Options &       options);
         void finishCompletions();
 
     private:

@@ -71,8 +71,8 @@ class MDModules::Impl
             }
         }
 
-        std::unique_ptr<IInputRecExtension>  field_;
-        t_inputrec                          *ir_;
+        std::unique_ptr<IInputRecExtension> field_;
+        t_inputrec *                        ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)

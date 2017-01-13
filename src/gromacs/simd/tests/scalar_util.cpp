@@ -201,7 +201,7 @@ TEST(SimdScalarUtilTest, reduceIncr4ReturnSum)
     real v3      = 4;
     real sum;
 
-    sum = reduceIncr4ReturnSum(data+1, v0, v1, v2, v3);
+    sum = reduceIncr4ReturnSum(data + 1, v0, v1, v2, v3);
 
     EXPECT_EQ(real(0.0), data[0]);
     EXPECT_EQ(v0, data[1]);
@@ -210,7 +210,7 @@ TEST(SimdScalarUtilTest, reduceIncr4ReturnSum)
     EXPECT_EQ(v3, data[4]);
     EXPECT_EQ(real(0.0), data[5]);
 
-    EXPECT_EQ(real(v0+v1+v2+v3), sum);
+    EXPECT_EQ(real(v0 + v1 + v2 + v3), sum);
 }
 
 /*! \} */

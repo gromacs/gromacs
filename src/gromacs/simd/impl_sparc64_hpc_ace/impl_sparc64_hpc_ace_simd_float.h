@@ -147,8 +147,7 @@
 /****************************************************
  * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static inline SimdFloat
-simdLoadF_sparc64_hpc_ace(const float *m)
+static inline SimdFloat simdLoadF_sparc64_hpc_ace(const float *m)
 {
     /* We are not allowed to cast single-to-double registers, but we can
      * masquerade the memory location as a variable of type _fjsp_v2r4.
@@ -160,8 +159,7 @@ simdLoadF_sparc64_hpc_ace(const float *m)
     return _fjsp_stod_v2r8(simd);
 }
 
-static inline void
-simdStoreF_sparc64_hpc_ace(float *m, SimdFloat x)
+static inline void simdStoreF_sparc64_hpc_ace(float *m, SimdFloat x)
 {
     /* We are not allowed to cast single-to-double registers, but we can
      * masquerade the memory location as a variable of type _fjsp_v2r4.

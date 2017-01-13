@@ -43,7 +43,8 @@
 
 struct t_rgb;
 
-typedef struct {
+typedef struct
+{
     t_windata wd;
 } t_legendwin;
 

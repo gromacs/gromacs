@@ -81,20 +81,20 @@
 
 struct t_trxstatus
 {
-    int                     flags;            /* flags for read_first/next_frame  */
-    int                     __frame;
-    real                    t0;               /* time of the first frame, needed  *
+    int  flags;                               /* flags for read_first/next_frame  */
+    int  __frame;
+    real t0;                                  /* time of the first frame, needed  *
                                                * for skipping frames with -dt     */
-    real                    tf;               /* internal frame time              */
-    t_trxframe             *xframe;
-    t_fileio               *fio;
-    tng_trajectory_t        tng;
-    int                     natoms;
-    double                  DT, BOX[3];
-    gmx_bool                bReadBox;
-    char                   *persistent_line; /* Persistent line for reading g96 trajectories */
+    real             tf;                      /* internal frame time              */
+    t_trxframe *     xframe;
+    t_fileio *       fio;
+    tng_trajectory_t tng;
+    int              natoms;
+    double           DT, BOX[3];
+    gmx_bool         bReadBox;
+    char *           persistent_line;        /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
-    gmx_vmdplugin_t        *vmdplugin;
+    gmx_vmdplugin_t *vmdplugin;
 #endif
 };
 
@@ -105,11 +105,11 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
     int    iq;
     double tol;
 
-    tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
+    tol = 2 * (bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
 
-    iq = (int)((a - b + tol*a)/c);
+    iq = (int)((a - b + tol * a) / c);
 
-    if (fabs(a - b - c*iq) <= tol*fabs(a))
+    if (fabs(a - b - c * iq) <= tol * fabs(a))
     {
         return TRUE;
     }
@@ -123,7 +123,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 
 int check_times2(real t, real t0, gmx_bool bDouble)
 {
-    int  r;
+    int r;
 
 #if !GMX_DOUBLE
     /* since t is float, we can not use double precision for bRmod */
@@ -131,8 +131,8 @@ int check_times2(real t, real t0, gmx_bool bDouble)
 #endif
 
     r = -1;
-    if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))  &&
-        (!bTimeSet(TEND)   || (t <= rTimeValue(TEND))))
+    if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))
+        && (!bTimeSet(TEND)   || (t <= rTimeValue(TEND))))
     {
         if (bTimeSet(TDELTA) && !bRmod_fd(t, t0, rTimeValue(TDELTA), bDouble))
         {
@@ -186,9 +186,9 @@ int nframes_read(t_trxstatus *status)
 static void printcount_(t_trxstatus *status, const gmx_output_env_t *oenv,
                         const char *l, real t)
 {
-    if ((status->__frame < 2*SKIP1 || status->__frame % SKIP1 == 0) &&
-        (status->__frame < 2*SKIP2 || status->__frame % SKIP2 == 0) &&
-        (status->__frame < 2*SKIP3 || status->__frame % SKIP3 == 0))
+    if ((status->__frame < 2 * SKIP1 || status->__frame % SKIP1 == 0)
+        && (status->__frame < 2 * SKIP2 || status->__frame % SKIP2 == 0)
+        && (status->__frame < 2 * SKIP3 || status->__frame % SKIP3 == 0))
     {
         fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->__frame,
                 output_env_conv_time(oenv, t));
@@ -215,12 +215,12 @@ static void printincomp(t_trxstatus *status, t_trxframe *fr)
     if (fr->not_ok & HEADER_NOT_OK)
     {
         fprintf(stderr, "WARNING: Incomplete header: nr %d time %g\n",
-                status->__frame+1, fr->time);
+                status->__frame + 1, fr->time);
     }
     else if (fr->not_ok)
     {
         fprintf(stderr, "WARNING: Incomplete frame: nr %d time %g\n",
-                status->__frame+1, fr->time);
+                status->__frame + 1, fr->time);
     }
     fflush(stderr);
 }
@@ -232,7 +232,7 @@ int prec2ndec(real prec)
         gmx_fatal(FARGS, "DEATH HORROR prec (%g) <= 0 in prec2ndec", prec);
     }
 
-    return (int)(log(prec)/log(10.0)+0.5);
+    return (int)(log(prec) / log(10.0) + 0.5);
 }
 
 real ndec2prec(int ndec)
@@ -254,10 +254,10 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
 
     if (filetype == efXTC)
     {
-        lasttime =
-            xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                        gmx_fio_getxdr(stfio),
-                                        status->natoms, &bOK);
+        lasttime
+            = xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
+                                          gmx_fio_getxdr(stfio),
+                                          status->natoms, &bOK);
         if (!bOK)
         {
             gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
@@ -308,8 +308,8 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->v         = nullptr;
         fr->f         = nullptr;
         clear_mat(fr->box);
-        fr->bPBC   = FALSE;
-        fr->ePBC   = -1;
+        fr->bPBC = FALSE;
+        fr->ePBC = -1;
     }
 }
 
@@ -463,15 +463,15 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
     return 0;
 }
 
-void trjtools_gmx_prepare_tng_writing(const char       *filename,
+void trjtools_gmx_prepare_tng_writing(const char *      filename,
                                       char              filemode,
-                                      t_trxstatus      *in,
-                                      t_trxstatus     **out,
-                                      const char       *infile,
+                                      t_trxstatus *     in,
+                                      t_trxstatus **    out,
+                                      const char *      infile,
                                       const int         natoms,
                                       const gmx_mtop_t *mtop,
-                                      const int        *index,
-                                      const char       *index_group_name)
+                                      const int *       index,
+                                      const char *      index_group_name)
 {
     if (filemode != 'w' && filemode != 'a')
     {
@@ -512,7 +512,7 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
 }
 
 void write_tng_frame(t_trxstatus *status,
-                     t_trxframe  *frame)
+                     t_trxframe * frame)
 {
     gmx_write_tng_from_trxframe(status->tng, frame, -1);
 }
@@ -716,9 +716,9 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     // Initiate model_nr to -1 rather than NOTSET.
     // It is not worthwhile introducing extra variables in the
     // read_pdbfile call to verify that a model_nr was read.
-    int       ePBC, model_nr = -1, na;
-    char      title[STRLEN], *time;
-    double    dbl;
+    int    ePBC, model_nr = -1, na;
+    char   title[STRLEN], *time;
+    double dbl;
 
     atoms.nr      = fr->natoms;
     atoms.atom    = nullptr;
@@ -726,7 +726,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     /* the other pointers in atoms should not be accessed if these are NULL */
     snew(symtab, 1);
     open_symtab(symtab);
-    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
+    na = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
     free_symtab(symtab);
     sfree(symtab);
     set_trxframe_ePBC(fr, ePBC);
@@ -752,7 +752,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     if (time)
     {
         fr->bTime = TRUE;
-        sscanf(time+4, "%lf", &dbl);
+        sscanf(time + 4, "%lf", &dbl);
         fr->time = (real)dbl;
     }
     else
@@ -890,9 +890,9 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
 
         if (bRet)
         {
-            bMissingData = (((status->flags & TRX_NEED_X) && !fr->bX) ||
-                            ((status->flags & TRX_NEED_V) && !fr->bV) ||
-                            ((status->flags & TRX_NEED_F) && !fr->bF));
+            bMissingData = (((status->flags & TRX_NEED_X) && !fr->bX)
+                            || ((status->flags & TRX_NEED_V) && !fr->bV)
+                            || ((status->flags & TRX_NEED_F) && !fr->bF));
             bSkip = FALSE;
             if (!bMissingData)
             {
@@ -913,8 +913,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
             }
         }
 
-    }
-    while (bRet && (bMissingData || bSkip));
+    } while (bRet && (bMissingData || bSkip));
 
     if (!bRet)
     {
@@ -931,9 +930,9 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
 int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                      const char *fn, t_trxframe *fr, int flags)
 {
-    t_fileio      *fio;
-    gmx_bool       bFirst, bOK;
-    int            ftp   = fn2ftp(fn);
+    t_fileio *fio;
+    gmx_bool  bFirst, bOK;
+    int       ftp = fn2ftp(fn);
 
     clear_trxframe(fr, TRUE);
 
@@ -968,7 +967,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             if (!(*status)->persistent_line)
             {
                 /* allocate the persistent line */
-                snew((*status)->persistent_line, STRLEN+1);
+                snew((*status)->persistent_line, STRLEN + 1);
             }
             t_symtab *symtab;
             snew(symtab, 1);
@@ -1067,8 +1066,8 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
         return FALSE;
     }
 
-    if (bFirst ||
-        (!(flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
+    if (bFirst
+        || (!(flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
     {
         /* Read a frame when no frame was read or the first was skipped */
         if (!read_next_frame(oenv, *status, fr))

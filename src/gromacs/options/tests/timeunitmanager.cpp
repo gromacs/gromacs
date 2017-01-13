@@ -70,14 +70,14 @@ TEST(TimeUnitManagerTest, BasicOperations)
 
 TEST(TimeUnitBehaviorTest, ScalesAssignedOptionValue)
 {
-    gmx::TimeUnitBehavior  behavior;
+    gmx::TimeUnitBehavior behavior;
 
-    gmx::Options           options;
-    double                 value = 0.0;
+    gmx::Options options;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
-    gmx::OptionsAssigner   assigner(&options);
+    gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
     ASSERT_NO_THROW_GMX(assigner.startOption("p"));
     ASSERT_NO_THROW_GMX(assigner.appendValue("1.5"));
@@ -108,8 +108,8 @@ TEST(TimeUnitBehaviorTest, DoesNotScaleDefaultValues)
 {
     gmx::TimeUnitBehavior behavior;
 
-    gmx::Options          options;
-    double                value = 1.5, value2 = 0.0;
+    gmx::Options options;
+    double       value = 1.5, value2 = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("q").store(&value2).timeValue()
@@ -133,8 +133,8 @@ TEST(TimeUnitBehaviorTest, ScalesUserInputWithMultipleSources)
 {
     gmx::TimeUnitBehavior behavior;
 
-    gmx::Options          options;
-    double                value = 0.0;
+    gmx::Options options;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
@@ -159,8 +159,8 @@ TEST(TimeUnitBehaviorTest, TimeUnitOptionWorks)
 {
     gmx::TimeUnitBehavior behavior;
 
-    gmx::Options          options;
-    double                value = 0.0;
+    gmx::Options options;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW_GMX(behavior.addTimeUnitOption(&options, "tu"));

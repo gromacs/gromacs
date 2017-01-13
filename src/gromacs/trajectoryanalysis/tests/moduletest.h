@@ -153,7 +153,7 @@ class AbstractTrajectoryAnalysisModuleTestFixture : public CommandLineTestBase
          * using TrajectoryAnalysisModule::registerBasicDataset() or
          * TrajectoryAnalysisModule::registerAnalysisDataset().
          */
-        void setDatasetTolerance(const char                   *name,
+        void setDatasetTolerance(const char *                  name,
                                  const FloatingPointTolerance &tolerance);
 
         /*! \brief

@@ -54,10 +54,10 @@
 #endif
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-#    define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
+#    define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH * sizeof(real))
 #else
 /* We can use any alignment, apart from 0, so we use 4 reals */
-#    define SIMD4_ALIGNMENT  (4*sizeof(real))
+#    define SIMD4_ALIGNMENT  (4 * sizeof(real))
 #endif
 
 #endif

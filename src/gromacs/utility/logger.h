@@ -101,7 +101,7 @@ class LogEntryWriter
         }
 
     private:
-        LogEntry    entry_;
+        LogEntry entry_;
 
         friend class LogWriteHelper;
 };

@@ -50,7 +50,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     int atom, sid;
 } t_sid;
 
@@ -62,10 +63,10 @@ static int sid_comp(const void *a, const void *b)
     sa = (t_sid *)a;
     sb = (t_sid *)b;
 
-    dd = sa->sid-sb->sid;
+    dd = sa->sid - sb->sid;
     if (dd == 0)
     {
-        return (sa->atom-sb->atom);
+        return (sa->atom - sb->atom);
     }
     else
     {
@@ -76,7 +77,7 @@ static int sid_comp(const void *a, const void *b)
 static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
                    int maxsid, t_sid sid[])
 {
-    int  j, ng, ai, aj, g0;
+    int j, ng, ai, aj, g0;
 
     ng = 0;
     ai = *AtomI;
@@ -85,7 +86,7 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
     /* Loop over all the bonds */
     for (j = 0; (j < g->nedge[ai]); j++)
     {
-        aj = g->edge[ai][j]-g0;
+        aj = g->edge[ai][j] - g0;
         /* If there is a white one, make it gray and set pbc */
         if (egc[aj] == egcolWhite)
         {
@@ -96,17 +97,17 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
             egc[aj] = egcolGrey;
 
             /* Check whether this one has been set before... */
-            range_check(aj+g0, 0, maxsid);
-            range_check(ai+g0, 0, maxsid);
-            if (sid[aj+g0].sid != -1)
+            range_check(aj + g0, 0, maxsid);
+            range_check(ai + g0, 0, maxsid);
+            if (sid[aj + g0].sid != -1)
             {
                 gmx_fatal(FARGS, "sid[%d]=%d, sid[%d]=%d, file %s, line %d",
-                          ai, sid[ai+g0].sid, aj, sid[aj+g0].sid, __FILE__, __LINE__);
+                          ai, sid[ai + g0].sid, aj, sid[aj + g0].sid, __FILE__, __LINE__);
             }
             else
             {
-                sid[aj+g0].sid  = sid[ai+g0].sid;
-                sid[aj+g0].atom = aj+g0;
+                sid[aj + g0].sid  = sid[ai + g0].sid;
+                sid[aj + g0].atom = aj + g0;
             }
             ng++;
         }
@@ -134,11 +135,11 @@ static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
 
 static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
 {
-    int     ng, nnodes;
-    int     nW, nG, nB;    /* Number of Grey, Black, White	*/
-    int     fW, fG;        /* First of each category	*/
-    egCol  *egc = nullptr; /* The colour of each node	*/
-    int     g0, nblock;
+    int    ng, nnodes;
+    int    nW, nG, nB;     /* Number of Grey, Black, White	*/
+    int    fW, fG;         /* First of each category	*/
+    egCol *egc = nullptr;  /* The colour of each node	*/
+    int    g0, nblock;
 
     if (!g->nbound)
     {
@@ -178,9 +179,9 @@ static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
         }
 
         /* Make the first white node grey, and set the block number */
-        egc[fW]        = egcolGrey;
-        range_check(fW+g0, 0, maxsid);
-        sid[fW+g0].sid = nblock++;
+        egc[fW] = egcolGrey;
+        range_check(fW + g0, 0, maxsid);
+        sid[fW + g0].sid = nblock++;
         nG++;
         nW--;
 
@@ -190,7 +191,7 @@ static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
         if (debug)
         {
             fprintf(debug, "Starting G loop (nW=%d, nG=%d, nB=%d, total %d)\n",
-                    nW, nG, nB, nW+nG+nB);
+                    nW, nG, nB, nW + nG + nB);
         }
 
         while (nG > 0)
@@ -225,7 +226,8 @@ static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
 }
 
 
-typedef struct {
+typedef struct
+{
     int first, last, sid;
 } t_merge_sid;
 
@@ -235,10 +237,10 @@ static int ms_comp(const void *a, const void *b)
     const t_merge_sid *mb = reinterpret_cast<const t_merge_sid *>(b);
     int                d;
 
-    d = ma->first-mb->first;
+    d = ma->first - mb->first;
     if (d == 0)
     {
-        return ma->last-mb->last;
+        return ma->last - mb->last;
     }
     else
     {
@@ -262,7 +264,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
 
     for (k = 0; (k < nsid); k++)
     {
-        ms[k].first = at_end+1;
+        ms[k].first = at_end + 1;
         ms[k].last  = -1;
         ms[k].sid   = k;
     }
@@ -282,7 +284,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
     ndel = 0;
     for (k = 0; (k < nsid); )
     {
-        for (j = k+1; (j < nsid); )
+        for (j = k + 1; (j < nsid); )
         {
             if (ms[j].first <= ms[k].last)
             {
@@ -295,7 +297,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
             else
             {
                 k = j;
-                j = k+1;
+                j = k + 1;
             }
         }
         if (j == nsid)
@@ -305,11 +307,11 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
     }
     for (k = 0; (k < nsid); k++)
     {
-        while ((k < nsid-1) && (ms[k].sid == -1))
+        while ((k < nsid - 1) && (ms[k].sid == -1))
         {
-            for (j = k+1; (j < nsid); j++)
+            for (j = k + 1; (j < nsid); j++)
             {
-                std::memcpy(&(ms[j-1]), &(ms[j]), sizeof(ms[0]));
+                std::memcpy(&(ms[j - 1]), &(ms[j]), sizeof(ms[0]));
             }
             nsid--;
         }
@@ -321,7 +323,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
         sid[k].sid  = -1;
     }
     sblock->nr           = nsid;
-    sblock->nalloc_index = sblock->nr+1;
+    sblock->nalloc_index = sblock->nr + 1;
     snew(sblock->index, sblock->nalloc_index);
     sblock->nra      = at_end - at_start;
     sblock->nalloc_a = sblock->nra;
@@ -329,7 +331,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
     sblock->index[0] = 0;
     for (k = n = 0; (k < nsid); k++)
     {
-        sblock->index[k+1] = sblock->index[k] + ms[k].last - ms[k].first+1;
+        sblock->index[k + 1] = sblock->index[k] + ms[k].last - ms[k].first + 1;
         for (j = ms[k].first; (j <= ms[k].last); j++)
         {
             range_check(n, 0, sblock->nra);
@@ -360,7 +362,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
 {
     t_graph *g;
     int      i, i0;
-    t_sid   *sid;
+    t_sid *  sid;
     int      nsid;
 
     g = mk_graph(nullptr, idef, at_start, at_end, TRUE, bSettle);
@@ -382,7 +384,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     }
 
     /* Now sort the shake blocks... */
-    qsort(sid+at_start, at_end-at_start, static_cast<size_t>(sizeof(sid[0])), sid_comp);
+    qsort(sid + at_start, at_end - at_start, static_cast<size_t>(sizeof(sid[0])), sid_comp);
 
     if (debug)
     {

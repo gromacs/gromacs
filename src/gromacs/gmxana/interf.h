@@ -38,7 +38,8 @@
 
 #include "gromacs/utility/real.h"
 
-typedef struct {
+typedef struct
+{
     real Z; /* Interface height-coordinate */
     real t; /* Interface thickness */
 } t_interf;

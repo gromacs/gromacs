@@ -77,7 +77,7 @@ class AtomsBuilder
     private:
         char **symtabString(char **source);
 
-        t_atoms  *atoms_;
+        t_atoms * atoms_;
         t_symtab *symtab_;
         int       nrAlloc_;
         int       nresAlloc_;

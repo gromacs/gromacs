@@ -67,8 +67,8 @@ class TextWriterTest : public gmx::test::StringTestBase
             checkText(stream_.toString(), "Output");
         }
 
-        gmx::StringOutputStream  stream_;
-        gmx::TextWriter          writer_;
+        gmx::StringOutputStream stream_;
+        gmx::TextWriter         writer_;
 };
 
 TEST_F(TextWriterTest, WritesLines)

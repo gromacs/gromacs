@@ -72,7 +72,7 @@ namespace
 //! Global context instance initialized in initForCommandLine().
 std::unique_ptr<CommandLineProgramContext> g_commandLineContext;
 //! Global library data file finder that respects GMXLIB.
-std::unique_ptr<DataFileFinder>            g_libFileFinder;
+std::unique_ptr<DataFileFinder> g_libFileFinder;
 
 /*! \brief
  * Broadcasts command-line arguments to all ranks.
@@ -92,14 +92,14 @@ void broadcastArguments(int *argc, char ***argv)
     const bool isMaster = (gmx_node_rank() == 0);
     if (!isMaster)
     {
-        snew(*argv, *argc+1);
+        snew(*argv, *argc + 1);
     }
     for (int i = 0; i < *argc; i++)
     {
         int len;
         if (isMaster)
         {
-            len = std::strlen((*argv)[i])+1;
+            len = std::strlen((*argv)[i]) + 1;
         }
         gmx_broadcast_world(sizeof(len), &len);
         if (!isMaster)

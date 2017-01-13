@@ -86,14 +86,14 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
                 "in nonsense.\n");
     }
 
-    fprintf(stderr, "Integrating from slice %d to slice %d\n", cb, ndata-ce);
+    fprintf(stderr, "Integrating from slice %d to slice %d\n", cb, ndata - ce);
 
-    for (slice = cb; slice < (ndata-ce); slice++)
+    for (slice = cb; slice < (ndata - ce); slice++)
     {
         sum = 0;
         for (i = cb; i < slice; i++)
         {
-            sum += slWidth * (data[i] + 0.5 * (data[i+1] - data[i]));
+            sum += slWidth * (data[i] + 0.5 * (data[i + 1] - data[i]));
         }
         result[slice] = sum;
     }
@@ -108,7 +108,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
                     double fudge_z, gmx_bool bSpherical, gmx_bool bCorrect,
                     const gmx_output_env_t *oenv)
 {
-    rvec        *x0;     /* coordinates without pbc */
+    rvec *       x0;     /* coordinates without pbc */
     matrix       box;    /* box (3x3) */
     int          natoms; /* nr. atoms in trj */
     t_trxstatus *status;
@@ -117,12 +117,12 @@ void calc_potential(const char *fn, int **index, int gnx[],
                  ax1       = 0, ax2 = 0,
                  nr_frames = 0, /* number of frames */
                  slice;         /* current slice */
-    double       slVolume;      /* volume of slice for spherical averaging */
-    double       qsum, nn;
-    real         t;
-    double       z;
-    rvec         xcm;
-    gmx_rmpbc_t  gpbc = nullptr;
+    double      slVolume;       /* volume of slice for spherical averaging */
+    double      qsum, nn;
+    real        t;
+    double      z;
+    rvec        xcm;
+    gmx_rmpbc_t gpbc = nullptr;
 
     switch (axis)
     {
@@ -168,7 +168,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
     /*********** Start processing trajectory ***********/
     do
     {
-        *slWidth = box[axis][axis]/(*nslices);
+        *slWidth = box[axis][axis] / (*nslices);
         teller++;
         gmx_rmpbc(gpbc, natoms, box, x0);
 
@@ -191,7 +191,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
                 {
                     rvec_add(x0[index[n][i]], xcm, x0[index[n][i]]);
                     /* only distance from origin counts, not sign */
-                    slice = static_cast<int>(norm(x0[index[n][i]])/(*slWidth));
+                    slice = static_cast<int>(norm(x0[index[n][i]]) / (*slWidth));
 
                     /* this is a nice check for spherical groups but not for
                        all water in a cubic box since a lot will fall outside
@@ -222,8 +222,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
             }
         }
         nr_frames++;
-    }
-    while (read_next_x(oenv, status, &t, x0, box));
+    } while (read_next_x(oenv, status, &t, x0, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -268,8 +267,8 @@ void calc_potential(const char *fn, int **index, int gnx[],
             else
             {
                 /* get charge per volume */
-                (*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices) /
-                    (nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+                (*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices)
+                    / (nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
             }
         }
         /* Now we have charge densities */
@@ -344,10 +343,10 @@ void calc_potential(const char *fn, int **index, int gnx[],
         {
             if (bSpherical)
             {
-                (*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 /
-                    (EPS0 * i * (*slWidth));
-                (*slField)[n][i] = ELC * (*slField)[n][i] * 1E18 /
-                    (EPS0 * i * (*slWidth));
+                (*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9
+                    / (EPS0 * i * (*slWidth));
+                (*slField)[n][i] = ELC * (*slField)[n][i] * 1E18
+                    / (EPS0 * i * (*slWidth));
             }
             else
             {
@@ -365,11 +364,11 @@ void plot_potential(double *potential[], double *charge[], double *field[],
                     int nslices, int nr_grps, const char *grpname[], double slWidth,
                     const gmx_output_env_t *oenv)
 {
-    FILE       *pot,     /* xvgr file with potential */
+    FILE *pot,           /* xvgr file with potential */
     *cha,                /* xvgr file with charges   */
     *fie;                /* xvgr files with fields   */
-    char       buf[256]; /* for xvgr title */
-    int        slice, n;
+    char buf[256];       /* for xvgr title */
+    int  slice, n;
 
     sprintf(buf, "Electrostatic Potential");
     pot = xvgropen(afile, buf, "Box (nm)", "Potential (V)", oenv);
@@ -391,7 +390,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
         for (n = 0; n < nr_grps; n++)
         {
             fprintf(pot, "   %20.16g", potential[n][slice]);
-            fprintf(fie, "   %20.16g", field[n][slice]/1e9); /* convert to V/nm */
+            fprintf(fie, "   %20.16g", field[n][slice] / 1e9); /* convert to V/nm */
             fprintf(cha, "   %20.16g", charge[n][slice]);
         }
         fprintf(pot, "\n");
@@ -406,7 +405,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
 
 int gmx_potential(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char *       desc[] = {
         "[THISMODULE] computes the electrostatical potential across the box. The potential is",
         "calculated by first summing the charges per slice and then integrating",
         "twice of this charge distribution. Periodic boundaries are not taken",
@@ -416,7 +415,7 @@ int gmx_potential(int argc, char *argv[])
         "spherical slices and twice integrating them. epsilon_r is taken as 1,",
         "but 2 is more appropriate in many cases."
     };
-    gmx_output_env_t  *oenv;
+    gmx_output_env_t * oenv;
     static int         axis       = 2;       /* normal to memb. default z  */
     static const char *axtitle    = "Z";
     static int         nslices    = 10;      /* nr of slices defined       */
@@ -443,19 +442,19 @@ int gmx_potential(int argc, char *argv[])
         { "-correct",  FALSE, etBOOL, {&bCorrect},
           "Assume net zero charge of groups to improve accuracy" }
     };
-    const char        *bugs[] = {
+    const char *       bugs[] = {
         "Discarding slices for integration should not be necessary."
     };
 
-    double           **potential,              /* potential per slice        */
+    double **potential,                        /* potential per slice        */
     **charge,                                  /* total charge per slice     */
     **field,                                   /* field per slice            */
-                       slWidth;                /* width of one slice         */
-    char      **grpname;                       /* groupnames                 */
-    int        *ngx;                           /* sizes of groups            */
+             slWidth;                          /* width of one slice         */
+    char **     grpname;                       /* groupnames                 */
+    int *       ngx;                           /* sizes of groups            */
     t_topology *top;                           /* topology        */
     int         ePBC;
-    int       **index;                         /* indices for all groups     */
+    int **      index;                         /* indices for all groups     */
     t_filenm    fnm[] = {                      /* files for g_order       */
         { efTRX, "-f", nullptr,  ffREAD },     /* trajectory file             */
         { efNDX, nullptr, nullptr,  ffREAD },  /* index file          */

@@ -73,8 +73,8 @@ class HelpManager
          * The provided topic and context objects must remain valid for the
          * lifetime of this manager object.
          */
-        HelpManager(const IHelpTopic         &rootTopic,
-                    const HelpWriterContext  &context);
+        HelpManager(const IHelpTopic &       rootTopic,
+                    const HelpWriterContext &context);
         ~HelpManager();
 
         /*! \brief

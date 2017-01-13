@@ -50,7 +50,8 @@
 #include "gmxfio-impl.h"
 
 /* Enumerated for data types in files */
-enum {
+enum
+{
     eioREAL, eioFLOAT, eioDOUBLE, eioINT, eioINT64,
     eioUCHAR, eioNUCHAR, eioUSHORT,
     eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR
@@ -106,16 +107,16 @@ static void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
 static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                        const char *desc, const char *srcfile, int line)
 {
-    unsigned char   ucdum, *ucptr;
-    bool_t          res = 0;
-    float           fvec[DIM];
-    double          dvec[DIM];
-    int             j, m, *iptr, idum;
-    gmx_int64_t     sdum;
-    real           *ptr;
-    unsigned short  us;
-    double          d = 0;
-    float           f = 0;
+    unsigned char  ucdum, *ucptr;
+    bool_t         res = 0;
+    float          fvec[DIM];
+    double         dvec[DIM];
+    int            j, m, *iptr, idum;
+    gmx_int64_t    sdum;
+    real *         ptr;
+    unsigned short us;
+    double         d = 0;
+    float          f = 0;
 
     GMX_RELEASE_ASSERT( fio->xdr != nullptr, "Implementation error: NULL XDR pointers");
     gmx_fio_check_nitem(eio, nitem, srcfile, line);
@@ -356,7 +357,7 @@ gmx_bool gmx_fio_writee_string(t_fileio *fio, const char *item,
                                const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
-    void    *it = (void*)item; /* ugh.. */
+    void *   it = (void*)item; /* ugh.. */
     gmx_fio_lock(fio);
     ret = do_xdr(fio, it, 1, eioSTRING, desc, srcfile, line);
     gmx_fio_unlock(fio);
@@ -404,13 +405,13 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio *fio, gmx_bool *item,
     if (fio->bRead)
     {
         int itmp = 0;
-        ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-        *item    = itmp;
+        ret   = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        *item = itmp;
     }
     else
     {
         int itmp = *item;
-        ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        ret = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -552,13 +553,13 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio *fio, gmx_bool *item, int n,
         if (fio->bRead)
         {
             int itmp = 0;
-            ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-            item[i]  = itmp;
+            ret     = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+            item[i] = itmp;
         }
         else
         {
             int itmp = item[i];
-            ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+            ret = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
         }
     }
     gmx_fio_unlock(fio);
@@ -709,7 +710,7 @@ void FileIOXdrSerializer::doString(std::string *value)
     if (!fio_->bRead)
     {
         std::strncpy(buf, value->c_str(), STRLEN);
-        buf[STRLEN-1] = 0;
+        buf[STRLEN - 1] = 0;
     }
     gmx_fio_do_string(fio_, buf);
     if (fio_->bRead)

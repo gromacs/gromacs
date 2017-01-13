@@ -75,7 +75,7 @@ namespace
 class SelectionCollectionTest : public ::testing::Test
 {
     public:
-        static int               s_debugLevel;
+        static int s_debugLevel;
 
         SelectionCollectionTest();
         ~SelectionCollectionTest();
@@ -88,10 +88,10 @@ class SelectionCollectionTest : public ::testing::Test
         void setTopology();
         void loadIndexGroups(const char *filename);
 
-        gmx::test::TopologyManager  topManager_;
-        gmx::SelectionCollection    sc_;
-        gmx::SelectionList          sel_;
-        gmx_ana_indexgrps_t        *grps_;
+        gmx::test::TopologyManager topManager_;
+        gmx::SelectionCollection   sc_;
+        gmx::SelectionList         sel_;
+        gmx_ana_indexgrps_t *      grps_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -123,26 +123,23 @@ SelectionCollectionTest::~SelectionCollectionTest()
     }
 }
 
-void
-SelectionCollectionTest::loadTopology(const char *filename)
+void SelectionCollectionTest::loadTopology(const char *filename)
 {
     topManager_.loadTopology(filename);
     setTopology();
 }
 
-void
-SelectionCollectionTest::setTopology()
+void SelectionCollectionTest::setTopology()
 {
     ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.topology(), -1));
 }
 
-void
-SelectionCollectionTest::loadIndexGroups(const char *filename)
+void SelectionCollectionTest::loadIndexGroups(const char *filename)
 {
     GMX_RELEASE_ASSERT(grps_ == nullptr,
                        "External groups can only be loaded once");
-    std::string fullpath =
-        gmx::test::TestFileManager::getInputFilePath(filename);
+    std::string fullpath
+        = gmx::test::TestFileManager::getInputFilePath(filename);
     gmx_ana_indexgrps_init(&grps_, nullptr, fullpath.c_str());
     sc_.setIndexGroups(grps_);
 }
@@ -163,8 +160,8 @@ class SelectionCollectionInteractiveTest : public SelectionCollectionTest
         void runTest(int count, bool bInteractive,
                      const gmx::ConstArrayRef<const char *> &input);
 
-        gmx::test::TestReferenceData      data_;
-        gmx::test::InteractiveTestHelper  helper_;
+        gmx::test::TestReferenceData     data_;
+        gmx::test::InteractiveTestHelper helper_;
 };
 
 void SelectionCollectionInteractiveTest::runTest(
@@ -190,14 +187,14 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
     public:
         enum TestFlag
         {
-            efTestEvaluation            = 1<<0,
-            efTestPositionAtoms         = 1<<1,
-            efTestPositionCoordinates   = 1<<2,
-            efTestPositionMapping       = 1<<3,
-            efTestPositionMasses        = 1<<4,
-            efTestPositionCharges       = 1<<5,
-            efTestSelectionNames        = 1<<6,
-            efDontTestCompiledAtoms     = 1<<8
+            efTestEvaluation          = 1 << 0,
+            efTestPositionAtoms       = 1 << 1,
+            efTestPositionCoordinates = 1 << 2,
+            efTestPositionMapping     = 1 << 3,
+            efTestPositionMasses      = 1 << 4,
+            efTestPositionCharges     = 1 << 5,
+            efTestSelectionNames      = 1 << 6,
+            efDontTestCompiledAtoms   = 1 << 8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
@@ -215,7 +212,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
         void runTest(int                                     natoms,
                      const gmx::ConstArrayRef<const char *> &selections);
-        void runTest(const char                             *filename,
+        void runTest(const char *                            filename,
                      const gmx::ConstArrayRef<const char *> &selections);
 
     private:
@@ -232,8 +229,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 };
 
 
-void
-SelectionCollectionDataTest::checkSelection(
+void SelectionCollectionDataTest::checkSelection(
         gmx::test::TestReferenceChecker *checker,
         const gmx::Selection &sel, TestFlags flags)
 {
@@ -282,8 +278,7 @@ SelectionCollectionDataTest::checkSelection(
 }
 
 
-void
-SelectionCollectionDataTest::runParser(
+void SelectionCollectionDataTest::runParser(
         const gmx::ConstArrayRef<const char *> &selections)
 {
     using gmx::test::TestReferenceChecker;
@@ -324,8 +319,7 @@ SelectionCollectionDataTest::runParser(
 }
 
 
-void
-SelectionCollectionDataTest::runCompiler()
+void SelectionCollectionDataTest::runCompiler()
 {
     ASSERT_NO_THROW_GMX(sc_.compile());
     ASSERT_EQ(count_, sel_.size());
@@ -333,17 +327,16 @@ SelectionCollectionDataTest::runCompiler()
 }
 
 
-void
-SelectionCollectionDataTest::checkCompiled()
+void SelectionCollectionDataTest::checkCompiled()
 {
     using gmx::test::TestReferenceChecker;
-    const TestFlags      mask = ~TestFlags(efTestPositionCoordinates);
+    const TestFlags mask = ~TestFlags(efTestPositionCoordinates);
 
     TestReferenceChecker compound(checker_.checkCompound("CompiledSelections", "Compiled"));
     for (size_t i = 0; i < count_; ++i)
     {
-        SCOPED_TRACE(std::string("Checking selection \"") +
-                     sel_[i].selectionText() + "\"");
+        SCOPED_TRACE(std::string("Checking selection \"")
+                     + sel_[i].selectionText() + "\"");
         std::string          id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
@@ -359,8 +352,7 @@ SelectionCollectionDataTest::checkCompiled()
 }
 
 
-void
-SelectionCollectionDataTest::runEvaluate()
+void SelectionCollectionDataTest::runEvaluate()
 {
     using gmx::test::TestReferenceChecker;
 
@@ -371,8 +363,8 @@ SelectionCollectionDataTest::runEvaluate()
             checker_.checkCompound("EvaluatedSelections", frame.c_str()));
     for (size_t i = 0; i < count_; ++i)
     {
-        SCOPED_TRACE(std::string("Checking selection \"") +
-                     sel_[i].selectionText() + "\"");
+        SCOPED_TRACE(std::string("Checking selection \"")
+                     + sel_[i].selectionText() + "\"");
         std::string          id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
@@ -381,16 +373,14 @@ SelectionCollectionDataTest::runEvaluate()
 }
 
 
-void
-SelectionCollectionDataTest::runEvaluateFinal()
+void SelectionCollectionDataTest::runEvaluateFinal()
 {
     ASSERT_NO_THROW_GMX(sc_.evaluateFinal(framenr_));
     checkCompiled();
 }
 
 
-void
-SelectionCollectionDataTest::runTest(
+void SelectionCollectionDataTest::runTest(
         int natoms, const gmx::ConstArrayRef<const char *> &selections)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
@@ -399,8 +389,7 @@ SelectionCollectionDataTest::runTest(
 }
 
 
-void
-SelectionCollectionDataTest::runTest(
+void SelectionCollectionDataTest::runTest(
         const char *filename, const gmx::ConstArrayRef<const char *> &selections)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections));

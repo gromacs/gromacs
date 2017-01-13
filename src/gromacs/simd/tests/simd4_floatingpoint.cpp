@@ -197,9 +197,9 @@ TEST_F(Simd4FloatingpointTest, trunc)
  */
 TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 {
-    Simd4Real        x                   = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
-    Simd4Real        ref                 = setSimd4RealFrom3R(0.5, 1.0/std::sqrt(M_PI), 1.0/std::sqrt(1234567890.0));
-    int              shiftbits           = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+    Simd4Real x         = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
+    Simd4Real ref       = setSimd4RealFrom3R(0.5, 1.0 / std::sqrt(M_PI), 1.0 / std::sqrt(1234567890.0));
+    int       shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
     {
@@ -214,45 +214,45 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 
 TEST_F(Simd4FloatingpointTest, cmpEqAndSelectByMask)
 {
-    Simd4Bool eq   = (rSimd4_5_7_9 == rSimd4_7_8_9);
+    Simd4Bool eq = (rSimd4_5_7_9 == rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(0, 0, 3), selectByMask(rSimd4_1_2_3, eq));
 }
 
 TEST_F(Simd4FloatingpointTest, selectByNotMask)
 {
-    Simd4Bool eq   = (rSimd4_5_7_9 == rSimd4_7_8_9);
+    Simd4Bool eq = (rSimd4_5_7_9 == rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(1, 2, 0), selectByNotMask(rSimd4_1_2_3, eq));
 }
 
 TEST_F(Simd4FloatingpointTest, cmpNe)
 {
-    Simd4Bool eq   = (rSimd4_5_7_9 != rSimd4_7_8_9);
+    Simd4Bool eq = (rSimd4_5_7_9 != rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(1, 2, 0), selectByMask(rSimd4_1_2_3, eq));
 }
 
 TEST_F(Simd4FloatingpointTest, cmpLe)
 {
-    Simd4Bool le   = (rSimd4_5_7_9 <= rSimd4_7_8_9);
+    Simd4Bool le = (rSimd4_5_7_9 <= rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_1_2_3, selectByMask(rSimd4_1_2_3, le));
 }
 
 TEST_F(Simd4FloatingpointTest, cmpLt)
 {
-    Simd4Bool lt   = (rSimd4_5_7_9 < rSimd4_7_8_9);
+    Simd4Bool lt = (rSimd4_5_7_9 < rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(1, 2, 0), selectByMask(rSimd4_1_2_3, lt));
 }
 
 TEST_F(Simd4FloatingpointTest, andB)
 {
-    Simd4Bool eq   = (rSimd4_5_7_9 == rSimd4_7_8_9);
-    Simd4Bool le   = (rSimd4_5_7_9 <= rSimd4_7_8_9);
+    Simd4Bool eq = (rSimd4_5_7_9 == rSimd4_7_8_9);
+    Simd4Bool le = (rSimd4_5_7_9 <= rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(0, 0, 3), selectByMask(rSimd4_1_2_3, eq && le));
 }
 
 TEST_F(Simd4FloatingpointTest, orB)
 {
-    Simd4Bool eq   = (rSimd4_5_7_9 == rSimd4_7_8_9);
-    Simd4Bool lt   = (rSimd4_5_7_9 < rSimd4_7_8_9);
+    Simd4Bool eq = (rSimd4_5_7_9 == rSimd4_7_8_9);
+    Simd4Bool lt = (rSimd4_5_7_9 < rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(1, 2, 3), selectByMask(rSimd4_1_2_3, eq || lt));
 }
 
@@ -273,7 +273,7 @@ TEST_F(Simd4FloatingpointTest, anyTrue)
 
 TEST_F(Simd4FloatingpointTest, blend)
 {
-    Simd4Bool lt   = (rSimd4_5_7_9 < rSimd4_7_8_9);
+    Simd4Bool lt = (rSimd4_5_7_9 < rSimd4_7_8_9);
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(4, 5, 3), blend(rSimd4_1_2_3, rSimd4_4_5_6, lt));
 }
 
@@ -306,21 +306,21 @@ TEST_F(Simd4FloatingpointTest, dotProduct)
 
 TEST_F(Simd4FloatingpointTest, transpose)
 {
-    Simd4Real        v0, v1, v2, v3;
-    int              i;
+    Simd4Real v0, v1, v2, v3;
+    int       i;
     // aligned pointers
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4*GMX_SIMD4_WIDTH];
-    real          *  p1 = p0 + GMX_SIMD4_WIDTH;
-    real          *  p2 = p0 + 2*GMX_SIMD4_WIDTH;
-    real          *  p3 = p0 + 3*GMX_SIMD4_WIDTH;
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4 * GMX_SIMD4_WIDTH];
+    real * p1 = p0 + GMX_SIMD4_WIDTH;
+    real * p2 = p0 + 2 * GMX_SIMD4_WIDTH;
+    real * p3 = p0 + 3 * GMX_SIMD4_WIDTH;
 
     // Assign data with tens as row, single-digit as column
     for (i = 0; i < 4; i++)
     {
-        p0[i] = 0*10 + i*1;
-        p1[i] = 1*10 + i*1;
-        p2[i] = 2*10 + i*1;
-        p3[i] = 3*10 + i*1;
+        p0[i] = 0 * 10 + i * 1;
+        p1[i] = 1 * 10 + i * 1;
+        p2[i] = 2 * 10 + i * 1;
+        p3[i] = 3 * 10 + i * 1;
     }
 
     v0 = load4(p0);
@@ -337,10 +337,10 @@ TEST_F(Simd4FloatingpointTest, transpose)
 
     for (i = 0; i < 4; i++)
     {
-        EXPECT_EQ(i*10+0, p0[i]);
-        EXPECT_EQ(i*10+1, p1[i]);
-        EXPECT_EQ(i*10+2, p2[i]);
-        EXPECT_EQ(i*10+3, p3[i]);
+        EXPECT_EQ(i * 10 + 0, p0[i]);
+        EXPECT_EQ(i * 10 + 1, p1[i]);
+        EXPECT_EQ(i * 10 + 2, p2[i]);
+        EXPECT_EQ(i * 10 + 3, p3[i]);
     }
 }
 

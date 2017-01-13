@@ -62,7 +62,7 @@ gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
     }
 
     /* start convolution from out[kernelSize-1] to out[dataSize-1] (last) */
-    for (i = kernelSize-1; i < dataSize; ++i)
+    for (i = kernelSize - 1; i < dataSize; ++i)
     {
         for (j = i, k = 0; k < kernelSize; --j, ++k)
         {
@@ -111,8 +111,8 @@ gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
         for (j = 0; (j < kernelsize); j++)
         {
             // add datasize in case i-j is <0
-            idx          = i-j + datasize;
-            filtered[i] += kernel[j]*x[idx % datasize];
+            idx          = i - j + datasize;
+            filtered[i] += kernel[j] * x[idx % datasize];
         }
     }
     for (i = 0; i < datasize; i++)
@@ -132,11 +132,11 @@ void gausskernel(real *out, int n, real var)
 {
     int  i, j = 0, k;
     real arg, tot = 0;
-    k = n/2;
+    k = n / 2;
 
     for (i = -k; i <= k; i++)
     {
-        arg  = (i*i)/(2*var);
+        arg  = (i * i) / (2 * var);
         tot += out[j++] = std::exp(-arg);
     }
     for (i = 0; i < j; i++)

@@ -73,8 +73,7 @@ namespace gmx
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-copysign(float x, float y)
+static inline float copysign(float x, float y)
 {
     return std::copysign(x, y);
 }
@@ -92,9 +91,8 @@ copysign(float x, float y)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-invsqrtPair(float x0,    float x1,
-            float *out0, float *out1)
+static inline void invsqrtPair(float x0,    float x1,
+                               float *out0, float *out1)
 {
     *out0 = invsqrt(x0);
     *out1 = invsqrt(x1);
@@ -109,10 +107,9 @@ invsqrtPair(float x0,    float x1,
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-inv(float x)
+static inline float inv(float x)
 {
-    return 1.0f/x;
+    return 1.0f / x;
 }
 
 /*! \brief Calculate 1/sqrt(x) for masked entry of float.
@@ -130,8 +127,7 @@ inv(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-maskzInvsqrt(float x, bool m)
+static inline float maskzInvsqrt(float x, bool m)
 {
     return m ? invsqrt(x) : 0.0f;
 }
@@ -151,8 +147,7 @@ maskzInvsqrt(float x, bool m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-maskzInv(float x, bool m)
+static inline float maskzInv(float x, bool m)
 {
     return m ? inv(x) : 0.0f;
 }
@@ -168,8 +163,7 @@ maskzInv(float x, bool m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-log(float x)
+static inline float log(float x)
 {
     return std::log(x);
 }
@@ -183,8 +177,7 @@ log(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-exp2(float x)
+static inline float exp2(float x)
 {
     return std::exp2(x);
 }
@@ -198,8 +191,7 @@ exp2(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-exp(float x)
+static inline float exp(float x)
 {
     return std::exp(x);
 }
@@ -213,8 +205,7 @@ exp(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-erf(float x)
+static inline float erf(float x)
 {
     return std::erf(x);
 }
@@ -228,8 +219,7 @@ erf(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-erfc(float x)
+static inline float erfc(float x)
 {
     return std::erfc(x);
 }
@@ -245,8 +235,7 @@ erfc(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-sincos(float x, float *sinval, float *cosval)
+static inline void sincos(float x, float *sinval, float *cosval)
 {
     *sinval = std::sin(x);
     *cosval = std::cos(x);
@@ -261,8 +250,7 @@ sincos(float x, float *sinval, float *cosval)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-sin(float x)
+static inline float sin(float x)
 {
     return std::sin(x);
 }
@@ -276,8 +264,7 @@ sin(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-cos(float x)
+static inline float cos(float x)
 {
     return std::cos(x);
 }
@@ -291,8 +278,7 @@ cos(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-tan(float x)
+static inline float tan(float x)
 {
     return std::tan(x);
 }
@@ -306,8 +292,7 @@ tan(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-asin(float x)
+static inline float asin(float x)
 {
     return std::asin(x);
 }
@@ -321,8 +306,7 @@ asin(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-acos(float x)
+static inline float acos(float x)
 {
     return std::acos(x);
 }
@@ -336,8 +320,7 @@ acos(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-atan(float x)
+static inline float atan(float x)
 {
     return std::atan(x);
 }
@@ -352,8 +335,7 @@ atan(float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-atan2(float y, float x)
+static inline float atan2(float y, float x)
 {
     return std::atan2(y, x);
 }
@@ -369,39 +351,38 @@ atan2(float y, float x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-pmeForceCorrection(float z2)
+static inline float pmeForceCorrection(float z2)
 {
-    const float  FN6(-1.7357322914161492954e-8f);
-    const float  FN5(1.4703624142580877519e-6f);
-    const float  FN4(-0.000053401640219807709149f);
-    const float  FN3(0.0010054721316683106153f);
-    const float  FN2(-0.019278317264888380590f);
-    const float  FN1(0.069670166153766424023f);
-    const float  FN0(-0.75225204789749321333f);
+    const float FN6(-1.7357322914161492954e-8f);
+    const float FN5(1.4703624142580877519e-6f);
+    const float FN4(-0.000053401640219807709149f);
+    const float FN3(0.0010054721316683106153f);
+    const float FN2(-0.019278317264888380590f);
+    const float FN1(0.069670166153766424023f);
+    const float FN0(-0.75225204789749321333f);
 
-    const float  FD4(0.0011193462567257629232f);
-    const float  FD3(0.014866955030185295499f);
-    const float  FD2(0.11583842382862377919f);
-    const float  FD1(0.50736591960530292870f);
-    const float  FD0(1.0f);
+    const float FD4(0.0011193462567257629232f);
+    const float FD3(0.014866955030185295499f);
+    const float FD2(0.11583842382862377919f);
+    const float FD1(0.50736591960530292870f);
+    const float FD0(1.0f);
 
-    float        z4;
-    float        polyFN0, polyFN1, polyFD0, polyFD1;
+    float z4;
+    float polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD1        = fma(FD3, z4, FD1);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = fma(polyFD1, z2, polyFD0);
+    polyFD0 = fma(FD4, z4, FD2);
+    polyFD1 = fma(FD3, z4, FD1);
+    polyFD0 = fma(polyFD0, z4, FD0);
+    polyFD0 = fma(polyFD1, z2, polyFD0);
 
-    polyFN0        = fma(FN6, z4, FN4);
-    polyFN1        = fma(FN5, z4, FN3);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN0        = fma(polyFN1, z2, polyFN0);
+    polyFN0 = fma(FN6, z4, FN4);
+    polyFN1 = fma(FN5, z4, FN3);
+    polyFN0 = fma(polyFN0, z4, FN2);
+    polyFN1 = fma(polyFN1, z4, FN1);
+    polyFN0 = fma(polyFN0, z4, FN0);
+    polyFN0 = fma(polyFN1, z2, polyFN0);
 
     return polyFN0 / polyFD0;
 }
@@ -417,37 +398,36 @@ pmeForceCorrection(float z2)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
-pmePotentialCorrection(float z2)
+static inline float pmePotentialCorrection(float z2)
 {
-    const float  VN6(1.9296833005951166339e-8f);
-    const float  VN5(-1.4213390571557850962e-6f);
-    const float  VN4(0.000041603292906656984871f);
-    const float  VN3(-0.00013134036773265025626f);
-    const float  VN2(0.038657983986041781264f);
-    const float  VN1(0.11285044772717598220f);
-    const float  VN0(1.1283802385263030286f);
+    const float VN6(1.9296833005951166339e-8f);
+    const float VN5(-1.4213390571557850962e-6f);
+    const float VN4(0.000041603292906656984871f);
+    const float VN3(-0.00013134036773265025626f);
+    const float VN2(0.038657983986041781264f);
+    const float VN1(0.11285044772717598220f);
+    const float VN0(1.1283802385263030286f);
 
-    const float  VD3(0.0066752224023576045451f);
-    const float  VD2(0.078647795836373922256f);
-    const float  VD1(0.43336185284710920150f);
-    const float  VD0(1.0f);
+    const float VD3(0.0066752224023576045451f);
+    const float VD2(0.078647795836373922256f);
+    const float VD1(0.43336185284710920150f);
+    const float VD0(1.0f);
 
-    float        z4;
-    float        polyVN0, polyVN1, polyVD0, polyVD1;
+    float z4;
+    float polyVN0, polyVN1, polyVD0, polyVD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyVD1        = fma(VD3, z4, VD1);
-    polyVD0        = fma(VD2, z4, VD0);
-    polyVD0        = fma(polyVD1, z2, polyVD0);
+    polyVD1 = fma(VD3, z4, VD1);
+    polyVD0 = fma(VD2, z4, VD0);
+    polyVD0 = fma(polyVD1, z2, polyVD0);
 
-    polyVN0        = fma(VN6, z4, VN4);
-    polyVN1        = fma(VN5, z4, VN3);
-    polyVN0        = fma(polyVN0, z4, VN2);
-    polyVN1        = fma(polyVN1, z4, VN1);
-    polyVN0        = fma(polyVN0, z4, VN0);
-    polyVN0        = fma(polyVN1, z2, polyVN0);
+    polyVN0 = fma(VN6, z4, VN4);
+    polyVN1 = fma(VN5, z4, VN3);
+    polyVN0 = fma(polyVN0, z4, VN2);
+    polyVN1 = fma(polyVN1, z4, VN1);
+    polyVN0 = fma(polyVN0, z4, VN0);
+    polyVN0 = fma(polyVN1, z2, polyVN0);
 
     return polyVN0 / polyVD0;
 }
@@ -467,8 +447,7 @@ pmePotentialCorrection(float z2)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-copysign(double x, double y)
+static inline double copysign(double x, double y)
 {
     return std::copysign(x, y);
 }
@@ -486,9 +465,8 @@ copysign(double x, double y)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-invsqrtPair(double x0,    double x1,
-            double *out0, double *out1)
+static inline void invsqrtPair(double x0,    double x1,
+                               double *out0, double *out1)
 {
     *out0 = invsqrt(x0);
     *out1 = invsqrt(x1);
@@ -503,10 +481,9 @@ invsqrtPair(double x0,    double x1,
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-inv(double x)
+static inline double inv(double x)
 {
-    return 1.0/x;
+    return 1.0 / x;
 }
 
 /*! \brief Calculate 1/sqrt(x) for masked entry of double.
@@ -524,8 +501,7 @@ inv(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskzInvsqrt(double x, bool m)
+static inline double maskzInvsqrt(double x, bool m)
 {
     return m ? invsqrt(x) : 0.0;
 }
@@ -545,8 +521,7 @@ maskzInvsqrt(double x, bool m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskzInv(double x, bool m)
+static inline double maskzInv(double x, bool m)
 {
     return m ? inv(x) : 0.0;
 }
@@ -562,8 +537,7 @@ maskzInv(double x, bool m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-log(double x)
+static inline double log(double x)
 {
     return std::log(x);
 }
@@ -577,8 +551,7 @@ log(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-exp2(double x)
+static inline double exp2(double x)
 {
     return std::exp2(x);
 }
@@ -592,8 +565,7 @@ exp2(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-exp(double x)
+static inline double exp(double x)
 {
     return std::exp(x);
 }
@@ -607,8 +579,7 @@ exp(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-erf(double x)
+static inline double erf(double x)
 {
     return std::erf(x);
 }
@@ -622,8 +593,7 @@ erf(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-erfc(double x)
+static inline double erfc(double x)
 {
     return std::erfc(x);
 }
@@ -639,8 +609,7 @@ erfc(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-sincos(double x, double *sinval, double *cosval)
+static inline void sincos(double x, double *sinval, double *cosval)
 {
     *sinval = std::sin(x);
     *cosval = std::cos(x);
@@ -655,8 +624,7 @@ sincos(double x, double *sinval, double *cosval)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-sin(double x)
+static inline double sin(double x)
 {
     return std::sin(x);
 }
@@ -670,8 +638,7 @@ sin(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-cos(double x)
+static inline double cos(double x)
 {
     return std::cos(x);
 }
@@ -685,8 +652,7 @@ cos(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-tan(double x)
+static inline double tan(double x)
 {
     return std::tan(x);
 }
@@ -700,8 +666,7 @@ tan(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-asin(double x)
+static inline double asin(double x)
 {
     return std::asin(x);
 }
@@ -715,8 +680,7 @@ asin(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-acos(double x)
+static inline double acos(double x)
 {
     return std::acos(x);
 }
@@ -730,8 +694,7 @@ acos(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-atan(double x)
+static inline double atan(double x)
 {
     return std::atan(x);
 }
@@ -746,8 +709,7 @@ atan(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-atan2(double y, double x)
+static inline double atan2(double y, double x)
 {
     return std::atan2(y, x);
 }
@@ -763,52 +725,51 @@ atan2(double y, double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-pmeForceCorrection(double z2)
+static inline double pmeForceCorrection(double z2)
 {
-    const double  FN10(-8.0072854618360083154e-14);
-    const double  FN9(1.1859116242260148027e-11);
-    const double  FN8(-8.1490406329798423616e-10);
-    const double  FN7(3.4404793543907847655e-8);
-    const double  FN6(-9.9471420832602741006e-7);
-    const double  FN5(0.000020740315999115847456);
-    const double  FN4(-0.00031991745139313364005);
-    const double  FN3(0.0035074449373659008203);
-    const double  FN2(-0.031750380176100813405);
-    const double  FN1(0.13884101728898463426);
-    const double  FN0(-0.75225277815249618847);
+    const double FN10(-8.0072854618360083154e-14);
+    const double FN9(1.1859116242260148027e-11);
+    const double FN8(-8.1490406329798423616e-10);
+    const double FN7(3.4404793543907847655e-8);
+    const double FN6(-9.9471420832602741006e-7);
+    const double FN5(0.000020740315999115847456);
+    const double FN4(-0.00031991745139313364005);
+    const double FN3(0.0035074449373659008203);
+    const double FN2(-0.031750380176100813405);
+    const double FN1(0.13884101728898463426);
+    const double FN0(-0.75225277815249618847);
 
-    const double  FD5(0.000016009278224355026701);
-    const double  FD4(0.00051055686934806966046);
-    const double  FD3(0.0081803507497974289008);
-    const double  FD2(0.077181146026670287235);
-    const double  FD1(0.41543303143712535988);
-    const double  FD0(1.0);
+    const double FD5(0.000016009278224355026701);
+    const double FD4(0.00051055686934806966046);
+    const double FD3(0.0081803507497974289008);
+    const double FD2(0.077181146026670287235);
+    const double FD1(0.41543303143712535988);
+    const double FD0(1.0);
 
-    double        z4;
-    double        polyFN0, polyFN1, polyFD0, polyFD1;
+    double z4;
+    double polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyFD1        = fma(FD5, z4, FD3);
-    polyFD1        = fma(polyFD1, z4, FD1);
-    polyFD1        = polyFD1 * z2;
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = polyFD0 + polyFD1;
+    polyFD1 = fma(FD5, z4, FD3);
+    polyFD1 = fma(polyFD1, z4, FD1);
+    polyFD1 = polyFD1 * z2;
+    polyFD0 = fma(FD4, z4, FD2);
+    polyFD0 = fma(polyFD0, z4, FD0);
+    polyFD0 = polyFD0 + polyFD1;
 
-    polyFD0        = inv(polyFD0);
+    polyFD0 = inv(polyFD0);
 
-    polyFN0        = fma(FN10, z4, FN8);
-    polyFN0        = fma(polyFN0, z4, FN6);
-    polyFN0        = fma(polyFN0, z4, FN4);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN1        = fma(FN9, z4, FN7);
-    polyFN1        = fma(polyFN1, z4, FN5);
-    polyFN1        = fma(polyFN1, z4, FN3);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN1, z2, polyFN0);
+    polyFN0 = fma(FN10, z4, FN8);
+    polyFN0 = fma(polyFN0, z4, FN6);
+    polyFN0 = fma(polyFN0, z4, FN4);
+    polyFN0 = fma(polyFN0, z4, FN2);
+    polyFN0 = fma(polyFN0, z4, FN0);
+    polyFN1 = fma(FN9, z4, FN7);
+    polyFN1 = fma(polyFN1, z4, FN5);
+    polyFN1 = fma(polyFN1, z4, FN3);
+    polyFN1 = fma(polyFN1, z4, FN1);
+    polyFN0 = fma(polyFN1, z2, polyFN0);
 
     return polyFN0 * polyFD0;
 }
@@ -824,49 +785,48 @@ pmeForceCorrection(double z2)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-pmePotentialCorrection(double z2)
+static inline double pmePotentialCorrection(double z2)
 {
-    const double  VN9(-9.3723776169321855475e-13);
-    const double  VN8(1.2280156762674215741e-10);
-    const double  VN7(-7.3562157912251309487e-9);
-    const double  VN6(2.6215886208032517509e-7);
-    const double  VN5(-4.9532491651265819499e-6);
-    const double  VN4(0.00025907400778966060389);
-    const double  VN3(0.0010585044856156469792);
-    const double  VN2(0.045247661136833092885);
-    const double  VN1(0.11643931522926034421);
-    const double  VN0(1.1283791671726767970);
+    const double VN9(-9.3723776169321855475e-13);
+    const double VN8(1.2280156762674215741e-10);
+    const double VN7(-7.3562157912251309487e-9);
+    const double VN6(2.6215886208032517509e-7);
+    const double VN5(-4.9532491651265819499e-6);
+    const double VN4(0.00025907400778966060389);
+    const double VN3(0.0010585044856156469792);
+    const double VN2(0.045247661136833092885);
+    const double VN1(0.11643931522926034421);
+    const double VN0(1.1283791671726767970);
 
-    const double  VD5(0.000021784709867336150342);
-    const double  VD4(0.00064293662010911388448);
-    const double  VD3(0.0096311444822588683504);
-    const double  VD2(0.085608012351550627051);
-    const double  VD1(0.43652499166614811084);
-    const double  VD0(1.0);
+    const double VD5(0.000021784709867336150342);
+    const double VD4(0.00064293662010911388448);
+    const double VD3(0.0096311444822588683504);
+    const double VD2(0.085608012351550627051);
+    const double VD1(0.43652499166614811084);
+    const double VD0(1.0);
 
-    double        z4;
-    double        polyVN0, polyVN1, polyVD0, polyVD1;
+    double z4;
+    double polyVN0, polyVN1, polyVD0, polyVD1;
 
-    z4             = z2 * z2;
+    z4 = z2 * z2;
 
-    polyVD1        = fma(VD5, z4, VD3);
-    polyVD0        = fma(VD4, z4, VD2);
-    polyVD1        = fma(polyVD1, z4, VD1);
-    polyVD0        = fma(polyVD0, z4, VD0);
-    polyVD0        = fma(polyVD1, z2, polyVD0);
+    polyVD1 = fma(VD5, z4, VD3);
+    polyVD0 = fma(VD4, z4, VD2);
+    polyVD1 = fma(polyVD1, z4, VD1);
+    polyVD0 = fma(polyVD0, z4, VD0);
+    polyVD0 = fma(polyVD1, z2, polyVD0);
 
-    polyVD0        = inv(polyVD0);
+    polyVD0 = inv(polyVD0);
 
-    polyVN1        = fma(VN9, z4, VN7);
-    polyVN0        = fma(VN8, z4, VN6);
-    polyVN1        = fma(polyVN1, z4, VN5);
-    polyVN0        = fma(polyVN0, z4, VN4);
-    polyVN1        = fma(polyVN1, z4, VN3);
-    polyVN0        = fma(polyVN0, z4, VN2);
-    polyVN1        = fma(polyVN1, z4, VN1);
-    polyVN0        = fma(polyVN0, z4, VN0);
-    polyVN0        = fma(polyVN1, z2, polyVN0);
+    polyVN1 = fma(VN9, z4, VN7);
+    polyVN0 = fma(VN8, z4, VN6);
+    polyVN1 = fma(polyVN1, z4, VN5);
+    polyVN0 = fma(polyVN0, z4, VN4);
+    polyVN1 = fma(polyVN1, z4, VN3);
+    polyVN0 = fma(polyVN0, z4, VN2);
+    polyVN1 = fma(polyVN1, z4, VN1);
+    polyVN0 = fma(polyVN0, z4, VN0);
+    polyVN0 = fma(polyVN1, z2, polyVN0);
 
     return polyVN0 * polyVD0;
 }
@@ -887,8 +847,7 @@ pmePotentialCorrection(double z2)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-invsqrtSingleAccuracy(double x)
+static inline double invsqrtSingleAccuracy(double x)
 {
     return invsqrt(static_cast<float>(x));
 }
@@ -904,9 +863,8 @@ invsqrtSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-invsqrtPairSingleAccuracy(double x0,    double x1,
-                          double *out0, double *out1)
+static inline void invsqrtPairSingleAccuracy(double x0,    double x1,
+                                             double *out0, double *out1)
 {
     *out0 = invsqrt(static_cast<float>(x0));
     *out1 = invsqrt(static_cast<float>(x1));
@@ -921,10 +879,9 @@ invsqrtPairSingleAccuracy(double x0,    double x1,
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-invSingleAccuracy(double x)
+static inline double invSingleAccuracy(double x)
 {
-    return 1.0f/x;
+    return 1.0f / x;
 }
 
 /*! \brief Calculate 1/sqrt(x) for masked entry of double, but with single accuracy.
@@ -942,8 +899,7 @@ invSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskzInvsqrtSingleAccuracy(double x, bool m)
+static inline double maskzInvsqrtSingleAccuracy(double x, bool m)
 {
     return m ? invsqrtSingleAccuracy(x) : 0.0;
 }
@@ -963,8 +919,7 @@ maskzInvsqrtSingleAccuracy(double x, bool m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-maskzInvSingleAccuracy(double x, bool m)
+static inline double maskzInvSingleAccuracy(double x, bool m)
 {
     return m ? invSingleAccuracy(x) : 0.0;
 }
@@ -978,8 +933,7 @@ maskzInvSingleAccuracy(double x, bool m)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-sqrtSingleAccuracy(double x)
+static inline double sqrtSingleAccuracy(double x)
 {
     return std::sqrt(static_cast<float>(x));
 }
@@ -993,8 +947,7 @@ sqrtSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-logSingleAccuracy(double x)
+static inline double logSingleAccuracy(double x)
 {
     return std::log(static_cast<float>(x));
 }
@@ -1008,8 +961,7 @@ logSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-exp2SingleAccuracy(double x)
+static inline double exp2SingleAccuracy(double x)
 {
     return std::exp2(static_cast<float>(x));
 }
@@ -1023,8 +975,7 @@ exp2SingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-expSingleAccuracy(double x)
+static inline double expSingleAccuracy(double x)
 {
     return std::exp(static_cast<float>(x));
 }
@@ -1038,8 +989,7 @@ expSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-erfSingleAccuracy(double x)
+static inline double erfSingleAccuracy(double x)
 {
     return std::erf(static_cast<float>(x));
 }
@@ -1053,8 +1003,7 @@ erfSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-erfcSingleAccuracy(double x)
+static inline double erfcSingleAccuracy(double x)
 {
     return std::erfc(static_cast<float>(x));
 }
@@ -1070,8 +1019,7 @@ erfcSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void
-sincosSingleAccuracy(double x, double *sinval, double *cosval)
+static inline void sincosSingleAccuracy(double x, double *sinval, double *cosval)
 {
     // There is no single-precision sincos guaranteed in C++11, so use
     // separate functions and hope the compiler optimizes it for us.
@@ -1088,8 +1036,7 @@ sincosSingleAccuracy(double x, double *sinval, double *cosval)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-sinSingleAccuracy(double x)
+static inline double sinSingleAccuracy(double x)
 {
     return std::sin(static_cast<float>(x));
 }
@@ -1103,8 +1050,7 @@ sinSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-cosSingleAccuracy(double x)
+static inline double cosSingleAccuracy(double x)
 {
     return std::cos(static_cast<float>(x));
 }
@@ -1118,8 +1064,7 @@ cosSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-tanSingleAccuracy(double x)
+static inline double tanSingleAccuracy(double x)
 {
     return std::tan(static_cast<float>(x));
 }
@@ -1133,8 +1078,7 @@ tanSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-asinSingleAccuracy(double x)
+static inline double asinSingleAccuracy(double x)
 {
     return std::asin(static_cast<float>(x));
 }
@@ -1148,8 +1092,7 @@ asinSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-acosSingleAccuracy(double x)
+static inline double acosSingleAccuracy(double x)
 {
     return std::acos(static_cast<float>(x));
 }
@@ -1163,8 +1106,7 @@ acosSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-atanSingleAccuracy(double x)
+static inline double atanSingleAccuracy(double x)
 {
     return std::atan(static_cast<float>(x));
 }
@@ -1179,8 +1121,7 @@ atanSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-atan2SingleAccuracy(double y, double x)
+static inline double atan2SingleAccuracy(double y, double x)
 {
     return std::atan2(static_cast<float>(y), static_cast<float>(x));
 }
@@ -1196,41 +1137,40 @@ atan2SingleAccuracy(double y, double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-pmeForceCorrectionSingleAccuracy(double z2)
+static inline double pmeForceCorrectionSingleAccuracy(double z2)
 {
-    const float  FN6(-1.7357322914161492954e-8f);
-    const float  FN5(1.4703624142580877519e-6f);
-    const float  FN4(-0.000053401640219807709149f);
-    const float  FN3(0.0010054721316683106153f);
-    const float  FN2(-0.019278317264888380590f);
-    const float  FN1(0.069670166153766424023f);
-    const float  FN0(-0.75225204789749321333f);
+    const float FN6(-1.7357322914161492954e-8f);
+    const float FN5(1.4703624142580877519e-6f);
+    const float FN4(-0.000053401640219807709149f);
+    const float FN3(0.0010054721316683106153f);
+    const float FN2(-0.019278317264888380590f);
+    const float FN1(0.069670166153766424023f);
+    const float FN0(-0.75225204789749321333f);
 
-    const float  FD4(0.0011193462567257629232f);
-    const float  FD3(0.014866955030185295499f);
-    const float  FD2(0.11583842382862377919f);
-    const float  FD1(0.50736591960530292870f);
-    const float  FD0(1.0f);
+    const float FD4(0.0011193462567257629232f);
+    const float FD3(0.014866955030185295499f);
+    const float FD2(0.11583842382862377919f);
+    const float FD1(0.50736591960530292870f);
+    const float FD0(1.0f);
 
-    float        z4;
-    float        polyFN0, polyFN1, polyFD0, polyFD1;
+    float z4;
+    float polyFN0, polyFN1, polyFD0, polyFD1;
 
-    float        z2f = z2;
+    float z2f = z2;
 
-    z4             = z2f * z2f;
+    z4 = z2f * z2f;
 
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD1        = fma(FD3, z4, FD1);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = fma(polyFD1, z2f, polyFD0);
+    polyFD0 = fma(FD4, z4, FD2);
+    polyFD1 = fma(FD3, z4, FD1);
+    polyFD0 = fma(polyFD0, z4, FD0);
+    polyFD0 = fma(polyFD1, z2f, polyFD0);
 
-    polyFN0        = fma(FN6, z4, FN4);
-    polyFN1        = fma(FN5, z4, FN3);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN0        = fma(polyFN1, z2f, polyFN0);
+    polyFN0 = fma(FN6, z4, FN4);
+    polyFN1 = fma(FN5, z4, FN3);
+    polyFN0 = fma(polyFN0, z4, FN2);
+    polyFN1 = fma(polyFN1, z4, FN1);
+    polyFN0 = fma(polyFN0, z4, FN0);
+    polyFN0 = fma(polyFN1, z2f, polyFN0);
 
     return polyFN0 / polyFD0;
 }
@@ -1246,39 +1186,38 @@ pmeForceCorrectionSingleAccuracy(double z2)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline double
-pmePotentialCorrectionSingleAccuracy(double z2)
+static inline double pmePotentialCorrectionSingleAccuracy(double z2)
 {
-    const float  VN6(1.9296833005951166339e-8f);
-    const float  VN5(-1.4213390571557850962e-6f);
-    const float  VN4(0.000041603292906656984871f);
-    const float  VN3(-0.00013134036773265025626f);
-    const float  VN2(0.038657983986041781264f);
-    const float  VN1(0.11285044772717598220f);
-    const float  VN0(1.1283802385263030286f);
+    const float VN6(1.9296833005951166339e-8f);
+    const float VN5(-1.4213390571557850962e-6f);
+    const float VN4(0.000041603292906656984871f);
+    const float VN3(-0.00013134036773265025626f);
+    const float VN2(0.038657983986041781264f);
+    const float VN1(0.11285044772717598220f);
+    const float VN0(1.1283802385263030286f);
 
-    const float  VD3(0.0066752224023576045451f);
-    const float  VD2(0.078647795836373922256f);
-    const float  VD1(0.43336185284710920150f);
-    const float  VD0(1.0f);
+    const float VD3(0.0066752224023576045451f);
+    const float VD2(0.078647795836373922256f);
+    const float VD1(0.43336185284710920150f);
+    const float VD0(1.0f);
 
-    float        z4;
-    float        polyVN0, polyVN1, polyVD0, polyVD1;
+    float z4;
+    float polyVN0, polyVN1, polyVD0, polyVD1;
 
-    float        z2f = z2;
+    float z2f = z2;
 
-    z4             = z2f * z2f;
+    z4 = z2f * z2f;
 
-    polyVD1        = fma(VD3, z4, VD1);
-    polyVD0        = fma(VD2, z4, VD0);
-    polyVD0        = fma(polyVD1, z2f, polyVD0);
+    polyVD1 = fma(VD3, z4, VD1);
+    polyVD0 = fma(VD2, z4, VD0);
+    polyVD0 = fma(polyVD1, z2f, polyVD0);
 
-    polyVN0        = fma(VN6, z4, VN4);
-    polyVN1        = fma(VN5, z4, VN3);
-    polyVN0        = fma(polyVN0, z4, VN2);
-    polyVN1        = fma(polyVN1, z4, VN1);
-    polyVN0        = fma(polyVN0, z4, VN0);
-    polyVN0        = fma(polyVN1, z2f, polyVN0);
+    polyVN0 = fma(VN6, z4, VN4);
+    polyVN1 = fma(VN5, z4, VN3);
+    polyVN0 = fma(polyVN0, z4, VN2);
+    polyVN1 = fma(polyVN1, z4, VN1);
+    polyVN0 = fma(polyVN0, z4, VN0);
+    polyVN0 = fma(polyVN1, z2f, polyVN0);
 
     return polyVN0 / polyVD0;
 }

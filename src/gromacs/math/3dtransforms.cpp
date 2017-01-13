@@ -63,7 +63,7 @@ void gmx_mat4_transform_point(mat4 m, const rvec x, vec4 v)
 
     for (i = 0; (i < N); i++)
     {
-        v[i] = m[XX][i]*x[XX]+m[YY][i]*x[YY]+m[ZZ][i]*x[ZZ]+m[WW][i];
+        v[i] = m[XX][i] * x[XX] + m[YY][i] * x[YY] + m[ZZ][i] * x[ZZ] + m[WW][i];
     }
 }
 
@@ -78,7 +78,7 @@ void gmx_mat4_mmul(mat4 A, mat4 B, mat4 C)
             A[i][j] = 0;
             for (k = 0; (k < N); k++)
             {
-                A[i][j] += B[i][k]*C[k][j];
+                A[i][j] += B[i][k] * C[k][j];
             }
         }
     }

@@ -111,34 +111,33 @@ highBitCounter
      *                           possible to optimize this extensively at compile time.
      *  \param         ctr       Reference to counter to check and clear.
      */
-    template<class UIntType, std::size_t words, unsigned int highBits>
-    static bool
-    checkAndClear(std::array<UIntType, words> * ctr)
+    template <class UIntType, std::size_t words, unsigned int highBits>
+    static bool checkAndClear(std::array<UIntType, words> * ctr)
     {
-        const std::size_t  bitsPerWord       = std::numeric_limits<UIntType>::digits;
-        const std::size_t  bitsTotal         = bitsPerWord*words;
+        const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
+        const std::size_t bitsTotal   = bitsPerWord * words;
 
         static_assert(highBits <= bitsTotal, "High bits do not fit in counter.");
 
-        const std::size_t  lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
-        const std::size_t  lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
-        const UIntType     lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
-        const UIntType     mask              = lastWordOne-1;
+        const std::size_t lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
+        const std::size_t lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
+        const UIntType    lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
+        const UIntType    mask              = lastWordOne - 1;
 
-        bool               isClear              = true;
+        bool isClear = true;
 
-        for (unsigned int i = words-1; i > lastWordIdx; --i)
+        for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
             if ((*ctr)[i])
             {
-                isClear    = false;
-                (*ctr)[i]  = 0;
+                isClear   = false;
+                (*ctr)[i] = 0;
             }
         }
         if (highBits > 0 && (*ctr)[lastWordIdx] >= lastWordOne)
         {
-            isClear                 = false;
-            (*ctr)[lastWordIdx]    &= mask;
+            isClear              = false;
+            (*ctr)[lastWordIdx] &= mask;
         }
         return isClear;
     }
@@ -155,18 +154,17 @@ highBitCounter
      *  This routine will work across the word boundaries for any number
      *  of internal counter bits that fits in the total counter.
      */
-    template<class UIntType, std::size_t words, unsigned int highBits>
-    static void
-    increment(std::array<UIntType, words> * ctr)
+    template <class UIntType, std::size_t words, unsigned int highBits>
+    static void increment(std::array<UIntType, words> * ctr)
     {
-        const std::size_t  bitsPerWord       = std::numeric_limits<UIntType>::digits;
-        const std::size_t  bitsTotal         = bitsPerWord*words;
+        const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
+        const std::size_t bitsTotal   = bitsPerWord * words;
 
         static_assert(highBits <= bitsTotal, "High bits do not fit in counter.");
 
-        const std::size_t  lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
-        const std::size_t  lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
-        const UIntType     lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
+        const std::size_t lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
+        const std::size_t lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
+        const UIntType    lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
 
         // For algorithm & efficiency reasons we need to store the internal counter in
         // the same array as the user-provided counter, so we use the higest bits, possibly
@@ -207,7 +205,7 @@ highBitCounter
             GMX_THROW(InternalError("Cannot increment random engine defined with 0 internal counter bits."));
         }
 
-        for (unsigned int i = words-1; i > lastWordIdx; --i)
+        for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
             (*ctr)[i]++;
             if ((*ctr)[i])
@@ -236,26 +234,25 @@ highBitCounter
      *  This routine will work across the word boundaries for any number
      *  of internal counter bits that fits in the total counter.
      */
-    template<class UIntType, std::size_t words, unsigned int highBits>
-    static void
-    increment(std::array<UIntType, words> * ctr, UIntType addend)
+    template <class UIntType, std::size_t words, unsigned int highBits>
+    static void increment(std::array<UIntType, words> * ctr, UIntType addend)
     {
-        const std::size_t  bitsPerWord       = std::numeric_limits<UIntType>::digits;
-        const std::size_t  bitsTotal         = bitsPerWord*words;
+        const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
+        const std::size_t bitsTotal   = bitsPerWord * words;
 
         static_assert(highBits <= bitsTotal, "High bits do not fit in counter.");
 
-        const std::size_t  lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
-        const std::size_t  lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
-        const UIntType     lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
-        const UIntType     lastWordMaxVal    = (~static_cast<UIntType>(0)) >> lastWordLowBitIdx;
+        const std::size_t lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
+        const std::size_t lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
+        const UIntType    lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
+        const UIntType    lastWordMaxVal    = (~static_cast<UIntType>(0)) >> lastWordLowBitIdx;
 
         if (lastWordIdx >= words)
         {
             GMX_THROW(InternalError("Cannot increment random engine defined with 0 internal counter bits."));
         }
 
-        for (unsigned int i = words-1; i > lastWordIdx; --i)
+        for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
             (*ctr)[i] += addend;
             addend     = ((*ctr)[i] < addend);   // 1 is the carry!
@@ -325,7 +322,7 @@ highBitCounter
  *                  can return after each restart will be
  *                  words*2^internalCounterBits.
  */
-template<unsigned int rounds, unsigned int internalCounterBits>
+template <unsigned int rounds, unsigned int internalCounterBits>
 class ThreeFry2x64General
 {
     // While this class will formally work with any value for rounds, there is
@@ -351,10 +348,9 @@ class ThreeFry2x64General
          *
          *  \return Input value rotated 'bits' left.
          */
-        result_type
-        rotLeft(result_type i, unsigned int bits)
+        result_type rotLeft(result_type i, unsigned int bits)
         {
-            return (i << bits) | (i >> (std::numeric_limits<result_type>::digits-bits));
+            return (i << bits) | (i >> (std::numeric_limits<result_type>::digits - bits));
         }
 
         /*! \brief Perform encryption step for ThreeFry2x64 algorithm
@@ -369,14 +365,13 @@ class ThreeFry2x64General
          *
          *  \return Newly encrypted 2x64 block, according to the class template parameters.
          */
-        counter_type
-        generateBlock(const counter_type &key,
-                      const counter_type &ctr)
+        counter_type generateBlock(const counter_type &key,
+                                   const counter_type &ctr)
         {
-            const unsigned int  rotations[] = {16, 42, 12, 31, 16, 32, 24, 21};
-            counter_type        x           = ctr;
+            const unsigned int rotations[] = {16, 42, 12, 31, 16, 32, 24, 21};
+            counter_type       x           = ctr;
 
-            result_type         ks[3] = { 0x0, 0x0, 0x1bd11bdaa9fc1a22 };
+            result_type ks[3] = { 0x0, 0x0, 0x1bd11bdaa9fc1a22 };
 
             // This is actually a pretty simple routine that merely executes the
             // for-block specified further down 'rounds' times. However, both
@@ -412,7 +407,7 @@ class ThreeFry2x64General
             for (unsigned int r = 20; r < rounds; r++)
             {
                 x[0] += x[1];
-                x[1]  = rotLeft(x[1], rotations[r%8]);
+                x[1]  = rotLeft(x[1], rotations[r % 8]);
                 x[1] ^= x[0];
                 if (( (r + 1) & 3 ) == 0)
                 {
@@ -494,8 +489,7 @@ class ThreeFry2x64General
          *  to save the user the trouble of making sure these are zero
          *  when using e.g. a random device, we just ignore them.
          */
-        void
-        seed(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+        void seed(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
         {
             seed(key0, static_cast<gmx_uint64_t>(domain));
         }
@@ -513,8 +507,7 @@ class ThreeFry2x64General
          *  \throws InternalError if the high bits needed to encode the number of counter
          *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
          */
-        void
-        seed(gmx_uint64_t key0, gmx_uint64_t key1)
+        void seed(gmx_uint64_t key0, gmx_uint64_t key1)
         {
             const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? ( StaticLog2<internalCounterBits>::value + 1 ) : 0;
 
@@ -523,7 +516,7 @@ class ThreeFry2x64General
             if (internalCounterBits > 0)
             {
                 internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBitsBits>(&key_);
-                internal::highBitCounter::increment<result_type, 2, internalCounterBitsBits>(&key_, internalCounterBits-1);
+                internal::highBitCounter::increment<result_type, 2, internalCounterBitsBits>(&key_, internalCounterBits - 1);
             }
             restart(0, 0);
         }
@@ -542,8 +535,7 @@ class ThreeFry2x64General
          *         for the internal part of the counter are set. The number of
          *         reserved bits is to the last template parameter to the class.
          */
-        void
-        restart(gmx_uint64_t ctr0 = 0, gmx_uint64_t ctr1 = 0)
+        void restart(gmx_uint64_t ctr0 = 0, gmx_uint64_t ctr1 = 0)
         {
 
             counter_ = {{ctr0, ctr1}};
@@ -563,8 +555,7 @@ class ThreeFry2x64General
          *
          *  \throws InternalError if the internal counter space is exhausted.
          */
-        result_type
-        operator()()
+        result_type operator()()
         {
             if (index_ >= c_resultsPerCounter_)
             {
@@ -586,8 +577,7 @@ class ThreeFry2x64General
          *
          *  \throws InternalError if the internal counter space is exhausted.
          */
-        void
-        discard(gmx_uint64_t n)
+        void discard(gmx_uint64_t n)
         {
             index_ += n % c_resultsPerCounter_;
             n      /= c_resultsPerCounter_;
@@ -616,8 +606,7 @@ class ThreeFry2x64General
          * This routine should return true if the two engines will generate
          * identical random streams when drawing.
          */
-        bool
-        operator==(const ThreeFry2x64General<rounds, internalCounterBits> &x) const
+        bool operator==(const ThreeFry2x64General<rounds, internalCounterBits> &x) const
         {
             // block_ is uniquely specified by key_ and counter_.
             return (key_ == x.key_ && counter_ == x.counter_ && index_ == x.index_);
@@ -630,13 +619,12 @@ class ThreeFry2x64General
          * This routine should return true if the two engines will generate
          * different random streams when drawing.
          */
-        bool
-        operator!=(const ThreeFry2x64General<rounds, internalCounterBits> &x) const { return !operator==(x); }
+        bool operator!=(const ThreeFry2x64General<rounds, internalCounterBits> &x) const { return !operator==(x); }
 
     private:
 
         /*! \brief Number of results returned for each invocation of the block generation */
-        static const unsigned int c_resultsPerCounter_  = static_cast<unsigned int>(sizeof(counter_type)/sizeof(result_type));
+        static const unsigned int c_resultsPerCounter_ = static_cast<unsigned int>(sizeof(counter_type) / sizeof(result_type));
 
         /*! \brief ThreeFry2x64 key, i.e. the random seed for this stream.
          *
@@ -671,7 +659,7 @@ class ThreeFry2x64General
  *  counters, and is most  efficient when we only need a few random values
  *  before restarting the counters with new values.
  */
-template<unsigned int internalCounterBits = 64>
+template <unsigned int internalCounterBits = 64>
 class ThreeFry2x64 : public ThreeFry2x64General<20, internalCounterBits>
 {
     public:
@@ -719,7 +707,7 @@ class ThreeFry2x64 : public ThreeFry2x64General<20, internalCounterBits>
  *  efficient when we only need a few random values before restarting
  *  the counters with new values.
  */
-template<unsigned int internalCounterBits = 64>
+template <unsigned int internalCounterBits = 64>
 class ThreeFry2x64Fast : public ThreeFry2x64General<13, internalCounterBits>
 {
     public:

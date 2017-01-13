@@ -93,10 +93,10 @@ class PositionCalculationTest : public ::testing::Test
                                const gmx::ConstArrayRef<int> &evalAtoms,
                                const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
 
-        gmx::test::TestReferenceData        data_;
-        gmx::test::TestReferenceChecker     checker_;
-        gmx::test::TopologyManager          topManager_;
-        gmx::PositionCalculationCollection  pcc_;
+        gmx::test::TestReferenceData       data_;
+        gmx::test::TestReferenceChecker    checker_;
+        gmx::test::TopologyManager         topManager_;
+        gmx::PositionCalculationCollection pcc_;
 
     private:
         typedef std::unique_ptr<gmx_ana_pos_t> PositionPointer;
@@ -123,9 +123,9 @@ class PositionCalculationTest : public ::testing::Test
                 return *this;
             }
 
-            PositionPointer                 pos;
-            gmx_ana_poscalc_t              *pc;
-            const char                     *name;
+            PositionPointer    pos;
+            gmx_ana_poscalc_t *pc;
+            const char *       name;
         };
 
         typedef std::vector<PositionTest> PositionTestList;
@@ -135,9 +135,9 @@ class PositionCalculationTest : public ::testing::Test
                             const char *name, gmx_ana_pos_t *p,
                             bool bCoordinates);
 
-        std::vector<gmx_ana_poscalc_t *>    pcList_;
-        PositionTestList                    posList_;
-        bool                                bTopSet_;
+        std::vector<gmx_ana_poscalc_t *> pcList_;
+        PositionTestList                 posList_;
+        bool                             bTopSet_;
 };
 
 PositionCalculationTest::PositionCalculationTest()
@@ -157,7 +157,7 @@ PositionCalculationTest::~PositionCalculationTest()
 
 void PositionCalculationTest::generateCoordinates()
 {
-    t_atoms    &atoms = topManager_.atoms();
+    t_atoms &   atoms = topManager_.atoms();
     t_trxframe *frame = topManager_.frame();
     for (int i = 0; i < atoms.nr; ++i)
     {
@@ -177,15 +177,14 @@ void PositionCalculationTest::generateCoordinates()
     }
 }
 
-gmx_ana_poscalc_t *
-PositionCalculationTest::createCalculation(e_poscalc_t type, int flags)
+gmx_ana_poscalc_t *PositionCalculationTest::createCalculation(e_poscalc_t type, int flags)
 {
     pcList_.reserve(pcList_.size() + 1);
     pcList_.push_back(pcc_.createCalculation(type, flags));
     return pcList_.back();
 }
 
-void PositionCalculationTest::setMaximumGroup(gmx_ana_poscalc_t             *pc,
+void PositionCalculationTest::setMaximumGroup(gmx_ana_poscalc_t *            pc,
                                               const gmx::ConstArrayRef<int> &atoms)
 {
     setTopologyIfRequired();
@@ -195,12 +194,11 @@ void PositionCalculationTest::setMaximumGroup(gmx_ana_poscalc_t             *pc,
     gmx_ana_poscalc_set_maxindex(pc, &g);
 }
 
-gmx_ana_pos_t *
-PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
+gmx_ana_pos_t *PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
 {
     posList_.reserve(posList_.size() + 1);
     PositionPointer p(new gmx_ana_pos_t());
-    gmx_ana_pos_t  *result = p.get();
+    gmx_ana_pos_t * result = p.get();
     posList_.emplace_back(std::move(p), pc, name);
     gmx_ana_poscalc_init_pos(pc, result);
     return result;
@@ -208,7 +206,7 @@ PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
 
 void PositionCalculationTest::checkInitialized()
 {
-    gmx::test::TestReferenceChecker  compound(
+    gmx::test::TestReferenceChecker compound(
             checker_.checkCompound("InitializedPositions", nullptr));
     PositionTestList::const_iterator pi;
     for (pi = posList_.begin(); pi != posList_.end(); ++pi)
@@ -301,7 +299,7 @@ void PositionCalculationTest::setTopologyIfRequired()
     std::vector<gmx_ana_poscalc_t *>::const_iterator pci;
     for (pci = pcList_.begin(); pci != pcList_.end(); ++pci)
     {
-        const bool         requiresTopology
+        const bool requiresTopology
             = gmx_ana_poscalc_required_topology_info(*pci)
                 != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
         if (requiresTopology)
@@ -336,7 +334,7 @@ void PositionCalculationTest::checkPositions(
         gmx::test::TestReferenceChecker posCompound(
                 compound.checkCompound("Position", nullptr));
         posCompound.checkSequence(&p->m.mapb.a[p->m.mapb.index[i]],
-                                  &p->m.mapb.a[p->m.mapb.index[i+1]],
+                                  &p->m.mapb.a[p->m.mapb.index[i + 1]],
                                   "Atoms");
         posCompound.checkInteger(p->m.refid[i], "RefId");
         if (bCoordinates)

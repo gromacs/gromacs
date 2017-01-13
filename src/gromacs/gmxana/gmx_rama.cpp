@@ -58,23 +58,23 @@ static void plot_rama(FILE *out, t_xrama *xr)
 
     for (i = 0; (i < xr->npp); i++)
     {
-        phi = xr->dih[xr->pp[i].iphi].ang*RAD2DEG;
-        psi = xr->dih[xr->pp[i].ipsi].ang*RAD2DEG;
+        phi = xr->dih[xr->pp[i].iphi].ang * RAD2DEG;
+        psi = xr->dih[xr->pp[i].ipsi].ang * RAD2DEG;
         fprintf(out, "%g  %g  %s\n", phi, psi, xr->pp[i].label);
     }
 }
 
 int gmx_rama(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from your topology file",
         "and computes these as a function of time.",
         "Using simple Unix tools such as [IT]grep[it] you can select out",
         "specific residues."
     };
 
-    FILE             *out;
-    t_xrama          *xr;
+    FILE *            out;
+    t_xrama *         xr;
     int               j;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
@@ -109,8 +109,7 @@ int gmx_rama(int argc, char *argv[])
     {
         plot_rama(out, xr);
         j++;
-    }
-    while (new_data(xr));
+    } while (new_data(xr));
     fprintf(stderr, "\n");
     xvgrclose(out);
 

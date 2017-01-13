@@ -71,7 +71,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          * \param[in] settings   Storage settings.
          * \param     manager    Manager for this object.
          */
-        SelectionOptionStorage(const SelectionOption  &settings,
+        SelectionOptionStorage(const SelectionOption & settings,
                                SelectionOptionManager *manager);
 
         virtual OptionInfo &optionInfo() { return info_; }

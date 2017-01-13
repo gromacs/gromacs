@@ -48,22 +48,25 @@ extern "C"
 {
 #endif
 
-typedef struct {
+typedef struct
+{
     int  i, j;
     real dist;
 } t_dist;
 
-typedef struct {
-    int  conf, clust;
+typedef struct
+{
+    int conf, clust;
 } t_clustid;
 
-typedef struct {
+typedef struct
+{
     int      n1, nn;
-    int     *m_ind;
+    int *    m_ind;
     gmx_bool b1D;
     real     minrms, maxrms, sumrms;
-    real    *erow;
-    real   **mat;
+    real *   erow;
+    real **  mat;
 } t_mat;
 
 /* The matrix is indexed using the matrix index */

@@ -60,22 +60,21 @@ gmx_bool yesno(void)
     do
     {
         c = toupper(fgetc(stdin));
-    }
-    while ((c != 'Y') && (c != 'N'));
+    } while ((c != 'Y') && (c != 'N'));
 
     return (c == 'Y');
 }
 
 t_specbond *get_specbonds(int *nspecbond)
 {
-    const char  *sbfile = "specbond.dat";
+    const char *sbfile = "specbond.dat";
 
-    t_specbond  *sb = nullptr;
-    char         r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32];
-    double       length;
-    int          nb1, nb2;
-    char       **lines;
-    int          nlines, i, n;
+    t_specbond *sb = nullptr;
+    char        r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32];
+    double      length;
+    int         nb1, nb2;
+    char **     lines;
+    int         nlines, i, n;
 
     nlines = get_lines(sbfile, &lines);
     if (nlines > 0)
@@ -139,10 +138,10 @@ static gmx_bool is_special(int nsb, t_specbond sb[], char *res, char *atom)
 
     for (i = 0; (i < nsb); i++)
     {
-        if (((strncmp(sb[i].res1, res, 3) == 0) &&
-             (gmx_strcasecmp(sb[i].atom1, atom) == 0)) ||
-            ((strncmp(sb[i].res2, res, 3) == 0) &&
-             (gmx_strcasecmp(sb[i].atom2, atom) == 0)))
+        if (((strncmp(sb[i].res1, res, 3) == 0)
+             && (gmx_strcasecmp(sb[i].atom1, atom) == 0))
+            || ((strncmp(sb[i].res2, res, 3) == 0)
+                && (gmx_strcasecmp(sb[i].atom2, atom) == 0)))
         {
             return TRUE;
         }
@@ -164,20 +163,20 @@ static gmx_bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
     if (debug)
     {
         fprintf(stderr, "Checking %s-%d %s-%d and %s-%d %s-%d: %g ",
-                res1, pdba->resinfo[pdba->atom[a1].resind].nr, at1, a1+1,
-                res2, pdba->resinfo[pdba->atom[a2].resind].nr, at2, a2+1, d);
+                res1, pdba->resinfo[pdba->atom[a1].resind].nr, at1, a1 + 1,
+                res2, pdba->resinfo[pdba->atom[a2].resind].nr, at2, a2 + 1, d);
     }
 
     for (i = 0; (i < nsb); i++)
     {
         *index_sb = i;
-        if (((strncmp(sb[i].res1, res1, 3) == 0)  &&
-             (gmx_strcasecmp(sb[i].atom1, at1) == 0) &&
-             (strncmp(sb[i].res2, res2, 3) == 0)  &&
-             (gmx_strcasecmp(sb[i].atom2, at2) == 0)))
+        if (((strncmp(sb[i].res1, res1, 3) == 0)
+             && (gmx_strcasecmp(sb[i].atom1, at1) == 0)
+             && (strncmp(sb[i].res2, res2, 3) == 0)
+             && (gmx_strcasecmp(sb[i].atom2, at2) == 0)))
         {
             *bSwap = FALSE;
-            if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
+            if ((0.9 * sb[i].length < d) && (1.1 * sb[i].length > d))
             {
                 if (debug)
                 {
@@ -186,13 +185,13 @@ static gmx_bool is_bond(int nsb, t_specbond sb[], t_atoms *pdba, int a1, int a2,
                 return TRUE;
             }
         }
-        if (((strncmp(sb[i].res1, res2, 3) == 0)  &&
-             (gmx_strcasecmp(sb[i].atom1, at2) == 0) &&
-             (strncmp(sb[i].res2, res1, 3) == 0)  &&
-             (gmx_strcasecmp(sb[i].atom2, at1) == 0)))
+        if (((strncmp(sb[i].res1, res2, 3) == 0)
+             && (gmx_strcasecmp(sb[i].atom1, at2) == 0)
+             && (strncmp(sb[i].res2, res1, 3) == 0)
+             && (gmx_strcasecmp(sb[i].atom2, at1) == 0)))
         {
             *bSwap = TRUE;
-            if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
+            if ((0.9 * sb[i].length < d) && (1.1 * sb[i].length > d))
             {
                 if (debug)
                 {
@@ -227,14 +226,14 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                  t_ssbond **specbonds, gmx_bool bVerbose)
 {
     t_specbond *sb    = nullptr;
-    t_ssbond   *bonds = nullptr;
+    t_ssbond *  bonds = nullptr;
     int         nsb;
     int         nspec, nbonds;
-    int        *specp, *sgp;
+    int *       specp, *sgp;
     gmx_bool    bDoit, bSwap;
     int         i, j, b, e, e2;
     int         ai, aj, index_sb;
-    real      **d;
+    real **     d;
     char        buf[10];
 
     nbonds = 0;
@@ -252,11 +251,11 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
              * in the input that still needs to be removed.
              */
             if (is_special(nsb, sb, *pdba->resinfo[pdba->atom[i].resind].name,
-                           *pdba->atomname[i]) &&
-                !(nspec > 0 &&
-                  pdba->atom[sgp[nspec-1]].resind == pdba->atom[i].resind &&
-                  gmx_strcasecmp(*pdba->atomname[sgp[nspec-1]],
-                                 *pdba->atomname[i]) == 0))
+                           *pdba->atomname[i])
+                && !(nspec > 0
+                     && pdba->atom[sgp[nspec - 1]].resind == pdba->atom[i].resind
+                     && gmx_strcasecmp(*pdba->atomname[sgp[nspec - 1]],
+                                       *pdba->atomname[i]) == 0))
             {
                 specp[nspec] = pdba->atom[i].resind;
                 sgp[nspec]   = i;
@@ -287,7 +286,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
             {
                 /* print resname/number column headings */
                 fprintf(stderr, "%8s%8s", "", "");
-                e = std::min(b+MAXCOL, nspec-1);
+                e = std::min(b + MAXCOL, nspec - 1);
                 for (i = b; (i < e); i++)
                 {
                     sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
@@ -297,21 +296,21 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                 fprintf(stderr, "\n");
                 /* print atomname/number column headings */
                 fprintf(stderr, "%8s%8s", "", "");
-                e = std::min(b+MAXCOL, nspec-1);
+                e = std::min(b + MAXCOL, nspec - 1);
                 for (i = b; (i < e); i++)
                 {
-                    sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
+                    sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i] + 1);
                     fprintf(stderr, "%8s", buf);
                 }
                 fprintf(stderr, "\n");
                 /* print matrix */
-                e = std::min(b+MAXCOL, nspec);
-                for (i = b+1; (i < nspec); i++)
+                e = std::min(b + MAXCOL, nspec);
+                for (i = b + 1; (i < nspec); i++)
                 {
                     sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
                             pdba->resinfo[specp[i]].nr);
                     fprintf(stderr, "%8s", buf);
-                    sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
+                    sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i] + 1);
                     fprintf(stderr, "%8s", buf);
                     e2 = std::min(i, e);
                     for (j = b; (j < e2); j++)
@@ -328,7 +327,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
         for (i = 0; (i < nspec); i++)
         {
             ai = sgp[i];
-            for (j = i+1; (j < nspec); j++)
+            for (j = i + 1; (j < nspec); j++)
             {
                 aj = sgp[j];
                 /* Ensure creation of at most nspec special bonds to avoid overflowing bonds[] */
@@ -338,10 +337,10 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                             bInteractive ? "Link" : "Linking",
                             *pdba->resinfo[pdba->atom[ai].resind].name,
                             pdba->resinfo[specp[i]].nr,
-                            *pdba->atomname[ai], ai+1,
+                            *pdba->atomname[ai], ai + 1,
                             *pdba->resinfo[pdba->atom[aj].resind].name,
                             pdba->resinfo[specp[j]].nr,
-                            *pdba->atomname[aj], aj+1,
+                            *pdba->atomname[aj], aj + 1,
                             bInteractive ? " (y/n) ?" : "...\n");
                     bDoit = bInteractive ? yesno() : TRUE;
 

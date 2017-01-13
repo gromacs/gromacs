@@ -75,7 +75,7 @@ struct FileTypeMapping
     //! OptionFileType value to map.
     OptionFileType optionType;
     //! Corresponding file type from filetypes.h.
-    int            fileType;
+    int fileType;
 };
 
 //! Mappings from OptionFileType to file types in filetypes.h.
@@ -125,9 +125,9 @@ class FileTypeHandler
          *
          * -1 represents an unknown file type.
          */
-        int        fileType_;
+        int fileType_;
         //! Number of different extensions this type supports.
-        int        extensionCount_;
+        int extensionCount_;
         /*! \brief
          * List of simple file types that are included in this type.
          *
@@ -173,8 +173,7 @@ const char *FileTypeHandler::extension(int i) const
     return ftp2ext_with_dot(fileType_);
 }
 
-bool
-FileTypeHandler::isValidType(int fileType) const
+bool FileTypeHandler::isValidType(int fileType) const
 {
     if (genericTypes_ != nullptr)
     {
@@ -201,7 +200,7 @@ FileTypeHandler::isValidType(int fileType) const
  * FileNameOptionStorage
  */
 
-FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
+FileNameOptionStorage::FileNameOptionStorage(const FileNameOption & settings,
                                              FileNameOptionManager *manager)
     : MyBase(settings), info_(this), manager_(manager), fileType_(-1),
       defaultExtension_(""), bRead_(settings.bRead_), bWrite_(settings.bWrite_),
@@ -387,9 +386,9 @@ void FileNameOptionStorage::processAll()
             const std::string &oldValue = valueList[0];
             GMX_ASSERT(endsWith(oldValue, defaultExtension()),
                        "Default value does not have the expected extension");
-            const std::string  prefix
+            const std::string prefix
                 = stripSuffixIfPresent(oldValue, defaultExtension());
-            const std::string  newValue
+            const std::string newValue
                 = manager_->completeDefaultFileName(prefix, info_);
             if (!newValue.empty() && newValue != oldValue)
             {
@@ -521,8 +520,7 @@ ConstArrayRef<int> FileNameOptionInfo::fileTypes() const
  * FileNameOption
  */
 
-AbstractOptionStorage *
-FileNameOption::createStorage(const OptionManagerContainer &managers) const
+AbstractOptionStorage *FileNameOption::createStorage(const OptionManagerContainer &managers) const
 {
     return new FileNameOptionStorage(*this, managers.get<FileNameOptionManager>());
 }

@@ -41,31 +41,35 @@
 
 struct t_topology;
 
-typedef struct gmx_neutron_atomic_structurefactors_t {
-    int       nratoms;
-    int      *p;       /* proton number */
-    int      *n;       /* neuton number */
-    double   *slength; /* scattering length in fm */
-    char    **atomnm;  /* atom symbol */
+typedef struct gmx_neutron_atomic_structurefactors_t
+{
+    int     nratoms;
+    int *   p;         /* proton number */
+    int *   n;         /* neuton number */
+    double *slength;   /* scattering length in fm */
+    char ** atomnm;    /* atom symbol */
 } gmx_neutron_atomic_structurefactors_t;
 
-typedef struct gmx_sans_t {
+typedef struct gmx_sans_t
+{
     const t_topology *top;     /* topology */
-    double           *slength; /* scattering length for this topology */
+    double *          slength; /* scattering length for this topology */
 } gmx_sans_t;
 
-typedef struct gmx_radial_distribution_histogram_t {
+typedef struct gmx_radial_distribution_histogram_t
+{
     int     grn;      /* number of bins */
     double  binwidth; /* bin size */
     double *r;        /* Distances */
     double *gr;       /* Probability */
 } gmx_radial_distribution_histogram_t;
 
-typedef struct gmx_static_structurefactor_t {
-    int      qn;    /* number of items */
-    double  *s;     /* scattering */
-    double  *q;     /* q vectors */
-    double   qstep; /* q increment */
+typedef struct gmx_static_structurefactor_t
+{
+    int     qn;     /* number of items */
+    double *s;      /* scattering */
+    double *q;      /* q vectors */
+    double  qstep;  /* q increment */
 } gmx_static_structurefactor_t;
 
 void check_binwidth(real binwidth);
@@ -78,10 +82,10 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
 
 gmx_sans_t *gmx_sans_init(const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t  *gsans,
-                                                                          rvec        *x,
+gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t * gsans,
+                                                                          rvec *       x,
                                                                           matrix       box,
-                                                                          int         *index,
+                                                                          int *        index,
                                                                           int          isize,
                                                                           double       binwidth,
                                                                           gmx_bool     bMC,

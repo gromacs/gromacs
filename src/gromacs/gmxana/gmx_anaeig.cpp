@@ -73,16 +73,16 @@ static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip
     double hwkT, dS, S = 0;
     double hbar, lambda;
 
-    hbar = PLANCK1/(2*M_PI);
-    for (i = 0; (i < n-nskip); i++)
+    hbar = PLANCK1 / (2 * M_PI);
+    for (i = 0; (i < n - nskip); i++)
     {
         if (eigval[i] > 0)
         {
             double w;
-            lambda = eigval[i]*AMU;
-            w      = std::sqrt(BOLTZMANN*temp/lambda)/NANO;
-            hwkT   = (hbar*w)/(BOLTZMANN*temp);
-            dS     = (hwkT/std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
+            lambda = eigval[i] * AMU;
+            w      = std::sqrt(BOLTZMANN * temp / lambda) / NANO;
+            hwkT   = (hbar * w) / (BOLTZMANN * temp);
+            dS     = (hwkT / std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
             S     += dS;
             if (debug)
             {
@@ -96,31 +96,31 @@ static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip
         }
     }
     fprintf(fp, "The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
-            S*RGAS);
+            S * RGAS);
 }
 
 static void calc_entropy_schlitter(FILE *fp, int n, int nskip,
                                    real *eigval, real temp)
 {
-    double  dd, deter;
-    int     i;
-    double  hbar, kt, kteh, S;
+    double dd, deter;
+    int    i;
+    double hbar, kt, kteh, S;
 
-    hbar = PLANCK1/(2*M_PI);
-    kt   = BOLTZMANN*temp;
-    kteh = kt*std::exp(2.0)/(hbar*hbar)*AMU*(NANO*NANO);
+    hbar = PLANCK1 / (2 * M_PI);
+    kt   = BOLTZMANN * temp;
+    kteh = kt * std::exp(2.0) / (hbar * hbar) * AMU * (NANO * NANO);
     if (debug)
     {
         fprintf(debug, "n = %d, nskip = %d kteh = %g\n", n, nskip, kteh);
     }
 
     deter = 0;
-    for (i = 0; (i < n-nskip); i++)
+    for (i = 0; (i < n - nskip); i++)
     {
-        dd     = 1+kteh*eigval[i];
+        dd     = 1 + kteh * eigval[i];
         deter += std::log(dd);
     }
-    S = 0.5*RGAS*deter;
+    S = 0.5 * RGAS * deter;
 
     fprintf(fp, "The Entropy due to the Schlitter formula is %g J/mol K\n", S);
 }
@@ -136,10 +136,10 @@ static real tick_spacing(real range, int minticks)
         return 1.0;
     }
 
-    sp = 0.2*std::exp(std::log(10.0)*std::ceil(std::log(range)/std::log(10.0)));
-    while (range/sp < minticks-1)
+    sp = 0.2 * std::exp(std::log(10.0) * std::ceil(std::log(range) / std::log(10.0)));
+    while (range / sp < minticks - 1)
     {
-        sp = sp/2;
+        sp = sp / 2;
     }
 
     return sp;
@@ -205,11 +205,11 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         }
         else
         {
-            ymin = ymin-0.1*(ymax-ymin);
+            ymin = ymin - 0.1 * (ymax - ymin);
         }
-        ymax = ymax+0.1*(ymax-ymin);
-        xsp  = tick_spacing((x[n-1]-x[0])*scale_x, 4);
-        ysp  = tick_spacing(ymax-ymin, 3);
+        ymax = ymax + 0.1 * (ymax - ymin);
+        xsp  = tick_spacing((x[n - 1] - x[0]) * scale_x, 4);
+        ysp  = tick_spacing(ymax - ymin, 3);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "@ with g%d\n@ g%d on\n", g, g);
@@ -221,7 +221,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
                     fprintf(out, "@ subtitle \"%s\"\n", subtitle);
                 }
             }
-            if (g == ngraphs-1)
+            if (g == ngraphs - 1)
             {
                 fprintf(out, "@ xaxis  label \"%s\"\n", xlabel);
             }
@@ -231,24 +231,24 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             }
             if (n > 1)
             {
-                fprintf(out, "@ world xmin %g\n", x[0]*scale_x);
-                fprintf(out, "@ world xmax %g\n", x[n-1]*scale_x);
+                fprintf(out, "@ world xmin %g\n", x[0] * scale_x);
+                fprintf(out, "@ world xmax %g\n", x[n - 1] * scale_x);
                 fprintf(out, "@ world ymin %g\n", ymin);
                 fprintf(out, "@ world ymax %g\n", ymax);
             }
             fprintf(out, "@ view xmin 0.15\n");
             fprintf(out, "@ view xmax 0.85\n");
-            fprintf(out, "@ view ymin %g\n", 0.15+(ngraphs-1-g)*0.7/ngraphs);
-            fprintf(out, "@ view ymax %g\n", 0.15+(ngraphs-g)*0.7/ngraphs);
+            fprintf(out, "@ view ymin %g\n", 0.15 + (ngraphs - 1 - g) * 0.7 / ngraphs);
+            fprintf(out, "@ view ymax %g\n", 0.15 + (ngraphs - g) * 0.7 / ngraphs);
             fprintf(out, "@ yaxis  label \"%s\"\n", ylabel[g]);
             fprintf(out, "@ xaxis tick major %g\n", xsp);
-            fprintf(out, "@ xaxis tick minor %g\n", xsp/2);
+            fprintf(out, "@ xaxis tick minor %g\n", xsp / 2);
             fprintf(out, "@ xaxis ticklabel start type spec\n");
-            fprintf(out, "@ xaxis ticklabel start %g\n", std::ceil(ymin/xsp)*xsp);
+            fprintf(out, "@ xaxis ticklabel start %g\n", std::ceil(ymin / xsp) * xsp);
             fprintf(out, "@ yaxis tick major %g\n", ysp);
-            fprintf(out, "@ yaxis tick minor %g\n", ysp/2);
+            fprintf(out, "@ yaxis tick minor %g\n", ysp / 2);
             fprintf(out, "@ yaxis ticklabel start type spec\n");
-            fprintf(out, "@ yaxis ticklabel start %g\n", std::ceil(ymin/ysp)*ysp);
+            fprintf(out, "@ yaxis ticklabel start %g\n", std::ceil(ymin / ysp) * ysp);
             if ((ymin < 0) && (ymax > 0))
             {
                 fprintf(out, "@ zeroxaxis bar on\n");
@@ -264,7 +264,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
                     fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
                 }
                 fprintf(out, "%10.4f %10.5f\n",
-                        x[i]*scale_x, y ? y[g][i] : sy[g][s][i]);
+                        x[i] * scale_x, y ? y[g][i] : sy[g][s][i]);
             }
             fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
@@ -272,9 +272,8 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
     gmx_ffclose(out);
 }
 
-static void
-compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
-        real *eigval1, int neig1, real *eigval2, int neig2)
+static void compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
+                    real *eigval1, int neig1, real *eigval2, int neig2)
 {
     int    n;
     int    i, j, k;
@@ -329,7 +328,7 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
     if (neig1 != n || neig2 != n)
     {
         fprintf(stdout, "this is %d%% and %d%% of the total trace\n",
-                static_cast<int>(100*sum1/trace1+0.5), static_cast<int>(100*sum2/trace2+0.5));
+                static_cast<int>(100 * sum1 / trace1 + 0.5), static_cast<int>(100 * sum2 / trace2 + 0.5));
     }
     fprintf(stdout, "Square root of the traces: %g and %g\n",
             std::sqrt(sum1), std::sqrt(sum2));
@@ -345,25 +344,25 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
             {
                 ip += iprod(eigvec1[i][k], eigvec2[j][k]);
             }
-            tmp += eigval2[j]*ip*ip;
+            tmp += eigval2[j] * ip * ip;
         }
-        sab += eigval1[i]*tmp;
+        sab += eigval1[i] * tmp;
     }
 
-    samsb2 = sum1+sum2-2*sab;
+    samsb2 = sum1 + sum2 - 2 * sab;
     if (samsb2 < 0)
     {
         samsb2 = 0;
     }
 
     fprintf(stdout, "The overlap of the covariance matrices:\n");
-    fprintf(stdout, "  normalized:  %.3f\n", 1-std::sqrt(samsb2/(sum1+sum2)));
-    tmp = 1-sab/std::sqrt(sum1*sum2);
+    fprintf(stdout, "  normalized:  %.3f\n", 1 - std::sqrt(samsb2 / (sum1 + sum2)));
+    tmp = 1 - sab / std::sqrt(sum1 * sum2);
     if (tmp < 0)
     {
         tmp = 0;
     }
-    fprintf(stdout, "       shape:  %.3f\n", 1-std::sqrt(tmp));
+    fprintf(stdout, "       shape:  %.3f\n", 1 - std::sqrt(tmp));
 }
 
 
@@ -372,12 +371,12 @@ static void inprod_matrix(const char *matfile, int natoms,
                           int nvec2, int *eignr2, rvec **eigvec2,
                           gmx_bool bSelect, int noutvec, int *outvec)
 {
-    FILE   *out;
-    real  **mat;
-    int     i, x1, y1, x, y, nlevels;
-    int     nx, ny;
-    real    inp, *t_x, *t_y, maxval;
-    t_rgb   rlo, rhi;
+    FILE * out;
+    real **mat;
+    int    i, x1, y1, x, y, nlevels;
+    int    nx, ny;
+    real   inp, *t_x, *t_y, maxval;
+    t_rgb  rlo, rhi;
 
     snew(t_y, nvec2);
     if (bSelect)
@@ -388,7 +387,7 @@ static void inprod_matrix(const char *matfile, int natoms,
         {
             if (outvec[y1] < nvec2)
             {
-                t_y[ny] = eignr2[outvec[y1]]+1;
+                t_y[ny] = eignr2[outvec[y1]] + 1;
                 ny++;
             }
         }
@@ -399,7 +398,7 @@ static void inprod_matrix(const char *matfile, int natoms,
         ny = nvec2;
         for (y = 0; y < ny; y++)
         {
-            t_y[y] = eignr2[y]+1;
+            t_y[y] = eignr2[y] + 1;
         }
     }
 
@@ -420,8 +419,8 @@ static void inprod_matrix(const char *matfile, int natoms,
         {
             x = x1;
         }
-        t_x[x1] = eignr1[x]+1;
-        fprintf(stderr, " %d", eignr1[x]+1);
+        t_x[x1] = eignr1[x] + 1;
+        fprintf(stderr, " %d", eignr1[x] + 1);
         for (y1 = 0; y1 < ny; y1++)
         {
             inp = 0;
@@ -471,7 +470,7 @@ static void overlap(const char *outfile, int natoms,
     fprintf(stderr, "Calculating overlap between eigenvectors of set 2 with eigenvectors\n");
     for (i = 0; i < noutvec; i++)
     {
-        fprintf(stderr, "%d ", outvec[i]+1);
+        fprintf(stderr, "%d ", outvec[i] + 1);
     }
     fprintf(stderr, "\n");
 
@@ -494,7 +493,7 @@ static void overlap(const char *outfile, int natoms,
             }
             overlap += gmx::square(inp);
         }
-        fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
+        fprintf(out, "%5d  %5.3f\n", eignr2[x] + 1, overlap / noutvec);
     }
 
     xvgrclose(out);
@@ -511,15 +510,15 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     int noutvec, int *outvec, gmx_bool bSplit,
                     const gmx_output_env_t *oenv)
 {
-    FILE        *xvgrout = nullptr;
+    FILE *       xvgrout = nullptr;
     int          nat, i, j, d, v, vec, nfr, nframes = 0, snew_size, frame;
     t_trxstatus *out = nullptr;
     t_trxstatus *status;
     int          noutvec_extr, imin, imax;
-    real        *pmin, *pmax;
-    int         *all_at;
+    real *       pmin, *pmax;
+    int *        all_at;
     matrix       box;
-    rvec        *xread, *x;
+    rvec *       xread, *x;
     real         t, inp, **inprod = nullptr;
     char         str[STRLEN], str2[STRLEN], **ylabel, *c;
     real         fact;
@@ -539,7 +538,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
     if (trajfile)
     {
-        snew(inprod, noutvec+1);
+        snew(inprod, noutvec + 1);
 
         if (filterfile)
         {
@@ -547,7 +546,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     filterfile);
             for (i = 0; i < noutvec; i++)
             {
-                fprintf(stderr, "%d ", outvec[i]+1);
+                fprintf(stderr, "%d ", outvec[i] + 1);
             }
             fprintf(stderr, "\n");
             out = open_trx(filterfile, "w");
@@ -582,7 +581,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 if (nframes >= snew_size)
                 {
                     snew_size += 100;
-                    for (i = 0; i < noutvec+1; i++)
+                    for (i = 0; i < noutvec + 1; i++)
                     {
                         srenew(inprod[i], snew_size);
                     }
@@ -606,9 +605,9 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     inp = 0;
                     for (i = 0; i < natoms; i++)
                     {
-                        inp += (eigvec[vec][i][0]*(x[i][0]-xav[i][0])+
-                                eigvec[vec][i][1]*(x[i][1]-xav[i][1])+
-                                eigvec[vec][i][2]*(x[i][2]-xav[i][2]))*sqrtm[i];
+                        inp += (eigvec[vec][i][0] * (x[i][0] - xav[i][0])
+                                + eigvec[vec][i][1] * (x[i][1] - xav[i][1])
+                                + eigvec[vec][i][2] * (x[i][2] - xav[i][2])) * sqrtm[i];
                     }
                     inprod[v][nframes] = inp;
                 }
@@ -622,8 +621,8 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                             xread[index[i]][d] = xav[i][d];
                             for (v = 0; v < noutvec; v++)
                             {
-                                xread[index[i]][d] +=
-                                    inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
+                                xread[index[i]][d]
+                                    += inprod[v][nframes] * eigvec[outvec[v]][i][d] / sqrtm[i];
                             }
                         }
                     }
@@ -632,8 +631,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 nframes++;
             }
             nfr++;
-        }
-        while (read_next_x(oenv, status, &t, xread, box));
+        } while (read_next_x(oenv, status, &t, xread, box));
         close_trx(status);
         sfree(x);
         if (filterfile)
@@ -658,7 +656,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         snew(ylabel, noutvec);
         for (v = 0; v < noutvec; v++)
         {
-            sprintf(str, "vec %d", eignr[outvec[v]]+1);
+            sprintf(str, "vec %d", eignr[outvec[v]] + 1);
             ylabel[v] = gmx_strdup(str);
         }
         sprintf(str, "projection on eigenvectors (%s)", proj_unit);
@@ -671,9 +669,9 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     if (twodplotfile)
     {
         sprintf(str, "projection on eigenvector %d (%s)",
-                eignr[outvec[0]]+1, proj_unit);
+                eignr[outvec[0]] + 1, proj_unit);
         sprintf(str2, "projection on eigenvector %d (%s)",
-                eignr[outvec[noutvec-1]]+1, proj_unit);
+                eignr[outvec[noutvec - 1]] + 1, proj_unit);
         xvgrout = xvgropen(twodplotfile, "2D projection of trajectory", str, str2,
                            oenv);
         for (i = 0; i < nframes; i++)
@@ -682,20 +680,20 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             {
                 fprintf(xvgrout, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
-            fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
+            fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec - 1][i]);
         }
         xvgrclose(xvgrout);
     }
 
     if (threedplotfile)
     {
-        t_atoms     atoms;
-        rvec       *x;
-        real       *b = nullptr;
-        matrix      box;
-        char       *resnm, *atnm;
-        gmx_bool    bPDB, b4D;
-        FILE       *out;
+        t_atoms  atoms;
+        rvec *   x;
+        real *   b = nullptr;
+        matrix   box;
+        char *   resnm, *atnm;
+        gmx_bool bPDB, b4D;
+        FILE *   out;
 
         if (noutvec < 3)
         {
@@ -714,13 +712,13 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     "fourth eigenvector will be plotted "
                     "in bfactor field of pdb file\n");
             sprintf(str, "4D proj. of traj. on eigenv. %d, %d, %d and %d",
-                    eignr[outvec[0]]+1, eignr[outvec[1]]+1,
-                    eignr[outvec[2]]+1, eignr[outvec[3]]+1);
+                    eignr[outvec[0]] + 1, eignr[outvec[1]] + 1,
+                    eignr[outvec[2]] + 1, eignr[outvec[3]] + 1);
         }
         else
         {
             sprintf(str, "3D proj. of traj. on eigenv. %d, %d and %d",
-                    eignr[outvec[0]]+1, eignr[outvec[1]]+1, eignr[outvec[2]]+1);
+                    eignr[outvec[0]] + 1, eignr[outvec[1]] + 1, eignr[outvec[2]] + 1);
         }
         init_t_atoms(&atoms, nframes, FALSE);
         snew(x, nframes);
@@ -730,7 +728,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
         if (nframes > 10000)
         {
-            fact = 10000.0/nframes;
+            fact = 10000.0 / nframes;
         }
         else
         {
@@ -742,14 +740,14 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             atoms.atomname[i]     = &atnm;
             atoms.atom[i].resind  = i;
             atoms.resinfo[i].name = &resnm;
-            atoms.resinfo[i].nr   = static_cast<int>(std::ceil(i*fact));
+            atoms.resinfo[i].nr   = static_cast<int>(std::ceil(i * fact));
             atoms.resinfo[i].ic   = ' ';
             x[i][XX]              = inprod[0][i];
             x[i][YY]              = inprod[1][i];
             x[i][ZZ]              = inprod[2][i];
             if (b4D)
             {
-                b[i]  = inprod[3][i];
+                b[i] = inprod[3][i];
             }
         }
         if ( ( b4D || bSplit ) && bPDB)
@@ -770,11 +768,11 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     fprintf(out, "TER\n");
                     j = 0;
                 }
-                gmx_fprintf_pdb_atomline(out, epdbATOM, i+1, "C", ' ', "PRJ", ' ', j+1, ' ',
-                                         10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 10*b[i], "");
+                gmx_fprintf_pdb_atomline(out, epdbATOM, i + 1, "C", ' ', "PRJ", ' ', j + 1, ' ',
+                                         10 * x[i][XX], 10 * x[i][YY], 10 * x[i][ZZ], 1.0, 10 * b[i], "");
                 if (j > 0)
                 {
-                    fprintf(out, "CONECT%5d%5d\n", i, i+1);
+                    fprintf(out, "CONECT%5d%5d\n", i, i + 1);
                 }
                 j++;
             }
@@ -816,7 +814,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 pmin[v] = inprod[v][imin];
                 pmax[v] = inprod[v][imax];
                 fprintf(stderr, "%7d     %10.6f %10d %10.6f %10d\n",
-                        eignr[outvec[v]]+1,
+                        eignr[outvec[v]] + 1,
                         pmin[v], imin, pmax[v], imax);
             }
         }
@@ -839,10 +837,10 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             }
             else
             {
-                sprintf(str2, str, eignr[outvec[v]]+1);
+                sprintf(str2, str, eignr[outvec[v]] + 1);
             }
             fprintf(stderr, "Writing %d frames along eigenvector %d to %s\n",
-                    nextr, outvec[v]+1, str2);
+                    nextr, outvec[v] + 1, str2);
             out = open_trx(str2, "w");
             for (frame = 0; frame < nextr; frame++)
             {
@@ -857,9 +855,9 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        xread[index[i]][d] =
-                            (xav[i][d] + (pmin[v]*(nextr-frame-1)+pmax[v]*frame)/(nextr-1)
-                             *eigvec[outvec[v]][i][d]/sqrtm[i]);
+                        xread[index[i]][d]
+                            = (xav[i][d] + (pmin[v] * (nextr - frame - 1) + pmax[v] * frame) / (nextr - 1)
+                               * eigvec[outvec[v]][i][d] / sqrtm[i]);
                     }
                 }
                 write_trx(out, natoms, index, atoms, 0, frame, topbox, xread, nullptr, nullptr);
@@ -888,12 +886,12 @@ static void components(const char *outfile, int natoms,
     snew(x, natoms);
     for (i = 0; i < natoms; i++)
     {
-        x[i] = i+1;
+        x[i] = i + 1;
     }
     for (g = 0; g < noutvec; g++)
     {
         v = outvec[g];
-        sprintf(str, "vec %d", eignr[v]+1);
+        sprintf(str, "vec %d", eignr[v] + 1);
         ylabel[g] = gmx_strdup(str);
         snew(y[g], 4);
         for (s = 0; s < 4; s++)
@@ -905,7 +903,7 @@ static void components(const char *outfile, int natoms,
             y[g][0][i] = norm(eigvec[v][i]);
             for (s = 0; s < 3; s++)
             {
-                y[g][s+1][i] = eigvec[v][i][s];
+                y[g][s + 1][i] = eigvec[v][i][s];
             }
         }
     }
@@ -922,9 +920,9 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
                  real *eigval, int neig,
                  const gmx_output_env_t *oenv)
 {
-    int    g, v, i;
-    real  *x, **y;
-    char   str[STRLEN], **ylabel;
+    int   g, v, i;
+    real *x, **y;
+    char  str[STRLEN], **ylabel;
 
     for (i = 0; i < neig; i++)
     {
@@ -941,21 +939,21 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
     snew(x, natoms);
     for (i = 0; i < natoms; i++)
     {
-        x[i] = i+1;
+        x[i] = i + 1;
     }
     for (g = 0; g < noutvec; g++)
     {
         v = outvec[g];
         if (eignr[v] >= neig)
         {
-            gmx_fatal(FARGS, "Selected vector %d is larger than the number of eigenvalues (%d)", eignr[v]+1, neig);
+            gmx_fatal(FARGS, "Selected vector %d is larger than the number of eigenvalues (%d)", eignr[v] + 1, neig);
         }
-        sprintf(str, "vec %d", eignr[v]+1);
+        sprintf(str, "vec %d", eignr[v] + 1);
         ylabel[g] = gmx_strdup(str);
         snew(y[g], natoms);
         for (i = 0; i < natoms; i++)
         {
-            y[g][i] = std::sqrt(eigval[eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
+            y[g][i] = std::sqrt(eigval[eignr[v]] * norm2(eigvec[v][i])) / sqrtm[i];
         }
     }
     write_xvgr_graphs(outfile, noutvec, 1, "RMS fluctuation (nm) ", nullptr,
@@ -1071,34 +1069,34 @@ int gmx_anaeig(int argc, char *argv[])
 
     t_topology        top;
     int               ePBC  = -1;
-    const t_atoms    *atoms = nullptr;
-    rvec             *xtop, *xref1, *xref2, *xrefp = nullptr;
+    const t_atoms *   atoms = nullptr;
+    rvec *            xtop, *xref1, *xref2, *xrefp = nullptr;
     gmx_bool          bDMR1, bDMA1, bDMR2, bDMA2;
     int               nvec1, nvec2, *eignr1 = nullptr, *eignr2 = nullptr;
-    rvec             *xav1, *xav2, **eigvec1 = nullptr, **eigvec2 = nullptr;
+    rvec *            xav1, *xav2, **eigvec1 = nullptr, **eigvec2 = nullptr;
     matrix            topbox;
     real              totmass, *sqrtm, *w_rls, t;
     int               natoms;
-    char             *grpname;
-    const char       *indexfile;
+    char *            grpname;
+    const char *      indexfile;
     int               i, j, d;
     int               nout, *iout, noutvec, *outvec, nfit;
-    int              *index = nullptr, *ifit = nullptr;
-    const char       *VecFile, *Vec2File, *topfile;
-    const char       *EigFile, *Eig2File;
-    const char       *CompFile, *RmsfFile, *ProjOnVecFile;
-    const char       *TwoDPlotFile, *ThreeDPlotFile;
-    const char       *FilterFile, *ExtremeFile;
-    const char       *OverlapFile, *InpMatFile;
+    int *             index = nullptr, *ifit = nullptr;
+    const char *      VecFile, *Vec2File, *topfile;
+    const char *      EigFile, *Eig2File;
+    const char *      CompFile, *RmsfFile, *ProjOnVecFile;
+    const char *      TwoDPlotFile, *ThreeDPlotFile;
+    const char *      FilterFile, *ExtremeFile;
+    const char *      OverlapFile, *InpMatFile;
     gmx_bool          bFit1, bFit2, bM, bIndex, bTPS, bTop, bVec2, bProj;
     gmx_bool          bFirstToLast, bFirstLastSet, bTraj, bCompare, bPDB3D;
-    real             *eigval1 = nullptr, *eigval2 = nullptr;
+    real *            eigval1 = nullptr, *eigval2 = nullptr;
     int               neig1, neig2;
-    double          **xvgdata;
+    double **         xvgdata;
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc;
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRN, "-v",    "eigenvec",    ffREAD  },
         { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
         { efTRX, "-f",    nullptr,          ffOPTRD },
@@ -1127,41 +1125,41 @@ int gmx_anaeig(int argc, char *argv[])
 
     indexfile = ftp2fn_null(efNDX, NFILE, fnm);
 
-    VecFile         = opt2fn("-v", NFILE, fnm);
-    Vec2File        = opt2fn_null("-v2", NFILE, fnm);
-    topfile         = ftp2fn(efTPS, NFILE, fnm);
-    EigFile         = opt2fn_null("-eig", NFILE, fnm);
-    Eig2File        = opt2fn_null("-eig2", NFILE, fnm);
-    CompFile        = opt2fn_null("-comp", NFILE, fnm);
-    RmsfFile        = opt2fn_null("-rmsf", NFILE, fnm);
-    ProjOnVecFile   = opt2fn_null("-proj", NFILE, fnm);
-    TwoDPlotFile    = opt2fn_null("-2d", NFILE, fnm);
-    ThreeDPlotFile  = opt2fn_null("-3d", NFILE, fnm);
-    FilterFile      = opt2fn_null("-filt", NFILE, fnm);
-    ExtremeFile     = opt2fn_null("-extr", NFILE, fnm);
-    OverlapFile     = opt2fn_null("-over", NFILE, fnm);
-    InpMatFile      = ftp2fn_null(efXPM, NFILE, fnm);
+    VecFile        = opt2fn("-v", NFILE, fnm);
+    Vec2File       = opt2fn_null("-v2", NFILE, fnm);
+    topfile        = ftp2fn(efTPS, NFILE, fnm);
+    EigFile        = opt2fn_null("-eig", NFILE, fnm);
+    Eig2File       = opt2fn_null("-eig2", NFILE, fnm);
+    CompFile       = opt2fn_null("-comp", NFILE, fnm);
+    RmsfFile       = opt2fn_null("-rmsf", NFILE, fnm);
+    ProjOnVecFile  = opt2fn_null("-proj", NFILE, fnm);
+    TwoDPlotFile   = opt2fn_null("-2d", NFILE, fnm);
+    ThreeDPlotFile = opt2fn_null("-3d", NFILE, fnm);
+    FilterFile     = opt2fn_null("-filt", NFILE, fnm);
+    ExtremeFile    = opt2fn_null("-extr", NFILE, fnm);
+    OverlapFile    = opt2fn_null("-over", NFILE, fnm);
+    InpMatFile     = ftp2fn_null(efXPM, NFILE, fnm);
 
-    bProj  = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile
+    bProj = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile
         || FilterFile || ExtremeFile;
-    bFirstLastSet  =
-        opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
-    bFirstToLast = CompFile || RmsfFile || ProjOnVecFile || FilterFile ||
-        OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
-    bVec2  = Vec2File || OverlapFile || InpMatFile;
-    bM     = RmsfFile || bProj;
-    bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max == 0))
+    bFirstLastSet
+                 = opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
+    bFirstToLast = CompFile || RmsfFile || ProjOnVecFile || FilterFile
+        || OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
+    bVec2 = Vec2File || OverlapFile || InpMatFile;
+    bM    = RmsfFile || bProj;
+    bTraj = ProjOnVecFile || FilterFile || (ExtremeFile && (max == 0))
         || TwoDPlotFile || ThreeDPlotFile;
     bIndex = bM || bProj;
-    bTPS   = ftp2bSet(efTPS, NFILE, fnm) || bM || bTraj ||
-        FilterFile  || (bIndex && indexfile);
+    bTPS   = ftp2bSet(efTPS, NFILE, fnm) || bM || bTraj
+        || FilterFile  || (bIndex && indexfile);
     bCompare = Vec2File || Eig2File;
     bPDB3D   = fn2ftp(ThreeDPlotFile) == efPDB;
 
     read_eigenvectors(VecFile, &natoms, &bFit1,
                       &xref1, &bDMR1, &xav1, &bDMA1,
                       &nvec1, &eignr1, &eigvec1, &eigval1);
-    neig1 = DIM*natoms;
+    neig1 = DIM * natoms;
 
     /* Overwrite eigenvalues from separate files if the user provides them */
     if (EigFile != nullptr)
@@ -1210,7 +1208,7 @@ int gmx_anaeig(int argc, char *argv[])
         read_eigenvectors(Vec2File, &neig2, &bFit2,
                           &xref2, &bDMR2, &xav2, &bDMA2, &nvec2, &eignr2, &eigvec2, &eigval2);
 
-        neig2 = DIM*neig2;
+        neig2 = DIM * neig2;
         if (neig2 != neig1)
         {
             gmx_fatal(FARGS, "Dimensions in the eigenvector files don't match");
@@ -1351,51 +1349,51 @@ int gmx_anaeig(int argc, char *argv[])
         {
             for (d = 0; (d < DIM); d++)
             {
-                t       += gmx::square((xav1[i][d]-xav2[i][d])*sqrtm[i]);
+                t       += gmx::square((xav1[i][d] - xav2[i][d]) * sqrtm[i]);
                 totmass += gmx::square(sqrtm[i]);
             }
         }
         fprintf(stdout, "RMSD (without fit) between the two average structures:"
-                " %.3f (nm)\n\n", std::sqrt(t/totmass));
+                " %.3f (nm)\n\n", std::sqrt(t / totmass));
     }
 
     if (last == -1)
     {
-        last = natoms*DIM;
+        last = natoms * DIM;
     }
     if (first > -1)
     {
         if (bFirstToLast)
         {
             /* make an index from first to last */
-            nout = last-first+1;
+            nout = last - first + 1;
             snew(iout, nout);
             for (i = 0; i < nout; i++)
             {
-                iout[i] = first-1+i;
+                iout[i] = first - 1 + i;
             }
         }
         else if (ThreeDPlotFile)
         {
             /* make an index of first+(0,1,2) and last */
             nout = bPDB3D ? 4 : 3;
-            nout = std::min(last-first+1, nout);
+            nout = std::min(last - first + 1, nout);
             snew(iout, nout);
-            iout[0] = first-1;
+            iout[0] = first - 1;
             iout[1] = first;
             if (nout > 3)
             {
-                iout[2] = first+1;
+                iout[2] = first + 1;
             }
-            iout[nout-1] = last-1;
+            iout[nout - 1] = last - 1;
         }
         else
         {
             /* make an index of first and last */
             nout = 2;
             snew(iout, nout);
-            iout[0] = first-1;
-            iout[1] = last-1;
+            iout[0] = first - 1;
+            iout[1] = last - 1;
         }
     }
     else
@@ -1407,14 +1405,13 @@ int gmx_anaeig(int argc, char *argv[])
         do
         {
             nout++;
-            srenew(iout, nout+1);
+            srenew(iout, nout + 1);
             if (1 != scanf("%d", &iout[nout]))
             {
                 gmx_fatal(FARGS, "Error reading user input");
             }
             iout[nout]--;
-        }
-        while (iout[nout] >= 0);
+        } while (iout[nout] >= 0);
 
         printf("\n");
     }
@@ -1440,7 +1437,7 @@ int gmx_anaeig(int argc, char *argv[])
         fprintf(stderr, ":");
         for (j = 0; j < noutvec; j++)
         {
-            fprintf(stderr, " %d", eignr1[outvec[j]]+1);
+            fprintf(stderr, " %d", eignr1[outvec[j]] + 1);
         }
     }
     fprintf(stderr, "\n");
@@ -1486,8 +1483,8 @@ int gmx_anaeig(int argc, char *argv[])
     }
 
 
-    if (!CompFile && !bProj && !OverlapFile && !InpMatFile &&
-        !bCompare && !bEntropy)
+    if (!CompFile && !bProj && !OverlapFile && !InpMatFile
+        && !bCompare && !bEntropy)
     {
         fprintf(stderr, "\nIf you want some output,"
                 " set one (or two or ...) of the output file options\n");

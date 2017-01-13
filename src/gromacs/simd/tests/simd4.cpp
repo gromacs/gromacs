@@ -68,9 +68,9 @@ const Simd4Real rSimd4_Exp      = setSimd4RealFrom3R( 1.405523517102745262391451
                                                       -2.1057102745623934534514516e+16);
 #    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
-const Simd4Real  rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
-                                                       8.794495252903116023030553e-140,
-                                                       -3.637060701570496477655022e+202);
+const Simd4Real rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
+                                                      8.794495252903116023030553e-140,
+                                                      -3.637060701570496477655022e+202);
 #    endif
 
 ::std::vector<real>
@@ -79,13 +79,12 @@ simd4Real2Vector(const Simd4Real simd4)
     GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
 
     store4(mem, simd4);
-    std::vector<real>   v(mem, mem+GMX_SIMD4_WIDTH);
+    std::vector<real> v(mem, mem + GMX_SIMD4_WIDTH);
 
     return v;
 }
 
-Simd4Real
-vector2Simd4Real(const std::vector<real> &v)
+Simd4Real vector2Simd4Real(const std::vector<real> &v)
 {
     GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
 
@@ -96,8 +95,7 @@ vector2Simd4Real(const std::vector<real> &v)
     return load4(mem);
 }
 
-Simd4Real
-setSimd4RealFrom3R(real r0, real r1, real r2)
+Simd4Real setSimd4RealFrom3R(real r0, real r1, real r2)
 {
     std::vector<real> v(3);
     v[0] = r0;
@@ -106,8 +104,7 @@ setSimd4RealFrom3R(real r0, real r1, real r2)
     return vector2Simd4Real(v);
 }
 
-Simd4Real
-setSimd4RealFrom1R(real value)
+Simd4Real setSimd4RealFrom1R(real value)
 {
     std::vector<real> v(GMX_SIMD4_WIDTH);
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
@@ -117,16 +114,14 @@ setSimd4RealFrom1R(real value)
     return vector2Simd4Real(v);
 }
 
-testing::AssertionResult
-Simd4Test::compareSimd4RealUlp(const char *  refExpr,     const char *  tstExpr,
-                               const Simd4Real ref, const Simd4Real tst)
+testing::AssertionResult Simd4Test::compareSimd4RealUlp(const char * refExpr,     const char *  tstExpr,
+                                                        const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorRealUlp(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
 }
 
-testing::AssertionResult
-Simd4Test::compareSimd4RealEq(const char * refExpr, const char * tstExpr,
-                              const Simd4Real ref, const Simd4Real tst)
+testing::AssertionResult Simd4Test::compareSimd4RealEq(const char * refExpr, const char * tstExpr,
+                                                       const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorEq(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
 }

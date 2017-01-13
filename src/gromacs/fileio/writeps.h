@@ -46,15 +46,18 @@
 /* TODO: These two enums are used also in xutil.h in src/programs/view/.
  * The Y position enum doesn't seem to be actually used in this header...
  */
-typedef enum {
+typedef enum
+{
     eXCenter, eXLeft, eXRight
 } eXPos;
 
-typedef enum {
+typedef enum
+{
     eYCenter, eYTop,  eYBottom
 } eYPos;
 
-enum {
+enum
+{
     efontTIMES, efontTIMESITALIC, efontTIMESBOLD, efontTIMESBOLDITALIC,
     efontHELV,  efontHELVITALIC,  efontHELVBOLD,  efontHELVBOLDITALIC,
     efontCOUR,  efontCOURITALIC,  efontCOURBOLD,  efontCOURBOLDITALIC,

@@ -71,7 +71,7 @@
 struct gmx_ewald_tab_t
 {
     int        nx, ny, nz, kmax;
-    cvec     **eir;
+    cvec **    eir;
     t_complex *tab_xy, *tab_qxyz;
 };
 
@@ -83,9 +83,9 @@ void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
         fprintf(fp, "Will do ordinary reciprocal space Ewald sum.\n");
     }
 
-    (*et)->nx       = ir->nkx+1;
-    (*et)->ny       = ir->nky+1;
-    (*et)->nz       = ir->nkz+1;
+    (*et)->nx       = ir->nkx + 1;
+    (*et)->ny       = ir->nky + 1;
+    (*et)->nz       = ir->nkz + 1;
     (*et)->kmax     = std::max((*et)->nx, std::max((*et)->ny, (*et)->nz));
     (*et)->eir      = nullptr;
     (*et)->tab_xy   = nullptr;
@@ -95,15 +95,15 @@ void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
 //! Calculates wave vectors.
 static void calc_lll(const rvec box, rvec lll)
 {
-    lll[XX] = 2.0*M_PI/box[XX];
-    lll[YY] = 2.0*M_PI/box[YY];
-    lll[ZZ] = 2.0*M_PI/box[ZZ];
+    lll[XX] = 2.0 * M_PI / box[XX];
+    lll[YY] = 2.0 * M_PI / box[YY];
+    lll[ZZ] = 2.0 * M_PI / box[ZZ];
 }
 
 //! Make tables for the structure factor parts
 static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
 {
-    int  i, j, m;
+    int i, j, m;
 
     if (kmax < 1)
     {
@@ -121,14 +121,14 @@ static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, 
 
         for (m = 0; (m < 3); m++)
         {
-            eir[1][i][m].re = cos(x[i][m]*lll[m]);
-            eir[1][i][m].im = sin(x[i][m]*lll[m]);
+            eir[1][i][m].re = cos(x[i][m] * lll[m]);
+            eir[1][i][m].im = sin(x[i][m] * lll[m]);
         }
         for (j = 2; (j < kmax); j++)
         {
             for (m = 0; (m < 3); m++)
             {
-                eir[j][i][m] = cmul(eir[j-1][i][m], eir[1][i][m]);
+                eir[j][i][m] = cmul(eir[j - 1][i][m], eir[1][i][m]);
             }
         }
     }
@@ -143,9 +143,9 @@ real do_ewald(t_inputrec *ir,
               real lambda,     real *dvdlambda,
               struct gmx_ewald_tab_t *et)
 {
-    real     factor     = -1.0/(4*ewaldcoeff*ewaldcoeff);
-    real     scaleRecip = 4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; /* 1/(Vol*e0) */
-    real    *charge, energy_AB[2], energy;
+    real     factor     = -1.0 / (4 * ewaldcoeff * ewaldcoeff);
+    real     scaleRecip = 4.0 * M_PI / (box[XX] * box[YY] * box[ZZ]) * ONE_4PI_EPS0 / ir->epsilon_r; /* 1/(Vol*e0) */
+    real *   charge, energy_AB[2], energy;
     rvec     lll;
     int      lowiy, lowiz, ix, iy, iz, n, q;
     real     tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
@@ -200,10 +200,10 @@ real do_ewald(t_inputrec *ir,
         energy_AB[q] = 0;
         for (ix = 0; ix < et->nx; ix++)
         {
-            mx = ix*lll[XX];
+            mx = ix * lll[XX];
             for (iy = lowiy; iy < et->ny; iy++)
             {
-                my = iy*lll[YY];
+                my = iy * lll[YY];
                 if (iy >= 0)
                 {
                     for (n = 0; n < natoms; n++)
@@ -220,10 +220,10 @@ real do_ewald(t_inputrec *ir,
                 }
                 for (iz = lowiz; iz < et->nz; iz++)
                 {
-                    mz  = iz*lll[ZZ];
-                    m2  = mx*mx+my*my+mz*mz;
-                    ak  = exp(m2*factor)/m2;
-                    akv = 2.0*ak*(1.0/m2-factor);
+                    mz  = iz * lll[ZZ];
+                    m2  = mx * mx + my * my + mz * mz;
+                    ak  = exp(m2 * factor) / m2;
+                    akv = 2.0 * ak * (1.0 / m2 - factor);
                     if (iz >= 0)
                     {
                         for (n = 0; n < natoms; n++)
@@ -247,30 +247,30 @@ real do_ewald(t_inputrec *ir,
                         cs += et->tab_qxyz[n].re;
                         ss += et->tab_qxyz[n].im;
                     }
-                    energy_AB[q]  += ak*(cs*cs+ss*ss);
-                    tmp            = scale*akv*(cs*cs+ss*ss);
-                    lrvir[XX][XX] -= tmp*mx*mx;
-                    lrvir[XX][YY] -= tmp*mx*my;
-                    lrvir[XX][ZZ] -= tmp*mx*mz;
-                    lrvir[YY][YY] -= tmp*my*my;
-                    lrvir[YY][ZZ] -= tmp*my*mz;
-                    lrvir[ZZ][ZZ] -= tmp*mz*mz;
+                    energy_AB[q]  += ak * (cs * cs + ss * ss);
+                    tmp            = scale * akv * (cs * cs + ss * ss);
+                    lrvir[XX][XX] -= tmp * mx * mx;
+                    lrvir[XX][YY] -= tmp * mx * my;
+                    lrvir[XX][ZZ] -= tmp * mx * mz;
+                    lrvir[YY][YY] -= tmp * my * my;
+                    lrvir[YY][ZZ] -= tmp * my * mz;
+                    lrvir[ZZ][ZZ] -= tmp * mz * mz;
                     for (n = 0; n < natoms; n++)
                     {
                         /*tmp=scale*ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);*/
-                        tmp       = scale*ak*(cs*et->tab_qxyz[n].im-ss*et->tab_qxyz[n].re);
-                        f[n][XX] += tmp*mx*2*scaleRecip;
-                        f[n][YY] += tmp*my*2*scaleRecip;
-                        f[n][ZZ] += tmp*mz*2*scaleRecip;
+                        tmp       = scale * ak * (cs * et->tab_qxyz[n].im - ss * et->tab_qxyz[n].re);
+                        f[n][XX] += tmp * mx * 2 * scaleRecip;
+                        f[n][YY] += tmp * my * 2 * scaleRecip;
+                        f[n][ZZ] += tmp * mz * 2 * scaleRecip;
 #if 0
-                        f[n][XX] += tmp*mx;
-                        f[n][YY] += tmp*my;
-                        f[n][ZZ] += tmp*mz;
+                        f[n][XX] += tmp * mx;
+                        f[n][YY] += tmp * my;
+                        f[n][ZZ] += tmp * mz;
 #endif
                     }
-                    lowiz = 1-et->nz;
+                    lowiz = 1 - et->nz;
                 }
-                lowiy = 1-et->ny;
+                lowiy = 1 - et->ny;
             }
         }
     }
@@ -281,16 +281,16 @@ real do_ewald(t_inputrec *ir,
     }
     else
     {
-        energy      = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
-        *dvdlambda += scaleRecip*(energy_AB[1] - energy_AB[0]);
+        energy      = (1.0 - lambda) * energy_AB[0] + lambda * energy_AB[1];
+        *dvdlambda += scaleRecip * (energy_AB[1] - energy_AB[0]);
     }
 
-    lrvir[XX][XX] = -0.5*scaleRecip*(lrvir[XX][XX]+energy);
-    lrvir[XX][YY] = -0.5*scaleRecip*(lrvir[XX][YY]);
-    lrvir[XX][ZZ] = -0.5*scaleRecip*(lrvir[XX][ZZ]);
-    lrvir[YY][YY] = -0.5*scaleRecip*(lrvir[YY][YY]+energy);
-    lrvir[YY][ZZ] = -0.5*scaleRecip*(lrvir[YY][ZZ]);
-    lrvir[ZZ][ZZ] = -0.5*scaleRecip*(lrvir[ZZ][ZZ]+energy);
+    lrvir[XX][XX] = -0.5 * scaleRecip * (lrvir[XX][XX] + energy);
+    lrvir[XX][YY] = -0.5 * scaleRecip * (lrvir[XX][YY]);
+    lrvir[XX][ZZ] = -0.5 * scaleRecip * (lrvir[XX][ZZ]);
+    lrvir[YY][YY] = -0.5 * scaleRecip * (lrvir[YY][YY] + energy);
+    lrvir[YY][ZZ] = -0.5 * scaleRecip * (lrvir[YY][ZZ]);
+    lrvir[ZZ][ZZ] = -0.5 * scaleRecip * (lrvir[ZZ][ZZ] + energy);
 
     lrvir[YY][XX] = lrvir[XX][YY];
     lrvir[ZZ][XX] = lrvir[XX][ZZ];
@@ -312,18 +312,18 @@ real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
     if (MASTER(cr))
     {
         /* Apply charge correction */
-        vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
+        vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
 
-        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*gmx::square(fr->ewaldcoeff_q));
+        fac = M_PI * ONE_4PI_EPS0 / (fr->epsilon_r * 2.0 * vol * vol * gmx::square(fr->ewaldcoeff_q));
 
-        qs2A = fr->qsum[0]*fr->qsum[0];
-        qs2B = fr->qsum[1]*fr->qsum[1];
+        qs2A = fr->qsum[0] * fr->qsum[0];
+        qs2B = fr->qsum[1] * fr->qsum[1];
 
-        vc = (qs2A*(1 - lambda) + qs2B*lambda)*fac;
+        vc = (qs2A * (1 - lambda) + qs2B * lambda) * fac;
 
-        enercorr = -vol*vc;
+        enercorr = -vol * vc;
 
-        *dvdlambda += -vol*(qs2B - qs2A)*fac;
+        *dvdlambda += -vol * (qs2B - qs2A) * fac;
 
         for (d = 0; d < DIM; d++)
         {

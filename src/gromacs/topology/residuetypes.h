@@ -57,9 +57,9 @@ int
 gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype);
 
 int
-gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
-                             const char        ***p_typenames,
-                             int                 *ntypes);
+gmx_residuetype_get_alltypes(gmx_residuetype_t *rt,
+                             const char ***     p_typenames,
+                             int *              ntypes);
 
 gmx_bool
 gmx_residuetype_is_protein(gmx_residuetype_t *rt, const char *resnm);

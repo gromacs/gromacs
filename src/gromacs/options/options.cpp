@@ -106,8 +106,7 @@ OptionsImpl::OptionsImpl()
  * OptionSectionImpl
  */
 
-OptionSectionImpl *
-OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
+OptionSectionImpl *OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
 {
     const char *name = section.name_;
     // Make sure that there are no duplicate sections.
@@ -169,7 +168,7 @@ void OptionSectionImpl::start()
 void OptionSectionImpl::finish()
 {
     // TODO: Consider how to customize these error messages based on context.
-    ExceptionInitializer  errors("Invalid input values");
+    ExceptionInitializer errors("Invalid input values");
     for (const auto &entry : optionMap_)
     {
         AbstractOptionStorage &option = *entry.second;
@@ -207,11 +206,11 @@ IOptionsContainer &OptionSectionImpl::Group::addGroup()
 OptionInfo *OptionSectionImpl::Group::addOptionImpl(const AbstractOption &settings)
 {
     OptionSectionImpl::AbstractOptionStoragePointer
-         option(settings.createStorage(parent_->managers_));
+        option(settings.createStorage(parent_->managers_));
     options_.reserve(options_.size() + 1);
-    auto insertionResult =
-        parent_->optionMap_.insert(std::make_pair(option->name(),
-                                                  std::move(option)));
+    auto insertionResult
+        = parent_->optionMap_.insert(std::make_pair(option->name(),
+                                                    std::move(option)));
     if (!insertionResult.second)
     {
         const std::string &name = insertionResult.first->second->name();

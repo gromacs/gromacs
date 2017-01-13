@@ -61,7 +61,7 @@
 #define NAME_LEN 1024
 static const int NOTSET = -92637;
 
-gmx_bool         bCase = FALSE;
+gmx_bool bCase = FALSE;
 
 static int or_groups(int nr1, int *at1, int nr2, int *at2,
                      int *nr, int *at)
@@ -167,7 +167,7 @@ static int parse_names(char **string, int *n_names, char **names)
         {
             if (*n_names >= MAXNAMES)
             {
-                gmx_fatal(FARGS, "To many names: %d\n", *n_names+1);
+                gmx_fatal(FARGS, "To many names: %d\n", *n_names + 1);
             }
             i = 0;
             while (is_name_char((*string)[i]))
@@ -199,7 +199,7 @@ static int parse_names(char **string, int *n_names, char **names)
 
 static gmx_bool parse_int_char(char **string, int *nr, char *c)
 {
-    char    *orig;
+    char *   orig;
     gmx_bool bRet;
 
     orig = *string;
@@ -215,11 +215,11 @@ static gmx_bool parse_int_char(char **string, int *nr, char *c)
 
     if (std::isdigit((*string)[0]))
     {
-        *nr = (*string)[0]-'0';
+        *nr = (*string)[0] - '0';
         (*string)++;
         while (std::isdigit((*string)[0]))
         {
-            *nr = (*nr)*10+(*string)[0]-'0';
+            *nr = (*nr) * 10 + (*string)[0] - '0';
             (*string)++;
         }
         if (std::isalpha((*string)[0]))
@@ -247,7 +247,7 @@ static gmx_bool parse_int_char(char **string, int *nr, char *c)
 
 static gmx_bool parse_int(char **string, int *nr)
 {
-    char    *orig, c;
+    char *   orig, c;
     gmx_bool bRet;
 
     orig = *string;
@@ -285,7 +285,7 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
         sp = std::strchr(s, c);
         if (sp != nullptr)
         {
-            (*string) += sp-s + 1;
+            (*string) += sp - s + 1;
             sp[0]      = '\0';
             (*nr)      = find_group(s, ngrps, grpname);
         }
@@ -297,8 +297,8 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
 static int select_atomnumbers(char **string, const t_atoms *atoms, int n1,
                               int *nr, int *index, char *gname)
 {
-    char    buf[STRLEN];
-    int     i, up;
+    char buf[STRLEN];
+    int  i, up;
 
     *nr = 0;
     while ((*string)[0] == ' ')
@@ -315,7 +315,7 @@ static int select_atomnumbers(char **string, const t_atoms *atoms, int n1,
         }
         else
         {
-            for (i = n1-1; i <= up-1; i++)
+            for (i = n1 - 1; i <= up - 1; i++)
             {
                 index[*nr] = i;
                 (*nr)++;
@@ -338,9 +338,9 @@ static int select_atomnumbers(char **string, const t_atoms *atoms, int n1,
         sprintf(gname, "a");
         do
         {
-            if ((i-1 >= 0) && (i-1 < atoms->nr))
+            if ((i - 1 >= 0) && (i - 1 < atoms->nr))
             {
-                index[*nr] = i-1;
+                index[*nr] = i - 1;
                 (*nr)++;
                 sprintf(buf, "_%d", i);
                 std::strcat(gname, buf);
@@ -350,8 +350,7 @@ static int select_atomnumbers(char **string, const t_atoms *atoms, int n1,
                 printf("Invalid atom number %d\n", i);
                 *nr = 0;
             }
-        }
-        while ((*nr != 0) && (parse_int(string, &i)));
+        } while ((*nr != 0) && (parse_int(string, &i)));
     }
 
     return *nr;
@@ -423,8 +422,7 @@ static int select_residuenumbers(char **string, const t_atoms *atoms,
             }
             sprintf(buf, "_%d", j);
             std::strcat(gname, buf);
-        }
-        while (parse_int_char(string, &j, &c));
+        } while (parse_int_char(string, &j, &c));
     }
 
     return *nr;
@@ -461,7 +459,7 @@ static int select_residueindices(char **string, const t_atoms *atoms,
             ri = &atoms->resinfo[atoms->atom[i].resind];
             for (j = n1; (j <= up); j++)
             {
-                if (atoms->atom[i].resind+1 == j && (c == ' ' || ri->ic == c))
+                if (atoms->atom[i].resind + 1 == j && (c == ' ' || ri->ic == c))
                 {
                     index[*nr] = i;
                     (*nr)++;
@@ -490,7 +488,7 @@ static int select_residueindices(char **string, const t_atoms *atoms,
             for (i = 0; i < atoms->nr; i++)
             {
                 ri = &atoms->resinfo[atoms->atom[i].resind];
-                if (atoms->atom[i].resind+1 == j && ri->ic == c)
+                if (atoms->atom[i].resind + 1 == j && ri->ic == c)
                 {
                     index[*nr] = i;
                     (*nr)++;
@@ -498,8 +496,7 @@ static int select_residueindices(char **string, const t_atoms *atoms,
             }
             sprintf(buf, "_%d", j);
             std::strcat(gname, buf);
-        }
-        while (parse_int_char(string, &j, &c));
+        } while (parse_int_char(string, &j, &c));
     }
 
     return *nr;
@@ -512,14 +509,14 @@ static gmx_bool atoms_from_residuenumbers(const t_atoms *atoms, int group, t_blo
     int i, j, j0, j1, resnr, nres;
 
     j0   = block->index[group];
-    j1   = block->index[group+1];
+    j1   = block->index[group + 1];
     nres = atoms->nres;
     for (j = j0; j < j1; j++)
     {
         if (block->a[j] >= nres)
         {
             printf("Index %s contains number>nres (%d>%d)\n",
-                   gname, block->a[j]+1, nres);
+                   gname, block->a[j] + 1, nres);
             return FALSE;
         }
     }
@@ -528,7 +525,7 @@ static gmx_bool atoms_from_residuenumbers(const t_atoms *atoms, int group, t_blo
         resnr = atoms->resinfo[atoms->atom[i].resind].nr;
         for (j = j0; j < j1; j++)
         {
-            if (block->a[j]+1 == resnr)
+            if (block->a[j] + 1 == resnr)
             {
                 index[*nr] = i;
                 (*nr)++;
@@ -537,7 +534,7 @@ static gmx_bool atoms_from_residuenumbers(const t_atoms *atoms, int group, t_blo
         }
     }
     printf("Found %d atom%s in %d residues from group %s\n",
-           *nr, (*nr == 1) ? "" : "s", j1-j0, gname);
+           *nr, (*nr == 1) ? "" : "s", j1 - j0, gname);
     return *nr;
 }
 
@@ -555,13 +552,13 @@ static gmx_bool comp_name(const char *name, const char *search)
         }
         else if (*search == '*')
         {
-            if (*(search+1))
+            if (*(search + 1))
             {
                 printf("WARNING: Currently '*' is only supported at the end of an expression\n");
             }
             // if * is the last char in search string, we have a match,
             // otherwise we just failed. Return in either case, we're done.
-            return (*(search+1) == '\0');
+            return (*(search + 1) == '\0');
         }
 
         // Compare one character
@@ -583,9 +580,9 @@ static gmx_bool comp_name(const char *name, const char *search)
 static int select_chainnames(const t_atoms *atoms, int n_names, char **names,
                              int *nr, int *index)
 {
-    char    name[2];
-    int     j;
-    int     i;
+    char name[2];
+    int  j;
+    int  i;
 
     name[1] = 0;
     *nr     = 0;
@@ -617,9 +614,9 @@ static int select_chainnames(const t_atoms *atoms, int n_names, char **names,
 static int select_atomnames(const t_atoms *atoms, int n_names, char **names,
                             int *nr, int *index, gmx_bool bType)
 {
-    char   *name;
-    int     j;
-    int     i;
+    char *name;
+    int   j;
+    int   i;
 
     *nr = 0;
     for (i = 0; i < atoms->nr; i++)
@@ -657,9 +654,9 @@ static int select_atomnames(const t_atoms *atoms, int n_names, char **names,
 static int select_residuenames(const t_atoms *atoms, int n_names, char **names,
                                int *nr, int *index)
 {
-    char   *name;
-    int     j;
-    int     i;
+    char *name;
+    int   j;
+    int   i;
 
     *nr = 0;
     for (i = 0; i < atoms->nr; i++)
@@ -692,13 +689,13 @@ static void copy2block(int n, int *index, t_blocka *block)
 
     block->nr++;
     n0         = block->nra;
-    block->nra = n0+n;
-    srenew(block->index, block->nr+1);
-    block->index[block->nr] = n0+n;
-    srenew(block->a, n0+n);
+    block->nra = n0 + n;
+    srenew(block->index, block->nr + 1);
+    block->index[block->nr] = n0 + n;
+    srenew(block->a, n0 + n);
     for (i = 0; (i < n); i++)
     {
-        block->a[n0+i] = index[i];
+        block->a[n0 + i] = index[i];
     }
 }
 
@@ -719,10 +716,10 @@ static void copy_group(int g, t_blocka *block, int *nr, int *index)
     int i, i0;
 
     i0  = block->index[g];
-    *nr = block->index[g+1]-i0;
+    *nr = block->index[g + 1] - i0;
     for (i = 0; i < *nr; i++)
     {
-        index[i] = block->a[i0+i];
+        index[i] = block->a[i0 + i];
     }
 }
 
@@ -736,33 +733,33 @@ static void remove_group(int nr, int nr2, t_blocka *block, char ***gn)
         nr2 = nr;
     }
 
-    for (j = 0; j <= nr2-nr; j++)
+    for (j = 0; j <= nr2 - nr; j++)
     {
         if ((nr < 0) || (nr >= block->nr))
         {
-            printf("Group %d does not exist\n", nr+j);
+            printf("Group %d does not exist\n", nr + j);
         }
         else
         {
-            shift = block->index[nr+1]-block->index[nr];
-            for (i = block->index[nr+1]; i < block->nra; i++)
+            shift = block->index[nr + 1] - block->index[nr];
+            for (i = block->index[nr + 1]; i < block->nra; i++)
             {
-                block->a[i-shift] = block->a[i];
+                block->a[i - shift] = block->a[i];
             }
 
             for (i = nr; i < block->nr; i++)
             {
-                block->index[i] = block->index[i+1]-shift;
+                block->index[i] = block->index[i + 1] - shift;
             }
             name = gmx_strdup((*gn)[nr]);
             sfree((*gn)[nr]);
-            for (i = nr; i < block->nr-1; i++)
+            for (i = nr; i < block->nr - 1; i++)
             {
-                (*gn)[i] = (*gn)[i+1];
+                (*gn)[i] = (*gn)[i + 1];
             }
             block->nr--;
             block->nra = block->index[block->nr];
-            printf("Removed group %d '%s'\n", nr+j, name);
+            printf("Removed group %d '%s'\n", nr + j, name);
             sfree(name);
         }
     }
@@ -771,39 +768,39 @@ static void remove_group(int nr, int nr2, t_blocka *block, char ***gn)
 static void split_group(const t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
                         gmx_bool bAtom)
 {
-    char    buf[STRLEN], *name;
-    int     i, resind;
-    int     a, n0, n1;
+    char buf[STRLEN], *name;
+    int  i, resind;
+    int  a, n0, n1;
 
     printf("Splitting group %d '%s' into %s\n", sel_nr, (*gn)[sel_nr],
            bAtom ? "atoms" : "residues");
 
     n0 = block->index[sel_nr];
-    n1 = block->index[sel_nr+1];
-    srenew(block->a, block->nra+n1-n0);
+    n1 = block->index[sel_nr + 1];
+    srenew(block->a, block->nra + n1 - n0);
     for (i = n0; i < n1; i++)
     {
         a      = block->a[i];
         resind = atoms->atom[a].resind;
         name   = *(atoms->resinfo[resind].name);
-        if (bAtom || (i == n0) || (atoms->atom[block->a[i-1]].resind != resind))
+        if (bAtom || (i == n0) || (atoms->atom[block->a[i - 1]].resind != resind))
         {
             if (i > n0)
             {
                 block->index[block->nr] = block->nra;
             }
             block->nr++;
-            srenew(block->index, block->nr+1);
+            srenew(block->index, block->nr + 1);
             srenew(*gn, block->nr);
             if (bAtom)
             {
-                sprintf(buf, "%s_%s_%d", (*gn)[sel_nr], *atoms->atomname[a], a+1);
+                sprintf(buf, "%s_%s_%d", (*gn)[sel_nr], *atoms->atomname[a], a + 1);
             }
             else
             {
                 sprintf(buf, "%s_%s_%d", (*gn)[sel_nr], name, atoms->resinfo[resind].nr);
             }
-            (*gn)[block->nr-1] = gmx_strdup(buf);
+            (*gn)[block->nr - 1] = gmx_strdup(buf);
         }
         block->a[block->nra] = a;
         block->nra++;
@@ -814,10 +811,10 @@ static void split_group(const t_atoms *atoms, int sel_nr, t_blocka *block, char 
 static int split_chain(const t_atoms *atoms, const rvec *x,
                        int sel_nr, t_blocka *block, char ***gn)
 {
-    char    buf[STRLEN];
-    int     j, nchain;
-    int     i, a, natoms, *start = nullptr, *end = nullptr, ca_start, ca_end;
-    rvec    vec;
+    char buf[STRLEN];
+    int  j, nchain;
+    int  i, a, natoms, *start = nullptr, *end = nullptr, ca_start, ca_end;
+    rvec vec;
 
     natoms   = atoms->nr;
     nchain   = 0;
@@ -831,12 +828,12 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
         }
         if (ca_start < natoms)
         {
-            srenew(start, nchain+1);
-            srenew(end, nchain+1);
+            srenew(start, nchain + 1);
+            srenew(end, nchain + 1);
             start[nchain] = ca_start;
-            while ((start[nchain] > 0) &&
-                   (atoms->atom[start[nchain]-1].resind ==
-                    atoms->atom[ca_start].resind))
+            while ((start[nchain] > 0)
+                   && (atoms->atom[start[nchain] - 1].resind
+                       == atoms->atom[ca_start].resind))
             {
                 start[nchain]--;
             }
@@ -848,8 +845,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
                 do
                 {
                     i++;
-                }
-                while ((i < natoms) && std::strcmp(*atoms->atomname[i], "CA"));
+                } while ((i < natoms) && std::strcmp(*atoms->atomname[i], "CA"));
                 if (i < natoms)
                 {
                     rvec_sub(x[ca_end], x[i], vec);
@@ -858,16 +854,15 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
                 {
                     break;
                 }
-            }
-            while (norm(vec) < 0.45);
+            } while (norm(vec) < 0.45);
 
             end[nchain] = ca_end;
-            while ((end[nchain]+1 < natoms) &&
-                   (atoms->atom[end[nchain]+1].resind == atoms->atom[ca_end].resind))
+            while ((end[nchain] + 1 < natoms)
+                   && (atoms->atom[end[nchain] + 1].resind == atoms->atom[ca_end].resind))
             {
                 end[nchain]++;
             }
-            ca_start = end[nchain]+1;
+            ca_start = end[nchain] + 1;
             nchain++;
         }
     }
@@ -882,20 +877,20 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
     for (j = 0; j < nchain; j++)
     {
         printf("%d:%6d atoms (%d to %d)\n",
-               j+1, end[j]-start[j]+1, start[j]+1, end[j]+1);
+               j + 1, end[j] - start[j] + 1, start[j] + 1, end[j] + 1);
     }
 
     if (nchain > 1)
     {
-        srenew(block->a, block->nra+block->index[sel_nr+1]-block->index[sel_nr]);
+        srenew(block->a, block->nra + block->index[sel_nr + 1] - block->index[sel_nr]);
         for (j = 0; j < nchain; j++)
         {
             block->nr++;
-            srenew(block->index, block->nr+1);
+            srenew(block->index, block->nr + 1);
             srenew(*gn, block->nr);
-            sprintf(buf, "%s_chain%d", (*gn)[sel_nr], j+1);
-            (*gn)[block->nr-1] = gmx_strdup(buf);
-            for (i = block->index[sel_nr]; i < block->index[sel_nr+1]; i++)
+            sprintf(buf, "%s_chain%d", (*gn)[sel_nr], j + 1);
+            (*gn)[block->nr - 1] = gmx_strdup(buf);
+            for (i = block->index[sel_nr]; i < block->index[sel_nr + 1]; i++)
             {
                 a = block->a[i];
                 if ((a >= start[j]) && (a <= end[j]))
@@ -905,9 +900,9 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
                 }
             }
             block->index[block->nr] = block->nra;
-            if (block->index[block->nr-1] == block->index[block->nr])
+            if (block->index[block->nr - 1] == block->index[block->nr])
             {
-                remove_group(block->nr-1, NOTSET, block, gn);
+                remove_group(block->nr - 1, NOTSET, block, gn);
             }
         }
     }
@@ -934,7 +929,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
                             t_blocka *block, char ***gn,
                             int *nr, int *index, char *gname)
 {
-    static char   **names, *ostring;
+    static char **  names, *ostring;
     static gmx_bool bFirst = TRUE;
     int             j, n_names, sel_nr1;
     int             i, nr1, *index1;
@@ -947,7 +942,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         snew(names, MAXNAMES);
         for (i = 0; i < MAXNAMES; i++)
         {
-            snew(names[i], NAME_LEN+1);
+            snew(names[i], NAME_LEN + 1);
         }
     }
 
@@ -975,8 +970,8 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
 
     ostring = *string;
 
-    if (parse_int(string, &sel_nr1) ||
-        parse_string(string, &sel_nr1, block->nr, *gn))
+    if (parse_int(string, &sel_nr1)
+        || parse_string(string, &sel_nr1, block->nr, *gn))
     {
         if ((sel_nr1 >= 0) && (sel_nr1 < block->nr))
         {
@@ -1009,8 +1004,8 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
     else if ((*string)[0] == 't')
     {
         (*string)++;
-        if (check_have_atoms(atoms, ostring) &&
-            parse_names(string, &n_names, names))
+        if (check_have_atoms(atoms, ostring)
+            && parse_names(string, &n_names, names))
         {
             if (!(atoms->haveType))
             {
@@ -1026,9 +1021,9 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
     else if (std::strncmp(*string, "res", 3) == 0)
     {
         (*string) += 3;
-        if (check_have_atoms(atoms, ostring) &&
-            parse_int(string, &sel_nr1) &&
-            (sel_nr1 >= 0) && (sel_nr1 < block->nr) )
+        if (check_have_atoms(atoms, ostring)
+            && parse_int(string, &sel_nr1)
+            && (sel_nr1 >= 0) && (sel_nr1 < block->nr) )
         {
             bRet = atoms_from_residuenumbers(atoms,
                                              sel_nr1, block, nr, index, (*gn)[sel_nr1]);
@@ -1038,8 +1033,8 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
     else if (std::strncmp(*string, "ri", 2) == 0)
     {
         (*string) += 2;
-        if (check_have_atoms(atoms, ostring) &&
-            parse_int_char(string, &sel_nr1, &c))
+        if (check_have_atoms(atoms, ostring)
+            && parse_int_char(string, &sel_nr1, &c))
         {
             bRet = select_residueindices(string, atoms, sel_nr1, c, nr, index, gname);
         }
@@ -1063,8 +1058,8 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
     else if (std::strncmp(*string, "chain", 5) == 0)
     {
         (*string) += 5;
-        if (check_have_atoms(atoms, ostring) &&
-            parse_names(string, &n_names, names))
+        if (check_have_atoms(atoms, ostring)
+            && parse_names(string, &n_names, names))
         {
             bRet = select_chainnames(atoms, n_names, names, nr, index);
             sprintf(gname, "ch%s", names[0]);
@@ -1076,7 +1071,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
     }
     if (bRet && bCompl)
     {
-        snew(index1, natoms-*nr);
+        snew(index1, natoms - *nr);
         nr1 = 0;
         for (i = 0; i < natoms; i++)
         {
@@ -1087,7 +1082,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
             }
             if (j == *nr)
             {
-                if (nr1 >= natoms-*nr)
+                if (nr1 >= natoms - *nr)
                 {
                     printf("There are double atoms in your index group\n");
                     break;
@@ -1103,9 +1098,9 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         }
         sfree(index1);
 
-        for (i = std::strlen(gname)+1; i > 0; i--)
+        for (i = std::strlen(gname) + 1; i > 0; i--)
         {
-            gname[i] = gname[i-1];
+            gname[i] = gname[i - 1];
         }
         gname[0] = '!';
         printf("Complemented group: %d atoms\n", *nr);
@@ -1125,11 +1120,11 @@ static void list_residues(const t_atoms *atoms)
     for (i = 0; i < atoms->nr; i++)
     {
         resind = atoms->atom[i].resind;
-        if ((resind != prev_resind) || (i == atoms->nr-1))
+        if ((resind != prev_resind) || (i == atoms->nr - 1))
         {
             if ((bDiff = std::strcmp(*atoms->resinfo[resind].name,
-                                     *atoms->resinfo[start].name)) ||
-                (i == atoms->nr-1))
+                                     *atoms->resinfo[start].name))
+                || (i == atoms->nr - 1))
             {
                 if (bDiff)
                 {
@@ -1139,18 +1134,18 @@ static void list_residues(const t_atoms *atoms)
                 {
                     end = resind;
                 }
-                if (end < start+3)
+                if (end < start + 3)
                 {
                     for (j = start; j <= end; j++)
                     {
                         printf("%4d %-5s",
-                               j+1, *(atoms->resinfo[j].name));
+                               j + 1, *(atoms->resinfo[j].name));
                     }
                 }
                 else
                 {
                     printf(" %4d - %4d %-5s  ",
-                           start+1, end+1, *(atoms->resinfo[start].name));
+                           start + 1, end + 1, *(atoms->resinfo[start].name));
                 }
                 start = resind;
             }
@@ -1162,7 +1157,7 @@ static void list_residues(const t_atoms *atoms)
 
 static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka *block, char ***gn, gmx_bool bVerbose)
 {
-    static char   **atnames, *ostring;
+    static char **  atnames, *ostring;
     static gmx_bool bFirst = TRUE;
     char            inp_string[STRLEN], *string;
     char            gname[STRLEN], gname1[STRLEN], gname2[STRLEN];
@@ -1176,7 +1171,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         snew(atnames, MAXNAMES);
         for (i = 0; i < MAXNAMES; i++)
         {
-            snew(atnames[i], NAME_LEN+1);
+            snew(atnames[i], NAME_LEN + 1);
         }
     }
 
@@ -1202,12 +1197,12 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
             else
             {
                 i0 = newgroup;
-                i1 = newgroup+1;
+                i1 = newgroup + 1;
             }
             for (i = i0; i < i1; i++)
             {
                 printf("%3d %-20s: %5d atoms\n", i, (*gn)[i],
-                       block->index[i+1]-block->index[i]);
+                       block->index[i + 1] - block->index[i]);
             }
             newgroup = NOTSET;
         }
@@ -1229,7 +1224,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         {
             gmx_fatal(FARGS, "Error reading user input");
         }
-        inp_string[std::strlen(inp_string)-1] = 0;
+        inp_string[std::strlen(inp_string) - 1] = 0;
         printf("\n");
         string = inp_string;
         while (string[0] == ' ')
@@ -1324,8 +1319,8 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
             string += 4;
             if (parse_int(&string, &sel_nr))
             {
-                remove_group(sel_nr+1, block->nr-1, block, gn);
-                remove_group(0, sel_nr-1, block, gn);
+                remove_group(sel_nr + 1, block->nr - 1, block, gn);
+                remove_group(0, sel_nr - 1, block, gn);
             }
         }
         else if (std::strncmp(string, "name", 4) == 0)
@@ -1361,9 +1356,9 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         else if (std::strncmp(string, "splitch", 7) == 0)
         {
             string += 7;
-            if (check_have_atoms(atoms, ostring) &&
-                parse_int(&string, &sel_nr) &&
-                (sel_nr >= 0) && (sel_nr < block->nr))
+            if (check_have_atoms(atoms, ostring)
+                && parse_int(&string, &sel_nr)
+                && (sel_nr >= 0) && (sel_nr < block->nr))
             {
                 split_chain(atoms, x, sel_nr, block, gn);
             }
@@ -1371,9 +1366,9 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         else if (std::strncmp(string, "splitres", 8) == 0)
         {
             string += 8;
-            if (check_have_atoms(atoms, ostring) &&
-                parse_int(&string, &sel_nr) &&
-                (sel_nr >= 0) && (sel_nr < block->nr))
+            if (check_have_atoms(atoms, ostring)
+                && parse_int(&string, &sel_nr)
+                && (sel_nr >= 0) && (sel_nr < block->nr))
             {
                 split_group(atoms, sel_nr, block, gn, FALSE);
             }
@@ -1381,9 +1376,9 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         else if (std::strncmp(string, "splitat", 7) == 0)
         {
             string += 7;
-            if (check_have_atoms(atoms, ostring) &&
-                parse_int(&string, &sel_nr) &&
-                (sel_nr >= 0) && (sel_nr < block->nr))
+            if (check_have_atoms(atoms, ostring)
+                && parse_int(&string, &sel_nr)
+                && (sel_nr >= 0) && (sel_nr < block->nr))
             {
                 split_group(atoms, sel_nr, block, gn, TRUE);
             }
@@ -1438,8 +1433,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
                             }
                         }
                     }
-                }
-                while (bAnd || bOr);
+                } while (bAnd || bOr);
             }
             while (string[0] == ' ')
             {
@@ -1453,7 +1447,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
             {
                 copy2block(nr, index, block);
                 srenew(*gn, block->nr);
-                newgroup        = block->nr-1;
+                newgroup        = block->nr - 1;
                 (*gn)[newgroup] = gmx_strdup(gname);
             }
             else
@@ -1461,8 +1455,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
                 printf("Group is empty\n");
             }
         }
-    }
-    while (string[0] != 'q');
+    } while (string[0] != 'q');
 
     sfree(index);
     sfree(index1);
@@ -1485,23 +1478,23 @@ static int block2natoms(t_blocka *block)
 
 void merge_blocks(t_blocka *dest, t_blocka *source)
 {
-    int     i, nra0, i0;
+    int i, nra0, i0;
 
     /* count groups, srenew and fill */
     i0        = dest->nr;
     nra0      = dest->nra;
     dest->nr += source->nr;
-    srenew(dest->index, dest->nr+1);
+    srenew(dest->index, dest->nr + 1);
     for (i = 0; i < source->nr; i++)
     {
-        dest->index[i0+i] = nra0 + source->index[i];
+        dest->index[i0 + i] = nra0 + source->index[i];
     }
     /* count atoms, srenew and fill */
     dest->nra += source->nra;
     srenew(dest->a, dest->nra);
     for (i = 0; i < source->nra; i++)
     {
-        dest->a[nra0+i] = source->a[i];
+        dest->a[nra0 + i] = source->a[i];
     }
 
     /* terminate list */
@@ -1511,7 +1504,7 @@ void merge_blocks(t_blocka *dest, t_blocka *source)
 
 int gmx_make_ndx(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char *desc[] = {
         "Index groups are necessary for almost every GROMACS program.",
         "All these programs can generate default index groups. You ONLY",
         "have to use [THISMODULE] when you need SPECIAL index groups.",
@@ -1554,17 +1547,17 @@ int gmx_make_ndx(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     int               nndxin;
-    const char       *stxfile;
-    char            **ndxinfiles;
-    const char       *ndxoutfile;
+    const char *      stxfile;
+    char **           ndxinfiles;
+    const char *      ndxoutfile;
     gmx_bool          bNatoms;
     int               i, j;
-    t_atoms          *atoms;
-    rvec             *x, *v;
+    t_atoms *         atoms;
+    rvec *            x, *v;
     int               ePBC;
     matrix            box;
-    t_blocka         *block, *block2;
-    char            **gnames, **gnames2;
+    t_blocka *        block, *block2;
+    char **           gnames, **gnames2;
     t_filenm          fnm[] = {
         { efSTX, "-f", nullptr,     ffOPTRD  },
         { efNDX, "-n", nullptr,     ffOPTRDMULT },
@@ -1624,10 +1617,10 @@ int gmx_make_ndx(int argc, char *argv[])
         for (i = 0; i < nndxin; i++)
         {
             block2 = init_index(ndxinfiles[i], &gnames2);
-            srenew(gnames, block->nr+block2->nr);
+            srenew(gnames, block->nr + block2->nr);
             for (j = 0; j < block2->nr; j++)
             {
-                gnames[block->nr+j] = gnames2[j];
+                gnames[block->nr + j] = gnames2[j];
             }
             sfree(gnames2);
             merge_blocks(block, block2);

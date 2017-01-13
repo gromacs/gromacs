@@ -58,7 +58,8 @@ typedef int t_iatom;
 
 /* this MUST correspond to the
    t_interaction_function[F_NRE] in gmxlib/ifunc.c */
-enum {
+enum
+{
     F_BONDS,
     F_G96BONDS,
     F_MORSE,
@@ -163,118 +164,153 @@ typedef union t_iparams
      * The harmonic type is used for all harmonic potentials:
      * bonds, angles and improper dihedrals
      */
-    struct {
+    struct
+    {
         real a, b, c;
     } bham;
-    struct {
+    struct
+    {
         real rA, krA, rB, krB;
     } harmonic;
-    struct {
+    struct
+    {
         real klinA, aA, klinB, aB;
     } linangle;
-    struct {
+    struct
+    {
         real lowA, up1A, up2A, kA, lowB, up1B, up2B, kB;
     } restraint;
     /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */
-    struct {
+    struct
+    {
         real b0, kb, kcub;
     } cubic;
-    struct {
+    struct
+    {
         real bm, kb;
     } fene;
-    struct {
+    struct
+    {
         real r1e, r2e, krr;
     } cross_bb;
-    struct {
+    struct
+    {
         real r1e, r2e, r3e, krt;
     } cross_ba;
-    struct {
+    struct
+    {
         real thetaA, kthetaA, r13A, kUBA, thetaB, kthetaB, r13B, kUBB;
     } u_b;
-    struct {
+    struct
+    {
         real theta, c[5];
     } qangle;
-    struct {
+    struct
+    {
         real alpha;
     } polarize;
-    struct {
+    struct
+    {
         real alpha, drcut, khyp;
     } anharm_polarize;
-    struct {
+    struct
+    {
         real al_x, al_y, al_z, rOH, rHH, rOD;
     } wpol;
-    struct {
+    struct
+    {
         real a, alpha1, alpha2, rfac;
     } thole;
-    struct {
+    struct
+    {
         real c6, c12;
     } lj;
-    struct {
+    struct
+    {
         real c6A, c12A, c6B, c12B;
     } lj14;
-    struct {
+    struct
+    {
         real fqq, qi, qj, c6, c12;
     } ljc14;
-    struct {
+    struct
+    {
         real qi, qj, c6, c12;
     } ljcnb;
     /* Proper dihedrals can not have different multiplicity when
      * doing free energy calculations, because the potential would not
      * be periodic anymore.
      */
-    struct {
+    struct
+    {
         real phiA, cpA; int mult; real phiB, cpB;
     } pdihs;
-    struct {
+    struct
+    {
         real dA, dB;
     } constr;
     /* Settle can not be used for Free energy calculations of water bond geometry.
      * Use shake (or lincs) instead if you have to change the water bonds.
      */
-    struct {
+    struct
+    {
         real doh, dhh;
     } settle;
-    struct {
+    struct
+    {
         real b0A, cbA, betaA, b0B, cbB, betaB;
     } morse;
-    struct {
+    struct
+    {
         real pos0A[DIM], fcA[DIM], pos0B[DIM], fcB[DIM];
     } posres;
-    struct {
+    struct
+    {
         real pos0[DIM], r, k; int geom;
     } fbposres;
-    struct {
+    struct
+    {
         real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];
     } rbdihs;
-    struct {
+    struct
+    {
         real cbtcA[NR_CBTDIHS], cbtcB[NR_CBTDIHS];
     } cbtdihs;
-    struct {
+    struct
+    {
         real a, b, c, d, e, f;
     } vsite;
-    struct {
-        int  n; real a;
+    struct
+    {
+        int n; real a;
     } vsiten;
     /* NOTE: npair is only set after reading the tpx file */
-    struct {
+    struct
+    {
         real low, up1, up2, kfac; int type, label, npair;
     } disres;
-    struct {
+    struct
+    {
         real phiA, dphiA, kfacA, phiB, dphiB, kfacB;
     } dihres;
-    struct {
-        int  ex, power, label; real c, obs, kfac;
+    struct
+    {
+        int ex, power, label; real c, obs, kfac;
     } orires;
-    struct {
-        int  table; real kA; real kB;
+    struct
+    {
+        int table; real kA; real kB;
     } tab;
-    struct {
+    struct
+    {
         real sar, st, pi, gbr, bmlt;
     } gb;
-    struct {
+    struct
+    {
         int cmapA, cmapB;
     } cmap;
-    struct {
+    struct
+    {
         real buf[MAXFORCEPARAM];
     } generic;                                               /* Conversion */
 } t_iparams;
@@ -333,13 +369,14 @@ typedef struct gmx_ffparams_t
     int         ntypes;
     int         atnr;
     t_functype *functype;
-    t_iparams  *iparams;
+    t_iparams * iparams;
     double      reppow;    /* The repulsion power for VdW: C12*r^-reppow   */
     real        fudgeQQ;   /* The scaling factor for Coulomb 1-4: f*q1*q2  */
     gmx_cmap_t  cmap_grid; /* The dihedral correction maps                 */
 } gmx_ffparams_t;
 
-enum {
+enum
+{
     ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
 };
 
@@ -348,17 +385,17 @@ typedef struct t_idef
     int         ntypes;
     int         atnr;
     t_functype *functype;
-    t_iparams  *iparams;
+    t_iparams * iparams;
     real        fudgeQQ;
     gmx_cmap_t  cmap_grid;
-    t_iparams  *iparams_posres, *iparams_fbposres;
+    t_iparams * iparams_posres, *iparams_fbposres;
     int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 
-    t_ilist     il[F_NRE];
-    int         ilsort;
-    int         nthreads;
-    int        *il_thread_division;
-    int         il_thread_division_nalloc;
+    t_ilist il[F_NRE];
+    int     ilsort;
+    int     nthreads;
+    int *   il_thread_division;
+    int     il_thread_division_nalloc;
 } t_idef;
 
 /*

@@ -54,8 +54,8 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
 
 /* Allocates and initializes a pair search data structure */
-void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
-                       ivec                      *n_dd_cells,
+void nbnxn_init_search(nbnxn_search_t *           nbs_ptr,
+                       ivec *                     n_dd_cells,
                        struct gmx_domdec_zones_t *zones,
                        gmx_bool                   bFEP,
                        int                        nthread_max);
@@ -74,13 +74,13 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * With perturbed particles, also a group scheme style nbl_fep list is made.
  */
 void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
-                         nbnxn_atomdata_t     *nbat,
-                         const t_blocka       *excl,
+                         nbnxn_atomdata_t *    nbat,
+                         const t_blocka *      excl,
                          real                  rlist,
                          int                   min_ci_balanced,
                          nbnxn_pairlist_set_t *nbl_list,
                          int                   iloc,
                          int                   nb_kernel_type,
-                         t_nrnb               *nrnb);
+                         t_nrnb *              nrnb);
 
 #endif

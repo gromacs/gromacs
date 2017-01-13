@@ -118,9 +118,9 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
     while (ind < *npmedata)
     {
         pme = (*pmedata)[ind];
-        if (pme->nkx == grid_size[XX] &&
-            pme->nky == grid_size[YY] &&
-            pme->nkz == grid_size[ZZ])
+        if (pme->nkx == grid_size[XX]
+            && pme->nky == grid_size[YY]
+            && pme->nkz == grid_size[ZZ])
         {
             *pme_ret = pme;
 
@@ -152,10 +152,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     int                ret;
     int                natoms;
     matrix             box;
-    rvec              *x_pp       = nullptr, *f_pp = nullptr;
-    real              *chargeA    = nullptr, *chargeB = nullptr;
-    real              *c6A        = nullptr, *c6B = nullptr;
-    real              *sigmaA     = nullptr, *sigmaB = nullptr;
+    rvec *             x_pp       = nullptr, *f_pp = nullptr;
+    real *             chargeA    = nullptr, *chargeB = nullptr;
+    real *             c6A        = nullptr, *c6B = nullptr;
+    real *             sigmaA     = nullptr, *sigmaB = nullptr;
     real               lambda_q   = 0;
     real               lambda_lj  = 0;
     int                maxshift_x = 0, maxshift_y = 0;
@@ -206,8 +206,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 /* Reset the cycle and flop counters */
                 reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, ir, step);
             }
-        }
-        while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
+        } while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
 
         if (ret == pmerecvqxFINISH)
         {

@@ -42,13 +42,12 @@
 namespace gmx
 {
 
-gmx_uint64_t
-makeRandomSeed()
+gmx_uint64_t makeRandomSeed()
 {
-    std::random_device  rd;
-    gmx_uint64_t        result;
-    std::size_t         deviceBits = std::numeric_limits<std::random_device::result_type>::digits;
-    std::size_t         resultBits = std::numeric_limits<gmx_uint64_t>::digits;
+    std::random_device rd;
+    gmx_uint64_t       result;
+    std::size_t        deviceBits = std::numeric_limits<std::random_device::result_type>::digits;
+    std::size_t        resultBits = std::numeric_limits<gmx_uint64_t>::digits;
 
     result = static_cast<gmx_uint64_t>(rd());
 

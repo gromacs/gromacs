@@ -133,8 +133,8 @@ class ErrorMessage
         ErrorMessage prependContext(const std::string &context) const;
 
     private:
-        std::string                     text_;
-        std::shared_ptr<ErrorMessage>   child_;
+        std::string                   text_;
+        std::shared_ptr<ErrorMessage> child_;
 };
 
 /*! \internal \brief
@@ -156,8 +156,7 @@ ErrorMessage::ErrorMessage(const std::string &text)
     text_.resize(length + 1);
 }
 
-ErrorMessage
-ErrorMessage::prependContext(const std::string &context) const
+ErrorMessage ErrorMessage::prependContext(const std::string &context) const
 {
     ErrorMessage newMessage(context);
     newMessage.child_.reset(new ErrorMessage(*this));
@@ -209,8 +208,7 @@ void GromacsException::prependContext(const std::string &context)
     setInfo(ExceptionInfoMessage(msg->prependContext(context)));
 }
 
-const internal::IExceptionInfo *
-GromacsException::getInfo(const std::type_index &index) const
+const internal::IExceptionInfo *GromacsException::getInfo(const std::type_index &index) const
 {
     auto iter = data_->infos_.find(index);
     if (iter != data_->infos_.end())
@@ -347,7 +345,7 @@ class MessageWriterFileNoThrow : public IMessageWriter
         }
 
     private:
-        FILE                   *fp_;
+        FILE *fp_;
 };
 
 /*! \brief
@@ -380,7 +378,7 @@ class MessageWriterTextWriter : public IMessageWriter
         }
 
     private:
-        TextWriter     *writer_;
+        TextWriter *writer_;
 };
 
 /*! \brief
@@ -420,7 +418,7 @@ class MessageWriterString : public IMessageWriter
         }
 
     private:
-        std::string             result_;
+        std::string result_;
 };
 
 /*! \brief
@@ -450,26 +448,26 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
         //                           funcPtr != NULL ? *funcPtr : "");
         // }
 
-        bool                bAnythingWritten = false;
+        bool bAnythingWritten = false;
         // TODO: Remove duplicate context if present in multiple nested exceptions.
         const ErrorMessage *msg = gmxEx->getInfo<ExceptionInfoMessage>();
         if (msg != nullptr)
         {
             while (msg != nullptr && msg->isContext())
             {
-                writer->writeLine(msg->text().c_str(), indent*2);
+                writer->writeLine(msg->text().c_str(), indent * 2);
                 ++indent;
                 msg = &msg->child();
             }
             if (msg != nullptr && !msg->text().empty())
             {
-                writer->writeLine(msg->text().c_str(), indent*2);
+                writer->writeLine(msg->text().c_str(), indent * 2);
                 bAnythingWritten = true;
             }
         }
         else
         {
-            writer->writeLine(ex.what(), indent*2);
+            writer->writeLine(ex.what(), indent * 2);
             bAnythingWritten = true;
         }
 
@@ -480,7 +478,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
                 = gmxEx->getInfo<ExceptionInfoApiFunction>();
             writer->writeErrNoInfo(*errorNumber,
                                    funcName != nullptr ? *funcName : nullptr,
-                                   (indent+1)*2);
+                                   (indent + 1) * 2);
             bAnythingWritten = true;
         }
 
@@ -505,7 +503,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
     }
     else
     {
-        writer->writeLine(ex.what(), indent*2);
+        writer->writeLine(ex.what(), indent * 2);
     }
 }
 
@@ -515,7 +513,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
 
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {
-    const char             *title      = "Unknown exception";
+    const char *            title      = "Unknown exception";
     bool                    bPrintType = false;
     const GromacsException *gmxEx      = dynamic_cast<const GromacsException *>(&ex);
     // TODO: Treat more of the standard exceptions
@@ -582,7 +580,7 @@ void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
     formatExceptionMessageInternal(&writer, ex, 0);
 }
 
-void formatExceptionMessageToWriter(TextWriter           *writer,
+void formatExceptionMessageToWriter(TextWriter *          writer,
                                     const std::exception &ex)
 {
     MessageWriterTextWriter messageWriter(writer);

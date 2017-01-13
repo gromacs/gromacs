@@ -409,8 +409,7 @@ class SimdLoadFProxyInternal
  * \return Proxy object that will call the actual load for either SimdFloat
  *         or float when you assign it and the conversion method is called.
  */
-static inline const SimdLoadFProxyInternal gmx_simdcall
-load(const float *m)
+static inline const SimdLoadFProxyInternal gmx_simdcall load(const float *m)
 {
     return {
                m
@@ -464,8 +463,7 @@ class SimdLoadUFProxyInternal
  * \return Proxy object that will call the actual loadU for either SimdFloat
  *         or float when you assign it and the conversion method is called.
  */
-static inline const SimdLoadUFProxyInternal gmx_simdcall
-loadU(const float *m)
+static inline const SimdLoadUFProxyInternal gmx_simdcall loadU(const float *m)
 {
     return {
                m
@@ -517,8 +515,7 @@ class SimdLoadDProxyInternal
  * \return Proxy object that will call the actual load for either SimdDouble
  *         or double when you assign it and the conversion method is called.
  */
-static inline const SimdLoadDProxyInternal gmx_simdcall
-load(const double *m)
+static inline const SimdLoadDProxyInternal gmx_simdcall load(const double *m)
 {
     return {
                m
@@ -570,8 +567,7 @@ class SimdLoadUDProxyInternal
  * \return Proxy object that will call the actual load for either SimdDouble
  *         or double when you assign it and the conversion method is called.
  */
-static inline const SimdLoadUDProxyInternal gmx_simdcall
-loadU(const double *m)
+static inline const SimdLoadUDProxyInternal gmx_simdcall loadU(const double *m)
 {
     return {
                m
@@ -627,8 +623,7 @@ class SimdLoadIProxyInternal
  * \return Proxy object that will call the actual load for either SimdFInt32
  *         or SimdDInt32 when you assign it and the conversion method is called.
  */
-static inline const SimdLoadIProxyInternal gmx_simdcall
-load(const std::int32_t *m)
+static inline const SimdLoadIProxyInternal gmx_simdcall load(const std::int32_t *m)
 {
     return {
                m
@@ -676,8 +671,7 @@ class SimdLoadUIProxyInternal
  * \return Proxy object that will call the actual load for either SimdFInt32
  *         or SimdDInt32 when you assign it and the conversion method is called.
  */
-static inline const SimdLoadUIProxyInternal gmx_simdcall
-loadU(const std::int32_t *m)
+static inline const SimdLoadUIProxyInternal gmx_simdcall loadU(const std::int32_t *m)
 {
     return {
                m
@@ -741,8 +735,7 @@ class SimdSetZeroProxyInternal
  *         variable to zero based on the conversion function called when you
  *         assign the result.
  */
-static inline const SimdSetZeroProxyInternal gmx_simdcall
-setZero()
+static inline const SimdSetZeroProxyInternal gmx_simdcall setZero()
 {
     return {};
 }

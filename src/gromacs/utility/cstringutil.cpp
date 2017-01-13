@@ -63,9 +63,9 @@ int continuing(char *s)
 
     rtrim(s);
     sl = strlen(s);
-    if ((sl > 0) && (s[sl-1] == CONTINUE))
+    if ((sl > 0) && (s[sl - 1] == CONTINUE))
     {
-        s[sl-1] = 0;
+        s[sl - 1] = 0;
         return TRUE;
     }
     else
@@ -134,7 +134,7 @@ void upstring (char *str)
 
 void ltrim (char *str)
 {
-    int   i, c;
+    int i, c;
 
     if (nullptr == str)
     {
@@ -150,9 +150,9 @@ void ltrim (char *str)
     {
         for (i = c; ('\0' != str[i]); i++)
         {
-            str[i-c] = str[i];
+            str[i - c] = str[i];
         }
-        str[i-c] = '\0';
+        str[i - c] = '\0';
     }
 }
 
@@ -165,7 +165,7 @@ void rtrim (char *str)
         return;
     }
 
-    nul = strlen(str)-1;
+    nul = strlen(str) - 1;
     while ((nul > 0) && ((str[nul] == ' ') || (str[nul] == '\t')) )
     {
         str[nul] = '\0';
@@ -181,16 +181,16 @@ void trim (char *str)
 
 void nice_header(FILE *out, const char *fn)
 {
-    int            uid;
-    char           userbuf[256];
-    char           hostbuf[256];
-    char           timebuf[STRLEN];
+    int  uid;
+    char userbuf[256];
+    char hostbuf[256];
+    char timebuf[STRLEN];
 
     /* Print a nice header above the file */
     fprintf(out, "%c\n", COMMENTSIGN);
     fprintf(out, "%c\tFile '%s' was generated\n", COMMENTSIGN, fn ? fn : "unknown");
 
-    uid  = gmx_getuid();
+    uid = gmx_getuid();
     gmx_getusername(userbuf, 256);
     gmx_gethostname(hostbuf, 256);
     gmx_format_current_time(timebuf, STRLEN);
@@ -210,20 +210,17 @@ int gmx_strcasecmp_min(const char *str1, const char *str2)
         do
         {
             ch1 = toupper(*(str1++));
-        }
-        while ((ch1 == '-') || (ch1 == '_'));
+        } while ((ch1 == '-') || (ch1 == '_'));
         do
         {
             ch2 = toupper(*(str2++));
-        }
-        while ((ch2 == '-') || (ch2 == '_'));
+        } while ((ch2 == '-') || (ch2 == '_'));
 
         if (ch1 != ch2)
         {
-            return (ch1-ch2);
+            return (ch1 - ch2);
         }
-    }
-    while (ch1);
+    } while (ch1);
     return 0;
 }
 
@@ -239,20 +236,17 @@ int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
         do
         {
             ch1 = toupper(*(str1++));
-        }
-        while ((ch1 == '-') || (ch1 == '_'));
+        } while ((ch1 == '-') || (ch1 == '_'));
         do
         {
             ch2 = toupper(*(str2++));
-        }
-        while ((ch2 == '-') || (ch2 == '_'));
+        } while ((ch2 == '-') || (ch2 == '_'));
 
         if (ch1 != ch2)
         {
-            return (ch1-ch2);
+            return (ch1 - ch2);
         }
-    }
-    while (ch1 && (str1-stri1 < n) && (str2-stri2 < n));
+    } while (ch1 && (str1 - stri1 < n) && (str2 - stri2 < n));
     return 0;
 }
 
@@ -266,10 +260,9 @@ int gmx_strcasecmp(const char *str1, const char *str2)
         ch2 = toupper(*(str2++));
         if (ch1 != ch2)
         {
-            return (ch1-ch2);
+            return (ch1 - ch2);
         }
-    }
-    while (ch1);
+    } while (ch1);
     return 0;
 }
 
@@ -288,11 +281,10 @@ int gmx_strncasecmp(const char *str1, const char *str2, int n)
         ch2 = toupper(*(str2++));
         if (ch1 != ch2)
         {
-            return (ch1-ch2);
+            return (ch1 - ch2);
         }
         n--;
-    }
-    while (ch1 && n);
+    } while (ch1 && n);
     return 0;
 }
 
@@ -300,14 +292,13 @@ char *gmx_strdup(const char *src)
 {
     char *dest;
 
-    snew(dest, strlen(src)+1);
+    snew(dest, strlen(src) + 1);
     strcpy(dest, src);
 
     return dest;
 }
 
-char *
-gmx_strndup(const char *src, int n)
+char *gmx_strndup(const char *src, int n)
 {
     int   len;
     char *dest;
@@ -317,7 +308,7 @@ gmx_strndup(const char *src, int n)
     {
         len = n;
     }
-    snew(dest, len+1);
+    snew(dest, len + 1);
     strncpy(dest, src, len);
     dest[len] = 0;
     return dest;
@@ -330,8 +321,7 @@ const unsigned int
     gmx_string_hash_init = 5381;
 
 
-unsigned int
-gmx_string_fullhash_func(const char *s, unsigned int hash_init)
+unsigned int gmx_string_fullhash_func(const char *s, unsigned int hash_init)
 {
     int c;
 
@@ -342,8 +332,7 @@ gmx_string_fullhash_func(const char *s, unsigned int hash_init)
     return hash_init;
 }
 
-unsigned int
-gmx_string_hash_func(const char *s, unsigned int hash_init)
+unsigned int gmx_string_hash_func(const char *s, unsigned int hash_init)
 {
     int c;
 
@@ -357,8 +346,7 @@ gmx_string_hash_func(const char *s, unsigned int hash_init)
     return hash_init;
 }
 
-int
-gmx_wcmatch(const char *pattern, const char *str)
+int gmx_wcmatch(const char *pattern, const char *str)
 {
     while (*pattern)
     {
@@ -424,7 +412,7 @@ gmx_wcmatch(const char *pattern, const char *str)
 
 char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFirst)
 {
-    char    *b2;
+    char *   b2;
     int      i, i0, i2, j, b2len, lspace = 0, l2space = 0;
     gmx_bool bFirst, bFitsOnLine;
 
@@ -441,7 +429,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
      */
 
     b2    = nullptr;
-    b2len = strlen(buf)+1+indent;
+    b2len = strlen(buf) + 1 + indent;
     snew(b2, b2len);
     i0 = i2 = 0;
     if (bIndentFirst)
@@ -456,19 +444,19 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
     {
         l2space = -1;
         /* find the last space before end of line */
-        for (i = i0; ((i-i0 < line_width) || (l2space == -1)) && (buf[i]); i++)
+        for (i = i0; ((i - i0 < line_width) || (l2space == -1)) && (buf[i]); i++)
         {
             b2[i2++] = buf[i];
             /* remember the position of a space */
             if (buf[i] == ' ')
             {
                 lspace  = i;
-                l2space = i2-1;
+                l2space = i2 - 1;
             }
             /* if we have a newline before the line is full, reset counters */
-            if (buf[i] == '\n' && buf[i+1])
+            if (buf[i] == '\n' && buf[i + 1])
             {
-                i0     = i+1;
+                i0     = i + 1;
                 b2len += indent;
                 srenew(b2, b2len);
                 /* add indentation after the newline */
@@ -479,7 +467,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
             }
         }
         /* If we are at the last newline, copy it */
-        if (buf[i] == '\n' && !buf[i+1])
+        if (buf[i] == '\n' && !buf[i + 1])
         {
             b2[i2++] = buf[i++];
         }
@@ -487,10 +475,10 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
         if (buf[i])
         {
             /* check if one word does not fit on the line */
-            bFitsOnLine = (i-i0 <= line_width);
+            bFitsOnLine = (i - i0 <= line_width);
             /* reset line counters to just after the space */
-            i0 = lspace+1;
-            i2 = l2space+1;
+            i0 = lspace + 1;
+            i2 = l2space + 1;
             /* if the words fit on the line, and we're beyond the indentation part */
             if ( (bFitsOnLine) && (l2space >= indent) )
             {
@@ -518,15 +506,13 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
                 }
             }
         }
-    }
-    while (buf[i]);
+    } while (buf[i]);
     b2[i2] = '\0';
 
     return b2;
 }
 
-gmx_int64_t
-str_to_int64_t(const char *str, char **endptr)
+gmx_int64_t str_to_int64_t(const char *str, char **endptr)
 {
 #ifndef _MSC_VER
     return strtoll(str, endptr, 10);

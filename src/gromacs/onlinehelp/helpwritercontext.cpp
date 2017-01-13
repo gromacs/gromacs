@@ -228,7 +228,7 @@ class IWrapper
          */
         virtual TextLineWrapperSettings &settings() = 0;
         //! Appends the given string to output.
-        virtual void wrap(const std::string &text)  = 0;
+        virtual void wrap(const std::string &text) = 0;
 };
 
 /*! \brief
@@ -255,8 +255,8 @@ class WrapperToString : public IWrapper
         const std::string &result() const { return result_; }
 
     private:
-        TextLineWrapper         wrapper_;
-        std::string             result_;
+        TextLineWrapper wrapper_;
+        std::string     result_;
 };
 
 /*! \brief
@@ -363,8 +363,8 @@ class HelpLinks::Impl
                 : linkName(linkName), replacement(replacement)
             {
             }
-            std::string         linkName;
-            std::string         replacement;
+            std::string linkName;
+            std::string replacement;
         };
 
         //! Shorthand for a list of links.
@@ -376,9 +376,9 @@ class HelpLinks::Impl
         }
 
         //! List of links.
-        LinkList          links_;
+        LinkList links_;
         //! Output format for which the links are formatted.
-        HelpOutputFormat  format_;
+        HelpOutputFormat format_;
 };
 
 /********************************************************************
@@ -466,11 +466,11 @@ class HelpWriterContext::Impl
                 }
 
                 //! Writer for writing the help.
-                TextWriter             &file_;
+                TextWriter &file_;
                 //! Output format for the help output.
-                HelpOutputFormat        format_;
+                HelpOutputFormat format_;
                 //! Links to use.
-                const HelpLinks        *links_;
+                const HelpLinks *links_;
 
             private:
                 //! Formatter for console output options.
@@ -487,8 +487,8 @@ class HelpWriterContext::Impl
                 : search(search), replace(replace)
             {
             }
-            std::string         search;
-            std::string         replace;
+            std::string search;
+            std::string replace;
         };
 
         //! Smart pointer type for managing the shared state.
@@ -502,7 +502,7 @@ class HelpWriterContext::Impl
         {
         }
         //! Copies the context.
-        Impl(const Impl &)            = default;
+        Impl(const Impl &) = default;
 
         //! Adds a new replacement.
         void addReplacement(const std::string &search,
@@ -524,14 +524,14 @@ class HelpWriterContext::Impl
          * or providing an interface for the caller to retrieve the output.
          */
         void processMarkup(const std::string &text,
-                           IWrapper          *wrapper) const;
+                           IWrapper *         wrapper) const;
 
         //! Constant state shared by all child context objects.
-        StatePointer            state_;
+        StatePointer state_;
         //! List of markup/other replacements.
-        ReplaceList             replacements_;
+        ReplaceList replacements_;
         //! Number of subsections above this context.
-        int                     sectionDepth_;
+        int sectionDepth_;
 
     private:
         GMX_DISALLOW_ASSIGN(Impl);
@@ -553,7 +553,7 @@ std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) cons
 }
 
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
-                                            IWrapper          *wrapper) const
+                                            IWrapper *         wrapper) const
 {
     std::string result(text);
     for (ReplaceList::const_iterator i = replacements_.begin();
@@ -565,11 +565,11 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     {
         case eHelpOutputFormat_Console:
         {
-            const int   baseFirstLineIndent = wrapper->settings().firstLineIndent();
-            const int   baseIndent          = wrapper->settings().indent();
+            const int baseFirstLineIndent = wrapper->settings().firstLineIndent();
+            const int baseIndent          = wrapper->settings().indent();
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            std::string          paragraph;
+            std::string paragraph;
             paragraph.reserve(result.length());
             RstParagraphIterator iter(result);
             while (iter.nextParagraph())
@@ -656,8 +656,7 @@ void HelpWriterContext::enterSubSection(const std::string &title)
     ++impl_->sectionDepth_;
 }
 
-std::string
-HelpWriterContext::substituteMarkupAndWrapToString(
+std::string HelpWriterContext::substituteMarkupAndWrapToString(
         const TextLineWrapperSettings &settings, const std::string &text) const
 {
     WrapperToString wrapper(settings);

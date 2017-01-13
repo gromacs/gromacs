@@ -74,11 +74,11 @@ static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
         mass = top->atoms.atom[ai].m;
         for (j = 0; (j < DIM); j++)
         {
-            xref[j] += mass*x[ai][j];
+            xref[j] += mass * x[ai][j];
         }
         mtot += mass;
     }
-    svmul(1/mtot, xref, xref);
+    svmul(1 / mtot, xref, xref);
     /* Now check if any atom is more than half the box from the COM */
     if (bPBC)
     {
@@ -89,15 +89,15 @@ static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
             for (m = 0; (m < nrefat); m++)
             {
                 ai   = index[m];
-                mass = top->atoms.atom[ai].m/mtot;
+                mass = top->atoms.atom[ai].m / mtot;
                 pbc_dx(pbc, x[ai], xref, dx);
                 rvec_add(xref, dx, xtest);
                 for (j = 0; (j < DIM); j++)
                 {
-                    if (std::abs(xtest[j]-x[ai][j]) > tol)
+                    if (std::abs(xtest[j] - x[ai][j]) > tol)
                     {
                         /* Here we have used the wrong image for contributing to the COM */
-                        xref[j] += mass*(xtest[j]-x[ai][j]);
+                        xref[j] += mass * (xtest[j] - x[ai][j]);
                         x[ai][j] = xtest[j];
                         bChanged = TRUE;
                     }
@@ -108,45 +108,44 @@ static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
                 printf("COM: %8.3f  %8.3f  %8.3f  iter = %d\n", xref[XX], xref[YY], xref[ZZ], iter);
             }
             iter++;
-        }
-        while (bChanged);
+        } while (bChanged);
     }
 }
 
 int gmx_sorient(int argc, char *argv[])
 {
-    t_topology        top;
-    int               ePBC = -1;
-    t_trxstatus      *status;
-    int               natoms;
-    real              t;
-    rvec             *xtop, *x;
-    matrix            box;
+    t_topology   top;
+    int          ePBC = -1;
+    t_trxstatus *status;
+    int          natoms;
+    real         t;
+    rvec *       xtop, *x;
+    matrix       box;
 
-    FILE             *fp;
-    int               i, p, sa0, sa1, sa2, n, ntot, nf, m, *hist1, *hist2, *histn, nbin1, nbin2, nrbin;
-    real             *histi1, *histi2, invbw, invrbw;
-    double            sum1, sum2;
-    int              *isize, nrefgrp, nrefat;
-    int             **index;
-    char            **grpname;
-    real              inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
-    real              c1, c2;
-    char              str[STRLEN];
-    gmx_bool          bTPS;
-    rvec              xref, dx, dxh1, dxh2, outer;
-    gmx_rmpbc_t       gpbc = nullptr;
-    t_pbc             pbc;
-    const char       *legr[] = {
+    FILE *      fp;
+    int         i, p, sa0, sa1, sa2, n, ntot, nf, m, *hist1, *hist2, *histn, nbin1, nbin2, nrbin;
+    real *      histi1, *histi2, invbw, invrbw;
+    double      sum1, sum2;
+    int *       isize, nrefgrp, nrefat;
+    int **      index;
+    char **     grpname;
+    real        inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
+    real        c1, c2;
+    char        str[STRLEN];
+    gmx_bool    bTPS;
+    rvec        xref, dx, dxh1, dxh2, outer;
+    gmx_rmpbc_t gpbc = nullptr;
+    t_pbc       pbc;
+    const char *legr[] = {
         "<cos(\\8q\\4\\s1\\N)>",
         "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>"
     };
-    const char       *legc[] = {
+    const char *legc[] = {
         "cos(\\8q\\4\\s1\\N)",
         "3cos\\S2\\N(\\8q\\4\\s2\\N)-1"
     };
 
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] analyzes solvent orientation around solutes.",
         "It calculates two angles between the vector from one or more",
         "reference positions to the first atom of each solvent molecule:",
@@ -186,7 +185,7 @@ int gmx_sorient(int argc, char *argv[])
         { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
     };
 
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efTRX, nullptr,  nullptr,  ffREAD },
         { efTPS, nullptr,  nullptr,  ffREAD },
         { efNDX, nullptr,  nullptr,  ffOPTRD },
@@ -247,22 +246,22 @@ int gmx_sorient(int argc, char *argv[])
 
     rmin2 = gmx::square(rmin);
     rmax2 = gmx::square(rmax);
-    rcut  = 0.99*std::sqrt(max_cutoff2(guess_ePBC(box), box));
+    rcut  = 0.99 * std::sqrt(max_cutoff2(guess_ePBC(box), box));
     if (rcut == 0)
     {
-        rcut = 10*rmax;
+        rcut = 10 * rmax;
     }
     rcut2 = gmx::square(rcut);
 
-    invbw = 1/binwidth;
-    nbin1 = 1+static_cast<int>(2*invbw + 0.5);
-    nbin2 = 1+static_cast<int>(invbw + 0.5);
+    invbw = 1 / binwidth;
+    nbin1 = 1 + static_cast<int>(2 * invbw + 0.5);
+    nbin2 = 1 + static_cast<int>(invbw + 0.5);
 
-    invrbw = 1/rbinw;
+    invrbw = 1 / rbinw;
 
     snew(hist1, nbin1);
     snew(hist2, nbin2);
-    nrbin = 1+static_cast<int>(rcut/rbinw);
+    nrbin = 1 + static_cast<int>(rcut / rbinw);
     if (nrbin == 0)
     {
         nrbin = 1;
@@ -291,8 +290,8 @@ int gmx_sorient(int argc, char *argv[])
         }
 
         set_pbc(&pbc, ePBC, box);
-        n    = 0;
-        inp  = 0;
+        n   = 0;
+        inp = 0;
         for (p = 0; (p < nrefgrp); p++)
         {
             if (bCom)
@@ -307,13 +306,13 @@ int gmx_sorient(int argc, char *argv[])
             for (m = 0; m < isize[1]; m += 3)
             {
                 sa0 = index[1][m];
-                sa1 = index[1][m+1];
-                sa2 = index[1][m+2];
+                sa1 = index[1][m + 1];
+                sa2 = index[1][m + 2];
                 range_check(sa0, 0, natoms);
                 range_check(sa1, 0, natoms);
                 range_check(sa2, 0, natoms);
                 pbc_dx(&pbc, x[sa0], xref, dx);
-                r2  = norm2(dx);
+                r2 = norm2(dx);
                 if (r2 < rcut2)
                 {
                     r = std::sqrt(r2);
@@ -323,7 +322,7 @@ int gmx_sorient(int argc, char *argv[])
                         rvec_sub(x[sa1], x[sa0], dxh1);
                         rvec_sub(x[sa2], x[sa0], dxh2);
                         rvec_inc(dxh1, dxh2);
-                        svmul(1/r, dx, dx);
+                        svmul(1 / r, dx, dx);
                         unitv(dxh1, dxh1);
                         inp = iprod(dx, dxh1);
                         cprod(dxh1, dxh2, outer);
@@ -335,19 +334,19 @@ int gmx_sorient(int argc, char *argv[])
                         /* Use the vector between the 2nd and 3rd atom */
                         rvec_sub(x[sa2], x[sa1], dxh2);
                         unitv(dxh2, dxh2);
-                        outp = iprod(dx, dxh2)/r;
+                        outp = iprod(dx, dxh2) / r;
                     }
                     {
-                        int ii = static_cast<int>(invrbw*r);
+                        int ii = static_cast<int>(invrbw * r);
                         range_check(ii, 0, nrbin);
                         histi1[ii] += inp;
-                        histi2[ii] += 3*gmx::square(outp) - 1;
+                        histi2[ii] += 3 * gmx::square(outp) - 1;
                         histn[ii]++;
                     }
                     if ((r2 >= rmin2) && (r2 < rmax2))
                     {
-                        int ii1 = static_cast<int>(invbw*(inp + 1));
-                        int ii2 = static_cast<int>(invbw*std::abs(outp));
+                        int ii1 = static_cast<int>(invbw * (inp + 1));
+                        int ii2 = static_cast<int>(invbw * std::abs(outp));
 
                         range_check(ii1, 0, nbin1);
                         range_check(ii2, 0, nbin2);
@@ -363,8 +362,7 @@ int gmx_sorient(int argc, char *argv[])
         ntot += n;
         nf++;
 
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     /* clean up */
     sfree(x);
@@ -372,11 +370,11 @@ int gmx_sorient(int argc, char *argv[])
     gmx_rmpbc_done(gpbc);
 
     /* Add the bin for the exact maximum to the previous bin */
-    hist1[nbin1-1] += hist1[nbin1];
-    hist2[nbin2-1] += hist2[nbin2];
+    hist1[nbin1 - 1] += hist1[nbin1];
+    hist2[nbin2 - 1] += hist2[nbin2];
 
-    nav     = static_cast<real>(ntot)/(nrefgrp*nf);
-    normfac = invbw/ntot;
+    nav     = static_cast<real>(ntot) / (nrefgrp * nf);
+    normfac = invbw / ntot;
 
     fprintf(stderr,  "Average nr of molecules between %g and %g nm: %.1f\n",
             rmin, rmax, nav);
@@ -398,7 +396,7 @@ int gmx_sorient(int argc, char *argv[])
     }
     for (i = 0; i < nbin1; i++)
     {
-        fprintf(fp, "%g %g\n", (i+0.5)*binwidth-1, 2*normfac*hist1[i]);
+        fprintf(fp, "%g %g\n", (i + 0.5) * binwidth - 1, 2 * normfac * hist1[i]);
     }
     xvgrclose(fp);
 
@@ -410,7 +408,7 @@ int gmx_sorient(int argc, char *argv[])
     }
     for (i = 0; i < nbin2; i++)
     {
-        fprintf(fp, "%g %g\n", (i+0.5)*binwidth, normfac*hist2[i]);
+        fprintf(fp, "%g %g\n", (i + 0.5) * binwidth, normfac * hist2[i]);
     }
     xvgrclose(fp);
 
@@ -424,9 +422,9 @@ int gmx_sorient(int argc, char *argv[])
     xvgr_legend(fp, 2, legr, oenv);
     for (i = 0; i < nrbin; i++)
     {
-        fprintf(fp, "%g %g %g\n", (i+0.5)*rbinw,
-                histn[i] ? histi1[i]/histn[i] : 0,
-                histn[i] ? histi2[i]/histn[i] : 0);
+        fprintf(fp, "%g %g %g\n", (i + 0.5) * rbinw,
+                histn[i] ? histi1[i] / histn[i] : 0,
+                histn[i] ? histi2[i] / histn[i] : 0);
     }
     xvgrclose(fp);
 
@@ -437,15 +435,15 @@ int gmx_sorient(int argc, char *argv[])
         fprintf(fp, "@ subtitle \"as a function of distance\"\n");
     }
     xvgr_legend(fp, 2, legc, oenv);
-    normfac = 1.0/(nrefgrp*nf);
+    normfac = 1.0 / (nrefgrp * nf);
     c1      = 0;
     c2      = 0;
     fprintf(fp, "%g %g %g\n", 0.0, c1, c2);
     for (i = 0; i < nrbin; i++)
     {
-        c1 += histi1[i]*normfac;
-        c2 += histi2[i]*normfac;
-        fprintf(fp, "%g %g %g\n", (i+1)*rbinw, c1, c2);
+        c1 += histi1[i] * normfac;
+        c2 += histi2[i] * normfac;
+        fprintf(fp, "%g %g %g\n", (i + 1) * rbinw, c1, c2);
     }
     xvgrclose(fp);
 
@@ -455,10 +453,10 @@ int gmx_sorient(int argc, char *argv[])
     {
         fprintf(fp, "@ subtitle \"as a function of distance\"\n");
     }
-    normfac = 1.0/(rbinw*nf);
+    normfac = 1.0 / (rbinw * nf);
     for (i = 0; i < nrbin; i++)
     {
-        fprintf(fp, "%g %g\n", (i+0.5)*rbinw, histn[i]*normfac);
+        fprintf(fp, "%g %g\n", (i + 0.5) * rbinw, histn[i] * normfac);
     }
     xvgrclose(fp);
 

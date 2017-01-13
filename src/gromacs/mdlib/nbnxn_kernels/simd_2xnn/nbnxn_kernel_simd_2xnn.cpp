@@ -68,13 +68,15 @@
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
-enum {
+enum
+{
     coulktRF, coulktTAB, coulktTAB_TWIN, coulktEWALD, coulktEWALD_TWIN, coulktNR
 };
 
 /*! \brief Kinds of Van der Waals treatments in SIMD Verlet kernels
  */
-enum {
+enum
+{
     vdwktLJCUT_COMBGEOM, vdwktLJCUT_COMBLB, vdwktLJCUT_COMBNONE, vdwktLJFORCESWITCH, vdwktLJPOTSWITCH, vdwktLJEWALDCOMBGEOM, vdwktNR
 };
 
@@ -215,16 +217,15 @@ static p_nbk_func_ener p_nbk_energrp[coulktNR][vdwktNR] =
 };
 
 
-static void
-reduce_group_energies(int ng, int ng_2log,
-                      const real *VSvdw, const real *VSc,
-                      real *Vvdw, real *Vc)
+static void reduce_group_energies(int ng, int ng_2log,
+                                  const real *VSvdw, const real *VSc,
+                                  real *Vvdw, real *Vc)
 {
-    const int unrollj      = GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE;
-    const int unrollj_half = unrollj/2;
+    const int unrollj      = GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE;
+    const int unrollj_half = unrollj / 2;
     int       ng_p2, i, j, j0, j1, c, s;
 
-    ng_p2 = (1<<ng_2log);
+    ng_p2 = (1 << ng_2log);
 
     /* The size of the x86 SIMD energy group buffer array is:
      * ng*ng*ng_p2*unrollj_half*simd_width
@@ -233,22 +234,22 @@ reduce_group_energies(int ng, int ng_2log,
     {
         for (j = 0; j < ng; j++)
         {
-            Vvdw[i*ng+j] = 0;
-            Vc[i*ng+j]   = 0;
+            Vvdw[i * ng + j] = 0;
+            Vc[i * ng + j]   = 0;
         }
 
         for (j1 = 0; j1 < ng; j1++)
         {
             for (j0 = 0; j0 < ng; j0++)
             {
-                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*unrollj;
+                c = ((i * ng + j1) * ng_p2 + j0) * unrollj_half * unrollj;
                 for (s = 0; s < unrollj_half; s++)
                 {
-                    Vvdw[i*ng+j0] += VSvdw[c+0];
-                    Vvdw[i*ng+j1] += VSvdw[c+1];
-                    Vc  [i*ng+j0] += VSc  [c+0];
-                    Vc  [i*ng+j1] += VSc  [c+1];
-                    c             += unrollj + 2;
+                    Vvdw[i * ng + j0] += VSvdw[c + 0];
+                    Vvdw[i * ng + j1] += VSvdw[c + 1];
+                    Vc  [i * ng + j0] += VSc  [c + 0];
+                    Vc  [i * ng + j1] += VSc  [c + 1];
+                    c                 += unrollj + 2;
                 }
             }
         }
@@ -261,17 +262,16 @@ reduce_group_energies(int ng, int ng_2log,
 
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
-void
-nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
-                       const nbnxn_atomdata_t    gmx_unused *nbat,
-                       const interaction_const_t gmx_unused *ic,
-                       int                       gmx_unused  ewald_excl,
-                       rvec                      gmx_unused *shift_vec,
-                       int                       gmx_unused  force_flags,
-                       int                       gmx_unused  clearF,
-                       real                      gmx_unused *fshift,
-                       real                      gmx_unused *Vc,
-                       real                      gmx_unused *Vvdw)
+void nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
+                            const nbnxn_atomdata_t    gmx_unused *nbat,
+                            const interaction_const_t gmx_unused *ic,
+                            int                       gmx_unused  ewald_excl,
+                            rvec                      gmx_unused *shift_vec,
+                            int                       gmx_unused  force_flags,
+                            int                       gmx_unused  clearF,
+                            real                      gmx_unused *fshift,
+                            real                      gmx_unused *Vc,
+                            real                      gmx_unused *Vvdw)
 #ifdef GMX_NBNXN_SIMD_2XNN
 {
     int                nnbl;
@@ -356,7 +356,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         // Presently, the kernels do not call C++ code that can throw, so
         // no need for a try/catch pair in this OpenMP region.
         nbnxn_atomdata_output_t *out;
-        real                    *fshift_p;
+        real *                   fshift_p;
 
         out = &nbat->out[nb];
 

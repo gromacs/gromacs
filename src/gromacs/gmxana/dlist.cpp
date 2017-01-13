@@ -53,23 +53,23 @@ t_dlist *mk_dlist(FILE *log,
     int       i, j, ii;
     t_dihatms atm, prev;
     int       nl = 0, nc[edMax];
-    char     *thisres;
-    t_dlist  *dl;
+    char *    thisres;
+    t_dlist * dl;
 
-    snew(dl, atoms->nres+1);
+    snew(dl, atoms->nres + 1);
     prev.C = prev.Cn[1] = -1; /* Keep the compiler quiet */
     for (i = 0; (i < edMax); i++)
     {
         nc[i] = 0;
     }
-    i    =  0;
+    i =  0;
     while (i < atoms->nr)
     {
         int ires = atoms->atom[i].resind;
 
         /* Initiate all atom numbers to -1 */
         atm.minC = atm.H = atm.N = atm.C = atm.O = atm.minCalpha = -1;
-        for (j = 0; (j < MAXCHI+3); j++)
+        for (j = 0; (j < MAXCHI + 3); j++)
         {
             atm.Cn[j] = -1;
         }
@@ -78,9 +78,9 @@ t_dlist *mk_dlist(FILE *log,
         /* maybe should allow for chis to hydrogens? */
         while ((i < atoms->nr) && (atoms->atom[i].resind == ires))
         {
-            if ((std::strcmp(*(atoms->atomname[i]), "H") == 0) ||
-                (std::strcmp(*(atoms->atomname[i]), "H1") == 0) ||
-                (std::strcmp(*(atoms->atomname[i]), "HN") == 0) )
+            if ((std::strcmp(*(atoms->atomname[i]), "H") == 0)
+                || (std::strcmp(*(atoms->atomname[i]), "H1") == 0)
+                || (std::strcmp(*(atoms->atomname[i]), "HN") == 0) )
             {
                 atm.H = i;
             }
@@ -92,10 +92,10 @@ t_dlist *mk_dlist(FILE *log,
             {
                 atm.C = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "O") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "O1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OC1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OT1") == 0))
+            else if ((std::strcmp(*(atoms->atomname[i]), "O") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "OT1") == 0))
             {
                 atm.O = i;
             }
@@ -107,37 +107,37 @@ t_dlist *mk_dlist(FILE *log,
             {
                 atm.Cn[2] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CG") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "CG1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OG") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "OG1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "SG") == 0))
+            else if ((std::strcmp(*(atoms->atomname[i]), "CG") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "CG1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "OG") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "OG1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "SG") == 0))
             {
                 atm.Cn[3] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CD") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "CD1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "SD") == 0)  ||
-                     (std::strcmp(*(atoms->atomname[i]), "OD1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "ND1") == 0))
+            else if ((std::strcmp(*(atoms->atomname[i]), "CD") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "CD1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "SD") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "OD1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "ND1") == 0))
             {
                 atm.Cn[4] = i;
             }
             /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */
-            else if (bHChi && ((std::strcmp(*(atoms->atomname[i]), "HG")  == 0) ||
-                               (std::strcmp(*(atoms->atomname[i]), "HG1")  == 0)) )
+            else if (bHChi && ((std::strcmp(*(atoms->atomname[i]), "HG")  == 0)
+                               || (std::strcmp(*(atoms->atomname[i]), "HG1")  == 0)) )
             {
                 atm.Cn[4] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CE") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "CE1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "OE1") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "NE") == 0))
+            else if ((std::strcmp(*(atoms->atomname[i]), "CE") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "CE1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "OE1") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "NE") == 0))
             {
                 atm.Cn[5] = i;
             }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CZ") == 0) ||
-                     (std::strcmp(*(atoms->atomname[i]), "NZ") == 0))
+            else if ((std::strcmp(*(atoms->atomname[i]), "CZ") == 0)
+                     || (std::strcmp(*(atoms->atomname[i]), "NZ") == 0))
             {
                 atm.Cn[6] = i;
             }
@@ -153,13 +153,13 @@ t_dlist *mk_dlist(FILE *log,
 
         /* added by grs - special case for aromatics, whose chis above 2 are
            not real and produce rubbish output - so set back to -1 */
-        if (std::strcmp(thisres, "PHE") == 0 ||
-            std::strcmp(thisres, "TYR") == 0 ||
-            std::strcmp(thisres, "PTR") == 0 ||
-            std::strcmp(thisres, "TRP") == 0 ||
-            std::strcmp(thisres, "HIS") == 0 ||
-            std::strcmp(thisres, "HISA") == 0 ||
-            std::strcmp(thisres, "HISB") == 0)
+        if (std::strcmp(thisres, "PHE") == 0
+            || std::strcmp(thisres, "TYR") == 0
+            || std::strcmp(thisres, "PTR") == 0
+            || std::strcmp(thisres, "TRP") == 0
+            || std::strcmp(thisres, "HIS") == 0
+            || std::strcmp(thisres, "HISA") == 0
+            || std::strcmp(thisres, "HISB") == 0)
         {
             for (ii = 5; ii <= 7; ii++)
             {
@@ -186,10 +186,10 @@ t_dlist *mk_dlist(FILE *log,
         prev = atm;
 
         /* Check how many dihedrals we have */
-        if ((atm.N != -1) && (atm.Cn[1] != -1) && (atm.C != -1) &&
-            (atm.O != -1) && ((atm.H != -1) || (atm.minC != -1)))
+        if ((atm.N != -1) && (atm.Cn[1] != -1) && (atm.C != -1)
+            && (atm.O != -1) && ((atm.H != -1) || (atm.minC != -1)))
         {
-            dl[nl].resnr     = ires+1;
+            dl[nl].resnr     = ires + 1;
             dl[nl].atm       = atm;
             dl[nl].atm.Cn[0] = atm.N;
             if ((atm.Cn[3] != -1) && (atm.Cn[2] != -1) && (atm.Cn[1] != -1))
@@ -232,13 +232,13 @@ t_dlist *mk_dlist(FILE *log,
                           thisres, __FILE__, __LINE__);
             }
 
-            sprintf(dl[nl].name, "%s%d", thisres, ires+r0);
+            sprintf(dl[nl].name, "%s%d", thisres, ires + r0);
             nl++;
         }
         else if (debug)
         {
             fprintf(debug, "Could not find N atom but could find other atoms"
-                    " in residue %s%d\n", thisres, ires+r0);
+                    " in residue %s%d\n", thisres, ires + r0);
         }
     }
     fprintf(stderr, "\n");
@@ -274,7 +274,7 @@ t_dlist *mk_dlist(FILE *log,
     {
         for (i = 0; (i < maxchi); i++)
         {
-            fprintf(log, "Chi%d  ", i+1);
+            fprintf(log, "Chi%d  ", i + 1);
         }
     }
     fprintf(log, "\nNumber:   ");
@@ -323,8 +323,8 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl)
         case edChi5:
         case edChi6:
             ddd = Dih - edChi1;
-            b   = ((dl->atm.Cn[ddd] != -1) &&  (dl->atm.Cn[ddd+1] != -1) &&
-                   (dl->atm.Cn[ddd+2] != -1) && (dl->atm.Cn[ddd+3] != -1));
+            b   = ((dl->atm.Cn[ddd] != -1) &&  (dl->atm.Cn[ddd + 1] != -1)
+                   && (dl->atm.Cn[ddd + 2] != -1) && (dl->atm.Cn[ddd + 3] != -1));
             break;
         default:
             pr_dlist(stdout, 1, dl, 1, 0, TRUE, TRUE, TRUE, TRUE, MAXCHI);
@@ -346,15 +346,15 @@ static void pr_one_ro(FILE *fp, t_dlist *dl, int nDih, real gmx_unused dt)
 
 static void pr_ntr_s2(FILE *fp, t_dlist *dl, int nDih, real dt)
 {
-    fprintf(fp, "  %6.2f  %6.2f\n", (dt == 0) ? 0 : dl->ntr[nDih]/dt, dl->S2[nDih]);
+    fprintf(fp, "  %6.2f  %6.2f\n", (dt == 0) ? 0 : dl->ntr[nDih] / dt, dl->S2[nDih]);
 }
 
 void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
               gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, int maxchi)
 {
-    int   i, Xi;
+    int i, Xi;
 
-    void  (*pr_props)(FILE *, t_dlist *, int, real);
+    void (*pr_props)(FILE *, t_dlist *, int, real);
 
     /* Analysis of dihedral transitions etc */
 
@@ -387,30 +387,30 @@ void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
         if (bPhi)
         {
             fprintf(fp, "   Phi [%5d,%5d,%5d,%5d]",
-                    (dl[i].atm.H == -1) ? 1+dl[i].atm.minC : 1+dl[i].atm.H,
-                    1+dl[i].atm.N, 1+dl[i].atm.Cn[1], 1+dl[i].atm.C);
+                    (dl[i].atm.H == -1) ? 1 + dl[i].atm.minC : 1 + dl[i].atm.H,
+                    1 + dl[i].atm.N, 1 + dl[i].atm.Cn[1], 1 + dl[i].atm.C);
             pr_props(fp, &dl[i], edPhi, dt);
         }
         if (bPsi)
         {
-            fprintf(fp, "   Psi [%5d,%5d,%5d,%5d]", 1+dl[i].atm.N, 1+dl[i].atm.Cn[1],
-                    1+dl[i].atm.C, 1+dl[i].atm.O);
+            fprintf(fp, "   Psi [%5d,%5d,%5d,%5d]", 1 + dl[i].atm.N, 1 + dl[i].atm.Cn[1],
+                    1 + dl[i].atm.C, 1 + dl[i].atm.O);
             pr_props(fp, &dl[i], edPsi, dt);
         }
         if (bOmega && has_dihedral(edOmega, &(dl[i])))
         {
-            fprintf(fp, " Omega [%5d,%5d,%5d,%5d]", 1+dl[i].atm.minCalpha, 1+dl[i].atm.minC,
-                    1+dl[i].atm.N, 1+dl[i].atm.Cn[1]);
+            fprintf(fp, " Omega [%5d,%5d,%5d,%5d]", 1 + dl[i].atm.minCalpha, 1 + dl[i].atm.minC,
+                    1 + dl[i].atm.N, 1 + dl[i].atm.Cn[1]);
             pr_props(fp, &dl[i], edOmega, dt);
         }
         for (Xi = 0; Xi < MAXCHI; Xi++)
         {
-            if (bChi && (Xi < maxchi) && (dl[i].atm.Cn[Xi+3] != -1) )
+            if (bChi && (Xi < maxchi) && (dl[i].atm.Cn[Xi + 3] != -1) )
             {
-                fprintf(fp, "   Chi%d[%5d,%5d,%5d,%5d]", Xi+1, 1+dl[i].atm.Cn[Xi],
-                        1+dl[i].atm.Cn[Xi+1], 1+dl[i].atm.Cn[Xi+2],
-                        1+dl[i].atm.Cn[Xi+3]);
-                pr_props(fp, &dl[i], Xi+edChi1, dt); /* Xi+2 was wrong here */
+                fprintf(fp, "   Chi%d[%5d,%5d,%5d,%5d]", Xi + 1, 1 + dl[i].atm.Cn[Xi],
+                        1 + dl[i].atm.Cn[Xi + 1], 1 + dl[i].atm.Cn[Xi + 2],
+                        1 + dl[i].atm.Cn[Xi + 3]);
+                pr_props(fp, &dl[i], Xi + edChi1, dt); /* Xi+2 was wrong here */
             }
         }
         fprintf(fp, "\n");
@@ -423,17 +423,17 @@ int pr_trans(FILE *fp, int nl, t_dlist dl[], real dt, int Xi)
 {
     /* never called at the moment */
 
-    int  i, nn, nz;
+    int i, nn, nz;
 
     nz = 0;
     fprintf(fp, "\\begin{table}[h]\n");
     fprintf(fp, "\\caption{Number of dihedral transitions per nanosecond}\n");
     fprintf(fp, "\\begin{tabular}{|l|l|}\n");
     fprintf(fp, "\\hline\n");
-    fprintf(fp, "Residue\t&$\\chi_%d$\t\\\\\n", Xi+1);
+    fprintf(fp, "Residue\t&$\\chi_%d$\t\\\\\n", Xi + 1);
     for (i = 0; (i < nl); i++)
     {
-        nn = static_cast<int>(dl[i].ntr[Xi]/dt);
+        nn = static_cast<int>(dl[i].ntr[Xi] / dt);
 
         if (nn == 0)
         {

@@ -71,8 +71,8 @@ extern "C"
  * gmx_types.h /Erik 2005-12-10
  */
 
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
-    (defined(__i386__) || defined(__x86_64__)))
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__))    \
+    && (defined(__i386__) || defined(__x86_64__)))
 /* x86 or x86-64 with GCC inline assembly */
 typedef unsigned long long
     gmx_cycles_t;
@@ -158,8 +158,8 @@ typedef hrtime_t
 typedef unsigned long long
     gmx_cycles_t;
 
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
+#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) )    \
+    && ( defined(__powerpc__) || defined(__ppc__) ) )
 /* PowerPC using gcc inline assembly (also works on xlc>=7.0 with -qasm=gcc) */
 typedef unsigned long long
     gmx_cycles_t;
@@ -213,13 +213,13 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     return 0;
 }
-#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
-    (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__))    \
+    && (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* x86 with GCC inline assembly - pentium TSC register */
-    gmx_cycles_t   cycle;
-    unsigned       low, high;
+    gmx_cycles_t cycle;
+    unsigned     low, high;
 
 #ifdef HAVE_RDTSCP
     __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
@@ -227,7 +227,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
 #endif
 
-    cycle = ((unsigned long long)low) | (((unsigned long long)high)<<32);
+    cycle = ((unsigned long long)low) | (((unsigned long long)high) << 32);
 
     return cycle;
 }
@@ -235,7 +235,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* 64-bit ARM cycle counters with GCC inline assembly */
-    gmx_cycles_t   cycle;
+    gmx_cycles_t cycle;
     __asm__ __volatile__("mrs %0, cntvct_el0" : "=r" (cycle) );
 
     return cycle;
@@ -341,8 +341,8 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
     struct timespec t;
     clock_gettime(CLOCK_SGI_CYCLE, &t);
     /* Return the number of nanoseconds, so we can subtract/add */
-    return ((unsigned long long)t.tv_sec)*1000000000+
-           (unsigned long long)t.tv_nsec;
+    return ((unsigned long long)t.tv_sec) * 1000000000
+           + (unsigned long long)t.tv_nsec;
 }
 #elif (defined(__SVR4) && defined (__SUNPRO_CC))
 static inline gmx_cycles_t gmx_cycles_read(void)
@@ -361,15 +361,15 @@ static inline gmx_cycles_t gmx_cycles_read(void)
      */
     if (t1.flag == RTC_POWER_PC)
     {
-        return ((gmx_cycles_t)t1.tb_high)<<32 | (gmx_cycles_t)t1.tb_low;
+        return ((gmx_cycles_t)t1.tb_high) << 32 | (gmx_cycles_t)t1.tb_low;
     }
     else
     {
-        return ((gmx_cycles_t)t1.tb_high)*1000000000+(gmx_cycles_t)t1.tb_low;
+        return ((gmx_cycles_t)t1.tb_high) * 1000000000 + (gmx_cycles_t)t1.tb_low;
     }
 }
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
+#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) )    \
+    && ( defined(__powerpc__) || defined(__ppc__) ) )
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* PowerPC using gcc inline assembly (and xlC>=7.0 with -qasm=gcc, and clang) */
@@ -382,8 +382,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
         __asm__ __volatile__ ("mftbu %0" : "=r" (high1) : );
         __asm__ __volatile__ ("mftb %0" : "=r" (low) : );
         __asm__ __volatile__ ("mftbu %0" : "=r" (high2) : );
-    }
-    while (high1 != high2);
+    } while (high1 != high2);
 
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;
 }
@@ -397,8 +396,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
         __asm__ __volatile__ ("mftbu %0" : "=r" (high1) : );
         __asm__ __volatile__ ("mftb %0" : "=r" (low) : );
         __asm__ __volatile__ ("mftbu %0" : "=r" (high2) : );
-    }
-    while (high1 != high2);
+    } while (high1 != high2);
 
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;
 }
@@ -451,8 +449,8 @@ static __inline__ int gmx_cycles_have_counter(void)
 {
     return 0;
 }
-#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
-    (defined(__i386__) || defined(__x86_64__)))
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC))    \
+    && (defined(__i386__) || defined(__x86_64__)))
 static __inline__ int gmx_cycles_have_counter(void)
 {
     /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
@@ -556,8 +554,8 @@ static inline int gmx_cycles_have_counter(void)
     /* AIX compilers */
     return 1;
 }
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
+#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) )    \
+    && ( defined(__powerpc__) || defined(__ppc__) ) )
 static __inline__ int gmx_cycles_have_counter(void)
 {
     /* PowerPC using gcc inline assembly (and xlc>=7.0 with -qasm=gcc) */

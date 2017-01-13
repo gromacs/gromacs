@@ -45,20 +45,19 @@
 
 
 /* Static data structures to find kernels */
-static nb_kernel_info_t *   kernel_list           = nullptr;
-static unsigned int         kernel_list_size      = 0;
-static int *                kernel_list_hash      = nullptr;
-static unsigned int         kernel_list_hash_size = 0;
+static nb_kernel_info_t * kernel_list           = nullptr;
+static unsigned int       kernel_list_size      = 0;
+static int *              kernel_list_hash      = nullptr;
+static unsigned int       kernel_list_hash_size = 0;
 
-static unsigned int
-nb_kernel_hash_func(const char *   arch,
-                    const char *   elec,
-                    const char *   elec_mod,
-                    const char *   vdw,
-                    const char *   vdw_mod,
-                    const char *   geom,
-                    const char *   other,
-                    const char *   vf)
+static unsigned int nb_kernel_hash_func(const char * arch,
+                                        const char * elec,
+                                        const char * elec_mod,
+                                        const char * vdw,
+                                        const char * vdw_mod,
+                                        const char * geom,
+                                        const char * other,
+                                        const char * vf)
 {
     unsigned int hash;
 
@@ -74,23 +73,21 @@ nb_kernel_hash_func(const char *   arch,
     return hash;
 }
 
-void
-nb_kernel_list_add_kernels(nb_kernel_info_t *   new_kernel_list,
-                           int                  new_kernel_list_size)
+void nb_kernel_list_add_kernels(nb_kernel_info_t * new_kernel_list,
+                                int                new_kernel_list_size)
 {
-    srenew(kernel_list, kernel_list_size+new_kernel_list_size);
-    memcpy(kernel_list+kernel_list_size, new_kernel_list, new_kernel_list_size*sizeof(nb_kernel_info_t));
+    srenew(kernel_list, kernel_list_size + new_kernel_list_size);
+    memcpy(kernel_list + kernel_list_size, new_kernel_list, new_kernel_list_size * sizeof(nb_kernel_info_t));
     kernel_list_size += new_kernel_list_size;
 }
 
 
-int
-nb_kernel_list_hash_init(void)
+int nb_kernel_list_hash_init(void)
 {
-    unsigned int            i;
-    unsigned int            index;
+    unsigned int i;
+    unsigned int index;
 
-    kernel_list_hash_size   = kernel_list_size*5;
+    kernel_list_hash_size = kernel_list_size * 5;
     snew(kernel_list_hash, kernel_list_hash_size);
 
     for (i = 0; i < kernel_list_hash_size; i++)
@@ -111,7 +108,7 @@ nb_kernel_list_hash_init(void)
         /* Check for collisions and advance if necessary */
         while (kernel_list_hash[index] != -1)
         {
-            index = (index+1) % kernel_list_hash_size;
+            index = (index + 1) % kernel_list_hash_size;
         }
 
         kernel_list_hash[index] = i;
@@ -119,8 +116,7 @@ nb_kernel_list_hash_init(void)
     return 0;
 }
 
-void
-nb_kernel_list_hash_destroy()
+void nb_kernel_list_hash_destroy()
 {
     sfree(kernel_list_hash);
     kernel_list_hash      = nullptr;
@@ -128,20 +124,19 @@ nb_kernel_list_hash_destroy()
 }
 
 
-nb_kernel_t *
-nb_kernel_list_findkernel(FILE gmx_unused *   log,
-                          const char *        arch,
-                          const char *        electrostatics,
-                          const char *        electrostatics_modifier,
-                          const char *        vdw,
-                          const char *        vdw_modifier,
-                          const char *        geometry,
-                          const char *        other,
-                          const char *        vf)
+nb_kernel_t *nb_kernel_list_findkernel(FILE gmx_unused * log,
+                                       const char *      arch,
+                                       const char *      electrostatics,
+                                       const char *      electrostatics_modifier,
+                                       const char *      vdw,
+                                       const char *      vdw_modifier,
+                                       const char *      geometry,
+                                       const char *      other,
+                                       const char *      vf)
 {
-    int                 i;
-    unsigned int        index;
-    nb_kernel_info_t *  kernelinfo_ptr;
+    int                i;
+    unsigned int       index;
+    nb_kernel_info_t * kernelinfo_ptr;
 
     if (kernel_list_hash_size == 0)
     {
@@ -160,19 +155,19 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
     kernelinfo_ptr = nullptr;
     while ( (i = kernel_list_hash[index]) != -1)
     {
-        if (!gmx_strcasecmp_min(kernel_list[i].architecture, arch) &&
-            !gmx_strcasecmp_min(kernel_list[i].electrostatics, electrostatics) &&
-            !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier, electrostatics_modifier) &&
-            !gmx_strcasecmp_min(kernel_list[i].vdw, vdw) &&
-            !gmx_strcasecmp_min(kernel_list[i].vdw_modifier, vdw_modifier) &&
-            !gmx_strcasecmp_min(kernel_list[i].geometry, geometry) &&
-            !gmx_strcasecmp_min(kernel_list[i].other, other) &&
-            !gmx_strcasecmp_min(kernel_list[i].vf, vf))
+        if (!gmx_strcasecmp_min(kernel_list[i].architecture, arch)
+            && !gmx_strcasecmp_min(kernel_list[i].electrostatics, electrostatics)
+            && !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier, electrostatics_modifier)
+            && !gmx_strcasecmp_min(kernel_list[i].vdw, vdw)
+            && !gmx_strcasecmp_min(kernel_list[i].vdw_modifier, vdw_modifier)
+            && !gmx_strcasecmp_min(kernel_list[i].geometry, geometry)
+            && !gmx_strcasecmp_min(kernel_list[i].other, other)
+            && !gmx_strcasecmp_min(kernel_list[i].vf, vf))
         {
-            kernelinfo_ptr = kernel_list+i;
+            kernelinfo_ptr = kernel_list + i;
             break;
         }
-        index = (index+1) % kernel_list_hash_size;
+        index = (index + 1) % kernel_list_hash_size;
     }
 
     if (debug && kernelinfo_ptr != nullptr)

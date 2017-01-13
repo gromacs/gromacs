@@ -143,7 +143,7 @@
 typedef struct gmx_ana_selparam_t
 {
     /** Name of the parameter. */
-    const char         *name;
+    const char *name;
     /*! \brief
      * The parameter value.
      *
@@ -164,7 +164,7 @@ typedef struct gmx_ana_selparam_t
      * makes a copy of the parameter structure for each instance of the
      * method, and the original parameter array is not changed.
      */
-    gmx_ana_selvalue_t  val;
+    gmx_ana_selvalue_t val;
     /*! \brief
      * Pointer to store the number of values.
      *
@@ -176,13 +176,13 @@ typedef struct gmx_ana_selparam_t
      * Should be initialized to NULL in the definition a \c gmx_ana_selmethod_t
      * and initialized in sel_datafunc().
      */
-    int                *nvalptr;
+    int *nvalptr;
     /*! \brief
      * Flags that alter the way the parameter is parsed/handled.
      *
      * See \ref selparam_flags for allowed values.
      */
-    int                 flags;
+    int flags;
 } gmx_ana_selparam_t;
 
 /** Finds a parameter from an array by name. */

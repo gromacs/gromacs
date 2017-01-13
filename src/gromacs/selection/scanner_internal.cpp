@@ -84,8 +84,7 @@
 /*! \brief
  * Handles initialization of method parameter token.
  */
-static int
-init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
+static int init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
     if (bBoolNo)
     {
@@ -94,7 +93,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
         snew(yylval->str, strlen(param->name) + 3);
         yylval->str[0] = 'n';
         yylval->str[1] = 'o';
-        strcpy(yylval->str+2, param->name);
+        strcpy(yylval->str + 2, param->name);
     }
     else
     {
@@ -106,10 +105,9 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 /*! \brief
  * Processes a selection method token.
  */
-static int
-init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
-                  const gmx::SelectionParserSymbol *symbol,
-                  bool bPosMod, gmx_sel_lexer_t *state)
+static int init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
+                             const gmx::SelectionParserSymbol *symbol,
+                             bool bPosMod, gmx_sel_lexer_t *state)
 {
     gmx_ana_selmethod_t *method = symbol->methodValue();
     /* If the previous token was not KEYWORD_POS, return EMPTY_POSMOD
@@ -181,9 +179,8 @@ init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
     return INVALID; /* Should not be reached */
 }
 
-int
-_gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
-                               gmx_sel_lexer_t *state)
+int _gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
+                                   gmx_sel_lexer_t *state)
 {
     if (state->nextparam)
     {
@@ -214,10 +211,9 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
     return 0;
 }
 
-int
-_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
-                                  char *yytext, size_t yyleng,
-                                  gmx_sel_lexer_t *state)
+int _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
+                                      char *yytext, size_t yyleng,
+                                      gmx_sel_lexer_t *state)
 {
     /* Check if the identifier matches with a parameter name */
     if (state->msp >= 0)
@@ -227,7 +223,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
         int                 sp      = state->msp;
         while (!param && sp >= 0)
         {
-            int             i;
+            int i;
             for (i = 0; i < state->mstack[sp]->nparams; ++i)
             {
                 /* Skip NULL parameters and too long parameters */
@@ -244,7 +240,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
                 /* Check separately for a 'no' prefix on boolean parameters */
                 if (state->mstack[sp]->param[i].val.type == NO_VALUE
                     && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
-                    && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
+                    && !strncmp(state->mstack[sp]->param[i].name, yytext + 2, yyleng - 2))
                 {
                     param   = &state->mstack[sp]->param[i];
                     bBoolNo = true;
@@ -346,9 +342,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
     return INVALID;
 }
 
-void
-_gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
-                         gmx_sel_lexer_t *state)
+void _gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
+                              gmx_sel_lexer_t *state)
 {
     yylloc->startIndex = yylloc->endIndex = state->pselstr.size();
     /* Do nothing if the string is empty, or if it is a space and there is
@@ -368,10 +363,9 @@ _gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
     yylloc->endIndex = state->pselstr.size();
 }
 
-void
-_gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    gmx::TextWriter *statusWriter, int maxnr,
-                    bool bGroups, struct gmx_ana_indexgrps_t *grps)
+void _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
+                         gmx::TextWriter *statusWriter, int maxnr,
+                         bool bGroups, struct gmx_ana_indexgrps_t *grps)
 {
     int rc = _gmx_sel_yylex_init(scannerp);
     if (rc != 0)
@@ -383,13 +377,13 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
 
     // cppcheck-suppress uninitdata
-    state->sc        = sc;
+    state->sc = sc;
     // cppcheck-suppress uninitdata
-    state->bGroups   = bGroups;
+    state->bGroups = bGroups;
     // cppcheck-suppress uninitdata
-    state->grps      = grps;
+    state->grps = grps;
     // cppcheck-suppress uninitdata
-    state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
+    state->nexpsel = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
     state->statusWriter = statusWriter;
 
@@ -412,8 +406,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     _gmx_sel_yyset_extra(state, *scannerp);
 }
 
-void
-_gmx_sel_free_lexer(yyscan_t scanner)
+void _gmx_sel_free_lexer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
@@ -426,16 +419,14 @@ _gmx_sel_free_lexer(yyscan_t scanner)
     _gmx_sel_yylex_destroy(scanner);
 }
 
-void
-_gmx_sel_lexer_set_exception(yyscan_t                  scanner,
-                             const std::exception_ptr &ex)
+void _gmx_sel_lexer_set_exception(yyscan_t                  scanner,
+                                  const std::exception_ptr &ex)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->exception = ex;
 }
 
-void
-_gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
+void _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     if (state->exception)
@@ -446,73 +437,63 @@ _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
     }
 }
 
-gmx::TextWriter *
-_gmx_sel_lexer_get_status_writer(yyscan_t scanner)
+gmx::TextWriter *_gmx_sel_lexer_get_status_writer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->statusWriter;
 }
 
-struct gmx_ana_selcollection_t *
-_gmx_sel_lexer_selcollection(yyscan_t scanner)
+struct gmx_ana_selcollection_t *_gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->sc;
 }
 
-bool
-_gmx_sel_lexer_has_groups_set(yyscan_t scanner)
+bool _gmx_sel_lexer_has_groups_set(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->bGroups;
 }
 
-struct gmx_ana_indexgrps_t *
-_gmx_sel_lexer_indexgrps(yyscan_t scanner)
+struct gmx_ana_indexgrps_t *_gmx_sel_lexer_indexgrps(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->grps;
 }
 
-int
-_gmx_sel_lexer_exp_selcount(yyscan_t scanner)
+int _gmx_sel_lexer_exp_selcount(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->nexpsel;
 }
 
-const char *
-_gmx_sel_lexer_pselstr(yyscan_t scanner)
+const char *_gmx_sel_lexer_pselstr(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->pselstr.c_str();
 }
 
-void
-_gmx_sel_lexer_set_current_location(yyscan_t                      scanner,
-                                    const gmx::SelectionLocation &location)
+void _gmx_sel_lexer_set_current_location(yyscan_t                      scanner,
+                                         const gmx::SelectionLocation &location)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->currentLocation = location;
 }
 
-const gmx::SelectionLocation &
-_gmx_sel_lexer_get_current_location(yyscan_t scanner)
+const gmx::SelectionLocation &_gmx_sel_lexer_get_current_location(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->currentLocation;
 }
 
-std::string
-_gmx_sel_lexer_get_current_text(yyscan_t scanner)
+std::string _gmx_sel_lexer_get_current_text(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return _gmx_sel_lexer_get_text(scanner, state->currentLocation);
 }
 
-std::string
-_gmx_sel_lexer_get_text(yyscan_t                      scanner,
-                        const gmx::SelectionLocation &location)
+std::string _gmx_sel_lexer_get_text(yyscan_t                      scanner,
+                                    const gmx::SelectionLocation &location)
 {
     gmx_sel_lexer_t *state      = _gmx_sel_yyget_extra(scanner);
     const int        startIndex = location.startIndex;
@@ -524,23 +505,20 @@ _gmx_sel_lexer_get_text(yyscan_t                      scanner,
     return state->pselstr.substr(startIndex, endIndex - startIndex);
 }
 
-void
-_gmx_sel_lexer_clear_pselstr(yyscan_t scanner)
+void _gmx_sel_lexer_clear_pselstr(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->pselstr.clear();
 }
 
-void
-_gmx_sel_lexer_clear_method_stack(yyscan_t scanner)
+void _gmx_sel_lexer_clear_method_stack(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
     state->msp = -1;
 }
 
-void
-_gmx_sel_finish_method(yyscan_t scanner)
+void _gmx_sel_finish_method(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
@@ -550,8 +528,7 @@ _gmx_sel_finish_method(yyscan_t scanner)
     }
 }
 
-void
-_gmx_sel_set_lex_input_file(yyscan_t scanner, FILE *fp)
+void _gmx_sel_set_lex_input_file(yyscan_t scanner, FILE *fp)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
@@ -560,8 +537,7 @@ _gmx_sel_set_lex_input_file(yyscan_t scanner, FILE *fp)
     _gmx_sel_yy_switch_to_buffer(state->buffer, scanner);
 }
 
-void
-_gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
+void _gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 

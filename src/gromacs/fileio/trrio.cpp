@@ -55,19 +55,19 @@ static int nFloatSize(gmx_trr_header_t *sh)
 
     if (sh->box_size)
     {
-        nflsize = sh->box_size/(DIM*DIM);
+        nflsize = sh->box_size / (DIM * DIM);
     }
     else if (sh->x_size)
     {
-        nflsize = sh->x_size/(sh->natoms*DIM);
+        nflsize = sh->x_size / (sh->natoms * DIM);
     }
     else if (sh->v_size)
     {
-        nflsize = sh->v_size/(sh->natoms*DIM);
+        nflsize = sh->v_size / (sh->natoms * DIM);
     }
     else if (sh->f_size)
     {
-        nflsize = sh->f_size/(sh->natoms*DIM);
+        nflsize = sh->f_size / (sh->natoms * DIM);
     }
     else
     {
@@ -90,8 +90,7 @@ static int nFloatSize(gmx_trr_header_t *sh)
    That does not exclude the possibility of a reading error between
    frames, but the trajectory-handling infrastructure needs an
    overhaul before we can handle that. */
-static gmx_bool
-do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *bOK)
+static gmx_bool do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *bOK)
 {
     const int       magicValue = 1993;
     int             magic      = magicValue;
@@ -166,9 +165,8 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
     return *bOK;
 }
 
-static gmx_bool
-do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
-                  rvec *box, rvec *x, rvec *v, rvec *f)
+static gmx_bool do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
+                                  rvec *box, rvec *x, rvec *v, rvec *f)
 {
     matrix   pv;
     gmx_bool bOK;
@@ -202,9 +200,8 @@ do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
     return bOK;
 }
 
-static gmx_bool
-do_trr_frame(t_fileio *fio, bool bRead, gmx_int64_t *step, real *t, real *lambda,
-             rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
+static gmx_bool do_trr_frame(t_fileio *fio, bool bRead, gmx_int64_t *step, real *t, real *lambda,
+                             rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     gmx_trr_header_t *sh;
     gmx_bool          bOK;
@@ -213,9 +210,9 @@ do_trr_frame(t_fileio *fio, bool bRead, gmx_int64_t *step, real *t, real *lambda
     if (!bRead)
     {
         sh->box_size = (box) ? sizeof(matrix) : 0;
-        sh->x_size   = ((x) ? (*natoms*sizeof(x[0])) : 0);
-        sh->v_size   = ((v) ? (*natoms*sizeof(v[0])) : 0);
-        sh->f_size   = ((f) ? (*natoms*sizeof(f[0])) : 0);
+        sh->x_size   = ((x) ? (*natoms * sizeof(x[0])) : 0);
+        sh->v_size   = ((v) ? (*natoms * sizeof(v[0])) : 0);
+        sh->f_size   = ((f) ? (*natoms * sizeof(f[0])) : 0);
         sh->natoms   = *natoms;
         sh->step     = *step;
         sh->nre      = 0;

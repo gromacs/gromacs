@@ -81,7 +81,7 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             fprintf(fp, "theta=%15.8e", iparams->qangle.theta);
             for (int i = 0; i < 5; i++)
             {
-                fprintf(fp, ", c%c=%15.8e", '0'+i, iparams->qangle.c[i]);
+                fprintf(fp, ", c%c=%15.8e", '0' + i, iparams->qangle.c[i]);
             }
             fprintf(fp, "\n");
             break;
@@ -225,15 +225,15 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             const real *rbcB = iparams->rbdihs.rbcB;
             real        VA[4], VB[4];
 
-            VA[3] = -0.25*rbcA[4];
-            VA[2] = -0.5*rbcA[3];
-            VA[1] = 4.0*VA[3]-rbcA[2];
-            VA[0] = 3.0*VA[2]-2.0*rbcA[1];
+            VA[3] = -0.25 * rbcA[4];
+            VA[2] = -0.5 * rbcA[3];
+            VA[1] = 4.0 * VA[3] - rbcA[2];
+            VA[0] = 3.0 * VA[2] - 2.0 * rbcA[1];
 
-            VB[3] = -0.25*rbcB[4];
-            VB[2] = -0.5*rbcB[3];
-            VB[1] = 4.0*VB[3]-rbcB[2];
-            VB[0] = 3.0*VB[2]-2.0*rbcB[1];
+            VB[3] = -0.25 * rbcB[4];
+            VB[2] = -0.5 * rbcB[3];
+            VB[1] = 4.0 * VB[3] - rbcB[2];
+            VB[0] = 3.0 * VB[2] - 2.0 * rbcB[1];
 
             for (int i = 0; i < NR_FOURDIHS; i++)
             {
@@ -292,7 +292,7 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             fprintf(fp, "kphi=%15.8e", iparams->cbtdihs.cbtcA[0]);
             for (int i = 1; i < NR_CBTDIHS; i++)
             {
-                fprintf(fp, ", cbtcA[%d]=%15.8e", i-1, iparams->cbtdihs.cbtcA[i]);
+                fprintf(fp, ", cbtcA[%d]=%15.8e", i - 1, iparams->cbtdihs.cbtcA[i]);
             }
             fprintf(fp, "\n");
             break;
@@ -322,7 +322,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
             iatoms = ilist->iatoms;
             for (i = j = 0; i < ilist->nr; )
             {
-                pr_indent(fp, indent+INDENT);
+                pr_indent(fp, indent + INDENT);
                 type  = *(iatoms++);
                 ftype = functype[type];
                 if (bShowNumbers)
@@ -341,7 +341,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
                     pr_iparams(fp, ftype,  &iparams[type]);
                 }
                 fprintf(fp, "\n");
-                i += 1+interaction_function[ftype].nratoms;
+                i += 1 + interaction_function[ftype].nratoms;
             }
         }
     }
@@ -354,7 +354,7 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
     real dx, idx;
 
     dx    = 360.0 / cmap_grid->grid_spacing;
-    nelem = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
+    nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
 
     if (available(fp, cmap_grid, indent, title))
     {
@@ -369,16 +369,16 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
 
             for (j = 0; j < nelem; j++)
             {
-                if ( (j%cmap_grid->grid_spacing) == 0)
+                if ( (j % cmap_grid->grid_spacing) == 0)
                 {
                     fprintf(fp, "%8.1f\n", idx);
                     idx += dx;
                 }
 
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j*4]);
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j*4+1]);
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j*4+2]);
-                fprintf(fp, "%8.3f\n", cmap_grid->cmapdata[i].cmap[j*4+3]);
+                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4]);
+                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4 + 1]);
+                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4 + 2]);
+                fprintf(fp, "%8.3f\n", cmap_grid->cmapdata[i].cmap[j * 4 + 3]);
             }
             fprintf(fp, "\n");
         }
@@ -399,7 +399,7 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
     fprintf(fp, "ntypes=%d\n", ffparams->ntypes);
     for (i = 0; i < ffparams->ntypes; i++)
     {
-        pr_indent(fp, indent+INDENT);
+        pr_indent(fp, indent + INDENT);
         fprintf(fp, "functype[%d]=%s, ",
                 bShowNumbers ? i : -1,
                 interaction_function[ffparams->functype[i]].name);
@@ -424,7 +424,7 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
         fprintf(fp, "ntypes=%d\n", idef->ntypes);
         for (i = 0; i < idef->ntypes; i++)
         {
-            pr_indent(fp, indent+INDENT);
+            pr_indent(fp, indent + INDENT);
             fprintf(fp, "functype[%d]=%s, ",
                     bShowNumbers ? i : -1,
                     interaction_function[idef->functype[i]].name);

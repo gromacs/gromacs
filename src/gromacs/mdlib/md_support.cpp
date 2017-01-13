@@ -102,7 +102,7 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
 {
-    int     *buf;
+    int *    buf;
     gmx_bool bPos, bEqual;
     int      s, d;
 
@@ -162,17 +162,17 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
              bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
-    real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
+    real prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bStopCM       = flags & CGLO_STOPCM;
-    bGStat        = flags & CGLO_GSTAT;
-    bReadEkin     = (flags & CGLO_READEKIN);
-    bScaleEkin    = (flags & CGLO_SCALEEKIN);
-    bEner         = flags & CGLO_ENERGY;
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrain    = (flags & CGLO_CONSTRAINT);
+    bStopCM    = flags & CGLO_STOPCM;
+    bGStat     = flags & CGLO_GSTAT;
+    bReadEkin  = (flags & CGLO_READEKIN);
+    bScaleEkin = (flags & CGLO_SCALEEKIN);
+    bEner      = flags & CGLO_ENERGY;
+    bTemp      = flags & CGLO_TEMPERATURE;
+    bPres      = (flags & CGLO_PRESSURE);
+    bConstrain = (flags & CGLO_CONSTRAINT);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -255,7 +255,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     if (bEner)
     {
         /* Calculate the amplitude of the cosine velocity profile */
-        ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
+        ekind->cosacc.vcos = ekind->cosacc.mvcos / mdatoms->tmass;
     }
 
     if (bTemp)
@@ -322,7 +322,7 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
     if (*p > 0 && *p % nst != 0)
     {
         /* Round up to the next multiple of nst */
-        *p = ((*p)/nst + 1)*nst;
+        *p = ((*p) / nst + 1) * nst;
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: %s changes %s to %d", desc_nst, desc_p, *p);
     }
@@ -353,15 +353,15 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
             else
             {
                 /* find out between which two value of lambda we should be */
-                frac      = (step*fepvals->delta_lambda);
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
+                frac      = (step * fepvals->delta_lambda);
+                fep_state = static_cast<int>(floor(frac * fepvals->n_lambda));
                 /* interpolate between this state and the next */
                 /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
+                frac = (frac * fepvals->n_lambda) - fep_state;
                 for (i = 0; i < efptNR; i++)
                 {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state])
+                        + frac * (fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
                 }
             }
         }
@@ -379,17 +379,17 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
         if (fepvals->delta_lambda != 0)
         {
             /* find out between which two value of lambda we should be */
-            frac = (step*fepvals->delta_lambda);
+            frac = (step * fepvals->delta_lambda);
             if (fepvals->n_lambda > 0)
             {
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
+                fep_state = static_cast<int>(floor(frac * fepvals->n_lambda));
                 /* interpolate between this state and the next */
                 /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
+                frac = (frac * fepvals->n_lambda) - fep_state;
                 for (i = 0; i < efptNR; i++)
                 {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state])
+                        + frac * (fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
                 }
             }
             else
@@ -441,10 +441,10 @@ static int lcd4(int i1, int i2, int i3, int i4)
         gmx_incons("All 4 inputs for determining nstglobalcomm are <= 0");
     }
 
-    while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
-                       (i2 > 0 && i2 % nst != 0)  ||
-                       (i3 > 0 && i3 % nst != 0)  ||
-                       (i4 > 0 && i4 % nst != 0)))
+    while (nst > 1 && ((i1 > 0 && i1 % nst != 0)
+                       || (i2 > 0 && i2 % nst != 0)
+                       || (i3 > 0 && i3 % nst != 0)
+                       || (i4 > 0 && i4 % nst != 0)))
     {
         nst--;
     }
@@ -462,10 +462,10 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
     if (nstglobalcomm == -1)
     {
         // Set up the default behaviour
-        if (!(ir->nstcalcenergy > 0 ||
-              ir->nstlist > 0 ||
-              ir->etc != etcNO ||
-              ir->epc != epcNO))
+        if (!(ir->nstcalcenergy > 0
+              || ir->nstlist > 0
+              || ir->etc != etcNO
+              || ir->epc != epcNO))
         {
             /* The user didn't choose the period for anything
                important, so we just make sure we can send signals and
@@ -496,10 +496,10 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
     else
     {
         // Check that the user's choice of mdrun -gcom will work
-        if (ir->nstlist > 0 &&
-            nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
+        if (ir->nstlist > 0
+            && nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
         {
-            nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
+            nstglobalcomm = (nstglobalcomm / ir->nstlist) * ir->nstlist;
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d",
                     nstglobalcomm);
@@ -543,7 +543,7 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bNotLastFrame)
 {
-    rvec    *xp, *vp;
+    rvec *xp, *vp;
 
     if (MASTER(cr) && !*bNotLastFrame)
     {
@@ -567,20 +567,20 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     state->flags = 0;
     if (ir->efep != efepNO || ir->bExpanded)
     {
-        state->flags |= (1<<estLAMBDA);
-        state->flags |= (1<<estFEPSTATE);
+        state->flags |= (1 << estLAMBDA);
+        state->flags |= (1 << estFEPSTATE);
     }
-    state->flags |= (1<<estX);
+    state->flags |= (1 << estX);
     state->lambda.resize(efptNR);
     GMX_RELEASE_ASSERT(state->x.size() >= static_cast<unsigned int>(state->natoms), "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
-        state->flags |= (1<<estV);
+        state->flags |= (1 << estV);
         state->v.resize(state->natoms + 1);
     }
     if (ir->eI == eiCG)
     {
-        state->flags |= (1<<estCGP);
+        state->flags |= (1 << estCGP);
         /* cg_p is not stored in the tpx file, so we need to allocate it */
         state->cg_p.resize(state->natoms + 1);
     }
@@ -588,37 +588,37 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     state->nnhpres = 0;
     if (ir->ePBC != epbcNONE)
     {
-        state->flags |= (1<<estBOX);
+        state->flags |= (1 << estBOX);
         if (inputrecPreserveShape(ir))
         {
-            state->flags |= (1<<estBOX_REL);
+            state->flags |= (1 << estBOX_REL);
         }
         if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK))
         {
-            state->flags |= (1<<estBOXV);
-            state->flags |= (1<<estPRES_PREV);
+            state->flags |= (1 << estBOXV);
+            state->flags |= (1 << estPRES_PREV);
         }
         if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
         {
             state->nnhpres = 1;
-            state->flags  |= (1<<estNHPRES_XI);
-            state->flags  |= (1<<estNHPRES_VXI);
-            state->flags  |= (1<<estSVIR_PREV);
-            state->flags  |= (1<<estFVIR_PREV);
-            state->flags  |= (1<<estVETA);
-            state->flags  |= (1<<estVOL0);
+            state->flags  |= (1 << estNHPRES_XI);
+            state->flags  |= (1 << estNHPRES_VXI);
+            state->flags  |= (1 << estSVIR_PREV);
+            state->flags  |= (1 << estFVIR_PREV);
+            state->flags  |= (1 << estVETA);
+            state->flags  |= (1 << estVOL0);
         }
     }
 
     if (ir->etc == etcNOSEHOOVER)
     {
-        state->flags |= (1<<estNH_XI);
-        state->flags |= (1<<estNH_VXI);
+        state->flags |= (1 << estNH_XI);
+        state->flags |= (1 << estNH_VXI);
     }
 
     if (ir->etc == etcVRESCALE)
     {
-        state->flags |= (1<<estTC_INT);
+        state->flags |= (1 << estTC_INT);
     }
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */

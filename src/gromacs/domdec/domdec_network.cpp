@@ -72,18 +72,18 @@ void dd_sendrecv_int(const struct gmx_domdec_t gmx_unused *dd,
 
     if (n_s && n_r)
     {
-        MPI_Sendrecv(buf_s, n_s*sizeof(int), MPI_BYTE, rank_s, 0,
-                     buf_r, n_r*sizeof(int), MPI_BYTE, rank_r, 0,
+        MPI_Sendrecv(buf_s, n_s * sizeof(int), MPI_BYTE, rank_s, 0,
+                     buf_r, n_r * sizeof(int), MPI_BYTE, rank_r, 0,
                      dd->mpi_comm_all, &stat);
     }
     else if (n_s)
     {
-        MPI_Send(    buf_s, n_s*sizeof(int), MPI_BYTE, rank_s, 0,
+        MPI_Send(    buf_s, n_s * sizeof(int), MPI_BYTE, rank_s, 0,
                      dd->mpi_comm_all);
     }
     else if (n_r)
     {
-        MPI_Recv(    buf_r, n_r*sizeof(int), MPI_BYTE, rank_r, 0,
+        MPI_Recv(    buf_r, n_r * sizeof(int), MPI_BYTE, rank_r, 0,
                      dd->mpi_comm_all, &stat);
     }
 
@@ -104,18 +104,18 @@ void dd_sendrecv_real(const struct gmx_domdec_t gmx_unused *dd,
 
     if (n_s && n_r)
     {
-        MPI_Sendrecv(buf_s, n_s*sizeof(real), MPI_BYTE, rank_s, 0,
-                     buf_r, n_r*sizeof(real), MPI_BYTE, rank_r, 0,
+        MPI_Sendrecv(buf_s, n_s * sizeof(real), MPI_BYTE, rank_s, 0,
+                     buf_r, n_r * sizeof(real), MPI_BYTE, rank_r, 0,
                      dd->mpi_comm_all, &stat);
     }
     else if (n_s)
     {
-        MPI_Send(    buf_s, n_s*sizeof(real), MPI_BYTE, rank_s, 0,
+        MPI_Send(    buf_s, n_s * sizeof(real), MPI_BYTE, rank_s, 0,
                      dd->mpi_comm_all);
     }
     else if (n_r)
     {
-        MPI_Recv(    buf_r, n_r*sizeof(real), MPI_BYTE, rank_r, 0,
+        MPI_Recv(    buf_r, n_r * sizeof(real), MPI_BYTE, rank_r, 0,
                      dd->mpi_comm_all, &stat);
     }
 
@@ -136,18 +136,18 @@ void dd_sendrecv_rvec(const struct gmx_domdec_t gmx_unused *dd,
 
     if (n_s && n_r)
     {
-        MPI_Sendrecv(buf_s[0], n_s*sizeof(rvec), MPI_BYTE, rank_s, 0,
-                     buf_r[0], n_r*sizeof(rvec), MPI_BYTE, rank_r, 0,
+        MPI_Sendrecv(buf_s[0], n_s * sizeof(rvec), MPI_BYTE, rank_s, 0,
+                     buf_r[0], n_r * sizeof(rvec), MPI_BYTE, rank_r, 0,
                      dd->mpi_comm_all, &stat);
     }
     else if (n_s)
     {
-        MPI_Send(    buf_s[0], n_s*sizeof(rvec), MPI_BYTE, rank_s, 0,
+        MPI_Send(    buf_s[0], n_s * sizeof(rvec), MPI_BYTE, rank_s, 0,
                      dd->mpi_comm_all);
     }
     else if (n_r)
     {
-        MPI_Recv(    buf_r[0], n_r*sizeof(rvec), MPI_BYTE, rank_r, 0,
+        MPI_Recv(    buf_r[0], n_r * sizeof(rvec), MPI_BYTE, rank_r, 0,
                      dd->mpi_comm_all, &stat);
     }
 
@@ -182,22 +182,22 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
         nreq = 0;
         if (n_r_fw)
         {
-            MPI_Irecv(buf_r_fw[0], n_r_fw*sizeof(rvec), MPI_BYTE,
+            MPI_Irecv(buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE,
                       rank_bw, 0, dd->mpi_comm_all, &req[nreq++]);
         }
         if (n_r_bw)
         {
-            MPI_Irecv(buf_r_bw[0], n_r_bw*sizeof(rvec), MPI_BYTE,
+            MPI_Irecv(buf_r_bw[0], n_r_bw * sizeof(rvec), MPI_BYTE,
                       rank_fw, 1, dd->mpi_comm_all, &req[nreq++]);
         }
         if (n_s_fw)
         {
-            MPI_Isend(buf_s_fw[0], n_s_fw*sizeof(rvec), MPI_BYTE,
+            MPI_Isend(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE,
                       rank_fw, 0, dd->mpi_comm_all, &req[nreq++]);
         }
         if (n_s_bw)
         {
-            MPI_Isend(buf_s_bw[0], n_s_bw*sizeof(rvec), MPI_BYTE,
+            MPI_Isend(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE,
                       rank_bw, 1, dd->mpi_comm_all, &req[nreq++]);
         }
         if (nreq)
@@ -212,12 +212,12 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
          * with a single full-duplex network connection per machine.
          */
         /* Forward */
-        MPI_Sendrecv(buf_s_fw[0], n_s_fw*sizeof(rvec), MPI_BYTE, rank_fw, 0,
-                     buf_r_fw[0], n_r_fw*sizeof(rvec), MPI_BYTE, rank_bw, 0,
+        MPI_Sendrecv(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE, rank_fw, 0,
+                     buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0,
                      dd->mpi_comm_all, &stat[0]);
         /* Backward */
-        MPI_Sendrecv(buf_s_bw[0], n_s_bw*sizeof(rvec), MPI_BYTE, rank_bw, 0,
-                     buf_r_bw[0], n_r_bw*sizeof(rvec), MPI_BYTE, rank_fw, 0,
+        MPI_Sendrecv(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE, rank_bw, 0,
+                     buf_r_bw[0], n_r_bw * sizeof(rvec), MPI_BYTE, rank_fw, 0,
                      dd->mpi_comm_all, &stat[0]);
     }
 #endif

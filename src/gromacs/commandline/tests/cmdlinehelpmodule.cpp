@@ -107,7 +107,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
  *
  * \ingroup module_commandline
  */
-void initOptionsBasic(gmx::IOptionsContainer                 *options,
+void initOptionsBasic(gmx::IOptionsContainer *                options,
                       gmx::ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {
@@ -125,7 +125,7 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     };
     // TODO: Find a more elegant solution, or get rid of the links.dat altogether.
     gmx::TextWriter::writeFileFromString("links.dat", "");
-    CommandLine        args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     MockOptionsModule &mod1 = addOptionsModule("module", "First module");
     MockOptionsModule &mod2 = addOptionsModule("other", "Second module");

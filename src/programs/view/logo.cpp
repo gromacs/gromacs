@@ -49,13 +49,15 @@
 #include "Xstuff.h"
 #include "xutil.h"
 
-typedef struct {
+typedef struct
+{
     int            x, y, rad;
     unsigned long *col;
 } t_circle;
 
-typedef struct {
-    const char  *text;
+typedef struct
+{
+    const char * text;
     int          y, h;
     XFontStruct *fnt;
 } t_mess;
@@ -81,48 +83,48 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 #define HSIZE 7
 #define YOFFS 30
     static t_circle c[] = {
-        { 10, YOFFS+12, CSIZE, &LIGHTGREEN },
-        { 20, YOFFS+22, CSIZE, &LIGHTGREEN },
-        { 20, YOFFS+34, OSIZE, &LIGHTRED   },
-        { 30, YOFFS+12, NSIZE, &LIGHTCYAN  },
-        { 30, YOFFS+ 2, HSIZE, &WHITE     },
-        { 40, YOFFS+22, CSIZE, &LIGHTGREEN },
-        { 40, YOFFS+34, CSIZE, &LIGHTGREEN },
-        { 50, YOFFS+12, CSIZE, &LIGHTGREEN },
+        { 10, YOFFS + 12, CSIZE, &LIGHTGREEN },
+        { 20, YOFFS + 22, CSIZE, &LIGHTGREEN },
+        { 20, YOFFS + 34, OSIZE, &LIGHTRED   },
+        { 30, YOFFS + 12, NSIZE, &LIGHTCYAN  },
+        { 30, YOFFS + 2, HSIZE, &WHITE     },
+        { 40, YOFFS + 22, CSIZE, &LIGHTGREEN },
+        { 40, YOFFS + 34, CSIZE, &LIGHTGREEN },
+        { 50, YOFFS + 12, CSIZE, &LIGHTGREEN },
         { 50, YOFFS,    OSIZE, &LIGHTRED   },
-        { 60, YOFFS+22, NSIZE, &LIGHTCYAN  },
-        { 60, YOFFS+32, HSIZE, &WHITE     },
-        { 70, YOFFS+12, CSIZE, &LIGHTGREEN },
-        { 80, YOFFS+22, CSIZE, &LIGHTGREEN },
-        { 80, YOFFS+34, OSIZE, &LIGHTRED   },
-        { 90, YOFFS+12, NSIZE, &LIGHTCYAN  },
-        { 90, YOFFS+ 2, HSIZE, &WHITE      },
-        {100, YOFFS+22, CSIZE, &LIGHTGREEN }
+        { 60, YOFFS + 22, NSIZE, &LIGHTCYAN  },
+        { 60, YOFFS + 32, HSIZE, &WHITE     },
+        { 70, YOFFS + 12, CSIZE, &LIGHTGREEN },
+        { 80, YOFFS + 22, CSIZE, &LIGHTGREEN },
+        { 80, YOFFS + 34, OSIZE, &LIGHTRED   },
+        { 90, YOFFS + 12, NSIZE, &LIGHTCYAN  },
+        { 90, YOFFS + 2, HSIZE, &WHITE      },
+        {100, YOFFS + 22, CSIZE, &LIGHTGREEN }
     };
     static int      lines[] = {
         0, 1, 1, 2, 1, 3, 3, 4, 3, 5, 5, 6, 5, 7, 7, 8, 7, 9,
         9, 10, 9, 11, 11, 12, 12, 13, 12, 14, 14, 15, 14, 16
     };
 #define COFFS 70
-    static t_mess   Mess[] = {
+    static t_mess Mess[] = {
         { "GROMACS",                         0,       20, nullptr },
         { nullptr,                             16,        9, nullptr },
-        { "Copyright (c) 1991-2013",        COFFS+ 2,  9, nullptr },
-        { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS+11,  9, nullptr },
-        { "& Groningen University ",        COFFS+20,  9, nullptr },
-        { "click to dismiss",               COFFS+31,  8, nullptr }
+        { "Copyright (c) 1991-2013",        COFFS + 2,  9, nullptr },
+        { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS + 11,  9, nullptr },
+        { "& Groningen University ",        COFFS + 20,  9, nullptr },
+        { "click to dismiss",               COFFS + 31,  8, nullptr }
     };
 #define NMESS asize(Mess)
-    int             i;
-    t_logo         *logo;
-    t_windata      *wd;
+    int        i;
+    t_logo *   logo;
+    t_windata *wd;
 
     logo = (t_logo *)data;
     wd   = &(logo->wd);
     if (bFirst)
     {
-        const real wfac = wd->width/110.0;
-        const real hfac = wd->height/110.0;
+        const real wfac = wd->width / 110.0;
+        const real hfac = wd->height / 110.0;
         for (i = 0; (i < asize(c)); i++)
         {
             c[i].x *= wfac;
@@ -133,8 +135,8 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
         {
             Mess[i].y  *= hfac;
             Mess[i].h  *= hfac;
-            Mess[i].fnt = (i == 0) ? logo->bigfont : (i == NMESS-1) ? x11->font :
-                logo->smallfont;
+            Mess[i].fnt = (i == 0) ? logo->bigfont : (i == NMESS - 1) ? x11->font
+                : logo->smallfont;
         }
         bFirst = false;
     }
@@ -146,7 +148,7 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             for (i = 0; (i < asize(lines)); i += 2)
             {
                 XDrawLine(x11->disp, wd->self, x11->gc,
-                          c[lines[i]].x, c[lines[i]].y, c[lines[i+1]].x, c[lines[i+1]].y);
+                          c[lines[i]].x, c[lines[i]].y, c[lines[i + 1]].x, c[lines[i + 1]].y);
             }
             XSetLineAttributes(x11->disp, x11->gc, 1, LineSolid, CapNotLast, JoinRound);
             for (i = 0; (i < asize(c)); i++)
@@ -155,7 +157,7 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
                 XFillCircle(x11->disp, wd->self, x11->gc, c[i].x, c[i].y, c[i].rad);
             }
             XSetForeground(x11->disp, x11->gc, BLACK);
-            XDrawRectangle(x11->disp, wd->self, x11->gc, 2, 2, wd->width-5, wd->height-5);
+            XDrawRectangle(x11->disp, wd->self, x11->gc, 2, 2, wd->width - 5, wd->height - 5);
             for (i = 0; (i < NMESS); i++)
             {
                 SpecialTextInRect(x11, Mess[i].fnt, wd->self, Mess[i].text,
@@ -192,10 +194,10 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
         "fixed"
     };
 #define NSF asize(sfname)
-    unsigned int       i;
-    unsigned long      bg;
-    char              *newcol;
-    t_logo            *logo;
+    unsigned int  i;
+    unsigned long bg;
+    char *        newcol;
+    t_logo *      logo;
 
     snew(logo, 1);
     logo->bQuitOnClick = bQuitOnClick;
@@ -218,7 +220,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     }
     if (i == NBF)
     {
-        std::perror(bfname[i-1]);
+        std::perror(bfname[i - 1]);
         std::exit(1);
     }
 #ifdef DEBUG
@@ -233,7 +235,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     }
     if (i == NSF)
     {
-        std::perror(sfname[i-1]);
+        std::perror(sfname[i - 1]);
         std::exit(1);
     }
 #ifdef DEBUG

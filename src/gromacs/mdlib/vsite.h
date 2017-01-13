@@ -51,16 +51,17 @@ struct t_ilist;
 struct t_mdatoms;
 struct t_nrnb;
 
-typedef struct gmx_vsite_t {
+typedef struct gmx_vsite_t
+{
     gmx_bool             bHaveChargeGroups;    /* Do we have charge groups?               */
     int                  n_intercg_vsite;      /* The number of inter charge group vsites */
     int                  nvsite_pbc_molt;      /* The array size of vsite_pbc_molt        */
-    int               ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
-    int                **vsite_pbc_loc;        /* The local pbc atoms                     */
-    int                 *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
+    int ***              vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
+    int **               vsite_pbc_loc;        /* The local pbc atoms                     */
+    int *                vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
     int                  nthreads;             /* Number of threads used for vsites       */
     struct VsiteThread **tData;                /* Thread local vsites and work structs    */
-    int                 *taskIndex;            /* Work array                              */
+    int *                taskIndex;            /* Work array                              */
     int                  taskIndexNalloc;      /* Size of taskIndex                       */
 } gmx_vsite_t;
 
@@ -114,11 +115,11 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
  * this is useful for correction vsites of the initial configuration.
  */
 
-void split_vsites_over_threads(const t_ilist   *ilist,
+void split_vsites_over_threads(const t_ilist *  ilist,
                                const t_iparams *ip,
                                const t_mdatoms *mdatoms,
                                gmx_bool         bLimitRange,
-                               gmx_vsite_t     *vsite);
+                               gmx_vsite_t *    vsite);
 /* Divide the vsite work-load over the threads.
  * Should be called at the end of the domain decomposition.
  */

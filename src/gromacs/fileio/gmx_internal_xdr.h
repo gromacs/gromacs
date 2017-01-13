@@ -120,7 +120,8 @@ typedef unsigned short xdr_uint32_t;
 #  error ERROR: No 32 bit wide integer type found!
 #endif
 
-enum xdr_op {
+enum xdr_op
+{
     XDR_ENCODE = 0,
     XDR_DECODE = 1,
     XDR_FREE   = 2
@@ -151,25 +152,25 @@ struct XDR
     enum xdr_op x_op;       /* operation; fast additional param */
     struct xdr_ops
     {
-        bool_t       (*x_getbytes) (XDR *__xdrs, char *__addr, unsigned int __len);
+        bool_t (*x_getbytes) (XDR *__xdrs, char *__addr, unsigned int __len);
         /* get some bytes from " */
-        bool_t       (*x_putbytes) (XDR *__xdrs, char *__addr, unsigned int __len);
+        bool_t (*x_putbytes) (XDR *__xdrs, char *__addr, unsigned int __len);
         /* put some bytes to " */
         unsigned int (*x_getpostn) (XDR *__xdrs);
         /* returns bytes off from beginning */
-        bool_t       (*x_setpostn) (XDR *__xdrs, unsigned int __pos);
+        bool_t (*x_setpostn) (XDR *__xdrs, unsigned int __pos);
         /* lets you reposition the stream */
         xdr_int32_t *(*x_inline) (XDR *__xdrs, int __len);
         /* buf quick ptr to buffered data */
-        void         (*x_destroy) (XDR *__xdrs);
+        void (*x_destroy) (XDR *__xdrs);
         /* free privates of this xdr_stream */
-        bool_t       (*x_getint32) (XDR *__xdrs, xdr_int32_t *__ip);
+        bool_t (*x_getint32) (XDR *__xdrs, xdr_int32_t *__ip);
         /* get a int from underlying stream */
-        bool_t       (*x_putint32) (XDR *__xdrs, xdr_int32_t *__ip);
+        bool_t (*x_putint32) (XDR *__xdrs, xdr_int32_t *__ip);
         /* put a int to " */
-        bool_t       (*x_getuint32) (XDR *__xdrs, xdr_uint32_t *__ip);
+        bool_t (*x_getuint32) (XDR *__xdrs, xdr_uint32_t *__ip);
         /* get a unsigned int from underlying stream */
-        bool_t       (*x_putuint32) (XDR *__xdrs, xdr_uint32_t *__ip);
+        bool_t (*x_putuint32) (XDR *__xdrs, xdr_uint32_t *__ip);
         /* put a int to " */
     }
     *x_ops;

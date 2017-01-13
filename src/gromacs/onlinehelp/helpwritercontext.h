@@ -218,7 +218,7 @@ class HelpWriterContext
          */
         std::string
         substituteMarkupAndWrapToString(const TextLineWrapperSettings &settings,
-                                        const std::string             &text) const;
+                                        const std::string &            text) const;
         /*! \brief
          * Substitutes markup used in help text and wraps lines.
          *
@@ -232,7 +232,7 @@ class HelpWriterContext
          */
         std::vector<std::string>
         substituteMarkupAndWrapToVector(const TextLineWrapperSettings &settings,
-                                        const std::string             &text) const;
+                                        const std::string &            text) const;
         /*! \brief
          * Writes a title for the current help topic.
          *

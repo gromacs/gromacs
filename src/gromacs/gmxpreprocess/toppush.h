@@ -43,11 +43,12 @@
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 
-typedef struct {
-    int       nr;   /* The number of entries in the list            */
-    int       nra2; /* The total number of entries in a			*/
-    int      *nra;  /* The number of entries in each a array (dim nr)   */
-    int     **a;    /* The atom numbers (dim nr) the length of each element	*/
+typedef struct
+{
+    int   nr;       /* The number of entries in the list            */
+    int   nra2;     /* The total number of entries in a			*/
+    int * nra;      /* The number of entries in each a array (dim nr)   */
+    int **a;        /* The atom numbers (dim nr) the length of each element	*/
     /* i is nra[i]						*/
 } t_block2;
 
@@ -78,15 +79,15 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
 
 void
 push_gb_params(gpp_atomtype_t atype,
-               char          *line,
+               char *         line,
                warninp_t      wi);
 
 void push_atom(struct t_symtab *symtab,
-               t_block         *cgs,
-               t_atoms         *at,
+               t_block *        cgs,
+               t_atoms *        at,
                gpp_atomtype_t   atype,
-               char            *line,
-               int             *lastcg,
+               char *           line,
+               int *            lastcg,
                warninp_t        wi);
 
 void push_bond(directive d, t_params bondtype[], t_params bond[],

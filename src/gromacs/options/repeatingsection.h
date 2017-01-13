@@ -143,7 +143,7 @@ class RepeatingOptionSectionStorage : public IOptionSectionStorage
          * Options within the section store their values to this structure, and
          * they are then copied to the final storage when the section finishes.
          */
-        T                                            currentData_;
+        T currentData_;
 
         //! Allows binding option storage to the current section data structure.
         friend class RepeatingOptionSectionHandle<T>;

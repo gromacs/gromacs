@@ -101,7 +101,7 @@ class InteractiveTestHelper
         void setInputLines(const ConstArrayRef<const char *> &inputLines);
 
         //! Returns the input stream for the session.
-        TextInputStream  &inputStream();
+        TextInputStream &inputStream();
         //! Returns the output stream for the session.
         TextOutputStream &outputStream();
 

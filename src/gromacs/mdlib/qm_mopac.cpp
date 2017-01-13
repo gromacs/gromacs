@@ -78,7 +78,7 @@ void init_mopac(t_QMrec *qm)
      * used instead.
      */
     char
-    *keywords;
+    * keywords;
 
     snew(keywords, 240);
 
@@ -93,7 +93,7 @@ void init_mopac(t_QMrec *qm)
         sprintf(keywords, "PRECISE GEO-OK CHARGE=%d SINGLET GRAD %s C.I.=(%d,%d) root=2 MECI \n",
                 qm->QMcharge,
                 eQMmethod_names[qm->QMmethod],
-                qm->CASorbitals, qm->CASelectrons/2);
+                qm->CASorbitals, qm->CASelectrons / 2);
     }
     F77_FUNC(domldt, DOMLDT) (&qm->nrQMatoms, qm->atomicnumberQM, keywords);
     fprintf(stderr, "keywords are: %s\n", keywords);
@@ -107,14 +107,14 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
      */
     double /* always double as the MOPAC routines are always compiled in
               double precission! */
-    *qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
+    * qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
     *qmgrad, *mmgrad = NULL, energy;
     int
         i, j;
     real
         QMener = 0.0;
-    snew(qmcrd, 3*(qm->nrQMatoms));
-    snew(qmgrad, 3*(qm->nrQMatoms));
+    snew(qmcrd, 3 * (qm->nrQMatoms));
+    snew(qmgrad, 3 * (qm->nrQMatoms));
     /* copy the data from qr into the arrays that are going to be used
      * in the fortran routines of MOPAC
      */
@@ -122,7 +122,7 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     {
         for (j = 0; j < DIM; j++)
         {
-            qmcrd[3*i+j] = (double)qm->xQM[i][j]*10;
+            qmcrd[3 * i + j] = (double)qm->xQM[i][j] * 10;
         }
     }
     if (mm->nrMMatoms)
@@ -149,11 +149,11 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
         {
             for (j = 0; j < DIM; j++)
             {
-                f[i][j]       = (real)10*CAL2JOULE*qmgrad[3*i+j];
-                fshift[i][j]  = (real)10*CAL2JOULE*qmgrad[3*i+j];
+                f[i][j]      = (real)10 * CAL2JOULE * qmgrad[3 * i + j];
+                fshift[i][j] = (real)10 * CAL2JOULE * qmgrad[3 * i + j];
             }
         }
-        QMener = (real)CAL2JOULE*energy;
+        QMener = (real)CAL2JOULE * energy;
         /* do we do something with the mulliken charges?? */
 
         free(qmchrg);
@@ -170,15 +170,15 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 
     double /* always double as the MOPAC routines are always compiled in
               double precission! */
-    *qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
+    * qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
     *qmgrad, *mmgrad = NULL, energy;
     int
         i, j;
     real
         QMener = 0.0;
 
-    snew(qmcrd, 3*(qm->nrQMatoms));
-    snew(qmgrad, 3*(qm->nrQMatoms));
+    snew(qmcrd, 3 * (qm->nrQMatoms));
+    snew(qmgrad, 3 * (qm->nrQMatoms));
     /* copy the data from qr into the arrays that are going to be used
      * in the fortran routines of MOPAC
      */
@@ -186,7 +186,7 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
     {
         for (j = 0; j < DIM; j++)
         {
-            qmcrd[3*i+j] = (double)qm->xQM[i][j]*10;
+            qmcrd[3 * i + j] = (double)qm->xQM[i][j] * 10;
         }
     }
     if (mm->nrMMatoms)
@@ -212,11 +212,11 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
         {
             for (j = 0; j < DIM; j++)
             {
-                f[i][j]      = (real)10*CAL2JOULE*qmgrad[3*i+j];
-                fshift[i][j] = (real)10*CAL2JOULE*qmgrad[3*i+j];
+                f[i][j]      = (real)10 * CAL2JOULE * qmgrad[3 * i + j];
+                fshift[i][j] = (real)10 * CAL2JOULE * qmgrad[3 * i + j];
             }
         }
-        QMener = (real)CAL2JOULE*energy;
+        QMener = (real)CAL2JOULE * energy;
     }
     free(qmgrad);
     free(qmcrd);

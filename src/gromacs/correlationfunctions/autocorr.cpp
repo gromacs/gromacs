@@ -69,7 +69,8 @@
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
 
-typedef struct {
+typedef struct
+{
     unsigned long mode;
     int           nrestart, nout, P, fitfn;
     gmx_bool      bFour, bNormalize;
@@ -77,12 +78,13 @@ typedef struct {
 } t_acf;
 
 /*! \brief Global variable set true if initialization routines are called. */
-static gmx_bool  bACFinit = FALSE;
+static gmx_bool bACFinit = FALSE;
 
 /*! \brief Data structure for storing command line variables. */
-static t_acf     acf;
+static t_acf acf;
 
-enum {
+enum
+{
     enNorm, enCos, enSin
 };
 
@@ -90,7 +92,7 @@ enum {
 static void low_do_four_core(int nframes, real c1[], real cfour[],
                              int nCos)
 {
-    int  i = 0;
+    int                             i = 0;
     std::vector<std::vector<real> > data;
     data.resize(1);
     data[0].resize(nframes, 0);
@@ -130,9 +132,9 @@ static void do_ac_core(int nframes, int nout,
                        real corr[], real c1[], int nrestart,
                        unsigned long mode)
 {
-    int     j, k, j3, jk3, m, n;
-    real    ccc, cth;
-    rvec    xj, xk;
+    int  j, k, j3, jk3, m, n;
+    real ccc, cth;
+    rvec xj, xk;
 
     if (nrestart < 1)
     {
@@ -154,12 +156,12 @@ static void do_ac_core(int nframes, int nout,
     /* Loop over starting points. */
     for (j = 0; (j < nframes); j += nrestart)
     {
-        j3  = DIM*j;
+        j3 = DIM * j;
 
         /* Loop over the correlation length for this starting point */
-        for (k = 0; (k < nout) && (j+k < nframes); k++)
+        for (k = 0; (k < nout) && (j + k < nframes); k++)
         {
-            jk3 = DIM*(j+k);
+            jk3 = DIM * (j + k);
 
             /* Switch over possible ACF types.
              * It might be more efficient to put the loops inside the switch,
@@ -167,17 +169,17 @@ static void do_ac_core(int nframes, int nout,
              */
             if (MODE(eacNormal))
             {
-                corr[k] += c1[j]*c1[j+k];
+                corr[k] += c1[j] * c1[j + k];
             }
             else if (MODE(eacCos))
             {
                 /* Compute the cos (phi(t)-phi(t+dt)) */
-                corr[k] += cos(c1[j]-c1[j+k]);
+                corr[k] += cos(c1[j] - c1[j + k]);
             }
             else if (MODE(eacIden))
             {
                 /* Check equality (phi(t)==phi(t+dt)) */
-                corr[k] += (c1[j] == c1[j+k]) ? 1 : 0;
+                corr[k] += (c1[j] == c1[j + k]) ? 1 : 0;
             }
             else if (MODE(eacP1) || MODE(eacP2) || MODE(eacP3))
             {
@@ -185,12 +187,12 @@ static void do_ac_core(int nframes, int nout,
 
                 for (m = 0; (m < DIM); m++)
                 {
-                    xj[m] = c1[j3+m];
-                    xk[m] = c1[jk3+m];
+                    xj[m] = c1[j3 + m];
+                    xk[m] = c1[jk3 + m];
                 }
                 cth = cos_angle(xj, xk);
 
-                if (cth-1.0 > 1.0e-15)
+                if (cth - 1.0 > 1.0e-15)
                 {
                     printf("j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n",
                            j, k, xj[XX], xj[YY], xj[ZZ], xk[XX], xk[YY], xk[ZZ]);
@@ -211,8 +213,8 @@ static void do_ac_core(int nframes, int nout,
                 rvec xj, xk, rr;
                 for (m = 0; (m < DIM); m++)
                 {
-                    xj[m] = c1[j3+m];
-                    xk[m] = c1[jk3+m];
+                    xj[m] = c1[j3 + m];
+                    xk[m] = c1[jk3 + m];
                 }
                 cprod(xj, xk, rr);
 
@@ -222,8 +224,8 @@ static void do_ac_core(int nframes, int nout,
             {
                 for (m = 0; (m < DIM); m++)
                 {
-                    xj[m] = c1[j3+m];
-                    xk[m] = c1[jk3+m];
+                    xj[m] = c1[j3 + m];
+                    xk[m] = c1[jk3 + m];
                 }
                 ccc = iprod(xj, xk);
 
@@ -238,8 +240,8 @@ static void do_ac_core(int nframes, int nout,
     /* Correct for the number of points and copy results to the data array */
     for (j = 0; (j < nout); j++)
     {
-        n     = (nframes-j+(nrestart-1))/nrestart;
-        c1[j] = corr[j]/n;
+        n     = (nframes - j + (nrestart - 1)) / nrestart;
+        c1[j] = corr[j] / n;
     }
 }
 
@@ -267,7 +269,7 @@ void normalize_acf(int nout, real corr[])
     }
     else
     {
-        c0 = 1.0/corr[0];
+        c0 = 1.0 / corr[0];
     }
     for (j = 0; (j < nout); j++)
     {
@@ -302,7 +304,7 @@ void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
         {
             c0 += c1[i][j];
         }
-        c1[0][j] = c0/nitem;
+        c1[0][j] = c0 / nitem;
     }
 }
 
@@ -314,7 +316,7 @@ void norm_and_scale_vectors(int nframes, real c1[], real scale)
 
     for (j = 0; (j < nframes); j++)
     {
-        rij = &(c1[j*DIM]);
+        rij = &(c1[j * DIM]);
         unitv(rij, rij);
         for (m = 0; (m < DIM); m++)
         {
@@ -341,10 +343,10 @@ static void dump_tmp(char *s, int n, real c[])
 static void do_four_core(unsigned long mode, int nframes,
                          real c1[], real csum[], real ctmp[])
 {
-    real   *cfour;
-    char    buf[32];
-    real    fac;
-    int     j, m, m1;
+    real *cfour;
+    char  buf[32];
+    real  fac;
+    int   j, m, m1;
 
     snew(cfour, nframes);
 
@@ -372,7 +374,7 @@ static void do_four_core(unsigned long mode, int nframes,
         low_do_four_core(nframes, ctmp, cfour, enCos);
         for (j = 0; (j < nframes); j++)
         {
-            c1[j]  = cfour[j];
+            c1[j] = cfour[j];
         }
 
         /* Sine term of AC function */
@@ -426,7 +428,7 @@ static void do_four_core(unsigned long mode, int nframes,
          */
         for (j = 0; (j < nframes); j++)
         {
-            csum[j]  = -0.5*(nframes-j);
+            csum[j] = -0.5 * (nframes - j);
         }
 
         /***** DIAGONAL ELEMENTS ************/
@@ -435,7 +437,7 @@ static void do_four_core(unsigned long mode, int nframes,
             /* Copy the vector data in a linear array */
             for (j = 0; (j < nframes); j++)
             {
-                ctmp[j]  = gmx::square(c1[DIM*j+m]);
+                ctmp[j] = gmx::square(c1[DIM * j + m]);
             }
             if (debug)
             {
@@ -453,17 +455,17 @@ static void do_four_core(unsigned long mode, int nframes,
             fac = 1.5;
             for (j = 0; (j < nframes); j++)
             {
-                csum[j] += fac*(cfour[j]);
+                csum[j] += fac * (cfour[j]);
             }
         }
         /******* OFF-DIAGONAL ELEMENTS **********/
         for (m = 0; (m < DIM); m++)
         {
             /* Copy the vector data in a linear array */
-            m1 = (m+1) % DIM;
+            m1 = (m + 1) % DIM;
             for (j = 0; (j < nframes); j++)
             {
-                ctmp[j] = c1[DIM*j+m]*c1[DIM*j+m1];
+                ctmp[j] = c1[DIM * j + m] * c1[DIM * j + m1];
             }
 
             if (debug)
@@ -480,7 +482,7 @@ static void do_four_core(unsigned long mode, int nframes,
             fac = 3.0;
             for (j = 0; (j < nframes); j++)
             {
-                csum[j] += fac*cfour[j];
+                csum[j] += fac * cfour[j];
             }
         }
     }
@@ -508,7 +510,7 @@ static void do_four_core(unsigned long mode, int nframes,
             /* Copy the vector data in a linear array */
             for (j = 0; (j < nframes); j++)
             {
-                ctmp[j] = c1[DIM*j+m];
+                ctmp[j] = c1[DIM * j + m];
             }
             low_do_four_core(nframes, ctmp, cfour, enNorm);
             for (j = 0; (j < nframes); j++)
@@ -525,7 +527,7 @@ static void do_four_core(unsigned long mode, int nframes,
     sfree(cfour);
     for (j = 0; (j < nframes); j++)
     {
-        c1[j] = csum[j]/(real)(nframes-j);
+        c1[j] = csum[j] / (real)(nframes - j);
     }
 }
 
@@ -536,18 +538,18 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
                      int eFitFn)
 {
-    FILE       *fp, *gp = nullptr;
-    int         i;
-    real       *csum;
-    real       *ctmp, *fit;
-    real        sum, Ct2av, Ctav;
-    gmx_bool    bFour = acf.bFour;
+    FILE *   fp, *gp = nullptr;
+    int      i;
+    real *   csum;
+    real *   ctmp, *fit;
+    real     sum, Ct2av, Ctav;
+    gmx_bool bFour = acf.bFour;
 
     /* Check flags and parameters */
     nout = get_acfnout();
     if (nout == -1)
     {
-        nout = acf.nout = (nframes+1)/2;
+        nout = acf.nout = (nframes + 1) / 2;
     }
     else if (nout > nframes)
     {
@@ -592,9 +594,9 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
      */
     for (int i = 0; i < nitem; i++)
     {
-        if (bVerbose && (((i % 100) == 0) || (i == nitem-1)))
+        if (bVerbose && (((i % 100) == 0) || (i == nitem - 1)))
         {
-            fprintf(stderr, "\rThingie %d", i+1);
+            fprintf(stderr, "\rThingie %d", i + 1);
             fflush(stderr);
         }
 
@@ -680,7 +682,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
                 }
             }
             Ctav  += sum;
-            Ct2av += sum*sum;
+            Ct2av += sum * sum;
             if (debug)
             {
                 fprintf(gp, "%5d  %.3f\n", i, sum);
@@ -696,7 +698,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
             Ct2av /= nitem;
             printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
                    Ctav, std::sqrt((Ct2av - gmx::square(Ctav))),
-                   std::sqrt((Ct2av - gmx::square(Ctav))/(nitem-1)));
+                   std::sqrt((Ct2av - gmx::square(Ctav)) / (nitem - 1)));
         }
     }
     if (fp)
@@ -707,7 +709,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
 }
 
 /*! \brief Legend for selecting Legendre polynomials. */
-static const char *Leg[]   = { nullptr, "0", "1", "2", "3", nullptr };
+static const char *Leg[] = { nullptr, "0", "1", "2", "3", nullptr };
 
 t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
 {
@@ -733,14 +735,14 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
     int      i, npa;
 
     npa = asize(acfpa);
-    snew(ppa, *npargs+npa);
+    snew(ppa, *npargs + npa);
     for (i = 0; (i < *npargs); i++)
     {
         ppa[i] = pa[i];
     }
     for (i = 0; (i < npa); i++)
     {
-        ppa[*npargs+i] = acfpa[i];
+        ppa[*npargs + i] = acfpa[i];
     }
     (*npargs) += npa;
 

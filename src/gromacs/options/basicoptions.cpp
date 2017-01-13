@@ -103,12 +103,11 @@ void expandVector(size_t length, std::vector<ValueType> *values)
  *
  * \ingroup module_options
  */
-std::vector<std::string>::const_iterator
-findEnumValue(const std::vector<std::string> &allowedValues,
-              const std::string              &value)
+std::vector<std::string>::const_iterator findEnumValue(const std::vector<std::string> &allowedValues,
+                                                       const std::string &             value)
 {
-    std::vector<std::string>::const_iterator  i;
-    std::vector<std::string>::const_iterator  match = allowedValues.end();
+    std::vector<std::string>::const_iterator i;
+    std::vector<std::string>::const_iterator match = allowedValues.end();
     for (i = allowedValues.begin(); i != allowedValues.end(); ++i)
     {
         // TODO: Case independence.
@@ -169,8 +168,7 @@ bool BooleanOptionInfo::defaultValue() const
  * BooleanOption
  */
 
-AbstractOptionStorage *
-BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage *BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return new BooleanOptionStorage(*this);
 }
@@ -211,8 +209,7 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStorage *
-IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage *IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return new IntegerOptionStorage(*this);
 }
@@ -245,8 +242,7 @@ Int64OptionInfo::Int64OptionInfo(Int64OptionStorage *option)
  * Int64Option
  */
 
-AbstractOptionStorage *
-Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage *Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return new Int64OptionStorage(*this);
 }
@@ -338,8 +334,7 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStorage *
-DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage *DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return new DoubleOptionStorage(*this);
 }
@@ -431,8 +426,7 @@ void FloatOptionInfo::setScaleFactor(double factor)
  * FloatOption
  */
 
-AbstractOptionStorage *
-FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage *FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return new FloatOptionStorage(*this);
 }
@@ -541,8 +535,7 @@ const std::vector<std::string> &StringOptionInfo::allowedValues() const
  * StringOption
  */
 
-AbstractOptionStorage *
-StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage *StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 {
     return new StringOptionStorage(*this);
 }
@@ -646,11 +639,10 @@ namespace internal
 {
 
 //! \cond internal
-AbstractOptionStorage *
-createEnumOptionStorage(const AbstractOption &option,
-                        const char *const *enumValues, int count,
-                        int defaultValue, int defaultValueIfSet,
-                        IOptionValueStore<int> *store)
+AbstractOptionStorage *createEnumOptionStorage(const AbstractOption &option,
+                                               const char *const *enumValues, int count,
+                                               int defaultValue, int defaultValueIfSet,
+                                               IOptionValueStore<int> *store)
 {
     std::unique_ptr<IOptionValueStore<int> > storePtr(store);
     return new EnumOptionStorage(option, enumValues, count, defaultValue,

@@ -122,7 +122,7 @@ void AtomsBuilder::addAtom(const t_atoms &atoms, int i)
     {
         if (atoms.pdbinfo != nullptr)
         {
-            atoms_->pdbinfo[index]  = atoms.pdbinfo[i];
+            atoms_->pdbinfo[index] = atoms.pdbinfo[i];
         }
         else
         {
@@ -143,7 +143,7 @@ void AtomsBuilder::startResidue(const t_resinfo &resinfo)
     atoms_->resinfo[index].nr   = nextResidueNumber_;
     atoms_->resinfo[index].name = symtabString(resinfo.name);
     ++nextResidueNumber_;
-    currentResidueIndex_      = index;
+    currentResidueIndex_ = index;
     ++atoms_->nres;
 }
 
@@ -158,7 +158,7 @@ void AtomsBuilder::finishResidue(const t_resinfo &resinfo)
     atoms_->resinfo[index].nr   = nextResidueNumber_;
     atoms_->resinfo[index].name = symtabString(resinfo.name);
     ++nextResidueNumber_;
-    currentResidueIndex_      = index + 1;
+    currentResidueIndex_ = index + 1;
     if (index >= atoms_->nres)
     {
         ++atoms_->nres;
@@ -274,7 +274,7 @@ void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
         builder.setNextResidueNumber(atoms->resinfo[0].nr);
     }
     builder.clearAtoms();
-    int          prevResInd = -1;
+    int prevResInd = -1;
     for (int i = 0; i < originalAtomCount; ++i)
     {
         if (!removed_[i])

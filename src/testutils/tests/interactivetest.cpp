@@ -89,8 +89,8 @@ class InteractiveSession
 
         void run()
         {
-            gmx::TextInputStream              &input  = helper_.inputStream();
-            gmx::TextOutputStream             &output = helper_.outputStream();
+            gmx::TextInputStream & input  = helper_.inputStream();
+            gmx::TextOutputStream &output = helper_.outputStream();
             helper_.setInputLines(inputLines_);
             std::vector<Event>::const_iterator event;
             for (event = events_.begin(); event != events_.end(); ++event)

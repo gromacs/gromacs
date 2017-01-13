@@ -50,7 +50,7 @@ class RefDataWriteSerializer : public gmx::ISerializer
 {
     public:
         RefDataWriteSerializer(gmx::test::TestReferenceChecker *parentChecker,
-                               const char                      *id)
+                               const char *                     id)
             : checker_(parentChecker->checkCompound("SerializedData", id))
         {
         }
@@ -86,7 +86,7 @@ class RefDataReadSerializer : public gmx::ISerializer
 {
     public:
         RefDataReadSerializer(gmx::test::TestReferenceChecker *parentChecker,
-                              const char                      *id)
+                              const char *                     id)
             : checker_(parentChecker->checkCompound("SerializedData", id))
         {
         }
@@ -123,17 +123,17 @@ class KeyValueTreeSerializerTest : public ::testing::Test
     public:
         void runTest()
         {
-            gmx::KeyValueTreeObject           input(builder_.build());
-            gmx::test::TestReferenceData      data;
-            gmx::test::TestReferenceChecker   checker(data.rootChecker());
+            gmx::KeyValueTreeObject         input(builder_.build());
+            gmx::test::TestReferenceData    data;
+            gmx::test::TestReferenceChecker checker(data.rootChecker());
             checker.checkKeyValueTreeObject(input, "Input");
             {
-                RefDataWriteSerializer        serializer(&checker, "Stream");
+                RefDataWriteSerializer serializer(&checker, "Stream");
                 gmx::serializeKeyValueTree(input, &serializer);
             }
             {
-                RefDataReadSerializer         serializer(&checker, "Stream");
-                gmx::KeyValueTreeObject       output
+                RefDataReadSerializer   serializer(&checker, "Stream");
+                gmx::KeyValueTreeObject output
                     = gmx::deserializeKeyValueTree(&serializer);
                 checker.checkKeyValueTreeObject(output, "Input");
             }

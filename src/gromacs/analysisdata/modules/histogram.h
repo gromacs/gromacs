@@ -149,13 +149,13 @@ class AnalysisHistogramSettingsInitializer
         { bIncludeAll_ = enabled; return *this; }
 
     private:
-        real                    min_;
-        real                    max_;
-        real                    binWidth_;
-        int                     binCount_;
-        bool                    bIntegerBins_;
-        bool                    bRoundRange_;
-        bool                    bIncludeAll_;
+        real min_;
+        real max_;
+        real binWidth_;
+        int  binCount_;
+        bool bIntegerBins_;
+        bool bRoundRange_;
+        bool bIncludeAll_;
 
         friend class AnalysisHistogramSettings;
 };
@@ -167,8 +167,7 @@ class AnalysisHistogramSettingsInitializer
  *
  * \inpublicapi
  */
-inline AnalysisHistogramSettingsInitializer
-histogramFromRange(real min, real max)
+inline AnalysisHistogramSettingsInitializer histogramFromRange(real min, real max)
 {
     return AnalysisHistogramSettingsInitializer().range(min, max);
 }
@@ -180,8 +179,7 @@ histogramFromRange(real min, real max)
  *
  * \inpublicapi
  */
-inline AnalysisHistogramSettingsInitializer
-histogramFromBins(real start, int nbins, real binwidth)
+inline AnalysisHistogramSettingsInitializer histogramFromBins(real start, int nbins, real binwidth)
 {
     return AnalysisHistogramSettingsInitializer()
                .start(start).binCount(nbins).binWidth(binwidth);
@@ -228,12 +226,12 @@ class AnalysisHistogramSettings
         int findBin(real y) const;
 
     private:
-        real                    firstEdge_;
-        real                    lastEdge_;
-        real                    binWidth_;
-        real                    inverseBinWidth_;
-        int                     binCount_;
-        bool                    bAll_;
+        real firstEdge_;
+        real lastEdge_;
+        real binWidth_;
+        real inverseBinWidth_;
+        int  binCount_;
+        bool bAll_;
 };
 
 
@@ -332,7 +330,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         void init(const AnalysisHistogramSettings &settings);
 
     private:
-        AnalysisHistogramSettings  settings_;
+        AnalysisHistogramSettings settings_;
 
         // Copy and assign disallowed by base.
 };
@@ -394,7 +392,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
         virtual int flags() const;
 
         virtual bool parallelDataStarted(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
@@ -459,7 +457,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
         virtual int flags() const;
 
         virtual bool parallelDataStarted(
-            AbstractAnalysisData              *data,
+            AbstractAnalysisData *             data,
             const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
@@ -522,7 +520,7 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
     private:
         class Impl;
 
-        PrivateImplPointer<Impl>   impl_;
+        PrivateImplPointer<Impl> impl_;
 
         // Copy and assign disallowed by base.
 };

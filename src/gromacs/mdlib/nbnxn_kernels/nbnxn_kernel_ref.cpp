@@ -59,21 +59,21 @@
 /*! \brief Typedefs for declaring lookup tables of kernel functions.
  */
 
-typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
-                                  const nbnxn_atomdata_t     *nbat,
-                                  const interaction_const_t  *ic,
-                                  rvec                       *shift_vec,
-                                  real                       *f,
-                                  real                       *fshift);
+typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t *   nbl,
+                                  const nbnxn_atomdata_t *   nbat,
+                                  const interaction_const_t *ic,
+                                  rvec *                     shift_vec,
+                                  real *                     f,
+                                  real *                     fshift);
 
-typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
-                                const nbnxn_atomdata_t     *nbat,
-                                const interaction_const_t  *ic,
-                                rvec                       *shift_vec,
-                                real                       *f,
-                                real                       *fshift,
-                                real                       *Vvdw,
-                                real                       *Vc);
+typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t *   nbl,
+                                const nbnxn_atomdata_t *   nbat,
+                                const interaction_const_t *ic,
+                                rvec *                     shift_vec,
+                                real *                     f,
+                                real *                     fshift,
+                                real *                     Vvdw,
+                                real *                     Vc);
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -145,11 +145,13 @@ typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
 #undef CALC_COUL_TAB
 
 
-enum {
+enum
+{
     coultRF, coultTAB, coultTAB_TWIN, coultNR
 };
 
-enum {
+enum
+{
     vdwtCUT, vdwtFSWITCH, vdwtPSWITCH, vdwtEWALDGEOM, vdwtEWALDLB, vdwtNR
 };
 
@@ -174,16 +176,15 @@ p_nbk_func_ener p_nbk_c_energrp[coultNR][vdwtNR] =
     { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref }
 };
 
-void
-nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
-                 const nbnxn_atomdata_t     *nbat,
-                 const interaction_const_t  *ic,
-                 rvec                       *shift_vec,
-                 int                         force_flags,
-                 int                         clearF,
-                 real                       *fshift,
-                 real                       *Vc,
-                 real                       *Vvdw)
+void nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
+                      const nbnxn_atomdata_t *    nbat,
+                      const interaction_const_t * ic,
+                      rvec *                      shift_vec,
+                      int                         force_flags,
+                      int                         clearF,
+                      real *                      fshift,
+                      real *                      Vc,
+                      real *                      Vvdw)
 {
     int                nnbl;
     nbnxn_pairlist_t **nbl;
@@ -256,7 +257,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         // Presently, the kernels do not call C++ code that can throw, so
         // no need for a try/catch pair in this OpenMP region.
         nbnxn_atomdata_output_t *out;
-        real                    *fshift_p;
+        real *                   fshift_p;
 
         out = &nbat->out[nb];
 

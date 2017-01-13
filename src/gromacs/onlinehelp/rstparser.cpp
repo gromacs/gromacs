@@ -83,7 +83,7 @@ bool startsListItem(const std::string &text, size_t index)
     {
         return false;
     }
-    if (text[index] == '*' && std::isspace(text[index+1]))
+    if (text[index] == '*' && std::isspace(text[index + 1]))
     {
         return true;
     }
@@ -94,7 +94,7 @@ bool startsListItem(const std::string &text, size_t index)
             ++index;
         }
         if (text.length() > index + 1 && text[index] == '.'
-            && std::isspace(text[index+1]))
+            && std::isspace(text[index + 1]))
         {
             return true;
         }

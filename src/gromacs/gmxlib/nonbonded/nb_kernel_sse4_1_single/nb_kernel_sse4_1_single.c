@@ -523,4 +523,4 @@ nb_kernel_info_t
 };
 
 int
-    kernellist_sse4_1_single_size = sizeof(kernellist_sse4_1_single)/sizeof(kernellist_sse4_1_single[0]);
+    kernellist_sse4_1_single_size = sizeof(kernellist_sse4_1_single) / sizeof(kernellist_sse4_1_single[0]);

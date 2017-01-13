@@ -111,7 +111,7 @@ static gmx_inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
             cj_size = nbnxn_simd_width;
             break;
         case nbnxnk4xN_SIMD_2xNN:
-            cj_size = nbnxn_simd_width/2;
+            cj_size = nbnxn_simd_width / 2;
             break;
         case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:

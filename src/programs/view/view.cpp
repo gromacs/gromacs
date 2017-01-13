@@ -95,12 +95,12 @@ static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
         XResizeWindow(x11->disp, gmx->pd->wd.self, width, y0);
     }
 
-    XMoveWindow(x11->disp, gmx->man->wd.self, 0, y0+1);
-    XResizeWindow(x11->disp, gmx->man->wd.self, width, height-y0-1);
+    XMoveWindow(x11->disp, gmx->man->wd.self, 0, y0 + 1);
+    XResizeWindow(x11->disp, gmx->man->wd.self, width, height - y0 - 1);
 
     wl = gmx->logo->wd.width;
     hl = gmx->logo->wd.height;
-    XMoveWindow(x11->disp, gmx->logo->wd.self, (width-wl)/2, (height-y0-hl)/2);
+    XMoveWindow(x11->disp, gmx->logo->wd.self, (width - wl) / 2, (height - y0 - hl) / 2);
 }
 
 static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
@@ -232,9 +232,9 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
 
 static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 {
-    t_gmx    *gmx;
-    int       nsel, width, height;
-    bool      result;
+    t_gmx *gmx;
+    int    nsel, width, height;
+    bool   result;
 
     result = false;
     gmx    = (t_gmx *)data;
@@ -262,13 +262,13 @@ static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     return result;
 }
 
-static t_mentry  FileMenu[] = {
+static t_mentry FileMenu[] = {
     { 0,  IDEXPORT,   false,  "Export..." },
     { 0,  IDDUMPWIN,  false,  "Print"     },
     { 0,  IDQUIT,     false,  "Quit"      }
 };
 
-static t_mentry  DispMenu[] = {
+static t_mentry DispMenu[] = {
     { 0,  IDFILTER,   false,  "Filter..." },
     { 0,  IDANIMATE,  false,  "Animate"   },
     { 0,  IDLABELSOFF,    false,  "Labels Off"},
@@ -276,7 +276,7 @@ static t_mentry  DispMenu[] = {
     { 0,  IDBONDOPTS,     false,  "Options..."}
 };
 
-static t_mentry  HelpMenu[] = {
+static t_mentry HelpMenu[] = {
     { 0,  IDHELP,     false,  "Help"             },
     { 0,  IDABOUT,    false,  "About GROMACS..." }
 };
@@ -285,7 +285,7 @@ static t_mentry *gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
 
 #define MSIZE asize(gmx_pd)
 
-static int         gmx_pd_size[MSIZE] = {
+static int gmx_pd_size[MSIZE] = {
     asize(FileMenu), asize(DispMenu), asize(HelpMenu)
 };
 
@@ -296,16 +296,16 @@ static const char *MenuTitle[MSIZE] = {
 static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
                      gmx_output_env_t *oenv)
 {
-    Pixmap                pm;
-    t_gmx                *gmx;
-    XSizeHints            hints;
-    int                   w0, h0;
-    int                   natom, natom_trx;
-    t_topology            top;
-    int                   ePBC;
-    matrix                box;
-    t_trxframe            fr;
-    t_trxstatus          *status;
+    Pixmap       pm;
+    t_gmx *      gmx;
+    XSizeHints   hints;
+    int          w0, h0;
+    int          natom, natom_trx;
+    t_topology   top;
+    int          ePBC;
+    matrix       box;
+    t_trxframe   fr;
+    t_trxstatus *status;
 
     snew(gmx, 1);
     snew(gmx->wd, 1);
@@ -318,8 +318,8 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     natom_trx = fr.natoms;
 
     /* Creates a simple window */
-    w0 = DisplayWidth(x11->disp, x11->screen)-132;
-    h0 = DisplayHeight(x11->disp, x11->screen)-140;
+    w0 = DisplayWidth(x11->disp, x11->screen) - 132;
+    h0 = DisplayHeight(x11->disp, x11->screen) - 140;
     InitWin(gmx->wd, 0, 0, w0, h0, 3, gmx::bromacs().c_str());
     gmx->wd->self = XCreateSimpleWindow(x11->disp, x11->root,
                                         gmx->wd->x, gmx->wd->y,
@@ -330,16 +330,16 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
                                      gromacs_height,
                                      WHITE, BLACK, 1);
     hints.flags      = PMinSize;
-    hints.min_width  = 2*EWIDTH+40;
-    hints.min_height = EHEIGHT+LDHEIGHT+LEGHEIGHT+40;
+    hints.min_width  = 2 * EWIDTH + 40;
+    hints.min_height = EHEIGHT + LDHEIGHT + LEGHEIGHT + 40;
     XSetStandardProperties(x11->disp, gmx->wd->self, gmx->wd->text, program,
                            pm, nullptr, 0, &hints);
 
     x11->RegisterCallback(x11, gmx->wd->self, x11->root, MainCallBack, gmx);
     x11->SetInputMask(x11, gmx->wd->self,
-                      ButtonPressMask     | ButtonReleaseMask |
-                      OwnerGrabButtonMask | ExposureMask      |
-                      StructureNotifyMask);
+                      ButtonPressMask     | ButtonReleaseMask
+                      | OwnerGrabButtonMask | ExposureMask
+                      | StructureNotifyMask);
 
     /* The order of creating windows is important here! */
     /* Manager */
@@ -373,7 +373,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
 int gmx_view(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] is the GROMACS trajectory viewer. This program reads a",
         "trajectory file, a run input file and an index file and plots a",
         "3D structure of your molecule on your standard X Window",
@@ -389,7 +389,7 @@ int gmx_view(int argc, char *argv[])
         "Some of the more common X command line options can be used: ",
         "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
     };
-    const char       *bugs[] = {
+    const char *bugs[] = {
         "Balls option does not work",
         "Some times dumps core without a good reason"
     };

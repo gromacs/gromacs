@@ -76,7 +76,7 @@ class AnalysisDataHandleImpl
         }
 
         //! The data object that this handle belongs to.
-        AnalysisData             &data_;
+        AnalysisData &data_;
         //! Current storage frame object, or NULL if no current frame.
         AnalysisDataStorageFrame *currentFrame_;
 };
@@ -102,14 +102,14 @@ class AnalysisData::Impl
         typedef std::vector<HandlePointer> HandleList;
 
         //! Storage implementation.
-        AnalysisDataStorage     storage_;
+        AnalysisDataStorage storage_;
         /*! \brief
          * List of handles for this data object.
          *
          * Note that AnalysisDataHandle objects also contain (raw) pointers
          * to these objects.
          */
-        HandleList              handles_;
+        HandleList handles_;
 };
 
 /********************************************************************
@@ -127,8 +127,7 @@ AnalysisData::~AnalysisData()
 }
 
 
-void
-AnalysisData::setDataSetCount(int dataSetCount)
+void AnalysisData::setDataSetCount(int dataSetCount)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
@@ -136,8 +135,7 @@ AnalysisData::setDataSetCount(int dataSetCount)
 }
 
 
-void
-AnalysisData::setColumnCount(int dataSet, int columnCount)
+void AnalysisData::setColumnCount(int dataSet, int columnCount)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
@@ -145,8 +143,7 @@ AnalysisData::setColumnCount(int dataSet, int columnCount)
 }
 
 
-void
-AnalysisData::setMultipoint(bool bMultipoint)
+void AnalysisData::setMultipoint(bool bMultipoint)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data type after creating handles");
@@ -154,15 +151,13 @@ AnalysisData::setMultipoint(bool bMultipoint)
 }
 
 
-int
-AnalysisData::frameCount() const
+int AnalysisData::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
 
 
-AnalysisDataHandle
-AnalysisData::startData(const AnalysisDataParallelOptions &opt)
+AnalysisDataHandle AnalysisData::startData(const AnalysisDataParallelOptions &opt)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.size() < static_cast<unsigned>(opt.parallelizationFactor()),
                        "Too many calls to startData() compared to provided options");
@@ -177,15 +172,13 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
 }
 
 
-void
-AnalysisData::finishFrameSerial(int frameIndex)
+void AnalysisData::finishFrameSerial(int frameIndex)
 {
     impl_->storage_.finishFrameSerial(frameIndex);
 }
 
 
-void
-AnalysisData::finishData(AnalysisDataHandle handle)
+void AnalysisData::finishData(AnalysisDataHandle handle)
 {
     Impl::HandleList::iterator i;
 
@@ -208,15 +201,13 @@ AnalysisData::finishData(AnalysisDataHandle handle)
 }
 
 
-AnalysisDataFrameRef
-AnalysisData::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisData::tryGetDataFrameInternal(int index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
 
-bool
-AnalysisData::requestStorageInternal(int nframes)
+bool AnalysisData::requestStorageInternal(int nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }
@@ -238,19 +229,17 @@ AnalysisDataHandle::AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl)
 }
 
 
-void
-AnalysisDataHandle::startFrame(int index, real x, real dx)
+void AnalysisDataHandle::startFrame(int index, real x, real dx)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
                        "startFrame() called twice without calling finishFrame()");
-    impl_->currentFrame_ =
-        &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+    impl_->currentFrame_
+        = &impl_->data_.impl_->storage_.startFrame(index, x, dx);
 }
 
 
-void
-AnalysisDataHandle::selectDataSet(int index)
+void AnalysisDataHandle::selectDataSet(int index)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -259,8 +248,7 @@ AnalysisDataHandle::selectDataSet(int index)
 }
 
 
-void
-AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
+void AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -269,8 +257,7 @@ AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 }
 
 
-void
-AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
+void AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -279,9 +266,8 @@ AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
 }
 
 
-void
-AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values,
-                              bool bPresent)
+void AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values,
+                                   bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -293,8 +279,7 @@ AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values,
 }
 
 
-void
-AnalysisDataHandle::finishPointSet()
+void AnalysisDataHandle::finishPointSet()
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->data_.isMultipoint(),
@@ -305,8 +290,7 @@ AnalysisDataHandle::finishPointSet()
 }
 
 
-void
-AnalysisDataHandle::finishFrame()
+void AnalysisDataHandle::finishFrame()
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -317,8 +301,7 @@ AnalysisDataHandle::finishFrame()
 }
 
 
-void
-AnalysisDataHandle::finishData()
+void AnalysisDataHandle::finishData()
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     // Deletes the implementation pointer.

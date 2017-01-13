@@ -57,7 +57,7 @@ class Simd4Float
         // Internal utility constructor to simplify return statements
         Simd4Float(__vector float simd) : simdInternal_(simd) {}
 
-        __vector float  simdInternal_;
+        __vector float simdInternal_;
 };
 
 class Simd4FBool
@@ -71,7 +71,7 @@ class Simd4FBool
         // Internal utility constructor to simplify return statements
         Simd4FBool(__vector vsxBool int simd) : simdInternal_(simd) {}
 
-        __vector vsxBool int  simdInternal_;
+        __vector vsxBool int simdInternal_;
 };
 
 // The VSX load & store operations are a bit of a mess. The interface is different
@@ -88,22 +88,19 @@ class Simd4FBool
 // revisit things once xlc is a bit more stable - for now you probably want
 // to stick to gcc...
 
-static inline Simd4Float gmx_simdcall
-load4(const float *m)
+static inline Simd4Float gmx_simdcall load4(const float *m)
 {
     return {
                *reinterpret_cast<const __vector float *>(m)
     };
 }
 
-static inline void gmx_simdcall
-store4(float *m, Simd4Float a)
+static inline void gmx_simdcall store4(float *m, Simd4Float a)
 {
     *reinterpret_cast<__vector float *>(m) = a.simdInternal_;
 }
 
-static inline Simd4Float gmx_simdcall
-load4U(const float *m)
+static inline Simd4Float gmx_simdcall load4U(const float *m)
 {
 #if defined(__ibmxl__) || defined(__xlC__)
     return {
@@ -116,8 +113,7 @@ load4U(const float *m)
 #endif
 }
 
-static inline void gmx_simdcall
-store4U(float *m, Simd4Float a)
+static inline void gmx_simdcall store4U(float *m, Simd4Float a)
 {
 #if defined(__ibmxl__) || defined(__xlC__)
     vec_xstw4(a.simdInternal_, 0, m);
@@ -126,160 +122,140 @@ store4U(float *m, Simd4Float a)
 #endif
 }
 
-static inline Simd4Float gmx_simdcall
-simd4SetZeroF()
+static inline Simd4Float gmx_simdcall simd4SetZeroF()
 {
     return {
                vec_splats(0.0f)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator&(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator&(Simd4Float a, Simd4Float b)
 {
     return {
                vec_and(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-andNot(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall andNot(Simd4Float a, Simd4Float b)
 {
     return {
                vec_andc(b.simdInternal_, a.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator|(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator|(Simd4Float a, Simd4Float b)
 {
     return {
                vec_or(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator^(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator^(Simd4Float a, Simd4Float b)
 {
     return {
                vec_xor(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator+(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator+(Simd4Float a, Simd4Float b)
 {
     return {
                vec_add(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator-(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator-(Simd4Float a, Simd4Float b)
 {
     return {
                vec_sub(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator-(Simd4Float x)
+static inline Simd4Float gmx_simdcall operator-(Simd4Float x)
 {
     return {
                -x.simdInternal_
     };
 }
 
-static inline Simd4Float gmx_simdcall
-operator*(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall operator*(Simd4Float a, Simd4Float b)
 {
     return {
                vec_mul(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vec_msub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vec_nmadd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-rsqrt(Simd4Float x)
+static inline Simd4Float gmx_simdcall rsqrt(Simd4Float x)
 {
     return {
                vec_rsqrte(x.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-abs(Simd4Float x)
+static inline Simd4Float gmx_simdcall abs(Simd4Float x)
 {
     return {
                vec_abs( x.simdInternal_ )
     };
 }
 
-static inline Simd4Float gmx_simdcall
-max(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall max(Simd4Float a, Simd4Float b)
 {
     return {
                vec_max(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-min(Simd4Float a, Simd4Float b)
+static inline Simd4Float gmx_simdcall min(Simd4Float a, Simd4Float b)
 {
     return {
                vec_min(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4Float gmx_simdcall
-round(Simd4Float x)
+static inline Simd4Float gmx_simdcall round(Simd4Float x)
 {
     return {
                vec_round( x.simdInternal_ )
     };
 }
 
-static inline Simd4Float gmx_simdcall
-trunc(Simd4Float x)
+static inline Simd4Float gmx_simdcall trunc(Simd4Float x)
 {
     return {
                vec_trunc( x.simdInternal_ )
     };
 }
 
-static inline float gmx_simdcall
-dotProduct(Simd4Float a, Simd4Float b)
+static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
     const __vector unsigned char perm1 = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
     const __vector unsigned char perm2 = { 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3 };
@@ -290,9 +266,8 @@ dotProduct(Simd4Float a, Simd4Float b)
     return vec_extract(sum, 0);
 }
 
-static inline void gmx_simdcall
-transpose(Simd4Float * v0, Simd4Float * v1,
-          Simd4Float * v2, Simd4Float * v3)
+static inline void gmx_simdcall transpose(Simd4Float * v0, Simd4Float * v1,
+                                          Simd4Float * v2, Simd4Float * v3)
 {
     __vector float t0 = vec_mergeh(v0->simdInternal_, v2->simdInternal_);
     __vector float t1 = vec_mergel(v0->simdInternal_, v2->simdInternal_);
@@ -304,16 +279,14 @@ transpose(Simd4Float * v0, Simd4Float * v1,
     v3->simdInternal_ = vec_mergel(t1, t3);
 }
 
-static inline Simd4FBool gmx_simdcall
-operator==(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator==(Simd4Float a, Simd4Float b)
 {
     return {
                vec_cmpeq(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator!=(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator!=(Simd4Float a, Simd4Float b)
 {
     return {
                vec_or(vec_cmpgt(a.simdInternal_, b.simdInternal_),
@@ -321,70 +294,61 @@ operator!=(Simd4Float a, Simd4Float b)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator<(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator<(Simd4Float a, Simd4Float b)
 {
     return {
                vec_cmplt(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator<=(Simd4Float a, Simd4Float b)
+static inline Simd4FBool gmx_simdcall operator<=(Simd4Float a, Simd4Float b)
 {
     return {
                vec_cmple(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator&&(Simd4FBool a, Simd4FBool b)
+static inline Simd4FBool gmx_simdcall operator&&(Simd4FBool a, Simd4FBool b)
 {
     return {
                vec_and(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline Simd4FBool gmx_simdcall
-operator||(Simd4FBool a, Simd4FBool b)
+static inline Simd4FBool gmx_simdcall operator||(Simd4FBool a, Simd4FBool b)
 {
     return {
                vec_or(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline bool gmx_simdcall
-anyTrue(Simd4FBool a)
+static inline bool gmx_simdcall anyTrue(Simd4FBool a)
 {
     return vec_any_ne(a.simdInternal_, reinterpret_cast<__vector vsxBool int>(vec_splats(0)));
 }
 
-static inline Simd4Float gmx_simdcall
-selectByMask(Simd4Float a, Simd4FBool m)
+static inline Simd4Float gmx_simdcall selectByMask(Simd4Float a, Simd4FBool m)
 {
     return {
                vec_and(a.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
     };
 }
 
-static inline Simd4Float gmx_simdcall
-selectByNotMask(Simd4Float a, Simd4FBool m)
+static inline Simd4Float gmx_simdcall selectByNotMask(Simd4Float a, Simd4FBool m)
 {
     return {
                vec_andc(a.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
     };
 }
 
-static inline Simd4Float gmx_simdcall
-blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+static inline Simd4Float gmx_simdcall blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
 {
     return {
                vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
     };
 }
 
-static inline float gmx_simdcall
-reduce(Simd4Float x)
+static inline float gmx_simdcall reduce(Simd4Float x)
 {
     const __vector unsigned char perm1 = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
     const __vector unsigned char perm2 = { 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3 };

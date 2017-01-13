@@ -46,7 +46,8 @@ extern "C"
 /* The code below is to facilitate controlled begin and end of
  * trajectory reading.
  */
-enum {
+enum
+{
     TBEGIN, TEND, TDELTA, TNR
 };
 

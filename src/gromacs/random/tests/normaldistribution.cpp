@@ -57,12 +57,12 @@ namespace
 
 TEST(NormalDistributionTest, Output)
 {
-    gmx::test::TestReferenceData        data;
-    gmx::test::TestReferenceChecker     checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
-    gmx::NormalDistribution<real>       dist(2.0, 5.0);
-    std::vector<real>                   result;
+    gmx::ThreeFry2x64<8>          rng(123456, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real> dist(2.0, 5.0);
+    std::vector<real>             result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -74,11 +74,11 @@ TEST(NormalDistributionTest, Output)
 
 TEST(NormalDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<8>           rng(123456, gmx::RandomDomain::Other);
-    gmx::NormalDistribution<real>  distA(2.0, 5.0);
-    gmx::NormalDistribution<real>  distB(2.0, 5.0);
-    gmx::NormalDistribution<real>  distC(3.0, 5.0);
-    gmx::NormalDistribution<real>  distD(2.0, 4.0);
+    gmx::ThreeFry2x64<8>          rng(123456, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real> distA(2.0, 5.0);
+    gmx::NormalDistribution<real> distB(2.0, 5.0);
+    gmx::NormalDistribution<real> distC(3.0, 5.0);
+    gmx::NormalDistribution<real> distD(2.0, 4.0);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -88,10 +88,10 @@ TEST(NormalDistributionTest, Logical)
 
 TEST(NormalDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                                rng(123456, gmx::RandomDomain::Other);
-    gmx::NormalDistribution<real>                       distA(2.0, 5.0);
-    gmx::NormalDistribution<real>                       distB(2.0, 5.0);
-    gmx::NormalDistribution<real>::result_type          valA, valB;
+    gmx::ThreeFry2x64<8>                       rng(123456, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real>              distA(2.0, 5.0);
+    gmx::NormalDistribution<real>              distB(2.0, 5.0);
+    gmx::NormalDistribution<real>::result_type valA, valB;
 
     valA = distA(rng);
 

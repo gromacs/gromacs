@@ -61,8 +61,8 @@ class Options;
  *
  * \ingroup module_options
  */
-void assignOptionsFromKeyValueTree(Options                   *options,
-                                   const KeyValueTreeObject  &tree,
+void assignOptionsFromKeyValueTree(Options *                  options,
+                                   const KeyValueTreeObject & tree,
                                    IKeyValueTreeErrorHandler *errorHandler);
 /*! \libinternal \brief
  * Adjusts a KeyValueTreeObject to the structure of given Options.
@@ -81,7 +81,7 @@ void assignOptionsFromKeyValueTree(Options                   *options,
  */
 KeyValueTreeObject
 adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
-                              const Options            &options);
+                              const Options &           options);
 
 //! \endcond
 

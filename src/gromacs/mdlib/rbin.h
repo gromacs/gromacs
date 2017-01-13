@@ -41,7 +41,8 @@
 
 struct t_commrec;
 
-typedef struct {
+typedef struct
+{
     int     nreal;
     int     maxreal;
     double *rbuf;

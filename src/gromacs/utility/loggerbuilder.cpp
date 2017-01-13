@@ -143,7 +143,7 @@ class LoggerBuilder::Impl
     public:
         std::vector<std::unique_ptr<TextOutputStream> > streams_;
         std::vector<std::unique_ptr<ILogTarget> >       targets_;
-        std::vector<ILogTarget *> loggerTargets_[MDLogger::LogLevelCount];
+        std::vector<ILogTarget *>                       loggerTargets_[MDLogger::LogLevelCount];
 };
 
 /********************************************************************

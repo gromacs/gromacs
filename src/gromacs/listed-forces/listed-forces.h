@@ -127,24 +127,24 @@ void calc_listed_lambda(const t_idef *idef,
 /*! \brief Do all aspects of energy and force calculations for mdrun
  * on the set of listed interactions */
 void
-do_force_listed(struct gmx_wallcycle           *wcycle,
-                matrix                          box,
-                const t_lambda                 *fepvals,
-                const t_commrec                *cr,
-                const t_idef                   *idef,
-                const rvec                      x[],
-                history_t                      *hist,
-                rvec                            f[],
-                t_forcerec                     *fr,
-                const struct t_pbc             *pbc,
-                const struct t_graph           *graph,
-                gmx_enerdata_t                 *enerd,
-                t_nrnb                         *nrnb,
-                real                           *lambda,
-                const t_mdatoms                *md,
-                struct t_fcdata                *fcd,
-                int                            *global_atom_index,
-                int                             flags);
+do_force_listed(struct gmx_wallcycle *wcycle,
+                matrix                box,
+                const t_lambda *      fepvals,
+                const t_commrec *     cr,
+                const t_idef *        idef,
+                const rvec            x[],
+                history_t *           hist,
+                rvec                  f[],
+                t_forcerec *          fr,
+                const struct t_pbc *  pbc,
+                const struct t_graph *graph,
+                gmx_enerdata_t *      enerd,
+                t_nrnb *              nrnb,
+                real *                lambda,
+                const t_mdatoms *     md,
+                struct t_fcdata *     fcd,
+                int *                 global_atom_index,
+                int                   flags);
 
 #ifdef __cplusplus
 }

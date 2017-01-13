@@ -60,9 +60,9 @@ class MDLogger;
  * If necessary, this function will modify hw_opt->nthreads_omp.
  */
 int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
-                     gmx_hw_opt_t        *hw_opt,
-                     const t_inputrec    *inputrec,
-                     const gmx_mtop_t    *mtop,
+                     gmx_hw_opt_t *       hw_opt,
+                     const t_inputrec *   inputrec,
+                     const gmx_mtop_t *   mtop,
                      const gmx::MDLogger &mdlog,
                      gmx_bool             bUseGpu,
                      bool                 doMembed);
@@ -76,13 +76,13 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
  * This function should be called after thread-MPI and OpenMP are set up.
  */
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
-                                        const gmx_hw_opt_t  *hw_opt,
+                                        const gmx_hw_opt_t * hw_opt,
                                         gmx_bool             bNtOmpOptionSet,
-                                        t_commrec           *cr,
+                                        t_commrec *          cr,
                                         const gmx::MDLogger &mdlog);
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
+void check_and_update_hw_opt_1(gmx_hw_opt_t *   hw_opt,
                                const t_commrec *cr,
                                int              nPmeRanks);
 

@@ -61,10 +61,10 @@ namespace gmx
  *
  * \tparam n Value to recursively calculate log2(n) for
  */
-template<std::uint64_t n>
+template <std::uint64_t n>
 struct StaticLog2
 {
-    static const int value = StaticLog2<n/2>::value+1; //!< Variable value used for recursive static calculation of Log2(int)
+    static const int value = StaticLog2<n / 2>::value + 1; //!< Variable value used for recursive static calculation of Log2(int)
 };
 
 /*! \brief Specialization of StaticLog2<n> for n==1.
@@ -72,7 +72,7 @@ struct StaticLog2
  *  This specialization provides the final value in the recursion; never
  *  call it directly, but use StaticLog2<n>::value.
  */
-template<>
+template <>
 struct StaticLog2<1>
 {
     static const int value = 0; //!< Base value for recursive static calculation of Log2(int)
@@ -87,7 +87,7 @@ struct StaticLog2<1>
  *  the template can occur before the conditional statement, so to avoid infinite
  *  recursion we need a specialization for the case n==0.
  */
-template<>
+template <>
 struct StaticLog2<0>
 {
     static const int value = -1; //!< Base value for recursive static calculation of Log2(int)
@@ -163,10 +163,9 @@ greatestCommonDivisor(std::int64_t p, std::int64_t q);
  *
  * \return 1.0/sqrt(x)
  */
-static inline float
-invsqrt(float x)
+static inline float invsqrt(float x)
 {
-    return 1.0f/std::sqrt(x);
+    return 1.0f / std::sqrt(x);
 }
 
 /*! \brief Calculate 1.0/sqrt(x) in double precision, but single range
@@ -180,10 +179,9 @@ invsqrt(float x)
  *
  * \return 1.0/sqrt(x)
  */
-static inline double
-invsqrt(double x)
+static inline double invsqrt(double x)
 {
-    return 1.0/std::sqrt(x);
+    return 1.0 / std::sqrt(x);
 }
 
 /*! \brief Calculate 1.0/sqrt(x) for integer x in double precision.
@@ -192,8 +190,7 @@ invsqrt(double x)
  *
  * \return 1.0/sqrt(x)
  */
-static inline double
-invsqrt(int x)
+static inline double invsqrt(int x)
 {
     return invsqrt(static_cast<double>(x));
 }
@@ -206,10 +203,9 @@ invsqrt(int x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline float
-invcbrt(float x)
+static inline float invcbrt(float x)
 {
-    return 1.0f/std::cbrt(x);
+    return 1.0f / std::cbrt(x);
 }
 
 /*! \brief Calculate inverse sixth root of x in double precision
@@ -220,10 +216,9 @@ invcbrt(float x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invcbrt(double x)
+static inline double invcbrt(double x)
 {
-    return 1.0/std::cbrt(x);
+    return 1.0 / std::cbrt(x);
 }
 
 /*! \brief Calculate inverse sixth root of integer x in double precision
@@ -234,10 +229,9 @@ invcbrt(double x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invcbrt(int x)
+static inline double invcbrt(int x)
 {
-    return 1.0/std::cbrt(x);
+    return 1.0 / std::cbrt(x);
 }
 
 /*! \brief Calculate sixth root of x in single precision.
@@ -248,8 +242,7 @@ invcbrt(int x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline float
-sixthroot(float x)
+static inline float sixthroot(float x)
 {
     return std::sqrt(std::cbrt(x));
 }
@@ -262,8 +255,7 @@ sixthroot(float x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-sixthroot(double x)
+static inline double sixthroot(double x)
 {
     return std::sqrt(std::cbrt(x));
 }
@@ -276,8 +268,7 @@ sixthroot(double x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-sixthroot(int x)
+static inline double sixthroot(int x)
 {
     return std::sqrt(std::cbrt(x));
 }
@@ -290,8 +281,7 @@ sixthroot(int x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline float
-invsixthroot(float x)
+static inline float invsixthroot(float x)
 {
     return invsqrt(std::cbrt(x));
 }
@@ -304,8 +294,7 @@ invsixthroot(float x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invsixthroot(double x)
+static inline double invsixthroot(double x)
 {
     return invsqrt(std::cbrt(x));
 }
@@ -318,8 +307,7 @@ invsixthroot(double x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invsixthroot(int x)
+static inline double invsixthroot(int x)
 {
     return invsqrt(std::cbrt(x));
 }
@@ -332,10 +320,9 @@ invsixthroot(int x)
  *  \return x^2
  */
 template <typename T>
-T
-square(T x)
+T square(T x)
 {
-    return x*x;
+    return x * x;
 }
 
 /*! \brief calculate x^3
@@ -346,10 +333,9 @@ square(T x)
  *  \return x^3
  */
 template <typename T>
-T
-power3(T x)
+T power3(T x)
 {
-    return x*square(x);
+    return x * square(x);
 }
 
 /*! \brief calculate x^4
@@ -360,8 +346,7 @@ power3(T x)
  *  \return x^4
  */
 template <typename T>
-T
-power4(T x)
+T power4(T x)
 {
     return square(square(x));
 }
@@ -374,10 +359,9 @@ power4(T x)
  *  \return x^5
  */
 template <typename T>
-T
-power5(T x)
+T power5(T x)
 {
-    return x*power4(x);
+    return x * power4(x);
 }
 
 /*! \brief calculate x^6
@@ -388,8 +372,7 @@ power5(T x)
  *  \return x^6
  */
 template <typename T>
-T
-power6(T x)
+T power6(T x)
 {
     return square(power3(x));
 }
@@ -402,8 +385,7 @@ power6(T x)
  *  \return x^12
  */
 template <typename T>
-T
-power12(T x)
+T power12(T x)
 {
     return square(power6(x));
 }
@@ -416,8 +398,8 @@ power12(T x)
  */
 static inline real series_sinhx(real x)
 {
-    real x2 = x*x;
-    return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
+    real x2 = x * x;
+    return (1 + (x2 / 6.0) * (1 + (x2 / 20.0) * (1 + (x2 / 42.0) * (1 + (x2 / 72.0) * (1 + (x2 / 110.0))))));
 }
 
 /*! \brief Inverse error function, double precision.

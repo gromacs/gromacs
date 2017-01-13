@@ -74,7 +74,7 @@ namespace ocl
  *         FileIOError     if a file I/O error prevents returning a valid compiled program.
  *         InternalError   if an OpenCL API error prevents returning a valid compiled program. */
 cl_program
-compileProgram(FILE              *fplog,
+compileProgram(FILE *             fplog,
                const std::string &kernelBaseFilename,
                const std::string &extraDefines,
                cl_context         context,

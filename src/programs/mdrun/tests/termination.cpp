@@ -70,7 +70,7 @@ typedef MdrunTestFixture MdrunTerminationTest;
 
 TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
 {
-    CommandLine       mdrunCaller;
+    CommandLine mdrunCaller;
     mdrunCaller.append("mdrun");
     TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
 

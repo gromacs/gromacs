@@ -56,7 +56,7 @@ struct t_trxframe;
  *
  * Handles all I/O errors internally via fatal error
  */
-void gmx_tng_open(const char       *filename,
+void gmx_tng_open(const char *      filename,
                   char              mode,
                   tng_trajectory_t *tng_data_p);
 
@@ -121,11 +121,11 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                     gmx_int64_t      step,
                     real             elapsedPicoSeconds,
                     real             lambda,
-                    const rvec      *box,
+                    const rvec *     box,
                     int              nAtoms,
-                    const rvec      *x,
-                    const rvec      *v,
-                    const rvec      *f);
+                    const rvec *     x,
+                    const rvec *     v,
+                    const rvec *     f);
 
 /*! \brief Write the current frame set to disk. Perform compression
  * etc.
@@ -142,14 +142,14 @@ void fflush_tng(tng_trajectory_t tng);
 float gmx_tng_get_time_of_final_frame(tng_trajectory_t tng);
 
 /*! \brief Prepare to write TNG output from trajectory conversion tools */
-void gmx_prepare_tng_writing(const char              *filename,
+void gmx_prepare_tng_writing(const char *             filename,
                              char                     mode,
-                             tng_trajectory_t        *in,
-                             tng_trajectory_t        *out,
+                             tng_trajectory_t *       in,
+                             tng_trajectory_t *       out,
                              int                      nAtoms,
                              const struct gmx_mtop_t *mtop,
-                             const int               *index,
-                             const char              *indexGroupName);
+                             const int *              index,
+                             const char *             indexGroupName);
 
 /*! \brief Write a trxframe to a TNG file
  *
@@ -161,49 +161,49 @@ void gmx_prepare_tng_writing(const char              *filename,
  * parameter natoms supports writing an index-group subset of the
  * atoms.
  */
-void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
-                                 const t_trxframe       *frame,
-                                 int                     natoms);
+void gmx_write_tng_from_trxframe(tng_trajectory_t  output,
+                                 const t_trxframe *frame,
+                                 int               natoms);
 
 /*! \brief Creates a molecule containing only the indexed atoms and sets
  * the number of all other molecules to 0. Works similar to a
  * selection group. */
 void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
                                  const int        nind,
-                                 const int       *ind,
-                                 const char      *name);
+                                 const int *      ind,
+                                 const char *     name);
 
 /*! \brief Read the first/next TNG frame. */
-gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
-                                 struct t_trxframe          *fr,
-                                 gmx_int64_t                *requestedIds,
-                                 int                         numRequestedIds);
+gmx_bool gmx_read_next_tng_frame(tng_trajectory_t   input,
+                                 struct t_trxframe *fr,
+                                 gmx_int64_t *      requestedIds,
+                                 int                numRequestedIds);
 
 /*! \brief Print the molecule system to stream */
 void gmx_print_tng_molecule_system(tng_trajectory_t input,
-                                   FILE            *stream);
+                                   FILE *           stream);
 
 /*! \brief Get a list of block IDs present in the next frame with data. */
-gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t     input,
-                                                    int                  frame,
-                                                    int                  nRequestedIds,
-                                                    gmx_int64_t         *requestedIds,
-                                                    gmx_int64_t         *nextFrame,
-                                                    gmx_int64_t         *nBlocks,
-                                                    gmx_int64_t        **blockIds);
+gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t input,
+                                                    int              frame,
+                                                    int              nRequestedIds,
+                                                    gmx_int64_t *    requestedIds,
+                                                    gmx_int64_t *    nextFrame,
+                                                    gmx_int64_t *    nBlocks,
+                                                    gmx_int64_t **   blockIds);
 
 /*! \brief Get data of the next frame with data from the data block
  * with the specified block ID. */
-gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
-                                                   gmx_int64_t          blockId,
-                                                   real               **values,
-                                                   gmx_int64_t         *frameNumber,
-                                                   double              *frameTime,
-                                                   gmx_int64_t         *nValuesPerFrame,
-                                                   gmx_int64_t         *nAtoms,
-                                                   real                *prec,
-                                                   char                *name,
-                                                   int                  maxLen,
-                                                   gmx_bool            *bOK);
+gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t input,
+                                                   gmx_int64_t      blockId,
+                                                   real **          values,
+                                                   gmx_int64_t *    frameNumber,
+                                                   double *         frameTime,
+                                                   gmx_int64_t *    nValuesPerFrame,
+                                                   gmx_int64_t *    nAtoms,
+                                                   real *           prec,
+                                                   char *           name,
+                                                   int              maxLen,
+                                                   gmx_bool *       bOK);
 
 #endif /* GMX_FILEIO_TNGIO_H */

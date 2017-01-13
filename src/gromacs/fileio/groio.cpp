@@ -58,7 +58,7 @@
 
 static void get_coordnum_fp(FILE *in, char *title, int *natoms)
 {
-    char line[STRLEN+1];
+    char line[STRLEN + 1];
 
     fgets2(title, STRLEN, in);
     fgets2(line, STRLEN, in);
@@ -87,15 +87,15 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                            t_symtab *symtab, t_atoms *atoms, int *ndec,
                            rvec x[], rvec *v, matrix box)
 {
-    char       name[6];
-    char       resname[6], oldresname[6];
-    char       line[STRLEN+1], *ptr;
-    char       buf[256];
-    double     x1, y1, z1, x2, y2, z2;
-    rvec       xmin, xmax;
-    int        natoms, i, m, resnr, newres, oldres, ddist, c;
-    gmx_bool   bFirst, bVel, oldResFirst;
-    char      *p1, *p2, *p3;
+    char     name[6];
+    char     resname[6], oldresname[6];
+    char     line[STRLEN + 1], *ptr;
+    char     buf[256];
+    double   x1, y1, z1, x2, y2, z2;
+    rvec     xmin, xmax;
+    int      natoms, i, m, resnr, newres, oldres, ddist, c;
+    gmx_bool bFirst, bVel, oldResFirst;
+    char *   p1, *p2, *p3;
 
     oldres      = -1;
     newres      = -1;
@@ -126,8 +126,8 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
 
     bVel = FALSE;
 
-    resname[0]     = '\0';
-    oldresname[0]  = '\0';
+    resname[0]    = '\0';
+    oldresname[0] = '\0';
 
     /* just pray the arrays are big enough */
     for (i = 0; (i < natoms); i++)
@@ -135,11 +135,11 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         if ((fgets2(line, STRLEN, in)) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d",
-                      infile, i+2);
+                      infile, i + 2);
         }
         if (strlen(line) < 39)
         {
-            gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile, i+1, line);
+            gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile, i + 1, line);
         }
 
         /* determine read precision from distance between periods
@@ -176,7 +176,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         memcpy(name, line, 5);
         name[5] = '\0';
         sscanf(name, "%d", &resnr);
-        sscanf(line+5, "%5s", resname);
+        sscanf(line + 5, "%5s", resname);
 
         if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)))
         {
@@ -197,7 +197,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         }
 
         /* atomname */
-        std::memcpy(name, line+10, 5);
+        std::memcpy(name, line + 10, 5);
         atoms->atomname[i] = put_symtab(symtab, name);
 
         /* Copy resname to oldresname after we are done with the sanity check above */
@@ -280,7 +280,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         }
         for (m = 0; (m < DIM); m++)
         {
-            box[m][m] = (xmax[m]-xmin[m]);
+            box[m][m] = (xmax[m] - xmin[m]);
         }
         fprintf(stderr, "Generated a cubic box %8.3f x %8.3f x %8.3f\n",
                 box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
@@ -430,8 +430,8 @@ static const char *get_hconf_format(bool haveVelocities)
 
 static void write_hconf_box(FILE *out, const matrix box)
 {
-    if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ] ||
-        box[ZZ][XX] || box[ZZ][YY])
+    if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ]
+        || box[ZZ][XX] || box[ZZ][YY])
     {
         fprintf(out, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
                 box[XX][XX], box[YY][YY], box[ZZ][ZZ],
@@ -462,28 +462,28 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
         ai = index[i];
 
         resind = atoms->atom[ai].resind;
-        std::strncpy(resnm, " ??? ", sizeof(resnm)-1);
+        std::strncpy(resnm, " ??? ", sizeof(resnm) - 1);
         if (resind < atoms->nres)
         {
-            std::strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
+            std::strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm) - 1);
             resnr = atoms->resinfo[resind].nr;
         }
         else
         {
-            std::strncpy(resnm, " ??? ", sizeof(resnm)-1);
+            std::strncpy(resnm, " ??? ", sizeof(resnm) - 1);
             resnr = resind + 1;
         }
 
         if (atoms->atom)
         {
-            std::strncpy(nm, *atoms->atomname[ai], sizeof(nm)-1);
+            std::strncpy(nm, *atoms->atomname[ai], sizeof(nm) - 1);
         }
         else
         {
-            std::strncpy(nm, " ??? ", sizeof(nm)-1);
+            std::strncpy(nm, " ??? ", sizeof(nm) - 1);
         }
 
-        fprintf(out, "%5d%-5.5s%5.5s%5d", resnr%100000, resnm, nm, (ai+1)%100000);
+        fprintf(out, "%5d%-5.5s%5.5s%5d", resnr % 100000, resnm, nm, (ai + 1) % 100000);
         /* next fprintf uses built format string */
         if (v)
         {
@@ -507,8 +507,8 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
 {
     int                     i, resnr;
     gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    char                   *atomname, *resname;
+    const t_atom *          atom;
+    char *                  atomname, *resname;
 
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
@@ -521,7 +521,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
         gmx_mtop_atomloop_all_names(aloop, &atomname, &resnr, &resname);
 
         fprintf(out, "%5d%-5.5s%5.5s%5d",
-                resnr%100000, resname, atomname, (i+1)%100000);
+                resnr % 100000, resname, atomname, (i + 1) % 100000);
         /* next fprintf uses built format string */
         if (v)
         {
@@ -543,8 +543,8 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
 void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
                    const rvec *x, const rvec *v, const matrix box)
 {
-    int     *aa;
-    int      i;
+    int *aa;
+    int  i;
 
     snew(aa, atoms->nr);
     for (i = 0; (i < atoms->nr); i++)

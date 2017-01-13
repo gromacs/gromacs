@@ -76,25 +76,25 @@ typedef struct
 
 typedef struct gmx_wallcycle
 {
-    wallcc_t        *wcc;
+    wallcc_t *wcc;
     /* did we detect one or more invalid cycle counts */
-    gmx_bool         haveInvalidCount;
+    gmx_bool haveInvalidCount;
     /* variables for testing/debugging */
-    gmx_bool         wc_barrier;
-    wallcc_t        *wcc_all;
-    int              wc_depth;
+    gmx_bool  wc_barrier;
+    wallcc_t *wcc_all;
+    int       wc_depth;
 #ifdef DEBUG_WCYCLE
 #define DEPTH_MAX 6
-    int               counterlist[DEPTH_MAX];
-    int               count_depth;
+    int counterlist[DEPTH_MAX];
+    int count_depth;
 #endif
-    int               ewc_prev;
-    gmx_cycles_t      cycle_prev;
-    gmx_int64_t       reset_counters;
+    int          ewc_prev;
+    gmx_cycles_t cycle_prev;
+    gmx_int64_t  reset_counters;
 #if GMX_MPI
-    MPI_Comm          mpi_comm_mygroup;
+    MPI_Comm mpi_comm_mygroup;
 #endif
-    wallcc_t         *wcsc;
+    wallcc_t *wcsc;
 } gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 printing characters
@@ -143,12 +143,12 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
 
     snew(wc, 1);
 
-    wc->haveInvalidCount    = FALSE;
-    wc->wc_barrier          = FALSE;
-    wc->wcc_all             = nullptr;
-    wc->wc_depth            = 0;
-    wc->ewc_prev            = -1;
-    wc->reset_counters      = resetstep;
+    wc->haveInvalidCount = FALSE;
+    wc->wc_barrier       = FALSE;
+    wc->wcc_all          = nullptr;
+    wc->wc_depth         = 0;
+    wc->ewc_prev         = -1;
+    wc->reset_counters   = resetstep;
 
 #if GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
@@ -169,7 +169,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
         {
             fprintf(fplog, "\nWill time all the code during the run\n\n");
         }
-        snew(wc->wcc_all, ewcNR*ewcNR);
+        snew(wc->wcc_all, ewcNR * ewcNR);
     }
 
     if (useCycleSubcounters)
@@ -214,8 +214,8 @@ static void wallcycle_all_start(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
 
 static void wallcycle_all_stop(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
 {
-    wc->wcc_all[wc->ewc_prev*ewcNR+ewc].n += 1;
-    wc->wcc_all[wc->ewc_prev*ewcNR+ewc].c += cycle - wc->cycle_prev;
+    wc->wcc_all[wc->ewc_prev * ewcNR + ewc].n += 1;
+    wc->wcc_all[wc->ewc_prev * ewcNR + ewc].c += cycle - wc->cycle_prev;
 }
 
 
@@ -326,17 +326,17 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
      * large, especially for ewcRUN. If we detect a negative count,
      * we will not print the cycle accounting table.
      */
-    cycle                    = gmx_cycles_read();
+    cycle = gmx_cycles_read();
     if (cycle >= wc->wcc[ewc].start)
     {
-        last                 = cycle - wc->wcc[ewc].start;
+        last = cycle - wc->wcc[ewc].start;
     }
     else
     {
         last                 = 0;
         wc->haveInvalidCount = TRUE;
     }
-    wc->wcc[ewc].c          += last;
+    wc->wcc[ewc].c += last;
     wc->wcc[ewc].n++;
     if (wc->wcc_all)
     {
@@ -378,7 +378,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
 
     if (wc->wcc_all)
     {
-        for (i = 0; i < ewcNR*ewcNR; i++)
+        for (i = 0; i < ewcNR * ewcNR; i++)
         {
             wc->wcc_all[i].n = 0;
             wc->wcc_all[i].c = 0;
@@ -416,7 +416,7 @@ static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
         else
         {
             /* Something is wrong with the cycle counting */
-            wcc[ewc_main].c  = 0;
+            wcc[ewc_main].c = 0;
         }
     }
 }
@@ -438,7 +438,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
             {
                 for (int j = 0; j < ewcNR; j++)
                 {
-                    wc->wcc_all[i*ewcNR+j].c *= nthreads_pme;
+                    wc->wcc_all[i * ewcNR + j].c *= nthreads_pme;
                 }
             }
         }
@@ -450,7 +450,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
             {
                 for (int j = 0; j < ewcNR; j++)
                 {
-                    wc->wcc_all[i*ewcNR+j].c *= nthreads_pp;
+                    wc->wcc_all[i * ewcNR + j].c *= nthreads_pp;
                 }
             }
         }
@@ -479,13 +479,13 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
 WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     WallcycleCounts cycles_sum;
-    wallcc_t       *wcc;
-    double          cycles[ewcNR+ewcsNR];
+    wallcc_t *      wcc;
+    double          cycles[ewcNR + ewcsNR];
 #if GMX_MPI
-    double          cycles_n[ewcNR+ewcsNR+1];
+    double cycles_n[ewcNR + ewcsNR + 1];
 #endif
-    int             i;
-    int             nsum;
+    int i;
+    int nsum;
 
     if (wc == nullptr)
     {
@@ -525,7 +525,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 #if GMX_MPI
         cycles_n[i] = static_cast<double>(wcc[i].n);
 #endif
-        cycles[i]   = static_cast<double>(wcc[i].c);
+        cycles[i] = static_cast<double>(wcc[i].c);
     }
     nsum = ewcNR;
     if (wc->wcsc)
@@ -533,9 +533,9 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         for (i = 0; i < ewcsNR; i++)
         {
 #if GMX_MPI
-            cycles_n[ewcNR+i] = static_cast<double>(wc->wcsc[i].n);
+            cycles_n[ewcNR + i] = static_cast<double>(wc->wcsc[i].n);
 #endif
-            cycles[ewcNR+i]   = static_cast<double>(wc->wcsc[i].c);
+            cycles[ewcNR + i] = static_cast<double>(wc->wcsc[i].c);
         }
         nsum += ewcsNR;
     }
@@ -543,7 +543,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 #if GMX_MPI
     if (cr->nnodes > 1)
     {
-        double buf[ewcNR+ewcsNR+1];
+        double buf[ewcNR + ewcsNR + 1];
 
         // TODO this code is used only at the end of the run, so we
         // can just do a simple reduce of haveInvalidCount in
@@ -561,7 +561,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         {
             for (i = 0; i < ewcsNR; i++)
             {
-                wc->wcsc[i].n = static_cast<int>(buf[ewcNR+i] + 0.5);
+                wc->wcsc[i].n = static_cast<int>(buf[ewcNR + i] + 0.5);
             }
         }
 
@@ -573,16 +573,16 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         {
             double *buf_all, *cyc_all;
 
-            snew(cyc_all, ewcNR*ewcNR);
-            snew(buf_all, ewcNR*ewcNR);
-            for (i = 0; i < ewcNR*ewcNR; i++)
+            snew(cyc_all, ewcNR * ewcNR);
+            snew(buf_all, ewcNR * ewcNR);
+            for (i = 0; i < ewcNR * ewcNR; i++)
             {
                 cyc_all[i] = wc->wcc_all[i].c;
             }
             // TODO Use MPI_Reduce
-            MPI_Allreduce(cyc_all, buf_all, ewcNR*ewcNR, MPI_DOUBLE, MPI_SUM,
+            MPI_Allreduce(cyc_all, buf_all, ewcNR * ewcNR, MPI_DOUBLE, MPI_SUM,
                           cr->mpi_comm_mysim);
-            for (i = 0; i < ewcNR*ewcNR; i++)
+            for (i = 0; i < ewcNR * ewcNR; i++)
             {
                 wc->wcc_all[i].c = static_cast<gmx_cycles_t>(buf_all[i]);
             }
@@ -641,11 +641,11 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
             ncalls_str[0]   = 0;
         }
         /* Convert the cycle count to wallclock time for this task */
-        wallt = c_sum*c2t;
+        wallt = c_sum * c2t;
 
         fprintf(fplog, " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
                 name, nnodes_str, nthreads_str, ncalls_str, wallt,
-                c_sum*1e-9, percentage);
+                c_sum * 1e-9, percentage);
     }
 }
 
@@ -658,7 +658,7 @@ static void print_gputimes(FILE *fplog, const char *name,
     if (n > 0)
     {
         snprintf(num, sizeof(num), "%10d", n);
-        snprintf(avg_perf, sizeof(avg_perf), "%10.3f", t/n);
+        snprintf(avg_perf, sizeof(avg_perf), "%10.3f", t / n);
     }
     else
     {
@@ -668,12 +668,12 @@ static void print_gputimes(FILE *fplog, const char *name,
     if (t != tot_t && tot_t > 0)
     {
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
-                name, num, t/1000, avg_perf, 100 * t/tot_t);
+                name, num, t / 1000, avg_perf, 100 * t / tot_t);
     }
     else
     {
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
-                name, "", t/1000, avg_perf, 100.0);
+                name, "", t / 1000, avg_perf, 100.0);
     }
 }
 
@@ -730,11 +730,11 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     GMX_ASSERT(nth_pme > 0, "Number of PME threads must be >0");
     GMX_ASSERT(nnodes > 0, "Number of nodes must be >0");
     GMX_ASSERT(npme >= 0, "Number of PME nodes cannot be negative");
-    npp     = nnodes - npme;
+    npp = nnodes - npme;
     /* npme is the number of PME-only ranks used, and we always do PP work */
     GMX_ASSERT(npp > 0, "Number of particle-particle nodes must be >0");
 
-    nth_tot = npp*nth_pp + npme*nth_pme;
+    nth_tot = npp * nth_pp + npme * nth_pme;
 
     /* When using PME-only nodes, the next line is valid for both
        PP-only and PME-only nodes because they started ewcRUN at the
@@ -765,11 +765,11 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
 
 
     /* Conversion factor from cycles to seconds */
-    c2t     = realtime/tot;
-    c2t_pp  = c2t * nth_tot / static_cast<double>(npp*nth_pp);
+    c2t    = realtime / tot;
+    c2t_pp = c2t * nth_tot / static_cast<double>(npp * nth_pp);
     if (npme > 0)
     {
-        c2t_pme = c2t * nth_tot / static_cast<double>(npme*nth_pme);
+        c2t_pme = c2t * nth_tot / static_cast<double>(npme * nth_pme);
     }
     else
     {
@@ -781,7 +781,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     print_header(fplog, npp, nth_pp, npme, nth_pme);
 
     fprintf(fplog, "%s\n", hline);
-    for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
+    for (i = ewcPPDURINGPME + 1; i < ewcNR; i++)
     {
         if (is_pme_subcounter(i))
         {
@@ -818,8 +818,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                 snprintf(buf, 20, "%-9.9s %-9.9s", wcn[i], wcn[j]);
                 print_cycles(fplog, c2t_pp, buf,
                              npp, nth_pp,
-                             wc->wcc_all[i*ewcNR+j].n,
-                             wc->wcc_all[i*ewcNR+j].c,
+                             wc->wcc_all[i * ewcNR + j].n,
+                             wc->wcc_all[i * ewcNR + j].c,
                              tot);
             }
         }
@@ -846,7 +846,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     {
         fprintf(fplog, " Breakdown of PME mesh computation\n");
         fprintf(fplog, "%s\n", hline);
-        for (i = ewcPPDURINGPME+1; i < ewcNR; i++)
+        for (i = ewcPPDURINGPME + 1; i < ewcNR; i++)
         {
             if (is_pme_subcounter(i))
             {
@@ -866,7 +866,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         {
             print_cycles(fplog, c2t_pp, wcsn[i],
                          npp, nth_pp,
-                         wc->wcsc[i].n, cyc_sum[ewcNR+i], tot);
+                         wc->wcsc[i].n, cyc_sum[ewcNR + i], tot);
         }
         fprintf(fplog, "%s\n", hline);
     }
@@ -897,7 +897,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         {
             tot_cpu_overlap += wc->wcc[ewcPMEMESH].c;
         }
-        tot_cpu_overlap *= realtime*1000/tot; /* convert s to ms */
+        tot_cpu_overlap *= realtime * 1000 / tot; /* convert s to ms */
 
         fprintf(fplog, "\n GPU timings\n%s\n", hline);
         fprintf(fplog, " Computing:                         Count  Wall t (s)      ms/step       %c\n", '%');
@@ -924,11 +924,11 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         print_gputimes(fplog, "Total ", gpu_t->nb_c, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);
 
-        gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
+        gpu_cpu_ratio = tot_gpu / tot_cpu_overlap;
         if (gpu_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)
         {
             fprintf(fplog, "\nAverage per-step force GPU/CPU evaluation time ratio: %.3f ms/%.3f ms = %.3f\n",
-                    tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
+                    tot_gpu / gpu_t->nb_c, tot_cpu_overlap / wc->wcc[ewcFORCE].n,
                     gpu_cpu_ratio);
         }
 
@@ -981,9 +981,9 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                 "call, so timings are not those of real runs.");
     }
 
-    if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0 &&
-        (cyc_sum[ewcDOMDEC] > tot*0.1 ||
-         cyc_sum[ewcNS] > tot*0.1))
+    if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0
+        && (cyc_sum[ewcDOMDEC] > tot * 0.1
+            || cyc_sum[ewcNS] > tot * 0.1))
     {
         /* Only the sim master calls this function, so always print to stderr */
         if (wc->wcc[ewcDOMDEC].n == 0)
@@ -991,7 +991,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cyc_sum[ewcNS]/tot+0.5));
+                    (int)(100 * cyc_sum[ewcNS] / tot + 0.5));
         }
         else
         {
@@ -999,17 +999,17 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                     "NOTE: %d %% of the run time was spent in domain decomposition,\n"
                     "      %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100*cyc_sum[ewcDOMDEC]/tot+0.5),
-                    (int)(100*cyc_sum[ewcNS]/tot+0.5));
+                    (int)(100 * cyc_sum[ewcDOMDEC] / tot + 0.5),
+                    (int)(100 * cyc_sum[ewcNS] / tot + 0.5));
         }
     }
 
-    if (cyc_sum[ewcMoveE] > tot*0.05)
+    if (cyc_sum[ewcMoveE] > tot * 0.05)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "NOTE: %d %% of the run time was spent communicating energies,\n"
                 "      you might want to use the -gcom option of mdrun\n",
-                (int)(100*cyc_sum[ewcMoveE]/tot+0.5));
+                (int)(100 * cyc_sum[ewcMoveE] / tot + 0.5));
     }
 }
 

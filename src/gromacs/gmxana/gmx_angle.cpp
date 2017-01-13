@@ -64,17 +64,17 @@ static void dump_dih_trr(int nframes, int nangles, real **dih, const char *fn,
 {
     int              i, j, k, l, m, na;
     struct t_fileio *fio;
-    rvec            *x;
+    rvec *           x;
     matrix           box = {{2, 0, 0}, {0, 2, 0}, {0, 0, 2}};
 
-    na = (nangles*2);
+    na = (nangles * 2);
     if ((na % 3) != 0)
     {
-        na = 1+na/3;
+        na = 1 + na / 3;
     }
     else
     {
-        na = na/3;
+        na = na / 3;
     }
     printf("There are %d dihedrals. Will fill %d atom positions with cos/sin\n",
            nangles, na);
@@ -151,25 +151,25 @@ int gmx_g_angle(int argc, char *argv[])
         "Counting transitions only works for dihedrals with multiplicity 3"
     };
 
-    FILE              *out;
-    real               dt;
-    int                isize;
-    int               *index;
-    char              *grpname;
-    real               maxang, S2, norm_fac, maxstat;
-    unsigned long      mode;
-    int                nframes, maxangstat, mult, *angstat;
-    int                i, j, nangles, first, last;
-    gmx_bool           bAver, bRb, bPeriodic,
-                       bFrac,               /* calculate fraction too?  */
-                       bTrans,              /* worry about transtions too? */
-                       bCorr;               /* correlation function ? */
-    real              aver, aver2, aversig; /* fraction trans dihedrals */
-    double            tfrac = 0;
-    char              title[256];
-    real            **dih = nullptr; /* mega array with all dih. angles at all times*/
-    real             *time, *trans_frac, *aver_angle;
-    t_filenm          fnm[] = {
+    FILE *        out;
+    real          dt;
+    int           isize;
+    int *         index;
+    char *        grpname;
+    real          maxang, S2, norm_fac, maxstat;
+    unsigned long mode;
+    int           nframes, maxangstat, mult, *angstat;
+    int           i, j, nangles, first, last;
+    gmx_bool      bAver, bRb, bPeriodic,
+                  bFrac,                    /* calculate fraction too?  */
+                  bTrans,                   /* worry about transtions too? */
+                  bCorr;                    /* correlation function ? */
+    real     aver, aver2, aversig;          /* fraction trans dihedrals */
+    double   tfrac = 0;
+    char     title[256];
+    real **  dih = nullptr;          /* mega array with all dih. angles at all times*/
+    real *   time, *trans_frac, *aver_angle;
+    t_filenm fnm[] = {
         { efTRX, "-f", nullptr,  ffREAD  },
         { efNDX, nullptr, "angle",  ffREAD  },
         { efXVG, "-od", "angdist",  ffWRITE },
@@ -182,7 +182,7 @@ int gmx_g_angle(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     int               npargs;
-    t_pargs          *ppa;
+    t_pargs *         ppa;
     gmx_output_env_t *oenv;
 
     npargs = asize(pa);
@@ -229,11 +229,11 @@ int gmx_g_angle(int argc, char *argv[])
     }
 
     /* Calculate bin size */
-    maxangstat = static_cast<int>(maxang/binwidth+0.5);
-    binwidth   = maxang/maxangstat;
+    maxangstat = static_cast<int>(maxang / binwidth + 0.5);
+    binwidth   = maxang / maxangstat;
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
-    nangles = isize/mult;
+    nangles = isize / mult;
     if ((isize % mult) != 0)
     {
         gmx_fatal(FARGS, "number of index elements not multiple of %d, "
@@ -289,7 +289,7 @@ int gmx_g_angle(int argc, char *argv[])
                  &nframes, &time, isize, index, &trans_frac, &aver_angle, dih,
                  oenv);
 
-    dt = (time[nframes-1]-time[0])/(nframes-1);
+    dt = (time[nframes - 1] - time[0]) / (nframes - 1);
 
     if (bAver)
     {
@@ -298,7 +298,7 @@ int gmx_g_angle(int argc, char *argv[])
                        title, "Time (ps)", "Angle (degrees)", oenv);
         for (i = 0; (i < nframes); i++)
         {
-            fprintf(out, "%10.5f  %8.3f", time[i], aver_angle[i]*RAD2DEG);
+            fprintf(out, "%10.5f  %8.3f", time[i], aver_angle[i] * RAD2DEG);
             if (bALL)
             {
                 for (j = 0; (j < nangles); j++)
@@ -306,11 +306,11 @@ int gmx_g_angle(int argc, char *argv[])
                     if (bPBC)
                     {
                         real dd = dih[j][i];
-                        fprintf(out, "  %8.3f", std::atan2(std::sin(dd), std::cos(dd))*RAD2DEG);
+                        fprintf(out, "  %8.3f", std::atan2(std::sin(dd), std::cos(dd)) * RAD2DEG);
                     }
                     else
                     {
-                        fprintf(out, "  %8.3f", dih[j][i]*RAD2DEG);
+                        fprintf(out, "  %8.3f", dih[j][i] * RAD2DEG);
                     }
                 }
             }
@@ -359,7 +359,7 @@ int gmx_g_angle(int argc, char *argv[])
 
             if (bChandler)
             {
-                real     dval, sixty = DEG2RAD*60;
+                real     dval, sixty = DEG2RAD * 60;
                 gmx_bool bTest;
 
                 for (i = 0; (i < nangles); i++)
@@ -377,7 +377,7 @@ int gmx_g_angle(int argc, char *argv[])
                         }
                         if (bTest)
                         {
-                            dih[i][j] = dval-tfrac;
+                            dih[i][j] = dval - tfrac;
                         }
                         else
                         {
@@ -402,11 +402,11 @@ int gmx_g_angle(int argc, char *argv[])
 
 
     /* Determine the non-zero part of the distribution */
-    for (first = 0; (first < maxangstat-1) && (angstat[first+1] == 0); first++)
+    for (first = 0; (first < maxangstat - 1) && (angstat[first + 1] == 0); first++)
     {
         ;
     }
-    for (last = maxangstat-1; (last > 0) && (angstat[last-1] == 0); last--)
+    for (last = maxangstat - 1; (last > 0) && (angstat[last - 1] == 0); last--)
     {
         ;
     }
@@ -414,12 +414,12 @@ int gmx_g_angle(int argc, char *argv[])
     aver = aver2 = 0;
     for (i = 0; (i < nframes); i++)
     {
-        aver  += RAD2DEG*aver_angle[i];
-        aver2 += gmx::square(RAD2DEG*aver_angle[i]);
+        aver  += RAD2DEG * aver_angle[i];
+        aver2 += gmx::square(RAD2DEG * aver_angle[i]);
     }
     aver   /= nframes;
     aver2  /= nframes;
-    aversig = std::sqrt(aver2-gmx::square(aver));
+    aversig = std::sqrt(aver2 - gmx::square(aver));
     printf("Found points in the range from %d to %d (max %d)\n",
            first, last, maxangstat);
     printf(" < angle >  = %g\n", aver);
@@ -438,20 +438,20 @@ int gmx_g_angle(int argc, char *argv[])
         fprintf(stderr, "Order parameter S^2 = %g\n", S2);
     }
 
-    bPeriodic = (mult == 4) && (first == 0) && (last == maxangstat-1);
+    bPeriodic = (mult == 4) && (first == 0) && (last == maxangstat - 1);
 
     out = xvgropen(opt2fn("-od", NFILE, fnm), title, "Degrees", "", oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out, "@    subtitle \"average angle: %g\\So\\N\"\n", aver);
     }
-    norm_fac = 1.0/(nangles*nframes*binwidth);
+    norm_fac = 1.0 / (nangles * nframes * binwidth);
     if (bPeriodic)
     {
         maxstat = 0;
         for (i = first; (i <= last); i++)
         {
-            maxstat = std::max(maxstat, angstat[i]*norm_fac);
+            maxstat = std::max(maxstat, angstat[i] * norm_fac);
         }
         if (output_env_get_print_xvgr_codes(oenv))
         {
@@ -459,7 +459,7 @@ int gmx_g_angle(int argc, char *argv[])
             fprintf(out, "@    world xmin -180\n");
             fprintf(out, "@    world xmax  180\n");
             fprintf(out, "@    world ymin 0\n");
-            fprintf(out, "@    world ymax %g\n", maxstat*1.05);
+            fprintf(out, "@    world ymax %g\n", maxstat * 1.05);
             fprintf(out, "@    xaxis  tick major 60\n");
             fprintf(out, "@    xaxis  tick minor 30\n");
             fprintf(out, "@    yaxis  tick major 0.005\n");
@@ -468,12 +468,12 @@ int gmx_g_angle(int argc, char *argv[])
     }
     for (i = first; (i <= last); i++)
     {
-        fprintf(out, "%10g  %10f\n", i*binwidth+180.0-maxang, angstat[i]*norm_fac);
+        fprintf(out, "%10g  %10f\n", i * binwidth + 180.0 - maxang, angstat[i] * norm_fac);
     }
     if (bPeriodic)
     {
         /* print first bin again as last one */
-        fprintf(out, "%10g  %10f\n", 180.0, angstat[0]*norm_fac);
+        fprintf(out, "%10g  %10f\n", 180.0, angstat[0] * norm_fac);
     }
 
     xvgrclose(out);

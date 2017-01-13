@@ -103,9 +103,9 @@ class SimdBaseTest : public ::testing::Test
          */
         SimdBaseTest() :
 #if GMX_DOUBLE
-            ulpTol_((1LL << (2 + std::numeric_limits<double>::digits-GMX_SIMD_ACCURACY_BITS_DOUBLE))),
+            ulpTol_((1LL << (2 + std::numeric_limits<double>::digits - GMX_SIMD_ACCURACY_BITS_DOUBLE))),
 #else
-            ulpTol_((1LL << (2 + std::numeric_limits<float>::digits-GMX_SIMD_ACCURACY_BITS_SINGLE))),
+            ulpTol_((1LL << (2 + std::numeric_limits<float>::digits - GMX_SIMD_ACCURACY_BITS_SINGLE))),
 #endif
             absTol_(0), range_(std::pair<real, real>(1, 10))
         {
@@ -124,7 +124,7 @@ class SimdBaseTest : public ::testing::Test
         /*! \brief Change math function testing range from the default [1,10]. */
         void setRange(real low, real high) { range_.first = low; range_.second = high; }
 
-        static int  s_nPoints;    //!< Number of test points to use, settable on command line.
+        static int s_nPoints;     //!< Number of test points to use, settable on command line.
 
         /*! \brief Compare two std::vector<real> for approximate equality.
          *
@@ -159,9 +159,8 @@ class SimdBaseTest : public ::testing::Test
          * in the vector test variable is within the class tolerances of the corresponding
          * reference elements.
          */
-        template <typename T> ::testing::AssertionResult
-        compareVectorEq(const char * refExpr,  const char * tstExpr,
-                        const std::vector<T> &ref, const std::vector<T> &tst)
+        template <typename T> ::testing::AssertionResult compareVectorEq(const char * refExpr,  const char * tstExpr,
+                                                                         const std::vector<T> &ref, const std::vector<T> &tst)
         {
             if (ref == tst)
             {
@@ -177,9 +176,9 @@ class SimdBaseTest : public ::testing::Test
         }
 
     protected:
-        std::int64_t           ulpTol_;       //!< Current tolerance in units-in-last-position.
-        real                   absTol_;       //!< Current absolute tolerance.
-        std::pair<real, real>  range_;        //!< Range for math function tests.
+        std::int64_t          ulpTol_;        //!< Current tolerance in units-in-last-position.
+        real                  absTol_;        //!< Current absolute tolerance.
+        std::pair<real, real> range_;         //!< Range for math function tests.
 };
 
 }      // namespace

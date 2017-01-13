@@ -76,11 +76,11 @@ void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm
         m = atoms->atom[index[i]].m;
         for (d = 0; d < DIM; d++)
         {
-            xcm[d] += m*x[index[i]][d];
+            xcm[d] += m * x[index[i]][d];
         }
         tm += m;
     }
-    svmul(1/tm, xcm, xcm);
+    svmul(1 / tm, xcm, xcm);
     for (i = 0; i < atoms->nr; i++)
     {
         rvec_dec(x[i], xcm);
@@ -96,7 +96,7 @@ int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
     r++;
     for (i = 1; i < isize; i++)
     {
-        if (atom[index[i]].resind != rindex[r-1])
+        if (atom[index[i]].resind != rindex[r - 1])
         {
             rindex[r] = atom[index[i]].resind;
             r++;
@@ -136,7 +136,7 @@ int find_next_match_atoms_in_res(int *i1, int index1[],
     gmx_bool bFW = FALSE;
 
     cmp  = NOTSET;
-    dmax = std::max(m1-*i1, m2-*i2);
+    dmax = std::max(m1 - *i1, m2 - *i2);
     for (dx = 0, dy = 0; dx < dmax && cmp != 0; dx++)
     {
         for (dy = dx; dy < dmax && cmp != 0; dy++)
@@ -148,22 +148,22 @@ int find_next_match_atoms_in_res(int *i1, int index1[],
                     fprintf(debug, ".");
                 }
                 cmp = NOTSET;
-                if (*i1+dx < m1 && *i2+dy < m2)
+                if (*i1 + dx < m1 && *i2 + dy < m2)
                 {
                     bFW = TRUE;
-                    cmp = debug_strcmp(*atnms1[index1[*i1+dx]], *atnms2[index2[*i2+dy]]);
+                    cmp = debug_strcmp(*atnms1[index1[*i1 + dx]], *atnms2[index2[*i2 + dy]]);
                     if (debug)
                     {
-                        fprintf(debug, "(%d %d)", *i1+dx, *i2+dy);
+                        fprintf(debug, "(%d %d)", *i1 + dx, *i2 + dy);
                     }
                 }
-                if (cmp != 0 && *i1+dy < m1 && *i2+dx < m2)
+                if (cmp != 0 && *i1 + dy < m1 && *i2 + dx < m2)
                 {
                     bFW = FALSE;
-                    cmp = debug_strcmp(*atnms1[index1[*i1+dy]], *atnms2[index2[*i2+dx]]);
+                    cmp = debug_strcmp(*atnms1[index1[*i1 + dy]], *atnms2[index2[*i2 + dx]]);
                     if (debug)
                     {
-                        fprintf(debug, "(%d %d)", *i1+dy, *i2+dx);
+                        fprintf(debug, "(%d %d)", *i1 + dy, *i2 + dx);
                     }
                 }
             }
@@ -214,7 +214,7 @@ static int find_next_match_res(int *rnr1, int isize1,
     }
 
     cmp  = NOTSET;
-    dmax = std::max(isize1-rr1, isize2-rr2);
+    dmax = std::max(isize1 - rr1, isize2 - rr2);
     if (debug)
     {
         fprintf(debug, " R:%d-%d:%d-%d:%d ",
@@ -227,34 +227,34 @@ static int find_next_match_res(int *rnr1, int isize1,
             if (dx != dy)
             {
                 cmp = NOTSET;
-                if (rr1+dx < isize1 && rr2+dy < isize2)
+                if (rr1 + dx < isize1 && rr2 + dy < isize2)
                 {
                     bFW = TRUE;
-                    cmp = debug_strcmp(*resinfo1[index1[rr1+dx]].name,
-                                       *resinfo2[index2[rr2+dy]].name);
+                    cmp = debug_strcmp(*resinfo1[index1[rr1 + dx]].name,
+                                       *resinfo2[index2[rr2 + dy]].name);
                     if (debug)
                     {
-                        fprintf(debug, "(%d %d)", rr1+dx, rr2+dy);
+                        fprintf(debug, "(%d %d)", rr1 + dx, rr2 + dy);
                     }
                 }
-                if (cmp != 0 && rr1+dy < isize1 && rr2+dx < isize2)
+                if (cmp != 0 && rr1 + dy < isize1 && rr2 + dx < isize2)
                 {
                     bFW = FALSE;
-                    cmp = debug_strcmp(*resinfo1[index1[rr1+dy]].name,
-                                       *resinfo2[index2[rr2+dx]].name);
+                    cmp = debug_strcmp(*resinfo1[index1[rr1 + dy]].name,
+                                       *resinfo2[index2[rr2 + dx]].name);
                     if (debug)
                     {
-                        fprintf(debug, "(%d %d)", rr1+dy, rr2+dx);
+                        fprintf(debug, "(%d %d)", rr1 + dy, rr2 + dx);
                     }
                 }
-                if (dx != 0 && cmp != 0 && rr1+dx < isize1 && rr2+dx < isize2)
+                if (dx != 0 && cmp != 0 && rr1 + dx < isize1 && rr2 + dx < isize2)
                 {
                     bFF = TRUE;
-                    cmp = debug_strcmp(*resinfo1[index1[rr1+dx]].name,
-                                       *resinfo2[index2[rr2+dx]].name);
+                    cmp = debug_strcmp(*resinfo1[index1[rr1 + dx]].name,
+                                       *resinfo2[index2[rr2 + dx]].name);
                     if (debug)
                     {
-                        fprintf(debug, "(%d %d)", rr1+dx, rr2+dx);
+                        fprintf(debug, "(%d %d)", rr1 + dx, rr2 + dx);
                     }
                 }
                 else
@@ -275,8 +275,8 @@ static int find_next_match_res(int *rnr1, int isize1,
         if (debug)
         {
             fprintf(debug, "%d.%d.%dX%sX%s", dx, rr1, rr2,
-                    *resinfo1[index1[rr1+1]].name,
-                    *resinfo2[index2[rr2+1]].name);
+                    *resinfo1[index1[rr1 + 1]].name,
+                    *resinfo2[index2[rr2 + 1]].name);
         }
         dx = 1;
     }
@@ -336,8 +336,8 @@ void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
     int        atcmp, rescmp;
     int        rnr1, rnr2, prnr1, prnr2;
     int        rsize1, rsize2;
-    int       *rindex1, *rindex2;
-    char    ***atnms1, ***atnms2;
+    int *      rindex1, *rindex2;
+    char ***   atnms1, ***atnms2;
     t_resinfo *resinfo1, *resinfo2;
 
     /* set some handy shortcuts */
@@ -484,7 +484,7 @@ void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
 
 int gmx_confrms(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char *    desc[] = {
         "[THISMODULE] computes the root mean square deviation (RMSD) of two",
         "structures after least-squares fitting the second structure on the first one.",
         "The two structures do NOT need to have the same number of atoms,",
@@ -525,32 +525,32 @@ int gmx_confrms(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* the two structure files */
-    const char       *conf1file, *conf2file, *matchndxfile, *outfile;
-    FILE             *fp;
-    char             *name1, *name2;
-    t_topology       *top1, *top2;
-    int               ePBC1, ePBC2;
-    t_atoms          *atoms1, *atoms2;
-    int               warn = 0;
-    int               at;
-    real             *w_rls, mass, totmass;
-    rvec             *x1, *v1, *x2, *v2, *fit_x;
-    matrix            box1, box2;
+    const char *conf1file, *conf2file, *matchndxfile, *outfile;
+    FILE *      fp;
+    char *      name1, *name2;
+    t_topology *top1, *top2;
+    int         ePBC1, ePBC2;
+    t_atoms *   atoms1, *atoms2;
+    int         warn = 0;
+    int         at;
+    real *      w_rls, mass, totmass;
+    rvec *      x1, *v1, *x2, *v2, *fit_x;
+    matrix      box1, box2;
 
     gmx_output_env_t *oenv;
 
     /* counters */
-    int     i, m;
+    int i, m;
 
     /* center of mass calculation */
-    rvec    xcm1, xcm2;
+    rvec xcm1, xcm2;
 
     /* variables for fit */
-    char    *groupnames1, *groupnames2;
-    int      isize1, isize2;
-    int     *index1, *index2;
-    real     rms, msd, minmsd, maxmsd;
-    real    *msds;
+    char *groupnames1, *groupnames2;
+    int   isize1, isize2;
+    int * index1, *index2;
+    real  rms, msd, minmsd, maxmsd;
+    real *msds;
 
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
@@ -613,12 +613,12 @@ int gmx_confrms(int argc, char *argv[])
             fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
             for (i = 0; i < isize1; i++)
             {
-                fprintf(fp, "%4d%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
+                fprintf(fp, "%4d%s", index1[i] + 1, (i % 15 == 14 || i == isize1 - 1) ? "\n" : " ");
             }
             fprintf(fp, "[ Match_%s_%s ]\n", conf2file, groupnames2);
             for (i = 0; i < isize2; i++)
             {
-                fprintf(fp, "%4d%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
+                fprintf(fp, "%4d%s", index2[i] + 1, (i % 15 == 14 || i == isize2 - 1) ? "\n" : " ");
             }
         }
     }
@@ -639,7 +639,7 @@ int gmx_confrms(int argc, char *argv[])
             {
                 fprintf(stderr,
                         "Warning: atomnames at index %d don't match: %d %s, %d %s\n",
-                        i+1, index1[i]+1, name1, index2[i]+1, name2);
+                        i + 1, index1[i] + 1, name1, index2[i] + 1, name2);
             }
             warn++;
         }
@@ -694,14 +694,14 @@ int gmx_confrms(int argc, char *argv[])
         for (m = 0; m < DIM; m++)
         {
             msd       = gmx::square(x1[index1[at]][m] - x2[index2[at]][m]);
-            rms      += msd*mass;
+            rms      += msd * mass;
             msds[at] += msd;
         }
         maxmsd   = std::max(maxmsd, msds[at]);
         minmsd   = std::min(minmsd, msds[at]);
         totmass += mass;
     }
-    rms = std::sqrt(rms/totmass);
+    rms = std::sqrt(rms / totmass);
 
     printf("Root mean square deviation after lsq fit = %g nm\n", rms);
     if (bBfac)
@@ -763,7 +763,7 @@ int gmx_confrms(int argc, char *argv[])
 /*  atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE; */
                     if (bBfac)
                     {
-                        atoms1->pdbinfo[index1[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
+                        atoms1->pdbinfo[index1[i]].bfac = (800 * M_PI * M_PI / 3.0) * msds[i];
                     }
 /*  if (bLabel) */
 /*    atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A'; */
@@ -792,7 +792,7 @@ int gmx_confrms(int argc, char *argv[])
 /*  atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE; */
                     if (bBfac)
                     {
-                        atoms2->pdbinfo[index2[i]].bfac = (800*M_PI*M_PI/3.0)*msds[i];
+                        atoms2->pdbinfo[index2[i]].bfac = (800 * M_PI * M_PI / 3.0) * msds[i];
                     }
 /*  if (bLabel) */
 /*    atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */

@@ -55,10 +55,10 @@ double **alloc_matrix(int n, int m)
     /* There's always time for more pointer arithmetic! */
     /* This is necessary in order to be able to work with LAPACK */
     snew(ptr, n);
-    snew(ptr[0], n*m);
+    snew(ptr[0], n * m);
     for (i = 1; (i < n); i++)
     {
-        ptr[i] = ptr[i-1]+m;
+        ptr[i] = ptr[i - 1] + m;
     }
     return ptr;
 }
@@ -99,7 +99,7 @@ void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z)
             z[i][j] = 0;
             for (k = 0; (k < n); k++)
             {
-                z[i][j] += x[k][i]*y[j][k];
+                z[i][j] += x[k][i] * y[j][k];
             }
         }
     }
@@ -113,7 +113,7 @@ static void dump_matrix(FILE *fp, const char *title, int n, double **a)
     fprintf(fp, "%s\n", title);
     for (i = 0; (i < n); i++)
     {
-        d = d*a[i][i];
+        d = d * a[i][i];
         for (j = 0; (j < n); j++)
         {
             fprintf(fp, " %8.2f", a[i][j]);
@@ -144,10 +144,10 @@ int matrix_invert(FILE *fp, int n, double **a)
     }
 #endif
     snew(ipiv, n);
-    lwork = n*n;
+    lwork = n * n;
     snew(work, lwork);
-    m     = lda   = n;
-    info  = 0;
+    m    = lda   = n;
+    info = 0;
     F77_FUNC(dgetrf, DGETRF) (&n, &m, a[0], &lda, ipiv, &info);
 #ifdef DEBUG_MATRIX
     if (fp)
@@ -216,7 +216,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         atx[i] = 0;
         for (j = 0; (j < nrow); j++)
         {
-            atx[i] += at[i][j]*y[j];
+            atx[i] += at[i][j] * y[j];
         }
     }
     for (i = 0; (i < ncol); i++)
@@ -224,7 +224,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         a0[i] = 0;
         for (j = 0; (j < ncol); j++)
         {
-            a0[i] += ata[i][j]*atx[j];
+            a0[i] += ata[i][j] * atx[j];
         }
     }
     chi2 = 0;
@@ -233,7 +233,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         ax = 0;
         for (i = 0; (i < ncol); i++)
         {
-            ax += a0[i]*a[j][i];
+            ax += a0[i] * a[j][i];
         }
         chi2 += (y[j] - ax) * (y[j] - ax);
     }

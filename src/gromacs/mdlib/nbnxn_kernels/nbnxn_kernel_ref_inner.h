@@ -58,21 +58,21 @@
         int type_i_off;
         int j;
 
-        ai = ci*UNROLLI + i;
+        ai = ci * UNROLLI + i;
 
-        type_i_off = type[ai]*ntype2;
+        type_i_off = type[ai] * ntype2;
 
         for (j = 0; j < UNROLLJ; j++)
         {
-            int             aj;
-            real            dx, dy, dz;
-            real            rsq, rinv;
-            real            rinvsq, rinvsix;
-            real            c6, c12;
-            real            FrLJ6 = 0, FrLJ12 = 0, frLJ = 0;
-            real            VLJ gmx_unused;
+            int  aj;
+            real dx, dy, dz;
+            real rsq, rinv;
+            real rinvsq, rinvsix;
+            real c6, c12;
+            real FrLJ6 = 0, FrLJ12 = 0, frLJ = 0;
+            real VLJ gmx_unused;
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-            real            r, rsw;
+            real r, rsw;
 #endif
 
 #ifdef CALC_COULOMB
@@ -102,7 +102,7 @@
              * (e.g. because of bonding). */
             int interact;
 
-            interact = ((l_cj[cjind].excl>>(i*UNROLLI + j)) & 1);
+            interact = ((l_cj[cjind].excl >> (i * UNROLLI + j)) & 1);
 #ifndef EXCL_FORCES
             skipmask = interact;
 #else
@@ -116,13 +116,13 @@
             // cppcheck-suppress unreadVariable
             VLJ = 0;
 
-            aj = cj*UNROLLJ + j;
+            aj = cj * UNROLLJ + j;
 
-            dx  = xi[i*XI_STRIDE+XX] - x[aj*X_STRIDE+XX];
-            dy  = xi[i*XI_STRIDE+YY] - x[aj*X_STRIDE+YY];
-            dz  = xi[i*XI_STRIDE+ZZ] - x[aj*X_STRIDE+ZZ];
+            dx = xi[i * XI_STRIDE + XX] - x[aj * X_STRIDE + XX];
+            dy = xi[i * XI_STRIDE + YY] - x[aj * X_STRIDE + YY];
+            dz = xi[i * XI_STRIDE + ZZ] - x[aj * X_STRIDE + ZZ];
 
-            rsq = dx*dx + dy*dy + dz*dz;
+            rsq = dx * dx + dy * dy + dz * dz;
 
             /* Prepare to enforce the cut-off. */
             skipmask = (rsq >= rcut2) ? 0 : skipmask;
@@ -145,42 +145,42 @@
              * the Coulomb table during lookup. */
             rinv = rinv * skipmask;
 
-            rinvsq  = rinv*rinv;
+            rinvsq = rinv * rinv;
 
 #ifdef HALF_LJ
-            if (i < UNROLLI/2)
+            if (i < UNROLLI / 2)
 #endif
             {
-                c6      = nbfp[type_i_off+type[aj]*2  ];
-                c12     = nbfp[type_i_off+type[aj]*2+1];
+                c6  = nbfp[type_i_off + type[aj] * 2  ];
+                c12 = nbfp[type_i_off + type[aj] * 2 + 1];
 
 #if defined LJ_CUT || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-                rinvsix = interact*rinvsq*rinvsq*rinvsq;
-                FrLJ6   = c6*rinvsix;
-                FrLJ12  = c12*rinvsix*rinvsix;
+                rinvsix = interact * rinvsq * rinvsq * rinvsq;
+                FrLJ6   = c6 * rinvsix;
+                FrLJ12  = c12 * rinvsix * rinvsix;
                 frLJ    = FrLJ12 - FrLJ6;
                 /* 7 flops for r^-2 + LJ force */
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-                VLJ     = (FrLJ12 + c12*ic->repulsion_shift.cpot)/12 -
-                    (FrLJ6 + c6*ic->dispersion_shift.cpot)/6;
+                VLJ = (FrLJ12 + c12 * ic->repulsion_shift.cpot) / 12
+                    - (FrLJ6 + c6 * ic->dispersion_shift.cpot) / 6;
                 /* 7 flops for LJ energy */
 #endif
 #endif
 
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                 /* Force or potential switching from ic->rvdw_switch */
-                r       = rsq*rinv;
-                rsw     = r - ic->rvdw_switch;
-                rsw     = (rsw >= 0.0 ? rsw : 0.0);
+                r   = rsq * rinv;
+                rsw = r - ic->rvdw_switch;
+                rsw = (rsw >= 0.0 ? rsw : 0.0);
 #endif
 #ifdef LJ_FORCE_SWITCH
-                frLJ   +=
-                    -c6*(ic->dispersion_shift.c2 + ic->dispersion_shift.c3*rsw)*rsw*rsw*r
-                    + c12*(ic->repulsion_shift.c2 + ic->repulsion_shift.c3*rsw)*rsw*rsw*r;
+                frLJ
+                    += -c6 * (ic->dispersion_shift.c2 + ic->dispersion_shift.c3 * rsw) * rsw * rsw * r
+                        + c12 * (ic->repulsion_shift.c2 + ic->repulsion_shift.c3 * rsw) * rsw * rsw * r;
 #if defined CALC_ENERGIES
-                VLJ    +=
-                    -c6*(-ic->dispersion_shift.c2/3 - ic->dispersion_shift.c3/4*rsw)*rsw*rsw*rsw
-                    + c12*(-ic->repulsion_shift.c2/3 - ic->repulsion_shift.c3/4*rsw)*rsw*rsw*rsw;
+                VLJ
+                    += -c6 * (-ic->dispersion_shift.c2 / 3 - ic->dispersion_shift.c3 / 4 * rsw) * rsw * rsw * rsw
+                        + c12 * (-ic->repulsion_shift.c2 / 3 - ic->repulsion_shift.c3 / 4 * rsw) * rsw * rsw * rsw;
 #endif
 #endif
 
@@ -189,40 +189,40 @@
                  * but before potential switching.
                  */
                 /* Need to zero the interaction if there should be exclusion. */
-                VLJ     = VLJ * interact;
+                VLJ = VLJ * interact;
 #endif
 
 #ifdef LJ_POT_SWITCH
                 {
                     real sw, dsw;
 
-                    sw    = 1.0 + (swV3 + (swV4+ swV5*rsw)*rsw)*rsw*rsw*rsw;
-                    dsw   = (swF2 + (swF3 + swF4*rsw)*rsw)*rsw*rsw;
+                    sw  = 1.0 + (swV3 + (swV4 + swV5 * rsw) * rsw) * rsw * rsw * rsw;
+                    dsw = (swF2 + (swF3 + swF4 * rsw) * rsw) * rsw * rsw;
 
-                    frLJ  = frLJ*sw - r*VLJ*dsw;
-                    VLJ  *= sw;
+                    frLJ = frLJ * sw - r * VLJ * dsw;
+                    VLJ *= sw;
                 }
 #endif
 
 #ifdef LJ_EWALD
                 {
-                    real            c6grid, rinvsix_nm, cr2, expmcr2, poly;
+                    real c6grid, rinvsix_nm, cr2, expmcr2, poly;
 #ifdef CALC_ENERGIES
-                    real            sh_mask;
+                    real sh_mask;
 #endif
 
 #ifdef LJ_EWALD_COMB_GEOM
-                    c6grid       = ljc[type[ai]*2]*ljc[type[aj]*2];
+                    c6grid = ljc[type[ai] * 2] * ljc[type[aj] * 2];
 #elif defined LJ_EWALD_COMB_LB
                     {
                         real sigma, sigma2, epsilon;
 
                         /* These sigma and epsilon are scaled to give 6*C6 */
-                        sigma   = ljc[type[ai]*2] + ljc[type[aj]*2];
-                        epsilon = ljc[type[ai]*2+1]*ljc[type[aj]*2+1];
+                        sigma   = ljc[type[ai] * 2] + ljc[type[aj] * 2];
+                        epsilon = ljc[type[ai] * 2 + 1] * ljc[type[aj] * 2 + 1];
 
-                        sigma2  = sigma*sigma;
-                        c6grid  = epsilon*sigma2*sigma2*sigma2;
+                        sigma2 = sigma * sigma;
+                        c6grid = epsilon * sigma2 * sigma2 * sigma2;
                     }
 #else
 #error "No LJ Ewald combination rule defined"
@@ -230,25 +230,25 @@
 
 #ifdef CHECK_EXCLS
                     /* Recalculate rinvsix without exclusion mask */
-                    rinvsix_nm   = rinvsq*rinvsq*rinvsq;
+                    rinvsix_nm = rinvsq * rinvsq * rinvsq;
 #else
-                    rinvsix_nm   = rinvsix;
+                    rinvsix_nm = rinvsix;
 #endif
-                    cr2          = lje_coeff2*rsq;
+                    cr2 = lje_coeff2 * rsq;
 #if GMX_DOUBLE
-                    expmcr2      = exp(-cr2);
+                    expmcr2 = exp(-cr2);
 #else
-                    expmcr2      = expf(-cr2);
+                    expmcr2 = expf(-cr2);
 #endif
-                    poly         = 1 + cr2 + 0.5*cr2*cr2;
+                    poly = 1 + cr2 + 0.5 * cr2 * cr2;
 
                     /* Subtract the grid force from the total LJ force */
-                    frLJ        += c6grid*(rinvsix_nm - expmcr2*(rinvsix_nm*poly + lje_coeff6_6));
+                    frLJ += c6grid * (rinvsix_nm - expmcr2 * (rinvsix_nm * poly + lje_coeff6_6));
 #ifdef CALC_ENERGIES
                     /* Shift should only be applied to real LJ pairs */
-                    sh_mask      = lje_vc*interact;
+                    sh_mask = lje_vc * interact;
 
-                    VLJ         += c6grid/6*(rinvsix_nm*(1 - expmcr2*poly) + sh_mask);
+                    VLJ += c6grid / 6 * (rinvsix_nm * (1 - expmcr2 * poly) + sh_mask);
 #endif
                 }
 #endif          /* LJ_EWALD */
@@ -261,13 +261,13 @@
                     skipmask_rvdw = (rsq < rvdw2) ? 1.0 : 0.0;
                     frLJ         *= skipmask_rvdw;
 #ifdef CALC_ENERGIES
-                    VLJ    *= skipmask_rvdw;
+                    VLJ *= skipmask_rvdw;
 #endif
                 }
 #else
 #if defined CALC_ENERGIES
                 /* Need to zero the interaction if r >= rcut */
-                VLJ     = VLJ * skipmask;
+                VLJ = VLJ * skipmask;
                 /* 1 more flop for LJ energy */
 #endif
 #endif          /* VDW_CUTOFF_CHECK */
@@ -275,7 +275,7 @@
 
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-                Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;
+                Vvdw[egp_sh_i[i] + ((egp_cj >> (nbat->neg_2log * j)) & egp_mask)] += VLJ;
 #else
                 Vvdw_ci += VLJ;
                 /* 1 flop for LJ energy addition */
@@ -296,45 +296,45 @@
             qq = skipmask * qi[i] * q[aj];
 
 #ifdef CALC_COUL_RF
-            fcoul  = qq*(interact*rinv*rinvsq - k_rf2);
+            fcoul = qq * (interact * rinv * rinvsq - k_rf2);
             /* 4 flops for RF force */
 #ifdef CALC_ENERGIES
-            vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
+            vcoul = qq * (interact * rinv + k_rf * rsq - c_rf);
             /* 4 flops for RF energy */
 #endif
 #endif
 
 #ifdef CALC_COUL_TAB
-            rs     = rsq*rinv*ic->tabq_scale;
-            ri     = (int)rs;
-            frac   = rs - ri;
+            rs   = rsq * rinv * ic->tabq_scale;
+            ri   = (int)rs;
+            frac = rs - ri;
 #if !GMX_DOUBLE
             /* fexcl = F_i + frac * (F_(i+1)-F_i) */
-            fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
+            fexcl = tab_coul_FDV0[ri * 4] + frac * tab_coul_FDV0[ri * 4 + 1];
 #else
             /* fexcl = (1-frac) * F_i + frac * F_(i+1) */
-            fexcl  = (1 - frac)*tab_coul_F[ri] + frac*tab_coul_F[ri+1];
+            fexcl = (1 - frac) * tab_coul_F[ri] + frac * tab_coul_F[ri + 1];
 #endif
-            fcoul  = interact*rinvsq - fexcl;
+            fcoul = interact * rinvsq - fexcl;
             /* 7 flops for float 1/r-table force */
 #ifdef CALC_ENERGIES
 #if !GMX_DOUBLE
-            vcoul  = qq*(interact*(rinv - ic->sh_ewald)
-                         -(tab_coul_FDV0[ri*4+2]
-                           -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
+            vcoul = qq * (interact * (rinv - ic->sh_ewald)
+                          - (tab_coul_FDV0[ri * 4 + 2]
+                             - halfsp * frac * (tab_coul_FDV0[ri * 4] + fexcl)));
             /* 7 flops for float 1/r-table energy (8 with excls) */
 #else
-            vcoul  = qq*(interact*(rinv - ic->sh_ewald)
-                         -(tab_coul_V[ri]
-                           -halfsp*frac*(tab_coul_F[ri] + fexcl)));
+            vcoul = qq * (interact * (rinv - ic->sh_ewald)
+                          - (tab_coul_V[ri]
+                             - halfsp * frac * (tab_coul_F[ri] + fexcl)));
 #endif
 #endif
-            fcoul *= qq*rinv;
+            fcoul *= qq * rinv;
 #endif
 
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-            Vc[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += vcoul;
+            Vc[egp_sh_i[i] + ((egp_cj >> (nbat->neg_2log * j)) & egp_mask)] += vcoul;
 #else
             Vc_ci += vcoul;
             /* 1 flop for Coulomb energy addition */
@@ -344,10 +344,10 @@
 
 #ifdef CALC_COULOMB
 #ifdef HALF_LJ
-            if (i < UNROLLI/2)
+            if (i < UNROLLI / 2)
 #endif
             {
-                fscal = frLJ*rinvsq + fcoul;
+                fscal = frLJ * rinvsq + fcoul;
                 /* 2 flops for scalar LJ+Coulomb force */
             }
 #ifdef HALF_LJ
@@ -357,20 +357,20 @@
             }
 #endif
 #else
-            fscal = frLJ*rinvsq;
+            fscal = frLJ * rinvsq;
 #endif
-            fx = fscal*dx;
-            fy = fscal*dy;
-            fz = fscal*dz;
+            fx = fscal * dx;
+            fy = fscal * dy;
+            fz = fscal * dz;
 
             /* Increment i-atom force */
-            fi[i*FI_STRIDE+XX] += fx;
-            fi[i*FI_STRIDE+YY] += fy;
-            fi[i*FI_STRIDE+ZZ] += fz;
+            fi[i * FI_STRIDE + XX] += fx;
+            fi[i * FI_STRIDE + YY] += fy;
+            fi[i * FI_STRIDE + ZZ] += fz;
             /* Decrement j-atom force */
-            f[aj*F_STRIDE+XX]  -= fx;
-            f[aj*F_STRIDE+YY]  -= fy;
-            f[aj*F_STRIDE+ZZ]  -= fz;
+            f[aj * F_STRIDE + XX] -= fx;
+            f[aj * F_STRIDE + YY] -= fy;
+            f[aj * F_STRIDE + ZZ] -= fz;
             /* 9 flops for force addition */
         }
     }

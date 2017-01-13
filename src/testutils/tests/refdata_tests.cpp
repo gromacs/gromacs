@@ -69,8 +69,8 @@ TEST(ReferenceDataTest, HandlesSimpleData)
         TestReferenceChecker checker(data.rootChecker());
         checker.checkBoolean(true, "bool");
         checker.checkInteger(1, "int");
-        checker.checkInt64(1ULL<<42, "int64");
-        checker.checkUInt64(1ULL<<42, "uint64");
+        checker.checkInt64(1ULL << 42, "int64");
+        checker.checkUInt64(1ULL << 42, "uint64");
         checker.checkDouble(0.5, "real");
         checker.checkString("Test", "string");
     }
@@ -79,8 +79,8 @@ TEST(ReferenceDataTest, HandlesSimpleData)
         TestReferenceChecker checker(data.rootChecker());
         checker.checkBoolean(true, "bool");
         checker.checkInteger(1, "int");
-        checker.checkInt64(1ULL<<42, "int64");
-        checker.checkUInt64(1ULL<<42, "uint64");
+        checker.checkInt64(1ULL << 42, "int64");
+        checker.checkUInt64(1ULL << 42, "uint64");
         checker.checkDouble(0.5, "real");
         checker.checkString("Test", "string");
     }
@@ -88,8 +88,8 @@ TEST(ReferenceDataTest, HandlesSimpleData)
 
 TEST(ReferenceDataTest, HandlesFloatingPointData)
 {
-    const float  floatValue  = 4.0f/3.0f;
-    const double doubleValue = 4.0/3.0;
+    const float  floatValue  = 4.0f / 3.0f;
+    const double doubleValue = 4.0 / 3.0;
 
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
@@ -121,7 +121,7 @@ TEST(ReferenceDataTest, HandlesPresenceChecks)
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         // Assigned to avoid warnings about potentially uninitialized value.
-        bool                 bRet = true;
+        bool bRet = true;
         EXPECT_TRUE(checker.checkPresent(true, "present"));
         checker.checkInteger(1, "present");
         EXPECT_NONFATAL_FAILURE(bRet = checker.checkPresent(false, "present"), "");
@@ -376,7 +376,7 @@ gmx::KeyValueTreeObject buildKeyValueTree(bool full)
     {
         obj.addValue<std::string>("s", "x");
     }
-    auto arr  = root.addUniformArray<int>("a");
+    auto arr = root.addUniformArray<int>("a");
     arr.addValue(2);
     arr.addValue(3);
     root.addValue<std::string>("s", "y");

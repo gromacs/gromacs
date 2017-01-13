@@ -73,8 +73,8 @@ class TerminationHelper
 {
     public:
         //! Constructor
-        TerminationHelper(TestFileManager  *fileManager,
-                          CommandLine      *mdrunCaller,
+        TerminationHelper(TestFileManager * fileManager,
+                          CommandLine *     mdrunCaller,
                           SimulationRunner *runner);
         /*! \brief Do a short simulation, likely terminated by -maxh
          *
@@ -86,7 +86,7 @@ class TerminationHelper
         void runSecondMdrun();
     protected:
         //! Object to help call mdrun
-        CommandLine      *mdrunCaller_;
+        CommandLine *mdrunCaller_;
         //! Object to coordinate running a simulation
         SimulationRunner *runner_;
 };

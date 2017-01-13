@@ -48,31 +48,34 @@ struct gmx_output_env_t;
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct
+{
     gmx_bool bShow;
-    char    *label;
+    char *   label;
     int      iphi, ipsi; /* point in the dih array of xr... */
 } t_phipsi;
 
-typedef struct {
-    int     ai[4];
-    int     mult;
-    real    phi0;
-    real    ang;
+typedef struct
+{
+    int  ai[4];
+    int  mult;
+    real phi0;
+    real ang;
 } t_dih;
 
-typedef struct {
+typedef struct
+{
     int               ndih;
-    t_dih            *dih;
+    t_dih *           dih;
     int               npp;
-    t_phipsi         *pp;
-    t_trxstatus      *traj;
+    t_phipsi *        pp;
+    t_trxstatus *     traj;
     int               natoms;
     int               amin, amax;
     real              t;
-    rvec             *x;
+    rvec *            x;
     matrix            box;
-    t_idef           *idef;
+    t_idef *          idef;
     int               ePBC;
     gmx_output_env_t *oenv;
 } t_xrama;

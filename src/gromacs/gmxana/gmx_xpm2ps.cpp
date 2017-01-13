@@ -62,7 +62,8 @@
 #define FUDGE 1.2
 #define DDD   2
 
-typedef struct {
+typedef struct
+{
     real     major;
     real     minor;
     real     offset;
@@ -77,7 +78,8 @@ typedef struct {
     char     tickfont[STRLEN];
 } t_axisdef;
 
-typedef struct {
+typedef struct
+{
     int       bw;
     real      linewidth;
     real      xoffs, yoffs;
@@ -101,23 +103,25 @@ typedef struct {
 } t_psrec;
 
 /* MUST correspond to char *legend[] in main() */
-enum {
+enum
+{
     elSel, elBoth, elFirst, elSecond, elNone, elNR
 };
 
 /* MUST correspond to char *combine[] in main() */
-enum {
+enum
+{
     ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR
 };
 
 void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 {
-    static const char *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
+    static const char *gmx_bools[BOOL_NR + 1] = { "no", "yes", nullptr };
     /* this must correspond to t_rgb *linecolors[] below */
     static const char *colors[] = { "none", "black", "white", nullptr };
     warninp_t          wi;
-    t_inpfile         *inp;
-    const char        *tmp;
+    t_inpfile *        inp;
+    const char *       tmp;
     int                ninp = 0;
 
     wi = init_warning(FALSE, 0);
@@ -184,8 +188,8 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
 t_rgb black = { 0, 0, 0 };
 t_rgb white = { 1, 1, 1 };
-t_rgb red   = { 1, 0, 0 };
-t_rgb blue  = { 0, 0, 1 };
+t_rgb red = { 1, 0, 0 };
+t_rgb blue = { 0, 0, 1 };
 #define BLACK (&black)
 /* this must correspond to *colors[] in get_params */
 t_rgb *linecolors[] = { nullptr, &black, &white, nullptr };
@@ -212,9 +216,9 @@ gmx_bool diff_maps(int nmap1, t_mapping *map1, int nmap2, t_mapping *map2)
             {
                 bDiff = TRUE;
             }
-            if ((map1[i].rgb.r != map2[i].rgb.r) ||
-                (map1[i].rgb.g != map2[i].rgb.g) ||
-                (map1[i].rgb.b != map2[i].rgb.b))
+            if ((map1[i].rgb.r != map2[i].rgb.r)
+                || (map1[i].rgb.g != map2[i].rgb.g)
+                || (map1[i].rgb.b != map2[i].rgb.b))
             {
                 bColDiff = TRUE;
             }
@@ -231,15 +235,15 @@ gmx_bool diff_maps(int nmap1, t_mapping *map1, int nmap2, t_mapping *map2)
 void leg_discrete(t_psdata ps, real x0, real y0, char *label,
                   real fontsize, char *font, int nmap, t_mapping map[])
 {
-    int   i;
-    real  yhh;
-    real  boxhh;
+    int  i;
+    real yhh;
+    real boxhh;
 
-    boxhh = fontsize+DDD;
+    boxhh = fontsize + DDD;
     /* LANDSCAPE */
     ps_rgb(ps, BLACK);
     ps_strfont(ps, font, fontsize);
-    yhh = y0+fontsize+3*DDD;
+    yhh = y0 + fontsize + 3 * DDD;
     if (std::strlen(label) > 0)
     {
         ps_ctext(ps, x0, yhh, label, eXLeft);
@@ -249,12 +253,12 @@ void leg_discrete(t_psdata ps, real x0, real y0, char *label,
     {
         ps_setorigin(ps);
         ps_rgb(ps, &(map[i].rgb));
-        ps_fillbox(ps, DDD, DDD, DDD+fontsize, boxhh-DDD);
+        ps_fillbox(ps, DDD, DDD, DDD + fontsize, boxhh - DDD);
         ps_rgb(ps, BLACK);
-        ps_box(ps, DDD, DDD, DDD+fontsize, boxhh-DDD);
-        ps_ctext(ps, boxhh+2*DDD, fontsize/3, map[i].desc, eXLeft);
+        ps_box(ps, DDD, DDD, DDD + fontsize, boxhh - DDD);
+        ps_ctext(ps, boxhh + 2 * DDD, fontsize / 3, map[i].desc, eXLeft);
         ps_unsetorigin(ps);
-        ps_moverel(ps, DDD, -fontsize/3);
+        ps_moverel(ps, DDD, -fontsize / 3);
     }
 }
 
@@ -263,16 +267,16 @@ void leg_continuous(t_psdata ps, real x0, real x, real y0, char *label,
                     int nmap, t_mapping map[],
                     int mapoffset)
 {
-    int   i;
-    real  xx0;
-    real  yhh, boxxh, boxyh;
+    int  i;
+    real xx0;
+    real yhh, boxxh, boxyh;
 
     boxyh = fontsize;
-    if (x < 8*fontsize)
+    if (x < 8 * fontsize)
     {
-        x = 8*fontsize;
+        x = 8 * fontsize;
     }
-    boxxh = x/(nmap-mapoffset);
+    boxxh = x / (nmap - mapoffset);
     if (boxxh > fontsize)
     {
         boxxh = fontsize;
@@ -281,25 +285,25 @@ void leg_continuous(t_psdata ps, real x0, real x, real y0, char *label,
     GMX_RELEASE_ASSERT(map != nullptr, "NULL map array provided to leg_continuous()");
 
     /* LANDSCAPE */
-    xx0 = x0-((nmap-mapoffset)*boxxh)/2.0;
+    xx0 = x0 - ((nmap - mapoffset) * boxxh) / 2.0;
 
-    for (i = 0; (i < nmap-mapoffset); i++)
+    for (i = 0; (i < nmap - mapoffset); i++)
     {
-        ps_rgb(ps, &(map[i+mapoffset].rgb));
-        ps_fillbox(ps, xx0+i*boxxh, y0, xx0+(i+1)*boxxh, y0+boxyh);
+        ps_rgb(ps, &(map[i + mapoffset].rgb));
+        ps_fillbox(ps, xx0 + i * boxxh, y0, xx0 + (i + 1) * boxxh, y0 + boxyh);
     }
     ps_strfont(ps, font, fontsize);
     ps_rgb(ps, BLACK);
-    ps_box(ps, xx0, y0, xx0+(nmap-mapoffset)*boxxh, y0+boxyh);
+    ps_box(ps, xx0, y0, xx0 + (nmap - mapoffset) * boxxh, y0 + boxyh);
 
-    yhh = y0+boxyh+3*DDD;
-    ps_ctext(ps, xx0+boxxh/2, yhh, map[0].desc, eXCenter);
+    yhh = y0 + boxyh + 3 * DDD;
+    ps_ctext(ps, xx0 + boxxh / 2, yhh, map[0].desc, eXCenter);
     if (std::strlen(label) > 0)
     {
         ps_ctext(ps, x0, yhh, label, eXCenter);
     }
-    ps_ctext(ps, xx0+((nmap-mapoffset)*boxxh)
-             - boxxh/2, yhh, map[nmap-1].desc, eXCenter);
+    ps_ctext(ps, xx0 + ((nmap - mapoffset) * boxxh)
+             - boxxh / 2, yhh, map[nmap - 1].desc, eXCenter);
 }
 
 void leg_bicontinuous(t_psdata ps, real x0, real x, real y0, char *label1,
@@ -308,19 +312,19 @@ void leg_bicontinuous(t_psdata ps, real x0, real x, real y0, char *label1,
 {
     real xx1, xx2, x1, x2;
 
-    x1  = x/(nmap1+nmap2)*nmap1; /* width of legend 1 */
-    x2  = x/(nmap1+nmap2)*nmap2; /* width of legend 2 */
-    xx1 = x0-(x2/2.0)-fontsize;  /* center of legend 1 */
-    xx2 = x0+(x1/2.0)+fontsize;  /* center of legend 2 */
-    x1 -= fontsize/2;            /* adjust width */
-    x2 -= fontsize/2;            /* adjust width */
+    x1  = x / (nmap1 + nmap2) * nmap1; /* width of legend 1 */
+    x2  = x / (nmap1 + nmap2) * nmap2; /* width of legend 2 */
+    xx1 = x0 - (x2 / 2.0) - fontsize;  /* center of legend 1 */
+    xx2 = x0 + (x1 / 2.0) + fontsize;  /* center of legend 2 */
+    x1 -= fontsize / 2;                /* adjust width */
+    x2 -= fontsize / 2;                /* adjust width */
     leg_continuous(ps, xx1, x1, y0, label1, fontsize, font, nmap1, map1, 0);
     leg_continuous(ps, xx2, x2, y0, label2, fontsize, font, nmap2, map2, 0);
 }
 
 static real box_height(t_matrix *mat, t_psrec *psr)
 {
-    return mat->ny*psr->yboxsize;
+    return mat->ny * psr->yboxsize;
 }
 
 static real box_dh(t_psrec *psr)
@@ -328,14 +332,14 @@ static real box_dh(t_psrec *psr)
     return psr->boxspacing;
 }
 
-#define IS_ONCE (i == nmat-1)
+#define IS_ONCE (i == nmat - 1)
 static real box_dh_top(gmx_bool bOnce, t_psrec *psr)
 {
     real dh;
 
     if (psr->bTitle || (psr->bTitleOnce && bOnce) )
     {
-        dh = 2*psr->titfontsize;
+        dh = 2 * psr->titfontsize;
     }
     else
     {
@@ -347,24 +351,24 @@ static real box_dh_top(gmx_bool bOnce, t_psrec *psr)
 
 static gmx_bool box_do_all_x_maj_ticks(t_psrec *psr)
 {
-    return (psr->boxspacing > (1.5*psr->X.majorticklen));
+    return (psr->boxspacing > (1.5 * psr->X.majorticklen));
 }
 
 static gmx_bool box_do_all_x_min_ticks(t_psrec *psr)
 {
-    return (psr->boxspacing > (1.5*psr->X.minorticklen));
+    return (psr->boxspacing > (1.5 * psr->X.minorticklen));
 }
 
 static void draw_boxes(t_psdata ps, real x0, real y0, real w,
                        int nmat, t_matrix mat[], t_psrec *psr)
 {
-    char     buf[128];
-    char    *mylab;
-    real     xxx;
-    char   **xtick, **ytick;
-    real     xx, yy, dy, xx00, yy00, offset_x, offset_y;
-    int      i, j, x, y, ntx, nty;
-    size_t   strlength;
+    char   buf[128];
+    char * mylab;
+    real   xxx;
+    char **xtick, **ytick;
+    real   xx, yy, dy, xx00, yy00, offset_x, offset_y;
+    int    i, j, x, y, ntx, nty;
+    size_t strlength;
 
     /* Only necessary when there will be no y-labels */
     strlength = 0;
@@ -376,14 +380,14 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
     for (i = 0; (i < nmat); i++)
     {
         dy = box_height(&(mat[i]), psr);
-        ps_box(ps, x0-1, yy00-1, x0+w+1, yy00+dy+1);
-        yy00 += dy+box_dh(psr)+box_dh_top(IS_ONCE, psr);
+        ps_box(ps, x0 - 1, yy00 - 1, x0 + w + 1, yy00 + dy + 1);
+        yy00 += dy + box_dh(psr) + box_dh_top(IS_ONCE, psr);
     }
 
     /* Draw the ticks on the axes */
     ps_linewidth(ps, static_cast<int>(psr->ticklinewidth));
-    xx00 = x0-1;
-    yy00 = y0-1;
+    xx00 = x0 - 1;
+    yy00 = y0 - 1;
     for (i = 0; (i < nmat); i++)
     {
         if (mat[i].flags & MAT_SPATIAL_X)
@@ -415,31 +419,31 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
         ps_strfont(ps, psr->X.tickfont, psr->X.tickfontsize);
         for (x = 0; (x < ntx); x++)
         {
-            xx = xx00 + (x + offset_x)*psr->xboxsize;
-            if ( ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) ||
-                   (psr->X.first && (x == 0))) &&
-                 ( (i == 0) || box_do_all_x_maj_ticks(psr) ) )
+            xx = xx00 + (x + offset_x) * psr->xboxsize;
+            if ( ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major)
+                   || (psr->X.first && (x == 0)))
+                 && ( (i == 0) || box_do_all_x_maj_ticks(psr) ) )
             {
                 /* Longer tick marks */
-                ps_line (ps, xx, yy00, xx, yy00-psr->X.majorticklen);
+                ps_line (ps, xx, yy00, xx, yy00 - psr->X.majorticklen);
                 /* Plot label on lowest graph only */
                 if (i == 0)
                 {
                     ps_ctext(ps, xx,
-                             yy00-DDD-psr->X.majorticklen-psr->X.tickfontsize*0.8,
+                             yy00 - DDD - psr->X.majorticklen - psr->X.tickfontsize * 0.8,
                              xtick[x], eXCenter);
                 }
             }
-            else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.minor) &&
-                     ( (i == 0) || box_do_all_x_min_ticks(psr) ) )
+            else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.minor)
+                     && ( (i == 0) || box_do_all_x_min_ticks(psr) ) )
             {
                 /* Shorter tick marks */
-                ps_line(ps, xx, yy00, xx, yy00-psr->X.minorticklen);
+                ps_line(ps, xx, yy00, xx, yy00 - psr->X.minorticklen);
             }
             else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) )
             {
                 /* Even shorter marks, only each X.major */
-                ps_line(ps, xx, yy00, xx, yy00-(psr->boxspacing/2));
+                ps_line(ps, xx, yy00, xx, yy00 - (psr->boxspacing / 2));
             }
         }
         ps_strfont(ps, psr->Y.tickfont, psr->Y.tickfontsize);
@@ -452,27 +456,27 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
 
         for (y = 0; (y < nty); y++)
         {
-            yy = yy00 + (y + offset_y)*psr->yboxsize;
-            if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.major) ||
-                (psr->Y.first && (y == 0)))
+            yy = yy00 + (y + offset_y) * psr->yboxsize;
+            if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.major)
+                || (psr->Y.first && (y == 0)))
             {
                 /* Major ticks */
                 strlength = std::max(strlength, std::strlen(ytick[y]));
-                ps_line (ps, xx00, yy, xx00-psr->Y.majorticklen, yy);
-                ps_ctext(ps, xx00-psr->Y.majorticklen-DDD,
-                         yy-psr->Y.tickfontsize/3.0, ytick[y], eXRight);
+                ps_line (ps, xx00, yy, xx00 - psr->Y.majorticklen, yy);
+                ps_ctext(ps, xx00 - psr->Y.majorticklen - DDD,
+                         yy - psr->Y.tickfontsize / 3.0, ytick[y], eXRight);
             }
             else if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.minor) )
             {
                 /* Minor ticks */
-                ps_line(ps, xx00, yy, xx00-psr->Y.minorticklen, yy);
+                ps_line(ps, xx00, yy, xx00 - psr->Y.minorticklen, yy);
             }
         }
         sfree(xtick);
         sfree(ytick);
 
         /* Label on Y-axis */
-        if (!psr->bYonce || i == nmat/2)
+        if (!psr->bYonce || i == nmat / 2)
         {
             if (strlen(psr->Y.label) > 0)
             {
@@ -486,14 +490,14 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
             {
                 ps_strfont(ps, psr->Y.font, psr->Y.fontsize);
                 ps_flip(ps, TRUE);
-                xxx = x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
-                ps_ctext(ps, yy00+box_height(&mat[i], psr)/2.0, 612.5-xxx,
+                xxx = x0 - psr->X.majorticklen - psr->X.tickfontsize * strlength - DDD;
+                ps_ctext(ps, yy00 + box_height(&mat[i], psr) / 2.0, 612.5 - xxx,
                          mylab, eXCenter);
                 ps_flip(ps, FALSE);
             }
         }
 
-        yy00 += box_height(&(mat[i]), psr)+box_dh(psr)+box_dh_top(IS_ONCE, psr);
+        yy00 += box_height(&(mat[i]), psr) + box_dh(psr) + box_dh_top(IS_ONCE, psr);
     }
     /* Label on X-axis */
     if (strlen(psr->X.label) > 0)
@@ -507,19 +511,19 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
     if (strlen(mylab) > 0)
     {
         ps_strfont(ps, psr->X.font, psr->X.fontsize);
-        ps_ctext(ps, x0+w/2, y0-DDD-psr->X.majorticklen-psr->X.tickfontsize*FUDGE-
-                 psr->X.fontsize, mylab, eXCenter);
+        ps_ctext(ps, x0 + w / 2, y0 - DDD - psr->X.majorticklen - psr->X.tickfontsize * FUDGE
+                 - psr->X.fontsize, mylab, eXCenter);
     }
 }
 
 static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                            int nmat, t_matrix mat[], t_psrec *psr)
 {
-    real   xx, yy, dy, xx00, yy00;
-    int    i, x, y;
+    real xx, yy, dy, xx00, yy00;
+    int  i, x, y;
 
-    xx00 = x0-1.5;
-    yy00 = y0-1.5;
+    xx00 = x0 - 1.5;
+    yy00 = y0 - 1.5;
     ps_linewidth(out, static_cast<int>(psr->zerolinewidth));
     for (i = 0; (i < nmat); i++)
     {
@@ -530,13 +534,13 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
             ps_rgb(out, linecolors[psr->X.lineatzero]);
             for (x = 0; (x < mat[i].nx); x++)
             {
-                xx = xx00+(x+0.7)*psr->xboxsize;
+                xx = xx00 + (x + 0.7) * psr->xboxsize;
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
-                if (x != 0 && x < mat[i].nx-1 &&
-                    std::abs(mat[i].axis_x[x]) <
-                    0.1*std::abs(mat[i].axis_x[x+1]-mat[i].axis_x[x]) )
+                if (x != 0 && x < mat[i].nx - 1
+                    && std::abs(mat[i].axis_x[x])
+                    < 0.1 * std::abs(mat[i].axis_x[x + 1] - mat[i].axis_x[x]) )
                 {
-                    ps_line (out, xx, yy00, xx, yy00+dy+2);
+                    ps_line (out, xx, yy00, xx, yy00 + dy + 2);
                 }
             }
         }
@@ -545,17 +549,17 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
             ps_rgb(out, linecolors[psr->Y.lineatzero]);
             for (y = 0; (y < mat[i].ny); y++)
             {
-                yy = yy00+(y+0.7)*psr->yboxsize;
+                yy = yy00 + (y + 0.7) * psr->yboxsize;
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
-                if (y != 0 && y < mat[i].ny-1 &&
-                    std::abs(mat[i].axis_y[y]) <
-                    0.1*std::abs(mat[i].axis_y[y+1]-mat[i].axis_y[y]) )
+                if (y != 0 && y < mat[i].ny - 1
+                    && std::abs(mat[i].axis_y[y])
+                    < 0.1 * std::abs(mat[i].axis_y[y + 1] - mat[i].axis_y[y]) )
                 {
-                    ps_line (out, xx00, yy, xx00+w+2, yy);
+                    ps_line (out, xx00, yy, xx00 + w + 2, yy);
                 }
             }
         }
-        yy00 += box_height(&(mat[i]), psr)+box_dh(psr)+box_dh_top(IS_ONCE, psr);
+        yy00 += box_height(&(mat[i]), psr) + box_dh(psr) + box_dh_top(IS_ONCE, psr);
     }
 }
 
@@ -572,7 +576,7 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
     ww = 0;
     for (i = 0; (i < nmat); i++)
     {
-        ww       = std::max(ww, mat[i].nx*psr->xboxsize);
+        ww       = std::max(ww, mat[i].nx * psr->xboxsize);
         hh      += box_height(&(mat[i]), psr);
         maxytick = std::max(maxytick, mat[i].nx);
     }
@@ -580,12 +584,12 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
     {
         if (mat[0].label_y[0])
         {
-            dww += 2.0*(psr->Y.fontsize+DDD);
+            dww += 2.0 * (psr->Y.fontsize + DDD);
         }
         if (psr->Y.major > 0)
         {
-            dww += psr->Y.majorticklen + DDD +
-                psr->Y.tickfontsize*(std::log(static_cast<real>(maxytick))/std::log(10.0));
+            dww += psr->Y.majorticklen + DDD
+                + psr->Y.tickfontsize * (std::log(static_cast<real>(maxytick)) / std::log(10.0));
         }
         else if (psr->Y.minor > 0)
         {
@@ -594,33 +598,33 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
 
         if (mat[0].label_x[0])
         {
-            dhh += psr->X.fontsize+2*DDD;
+            dhh += psr->X.fontsize + 2 * DDD;
         }
         if ( /* fool emacs auto-indent */
-            (elegend == elBoth && (mat[0].legend[0] || (mat2 && mat2[0].legend[0]))) ||
-            (elegend == elFirst && mat[0].legend[0]) ||
-            (elegend == elSecond && (mat2 && mat2[0].legend[0])) )
+            (elegend == elBoth && (mat[0].legend[0] || (mat2 && mat2[0].legend[0])))
+            || (elegend == elFirst && mat[0].legend[0])
+            || (elegend == elSecond && (mat2 && mat2[0].legend[0])) )
         {
-            dhh += 2*(psr->legfontsize*FUDGE+2*DDD);
+            dhh += 2 * (psr->legfontsize * FUDGE + 2 * DDD);
         }
         else
         {
-            dhh += psr->legfontsize*FUDGE+2*DDD;
+            dhh += psr->legfontsize * FUDGE + 2 * DDD;
         }
         if (psr->X.major > 0)
         {
-            dhh += psr->X.tickfontsize*FUDGE+2*DDD+psr->X.majorticklen;
+            dhh += psr->X.tickfontsize * FUDGE + 2 * DDD + psr->X.majorticklen;
         }
         else if (psr->X.minor > 0)
         {
             dhh += psr->X.minorticklen;
         }
 
-        hh += (nmat-1)*box_dh(psr);
+        hh += (nmat - 1) * box_dh(psr);
         hh += box_dh_top(TRUE, psr);
         if (nmat > 1)
         {
-            hh += (nmat-1)*box_dh_top(FALSE, psr);
+            hh += (nmat - 1) * box_dh_top(FALSE, psr);
         }
     }
     *w  = ww;
@@ -635,11 +639,11 @@ int add_maps(t_mapping **newmap,
     static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
     int         nsymbols;
     int         nmap, j, k;
-    t_mapping  *map;
+    t_mapping * map;
 
     nsymbols = std::strlen(mapper);
-    nmap     = nmap1+nmap2;
-    if (nmap > nsymbols*nsymbols)
+    nmap     = nmap1 + nmap2;
+    if (nmap > nsymbols * nsymbols)
     {
         gmx_fatal(FARGS, "Not enough symbols to merge the two colormaps\n");
     }
@@ -651,7 +655,7 @@ int add_maps(t_mapping **newmap,
         map[j].code.c1 = mapper[j % nsymbols];
         if (nmap > nsymbols)
         {
-            map[j].code.c2 = mapper[j/nsymbols];
+            map[j].code.c2 = mapper[j / nsymbols];
         }
         map[j].rgb.r = map1[j].rgb.r;
         map[j].rgb.g = map1[j].rgb.g;
@@ -660,11 +664,11 @@ int add_maps(t_mapping **newmap,
     }
     for (j = 0; j < nmap2; j++)
     {
-        k              = j+nmap1;
+        k              = j + nmap1;
         map[k].code.c1 = mapper[k % nsymbols];
         if (nmap > nsymbols)
         {
-            map[k].code.c2 = mapper[k/nsymbols];
+            map[k].code.c2 = mapper[k / nsymbols];
         }
         map[k].rgb.r = map2[j].rgb.r;
         map[k].rgb.g = map2[j].rgb.g;
@@ -679,7 +683,7 @@ int add_maps(t_mapping **newmap,
 void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
              gmx_bool bDiag, gmx_bool bFirstDiag)
 {
-    FILE      *out;
+    FILE *     out;
     int        i, x, y, col;
     int        nmap;
     t_mapping *map = nullptr;
@@ -705,7 +709,7 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
                     }
                     else /* lower right -> map2 */
                     {
-                        col = mat[i].nmap+mat[i].matrix[x][y];
+                        col = mat[i].nmap + mat[i].matrix[x][y];
                     }
                     if ((bDiag) || (x != y))
                     {
@@ -722,11 +726,11 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
             mat[i].map  = map;
             if (std::strcmp(mat[i].title, mat2[i].title) != 0)
             {
-                sprintf(mat[i].title+strlen(mat[i].title), " / %s", mat2[i].title);
+                sprintf(mat[i].title + strlen(mat[i].title), " / %s", mat2[i].title);
             }
             if (std::strcmp(mat[i].legend, mat2[i].legend) != 0)
             {
-                sprintf(mat[i].legend+strlen(mat[i].legend), " / %s", mat2[i].legend);
+                sprintf(mat[i].legend + strlen(mat[i].legend), " / %s", mat2[i].legend);
             }
             write_xpm_m(out, mat[i]);
         }
@@ -741,15 +745,15 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
     gmx_bool bTryAgain;
     int      i, j, t, f = 0, ten;
 #define NFACT 4
-    real     major_fact[NFACT] = {5, 4, 2, 1};
-    real     minor_fact[NFACT] = {5, 4, 4, 5};
+    real major_fact[NFACT] = {5, 4, 2, 1};
+    real minor_fact[NFACT] = {5, 4, 4, 5};
 
     /* start with interval between 10 matrix points: */
-    space = std::max(10*axis[1]-axis[0], axis[std::min(10, n-1)]-axis[0]);
+    space = std::max(10 * axis[1] - axis[0], axis[std::min(10, n - 1)] - axis[0]);
     /* get power of 10 */
-    ten       = static_cast<int>(std::ceil(std::log(space)/std::log(10.0))-1);
+    ten       = static_cast<int>(std::ceil(std::log(space) / std::log(10.0)) - 1);
     bTryAgain = TRUE;
-    for (t = ten+2; t > ten-3 && bTryAgain; t--)
+    for (t = ten + 2; t > ten - 3 && bTryAgain; t--)
     {
         for (f = 0; f < NFACT && bTryAgain; f++)
         {
@@ -764,17 +768,17 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
                 }
             }
             /* do we have a reasonable number of ticks ? */
-            bTryAgain = (i > std::min(10, n-1)) || (i < 5);
+            bTryAgain = (i > std::min(10, n - 1)) || (i < 5);
         }
     }
     if (bTryAgain)
     {
-        space = std::max(10*axis[1]-axis[0], axis[std::min(10, n-1)]-axis[0]);
+        space = std::max(10 * axis[1] - axis[0], axis[std::min(10, n - 1)] - axis[0]);
         fprintf(stderr, "Auto tick spacing failed for %c-axis, guessing %g\n",
                 axisnm, space);
     }
     *major = space;
-    *minor = space / minor_fact[(f > 0) ? f-1 : 0];
+    *minor = space / minor_fact[(f > 0) ? f - 1 : 0];
     fprintf(stderr, "Auto tick spacing for %c-axis: major %g, minor %g\n",
             axisnm, *major, *minor);
 }
@@ -785,17 +789,17 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             real size, real boxx, real boxy, const char *m2p, const char *m2pout,
             int mapoffset)
 {
-    const char   *libm2p;
-    char          buf[256], *legend;
-    t_psdata      out;
-    t_psrec       psrec, *psr;
-    int           W, H;
-    int           i, x, y, col, leg = 0;
-    real          x0, y0, xx;
-    real          w, h, dw, dh;
-    int           nmap1 = 0, nmap2 = 0, leg_nmap;
-    t_mapping    *map1  = nullptr, *map2 = nullptr, *leg_map;
-    gmx_bool      bMap1, bNextMap1, bDiscrete;
+    const char *libm2p;
+    char        buf[256], *legend;
+    t_psdata    out;
+    t_psrec     psrec, *psr;
+    int         W, H;
+    int         i, x, y, col, leg = 0;
+    real        x0, y0, xx;
+    real        w, h, dw, dh;
+    int         nmap1 = 0, nmap2 = 0, leg_nmap;
+    t_mapping * map1  = nullptr, *map2 = nullptr, *leg_map;
+    gmx_bool    bMap1, bNextMap1, bDiscrete;
 
     /* memory leak: */
     libm2p = m2p ? gmxlibfn(m2p) : m2p;
@@ -836,12 +840,12 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
 
     if (psr->xboxsize == 0)
     {
-        psr->xboxsize = size/mat[0].nx;
+        psr->xboxsize = size / mat[0].nx;
         printf("Set the x-size of the box to %.3f\n", psr->xboxsize);
     }
     if (psr->yboxsize == 0)
     {
-        psr->yboxsize = size/mat[0].nx;
+        psr->yboxsize = size / mat[0].nx;
         printf("Set the y-size of the box to %.3f\n", psr->yboxsize);
     }
 
@@ -852,7 +856,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         {
             nmap1 = mat[i].nmap;
             map1  = mat[i].map;
-            leg   = i+1;
+            leg   = i + 1;
         }
     }
     if (leg != 1)
@@ -868,7 +872,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             {
                 nmap2 = mat2[i].nmap;
                 map2  = mat2[i].map;
-                leg   = i+1;
+                leg   = i + 1;
             }
         }
         if (leg != 1)
@@ -881,8 +885,8 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         std::strcpy(mat[0].legend, psr->leglabel);
     }
 
-    bTitle          = bTitle     && mat[nmat-1].title[0];
-    bTitleOnce      = bTitleOnce && mat[nmat-1].title[0];
+    bTitle          = bTitle     && mat[nmat - 1].title[0];
+    bTitleOnce      = bTitleOnce && mat[nmat - 1].title[0];
     psr->bTitle     = bTitle;
     psr->bTitleOnce = bTitleOnce;
     psr->bYonce     = bYonce;
@@ -891,18 +895,18 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     box_dim(nmat, mat, mat2, psr, elegend, bFrame, &w, &h, &dw, &dh);
 
     /* Set up bounding box */
-    W = static_cast<int>(w+dw);
-    H = static_cast<int>(h+dh);
+    W = static_cast<int>(w + dw);
+    H = static_cast<int>(h + dh);
 
     /* Start box at */
     x0 = dw;
     y0 = dh;
-    x  = static_cast<int>(W+psr->xoffs);
-    y  = static_cast<int>(H+psr->yoffs);
+    x  = static_cast<int>(W + psr->xoffs);
+    y  = static_cast<int>(H + psr->yoffs);
     if (bFrame)
     {
-        x += 5*DDD;
-        y += 4*DDD;
+        x += 5 * DDD;
+        y += 4 * DDD;
     }
     out = ps_open(outf, 0, 0, x, y);
     ps_linewidth(out, static_cast<int>(psr->linewidth));
@@ -918,7 +922,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
 
     for (i = 0; (i < nmat); i++)
     {
-        if (bTitle || (bTitleOnce && i == nmat-1) )
+        if (bTitle || (bTitleOnce && i == nmat - 1) )
         {
             /* Print title, if any */
             ps_rgb(out, BLACK);
@@ -931,7 +935,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             {
                 sprintf(buf, "%s / %s", mat[i].title, mat2[i].title);
             }
-            ps_ctext(out, x0+w/2, y0+box_height(&(mat[i]), psr)+psr->titfontsize,
+            ps_ctext(out, x0 + w / 2, y0 + box_height(&(mat[i]), psr) + psr->titfontsize,
                      buf, eXCenter);
         }
         sprintf(buf, "Here starts the filling of box #%d", i);
@@ -941,7 +945,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             int nexty;
             int nextcol;
 
-            xx = x0+x*psr->xboxsize;
+            xx = x0 + x * psr->xboxsize;
             ps_moveto(out, xx, y0);
             y     = 0;
             bMap1 = (!mat2 || (x < y || (x == y && bFirstDiag)));
@@ -972,12 +976,12 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                     {
                         if (bMap1)
                         {
-                            ps_rgb_nbox(out, &(mat[i].map[col].rgb), nexty-y);
+                            ps_rgb_nbox(out, &(mat[i].map[col].rgb), nexty - y);
                         }
                         else
                         {
                             assert(mat2);
-                            ps_rgb_nbox(out, &(mat2[i].map[col].rgb), nexty-y);
+                            ps_rgb_nbox(out, &(mat2[i].map[col].rgb), nexty - y);
                         }
                     }
                     else
@@ -990,7 +994,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                 }
             }
         }
-        y0 += box_height(&(mat[i]), psr)+box_dh(psr)+box_dh_top(IS_ONCE, psr);
+        y0 += box_height(&(mat[i]), psr) + box_dh(psr) + box_dh_top(IS_ONCE, psr);
     }
 
     if (psr->X.lineatzero || psr->Y.lineatzero)
@@ -1028,14 +1032,14 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
         {
             if (elegend != elBoth)
             {
-                leg_continuous(out, x0+w/2, w/2, DDD, legend,
+                leg_continuous(out, x0 + w / 2, w / 2, DDD, legend,
                                psr->legfontsize, psr->legfont, leg_nmap, leg_map,
                                mapoffset);
             }
             else
             {
                 assert(mat2);
-                leg_bicontinuous(out, x0+w/2, w, DDD, mat[0].legend, mat2[0].legend,
+                leg_bicontinuous(out, x0 + w / 2, w, DDD, mat[0].legend, mat2[0].legend,
                                  psr->legfontsize, psr->legfont, nmap1, map1, nmap2, map2);
             }
         }
@@ -1080,7 +1084,7 @@ void prune_mat(int nmat, t_matrix *mat, t_matrix *mat2, int skip)
     {
         fprintf(stderr, "converting %dx%d matrix to %dx%d\n",
                 mat[i].nx, mat[i].ny,
-                (mat[i].nx+skip-1)/skip, (mat[i].ny+skip-1)/skip);
+                (mat[i].nx + skip - 1) / skip, (mat[i].ny + skip - 1) / skip);
         /* walk through matrix */
         xs = 0;
         for (x = 0; (x < mat[i].nx); x++)
@@ -1117,12 +1121,12 @@ void prune_mat(int nmat, t_matrix *mat, t_matrix *mat2, int skip)
             }
         }
         /* adjust parameters */
-        mat[i].nx = (mat[i].nx+skip-1)/skip;
-        mat[i].ny = (mat[i].ny+skip-1)/skip;
+        mat[i].nx = (mat[i].nx + skip - 1) / skip;
+        mat[i].ny = (mat[i].ny + skip - 1) / skip;
         if (mat2)
         {
-            mat2[i].nx = (mat2[i].nx+skip-1)/skip;
-            mat2[i].ny = (mat2[i].ny+skip-1)/skip;
+            mat2[i].nx = (mat2[i].nx + skip - 1) / skip;
+            mat2[i].ny = (mat2[i].ny + skip - 1) / skip;
         }
     }
 }
@@ -1144,9 +1148,9 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
             {
                 mats = mat2;
             }
-            for (x = 0; x < mats[i].nx-1; x++)
+            for (x = 0; x < mats[i].nx - 1; x++)
             {
-                if (std::abs(mats[i].axis_x[x+1]) < 1e-5)
+                if (std::abs(mats[i].axis_x[x + 1]) < 1e-5)
                 {
                     for (y = 0; y < mats[i].ny; y++)
                     {
@@ -1154,9 +1158,9 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
                     }
                 }
             }
-            for (y = 0; y < mats[i].ny-1; y++)
+            for (y = 0; y < mats[i].ny - 1; y++)
             {
-                if (std::abs(mats[i].axis_y[y+1]) < 1e-5)
+                if (std::abs(mats[i].axis_y[y + 1]) < 1e-5)
                 {
                     for (x = 0; x < mats[i].nx; x++)
                     {
@@ -1172,10 +1176,10 @@ void write_combined_matrix(int ecombine, const char *fn,
                            int nmat, t_matrix *mat1, t_matrix *mat2,
                            real *cmin, real *cmax)
 {
-    int        i, j, k, nlevels;
-    FILE      *out;
-    real     **rmat1, **rmat2;
-    real       rhi, rlo;
+    int    i, j, k, nlevels;
+    FILE * out;
+    real **rmat1, **rmat2;
+    real   rhi, rlo;
 
     out = gmx_ffopen(fn, "w");
     for (k = 0; k < nmat; k++)
@@ -1258,7 +1262,7 @@ void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,
             const char *epsfile, const char *xpmfile, const char *m2p,
             const char *m2pout, int skip, int mapoffset)
 {
-    int      i, j, k;
+    int i, j, k;
 
     if (mat2)
     {
@@ -1271,7 +1275,7 @@ void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,
             }
             for (j = 0; (j < mat[k].ny); j++)
             {
-                for (i = bFirstDiag ? j+1 : j; (i < mat[k].nx); i++)
+                for (i = bFirstDiag ? j + 1 : j; (i < mat[k].nx); i++)
                 {
                     mat[k].matrix[i][j] = mat2[k].matrix[i][j];
                 }
@@ -1314,10 +1318,10 @@ void gradient_map(rvec grad, int nmap, t_mapping map[])
 
     for (i = 0; i < nmap; i++)
     {
-        c            = i/(nmap-1.0);
-        map[i].rgb.r = 1-c*(1-grad[XX]);
-        map[i].rgb.g = 1-c*(1-grad[YY]);
-        map[i].rgb.b = 1-c*(1-grad[ZZ]);
+        c            = i / (nmap - 1.0);
+        map[i].rgb.r = 1 - c * (1 - grad[XX]);
+        map[i].rgb.g = 1 - c * (1 - grad[YY]);
+        map[i].rgb.b = 1 - c * (1 - grad[ZZ]);
     }
 }
 
@@ -1338,7 +1342,7 @@ void rainbow_map(gmx_bool bBlue, int nmap, t_mapping map[])
 
     for (i = 0; i < nmap; i++)
     {
-        c = (map[i].rgb.r + map[i].rgb.g + map[i].rgb.b)/3;
+        c = (map[i].rgb.r + map[i].rgb.g + map[i].rgb.b) / 3;
         if (c > 1)
         {
             c = 1;
@@ -1350,25 +1354,25 @@ void rainbow_map(gmx_bool bBlue, int nmap, t_mapping map[])
         if (c <= 0.25) /* 0-0.25 */
         {
             r = 0;
-            g = std::pow(4.0*c, 2.0/3.0);
+            g = std::pow(4.0 * c, 2.0 / 3.0);
             b = 1;
         }
         else if (c <= 0.5) /* 0.25-0.5 */
         {
             r = 0;
             g = 1;
-            b = std::pow(2.0-4.0*c, 2.0/3.0);
+            b = std::pow(2.0 - 4.0 * c, 2.0 / 3.0);
         }
         else if (c <= 0.75) /* 0.5-0.75 */
         {
-            r = std::pow(4.0*c-2.0, 2.0/3.0);
+            r = std::pow(4.0 * c - 2.0, 2.0 / 3.0);
             g = 1;
             b = 0;
         }
         else /* 0.75-1 */
         {
             r = 1;
-            g = std::pow(4.0-4.0*c, 2.0/3.0);
+            g = std::pow(4.0 - 4.0 * c, 2.0 / 3.0);
             b = 0;
         }
         map[i].rgb.r = r;
@@ -1389,7 +1393,7 @@ void rainbow_mat(gmx_bool bBlue, int nmat, t_matrix mat[])
 
 int gmx_xpm2ps(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] makes a beautiful color plot of an XPixelMap file.",
         "Labels and axis can be displayed, when they are supplied",
         "in the correct matrix format.",
@@ -1433,24 +1437,27 @@ int gmx_xpm2ps(int argc, char *argv[])
     };
 
     gmx_output_env_t *oenv;
-    const char       *fn, *epsfile = nullptr, *xpmfile = nullptr;
+    const char *      fn, *epsfile = nullptr, *xpmfile = nullptr;
     int               i, nmat, nmat2, etitle, elegend, ediag, erainbow, ecombine;
-    t_matrix         *mat = nullptr, *mat2 = nullptr;
+    t_matrix *        mat = nullptr, *mat2 = nullptr;
     gmx_bool          bTitle, bTitleOnce, bDiag, bFirstDiag, bGrad;
     static gmx_bool   bFrame = TRUE, bZeroLine = FALSE, bYonce = FALSE;
     static real       size   = 400, boxx = 0, boxy = 0, cmin = 0, cmax = 0;
     static rvec       grad   = {0, 0, 0};
-    enum                    {
+    enum
+    {
         etSel, etTop, etOnce, etYlabel, etNone, etNR
     };
-    const char *title[]   = { nullptr, "top", "once", "ylabel", "none", nullptr };
+    const char *title[] = { nullptr, "top", "once", "ylabel", "none", nullptr };
     /* MUST correspond to enum elXxx as defined at top of file */
-    const char *legend[]  = { nullptr, "both", "first", "second", "none", nullptr };
-    enum                    {
+    const char *legend[] = { nullptr, "both", "first", "second", "none", nullptr };
+    enum
+    {
         edSel, edFirst, edSecond, edNone, edNR
     };
-    const char *diag[]    = { nullptr, "first", "second", "none", nullptr };
-    enum                    {
+    const char *diag[] = { nullptr, "first", "second", "none", nullptr };
+    enum
+    {
         erSel, erNo, erBlue, erRed, erNR
     };
     const char *rainbow[] = { nullptr, "no", "blue", "red", nullptr };
@@ -1486,7 +1493,7 @@ int gmx_xpm2ps(int argc, char *argv[])
         { "-cmax",    FALSE, etREAL, {&cmax}, "Maximum for combination output" }
     };
 #define NPA asize(pa)
-    t_filenm    fnm[] = {
+    t_filenm fnm[] = {
         { efXPM, "-f",  nullptr,      ffREAD },
         { efXPM, "-f2", "root2",   ffOPTRD },
         { efM2P, "-di", nullptr,      ffLIBOPTRD },

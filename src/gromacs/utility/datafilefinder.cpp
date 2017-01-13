@@ -70,9 +70,9 @@ class DataFileFinder::Impl
 
         Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
-        const char               *envName_;
-        bool                      bEnvIsSet_;
-        std::vector<std::string>  searchPath_;
+        const char *             envName_;
+        bool                     bEnvIsSet_;
+        std::vector<std::string> searchPath_;
 };
 
 std::string DataFileFinder::Impl::getDefaultPath()

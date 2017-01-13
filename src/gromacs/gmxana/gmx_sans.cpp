@@ -59,7 +59,7 @@
 
 int gmx_sans(int argc, char *argv[])
 {
-    const char          *desc[] = {
+    const char *        desc[] = {
         "[THISMODULE] computes SANS spectra using Debye formula.",
         "It currently uses topology file (since it need to assigne element for each atom).",
         "[PAR]",
@@ -76,23 +76,23 @@ int gmx_sans(int argc, char *argv[])
         "[PAR]",
         "WARNING: If sq or pr specified this tool can produce large number of files! Up to two times larger than number of frames!"
     };
-    static gmx_bool      bPBC     = TRUE;
-    static gmx_bool      bNORM    = FALSE;
-    static real          binwidth = 0.2, grid = 0.05; /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
-    static real          start_q  = 0.0, end_q = 2.0, q_step = 0.01;
-    static real          mcover   = -1;
-    static unsigned int  seed     = 0;
-    static int           nthreads = -1;
+    static gmx_bool     bPBC     = TRUE;
+    static gmx_bool     bNORM    = FALSE;
+    static real         binwidth = 0.2, grid = 0.05;  /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
+    static real         start_q  = 0.0, end_q = 2.0, q_step = 0.01;
+    static real         mcover   = -1;
+    static unsigned int seed     = 0;
+    static int          nthreads = -1;
 
-    static const char   *emode[]   = { nullptr, "direct", "mc", nullptr };
-    static const char   *emethod[] = { nullptr, "debye", "fft", nullptr };
+    static const char *emode[]   = { nullptr, "direct", "mc", nullptr };
+    static const char *emethod[] = { nullptr, "debye", "fft", nullptr };
 
-    gmx_neutron_atomic_structurefactors_t    *gnsf;
-    gmx_sans_t                               *gsans;
+    gmx_neutron_atomic_structurefactors_t *gnsf;
+    gmx_sans_t *                           gsans;
 
 #define NPA asize(pa)
 
-    t_pargs                               pa[] = {
+    t_pargs                              pa[] = {
         { "-bin", FALSE, etREAL, {&binwidth},
           "[HIDDEN]Binwidth (nm)" },
         { "-mode", FALSE, etENUM, {emode},
@@ -118,32 +118,32 @@ int gmx_sans(int argc, char *argv[])
           "Number of threads to start"},
 #endif
     };
-    FILE                                 *fp;
-    const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
-    t_trxstatus                          *status;
-    t_topology                           *top  = nullptr;
-    gmx_rmpbc_t                           gpbc = nullptr;
-    gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
-    gmx_bool                              bMC  = FALSE;
-    int                                   ePBC = -1;
-    matrix                                box;
-    rvec                                 *x;
-    int                                   natoms;
-    real                                  t;
-    char                                **grpname = nullptr;
-    int                                  *index   = nullptr;
-    int                                   isize;
-    int                                   i;
-    char                                 *hdr            = nullptr;
-    char                                 *suffix         = nullptr;
-    t_filenm                             *fnmdup         = nullptr;
-    gmx_radial_distribution_histogram_t  *prframecurrent = nullptr, *pr = nullptr;
-    gmx_static_structurefactor_t         *sqframecurrent = nullptr, *sq = nullptr;
-    gmx_output_env_t                     *oenv;
+    FILE *                               fp;
+    const char *                         fnTPX, *fnTRX, *fnDAT = nullptr;
+    t_trxstatus *                        status;
+    t_topology *                         top  = nullptr;
+    gmx_rmpbc_t                          gpbc = nullptr;
+    gmx_bool                             bFFT = FALSE, bDEBYE = FALSE;
+    gmx_bool                             bMC  = FALSE;
+    int                                  ePBC = -1;
+    matrix                               box;
+    rvec *                               x;
+    int                                  natoms;
+    real                                 t;
+    char **                              grpname = nullptr;
+    int *                                index   = nullptr;
+    int                                  isize;
+    int                                  i;
+    char *                               hdr            = nullptr;
+    char *                               suffix         = nullptr;
+    t_filenm *                           fnmdup         = nullptr;
+    gmx_radial_distribution_histogram_t *prframecurrent = nullptr, *pr = nullptr;
+    gmx_static_structurefactor_t *       sqframecurrent = nullptr, *sq = nullptr;
+    gmx_output_env_t *                   oenv;
 
 #define NFILE asize(fnm)
 
-    t_filenm   fnm[] = {
+    t_filenm fnm[] = {
         { efTPR,  "-s",       nullptr,       ffREAD },
         { efTRX,  "-f",       nullptr,       ffREAD },
         { efNDX,  nullptr,       nullptr,       ffOPTRD },
@@ -340,8 +340,7 @@ int gmx_sans(int argc, char *argv[])
         sfree(sqframecurrent->q);
         sfree(sqframecurrent->s);
         sfree(sqframecurrent);
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     /* normalize histo */

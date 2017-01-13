@@ -61,14 +61,14 @@
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(t_commrec         *cr,
-                               const t_inputrec  *ir,
-                               const gmx_mtop_t  *top_global,
-                               gmx_localtop_t    *top,
-                               t_forcerec        *fr,
-                               t_graph          **graph,
-                               t_mdatoms         *mdatoms,
-                               gmx_vsite_t       *vsite,
-                               gmx_shellfc_t     *shellfc);
+void mdAlgorithmsSetupAtomData(t_commrec *       cr,
+                               const t_inputrec *ir,
+                               const gmx_mtop_t *top_global,
+                               gmx_localtop_t *  top,
+                               t_forcerec *      fr,
+                               t_graph **        graph,
+                               t_mdatoms *       mdatoms,
+                               gmx_vsite_t *     vsite,
+                               gmx_shellfc_t *   shellfc);
 
 #endif

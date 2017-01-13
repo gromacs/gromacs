@@ -80,7 +80,7 @@ struct InstallationPrefixInfo
      * should be searched using the layout of the source tree instead of the
      * installation.
      */
-    const bool        bSourceLayout;
+    const bool bSourceLayout;
 };
 
 

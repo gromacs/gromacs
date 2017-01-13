@@ -45,16 +45,17 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
-    int              nr;       /* The number of atomtypes		*/
-    char          ***atomname; /* Names of the atomtypes		*/
+typedef struct
+{
+    int     nr;                /* The number of atomtypes		*/
+    char ***atomname;          /* Names of the atomtypes		*/
 } gpp_bond_atomtype;
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at)
 {
     gpp_bond_atomtype *ga = (gpp_bond_atomtype *) at;
 
-    int                i;
+    int i;
 
     for (i = 0; (i < ga->nr); i++)
     {
@@ -96,7 +97,7 @@ void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
 
     ga->nr++;
     srenew(ga->atomname, ga->nr);
-    ga->atomname[ga->nr-1] = put_symtab(tab, name);
+    ga->atomname[ga->nr - 1] = put_symtab(tab, name);
 }
 
 void done_bond_atomtype(t_bond_atomtype *at)

@@ -116,9 +116,9 @@ typedef struct
 // Struct for derivatives of a non-bonded interaction potential
 typedef struct
 {
-    real  md1; // -V' at the cutoff
-    real  d2;  //  V'' at the cutoff
-    real  md3; // -V''' at the cutoff
+    real md1;  // -V' at the cutoff
+    real d2;   //  V'' at the cutoff
+    real md3;  // -V''' at the cutoff
 } pot_derivatives_t;
 
 void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
@@ -137,7 +137,7 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
     {
         /* The CUDA kernels split the j-clusters in two halves */
         list_setup->cluster_size_i = nbnxn_kernel_to_cluster_i_size(nbnxnk8x8x8_GPU);
-        list_setup->cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnk8x8x8_GPU)/2;
+        list_setup->cluster_size_j = nbnxn_kernel_to_cluster_j_size(nbnxnk8x8x8_GPU) / 2;
     }
     else
     {
@@ -162,24 +162,23 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
     }
 }
 
-static gmx_bool
-atom_nonbonded_kinetic_prop_equal(const atom_nonbonded_kinetic_prop_t *prop1,
-                                  const atom_nonbonded_kinetic_prop_t *prop2)
+static gmx_bool atom_nonbonded_kinetic_prop_equal(const atom_nonbonded_kinetic_prop_t *prop1,
+                                                  const atom_nonbonded_kinetic_prop_t *prop2)
 {
-    return (prop1->mass     == prop2->mass &&
-            prop1->type     == prop2->type &&
-            prop1->q        == prop2->q &&
-            prop1->bConstr  == prop2->bConstr &&
-            prop1->con_mass == prop2->con_mass &&
-            prop1->con_len  == prop2->con_len);
+    return (prop1->mass     == prop2->mass
+            && prop1->type     == prop2->type
+            && prop1->q        == prop2->q
+            && prop1->bConstr  == prop2->bConstr
+            && prop1->con_mass == prop2->con_mass
+            && prop1->con_len  == prop2->con_len);
 }
 
 static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
                    const atom_nonbonded_kinetic_prop_t *prop,
                    int nmol)
 {
-    verletbuf_atomtype_t   *att;
-    int                     natt, i;
+    verletbuf_atomtype_t *att;
+    int                   natt, i;
 
     if (prop->mass == 0)
     {
@@ -209,10 +208,10 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
     }
 }
 
-static void get_vsite_masses(const gmx_moltype_t  *moltype,
+static void get_vsite_masses(const gmx_moltype_t * moltype,
                              const gmx_ffparams_t *ffparams,
-                             real                 *vsite_m,
-                             int                  *n_nonlin_vsite)
+                             real *                vsite_m,
+                             int *                 n_nonlin_vsite)
 {
     int            ft, i;
     const t_ilist *il;
@@ -226,7 +225,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
         {
             il = &moltype->ilist[ft];
 
-            for (i = 0; i < il->nr; i += 1+NRAL(ft))
+            for (i = 0; i < il->nr; i += 1 + NRAL(ft))
             {
                 const t_iparams *ip;
                 real             inv_mass, coeff, m_aj;
@@ -234,31 +233,31 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                 ip = &ffparams->iparams[il->iatoms[i]];
 
-                a1 = il->iatoms[i+1];
+                a1 = il->iatoms[i + 1];
 
                 if (ft != F_VSITEN)
                 {
                     /* Only vsiten can have more than four
                        constructing atoms, so NRAL(ft) <= 5 */
-                    int        j;
-                    real      *cam;
-                    const int  maxj = NRAL(ft);
+                    int       j;
+                    real *    cam;
+                    const int maxj = NRAL(ft);
 
                     snew(cam, maxj);
                     assert(maxj <= 5);
                     for (j = 1; j < maxj; j++)
                     {
-                        cam[j] = moltype->atoms.atom[il->iatoms[i+1+j]].m;
+                        cam[j] = moltype->atoms.atom[il->iatoms[i + 1 + j]].m;
                         if (cam[j] == 0)
                         {
-                            cam[j] = vsite_m[il->iatoms[i+1+j]];
+                            cam[j] = vsite_m[il->iatoms[i + 1 + j]];
                         }
                         if (cam[j] == 0)
                         {
                             gmx_fatal(FARGS, "In molecule type '%s' %s construction involves atom %d, which is a virtual site of equal or high complexity. This is not supported.",
                                       *moltype->name,
                                       interaction_function[ft].longname,
-                                      il->iatoms[i+1+j]+1);
+                                      il->iatoms[i + 1 + j] + 1);
                         }
                     }
 
@@ -266,11 +265,11 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                     {
                         case F_VSITE2:
                             /* Exact */
-                            vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*gmx::square(1-ip->vsite.a) + cam[1]*gmx::square(ip->vsite.a));
+                            vsite_m[a1] = (cam[1] * cam[2]) / (cam[2] * gmx::square(1 - ip->vsite.a) + cam[1] * gmx::square(ip->vsite.a));
                             break;
                         case F_VSITE3:
                             /* Exact */
-                            vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*gmx::square(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*gmx::square(ip->vsite.a) + cam[1]*cam[2]*gmx::square(ip->vsite.b));
+                            vsite_m[a1] = (cam[1] * cam[2] * cam[3]) / (cam[2] * cam[3] * gmx::square(1 - ip->vsite.a - ip->vsite.b) + cam[1] * cam[3] * gmx::square(ip->vsite.a) + cam[1] * cam[2] * gmx::square(ip->vsite.b));
                             break;
                         case F_VSITEN:
                             gmx_incons("Invalid vsite type");
@@ -304,10 +303,10 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                     /* Exact */
                     inv_mass = 0;
-                    for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
+                    for (j = 0; j < 3 * ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
                     {
-                        aj    = il->iatoms[i+j+2];
-                        coeff = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
+                        aj    = il->iatoms[i + j + 2];
+                        coeff = ffparams->iparams[il->iatoms[i + j]].vsiten.a;
                         if (moltype->atoms.atom[aj].ptype == eptVSite)
                         {
                             m_aj = vsite_m[aj];
@@ -320,9 +319,9 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                         {
                             gmx_incons("The mass of a vsiten constructing atom is <= 0");
                         }
-                        inv_mass += coeff*coeff/m_aj;
+                        inv_mass += coeff * coeff / m_aj;
                     }
-                    vsite_m[a1] = 1/inv_mass;
+                    vsite_m[a1] = 1 / inv_mass;
                     /* Correct for loop increment of i */
                     i += j - 1 - NRAL(ft);
                 }
@@ -336,19 +335,19 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
     }
 }
 
-static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
+static void get_verlet_buffer_atomtypes(const gmx_mtop_t *     mtop,
                                         verletbuf_atomtype_t **att_p,
-                                        int                   *natt_p,
-                                        int                   *n_nonlin_vsite)
+                                        int *                  natt_p,
+                                        int *                  n_nonlin_vsite)
 {
-    verletbuf_atomtype_t          *att;
+    verletbuf_atomtype_t *         att;
     int                            natt;
     int                            mb, nmol, ft, i, a1, a2, a3, a;
-    const t_atoms                 *atoms;
-    const t_ilist                 *il;
-    const t_iparams               *ip;
+    const t_atoms *                atoms;
+    const t_ilist *                il;
+    const t_iparams *              ip;
     atom_nonbonded_kinetic_prop_t *prop;
-    real                          *vsite_m;
+    real *                         vsite_m;
     int                            n_nonlin_vsite_mol;
 
     att  = nullptr;
@@ -376,11 +375,11 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
         {
             il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
 
-            for (i = 0; i < il->nr; i += 1+NRAL(ft))
+            for (i = 0; i < il->nr; i += 1 + NRAL(ft))
             {
-                ip         = &mtop->ffparams.iparams[il->iatoms[i]];
-                a1         = il->iatoms[i+1];
-                a2         = il->iatoms[i+2];
+                ip = &mtop->ffparams.iparams[il->iatoms[i]];
+                a1 = il->iatoms[i + 1];
+                a2 = il->iatoms[i + 2];
                 if (atoms->atom[a2].m > prop[a1].con_mass)
                 {
                     prop[a1].con_mass = atoms->atom[a2].m;
@@ -396,12 +395,12 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         il = &mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE];
 
-        for (i = 0; i < il->nr; i += 1+NRAL(F_SETTLE))
+        for (i = 0; i < il->nr; i += 1 + NRAL(F_SETTLE))
         {
-            ip         = &mtop->ffparams.iparams[il->iatoms[i]];
-            a1         = il->iatoms[i+1];
-            a2         = il->iatoms[i+2];
-            a3         = il->iatoms[i+3];
+            ip = &mtop->ffparams.iparams[il->iatoms[i]];
+            a1 = il->iatoms[i + 1];
+            a2 = il->iatoms[i + 2];
+            a3 = il->iatoms[i + 3];
             /* Usually the mass of a1 (usually oxygen) is larger than a2/a3.
              * If this is not the case, we overestimate the displacement,
              * which leads to a larger buffer (ok since this is an exotic case).
@@ -422,7 +421,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                          &n_nonlin_vsite_mol);
         if (n_nonlin_vsite != nullptr)
         {
-            *n_nonlin_vsite += nmol*n_nonlin_vsite_mol;
+            *n_nonlin_vsite += nmol * n_nonlin_vsite_mol;
         }
 
         for (a = 0; a < atoms->nr; a++)
@@ -435,8 +434,8 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
             {
                 prop[a].mass = atoms->atom[a].m;
             }
-            prop[a].type     = atoms->atom[a].type;
-            prop[a].q        = atoms->atom[a].q;
+            prop[a].type = atoms->atom[a].type;
+            prop[a].q    = atoms->atom[a].q;
             /* We consider an atom constrained, #DOF=2, when it is
              * connected with constraints to (at least one) atom with
              * a mass of more than 0.4x its own mass. This is not a critical
@@ -444,7 +443,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
              * and constrained displacement will not differ much (and both
              * overestimate the displacement).
              */
-            prop[a].bConstr = (prop[a].con_mass > 0.4*prop[a].mass);
+            prop[a].bConstr = (prop[a].con_mass > 0.4 * prop[a].mass);
 
             add_at(&att, &natt, &prop[a], nmol);
         }
@@ -481,8 +480,8 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
  */
 static void constrained_atom_sigma2(real                                 kT_fac,
                                     const atom_nonbonded_kinetic_prop_t *prop,
-                                    real                                *sigma2_2d,
-                                    real                                *sigma2_3d)
+                                    real *                               sigma2_2d,
+                                    real *                               sigma2_3d)
 {
     real sigma2_rot;
     real com_dist;
@@ -494,13 +493,13 @@ static void constrained_atom_sigma2(real                                 kT_fac,
      */
 
     /* Determine the variance for the displacement of the rotational mode */
-    sigma2_rot = kT_fac/(prop->mass*(prop->mass + prop->con_mass)/prop->con_mass);
+    sigma2_rot = kT_fac / (prop->mass * (prop->mass + prop->con_mass) / prop->con_mass);
 
     /* The distance from the atom to the COM, i.e. the rotational arm */
-    com_dist = prop->con_len*prop->con_mass/(prop->mass + prop->con_mass);
+    com_dist = prop->con_len * prop->con_mass / (prop->mass + prop->con_mass);
 
     /* The variance relative to the arm */
-    sigma2_rel = sigma2_rot/(com_dist*com_dist);
+    sigma2_rel = sigma2_rot / (com_dist * com_dist);
     /* At 6 the scaling formula has slope 0,
      * so we keep sigma2_2d constant after that.
      */
@@ -524,8 +523,8 @@ static void constrained_atom_sigma2(real                                 kT_fac,
          * runs to infinity, whereas it should be <= 2*com_dist).
          * Thus we always overestimate the drift and the buffer size.
          */
-        scale      = 1/(1 + sigma2_rel/6);
-        *sigma2_2d = sigma2_rot*scale*scale;
+        scale      = 1 / (1 + sigma2_rel / 6);
+        *sigma2_2d = sigma2_rot * scale * scale;
     }
     else
     {
@@ -537,17 +536,17 @@ static void constrained_atom_sigma2(real                                 kT_fac,
          * the variance and additionally has a long tail. This means
          * we have a (safe) overestimation of the drift.
          */
-        *sigma2_2d = 1.5*com_dist*com_dist;
+        *sigma2_2d = 1.5 * com_dist * com_dist;
     }
 
     /* The constrained atom also moves (in 3D) with the COM of both atoms */
-    *sigma2_3d = kT_fac/(prop->mass + prop->con_mass);
+    *sigma2_3d = kT_fac / (prop->mass + prop->con_mass);
 }
 
 static void get_atom_sigma2(real                                 kT_fac,
                             const atom_nonbonded_kinetic_prop_t *prop,
-                            real                                *sigma2_2d,
-                            real                                *sigma2_3d)
+                            real *                               sigma2_2d,
+                            real *                               sigma2_3d)
 {
     if (prop->bConstr)
     {
@@ -558,7 +557,7 @@ static void get_atom_sigma2(real                                 kT_fac,
     {
         /* Unconstrained atom: trivial */
         *sigma2_2d = 0;
-        *sigma2_3d = kT_fac/prop->mass;
+        *sigma2_3d = kT_fac / prop->mass;
     }
 }
 
@@ -574,11 +573,11 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
      */
     real ex, er;
 
-    ex = std::exp(-x*x/(2*s2));
-    er = std::erfc(x/std::sqrt(2*s2));
+    ex = std::exp(-x * x / (2 * s2));
+    er = std::erfc(x / std::sqrt(2 * s2));
 
-    *shift = -x + std::sqrt(2*s2/M_PI)*ex/er;
-    *scale = 0.5*M_PI*std::exp(ex*ex/(M_PI*er*er))*er;
+    *shift = -x + std::sqrt(2 * s2 / M_PI) * ex / er;
+    *scale = 0.5*M_PI*std::exp(ex * ex / (M_PI * er * er)) * er;
 }
 
 // Returns an (over)estimate of the energy drift for a single atom pair,
@@ -594,12 +593,12 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
     // such that we can divide by erfc and have some space left for arithmetic.
     const real erfc_arg_max = 8.0;
 
-    real       rsh    = r_buffer;
-    real       sc_fac = 1.0;
+    real rsh    = r_buffer;
+    real sc_fac = 1.0;
 
-    real       c_exp, c_erfc;
+    real c_exp, c_erfc;
 
-    if (rsh*rsh > 2*s2*erfc_arg_max*erfc_arg_max)
+    if (rsh * rsh > 2 * s2 * erfc_arg_max * erfc_arg_max)
     {
         // Below we calculate c_erfc = 0.5*erfc(rsh/sqrt(2*s2))
         // When rsh/sqrt(2*s2) increases, this erfc will be the first
@@ -622,7 +621,7 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
         {
             real sh, sc;
 
-            approx_2dof(s2i_2d, r_buffer*s2i_2d/s2, &sh, &sc);
+            approx_2dof(s2i_2d, r_buffer * s2i_2d / s2, &sh, &sc);
             rsh    += sh;
             sc_fac *= sc;
         }
@@ -630,7 +629,7 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
         {
             real sh, sc;
 
-            approx_2dof(s2j_2d, r_buffer*s2j_2d/s2, &sh, &sc);
+            approx_2dof(s2j_2d, r_buffer * s2j_2d / s2, &sh, &sc);
             rsh    += sh;
             sc_fac *= sc;
         }
@@ -646,18 +645,18 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
          * Note that pot has unit energy*length, as the linear
          * atom density still needs to be put in.
          */
-        c_exp  = std::exp(-rsh*rsh/(2*s2))/std::sqrt(2*M_PI);
-        c_erfc = 0.5*std::erfc(rsh/(std::sqrt(2*s2)));
+        c_exp  = std::exp(-rsh * rsh / (2 * s2)) / std::sqrt(2 * M_PI);
+        c_erfc = 0.5 * std::erfc(rsh / (std::sqrt(2 * s2)));
     }
     real s    = std::sqrt(s2);
-    real rsh2 = rsh*rsh;
+    real rsh2 = rsh * rsh;
 
-    real pot1 = sc_fac*
-        der->md1/2*((rsh2 + s2)*c_erfc - rsh*s*c_exp);
-    real pot2 = sc_fac*
-        der->d2/6*(s*(rsh2 + 2*s2)*c_exp - rsh*(rsh2 + 3*s2)*c_erfc);
-    real pot3 = sc_fac*
-        der->md3/24*((rsh2*rsh2 + 6*rsh2*s2 + 3*s2*s2)*c_erfc - rsh*s*(rsh2 + 5*s2)*c_exp);
+    real pot1 = sc_fac
+        * der->md1 / 2 * ((rsh2 + s2) * c_erfc - rsh * s * c_exp);
+    real pot2 = sc_fac
+        * der->d2 / 6 * (s * (rsh2 + 2 * s2) * c_exp - rsh * (rsh2 + 3 * s2) * c_erfc);
+    real pot3 = sc_fac
+        * der->md3 / 24 * ((rsh2 * rsh2 + 6 * rsh2 * s2 + 3 * s2 * s2) * c_erfc - rsh * s * (rsh2 + 5 * s2) * c_exp);
 
     return pot1 + pot2 + pot3;
 }
@@ -699,12 +698,12 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
             real s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d;
 
             // Set -V', V'' and -V''' at the cut-off for LJ */
-            real              c6  = ffp->iparams[prop_i->type*ffp->atnr + prop_j->type].lj.c6;
-            real              c12 = ffp->iparams[prop_i->type*ffp->atnr + prop_j->type].lj.c12;
+            real              c6  = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c6;
+            real              c12 = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c12;
             pot_derivatives_t lj;
-            lj.md1 = c6*ljDisp->md1 + c12*ljRep->md1;
-            lj.d2  = c6*ljDisp->d2  + c12*ljRep->d2;
-            lj.md3 = c6*ljDisp->md3 + c12*ljRep->md3;
+            lj.md1 = c6 * ljDisp->md1 + c12 * ljRep->md1;
+            lj.d2  = c6 * ljDisp->d2  + c12 * ljRep->d2;
+            lj.md3 = c6 * ljDisp->md3 + c12 * ljRep->md3;
 
             real pot_lj = energyDriftAtomPair(prop_i, prop_j,
                                               s2, s2i_2d, s2j_2d,
@@ -713,14 +712,14 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
 
             // Set -V' and V'' at the cut-off for Coulomb
             pot_derivatives_t elec_qq;
-            elec_qq.md1 = elec->md1*prop_i->q*prop_j->q;
-            elec_qq.d2  = elec->d2 *prop_i->q*prop_j->q;
+            elec_qq.md1 = elec->md1 * prop_i->q * prop_j->q;
+            elec_qq.d2  = elec->d2 * prop_i->q * prop_j->q;
             elec_qq.md3 = 0;
 
-            real pot_q  = energyDriftAtomPair(prop_i, prop_j,
-                                              s2, s2i_2d, s2j_2d,
-                                              rlist - rcoulomb,
-                                              &elec_qq);
+            real pot_q = energyDriftAtomPair(prop_i, prop_j,
+                                             s2, s2i_2d, s2j_2d,
+                                             rlist - rcoulomb,
+                                             &elec_qq);
 
             // Note that attractive and repulsive potentials for individual
             // pairs can partially cancel.
@@ -729,16 +728,16 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
             /* Multiply by the number of atom pairs */
             if (j == i)
             {
-                pot *= (double)att[i].n*(att[i].n - 1)/2;
+                pot *= (double)att[i].n * (att[i].n - 1) / 2;
             }
             else
             {
-                pot *= (double)att[i].n*att[j].n;
+                pot *= (double)att[i].n * att[j].n;
             }
             /* We need the line density to get the energy drift of the system.
              * The effective average r^2 is close to (rlist+sigma)^2.
              */
-            pot *= 4*M_PI*gmx::square(rlist + std::sqrt(s2))/boxvol;
+            pot *= 4*M_PI*gmx::square(rlist + std::sqrt(s2)) / boxvol;
 
             /* Add the unsigned drift to avoid cancellation of errors */
             drift_tot += std::abs(pot);
@@ -752,14 +751,14 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
 {
     real d, area_rel;
 
-    if (rlist < 0.5*particle_distance)
+    if (rlist < 0.5 * particle_distance)
     {
         /* We have non overlapping spheres */
         return 1.0;
     }
 
     /* Half the inter-particle distance relative to rlist */
-    d = 0.5*particle_distance/rlist;
+    d = 0.5 * particle_distance / rlist;
 
     /* Determine the area of the surface at distance rlist to the closest
      * particle, relative to surface of a sphere of radius rlist.
@@ -785,18 +784,18 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
              * The surface around a tetrahedron is too complex for a full
              * analytical solution, so we use a Taylor expansion.
              */
-            area_rel = (1.0 + 1/M_PI*(6*std::acos(1/std::sqrt(3))*d +
-                                      std::sqrt(3)*d*d*(1.0 +
-                                                        5.0/18.0*d*d +
-                                                        7.0/45.0*d*d*d*d +
-                                                        83.0/756.0*d*d*d*d*d*d)));
+            area_rel = (1.0 + 1 / M_PI * (6 * std::acos(1 / std::sqrt(3)) * d
+                                          + std::sqrt(3) * d * d * (1.0
+                                                                    + 5.0 / 18.0 * d * d
+                                                                    + 7.0 / 45.0 * d * d * d * d
+                                                                    + 83.0 / 756.0 * d * d * d * d * d * d)));
             break;
         default:
             gmx_incons("surface_frac called with unsupported cluster_size");
             area_rel = 1.0;
     }
 
-    return area_rel/cluster_size;
+    return area_rel / cluster_size;
 }
 
 /* Returns the negative of the third derivative of a potential r^-p
@@ -810,11 +809,11 @@ static real md3_force_switch(real p, real rswitch, real rc)
     real a, b;
     real md3_pot, md3_sw;
 
-    a = -((p + 4)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*gmx::square(rc-rswitch));
-    b =  ((p + 3)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*gmx::power3(rc-rswitch));
+    a = -((p + 4) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::square(rc - rswitch));
+    b =  ((p + 3) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::power3(rc - rswitch));
 
-    md3_pot = (p + 2)*(p + 1)*p*pow(rc, p+3);
-    md3_sw  = 2*a + 6*b*(rc - rswitch);
+    md3_pot = (p + 2) * (p + 1) * p * pow(rc, p + 3);
+    md3_sw  = 2 * a + 6 * b * (rc - rswitch);
 
     return md3_pot + md3_sw;
 }
@@ -826,11 +825,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
-    double                resolution;
-    char                 *env;
+    double resolution;
+    char * env;
 
-    real                  particle_distance;
-    real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
+    real particle_distance;
+    real nb_clust_frac_pairs_not_in_list_at_cutoff;
 
     verletbuf_atomtype_t *att  = nullptr;
     int                   natt = -1, i;
@@ -906,7 +905,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
      */
 
     /* Worst case assumption: HCP packing of particles gives largest distance */
-    particle_distance = std::cbrt(boxvol*std::sqrt(2)/mtop->natoms);
+    particle_distance = std::cbrt(boxvol * std::sqrt(2) / mtop->natoms);
 
     get_verlet_buffer_atomtypes(mtop, &att, &natt, n_nonlin_vsite);
     assert(att != NULL && natt >= 0);
@@ -931,8 +930,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                ljDisp.md1 =     -6*std::pow(ir->rvdw, -7.0);
-                ljRep.md1  = repPow*std::pow(ir->rvdw, -(repPow + 1));
+                ljDisp.md1 =     -6 * std::pow(ir->rvdw, -7.0);
+                ljRep.md1  = repPow * std::pow(ir->rvdw, -(repPow + 1));
                 /* The contribution of the higher derivatives is negligible */
                 break;
             case eintmodFORCESWITCH:
@@ -945,11 +944,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                  * V''' is given by the original potential times
                  * the third derivative of the switch function.
                  */
-                sw_range   = ir->rvdw - ir->rvdw_switch;
-                md3_pswf   = 60.0/gmx::power3(sw_range);
+                sw_range = ir->rvdw - ir->rvdw_switch;
+                md3_pswf = 60.0 / gmx::power3(sw_range);
 
-                ljDisp.md3 = -std::pow(ir->rvdw, -6.0   )*md3_pswf;
-                ljRep.md3  =  std::pow(ir->rvdw, -repPow)*md3_pswf;
+                ljDisp.md3 = -std::pow(ir->rvdw, -6.0   ) * md3_pswf;
+                ljRep.md3  =  std::pow(ir->rvdw, -repPow) * md3_pswf;
                 break;
             default:
                 gmx_incons("Unimplemented VdW modifier");
@@ -957,16 +956,16 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     }
     else if (EVDW_PME(ir->vdwtype))
     {
-        real b     = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
-        real r     = ir->rvdw;
-        real br    = b*r;
-        real br2   = br*br;
-        real br4   = br2*br2;
-        real br6   = br4*br2;
+        real b   = calc_ewaldcoeff_lj(ir->rvdw, ir->ewald_rtol_lj);
+        real r   = ir->rvdw;
+        real br  = b * r;
+        real br2 = br * br;
+        real br4 = br2 * br2;
+        real br6 = br4 * br2;
         // -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2),
         // see LJ-PME equations in manual] and r^-reppow
-        ljDisp.md1 = -std::exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*std::pow(r, -7.0);
-        ljRep.md1  = repPow*pow(r, -(repPow + 1));
+        ljDisp.md1 = -std::exp(-br2) * (br6 + 3.0 * br4 + 6.0 * br2 + 6.0) * std::pow(r, -7.0);
+        ljRep.md1  = repPow * pow(r, -(repPow + 1));
         // The contribution of the higher derivatives is negligible
     }
     else
@@ -974,7 +973,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
     }
 
-    elfac = ONE_4PI_EPS0/ir->epsilon_r;
+    elfac = ONE_4PI_EPS0 / ir->epsilon_r;
 
     // Determine the 1st and 2nd derivative for the electostatics
     pot_derivatives_t elec = { 0, 0, 0 };
@@ -990,23 +989,23 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         }
         else
         {
-            eps_rf = ir->epsilon_rf/ir->epsilon_r;
+            eps_rf = ir->epsilon_rf / ir->epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = (eps_rf - ir->epsilon_r)/( gmx::power3(ir->rcoulomb) * (2*eps_rf + ir->epsilon_r) );
+                k_rf = (eps_rf - ir->epsilon_r) / ( gmx::power3(ir->rcoulomb) * (2 * eps_rf + ir->epsilon_r) );
             }
             else
             {
                 /* epsilon_rf = infinity */
-                k_rf = 0.5/gmx::power3(ir->rcoulomb);
+                k_rf = 0.5 / gmx::power3(ir->rcoulomb);
             }
         }
 
         if (eps_rf > 0)
         {
-            elec.md1 = elfac*(1.0/gmx::square(ir->rcoulomb) - 2*k_rf*ir->rcoulomb);
+            elec.md1 = elfac * (1.0 / gmx::square(ir->rcoulomb) - 2 * k_rf * ir->rcoulomb);
         }
-        elec.d2      = elfac*(2.0/gmx::power3(ir->rcoulomb) + 2*k_rf);
+        elec.d2 = elfac * (2.0 / gmx::power3(ir->rcoulomb) + 2 * k_rf);
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
@@ -1014,9 +1013,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
         b        = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         rc       = ir->rcoulomb;
-        br       = b*rc;
-        elec.md1 = elfac*(b*std::exp(-br*br)*M_2_SQRTPI/rc + std::erfc(br)/(rc*rc));
-        elec.d2  = elfac/(rc*rc)*(2*b*(1 + br*br)*std::exp(-br*br)*M_2_SQRTPI + 2*std::erfc(br)/rc);
+        br       = b * rc;
+        elec.md1 = elfac * (b * std::exp(-br * br) * M_2_SQRTPI / rc + std::erfc(br) / (rc * rc));
+        elec.d2  = elfac / (rc * rc) * (2 * b * (1 + br * br) * std::exp(-br * br) * M_2_SQRTPI + 2 * std::erfc(br) / rc);
     }
     else
     {
@@ -1035,7 +1034,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          * should be negligible (unless nstlist is extremely large, which
          * you wouldn't do anyhow).
          */
-        kT_fac = 2*BOLTZ*reference_temperature*(ir->nstlist-1)*ir->delta_t;
+        kT_fac = 2 * BOLTZ * reference_temperature * (ir->nstlist - 1) * ir->delta_t;
         if (ir->bd_fric > 0)
         {
             /* This is directly sigma^2 of the displacement */
@@ -1066,7 +1065,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     }
     else
     {
-        kT_fac = BOLTZ*reference_temperature*gmx::square((ir->nstlist-1)*ir->delta_t);
+        kT_fac = BOLTZ * reference_temperature * gmx::square((ir->nstlist - 1) * ir->delta_t);
     }
 
     mass_min = att[0].prop.mass;
@@ -1088,11 +1087,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     /* Search using bisection */
     ib0 = -1;
     /* The drift will be neglible at 5 times the max sigma */
-    ib1 = (int)(5*2*std::sqrt(kT_fac/mass_min)/resolution) + 1;
+    ib1 = (int)(5 * 2 * std::sqrt(kT_fac / mass_min) / resolution) + 1;
     while (ib1 - ib0 > 1)
     {
-        ib = (ib0 + ib1)/2;
-        rb = ib*resolution;
+        ib = (ib0 + ib1) / 2;
+        rb = ib * resolution;
         rl = std::max(ir->rvdw, ir->rcoulomb) + rb;
 
         /* Calculate the average energy drift at the last step
@@ -1108,15 +1107,15 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          * and not a 1 x 1 particle pair list. This reduces the drift.
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
-        nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(std::min(list_setup->cluster_size_i, 4),
-                         particle_distance, rl)*
-            surface_frac(std::min(list_setup->cluster_size_j, 4),
-                         particle_distance, rl);
+        nb_clust_frac_pairs_not_in_list_at_cutoff
+            = surface_frac(std::min(list_setup->cluster_size_i, 4),
+                           particle_distance, rl)
+                * surface_frac(std::min(list_setup->cluster_size_j, 4),
+                               particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
-        drift /= ir->nstlist*ir->delta_t*mtop->natoms;
+        drift /= ir->nstlist * ir->delta_t * mtop->natoms;
 
         if (debug)
         {
@@ -1139,5 +1138,5 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     sfree(att);
 
-    *rlist = std::max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
+    *rlist = std::max(ir->rvdw, ir->rcoulomb) + ib1 * resolution;
 }

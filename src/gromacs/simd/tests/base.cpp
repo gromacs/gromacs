@@ -69,22 +69,22 @@ GMX_TEST_OPTIONS(SimdBaseTestOptions, options)
 /*! \addtogroup module_simd */
 /*! \{ */
 
-int  SimdBaseTest::s_nPoints    = 10000;
+int SimdBaseTest::s_nPoints = 10000;
 
-::testing::AssertionResult
-SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
-                                   const std::vector<real> &ref, const std::vector<real> &tst)
+::testing::AssertionResult SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
+                                                              const std::vector<real> &ref, const std::vector<real> &tst)
 {
-    std::vector<real>             absDiff(tst.size());
-    std::vector<std::int64_t>     ulpDiff(tst.size());
-    bool                          allOk;
-    size_t                        i;
+    std::vector<real>         absDiff(tst.size());
+    std::vector<std::int64_t> ulpDiff(tst.size());
+    bool                      allOk;
+    size_t                    i;
 
-    union {
+    union
+    {
 #if GMX_DOUBLE
         double r; std::int64_t i;
 #else
-        float  r; std::int32_t i;
+        float r; std::int32_t i;
 #endif
     } conv0, conv1;
 
@@ -97,13 +97,13 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
 
     for (i = 0, allOk = true; i < tst.size(); i++)
     {
-        absDiff[i]  = fabs(ref[i]-tst[i]);
-        conv0.r     = ref[i];
-        conv1.r     = tst[i];
-        ulpDiff[i]  = llabs(conv0.i-conv1.i);
+        absDiff[i] = fabs(ref[i] - tst[i]);
+        conv0.r    = ref[i];
+        conv1.r    = tst[i];
+        ulpDiff[i] = llabs(conv0.i - conv1.i);
 
         /* Use strict smaller-than for absolute tolerance check, so we disable it with absTol_=0 */
-        allOk       = allOk && ( ( absDiff[i] < absTol_ ) || ( ( ref[i]*tst[i] >= 0 ) && (ulpDiff[i] <= ulpTol_) ) );
+        allOk = allOk && ( ( absDiff[i] < absTol_ ) || ( ( ref[i] * tst[i] >= 0 ) && (ulpDiff[i] <= ulpTol_) ) );
     }
 
     if (allOk == true)

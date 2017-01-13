@@ -94,7 +94,7 @@ void handleRestart(t_commrec *cr,
                    gmx_bool   bTryToAppendFiles,
                    const int  NFILE,
                    t_filenm   fnm[],
-                   gmx_bool  *bDoAppendFiles,
-                   gmx_bool  *bStartFromCpt);
+                   gmx_bool * bDoAppendFiles,
+                   gmx_bool * bStartFromCpt);
 
 #endif

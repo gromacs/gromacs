@@ -270,7 +270,7 @@ class FloatingPointDifference
     private:
 
         //! Save the magnitude of the reference value for relative (i.e., not ULP) tolerance
-        double       termMagnitude_;
+        double termMagnitude_;
         //! Stores the absolute difference, or NaN if one or both values were NaN.
         double       absoluteDifference_;
         gmx_uint64_t ulpDifference_;
@@ -280,7 +280,7 @@ class FloatingPointDifference
          *
          * This sets the units for `ulpDifference_`.
          */
-        bool         bDouble_;
+        bool bDouble_;
 };
 
 /*! \libinternal \brief
@@ -397,8 +397,7 @@ class FloatingPointTolerance
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-ulpTolerance(gmx_uint64_t ulpDiff)
+static inline FloatingPointTolerance ulpTolerance(gmx_uint64_t ulpDiff)
 {
     return FloatingPointTolerance(0.0, 0.0, 0.0, 0.0, ulpDiff, ulpDiff, false);
 }
@@ -441,13 +440,12 @@ FloatingPointTolerance
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-relativeToleranceAsPrecisionDependentUlp(double       magnitude,
-                                         gmx_uint64_t singleUlpDiff,
-                                         gmx_uint64_t doubleUlpDiff)
+static inline FloatingPointTolerance relativeToleranceAsPrecisionDependentUlp(double       magnitude,
+                                                                              gmx_uint64_t singleUlpDiff,
+                                                                              gmx_uint64_t doubleUlpDiff)
 {
-    return FloatingPointTolerance(magnitude*singleUlpDiff*GMX_FLOAT_EPS,
-                                  magnitude*doubleUlpDiff*GMX_DOUBLE_EPS,
+    return FloatingPointTolerance(magnitude * singleUlpDiff * GMX_FLOAT_EPS,
+                                  magnitude * doubleUlpDiff * GMX_DOUBLE_EPS,
                                   0.0, 0.0,
                                   singleUlpDiff, doubleUlpDiff, false);
 }
@@ -457,8 +455,7 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-absoluteTolerance(double tolerance)
+static inline FloatingPointTolerance absoluteTolerance(double tolerance)
 {
     return FloatingPointTolerance(tolerance, tolerance, 0.0, 0.0,
                                   GMX_UINT64_MAX, GMX_UINT64_MAX, false);
@@ -480,8 +477,7 @@ absoluteTolerance(double tolerance)
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
+static inline FloatingPointTolerance relativeToleranceAsUlp(double magnitude, gmx_uint64_t ulpDiff)
 {
     return relativeToleranceAsPrecisionDependentUlp(magnitude, ulpDiff, ulpDiff);
 }
@@ -596,8 +592,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
 /*! \internal \brief
  * Helper method for `(EXPECT|ASSERT)_PLAIN`.
  */
-static inline ::testing::AssertionResult
-plainAssertHelper(const char * /*expr*/, const ::testing::AssertionResult &expr)
+static inline ::testing::AssertionResult plainAssertHelper(const char * /*expr*/, const ::testing::AssertionResult &expr)
 {
     return expr;
 }

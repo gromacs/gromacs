@@ -159,17 +159,17 @@ class AnalysisDataValue
         //! Possible flags for \a flags_.
         enum Flag
         {
-            efSet       = 1<<0, //!< Value has been set.
-            efErrorSet  = 1<<1, //!< Error estimate has been set.
-            efPresent   = 1<<2  //!< Value is set as present.
+            efSet      = 1 << 0, //!< Value has been set.
+            efErrorSet = 1 << 1, //!< Error estimate has been set.
+            efPresent  = 1 << 2  //!< Value is set as present.
         };
 
         //! Value for this value.
-        real                    value_;
+        real value_;
         //! Error estimate for this value, zero if not set.
-        real                    error_;
+        real error_;
         //! Status flags for thise value.
-        FlagsTemplate<Flag>     flags_;
+        FlagsTemplate<Flag> flags_;
 };
 
 //! Shorthand for reference to an array of data values.
@@ -257,9 +257,9 @@ class AnalysisDataFrameHeader
         }
 
     private:
-        int                     index_;
-        real                    x_;
-        real                    dx_;
+        int  index_;
+        real x_;
+        real dx_;
 };
 
 
@@ -316,10 +316,10 @@ class AnalysisDataPointSetInfo
         int firstColumn() const { return firstColumn_; }
 
     private:
-        int                     valueOffset_;
-        int                     valueCount_;
-        int                     dataSetIndex_;
-        int                     firstColumn_;
+        int valueOffset_;
+        int valueCount_;
+        int dataSetIndex_;
+        int firstColumn_;
 };
 
 //! Shorthand for reference to an array of point set data objects.
@@ -361,9 +361,9 @@ class AnalysisDataPointSetRef
          * The first element of the point set should be found from \p values
          * using the offset in \p pointSetInfo.
          */
-        AnalysisDataPointSetRef(const AnalysisDataFrameHeader  &header,
+        AnalysisDataPointSetRef(const AnalysisDataFrameHeader & header,
                                 const AnalysisDataPointSetInfo &pointSetInfo,
-                                const AnalysisDataValuesRef    &values);
+                                const AnalysisDataValuesRef &   values);
         /*! \brief
          * Constructs a point set reference from given values.
          *
@@ -373,7 +373,7 @@ class AnalysisDataPointSetRef
          * The first element in \p values should correspond to the first
          * column.
          */
-        AnalysisDataPointSetRef(const AnalysisDataFrameHeader        &header,
+        AnalysisDataPointSetRef(const AnalysisDataFrameHeader &       header,
                                 const std::vector<AnalysisDataValue> &values);
         /*! \brief
          * Constructs a point set reference to a subset of columns.
@@ -535,8 +535,8 @@ class AnalysisDataFrameRef
          * \param[in] values      Values for each column.
          * \param[in] pointSets   Point set data.
          */
-        AnalysisDataFrameRef(const AnalysisDataFrameHeader      &header,
-                             const AnalysisDataValuesRef        &values,
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader &     header,
+                             const AnalysisDataValuesRef &       values,
                              const AnalysisDataPointSetInfosRef &pointSets);
         /*! \brief
          * Constructs a frame reference from given values.
@@ -545,8 +545,8 @@ class AnalysisDataFrameRef
          * \param[in] values      Values for each column.
          * \param[in] pointSets   Point set data.
          */
-        AnalysisDataFrameRef(const AnalysisDataFrameHeader               &header,
-                             const std::vector<AnalysisDataValue>        &values,
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader &              header,
+                             const std::vector<AnalysisDataValue> &       values,
                              const std::vector<AnalysisDataPointSetInfo> &pointSets);
         /*! \brief
          * Constructs a frame reference to a subset of columns.

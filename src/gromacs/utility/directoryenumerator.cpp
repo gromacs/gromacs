@@ -101,10 +101,10 @@ class DirectoryEnumerator::Impl
             {
                 if (errno != ENOENT && bThrow)
                 {
-                    const int         code    = errno;
-                    const std::string message =
-                        formatString("Failed to list files in directory '%s'",
-                                     dirname);
+                    const int         code = errno;
+                    const std::string message
+                        = formatString("Failed to list files in directory '%s'",
+                                       dirname);
                     GMX_THROW_WITH_ERRNO(FileIOError(message), "_findfirst", code);
                 }
                 return NULL;
@@ -151,9 +151,9 @@ class DirectoryEnumerator::Impl
         }
 
     private:
-        intptr_t     windows_handle;
-        _finddata_t  finddata;
-        bool         bFirst_;
+        intptr_t    windows_handle;
+        _finddata_t finddata;
+        bool        bFirst_;
 };
 #elif HAVE_DIRENT_H
 class DirectoryEnumerator::Impl
@@ -161,16 +161,16 @@ class DirectoryEnumerator::Impl
     public:
         static Impl *init(const char *dirname, bool bThrow)
         {
-            errno       = 0;
+            errno = 0;
             DIR *handle = opendir(dirname);
             if (handle == nullptr)
             {
                 if (bThrow)
                 {
-                    const int         code    = errno;
-                    const std::string message =
-                        formatString("Failed to list files in directory '%s'",
-                                     dirname);
+                    const int         code = errno;
+                    const std::string message
+                        = formatString("Failed to list files in directory '%s'",
+                                       dirname);
                     GMX_THROW_WITH_ERRNO(FileIOError(message), "opendir", code);
                 }
                 return nullptr;
@@ -207,7 +207,7 @@ class DirectoryEnumerator::Impl
         }
 
     private:
-        DIR    *dirent_handle;
+        DIR *dirent_handle;
 };
 #else
 class DirectoryEnumerator::Impl

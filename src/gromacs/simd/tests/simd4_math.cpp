@@ -88,47 +88,48 @@ class Simd4MathTest : public Simd4Test
  * the SimdBaseTest class. You should not never call this function directly,
  * but use the macro GMX_EXPECT_SIMD4_FUNC_NEAR(refFunc,tstFunc) instead.
  */
-::testing::AssertionResult
-Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                        real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x))
+::testing::AssertionResult Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
+                                                                   real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x))
 {
-    std::vector<real>            vx(GMX_SIMD4_WIDTH);
-    std::vector<real>            vref(GMX_SIMD4_WIDTH);
-    std::vector<real>            vtst(GMX_SIMD4_WIDTH);
-    real                         dx;
-    std::int64_t                 ulpDiff, maxUlpDiff;
-    real                         maxUlpDiffPos;
-    real                         refValMaxUlpDiff, simdValMaxUlpDiff;
-    bool                         eq, signOk;
-    int                          i, iter;
-    int                          niter   = s_nPoints/GMX_SIMD4_WIDTH;
-    int                          npoints = niter*GMX_SIMD4_WIDTH;
+    std::vector<real> vx(GMX_SIMD4_WIDTH);
+    std::vector<real> vref(GMX_SIMD4_WIDTH);
+    std::vector<real> vtst(GMX_SIMD4_WIDTH);
+    real              dx;
+    std::int64_t      ulpDiff, maxUlpDiff;
+    real              maxUlpDiffPos;
+    real              refValMaxUlpDiff, simdValMaxUlpDiff;
+    bool              eq, signOk;
+    int               i, iter;
+    int               niter   = s_nPoints / GMX_SIMD4_WIDTH;
+    int               npoints = niter * GMX_SIMD4_WIDTH;
 #    if GMX_DOUBLE
-    union {
+    union
+    {
         double r; std::int64_t i;
     } conv0, conv1;
 #    else
-    union {
-        float  r; std::int32_t i;
+    union
+    {
+        float r; std::int32_t i;
     } conv0, conv1;
 #    endif
 
     maxUlpDiff = 0;
-    dx         = (range_.second-range_.first)/npoints;
+    dx         = (range_.second - range_.first) / npoints;
 
     for (iter = 0; iter < niter; iter++)
     {
         for (i = 0; i < GMX_SIMD4_WIDTH; i++)
         {
-            vx[i]   = range_.first+dx*(iter*GMX_SIMD4_WIDTH+i);
+            vx[i]   = range_.first + dx * (iter * GMX_SIMD4_WIDTH + i);
             vref[i] = refFunc(vx[i]);
         }
-        vtst  = simd4Real2Vector(simd4Func(vector2Simd4Real(vx)));
+        vtst = simd4Real2Vector(simd4Func(vector2Simd4Real(vx)));
 
         for (i = 0, eq = true, signOk = true; i < GMX_SIMD4_WIDTH && eq == true; i++)
         {
-            eq     = eq && ( fabs(vref[i]-vtst[i]) < absTol_ );
-            signOk = signOk && ( vref[i]*vtst[i] >= 0 );
+            eq     = eq && ( fabs(vref[i] - vtst[i]) < absTol_ );
+            signOk = signOk && ( vref[i] * vtst[i] >= 0 );
         }
         if (eq == true)
         {
@@ -155,7 +156,7 @@ Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *si
         {
             conv0.r = vref[i];
             conv1.r = vtst[i];
-            ulpDiff = llabs(conv0.i-conv1.i);
+            ulpDiff = llabs(conv0.i - conv1.i);
             if (ulpDiff > maxUlpDiff)
             {
                 maxUlpDiff        = ulpDiff;
@@ -196,10 +197,9 @@ namespace
 /*! \{ */
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
-static real
-refInvsqrt(real x)
+static real refInvsqrt(real x)
 {
-    return 1.0/std::sqrt(x);
+    return 1.0 / std::sqrt(x);
 }
 
 TEST_F(Simd4MathTest, invsqrt)
@@ -212,7 +212,7 @@ TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
 {
     setRange(1e-10, 1e10);
     /* Increase the allowed error by the difference between the actual precision and single */
-    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits - std::numeric_limits<float>::digits)));
     GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
 }
 

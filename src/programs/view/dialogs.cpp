@@ -154,7 +154,7 @@ static t_dlg *about_mb(t_x11 *x11, t_gmx *gmx)
 static void QuitCB(t_x11 *x11, int dlg_mess, int /*item_id*/,
                    char *set, void *data)
 {
-    t_gmx  *gmx;
+    t_gmx *gmx;
     gmx = static_cast<t_gmx *>(data);
 
     hide_mb(gmx);
@@ -204,16 +204,17 @@ static t_dlg *ni_mb(t_x11 *x11, t_gmx *gmx)
                       MBCallback, gmx);
 }
 
-enum {
+enum
+{
     eExE, eExGrom, eExPdb, eExConf, eExNR
 };
 
 static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
                      char *set, void *data)
 {
-    bool       bOk;
-    t_gmx     *gmx;
-    t_dlg     *dlg;
+    bool   bOk;
+    t_gmx *gmx;
+    t_dlg *dlg;
 
     gmx = static_cast<t_gmx *>(data);
     dlg = gmx->dlgs[edExport];
@@ -249,7 +250,8 @@ static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
     }
 }
 
-enum {
+enum
+{
     eg0, egTOPOL, egCONFIN, egPARAM, eg1, eg1PROC, eg32PROC
 };
 
@@ -264,7 +266,8 @@ static void Extract(t_dlg *dlg, int ID, char *buf)
     }
 }
 
-enum bond_set {
+enum bond_set
+{
     ebShowH = 11, ebDPlus, ebRMPBC, ebCue, ebSkip, ebWait
 };
 
@@ -275,8 +278,8 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
     static int ebox  = -1;
     bool       bOk, bBond = false;
     int        nskip, nwait;
-    t_gmx     *gmx;
-    char      *endptr;
+    t_gmx *    gmx;
+    char *     endptr;
 
     gmx = static_cast<t_gmx *>(data);
     if (ebond == -1)
@@ -289,12 +292,12 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
         case DLG_SET:
             if (item_id <= eBNR)
             {
-                ebond = item_id-1;
+                ebond = item_id - 1;
                 bBond = false;
             }
-            else if (item_id <= eBNR+esbNR+1)
+            else if (item_id <= eBNR + esbNR + 1)
             {
-                ebox  = item_id-eBNR-2;
+                ebox  = item_id - eBNR - 2;
                 bBond = true;
             }
             else
@@ -409,7 +412,8 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
     }
 }
 
-enum {
+enum
+{
     esFUNCT = 1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL
 };
 
@@ -428,7 +432,8 @@ static bool in_set(int i, int n, int set[])
 
 typedef t_dlg *t_mmb (t_x11 *x11, t_gmx *gmx);
 
-typedef struct {
+typedef struct
+{
     const char  *dlgfile;
     DlgCallback *cb;
 } t_dlginit;

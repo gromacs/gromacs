@@ -113,47 +113,40 @@ SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
 // and verlet-buffer-tolerance = -1 gives a grompp error. If we keep
 // things that way, this function should be renamed. For now,
 // force the use of the group scheme.
-void
-SimulationRunner::useEmptyMdpFile()
+void SimulationRunner::useEmptyMdpFile()
 {
     // TODO When removing the group scheme, update actual and potential users of useEmptyMdpFile
     useStringAsMdpFile("cutoff-scheme = Group\n");
 }
 
-void
-SimulationRunner::useStringAsMdpFile(const char *mdpString)
+void SimulationRunner::useStringAsMdpFile(const char *mdpString)
 {
     useStringAsMdpFile(std::string(mdpString));
 }
 
-void
-SimulationRunner::useStringAsMdpFile(const std::string &mdpString)
+void SimulationRunner::useStringAsMdpFile(const std::string &mdpString)
 {
     gmx::TextWriter::writeFileFromString(mdpInputFileName_, mdpString);
 }
 
-void
-SimulationRunner::useStringAsNdxFile(const char *ndxString)
+void SimulationRunner::useStringAsNdxFile(const char *ndxString)
 {
     gmx::TextWriter::writeFileFromString(ndxFileName_, ndxString);
 }
 
-void
-SimulationRunner::useTopGroAndNdxFromDatabase(const char *name)
+void SimulationRunner::useTopGroAndNdxFromDatabase(const char *name)
 {
     topFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
     groFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
     ndxFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
-void
-SimulationRunner::useGroFromDatabase(const char *name)
+void SimulationRunner::useGroFromDatabase(const char *name)
 {
     groFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
 }
 
-int
-SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
+int SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
 {
     CommandLine caller;
     caller.append("grompp");
@@ -169,14 +162,12 @@ SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
     return gmx_grompp(caller.argc(), caller.argv());
 }
 
-int
-SimulationRunner::callGromppOnThisRank()
+int SimulationRunner::callGromppOnThisRank()
 {
     return callGromppOnThisRank(CommandLine());
 }
 
-int
-SimulationRunner::callGrompp(const CommandLine &callerRef)
+int SimulationRunner::callGrompp(const CommandLine &callerRef)
 {
     int returnValue = 0;
 #if GMX_LIB_MPI
@@ -197,14 +188,12 @@ SimulationRunner::callGrompp(const CommandLine &callerRef)
     return returnValue;
 }
 
-int
-SimulationRunner::callGrompp()
+int SimulationRunner::callGrompp()
 {
     return callGrompp(CommandLine());
 }
 
-int
-SimulationRunner::callMdrun(const CommandLine &callerRef)
+int SimulationRunner::callMdrun(const CommandLine &callerRef)
 {
     /* Conforming to style guide by not passing a non-const reference
        to this function. Passing a non-const reference might make it
@@ -264,8 +253,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     return gmx_mdrun(caller.argc(), caller.argv());
 }
 
-int
-SimulationRunner::callMdrun()
+int SimulationRunner::callMdrun()
 {
     return callMdrun(CommandLine());
 }

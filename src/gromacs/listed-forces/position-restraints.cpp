@@ -79,7 +79,7 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
     real posA, posB, L1, ref = 0.;
     rvec pos;
 
-    L1 = 1.0-lambda;
+    L1 = 1.0 - lambda;
 
     for (m = 0; m < DIM; m++)
     {
@@ -91,7 +91,7 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
             {
                 case erscNO:
                     ref      = 0;
-                    rdist[m] = L1*posA + lambda*posB;
+                    rdist[m] = L1 * posA + lambda * posB;
                     dpdl[m]  = posB - posA;
                     break;
                 case erscALL:
@@ -99,18 +99,18 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                     posA *= pbc->box[m][m];
                     posB *= pbc->box[m][m];
                     assert(npbcdim <= DIM);
-                    for (d = m+1; d < npbcdim; d++)
+                    for (d = m + 1; d < npbcdim; d++)
                     {
-                        posA += pos0A[d]*pbc->box[d][m];
-                        posB += pos0B[d]*pbc->box[d][m];
+                        posA += pos0A[d] * pbc->box[d][m];
+                        posB += pos0B[d] * pbc->box[d][m];
                     }
-                    ref      = L1*posA + lambda*posB;
+                    ref      = L1 * posA + lambda * posB;
                     rdist[m] = 0;
                     dpdl[m]  = posB - posA;
                     break;
                 case erscCOM:
-                    ref      = L1*comA_sc[m] + lambda*comB_sc[m];
-                    rdist[m] = L1*posA       + lambda*posB;
+                    ref      = L1 * comA_sc[m] + lambda * comB_sc[m];
+                    rdist[m] = L1 * posA       + lambda * posB;
                     dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
                     break;
                 default:
@@ -119,7 +119,7 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
         }
         else
         {
-            ref      = L1*posA + lambda*posB;
+            ref      = L1 * posA + lambda * posB;
             rdist[m] = 0;
             dpdl[m]  = posB - posA;
         }
@@ -144,8 +144,8 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
  *         Returns the flat-bottom potential. */
 real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bool bInvert)
 {
-    int     d;
-    real    dr, dr2, invdr, v, rfb2;
+    int  d;
+    real dr, dr2, invdr, v, rfb2;
 
     dr2  = 0.0;
     rfb2 = gmx::square(rfb);
@@ -159,18 +159,18 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
         }
     }
 
-    if  (dr2 > 0.0 &&
-         ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+    if  (dr2 > 0.0
+         && ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
          )
     {
-        dr     = std::sqrt(dr2);
-        invdr  = 1./dr;
-        v      = 0.5*kk*gmx::square(dr - rfb);
+        dr    = std::sqrt(dr2);
+        invdr = 1. / dr;
+        v     = 0.5*kk*gmx::square(dr - rfb);
         for (d = 0; d < DIM; d++)
         {
             if (d != fbdim)
             {
-                fm[d] = -kk*(dr-rfb)*dx[d]*invdr; /* Force pointing to the center */
+                fm[d] = -kk * (dr - rfb) * dx[d] * invdr; /* Force pointing to the center */
             }
         }
     }
@@ -207,7 +207,7 @@ real fbposres(int nbonds,
             assert(npbcdim <= DIM);
             for (d = m; d < npbcdim; d++)
             {
-                com_sc[m] += com[d]*pbc->box[d][m];
+                com_sc[m] += com[d] * pbc->box[d][m];
             }
         }
     }
@@ -245,13 +245,13 @@ real fbposres(int nbonds,
             case efbposresSPHERE:
                 /* spherical flat-bottom posres */
                 dr2 = norm2(dx);
-                if (dr2 > 0.0 &&
-                    ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
+                if (dr2 > 0.0
+                    && ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
                     )
                 {
                     dr   = std::sqrt(dr2);
                     v    = 0.5*kk*gmx::square(dr - rfb);
-                    fact = -kk*(dr-rfb)/dr; /* Force pointing to the center pos0 */
+                    fact = -kk * (dr - rfb) / dr; /* Force pointing to the center pos0 */
                     svmul(fact, dx, fm);
                 }
                 break;
@@ -281,12 +281,12 @@ real fbposres(int nbonds,
                 if ( ( dr > rfb && bInvert == FALSE ) || ( 0 < dr && dr < rfb && bInvert == TRUE )  )
                 {
                     v         = 0.5*kk*gmx::square(dr - rfb);
-                    fm[fbdim] = -kk*(dr - rfb);
+                    fm[fbdim] = -kk * (dr - rfb);
                 }
                 else if ( (dr < (-rfb) && bInvert == FALSE ) || ( (-rfb) < dr && dr < 0 && bInvert == TRUE ))
                 {
                     v         = 0.5*kk*gmx::square(dr + rfb);
-                    fm[fbdim] = -kk*(dr + rfb);
+                    fm[fbdim] = -kk * (dr + rfb);
                 }
                 break;
         }
@@ -295,9 +295,9 @@ real fbposres(int nbonds,
 
         for (m = 0; (m < DIM); m++)
         {
-            f[ai][m]   += fm[m];
+            f[ai][m] += fm[m];
             /* Here we correct for the pbc_dx which included rdist */
-            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm[m];
+            vir_diag[m] -= 0.5 * (dx[m] + rdist[m]) * fm[m];
         }
     }
 
@@ -339,8 +339,8 @@ real posres(int nbonds,
             assert(npbcdim <= DIM);
             for (d = m; d < npbcdim; d++)
             {
-                comA_sc[m] += comA[d]*pbc->box[d][m];
-                comB_sc[m] += comB[d]*pbc->box[d][m];
+                comA_sc[m] += comA[d] * pbc->box[d][m];
+                comB_sc[m] += comB[d] * pbc->box[d][m];
             }
         }
     }
@@ -362,18 +362,18 @@ real posres(int nbonds,
 
         for (m = 0; (m < DIM); m++)
         {
-            kk          = L1*pr->posres.fcA[m] + lambda*pr->posres.fcB[m];
-            fm          = -kk*dx[m];
-            vtot       += 0.5*kk*dx[m]*dx[m];
-            *dvdlambda +=
-                0.5*(pr->posres.fcB[m] - pr->posres.fcA[m])*dx[m]*dx[m]
-                + fm*dpdl[m];
+            kk    = L1 * pr->posres.fcA[m] + lambda * pr->posres.fcB[m];
+            fm    = -kk * dx[m];
+            vtot += 0.5 * kk * dx[m] * dx[m];
+            *dvdlambda
+                += 0.5 * (pr->posres.fcB[m] - pr->posres.fcA[m]) * dx[m] * dx[m]
+                    + fm * dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
             if (bForceValid)
             {
                 f[ai][m]    += fm;
-                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+                vir_diag[m] -= 0.5 * (dx[m] + rdist[m]) * fm;
             }
         }
     }
@@ -383,16 +383,15 @@ real posres(int nbonds,
 
 } // namespace
 
-void
-posres_wrapper(t_nrnb             *nrnb,
-               const t_idef       *idef,
-               const struct t_pbc *pbc,
-               const rvec          x[],
-               gmx_enerdata_t     *enerd,
-               real               *lambda,
-               t_forcerec         *fr)
+void posres_wrapper(t_nrnb *            nrnb,
+                    const t_idef *      idef,
+                    const struct t_pbc *pbc,
+                    const rvec          x[],
+                    gmx_enerdata_t *    enerd,
+                    real *              lambda,
+                    t_forcerec *        fr)
 {
-    real  v, dvdl;
+    real v, dvdl;
 
     dvdl = 0;
     v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
@@ -406,21 +405,20 @@ posres_wrapper(t_nrnb             *nrnb,
      * but if k changes, it is not.
      */
     enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
-    inc_nrnb(nrnb, eNR_POSRES, idef->il[F_POSRES].nr/2);
+    inc_nrnb(nrnb, eNR_POSRES, idef->il[F_POSRES].nr / 2);
 }
 
-void
-posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
-                      const t_lambda       *fepvals,
-                      const t_idef         *idef,
-                      const struct t_pbc   *pbc,
-                      const rvec            x[],
-                      gmx_enerdata_t       *enerd,
-                      real                 *lambda,
-                      t_forcerec           *fr)
+void posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
+                           const t_lambda *      fepvals,
+                           const t_idef *        idef,
+                           const struct t_pbc *  pbc,
+                           const rvec            x[],
+                           gmx_enerdata_t *      enerd,
+                           real *                lambda,
+                           t_forcerec *          fr)
 {
-    real  v;
-    int   i;
+    real v;
+    int  i;
 
     if (0 == idef->il[F_POSRES].nr)
     {
@@ -432,7 +430,7 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
     {
         real dvdl_dum = 0, lambda_dum;
 
-        lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i-1]);
+        lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
         v          = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
                             idef->iparams_posres,
                             x, nullptr, nullptr,
@@ -445,14 +443,14 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb             *nrnb,
-                      const t_idef       *idef,
+void fbposres_wrapper(t_nrnb *            nrnb,
+                      const t_idef *      idef,
                       const struct t_pbc *pbc,
                       const rvec          x[],
-                      gmx_enerdata_t     *enerd,
-                      t_forcerec         *fr)
+                      gmx_enerdata_t *    enerd,
+                      t_forcerec *        fr)
 {
-    real  v;
+    real v;
 
     v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms,
                  idef->iparams_fbposres,
@@ -460,5 +458,5 @@ void fbposres_wrapper(t_nrnb             *nrnb,
                  fr->ePBC == epbcNONE ? nullptr : pbc,
                  fr->rc_scaling, fr->ePBC, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
-    inc_nrnb(nrnb, eNR_FBPOSRES, idef->il[F_FBPOSRES].nr/2);
+    inc_nrnb(nrnb, eNR_FBPOSRES, idef->il[F_FBPOSRES].nr / 2);
 }

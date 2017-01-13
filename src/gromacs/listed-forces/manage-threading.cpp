@@ -65,7 +65,8 @@
 #include "listed-internal.h"
 
 /*! \brief struct for passing all data required for a function type */
-typedef struct {
+typedef struct
+{
     int      ftype; /**< the function type index */
     t_ilist *il;    /**< pointer to t_ilist entry corresponding to ftype */
     int      nat;   /**< nr of atoms involved in a single ftype interaction */
@@ -81,7 +82,7 @@ typedef struct {
 static void divide_bondeds_by_locality(int                 ntype,
                                        const ilist_data_t *ild,
                                        int                 nthread,
-                                       t_idef             *idef)
+                                       t_idef *            idef)
 {
     int nat_tot, nat_sum;
     int ind[F_NRE];    /* index into the ild[].il->iatoms */
@@ -94,9 +95,9 @@ static void divide_bondeds_by_locality(int                 ntype,
     for (f = 0; f < ntype; f++)
     {
         /* Sum #bondeds*#atoms_per_bond over all bonded types */
-        nat_tot  += ild[f].il->nr/(ild[f].nat + 1)*ild[f].nat;
+        nat_tot += ild[f].il->nr / (ild[f].nat + 1) * ild[f].nat;
         /* The start bound for thread 0 is 0 for all interactions */
-        ind[f]    = 0;
+        ind[f] = 0;
         /* Initialize the next atom index array */
         assert(ild[f].il->nr > 0);
         at_ind[f] = ild[f].il->iatoms[1];
@@ -125,7 +126,7 @@ static void divide_bondeds_by_locality(int                 ntype,
          * uniformly. Proper and RB dihedrals are often distributed
          * non-uniformly, but their cost is roughly equal.
          */
-        nat_thread = (nat_tot*t)/nthread;
+        nat_thread = (nat_tot * t) / nthread;
 
         while (nat_sum < nat_thread)
         {
@@ -177,7 +178,7 @@ static void divide_bondeds_by_locality(int                 ntype,
         /* Store the bonded end boundaries (at index t) for thread t-1 */
         for (f = 0; f < ntype; f++)
         {
-            idef->il_thread_division[ild[f].ftype*(nthread + 1) + t] = ind[f];
+            idef->il_thread_division[ild[f].ftype * (nthread + 1) + t] = ind[f];
         }
     }
 
@@ -191,7 +192,7 @@ static void divide_bondeds_by_locality(int                 ntype,
 static void divide_bondeds_over_threads(t_idef *idef,
                                         int     nthread,
                                         int     max_nthread_uniform,
-                                        bool   *haveBondeds)
+                                        bool *  haveBondeds)
 {
     ilist_data_t ild[F_NRE];
     int          ntype;
@@ -201,9 +202,9 @@ static void divide_bondeds_over_threads(t_idef *idef,
 
     idef->nthreads = nthread;
 
-    if (F_NRE*(nthread + 1) > idef->il_thread_division_nalloc)
+    if (F_NRE * (nthread + 1) > idef->il_thread_division_nalloc)
     {
-        idef->il_thread_division_nalloc = F_NRE*(nthread + 1);
+        idef->il_thread_division_nalloc = F_NRE * (nthread + 1);
         snew(idef->il_thread_division, idef->il_thread_division_nalloc);
     }
 
@@ -227,7 +228,7 @@ static void divide_bondeds_over_threads(t_idef *idef,
             int t;
             for (t = 0; t <= nthread; t++)
             {
-                idef->il_thread_division[f*(nthread + 1) + t] = 0;
+                idef->il_thread_division[f * (nthread + 1) + t] = 0;
             }
         }
         else if (nthread <= max_nthread_uniform || f == F_DISRES)
@@ -245,22 +246,22 @@ static void divide_bondeds_over_threads(t_idef *idef,
                 int nr_t;
 
                 /* Divide equally over the threads */
-                nr_t = (((idef->il[f].nr/nat1)*t)/nthread)*nat1;
+                nr_t = (((idef->il[f].nr / nat1) * t) / nthread) * nat1;
 
                 if (f == F_DISRES)
                 {
                     /* Ensure that distance restraint pairs with the same label
                      * end up on the same thread.
                      */
-                    while (nr_t > 0 && nr_t < idef->il[f].nr &&
-                           idef->iparams[idef->il[f].iatoms[nr_t]].disres.label ==
-                           idef->iparams[idef->il[f].iatoms[nr_t-nat1]].disres.label)
+                    while (nr_t > 0 && nr_t < idef->il[f].nr
+                           && idef->iparams[idef->il[f].iatoms[nr_t]].disres.label
+                           == idef->iparams[idef->il[f].iatoms[nr_t - nat1]].disres.label)
                     {
                         nr_t += nat1;
                     }
                 }
 
-                idef->il_thread_division[f*(nthread + 1) + t] = nr_t;
+                idef->il_thread_division[f * (nthread + 1) + t] = nr_t;
             }
         }
         else
@@ -274,7 +275,7 @@ static void divide_bondeds_over_threads(t_idef *idef,
             ild[ntype].nat   = nat;
 
             /* The first index for the thread division is always 0 */
-            idef->il_thread_division[f*(nthread + 1)] = 0;
+            idef->il_thread_division[f * (nthread + 1)] = 0;
 
             ntype++;
         }
@@ -300,9 +301,9 @@ static void divide_bondeds_over_threads(t_idef *idef,
                 for (t = 0; t < nthread; t++)
                 {
                     fprintf(debug, " %4d",
-                            (idef->il_thread_division[f*(nthread + 1) + t + 1] -
-                             idef->il_thread_division[f*(nthread + 1) + t])/
-                            (1 + NRAL(f)));
+                            (idef->il_thread_division[f * (nthread + 1) + t + 1]
+                             - idef->il_thread_division[f * (nthread + 1) + t])
+                            / (1 + NRAL(f)));
                 }
                 fprintf(debug, "\n");
             }
@@ -311,11 +312,10 @@ static void divide_bondeds_over_threads(t_idef *idef,
 }
 
 //! Construct a reduction mask for which parts (blocks) of the force array are touched on which thread task
-static void
-calc_bonded_reduction_mask(int natoms,
-                           f_thread_t *f_thread,
-                           const t_idef *idef,
-                           int thread, int nthread)
+static void calc_bonded_reduction_mask(int natoms,
+                                       f_thread_t *f_thread,
+                                       const t_idef *idef,
+                                       int thread, int nthread)
 {
     static_assert(BITMASK_SIZE == GMX_OPENMP_MAX_THREADS, "For the error message below we assume these two are equal.");
 
@@ -336,7 +336,7 @@ calc_bonded_reduction_mask(int natoms,
         srenew(f_thread->mask,        f_thread->block_nalloc);
         srenew(f_thread->block_index, f_thread->block_nalloc);
         sfree_aligned(f_thread->f);
-        snew_aligned(f_thread->f,     f_thread->block_nalloc*reduction_block_size, 128);
+        snew_aligned(f_thread->f,     f_thread->block_nalloc * reduction_block_size, 128);
     }
 
     gmx_bitmask_t *mask = f_thread->mask;
@@ -355,14 +355,14 @@ calc_bonded_reduction_mask(int natoms,
             {
                 int nat1 = interaction_function[ftype].nratoms + 1;
 
-                int nb0 = idef->il_thread_division[ftype*(nthread + 1) + thread];
-                int nb1 = idef->il_thread_division[ftype*(nthread + 1) + thread + 1];
+                int nb0 = idef->il_thread_division[ftype * (nthread + 1) + thread];
+                int nb1 = idef->il_thread_division[ftype * (nthread + 1) + thread + 1];
 
                 for (int i = nb0; i < nb1; i += nat1)
                 {
                     for (int a = 1; a < nat1; a++)
                     {
-                        bitmask_set_bit(&mask[idef->il[ftype].iatoms[i+a] >> reduction_block_bits], thread);
+                        bitmask_set_bit(&mask[idef->il[ftype].iatoms[i + a] >> reduction_block_bits], thread);
                     }
                 }
             }
@@ -459,7 +459,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
                 std::string flags = gmx::formatString("%x", *mask);
 #else
                 std::string flags = gmx::formatAndJoin(*mask,
-                                                       *mask+BITMASK_ALEN,
+                                                       *mask + BITMASK_ALEN,
                                                        "", gmx::StringFormatter("%x"));
 #endif
                 fprintf(debug, "block %d flags %s count %d\n",
@@ -472,8 +472,8 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
         fprintf(debug, "Number of %d atom blocks to reduce: %d\n",
                 reduction_block_size, bt->nblock_used);
         fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
-                ctot*reduction_block_size/(double)fr->natoms_force,
-                ctot/(double)bt->nblock_used);
+                ctot * reduction_block_size / (double)fr->natoms_force,
+                ctot / (double)bt->nblock_used);
     }
 }
 
@@ -507,7 +507,7 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
             bt->f_t[t].f        = nullptr;
             bt->f_t[t].f_nalloc = 0;
             snew(bt->f_t[t].fshift, SHIFTS);
-            bt->f_t[t].grpp.nener = nenergrp*nenergrp;
+            bt->f_t[t].grpp.nener = nenergrp * nenergrp;
             for (int i = 0; i < egNR; i++)
             {
                 snew(bt->f_t[t].grpp.ener[i], bt->f_t[t].grpp.nener);

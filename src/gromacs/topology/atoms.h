@@ -45,17 +45,19 @@
 struct t_symtab;
 
 /* The particle type */
-enum {
+enum
+{
     eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
 
 /* The particle type names */
-extern const char *ptype_str[eptNR+1];
+extern const char *ptype_str[eptNR + 1];
 
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file
  */
-enum PDB_record {
+enum PDB_record
+{
     epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
     epdbMODEL,  epdbENDMDL, epdbTER,    epdbHEADER, epdbTITLE, epdbREMARK,
     epdbCONECT, epdbNR
@@ -75,12 +77,12 @@ typedef struct t_atom
 
 typedef struct t_resinfo
 {
-    char          **name;       /* Pointer to the residue name          */
-    int             nr;         /* Residue number                       */
-    unsigned char   ic;         /* Code for insertion of residues       */
-    int             chainnum;   /* Iincremented at TER or new chain id  */
-    char            chainid;    /* Chain identifier written/read to pdb */
-    char          **rtp;        /* rtp building block name (optional)   */
+    char **       name;         /* Pointer to the residue name          */
+    int           nr;           /* Residue number                       */
+    unsigned char ic;           /* Code for insertion of residues       */
+    int           chainnum;     /* Iincremented at TER or new chain id  */
+    char          chainid;      /* Chain identifier written/read to pdb */
+    char **       rtp;          /* rtp building block name (optional)   */
 } t_resinfo;
 
 typedef struct t_pdbinfo
@@ -97,46 +99,46 @@ typedef struct t_pdbinfo
 
 typedef struct t_grps
 {
-    int   nr;                   /* Number of different groups           */
-    int  *nm_ind;               /* Index in the group names             */
+    int  nr;                    /* Number of different groups           */
+    int *nm_ind;                /* Index in the group names             */
 } t_grps;
 
 typedef struct t_atoms
 {
-    int          nr;            /* Nr of atoms                          */
-    t_atom      *atom;          /* Array of atoms (dim: nr)             */
+    int     nr;                 /* Nr of atoms                          */
+    t_atom *atom;               /* Array of atoms (dim: nr)             */
                                 /* The following entries will not       */
                                 /* always be used (nres==0)             */
-    char      ***atomname;      /* Array of pointers to atom name       */
+    char ***atomname;           /* Array of pointers to atom name       */
                                 /* use: (*(atomname[i]))                */
-    char      ***atomtype;      /* Array of pointers to atom types      */
+    char ***atomtype;           /* Array of pointers to atom types      */
                                 /* use: (*(atomtype[i]))                */
-    char      ***atomtypeB;     /* Array of pointers to B atom types    */
+    char ***atomtypeB;          /* Array of pointers to B atom types    */
                                 /* use: (*(atomtypeB[i]))               */
-    int          nres;          /* The number of resinfo entries        */
-    t_resinfo   *resinfo;       /* Array of residue names and numbers   */
-    t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
+    int        nres;            /* The number of resinfo entries        */
+    t_resinfo *resinfo;         /* Array of residue names and numbers   */
+    t_pdbinfo *pdbinfo;         /* PDB Information, such as aniso. Bfac */
 
     /* Flags that tell if properties are set for all nr atoms.
      * For B-state parameters, both haveBState and the mass/charge/type
      * flag should be TRUE.
      */
-    gmx_bool     haveMass;      /* Mass available                       */
-    gmx_bool     haveCharge;    /* Charge available                     */
-    gmx_bool     haveType;      /* Atom type available                  */
-    gmx_bool     haveBState;    /* B-state parameters available         */
-    gmx_bool     havePdbInfo;   /* pdbinfo available                    */
+    gmx_bool haveMass;          /* Mass available                       */
+    gmx_bool haveCharge;        /* Charge available                     */
+    gmx_bool haveType;          /* Atom type available                  */
+    gmx_bool haveBState;        /* B-state parameters available         */
+    gmx_bool havePdbInfo;       /* pdbinfo available                    */
 } t_atoms;
 
 typedef struct t_atomtypes
 {
-    int           nr;           /* number of atomtypes                          */
-    real         *radius;       /* GBSA radius for each atomtype                */
-    real         *vol;          /* GBSA efective volume for each atomtype       */
-    real         *surftens;     /* implicit solvent surftens for each atomtype  */
-    real         *gb_radius;    /* GB radius for each atom type                 */
-    real         *S_hct;        /* Overlap factors for HCT/OBC GB models        */
-    int          *atomnumber;   /* Atomic number, used for QM/MM                */
+    int   nr;                   /* number of atomtypes                          */
+    real *radius;               /* GBSA radius for each atomtype                */
+    real *vol;                  /* GBSA efective volume for each atomtype       */
+    real *surftens;             /* implicit solvent surftens for each atomtype  */
+    real *gb_radius;            /* GB radius for each atom type                 */
+    real *S_hct;                /* Overlap factors for HCT/OBC GB models        */
+    int * atomnumber;           /* Atomic number, used for QM/MM                */
 } t_atomtypes;
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))

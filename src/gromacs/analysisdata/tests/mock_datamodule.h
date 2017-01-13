@@ -71,9 +71,9 @@ class MockAnalysisDataModule : public IAnalysisDataModule
         virtual int flags() const;
 
         MOCK_METHOD2(parallelDataStarted,
-                     bool(AbstractAnalysisData              *data,
+                     bool(AbstractAnalysisData              * data,
                           const AnalysisDataParallelOptions &options));
-        MOCK_METHOD1(dataStarted, void(AbstractAnalysisData *data));
+        MOCK_METHOD1(dataStarted, void(AbstractAnalysisData * data));
         MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
         MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
         MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader &header));
@@ -81,16 +81,16 @@ class MockAnalysisDataModule : public IAnalysisDataModule
         MOCK_METHOD0(dataFinished, void());
 
         void setupStaticCheck(const AnalysisDataTestInput &data,
-                              AbstractAnalysisData        *source,
+                              AbstractAnalysisData *       source,
                               bool                         bParallel);
         void setupStaticColumnCheck(const AnalysisDataTestInput &data,
                                     int firstcol, int n,
                                     AbstractAnalysisData *source);
         void setupStaticStorageCheck(const AnalysisDataTestInput &data,
                                      int                          storageCount,
-                                     AbstractAnalysisData        *source);
+                                     AbstractAnalysisData *       source);
         void setupReferenceCheck(const TestReferenceChecker &checker,
-                                 AbstractAnalysisData       *source);
+                                 AbstractAnalysisData *      source);
 
     private:
         class Impl;

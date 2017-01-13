@@ -170,12 +170,12 @@ void initTestOptions(IOptionsContainer *options);
             { \
                 ::gmx::test::registerTestOptions(#name, this); \
             } \
-            virtual void initOptions(::gmx::IOptionsContainer *options); \
+            virtual void initOptions(::gmx::IOptionsContainer * options); \
     }; \
     \
     static name s_ ## name ## Instance; \
     \
-    void name::initOptions(::gmx::IOptionsContainer *options)
+    void name::initOptions(::gmx::IOptionsContainer * options)
 
 } // namespace test
 } // namespace gmx

@@ -66,13 +66,13 @@ class CommandLineParserTest : public ::testing::Test
     public:
         CommandLineParserTest();
 
-        gmx::Options            options_;
-        gmx::CommandLineParser  parser_;
-        bool                    flag_;
-        std::vector<int>        ivalues_;
-        std::vector<double>     dvalues_;
-        int                     ivalue1p_;
-        int                     ivalue12_;
+        gmx::Options           options_;
+        gmx::CommandLineParser parser_;
+        bool                   flag_;
+        std::vector<int>       ivalues_;
+        std::vector<double>    dvalues_;
+        int                    ivalue1p_;
+        int                    ivalue12_;
 };
 
 CommandLineParserTest::CommandLineParserTest()

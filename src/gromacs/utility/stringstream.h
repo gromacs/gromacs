@@ -75,7 +75,7 @@ class StringOutputStream : public TextOutputStream
         std::string str_;
 };
 
-template<typename T> class ConstArrayRef;
+template <typename T> class ConstArrayRef;
 
 /*! \libinternal \brief
  * Helper class to convert static string data to a stream.

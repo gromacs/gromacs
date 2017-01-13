@@ -55,7 +55,7 @@
 
 int gmx_filter(int argc, char *argv[])
 {
-    const char       *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] performs frequency filtering on a trajectory.",
         "The filter shape is cos([GRK]pi[grk] t/A) + 1 from -A to +A, where A is given",
         "by the option [TT]-nf[tt] times the time step in the input trajectory.",
@@ -91,20 +91,20 @@ int gmx_filter(int argc, char *argv[])
         { "-fit", FALSE, etBOOL, {&bFit},
           "Fit all frames to a reference structure" }
     };
-    const char       *topfile, *lowfile, *highfile;
+    const char *      topfile, *lowfile, *highfile;
     gmx_bool          bTop = FALSE;
     t_topology        top;
     int               ePBC = -1;
-    rvec             *xtop;
+    rvec *            xtop;
     matrix            topbox, *box, boxf;
-    char             *grpname;
+    char *            grpname;
     int               isize;
-    int              *index;
-    real             *w_rls = nullptr;
-    t_trxstatus      *in;
-    t_trxstatus      *outl, *outh;
+    int *             index;
+    real *            w_rls = nullptr;
+    t_trxstatus *     in;
+    t_trxstatus *     outl, *outh;
     int               nffr, i, fr, nat, j, d, m;
-    int              *ind;
+    int *             ind;
     real              flen, *filt, sum, *t;
     rvec              xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
     gmx_output_env_t *oenv;
@@ -167,14 +167,14 @@ int gmx_filter(int argc, char *argv[])
     }
 
     /* The actual filter length flen can actually be any real number */
-    flen = 2*nf;
+    flen = 2 * nf;
     /* nffr is the number of frames that we filter over */
-    nffr = 2*nf - 1;
+    nffr = 2 * nf - 1;
     snew(filt, nffr);
     sum = 0;
     for (i = 0; i < nffr; i++)
     {
-        filt[i] = std::cos(2*M_PI*(i - nf + 1)/static_cast<real>(flen)) + 1;
+        filt[i] = std::cos(2 * M_PI * (i - nf + 1) / static_cast<real>(flen)) + 1;
         sum    += filt[i];
     }
     fprintf(stdout, "filter weights:");
@@ -197,7 +197,7 @@ int gmx_filter(int argc, char *argv[])
         ind[i] = i;
     }
     /* x[nffr - 1] was already allocated by read_first_x */
-    for (i = 0; i < nffr-1; i++)
+    for (i = 0; i < nffr - 1; i++)
     {
         snew(x[i], nat);
     }
@@ -230,12 +230,12 @@ int gmx_filter(int argc, char *argv[])
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    hbox[d] = 0.5*box[nffr - 1][d][d];
+                    hbox[d] = 0.5 * box[nffr - 1][d][d];
                 }
             }
             for (i = 0; i < nat; i++)
             {
-                for (m = DIM-1; m >= 0; m--)
+                for (m = DIM - 1; m >= 0; m--)
                 {
                     if (hbox[m] > 0)
                     {
@@ -288,14 +288,14 @@ int gmx_filter(int argc, char *argv[])
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        xf[j][d] += filt[i]*x[i][j][d];
+                        xf[j][d] += filt[i] * x[i][j][d];
                     }
                 }
                 for (j = 0; j < DIM; j++)
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        boxf[j][d] += filt[i]*box[i][j][d];
+                        boxf[j][d] += filt[i] * box[i][j][d];
                     }
                 }
             }
@@ -334,16 +334,15 @@ int gmx_filter(int argc, char *argv[])
         }
         /* Cycle all the pointer and the box by one */
         ptr = x[0];
-        for (i = 0; i < nffr-1; i++)
+        for (i = 0; i < nffr - 1; i++)
         {
-            t[i] = t[i+1];
-            x[i] = x[i+1];
-            copy_mat(box[i+1], box[i]);
+            t[i] = t[i + 1];
+            x[i] = x[i + 1];
+            copy_mat(box[i + 1], box[i]);
         }
         x[nffr - 1] = ptr;
         fr++;
-    }
-    while (read_next_x(oenv, in, &(t[nffr - 1]), x[nffr - 1], box[nffr - 1]));
+    } while (read_next_x(oenv, in, &(t[nffr - 1]), x[nffr - 1], box[nffr - 1]));
 
     if (bTop)
     {

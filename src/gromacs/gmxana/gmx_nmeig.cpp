@@ -66,60 +66,60 @@
 
 static double cv_corr(double nu, double T)
 {
-    double x  = PLANCK*nu/(BOLTZ*T);
+    double x  = PLANCK * nu / (BOLTZ * T);
     double ex = std::exp(x);
 
     if (nu <= 0)
     {
-        return BOLTZ*KILO;
+        return BOLTZ * KILO;
     }
     else
     {
-        return BOLTZ*KILO*(ex*gmx::square(x)/gmx::square(ex-1) - 1);
+        return BOLTZ * KILO * (ex * gmx::square(x) / gmx::square(ex - 1) - 1);
     }
 }
 
 static double u_corr(double nu, double T)
 {
-    double x  = PLANCK*nu/(BOLTZ*T);
+    double x  = PLANCK * nu / (BOLTZ * T);
     double ex = std::exp(x);
 
     if (nu <= 0)
     {
-        return BOLTZ*T;
+        return BOLTZ * T;
     }
     else
     {
-        return BOLTZ*T*(0.5*x - 1 + x/(ex-1));
+        return BOLTZ * T * (0.5 * x - 1 + x / (ex - 1));
     }
 }
 
 static size_t get_nharm_mt(const gmx_moltype_t *mt)
 {
-    static int   harm_func[] = { F_BONDS };
-    int          i, ft;
-    size_t       nh = 0;
+    static int harm_func[] = { F_BONDS };
+    int        i, ft;
+    size_t     nh = 0;
 
     for (i = 0; (i < asize(harm_func)); i++)
     {
         ft  = harm_func[i];
-        nh += mt->ilist[ft].nr/(interaction_function[ft].nratoms+1);
+        nh += mt->ilist[ft].nr / (interaction_function[ft].nratoms + 1);
     }
     return nh;
 }
 
 static size_t get_nvsite_mt(gmx_moltype_t *mt)
 {
-    static int   vs_func[] = {
+    static int vs_func[] = {
         F_VSITE2, F_VSITE3, F_VSITE3FD, F_VSITE3FAD,
         F_VSITE3OUT, F_VSITE4FD, F_VSITE4FDN, F_VSITEN
     };
-    int          i, ft;
-    size_t       nh = 0;
+    int        i, ft;
+    size_t     nh = 0;
     for (i = 0; (i < asize(vs_func)); i++)
     {
         ft  = vs_func[i];
-        nh += mt->ilist[ft].nr/(interaction_function[ft].nratoms+1);
+        nh += mt->ilist[ft].nr / (interaction_function[ft].nratoms + 1);
     }
     return nh;
 }
@@ -130,22 +130,21 @@ static int get_nharm(const gmx_mtop_t *mtop)
 
     for (int j = 0; (j < mtop->nmolblock); j++)
     {
-        int mt  = mtop->molblock[j].type;
+        int mt = mtop->molblock[j].type;
         nh += mtop->molblock[j].nmol * get_nharm_mt(&(mtop->moltype[mt]));
     }
     return nh;
 }
 
-static void
-nma_full_hessian(real                      *hess,
-                 int                        ndim,
-                 gmx_bool                   bM,
-                 const t_topology          *top,
-                 const std::vector<size_t> &atom_index,
-                 int                        begin,
-                 int                        end,
-                 real                      *eigenvalues,
-                 real                      *eigenvectors)
+static void nma_full_hessian(real *                     hess,
+                             int                        ndim,
+                             gmx_bool                   bM,
+                             const t_topology *         top,
+                             const std::vector<size_t> &atom_index,
+                             int                        begin,
+                             int                        end,
+                             real *                     eigenvalues,
+                             real *                     eigenvectors)
 {
     real mass_fac;
 
@@ -161,10 +160,10 @@ nma_full_hessian(real                      *hess,
                 for (size_t k = 0; (k < atom_index.size()); k++)
                 {
                     size_t ak = atom_index[k];
-                    mass_fac = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    mass_fac = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
                     for (size_t l = 0; (l < DIM); l++)
                     {
-                        hess[(i*DIM+j)*ndim+k*DIM+l] *= mass_fac;
+                        hess[(i * DIM + j) * ndim + k * DIM + l] *= mass_fac;
                     }
                 }
             }
@@ -176,12 +175,12 @@ nma_full_hessian(real                      *hess,
     fprintf(stderr, "\nDiagonalizing to find vectors %d through %d...\n", begin, end);
     fflush(stderr);
 
-    eigensolver(hess, ndim, begin-1, end-1, eigenvalues, eigenvectors);
+    eigensolver(hess, ndim, begin - 1, end - 1, eigenvalues, eigenvectors);
 
     /* And scale the output eigenvectors */
     if (bM && eigenvectors != nullptr)
     {
-        for (int i = 0; i < (end-begin+1); i++)
+        for (int i = 0; i < (end - begin + 1); i++)
         {
             for (size_t j = 0; j < atom_index.size(); j++)
             {
@@ -189,7 +188,7 @@ nma_full_hessian(real                      *hess,
                 mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (size_t k = 0; (k < DIM); k++)
                 {
-                    eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
+                    eigenvectors[i * ndim + j * DIM + k] *= mass_fac;
                 }
             }
         }
@@ -198,14 +197,13 @@ nma_full_hessian(real                      *hess,
 
 
 
-static void
-nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
-                   gmx_bool                   bM,
-                   const t_topology          *top,
-                   const std::vector<size_t> &atom_index,
-                   int                        neig,
-                   real                      *eigenvalues,
-                   real                      *eigenvectors)
+static void nma_sparse_hessian(gmx_sparsematrix_t *       sparse_hessian,
+                               gmx_bool                   bM,
+                               const t_topology *         top,
+                               const std::vector<size_t> &atom_index,
+                               int                        neig,
+                               real *                     eigenvalues,
+                               real *                     eigenvectors)
 {
     int    i, k;
     int    row, col;
@@ -213,7 +211,7 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
     int    katom;
     size_t ndim;
 
-    ndim = DIM*atom_index.size();
+    ndim = DIM * atom_index.size();
 
     /* Cannot check symmetry since we only store half matrix */
     /* divide elements hess[i][j] by sqrt(mas[i])*sqrt(mas[j]) when required */
@@ -227,13 +225,13 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
             size_t ai = atom_index[iatom];
             for (size_t j = 0; (j < DIM); j++)
             {
-                row = DIM*iatom+j;
+                row = DIM * iatom + j;
                 for (k = 0; k < sparse_hessian->ndata[row]; k++)
                 {
-                    col       = sparse_hessian->data[row][k].col;
-                    katom     = col/3;
+                    col   = sparse_hessian->data[row][k].col;
+                    katom = col / 3;
                     size_t ak = atom_index[katom];
-                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    mass_fac                            = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
                     sparse_hessian->data[row][k].value *= mass_fac;
                 }
             }
@@ -255,7 +253,7 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
                 mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (k = 0; (k < DIM); k++)
                 {
-                    eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
+                    eigenvectors[i * ndim + j * DIM + k] *= mass_fac;
                 }
             }
         }
@@ -276,7 +274,7 @@ static real *allocateEigenvectors(int nrow, int first, int last,
     {
         numVector = last - first + 1;
     }
-    size_t vectorsSize = static_cast<size_t>(nrow)*static_cast<size_t>(numVector);
+    size_t vectorsSize = static_cast<size_t>(nrow) * static_cast<size_t>(numVector);
     /* We can't have more than INT_MAX elements.
      * Relaxing this restriction probably requires changing lots of loop
      * variable types in the linear algebra code.
@@ -297,7 +295,7 @@ static real *allocateEigenvectors(int nrow, int first, int last,
 
 int gmx_nmeig(int argc, char *argv[])
 {
-    const char            *desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates the eigenvectors/values of a (Hessian) matrix,",
         "which can be calculated with [gmx-mdrun].",
         "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
@@ -326,10 +324,10 @@ int gmx_nmeig(int argc, char *argv[])
         "output."
     };
 
-    static gmx_bool        bM    = TRUE, bCons = FALSE;
-    static int             begin = 1, end = 50, maxspec = 4000;
-    static real            T     = 298.15, width = 1;
-    t_pargs                pa[]  =
+    static gmx_bool bM    = TRUE, bCons = FALSE;
+    static int      begin = 1, end = 50, maxspec = 4000;
+    static real     T     = 298.15, width = 1;
+    t_pargs         pa[]  =
     {
         { "-m",  FALSE, etBOOL, {&bM},
           "Divide elements of Hessian by product of sqrt(mass) of involved "
@@ -348,30 +346,30 @@ int gmx_nmeig(int argc, char *argv[])
         { "-width",  FALSE, etREAL, {&width},
           "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
-    FILE                  *out, *qc, *spec;
-    t_topology             top;
-    gmx_mtop_t             mtop;
-    rvec                  *top_x;
-    matrix                 box;
-    real                  *eigenvalues;
-    real                  *eigenvectors;
-    real                   qcvtot, qutot, qcv, qu;
-    int                    i, j, k;
-    t_tpxheader            tpx;
-    real                   value, omega, nu;
-    real                   factor_gmx_to_omega2;
-    real                   factor_omega_to_wavenumber;
-    real                  *spectrum = nullptr;
-    real                   wfac;
-    gmx_output_env_t      *oenv;
-    const char            *qcleg[] = {
+    FILE *               out, *qc, *spec;
+    t_topology           top;
+    gmx_mtop_t           mtop;
+    rvec *               top_x;
+    matrix               box;
+    real *               eigenvalues;
+    real *               eigenvectors;
+    real                 qcvtot, qutot, qcv, qu;
+    int                  i, j, k;
+    t_tpxheader          tpx;
+    real                 value, omega, nu;
+    real                 factor_gmx_to_omega2;
+    real                 factor_omega_to_wavenumber;
+    real *               spectrum = nullptr;
+    real                 wfac;
+    gmx_output_env_t *   oenv;
+    const char *         qcleg[] = {
         "Heat Capacity cV (J/mol K)",
         "Enthalpy H (kJ/mol)"
     };
-    real *                 full_hessian   = nullptr;
-    gmx_sparsematrix_t *   sparse_hessian = nullptr;
+    real *               full_hessian   = nullptr;
+    gmx_sparsematrix_t * sparse_hessian = nullptr;
 
-    t_filenm               fnm[] = {
+    t_filenm fnm[] = {
         { efMTX, "-f", "hessian",    ffREAD  },
         { efTPR, nullptr, nullptr,         ffREAD  },
         { efXVG, "-of", "eigenfreq", ffWRITE },
@@ -404,8 +402,8 @@ int gmx_nmeig(int argc, char *argv[])
 
     top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    bM       = TRUE;
-    int ndim = DIM*atom_index.size();
+    bM = TRUE;
+    int ndim = DIM * atom_index.size();
 
     if (opt2bSet("-qc", NFILE, fnm))
     {
@@ -436,7 +434,7 @@ int gmx_nmeig(int argc, char *argv[])
 
         fprintf(stderr, "Will try to allocate memory and convert to full matrix representation...\n");
 
-        size_t hessianSize = static_cast<size_t>(nrow)*static_cast<size_t>(ncol);
+        size_t hessianSize = static_cast<size_t>(nrow) * static_cast<size_t>(ncol);
         /* Allowing  Hessians larger than INT_MAX probably only makes sense
          * with (OpenMP) parallel diagonalization routines, since with a single
          * thread it will takes months.
@@ -447,7 +445,7 @@ int gmx_nmeig(int argc, char *argv[])
                       nrow, ncol, INT_MAX);
         }
         snew(full_hessian, hessianSize);
-        for (i = 0; i < nrow*ncol; i++)
+        for (i = 0; i < nrow * ncol; i++)
         {
             full_hessian[i] = 0;
         }
@@ -456,10 +454,10 @@ int gmx_nmeig(int argc, char *argv[])
         {
             for (j = 0; j < sparse_hessian->ndata[i]; j++)
             {
-                k                      = sparse_hessian->data[i][j].col;
-                value                  = sparse_hessian->data[i][j].value;
-                full_hessian[i*ndim+k] = value;
-                full_hessian[k*ndim+i] = value;
+                k                          = sparse_hessian->data[i][j].col;
+                value                      = sparse_hessian->data[i][j].value;
+                full_hessian[i * ndim + k] = value;
+                full_hessian[k * ndim + i] = value;
             }
         }
         gmx_sparsematrix_destroy(sparse_hessian);
@@ -488,7 +486,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     /* check the output, first 6 eigenvalues should be reasonably small */
     gmx_bool bSuck = FALSE;
-    for (i = begin-1; (i < 6); i++)
+    for (i = begin - 1; (i < 6); i++)
     {
         if (std::abs(eigenvalues[i]) > 1.0e-3)
         {
@@ -519,9 +517,9 @@ int gmx_nmeig(int argc, char *argv[])
         }
     }
 
-    for (i = 0; i <= (end-begin); i++)
+    for (i = 0; i <= (end - begin); i++)
     {
-        fprintf (out, "%6d %15g\n", begin+i, eigenvalues[i]);
+        fprintf (out, "%6d %15g\n", begin + i, eigenvalues[i]);
     }
     xvgrclose(out);
 
@@ -576,36 +574,36 @@ int gmx_nmeig(int argc, char *argv[])
      * light. Do this by first converting to omega^2 (units 1/s), take the square
      * root, and finally divide by the speed of light (nm/ps in gromacs).
      */
-    factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
-    factor_omega_to_wavenumber = 1.0E-5/(2.0*M_PI*SPEED_OF_LIGHT);
+    factor_gmx_to_omega2       = 1.0E21 / (AVOGADRO * AMU);
+    factor_omega_to_wavenumber = 1.0E-5 / (2.0 * M_PI * SPEED_OF_LIGHT);
 
     for (i = begin; (i <= end); i++)
     {
-        value = eigenvalues[i-begin];
+        value = eigenvalues[i - begin];
         if (value < 0)
         {
             value = 0;
         }
-        omega = std::sqrt(value*factor_gmx_to_omega2);
-        nu    = 1e-12*omega/(2*M_PI);
-        value = omega*factor_omega_to_wavenumber;
+        omega = std::sqrt(value * factor_gmx_to_omega2);
+        nu    = 1e-12 * omega / (2 * M_PI);
+        value = omega * factor_omega_to_wavenumber;
         fprintf (out, "%6d %15g\n", i, value);
         if (nullptr != spec)
         {
-            wfac = eigenvalues[i-begin]/(width*std::sqrt(2*M_PI));
+            wfac = eigenvalues[i - begin] / (width * std::sqrt(2 * M_PI));
             for (j = 0; (j < maxspec); j++)
             {
-                spectrum[j] += wfac*std::exp(-gmx::square(j-value)/(2*gmx::square(width)));
+                spectrum[j] += wfac * std::exp(-gmx::square(j - value) / (2 * gmx::square(width)));
             }
         }
         if (nullptr != qc)
         {
             qcv = cv_corr(nu, T);
             qu  = u_corr(nu, T);
-            if (i > end-nharm)
+            if (i > end - nharm)
             {
-                qcv += BOLTZ*KILO;
-                qu  += BOLTZ*T;
+                qcv += BOLTZ * KILO;
+                qu  += BOLTZ * T;
             }
             fprintf (qc, "%6d %15g %15g\n", i, qcv, qu);
             qcvtot += qcv;
@@ -617,7 +615,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         for (j = 0; (j < maxspec); j++)
         {
-            fprintf(spec, "%10g  %10g\n", 1.0*j, spectrum[j]);
+            fprintf(spec, "%10g  %10g\n", 1.0 * j, spectrum[j]);
         }
         xvgrclose(spec);
     }
@@ -644,7 +642,7 @@ int gmx_nmeig(int argc, char *argv[])
     else
     {
         /* The sparse matrix diagonalization store all eigenvectors up to end */
-        eigenvectorPtr = eigenvectors + (begin - 1)*atom_index.size();
+        eigenvectorPtr = eigenvectors + (begin - 1) * atom_index.size();
     }
     write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin, end,
                        eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);

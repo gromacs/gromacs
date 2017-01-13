@@ -50,7 +50,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-const char *ptype_str[eptNR+1] = {
+const char *ptype_str[eptNR + 1] = {
     "Atom", "Nucleus", "Shell", "Bond", "VSite", nullptr
 };
 
@@ -109,21 +109,21 @@ void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
 
     if (natom_extra > 0)
     {
-        srenew(atoms->atomname, atoms->nr+natom_extra);
-        srenew(atoms->atom, atoms->nr+natom_extra);
+        srenew(atoms->atomname, atoms->nr + natom_extra);
+        srenew(atoms->atom, atoms->nr + natom_extra);
         if (nullptr != atoms->pdbinfo)
         {
-            srenew(atoms->pdbinfo, atoms->nr+natom_extra);
+            srenew(atoms->pdbinfo, atoms->nr + natom_extra);
         }
         if (nullptr != atoms->atomtype)
         {
-            srenew(atoms->atomtype, atoms->nr+natom_extra);
+            srenew(atoms->atomtype, atoms->nr + natom_extra);
         }
         if (nullptr != atoms->atomtypeB)
         {
-            srenew(atoms->atomtypeB, atoms->nr+natom_extra);
+            srenew(atoms->atomtypeB, atoms->nr + natom_extra);
         }
-        for (i = atoms->nr; (i < atoms->nr+natom_extra); i++)
+        for (i = atoms->nr; (i < atoms->nr + natom_extra); i++)
         {
             atoms->atomname[i] = nullptr;
             memset(&atoms->atom[i], 0, sizeof(atoms->atom[i]));
@@ -144,8 +144,8 @@ void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
     }
     if (nres_extra > 0)
     {
-        srenew(atoms->resinfo, atoms->nres+nres_extra);
-        for (i = atoms->nres; (i < atoms->nres+nres_extra); i++)
+        srenew(atoms->resinfo, atoms->nres + nres_extra);
+        for (i = atoms->nres; (i < atoms->nres + nres_extra); i++)
         {
             std::memset(&atoms->resinfo[i], 0, sizeof(atoms->resinfo[i]));
         }
@@ -186,7 +186,7 @@ void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
     pdbinfo->occup        = 1.0;
     pdbinfo->bfac         = 0.0;
     pdbinfo->bAnisotropic = FALSE;
-    std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
+    std::fill(pdbinfo->uij, pdbinfo->uij + 6, 0.0);
 }
 
 t_atoms *copy_t_atoms(const t_atoms *src)
@@ -218,7 +218,7 @@ t_atoms *copy_t_atoms(const t_atoms *src)
         }
         if (nullptr != src->atomname)
         {
-            dst->atomname[i]  = src->atomname[i];
+            dst->atomname[i] = src->atomname[i];
         }
         if (nullptr != src->atomtype)
         {
@@ -395,12 +395,12 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
         return;
     }
 
-    int            maxWarn  = (printMissingMasses ? 10 : 0);
-    int            numWarn  = 0;
+    int maxWarn = (printMissingMasses ? 10 : 0);
+    int numWarn = 0;
 
-    gmx_atomprop_t aps      = gmx_atomprop_init();
+    gmx_atomprop_t aps = gmx_atomprop_init();
 
-    gmx_bool       haveMass = TRUE;
+    gmx_bool haveMass = TRUE;
     for (int i = 0; i < atoms->nr; i++)
     {
         if (!gmx_atomprop_query(aps, epropMass,

@@ -132,7 +132,7 @@ class ExceptionInfo : public internal::IExceptionInfo
         const T &value() const { return value_; }
 
     private:
-        T       value_;
+        T value_;
 };
 
 /*! \internal
@@ -152,7 +152,7 @@ struct ThrowLocation
     //! File where the throw occurred.
     const char *file;
     //! Line number where the throw occurred.
-    int         line;
+    int line;
 };
 
 //! Stores `errno` value that triggered the exception.
@@ -248,8 +248,8 @@ class ExceptionInitializer
         }
 
     private:
-        std::string                     reason_;
-        internal::NestedExceptionList   nested_;
+        std::string                   reason_;
+        internal::NestedExceptionList nested_;
 
         friend class GromacsException;
 };
@@ -385,8 +385,7 @@ class GromacsException : public std::exception
  */
 template <class Exception, class Tag, class T>
 inline
-typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, const Exception &>::type
-operator<<(const Exception &ex, const ExceptionInfo<Tag, T> &item)
+typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, const Exception &>::type operator<<(const Exception &ex, const ExceptionInfo<Tag, T> &item)
 {
     const_cast<Exception &>(ex).setInfo(item);
     return ex;
@@ -665,7 +664,7 @@ void formatExceptionMessageToFile(FILE *fp, const std::exception &ex);
  * \param[in] ex      Exception to format.
  * \throws    std::bad_alloc if out of memory.
  */
-void formatExceptionMessageToWriter(TextWriter           *writer,
+void formatExceptionMessageToWriter(TextWriter *          writer,
                                     const std::exception &ex);
 /*! \brief
  * Handles an exception that is causing the program to terminate.

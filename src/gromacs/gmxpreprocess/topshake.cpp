@@ -83,7 +83,7 @@ static void copy_bond (t_params *pr, int to, int from)
 
 static int count_hydrogens (char ***atomname, int nra, int a[])
 {
-    int  i, nh;
+    int i, nh;
 
     if (!atomname)
     {
@@ -105,13 +105,13 @@ static int count_hydrogens (char ***atomname, int nra, int a[])
 
 void make_shake (t_params plist[], t_atoms *atoms, int nshake)
 {
-    char          ***info = atoms->atomname;
-    t_params        *pr;
-    t_params        *bonds;
-    t_param          p, *bond, *ang;
-    real             b_ij, b_jk;
-    int              i, j, ftype, ftype_a;
-    gmx_bool         bFound;
+    char ***  info = atoms->atomname;
+    t_params *pr;
+    t_params *bonds;
+    t_param   p, *bond, *ang;
+    real      b_ij, b_jk;
+    int       i, j, ftype, ftype_a;
+    gmx_bool  bFound;
 
     if (nshake != eshNONE)
     {
@@ -159,9 +159,9 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                 printf("Angle: %d-%d-%d\n", ang->ai(), ang->aj(), ang->ak());
 #endif
                                 numhydrogens = count_hydrogens(info, 3, ang->a);
-                                if ((nshake == eshALLANGLES) ||
-                                    (numhydrogens > 1) ||
-                                    (numhydrogens == 1 && toupper(**(info[ang->a[1]])) == 'O'))
+                                if ((nshake == eshALLANGLES)
+                                    || (numhydrogens > 1)
+                                    || (numhydrogens == 1 && toupper(**(info[ang->a[1]])) == 'O'))
                                 {
                                     /* Can only add hydrogen angle shake, if the two bonds
                                      * are constrained.
@@ -176,17 +176,17 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                     for (j = 0; !bFound && (j < bonds->nr); j++)
                                     {
                                         bond = &(bonds->param[j]);
-                                        if (((bond->ai() == ang->ai()) &&
-                                             (bond->aj() == ang->aj())) ||
-                                            ((bond->ai() == ang->aj()) &&
-                                             (bond->aj() == ang->ai())))
+                                        if (((bond->ai() == ang->ai())
+                                             && (bond->aj() == ang->aj()))
+                                            || ((bond->ai() == ang->aj())
+                                                && (bond->aj() == ang->ai())))
                                         {
                                             b_ij = bond->c0();
                                         }
-                                        if (((bond->ai() == ang->ak()) &&
-                                             (bond->aj() == ang->aj())) ||
-                                            ((bond->ai() == ang->aj()) &&
-                                             (bond->aj() == ang->ak())))
+                                        if (((bond->ai() == ang->ak())
+                                             && (bond->aj() == ang->aj()))
+                                            || ((bond->ai() == ang->aj())
+                                                && (bond->aj() == ang->ak())))
                                         {
                                             b_jk = bond->c0();
                                         }
@@ -195,15 +195,15 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                     if (bFound)
                                     {
                                         /* apply law of cosines */
-                                        p.c0() = std::sqrt( b_ij*b_ij + b_jk*b_jk -
-                                                            2.0*b_ij*b_jk*cos(DEG2RAD*ang->c0()) );
+                                        p.c0() = std::sqrt( b_ij * b_ij + b_jk * b_jk
+                                                            - 2.0 * b_ij * b_jk * cos(DEG2RAD * ang->c0()) );
                                         p.c1() = p.c0();
 #ifdef DEBUG
                                         printf("p: %d, q: %d, dist: %12.5e\n", p.ai(), p.aj(), p.c0());
 #endif
                                         add_param_to_list (&(plist[F_CONSTR]), &p);
                                         /* move the last bond to this position */
-                                        copy_bond (pr, i, pr->nr-1);
+                                        copy_bond (pr, i, pr->nr - 1);
                                         /* should free memory here!! */
                                         pr->nr--;
                                     }
@@ -230,8 +230,8 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                 j  = 0;
                 for (i = 0; i < pr->nr; i++)
                 {
-                    if ( (nshake != eshHBONDS) ||
-                         (count_hydrogens (info, 2, pr->param[i].a) > 0) )
+                    if ( (nshake != eshHBONDS)
+                         || (count_hydrogens (info, 2, pr->param[i].a) > 0) )
                     {
                         /* append this bond to the shake list */
                         p.ai() = pr->param[i].ai();

@@ -42,35 +42,40 @@
 
 #include "xdlgitem.h"
 
-typedef struct {
+typedef struct
+{
     edlgitem edlg;
     bool     bDef;
     int      nname;
-    char   **name;
-    char    *set, *get, *def, *help;
+    char **  name;
+    char *   set, *get, *def, *help;
 } t_fitem;
 
-typedef struct {
-    char     *name;
+typedef struct
+{
+    char *    name;
     int       x, y, w, h;
     int       nfitem;
     t_fitem **fitem;
 } t_fgroup;
 
-typedef struct {
+typedef struct
+{
     int      x, y, w, h;
     t_fitem *fitem;
 } t_fsimple;
 
-typedef struct {
+typedef struct
+{
     int         w, h;
     int         nfgroup;
-    t_fgroup  **fgroup;
+    t_fgroup ** fgroup;
     int         nfsimple;
     t_fsimple **fsimple;
 } t_fgrid;
 
-typedef enum {
+typedef enum
+{
     eGRIDEXP, eACCOEXP, eACCCEXP, eGRPEXP, eITEMEXP, eSAMEPOINT,
     eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS
 } eDLGERR;

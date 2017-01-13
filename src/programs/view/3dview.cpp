@@ -66,8 +66,8 @@ static void calculate_view(t_3dview *view)
     dx = view->eye[XX];
     dy = view->eye[YY];
     dz = view->eye[ZZ];
-    l  = std::sqrt(dx*dx+dy*dy+dz*dz);
-    r  = std::sqrt(dx*dx+dy*dy);
+    l  = std::sqrt(dx * dx + dy * dy + dz * dz);
+    r  = std::sqrt(dx * dx + dy * dy);
 #ifdef DEBUG
     gmx_vec4_print(debug, "eye", view->eye);
     std::printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n", dx, dy, dz, l, r);
@@ -85,11 +85,11 @@ static void calculate_view(t_3dview *view)
     gmx_mat4_init_unity(T3);
     if (r > 0)
     {
-        T3[XX][XX] = -dy/r, T3[XX][ZZ] = dx/r, T3[ZZ][XX] = -dx/r, T3[ZZ][ZZ] = -dy/r;
+        T3[XX][XX] = -dy / r, T3[XX][ZZ] = dx / r, T3[ZZ][XX] = -dx / r, T3[ZZ][ZZ] = -dy / r;
     }
 
     gmx_mat4_init_unity(T4);
-    T4[YY][YY] = r/l, T4[YY][ZZ] = dz/l, T4[ZZ][YY] = -dz/l, T4[ZZ][ZZ] = r/l;
+    T4[YY][YY] = r / l, T4[YY][ZZ] = dz / l, T4[ZZ][YY] = -dz / l, T4[ZZ][ZZ] = r / l;
 
     gmx_mat4_init_unity(T5);
     T5[ZZ][ZZ] = -1;
@@ -128,13 +128,13 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
     for (i = 0; (i < DIM); i++)
     {
         dr   = view->eye[i];
-        dr2 += dr*dr;
+        dr2 += dr * dr;
     }
     dr1 = std::sqrt(dr2);
     if (fac < 1)
     {
         bm = std::max(norm(view->box[XX]), std::max(norm(view->box[YY]), norm(view->box[ZZ])));
-        if (dr1*fac < 1.1*bm) /* Don't come to close */
+        if (dr1 * fac < 1.1 * bm) /* Don't come to close */
         {
             return FALSE;
         }
@@ -151,7 +151,7 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
 /* Initiates the state of 3d rotation matrices in the structure */
 static void init_rotate_3d(t_3dview *view)
 {
-    real rot = DEG2RAD*15;
+    real rot = DEG2RAD * 15;
     int  i;
 
     for (i = 0; (i < DIM); i++)
@@ -189,11 +189,11 @@ void translate_view(t_3dview *view, int axis, gmx_bool bPositive)
 #endif
     if (bPositive)
     {
-        view->origin[axis] += view->box[axis][axis]/8;
+        view->origin[axis] += view->box[axis][axis] / 8;
     }
     else
     {
-        view->origin[axis] -= view->box[axis][axis]/8;
+        view->origin[axis] -= view->box[axis][axis] / 8;
     }
     calculate_view(view);
 }
@@ -206,7 +206,7 @@ void reset_view(t_3dview *view)
     set_scale(view, 4.0, 4.0);
     clear_rvec(view->eye);
     calc_box_center(view->ecenter, view->box, view->origin);
-    view->eye[ZZ] = 3.0*std::max(view->box[XX][XX], view->box[YY][YY]);
+    view->eye[ZZ] = 3.0 * std::max(view->box[XX][XX], view->box[YY][YY]);
     zoom_3d(view, 1.0);
     view->eye[WW] = view->origin[WW] = 0.0;
 

@@ -79,19 +79,19 @@ void update_realloc(gmx_update_t *upd, int natoms);
 void set_deform_reference_box(gmx_update_t *upd,
                               gmx_int64_t step, matrix box);
 
-void update_tcouple(gmx_int64_t       step,
-                    t_inputrec       *inputrec,
-                    t_state          *state,
-                    gmx_ekindata_t   *ekind,
-                    t_extmass        *MassQ,
-                    t_mdatoms        *md
+void update_tcouple(gmx_int64_t     step,
+                    t_inputrec *    inputrec,
+                    t_state *       state,
+                    gmx_ekindata_t *ekind,
+                    t_extmass *     MassQ,
+                    t_mdatoms *     md
                     );
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
-void update_pcouple_before_coordinates(FILE             *fplog,
+void update_pcouple_before_coordinates(FILE *            fplog,
                                        gmx_int64_t       step,
                                        const t_inputrec *inputrec,
-                                       t_state          *state,
+                                       t_state *         state,
                                        matrix            parrinellorahmanMu,
                                        matrix            M,
                                        gmx_bool          bInitStep);
@@ -101,52 +101,52 @@ void update_pcouple_before_coordinates(FILE             *fplog,
  * and scales the coordinates.
  * When the deform option is used, scales coordinates and box here.
  */
-void update_pcouple_after_coordinates(FILE             *fplog,
+void update_pcouple_after_coordinates(FILE *            fplog,
                                       gmx_int64_t       step,
                                       const t_inputrec *inputrec,
-                                      const t_mdatoms  *md,
+                                      const t_mdatoms * md,
                                       const matrix      pressure,
                                       const matrix      parrinellorahmanMu,
-                                      t_state          *state,
-                                      t_nrnb           *nrnb,
-                                      gmx_update_t     *upd);
+                                      t_state *         state,
+                                      t_nrnb *          nrnb,
+                                      gmx_update_t *    upd);
 
-void update_coords(FILE              *fplog,
-                   gmx_int64_t        step,
-                   t_inputrec        *inputrec, /* input record and box stuff	*/
-                   t_mdatoms         *md,
-                   t_state           *state,
-                   PaddedRVecVector  *f, /* forces on home particles */
-                   t_fcdata          *fcd,
-                   gmx_ekindata_t    *ekind,
-                   matrix             M,
-                   gmx_update_t      *upd,
-                   int                bUpdatePart,
-                   t_commrec         *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr        *constr);
+void update_coords(FILE *            fplog,
+                   gmx_int64_t       step,
+                   t_inputrec *      inputrec,  /* input record and box stuff	*/
+                   t_mdatoms *       md,
+                   t_state *         state,
+                   PaddedRVecVector *f,  /* forces on home particles */
+                   t_fcdata *        fcd,
+                   gmx_ekindata_t *  ekind,
+                   matrix            M,
+                   gmx_update_t *    upd,
+                   int               bUpdatePart,
+                   t_commrec *       cr,  /* these shouldn't be here -- need to think about it */
+                   gmx_constr *      constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
 
-void update_constraints(FILE              *fplog,
-                        gmx_int64_t        step,
-                        real              *dvdlambda, /* FEP stuff */
-                        t_inputrec        *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms         *md,
-                        t_state           *state,
-                        gmx_bool           bMolPBC,
-                        t_graph           *graph,
-                        PaddedRVecVector  *force, /* forces on home particles */
-                        t_idef            *idef,
-                        tensor             vir_part,
-                        t_commrec         *cr,
-                        t_nrnb            *nrnb,
-                        gmx_wallcycle_t    wcycle,
-                        gmx_update_t      *upd,
-                        gmx_constr        *constr,
-                        gmx_bool           bFirstHalf,
-                        gmx_bool           bCalcVir);
+void update_constraints(FILE *            fplog,
+                        gmx_int64_t       step,
+                        real *            dvdlambda,  /* FEP stuff */
+                        t_inputrec *      inputrec,   /* input record and box stuff	*/
+                        t_mdatoms *       md,
+                        t_state *         state,
+                        gmx_bool          bMolPBC,
+                        t_graph *         graph,
+                        PaddedRVecVector *force,  /* forces on home particles */
+                        t_idef *          idef,
+                        tensor            vir_part,
+                        t_commrec *       cr,
+                        t_nrnb *          nrnb,
+                        gmx_wallcycle_t   wcycle,
+                        gmx_update_t *    upd,
+                        gmx_constr *      constr,
+                        gmx_bool          bFirstHalf,
+                        gmx_bool          bCalcVir);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 

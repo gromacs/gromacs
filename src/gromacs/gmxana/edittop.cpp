@@ -85,12 +85,12 @@ static void delete_from_interactions(t_idef *idef, int inr)
         nra = interaction_function[i].nratoms;
         nnr = 0;
         snew(niatoms, idef->il[i].nr);
-        for (j = 0; (j < idef->il[i].nr); j += nra+1)
+        for (j = 0; (j < idef->il[i].nr); j += nra + 1)
         {
             bDel = FALSE;
             for (k = 0; (k < nra); k++)
             {
-                if (idef->il[i].iatoms[j+k+1] == inr)
+                if (idef->il[i].iatoms[j + k + 1] == inr)
                 {
                     bDel = TRUE;
                 }
@@ -98,11 +98,11 @@ static void delete_from_interactions(t_idef *idef, int inr)
             if (!bDel)
             {
                 /* If this does not need to be deleted, then copy it to temp array */
-                for (k = 0; (k < nra+1); k++)
+                for (k = 0; (k < nra + 1); k++)
                 {
-                    niatoms[nnr+k] = idef->il[i].iatoms[j+k];
+                    niatoms[nnr + k] = idef->il[i].iatoms[j + k];
                 }
-                nnr += nra+1;
+                nnr += nra + 1;
             }
         }
         /* Copy temp array back */
@@ -122,13 +122,13 @@ static void delete_from_block(t_block *block, int inr)
 
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (j == inr)
             {
                 /* This atom has to go */
                 /* Change indices too */
-                for (i1 = i+1; (i1 <= block->nr); i1++)
+                for (i1 = i + 1; (i1 <= block->nr); i1++)
                 {
                     block->index[i1]--;
                 }
@@ -144,19 +144,19 @@ static void delete_from_blocka(t_blocka *block, int inr)
 
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             k = block->a[j];
             if (k == inr)
             {
                 /* This atom has to go */
-                for (j1 = j; (j1 < block->nra-1); j1++)
+                for (j1 = j; (j1 < block->nra - 1); j1++)
                 {
-                    block->a[j1] = block->a[j1+1];
+                    block->a[j1] = block->a[j1 + 1];
                 }
                 block->nra--;
                 /* Change indices too */
-                for (i1 = i+1; (i1 <= block->nr); i1++)
+                for (i1 = i + 1; (i1 <= block->nr); i1++)
                 {
                     block->index[i1]--;
                 }
@@ -170,23 +170,23 @@ static void delete_from_atoms(t_atoms *atoms, int inr)
     int i;
 
     /* Shift the atomnames down */
-    for (i = inr; (i < atoms->nr-1); i++)
+    for (i = inr; (i < atoms->nr - 1); i++)
     {
-        atoms->atomname[i] = atoms->atomname[i+1];
+        atoms->atomname[i] = atoms->atomname[i + 1];
     }
 
     /* Shift the atom struct down */
-    for (i = inr; (i < atoms->nr-1); i++)
+    for (i = inr; (i < atoms->nr - 1); i++)
     {
-        atoms->atom[i] = atoms->atom[i+1];
+        atoms->atom[i] = atoms->atom[i + 1];
     }
 
     if (atoms->havePdbInfo)
     {
         /* Shift the pdbatom struct down */
-        for (i = inr; (i < atoms->nr-1); i++)
+        for (i = inr; (i < atoms->nr - 1); i++)
         {
-            atoms->pdbinfo[i] = atoms->pdbinfo[i+1];
+            atoms->pdbinfo[i] = atoms->pdbinfo[i + 1];
         }
     }
     atoms->nr--;

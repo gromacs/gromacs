@@ -81,8 +81,7 @@ AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x)
 {
 }
 
-AnalysisDataTestInputPointSet &
-AnalysisDataTestInputFrame::addPointSet(int dataSet, int firstColumn)
+AnalysisDataTestInputPointSet &AnalysisDataTestInputFrame::addPointSet(int dataSet, int firstColumn)
 {
     pointSets_.push_back(
             AnalysisDataTestInputPointSet(pointSets_.size(),
@@ -194,7 +193,7 @@ AnalysisDataTestFixture::AnalysisDataTestFixture()
 
 
 void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput &input,
-                                              AnalysisData                *data)
+                                              AnalysisData *               data)
 {
     data->setDataSetCount(input.dataSetCount());
     for (int i = 0; i < input.dataSetCount(); ++i)
@@ -206,7 +205,7 @@ void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput &input
 
 
 void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput &input,
-                                             AnalysisData                *data)
+                                             AnalysisData *               data)
 {
     gmx::AnalysisDataParallelOptions options;
     gmx::AnalysisDataHandle          handle = data->startData(options);
@@ -250,9 +249,8 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
 }
 
 
-void
-AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
-                                                AbstractAnalysisData        *source)
+void AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
+                                                     AbstractAnalysisData *       source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticCheck(data, source, false);
@@ -260,10 +258,9 @@ AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &dat
 }
 
 
-void
-AnalysisDataTestFixture::addStaticParallelCheckerModule(
+void AnalysisDataTestFixture::addStaticParallelCheckerModule(
         const AnalysisDataTestInput &data,
-        AbstractAnalysisData        *source)
+        AbstractAnalysisData *       source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticCheck(data, source, true);
@@ -271,10 +268,9 @@ AnalysisDataTestFixture::addStaticParallelCheckerModule(
 }
 
 
-void
-AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInput &data,
-                                                      int firstcol, int n,
-                                                      AbstractAnalysisData *source)
+void AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInput &data,
+                                                           int firstcol, int n,
+                                                           AbstractAnalysisData *source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticColumnCheck(data, firstcol, n, source);
@@ -282,10 +278,9 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
 }
 
 
-void
-AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInput &data,
-                                                       int                          storageCount,
-                                                       AbstractAnalysisData        *source)
+void AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInput &data,
+                                                            int                          storageCount,
+                                                            AbstractAnalysisData *       source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticStorageCheck(data, storageCount, source);
@@ -293,11 +288,10 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
 }
 
 
-void
-AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker   &checker,
-                                                   const char                   *id,
-                                                   AbstractAnalysisData         *source,
-                                                   const FloatingPointTolerance &tolerance)
+void AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker &  checker,
+                                                        const char *                  id,
+                                                        AbstractAnalysisData *        source,
+                                                        const FloatingPointTolerance &tolerance)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     TestReferenceChecker          tmpChecker(checker);
@@ -308,9 +302,8 @@ AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker   
 }
 
 
-void
-AnalysisDataTestFixture::addReferenceCheckerModule(const char           *id,
-                                                   AbstractAnalysisData *source)
+void AnalysisDataTestFixture::addReferenceCheckerModule(const char *          id,
+                                                        AbstractAnalysisData *source)
 {
     addReferenceCheckerModule(data_.rootChecker(), id, source,
                               defaultRealTolerance());
