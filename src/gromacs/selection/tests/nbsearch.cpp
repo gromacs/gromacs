@@ -78,124 +78,124 @@ namespace
 
 class NeighborhoodSearchTestData
 {
-    public:
-        struct RefPair
+public:
+    struct RefPair
+    {
+        RefPair(int refIndex, real distance)
+            : refIndex(refIndex), distance(distance), bFound(false),
+              bExcluded(false), bIndexed(true)
         {
-            RefPair(int refIndex, real distance)
-                : refIndex(refIndex), distance(distance), bFound(false),
-                  bExcluded(false), bIndexed(true)
+        }
+
+        bool operator<(const RefPair &other) const
+        {
+            return refIndex < other.refIndex;
+        }
+
+        int  refIndex;
+        real distance;
+        // The variables below are state variables that are only used
+        // during the actual testing after creating a copy of the reference
+        // pair list, not as part of the reference data.
+        // Simpler to have just a single structure for both purposes.
+        bool bFound;
+        bool bExcluded;
+        bool bIndexed;
+    };
+
+    struct TestPosition
+    {
+        explicit TestPosition(const rvec x)
+            : refMinDist(0.0), refNearestPoint(-1)
+        {
+            copy_rvec(x, this->x);
+        }
+
+        rvec                 x;
+        real                 refMinDist;
+        int                  refNearestPoint;
+        std::vector<RefPair> refPairs;
+    };
+
+    typedef std::vector<TestPosition> TestPositionList;
+
+    NeighborhoodSearchTestData(gmx_uint64_t seed, real cutoff);
+
+    gmx::AnalysisNeighborhoodPositions refPositions() const
+    {
+        return gmx::AnalysisNeighborhoodPositions(refPos_);
+    }
+    gmx::AnalysisNeighborhoodPositions testPositions() const
+    {
+        if (testPos_.empty())
+        {
+            testPos_.reserve(testPositions_.size());
+            for (size_t i = 0; i < testPositions_.size(); ++i)
             {
+                testPos_.emplace_back(testPositions_[i].x);
             }
-
-            bool operator<(const RefPair &other) const
-            {
-                return refIndex < other.refIndex;
-            }
-
-            int  refIndex;
-            real distance;
-            // The variables below are state variables that are only used
-            // during the actual testing after creating a copy of the reference
-            // pair list, not as part of the reference data.
-            // Simpler to have just a single structure for both purposes.
-            bool bFound;
-            bool bExcluded;
-            bool bIndexed;
-        };
-
-        struct TestPosition
-        {
-            explicit TestPosition(const rvec x)
-                : refMinDist(0.0), refNearestPoint(-1)
-            {
-                copy_rvec(x, this->x);
-            }
-
-            rvec                 x;
-            real                 refMinDist;
-            int                  refNearestPoint;
-            std::vector<RefPair> refPairs;
-        };
-
-        typedef std::vector<TestPosition> TestPositionList;
-
-        NeighborhoodSearchTestData(gmx_uint64_t seed, real cutoff);
-
-        gmx::AnalysisNeighborhoodPositions refPositions() const
-        {
-            return gmx::AnalysisNeighborhoodPositions(refPos_);
         }
-        gmx::AnalysisNeighborhoodPositions testPositions() const
-        {
-            if (testPos_.empty())
-            {
-                testPos_.reserve(testPositions_.size());
-                for (size_t i = 0; i < testPositions_.size(); ++i)
-                {
-                    testPos_.emplace_back(testPositions_[i].x);
-                }
-            }
-            return gmx::AnalysisNeighborhoodPositions(testPos_);
-        }
-        gmx::AnalysisNeighborhoodPositions testPosition(int index) const
-        {
-            return testPositions().selectSingleFromArray(index);
-        }
+        return gmx::AnalysisNeighborhoodPositions(testPos_);
+    }
+    gmx::AnalysisNeighborhoodPositions testPosition(int index) const
+    {
+        return testPositions().selectSingleFromArray(index);
+    }
 
-        void addTestPosition(const rvec x)
-        {
-            GMX_RELEASE_ASSERT(testPos_.empty(),
-                               "Cannot add positions after testPositions() call");
-            testPositions_.emplace_back(x);
-        }
-        gmx::RVec generateRandomPosition();
-        std::vector<int> generateIndex(int count, gmx_uint64_t seed) const;
-        void generateRandomRefPositions(int count);
-        void generateRandomTestPositions(int count);
-        void computeReferences(t_pbc *pbc)
-        {
-            computeReferencesInternal(pbc, false);
-        }
-        void computeReferencesXY(t_pbc *pbc)
-        {
-            computeReferencesInternal(pbc, true);
-        }
+    void addTestPosition(const rvec x)
+    {
+        GMX_RELEASE_ASSERT(testPos_.empty(),
+                           "Cannot add positions after testPositions() call");
+        testPositions_.emplace_back(x);
+    }
+    gmx::RVec generateRandomPosition();
+    std::vector<int> generateIndex(int count, gmx_uint64_t seed) const;
+    void generateRandomRefPositions(int count);
+    void generateRandomTestPositions(int count);
+    void computeReferences(t_pbc *pbc)
+    {
+        computeReferencesInternal(pbc, false);
+    }
+    void computeReferencesXY(t_pbc *pbc)
+    {
+        computeReferencesInternal(pbc, true);
+    }
 
-        bool containsPair(int testIndex, const RefPair &pair) const
+    bool containsPair(int testIndex, const RefPair &pair) const
+    {
+        const std::vector<RefPair> &         refPairs = testPositions_[testIndex].refPairs;
+        std::vector<RefPair>::const_iterator foundRefPair
+            = std::lower_bound(refPairs.begin(), refPairs.end(), pair);
+        if (foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex)
         {
-            const std::vector<RefPair> &         refPairs = testPositions_[testIndex].refPairs;
-            std::vector<RefPair>::const_iterator foundRefPair
-                = std::lower_bound(refPairs.begin(), refPairs.end(), pair);
-            if (foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex)
-            {
-                return false;
-            }
-            return true;
+            return false;
         }
+        return true;
+    }
 
-        // Return a tolerance that accounts for the magnitudes of the coordinates
-        // when doing subtractions, so that we set the ULP tolerance relative to the
-        // coordinate values rather than their difference.
-        // i.e., 10.0-9.9999999 will achieve a few ULP accuracy relative
-        // to 10.0, but a much larger error relative to the difference.
-        gmx::test::FloatingPointTolerance relativeTolerance() const
-        {
-            real magnitude = std::max(box_[XX][XX], std::max(box_[YY][YY], box_[ZZ][ZZ]));
-            return gmx::test::relativeToleranceAsUlp(magnitude, 4);
-        }
+    // Return a tolerance that accounts for the magnitudes of the coordinates
+    // when doing subtractions, so that we set the ULP tolerance relative to the
+    // coordinate values rather than their difference.
+    // i.e., 10.0-9.9999999 will achieve a few ULP accuracy relative
+    // to 10.0, but a much larger error relative to the difference.
+    gmx::test::FloatingPointTolerance relativeTolerance() const
+    {
+        real magnitude = std::max(box_[XX][XX], std::max(box_[YY][YY], box_[ZZ][ZZ]));
+        return gmx::test::relativeToleranceAsUlp(magnitude, 4);
+    }
 
-        gmx::DefaultRandomEngine rng_;
-        real                     cutoff_;
-        matrix                   box_;
-        t_pbc                    pbc_;
-        int                      refPosCount_;
-        std::vector<gmx::RVec>   refPos_;
-        TestPositionList         testPositions_;
+    gmx::DefaultRandomEngine rng_;
+    real                     cutoff_;
+    matrix                   box_;
+    t_pbc                    pbc_;
+    int                      refPosCount_;
+    std::vector<gmx::RVec>   refPos_;
+    TestPositionList         testPositions_;
 
-    private:
-        void computeReferencesInternal(t_pbc *pbc, bool bXY);
+private:
+    void computeReferencesInternal(t_pbc *pbc, bool bXY);
 
-        mutable std::vector<gmx::RVec> testPos_;
+    mutable std::vector<gmx::RVec> testPos_;
 };
 
 //! Shorthand for a collection of reference pairs.
@@ -309,34 +309,34 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc *pbc, bool bXY)
 
 class ExclusionsHelper
 {
-    public:
-        static void markExcludedPairs(RefPairList *refPairs, int testIndex,
-                                      const t_blocka *excls);
+public:
+    static void markExcludedPairs(RefPairList *refPairs, int testIndex,
+                                  const t_blocka *excls);
 
-        ExclusionsHelper(int refPosCount, int testPosCount);
+    ExclusionsHelper(int refPosCount, int testPosCount);
 
-        void generateExclusions();
+    void generateExclusions();
 
-        const t_blocka *exclusions() const { return &excls_; }
+    const t_blocka *exclusions() const { return &excls_; }
 
-        gmx::ConstArrayRef<int> refPosIds() const
-        {
-            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
-                                                     exclusionIds_.begin() + refPosCount_);
-        }
-        gmx::ConstArrayRef<int> testPosIds() const
-        {
-            return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
-                                                     exclusionIds_.begin() + testPosCount_);
-        }
+    gmx::ConstArrayRef<int> refPosIds() const
+    {
+        return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
+                                                 exclusionIds_.begin() + refPosCount_);
+    }
+    gmx::ConstArrayRef<int> testPosIds() const
+    {
+        return gmx::constArrayRefFromVector<int>(exclusionIds_.begin(),
+                                                 exclusionIds_.begin() + testPosCount_);
+    }
 
-    private:
-        int              refPosCount_;
-        int              testPosCount_;
-        std::vector<int> exclusionIds_;
-        std::vector<int> exclsIndex_;
-        std::vector<int> exclsAtoms_;
-        t_blocka         excls_;
+private:
+    int              refPosCount_;
+    int              testPosCount_;
+    std::vector<int> exclusionIds_;
+    std::vector<int> exclsIndex_;
+    std::vector<int> exclsAtoms_;
+    t_blocka         excls_;
 };
 
 // static
@@ -408,26 +408,26 @@ void ExclusionsHelper::generateExclusions()
 
 class NeighborhoodSearchTest : public ::testing::Test
 {
-    public:
-        void testIsWithin(gmx::AnalysisNeighborhoodSearch * search,
+public:
+    void testIsWithin(gmx::AnalysisNeighborhoodSearch * search,
+                      const NeighborhoodSearchTestData &data);
+    void testMinimumDistance(gmx::AnalysisNeighborhoodSearch * search,
+                             const NeighborhoodSearchTestData &data);
+    void testNearestPoint(gmx::AnalysisNeighborhoodSearch * search,
                           const NeighborhoodSearchTestData &data);
-        void testMinimumDistance(gmx::AnalysisNeighborhoodSearch * search,
-                                 const NeighborhoodSearchTestData &data);
-        void testNearestPoint(gmx::AnalysisNeighborhoodSearch * search,
-                              const NeighborhoodSearchTestData &data);
-        void testPairSearch(gmx::AnalysisNeighborhoodSearch * search,
-                            const NeighborhoodSearchTestData &data);
-        void testPairSearchIndexed(gmx::AnalysisNeighborhood *       nb,
-                                   const NeighborhoodSearchTestData &data,
-                                   gmx_uint64_t                      seed);
-        void testPairSearchFull(gmx::AnalysisNeighborhoodSearch *         search,
-                                const NeighborhoodSearchTestData &        data,
-                                const gmx::AnalysisNeighborhoodPositions &pos,
-                                const t_blocka *                          excls,
-                                const gmx::ConstArrayRef<int> &           refIndices,
-                                const gmx::ConstArrayRef<int> &           testIndices);
+    void testPairSearch(gmx::AnalysisNeighborhoodSearch * search,
+                        const NeighborhoodSearchTestData &data);
+    void testPairSearchIndexed(gmx::AnalysisNeighborhood *       nb,
+                               const NeighborhoodSearchTestData &data,
+                               gmx_uint64_t                      seed);
+    void testPairSearchFull(gmx::AnalysisNeighborhoodSearch *         search,
+                            const NeighborhoodSearchTestData &        data,
+                            const gmx::AnalysisNeighborhoodPositions &pos,
+                            const t_blocka *                          excls,
+                            const gmx::ConstArrayRef<int> &           refIndices,
+                            const gmx::ConstArrayRef<int> &           testIndices);
 
-        gmx::AnalysisNeighborhood nb_;
+    gmx::AnalysisNeighborhood nb_;
 };
 
 void NeighborhoodSearchTest::testIsWithin(
@@ -705,181 +705,181 @@ void NeighborhoodSearchTest::testPairSearchFull(
 
 class TrivialTestData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static TrivialTestData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static TrivialTestData singleton;
+        return singleton.data_;
+    }
 
-        TrivialTestData() : data_(12345, 1.0)
-        {
-            // Make the box so small we are virtually guaranteed to have
-            // several neighbors for the five test positions
-            data_.box_[XX][XX] = 3.0;
-            data_.box_[YY][YY] = 3.0;
-            data_.box_[ZZ][ZZ] = 3.0;
-            data_.generateRandomRefPositions(10);
-            data_.generateRandomTestPositions(5);
-            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
-            data_.computeReferences(&data_.pbc_);
-        }
+    TrivialTestData() : data_(12345, 1.0)
+    {
+        // Make the box so small we are virtually guaranteed to have
+        // several neighbors for the five test positions
+        data_.box_[XX][XX] = 3.0;
+        data_.box_[YY][YY] = 3.0;
+        data_.box_[ZZ][ZZ] = 3.0;
+        data_.generateRandomRefPositions(10);
+        data_.generateRandomTestPositions(5);
+        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        data_.computeReferences(&data_.pbc_);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 class TrivialNoPBCTestData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static TrivialNoPBCTestData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static TrivialNoPBCTestData singleton;
+        return singleton.data_;
+    }
 
-        TrivialNoPBCTestData() : data_(12345, 1.0)
-        {
-            data_.generateRandomRefPositions(10);
-            data_.generateRandomTestPositions(5);
-            data_.computeReferences(nullptr);
-        }
+    TrivialNoPBCTestData() : data_(12345, 1.0)
+    {
+        data_.generateRandomRefPositions(10);
+        data_.generateRandomTestPositions(5);
+        data_.computeReferences(nullptr);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 class RandomBoxFullPBCData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static RandomBoxFullPBCData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static RandomBoxFullPBCData singleton;
+        return singleton.data_;
+    }
 
-        RandomBoxFullPBCData() : data_(12345, 1.0)
-        {
-            data_.box_[XX][XX] = 10.0;
-            data_.box_[YY][YY] = 5.0;
-            data_.box_[ZZ][ZZ] = 7.0;
-            // TODO: Consider whether manually picking some positions would give better
-            // test coverage.
-            data_.generateRandomRefPositions(1000);
-            data_.generateRandomTestPositions(100);
-            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
-            data_.computeReferences(&data_.pbc_);
-        }
+    RandomBoxFullPBCData() : data_(12345, 1.0)
+    {
+        data_.box_[XX][XX] = 10.0;
+        data_.box_[YY][YY] = 5.0;
+        data_.box_[ZZ][ZZ] = 7.0;
+        // TODO: Consider whether manually picking some positions would give better
+        // test coverage.
+        data_.generateRandomRefPositions(1000);
+        data_.generateRandomTestPositions(100);
+        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        data_.computeReferences(&data_.pbc_);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 class RandomBoxXYFullPBCData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static RandomBoxXYFullPBCData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static RandomBoxXYFullPBCData singleton;
+        return singleton.data_;
+    }
 
-        RandomBoxXYFullPBCData() : data_(54321, 1.0)
-        {
-            data_.box_[XX][XX] = 10.0;
-            data_.box_[YY][YY] = 5.0;
-            data_.box_[ZZ][ZZ] = 7.0;
-            // TODO: Consider whether manually picking some positions would give better
-            // test coverage.
-            data_.generateRandomRefPositions(1000);
-            data_.generateRandomTestPositions(100);
-            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
-            data_.computeReferencesXY(&data_.pbc_);
-        }
+    RandomBoxXYFullPBCData() : data_(54321, 1.0)
+    {
+        data_.box_[XX][XX] = 10.0;
+        data_.box_[YY][YY] = 5.0;
+        data_.box_[ZZ][ZZ] = 7.0;
+        // TODO: Consider whether manually picking some positions would give better
+        // test coverage.
+        data_.generateRandomRefPositions(1000);
+        data_.generateRandomTestPositions(100);
+        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        data_.computeReferencesXY(&data_.pbc_);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 class RandomTriclinicFullPBCData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static RandomTriclinicFullPBCData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static RandomTriclinicFullPBCData singleton;
+        return singleton.data_;
+    }
 
-        RandomTriclinicFullPBCData() : data_(12345, 1.0)
-        {
-            data_.box_[XX][XX] = 5.0;
-            data_.box_[YY][XX] = 2.5;
-            data_.box_[YY][YY] = 2.5 * std::sqrt(3.0);
-            data_.box_[ZZ][XX] = 2.5;
-            data_.box_[ZZ][YY] = 2.5 * std::sqrt(1.0 / 3.0);
-            data_.box_[ZZ][ZZ] = 5.0 * std::sqrt(2.0 / 3.0);
-            // TODO: Consider whether manually picking some positions would give better
-            // test coverage.
-            data_.generateRandomRefPositions(1000);
-            data_.generateRandomTestPositions(100);
-            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
-            data_.computeReferences(&data_.pbc_);
-        }
+    RandomTriclinicFullPBCData() : data_(12345, 1.0)
+    {
+        data_.box_[XX][XX] = 5.0;
+        data_.box_[YY][XX] = 2.5;
+        data_.box_[YY][YY] = 2.5 * std::sqrt(3.0);
+        data_.box_[ZZ][XX] = 2.5;
+        data_.box_[ZZ][YY] = 2.5 * std::sqrt(1.0 / 3.0);
+        data_.box_[ZZ][ZZ] = 5.0 * std::sqrt(2.0 / 3.0);
+        // TODO: Consider whether manually picking some positions would give better
+        // test coverage.
+        data_.generateRandomRefPositions(1000);
+        data_.generateRandomTestPositions(100);
+        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        data_.computeReferences(&data_.pbc_);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 class RandomBox2DPBCData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static RandomBox2DPBCData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static RandomBox2DPBCData singleton;
+        return singleton.data_;
+    }
 
-        RandomBox2DPBCData() : data_(12345, 1.0)
-        {
-            data_.box_[XX][XX] = 10.0;
-            data_.box_[YY][YY] = 7.0;
-            data_.box_[ZZ][ZZ] = 5.0;
-            // TODO: Consider whether manually picking some positions would give better
-            // test coverage.
-            data_.generateRandomRefPositions(1000);
-            data_.generateRandomTestPositions(100);
-            set_pbc(&data_.pbc_, epbcXY, data_.box_);
-            data_.computeReferences(&data_.pbc_);
-        }
+    RandomBox2DPBCData() : data_(12345, 1.0)
+    {
+        data_.box_[XX][XX] = 10.0;
+        data_.box_[YY][YY] = 7.0;
+        data_.box_[ZZ][ZZ] = 5.0;
+        // TODO: Consider whether manually picking some positions would give better
+        // test coverage.
+        data_.generateRandomRefPositions(1000);
+        data_.generateRandomTestPositions(100);
+        set_pbc(&data_.pbc_, epbcXY, data_.box_);
+        data_.computeReferences(&data_.pbc_);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 class RandomBoxNoPBCData
 {
-    public:
-        static const NeighborhoodSearchTestData &get()
-        {
-            static RandomBoxNoPBCData singleton;
-            return singleton.data_;
-        }
+public:
+    static const NeighborhoodSearchTestData &get()
+    {
+        static RandomBoxNoPBCData singleton;
+        return singleton.data_;
+    }
 
-        RandomBoxNoPBCData() : data_(12345, 1.0)
-        {
-            data_.box_[XX][XX] = 10.0;
-            data_.box_[YY][YY] = 5.0;
-            data_.box_[ZZ][ZZ] = 7.0;
-            // TODO: Consider whether manually picking some positions would give better
-            // test coverage.
-            data_.generateRandomRefPositions(1000);
-            data_.generateRandomTestPositions(100);
-            set_pbc(&data_.pbc_, epbcNONE, data_.box_);
-            data_.computeReferences(nullptr);
-        }
+    RandomBoxNoPBCData() : data_(12345, 1.0)
+    {
+        data_.box_[XX][XX] = 10.0;
+        data_.box_[YY][YY] = 5.0;
+        data_.box_[ZZ][ZZ] = 7.0;
+        // TODO: Consider whether manually picking some positions would give better
+        // test coverage.
+        data_.generateRandomRefPositions(1000);
+        data_.generateRandomTestPositions(100);
+        set_pbc(&data_.pbc_, epbcNONE, data_.box_);
+        data_.computeReferences(nullptr);
+    }
 
-    private:
-        NeighborhoodSearchTestData data_;
+private:
+    NeighborhoodSearchTestData data_;
 };
 
 /********************************************************************

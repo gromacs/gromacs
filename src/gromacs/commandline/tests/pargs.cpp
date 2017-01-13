@@ -66,75 +66,75 @@ using gmx::test::CommandLine;
 
 class ParseCommonArgsTest : public ::testing::Test
 {
-    public:
-        enum FileArgumentType
-        {
-            efFull,
-            efNoExtension,
-            efEmptyValue
-        };
+public:
+    enum FileArgumentType
+    {
+        efFull,
+        efNoExtension,
+        efEmptyValue
+    };
 
-        ParseCommonArgsTest()
-            : oenv_(nullptr), fileCount_(0)
-        {
-        }
-        virtual ~ParseCommonArgsTest()
-        {
-            output_env_done(oenv_);
-        }
+    ParseCommonArgsTest()
+        : oenv_(nullptr), fileCount_(0)
+    {
+    }
+    virtual ~ParseCommonArgsTest()
+    {
+        output_env_done(oenv_);
+    }
 
-        int nfile() const { return fileCount_; }
+    int nfile() const { return fileCount_; }
 
-        void parseFromArgs(unsigned long           flags,
-                           gmx::ArrayRef<t_filenm> fnm,
-                           gmx::ArrayRef<t_pargs>  pa)
+    void parseFromArgs(unsigned long           flags,
+                       gmx::ArrayRef<t_filenm> fnm,
+                       gmx::ArrayRef<t_pargs>  pa)
+    {
+        fileCount_ = fnm.size();
+        bool bOk = parse_common_args(&args_.argc(), args_.argv(), flags,
+                                     fnm.size(), fnm.data(),
+                                     pa.size(), pa.data(),
+                                     0, nullptr, 0, nullptr, &oenv_);
+        EXPECT_TRUE(bOk);
+    }
+    void parseFromArray(gmx::ConstArrayRef<const char *> cmdline,
+                        unsigned long                    flags,
+                        gmx::ArrayRef<t_filenm>          fnm,
+                        gmx::ArrayRef<t_pargs>           pa)
+    {
+        args_.initFromArray(cmdline);
+        parseFromArgs(flags, fnm, pa);
+    }
+    std::string addFileArg(const char *name, const char *extension,
+                           FileArgumentType type)
+    {
+        std::string filename(tempFiles_.getTemporaryFilePath(extension));
+        gmx::TextWriter::writeFileFromString(filename, "Dummy file");
+        if (name != nullptr)
         {
-            fileCount_ = fnm.size();
-            bool bOk = parse_common_args(&args_.argc(), args_.argv(), flags,
-                                         fnm.size(), fnm.data(),
-                                         pa.size(), pa.data(),
-                                         0, nullptr, 0, nullptr, &oenv_);
-            EXPECT_TRUE(bOk);
-        }
-        void parseFromArray(gmx::ConstArrayRef<const char *> cmdline,
-                            unsigned long                    flags,
-                            gmx::ArrayRef<t_filenm>          fnm,
-                            gmx::ArrayRef<t_pargs>           pa)
-        {
-            args_.initFromArray(cmdline);
-            parseFromArgs(flags, fnm, pa);
-        }
-        std::string addFileArg(const char *name, const char *extension,
-                               FileArgumentType type)
-        {
-            std::string filename(tempFiles_.getTemporaryFilePath(extension));
-            gmx::TextWriter::writeFileFromString(filename, "Dummy file");
-            if (name != nullptr)
+            args_.append(name);
+            switch (type)
             {
-                args_.append(name);
-                switch (type)
-                {
-                    case efFull:
-                        args_.append(filename);
-                        break;
-                    case efNoExtension:
-                        args_.append(gmx::Path::stripExtension(filename));
-                        break;
-                    case efEmptyValue:
-                        break;
-                }
+                case efFull:
+                    args_.append(filename);
+                    break;
+                case efNoExtension:
+                    args_.append(gmx::Path::stripExtension(filename));
+                    break;
+                case efEmptyValue:
+                    break;
             }
-            return filename;
         }
+        return filename;
+    }
 
-        // This must be a member that persists until the end of the test,
-        // because string arguments are not duplicated in the output.
-        CommandLine args_;
+    // This must be a member that persists until the end of the test,
+    // because string arguments are not duplicated in the output.
+    CommandLine args_;
 
-    private:
-        gmx_output_env_t *         oenv_;
-        size_t                     fileCount_;
-        gmx::test::TestFileManager tempFiles_;
+private:
+    gmx_output_env_t *         oenv_;
+    size_t                     fileCount_;
+    gmx::test::TestFileManager tempFiles_;
 };
 
 /********************************************************************

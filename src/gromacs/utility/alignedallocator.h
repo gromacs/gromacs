@@ -110,136 +110,136 @@ alignedFree(void *p);
 template <class T>
 class AlignedAllocator
 {
-    public:
-        // The standard library specification for a custom allocator
-        // requires these typedefs, with this capitalization/underscoring.
-        typedef T              value_type;      //!< Type of allocated elements
-        typedef T             &reference;       //!< Reference to allocated elements
-        typedef const T       &const_reference; //!< Constant reference to allocated elements
-        typedef T *            pointer;         //!< Pointer to allocated elements
-        typedef const T *      const_pointer;   //!< Constant pointer to allocated elements
-        typedef std::size_t    size_type;       //!< Integer type to use for size of objects
-        typedef std::ptrdiff_t difference_type; //!< Type to hold differences between pointers
+public:
+    // The standard library specification for a custom allocator
+    // requires these typedefs, with this capitalization/underscoring.
+    typedef T              value_type;          //!< Type of allocated elements
+    typedef T             &reference;           //!< Reference to allocated elements
+    typedef const T       &const_reference;     //!< Constant reference to allocated elements
+    typedef T *            pointer;             //!< Pointer to allocated elements
+    typedef const T *      const_pointer;       //!< Constant pointer to allocated elements
+    typedef std::size_t    size_type;           //!< Integer type to use for size of objects
+    typedef std::ptrdiff_t difference_type;     //!< Type to hold differences between pointers
 
-        /*! \libinternal \brief Standard-required typedef to use allocator with different class.
-         *
-         *  \tparam U new class
-         *
-         *  This is used for things like std::list where the size of each link
-         *  is larger than the class stored in the link.
-         *
-         *  Required by the specification for an allocator.
-         */
-        template <class U>
-        struct rebind
+    /*! \libinternal \brief Standard-required typedef to use allocator with different class.
+     *
+     *  \tparam U new class
+     *
+     *  This is used for things like std::list where the size of each link
+     *  is larger than the class stored in the link.
+     *
+     *  Required by the specification for an allocator.
+     */
+    template <class U>
+    struct rebind
+    {
+        typedef AlignedAllocator<U> other;     //!< Align class U with our alignment
+    };
+
+    /*! \brief Templated copy constructor
+     *
+     * This template constructor cannot be auto-generated, and is
+     * normally unused, except e.g. MSVC2015 standard library uses
+     * it in debug mode, presumably to implement some checks.
+     */
+    template <class U>
+    explicit AlignedAllocator(const AlignedAllocator<U> &) {}
+
+    /*! \brief Constructor
+     *
+     * No constructor can be auto-generated in the presence of any
+     * user-defined constructor, but we want the default constructor.
+     */
+    AlignedAllocator() {};
+
+    /*! \brief Return address of an object
+     *
+     *  \param r Reference to object of type T
+     *  \return Pointer to T memory
+     */
+    pointer address(reference r) const { return &r; }
+
+    /*! \brief Return address of a const object
+     *
+     *  \param r Const reference to object of type T
+     *  \return Pointer to T memory
+     */
+    const_pointer address(const_reference r) const { return &r; }
+
+    /*! \brief Do the actual memory allocation
+     *
+     *  \param n    Number of elements of type T to allocate. n can be
+     *              0 bytes, which will return a non-null properly aligned
+     *              and padded pointer that should not be used.
+     *  \param hint Optional value returned from previous call to allocate.
+     *              For now this is not used.
+     *  \return Pointer to allocated memory
+     *
+     *  \throws std::bad_alloc if the allocation fails.
+     */
+    pointer allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
+    {
+        void *p = internal::alignedMalloc(n * sizeof(T));
+
+        if (p == nullptr)
         {
-            typedef AlignedAllocator<U> other; //!< Align class U with our alignment
-        };
-
-        /*! \brief Templated copy constructor
-         *
-         * This template constructor cannot be auto-generated, and is
-         * normally unused, except e.g. MSVC2015 standard library uses
-         * it in debug mode, presumably to implement some checks.
-         */
-        template <class U>
-        explicit AlignedAllocator(const AlignedAllocator<U> &) {}
-
-        /*! \brief Constructor
-         *
-         * No constructor can be auto-generated in the presence of any
-         * user-defined constructor, but we want the default constructor.
-         */
-        AlignedAllocator() {};
-
-        /*! \brief Return address of an object
-         *
-         *  \param r Reference to object of type T
-         *  \return Pointer to T memory
-         */
-        pointer address(reference r) const { return &r; }
-
-        /*! \brief Return address of a const object
-         *
-         *  \param r Const reference to object of type T
-         *  \return Pointer to T memory
-         */
-        const_pointer address(const_reference r) const { return &r; }
-
-        /*! \brief Do the actual memory allocation
-         *
-         *  \param n    Number of elements of type T to allocate. n can be
-         *              0 bytes, which will return a non-null properly aligned
-         *              and padded pointer that should not be used.
-         *  \param hint Optional value returned from previous call to allocate.
-         *              For now this is not used.
-         *  \return Pointer to allocated memory
-         *
-         *  \throws std::bad_alloc if the allocation fails.
-         */
-        pointer allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
-        {
-            void *p = internal::alignedMalloc(n * sizeof(T));
-
-            if (p == nullptr)
-            {
-                throw std::bad_alloc();
-            }
-            else
-            {
-                return static_cast<pointer>(p);
-            }
+            throw std::bad_alloc();
         }
-
-        /*! \brief Release memory
-         *
-         * \param p  Pointer to previously allocated memory returned from allocate()
-         * \param n  number of objects previously passed to allocate()
-         */
-        void deallocate(pointer p, std::size_t gmx_unused n)
+        else
         {
-            internal::alignedFree(p);
+            return static_cast<pointer>(p);
         }
+    }
 
-        /*! \brief Construct an object without allocating memory
-         *
-         * \tparam Args  Variable-length list of types for constructor args
-         * \param p      Adress of memory where to construct object
-         * \param args   Variable-length list of arguments to constructor
-         */
-        template <class ... Args>
-        void construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
+    /*! \brief Release memory
+     *
+     * \param p  Pointer to previously allocated memory returned from allocate()
+     * \param n  number of objects previously passed to allocate()
+     */
+    void deallocate(pointer p, std::size_t gmx_unused n)
+    {
+        internal::alignedFree(p);
+    }
 
-        /*! \brief Call the destructor of object without releasing memory
-         *
-         * \param p  Address of memory where to destroy object
-         */
-        void destroy(pointer p) { p->~value_type(); }
+    /*! \brief Construct an object without allocating memory
+     *
+     * \tparam Args  Variable-length list of types for constructor args
+     * \param p      Adress of memory where to construct object
+     * \param args   Variable-length list of arguments to constructor
+     */
+    template <class ... Args>
+    void construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
 
-        /*! \brief Return largest number of objects that can be allocated
-         *
-         * This will be set such that the number of objects T multiplied by
-         * the size of each object is the largest value that can be represented
-         * by size_type.
-         */
-        std::size_t max_size() const { return (static_cast<size_t>(0) - static_cast<size_t>(1)) / sizeof(T); }
+    /*! \brief Call the destructor of object without releasing memory
+     *
+     * \param p  Address of memory where to destroy object
+     */
+    void destroy(pointer p) { p->~value_type(); }
 
-        /*! \brief Return true if two allocators are identical
-         *
-         * \param rhs Other allocator
-         *
-         * This is a member function of the left-hand-side allocator.
-         */
-        template <class T2>
-        bool operator==(const AlignedAllocator<T2> &gmx_unused rhs) const { return std::is_same<T, T2>::value; GMX_UNUSED_VALUE(rhs); }
+    /*! \brief Return largest number of objects that can be allocated
+     *
+     * This will be set such that the number of objects T multiplied by
+     * the size of each object is the largest value that can be represented
+     * by size_type.
+     */
+    std::size_t max_size() const { return (static_cast<size_t>(0) - static_cast<size_t>(1)) / sizeof(T); }
 
-        /*! \brief Return true if two allocators are different
-         *
-         * \param rhs Other allocator.
-         *
-         * This is a member function of the left-hand-side allocator.
-         */
-        bool operator!=(const AlignedAllocator &rhs) const { return !operator==(rhs); }
+    /*! \brief Return true if two allocators are identical
+     *
+     * \param rhs Other allocator
+     *
+     * This is a member function of the left-hand-side allocator.
+     */
+    template <class T2>
+    bool operator==(const AlignedAllocator<T2> &gmx_unused rhs) const { return std::is_same<T, T2>::value; GMX_UNUSED_VALUE(rhs); }
+
+    /*! \brief Return true if two allocators are different
+     *
+     * \param rhs Other allocator.
+     *
+     * This is a member function of the left-hand-side allocator.
+     */
+    bool operator!=(const AlignedAllocator &rhs) const { return !operator==(rhs); }
 };
 
 }      // namespace gmx

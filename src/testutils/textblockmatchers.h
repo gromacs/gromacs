@@ -76,22 +76,22 @@ class TestReferenceChecker;
  */
 class ITextBlockMatcher
 {
-    public:
-        virtual ~ITextBlockMatcher();
+public:
+    virtual ~ITextBlockMatcher();
 
-        /*! \brief
-         * Matches contents of a stream against reference data.
-         *
-         * \param  stream   Stream to match.
-         * \param  checker  Checker to use for matching.
-         *
-         * The method can change the state of the provided checker (e.g., by
-         * changing the default tolerance).
-         * The caller is responsible of providing a checker where such state
-         * changes do not matter.
-         */
-        virtual void checkStream(TextInputStream *     stream,
-                                 TestReferenceChecker *checker) = 0;
+    /*! \brief
+     * Matches contents of a stream against reference data.
+     *
+     * \param  stream   Stream to match.
+     * \param  checker  Checker to use for matching.
+     *
+     * The method can change the state of the provided checker (e.g., by
+     * changing the default tolerance).
+     * The caller is responsible of providing a checker where such state
+     * changes do not matter.
+     */
+    virtual void checkStream(TextInputStream *     stream,
+                             TestReferenceChecker *checker) = 0;
 };
 
 //! Smart pointer for managing a ITextBlockMatcher.
@@ -111,12 +111,12 @@ typedef std::unique_ptr<ITextBlockMatcher> TextBlockMatcherPointer;
  */
 class ITextBlockMatcherSettings
 {
-    public:
-        //! Factory method that constructs the matcher after parameters are set.
-        virtual TextBlockMatcherPointer createMatcher() const = 0;
+public:
+    //! Factory method that constructs the matcher after parameters are set.
+    virtual TextBlockMatcherPointer createMatcher() const = 0;
 
-    protected:
-        virtual ~ITextBlockMatcherSettings();
+protected:
+    virtual ~ITextBlockMatcherSettings();
 };
 
 /*! \libinternal \brief
@@ -127,8 +127,8 @@ class ITextBlockMatcherSettings
  */
 class ExactTextMatch : public ITextBlockMatcherSettings
 {
-    public:
-        virtual TextBlockMatcherPointer createMatcher() const;
+public:
+    virtual TextBlockMatcherPointer createMatcher() const;
 };
 
 /*! \libinternal \brief
@@ -139,8 +139,8 @@ class ExactTextMatch : public ITextBlockMatcherSettings
  */
 class NoTextMatch : public ITextBlockMatcherSettings
 {
-    public:
-        virtual TextBlockMatcherPointer createMatcher() const;
+public:
+    virtual TextBlockMatcherPointer createMatcher() const;
 };
 
 } // namespace test

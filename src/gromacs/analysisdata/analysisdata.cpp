@@ -68,17 +68,17 @@ namespace internal
  */
 class AnalysisDataHandleImpl
 {
-    public:
-        //! Creates a handle associated with the given data object.
-        explicit AnalysisDataHandleImpl(AnalysisData *data)
-            : data_(*data), currentFrame_(nullptr)
-        {
-        }
+public:
+    //! Creates a handle associated with the given data object.
+    explicit AnalysisDataHandleImpl(AnalysisData *data)
+        : data_(*data), currentFrame_(nullptr)
+    {
+    }
 
-        //! The data object that this handle belongs to.
-        AnalysisData &data_;
-        //! Current storage frame object, or NULL if no current frame.
-        AnalysisDataStorageFrame *currentFrame_;
+    //! The data object that this handle belongs to.
+    AnalysisData &data_;
+    //! Current storage frame object, or NULL if no current frame.
+    AnalysisDataStorageFrame *currentFrame_;
 };
 
 }   // namespace internal
@@ -94,22 +94,22 @@ class AnalysisDataHandleImpl
  */
 class AnalysisData::Impl
 {
-    public:
-        //! Smart pointer type to manage a data handle implementation.
-        typedef std::unique_ptr<internal::AnalysisDataHandleImpl>
-            HandlePointer;
-        //! Shorthand for a list of data handles.
-        typedef std::vector<HandlePointer> HandleList;
+public:
+    //! Smart pointer type to manage a data handle implementation.
+    typedef std::unique_ptr<internal::AnalysisDataHandleImpl>
+        HandlePointer;
+    //! Shorthand for a list of data handles.
+    typedef std::vector<HandlePointer> HandleList;
 
-        //! Storage implementation.
-        AnalysisDataStorage storage_;
-        /*! \brief
-         * List of handles for this data object.
-         *
-         * Note that AnalysisDataHandle objects also contain (raw) pointers
-         * to these objects.
-         */
-        HandleList handles_;
+    //! Storage implementation.
+    AnalysisDataStorage storage_;
+    /*! \brief
+     * List of handles for this data object.
+     *
+     * Note that AnalysisDataHandle objects also contain (raw) pointers
+     * to these objects.
+     */
+    HandleList handles_;
 };
 
 /********************************************************************

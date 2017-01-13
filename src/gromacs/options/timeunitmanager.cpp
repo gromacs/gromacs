@@ -186,27 +186,27 @@ namespace
 template <class FloatingPointOptionInfo>
 class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionInfo>
 {
-    public:
-        //! Initializes a scaler with the given factor.
-        explicit TimeOptionScaler(double factor) : factor_(factor) {}
+public:
+    //! Initializes a scaler with the given factor.
+    explicit TimeOptionScaler(double factor) : factor_(factor) {}
 
-        void visitSection(OptionSectionInfo *section)
+    void visitSection(OptionSectionInfo *section)
+    {
+        OptionsModifyingIterator iterator(section);
+        iterator.acceptSections(this);
+        iterator.acceptOptions(this);
+    }
+
+    void visitOptionType(FloatingPointOptionInfo *option)
+    {
+        if (option->isTime())
         {
-            OptionsModifyingIterator iterator(section);
-            iterator.acceptSections(this);
-            iterator.acceptOptions(this);
+            option->setScaleFactor(factor_);
         }
+    }
 
-        void visitOptionType(FloatingPointOptionInfo *option)
-        {
-            if (option->isTime())
-            {
-                option->setScaleFactor(factor_);
-            }
-        }
-
-    private:
-        double factor_;
+private:
+    double factor_;
 };
 
 }   // namespace

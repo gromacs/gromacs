@@ -65,100 +65,100 @@ namespace
 // Simple input data for gmx::AnalysisDataAverageModule tests.
 class SimpleInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static SimpleInputData singleton;
-            return singleton.data_;
+        static SimpleInputData singleton;
+        return singleton.data_;
 #else
-            static SimpleInputData singleton_average;
-            return singleton_average.data_;
+        static SimpleInputData singleton_average;
+        return singleton_average.data_;
 #endif
-        }
+    }
 
-        SimpleInputData() : data_(1, false)
-        {
-            data_.setColumnCount(0, 3);
-            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
-            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
-            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
-        }
+    SimpleInputData() : data_(1, false)
+    {
+        data_.setColumnCount(0, 3);
+        data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
+        data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
+        data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 // Multipoint input data for gmx::AnalysisDataAverageModule tests.
 class MultipointInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static MultipointInputData singleton;
-            return singleton.data_;
+        static MultipointInputData singleton;
+        return singleton.data_;
 #else
-            static MultipointInputData singleton_average;
-            return singleton_average.data_;
+        static MultipointInputData singleton_average;
+        return singleton_average.data_;
 #endif
-        }
+    }
 
-        MultipointInputData() : data_(1, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 3);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(0, 0, 1.0, 0.0);
-            frame1.addPointSetWithValues(0, 0, 2.0);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.0, 1.0);
-            frame2.addPointSetWithValues(0, 0, 2.0);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
-        }
+    MultipointInputData() : data_(1, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 3);
+        AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+        frame1.addPointSetWithValues(0, 0, 1.0, 0.0);
+        frame1.addPointSetWithValues(0, 0, 2.0);
+        AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.0, 1.0);
+        frame2.addPointSetWithValues(0, 0, 2.0);
+        AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 // Input data with multiple data sets for gmx::AnalysisDataAverageModule tests.
 class MultiDataSetInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static MultiDataSetInputData singleton;
-            return singleton.data_;
+        static MultiDataSetInputData singleton;
+        return singleton.data_;
 #else
-            static MultiDataSetInputData singleton_average;
-            return singleton_average.data_;
+        static MultiDataSetInputData singleton_average;
+        return singleton_average.data_;
 #endif
-        }
+    }
 
-        MultiDataSetInputData() : data_(2, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 3);
-            data_.setColumnCount(1, 2);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(0, 0, 1.0, 0.0);
-            frame1.addPointSetWithValues(1, 0, 2.0, 1.0);
-            frame1.addPointSetWithValues(1, 1, 2.0);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.0, 1.0);
-            frame2.addPointSetWithValues(0, 2, 2.0);
-            frame2.addPointSetWithValues(1, 0, 1.0, 0.0);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
-            frame3.addPointSetWithValues(1, 0, 0.0, 2.0);
-        }
+    MultiDataSetInputData() : data_(2, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 3);
+        data_.setColumnCount(1, 2);
+        AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+        frame1.addPointSetWithValues(0, 0, 1.0, 0.0);
+        frame1.addPointSetWithValues(1, 0, 2.0, 1.0);
+        frame1.addPointSetWithValues(1, 1, 2.0);
+        AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.0, 1.0);
+        frame2.addPointSetWithValues(0, 2, 2.0);
+        frame2.addPointSetWithValues(1, 0, 1.0, 0.0);
+        AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+        frame3.addPointSetWithValues(1, 0, 0.0, 2.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 

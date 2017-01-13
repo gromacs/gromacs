@@ -325,328 +325,328 @@ highBitCounter
 template <unsigned int rounds, unsigned int internalCounterBits>
 class ThreeFry2x64General
 {
-    // While this class will formally work with any value for rounds, there is
-    // no reason to go lower than 13, and this might help catch some typos.
-    // If we find a reason to use lower values in the future, or if you simply
-    // want to test, this assert can safely be removed.
-    static_assert(rounds >= 13, "You should not use less than 13 encryption rounds for ThreeFry2x64.");
+// While this class will formally work with any value for rounds, there is
+// no reason to go lower than 13, and this might help catch some typos.
+// If we find a reason to use lower values in the future, or if you simply
+// want to test, this assert can safely be removed.
+static_assert(rounds >= 13, "You should not use less than 13 encryption rounds for ThreeFry2x64.");
 
-    public:
-        // result_type must be lower case to be compatible with C++11 standard library
+public:
+    // result_type must be lower case to be compatible with C++11 standard library
 
-        /*! \brief Integer type for output. */
-        typedef gmx_uint64_t                    result_type;
-        /*! \brief Use array for counter & key states so it is allocated on the stack */
-        typedef std::array<result_type, 2>      counter_type;
+    /*! \brief Integer type for output. */
+    typedef gmx_uint64_t                    result_type;
+    /*! \brief Use array for counter & key states so it is allocated on the stack */
+    typedef std::array<result_type, 2>      counter_type;
 
-    private:
+private:
 
-        /*! \brief Rotate value left by specified number of bits
-         *
-         *  \param i    Value to rotate (result_type, which should be 64-bit).
-         *  \param bits Number of bits to rotate i.
-         *
-         *  \return Input value rotated 'bits' left.
-         */
-        result_type rotLeft(result_type i, unsigned int bits)
+    /*! \brief Rotate value left by specified number of bits
+     *
+     *  \param i    Value to rotate (result_type, which should be 64-bit).
+     *  \param bits Number of bits to rotate i.
+     *
+     *  \return Input value rotated 'bits' left.
+     */
+    result_type rotLeft(result_type i, unsigned int bits)
+    {
+        return (i << bits) | (i >> (std::numeric_limits<result_type>::digits - bits));
+    }
+
+    /*! \brief Perform encryption step for ThreeFry2x64 algorithm
+     *
+     *  It performs the encryption step of the standard ThreeFish symmetric-key
+     *  tweakable block cipher, which is the core of the ThreeFry random
+     *  engine. The number of encryption rounds is specified by the class
+     *  template parameter 'rounds'.
+     *
+     *  \param key   Reference to key value
+     *  \param ctr   Counter value to use
+     *
+     *  \return Newly encrypted 2x64 block, according to the class template parameters.
+     */
+    counter_type generateBlock(const counter_type &key,
+                               const counter_type &ctr)
+    {
+        const unsigned int rotations[] = {16, 42, 12, 31, 16, 32, 24, 21};
+        counter_type       x           = ctr;
+
+        result_type ks[3] = { 0x0, 0x0, 0x1bd11bdaa9fc1a22 };
+
+        // This is actually a pretty simple routine that merely executes the
+        // for-block specified further down 'rounds' times. However, both
+        // clang and gcc have problems unrolling and replacing rotations[r%8]
+        // with constants, so we unroll the first 20 iterations manually.
+
+        if (rounds > 0)
         {
-            return (i << bits) | (i >> (std::numeric_limits<result_type>::digits - bits));
+            ks[0] = key[0]; ks[2] ^= key[0]; x[0] = x[0] + key[0];
+            ks[1] = key[1]; ks[2] ^= key[1]; x[1] = x[1] + key[1];
+            x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0];
         }
+        if (rounds > 1)  { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
+        if (rounds > 2)  { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
+        if (rounds > 3)  { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[1]; x[1] += ks[2] + 1; }
+        if (rounds > 4)  { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
+        if (rounds > 5)  { x[0] += x[1]; x[1] = rotLeft(x[1], 32); x[1] ^= x[0]; }
+        if (rounds > 6)  { x[0] += x[1]; x[1] = rotLeft(x[1], 24); x[1] ^= x[0]; }
+        if (rounds > 7)  { x[0] += x[1]; x[1] = rotLeft(x[1], 21); x[1] ^= x[0]; x[0] += ks[2]; x[1] += ks[0] + 2; }
+        if (rounds > 8)  { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
+        if (rounds > 9)  { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
+        if (rounds > 10) { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
+        if (rounds > 11) { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[0]; x[1] += ks[1] + 3; }
+        if (rounds > 12) { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
+        if (rounds > 13) { x[0] += x[1]; x[1] = rotLeft(x[1], 32); x[1] ^= x[0]; }
+        if (rounds > 14) { x[0] += x[1]; x[1] = rotLeft(x[1], 24); x[1] ^= x[0]; }
+        if (rounds > 15) { x[0] += x[1]; x[1] = rotLeft(x[1], 21); x[1] ^= x[0]; x[0] += ks[1]; x[1] += ks[2] + 4; }
+        if (rounds > 16) { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
+        if (rounds > 17) { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
+        if (rounds > 18) { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
+        if (rounds > 19) { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[2]; x[1] += ks[0] + 5; }
 
-        /*! \brief Perform encryption step for ThreeFry2x64 algorithm
-         *
-         *  It performs the encryption step of the standard ThreeFish symmetric-key
-         *  tweakable block cipher, which is the core of the ThreeFry random
-         *  engine. The number of encryption rounds is specified by the class
-         *  template parameter 'rounds'.
-         *
-         *  \param key   Reference to key value
-         *  \param ctr   Counter value to use
-         *
-         *  \return Newly encrypted 2x64 block, according to the class template parameters.
-         */
-        counter_type generateBlock(const counter_type &key,
-                                   const counter_type &ctr)
+        for (unsigned int r = 20; r < rounds; r++)
         {
-            const unsigned int rotations[] = {16, 42, 12, 31, 16, 32, 24, 21};
-            counter_type       x           = ctr;
-
-            result_type ks[3] = { 0x0, 0x0, 0x1bd11bdaa9fc1a22 };
-
-            // This is actually a pretty simple routine that merely executes the
-            // for-block specified further down 'rounds' times. However, both
-            // clang and gcc have problems unrolling and replacing rotations[r%8]
-            // with constants, so we unroll the first 20 iterations manually.
-
-            if (rounds > 0)
+            x[0] += x[1];
+            x[1]  = rotLeft(x[1], rotations[r % 8]);
+            x[1] ^= x[0];
+            if (( (r + 1) & 3 ) == 0)
             {
-                ks[0] = key[0]; ks[2] ^= key[0]; x[0] = x[0] + key[0];
-                ks[1] = key[1]; ks[2] ^= key[1]; x[1] = x[1] + key[1];
-                x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0];
+                unsigned int r4 = (r + 1) >> 2;
+                x[0] += ks[ r4 % 3 ];
+                x[1] += ks[ (r4 + 1) % 3 ] + r4;
             }
-            if (rounds > 1)  { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
-            if (rounds > 2)  { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
-            if (rounds > 3)  { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[1]; x[1] += ks[2] + 1; }
-            if (rounds > 4)  { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-            if (rounds > 5)  { x[0] += x[1]; x[1] = rotLeft(x[1], 32); x[1] ^= x[0]; }
-            if (rounds > 6)  { x[0] += x[1]; x[1] = rotLeft(x[1], 24); x[1] ^= x[0]; }
-            if (rounds > 7)  { x[0] += x[1]; x[1] = rotLeft(x[1], 21); x[1] ^= x[0]; x[0] += ks[2]; x[1] += ks[0] + 2; }
-            if (rounds > 8)  { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-            if (rounds > 9)  { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
-            if (rounds > 10) { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
-            if (rounds > 11) { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[0]; x[1] += ks[1] + 3; }
-            if (rounds > 12) { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-            if (rounds > 13) { x[0] += x[1]; x[1] = rotLeft(x[1], 32); x[1] ^= x[0]; }
-            if (rounds > 14) { x[0] += x[1]; x[1] = rotLeft(x[1], 24); x[1] ^= x[0]; }
-            if (rounds > 15) { x[0] += x[1]; x[1] = rotLeft(x[1], 21); x[1] ^= x[0]; x[0] += ks[1]; x[1] += ks[2] + 4; }
-            if (rounds > 16) { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-            if (rounds > 17) { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
-            if (rounds > 18) { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
-            if (rounds > 19) { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[2]; x[1] += ks[0] + 5; }
-
-            for (unsigned int r = 20; r < rounds; r++)
-            {
-                x[0] += x[1];
-                x[1]  = rotLeft(x[1], rotations[r % 8]);
-                x[1] ^= x[0];
-                if (( (r + 1) & 3 ) == 0)
-                {
-                    unsigned int r4 = (r + 1) >> 2;
-                    x[0] += ks[ r4 % 3 ];
-                    x[1] += ks[ (r4 + 1) % 3 ] + r4;
-                }
-            }
-            return x;
         }
+        return x;
+    }
 
-    public:
-        //! \brief Smallest value that can be returned from random engine.
-        static gmx_constexpr
-        result_type min() { return std::numeric_limits<result_type>::min(); }
+public:
+    //! \brief Smallest value that can be returned from random engine.
+    static gmx_constexpr
+    result_type min() { return std::numeric_limits<result_type>::min(); }
 
-        //! \brief Largest value that can be returned from random engine.
-        static gmx_constexpr
-        result_type max() { return std::numeric_limits<result_type>::max(); }
+    //! \brief Largest value that can be returned from random engine.
+    static gmx_constexpr
+    result_type max() { return std::numeric_limits<result_type>::max(); }
 
-        /*! \brief Construct random engine with 2x64 key values
-         *
-         *  This constructor takes two values, and should only be used with
-         *  the 2x64 implementations.
-         *
-         *  \param key0   Random seed in the form of a 64-bit unsigned value.
-         *  \param domain Random domain. This is used to guarantee that different
-         *                applications of a random engine inside the code get different
-         *                streams of random numbers, without requiring the user
-         *                to provide lots of random seeds. Pick a value from the
-         *                RandomDomain class, or RandomDomain::Other if it is
-         *                not important. In the latter case you might want to use
-         *                \ref gmx::DefaultRandomEngine instead.
-         *
-         *  \note The random domain is really another 64-bit seed value.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero.
-         */
-        ThreeFry2x64General(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+    /*! \brief Construct random engine with 2x64 key values
+     *
+     *  This constructor takes two values, and should only be used with
+     *  the 2x64 implementations.
+     *
+     *  \param key0   Random seed in the form of a 64-bit unsigned value.
+     *  \param domain Random domain. This is used to guarantee that different
+     *                applications of a random engine inside the code get different
+     *                streams of random numbers, without requiring the user
+     *                to provide lots of random seeds. Pick a value from the
+     *                RandomDomain class, or RandomDomain::Other if it is
+     *                not important. In the latter case you might want to use
+     *                \ref gmx::DefaultRandomEngine instead.
+     *
+     *  \note The random domain is really another 64-bit seed value.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero.
+     */
+    ThreeFry2x64General(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+    {
+        seed(key0, domain);
+    }
+
+    /*! \brief Construct random engine from 2x64-bit unsigned integers
+     *
+     *  This constructor assigns the raw 128 bit key data from unsigned integers.
+     *  It is meant for the case when you want full control over the key,
+     *  for instance to compare with reference values of the ThreeFry
+     *  function during testing.
+     *
+     *  \param key0   First word of key/random seed.
+     *  \param key1   Second word of key/random seed.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
+     */
+    ThreeFry2x64General(gmx_uint64_t key0, gmx_uint64_t key1)
+    {
+        seed(key0, key1);
+    }
+
+    /*! \brief Seed 2x64 random engine with two 64-bit key values
+     *
+     *  \param key0   First word of random seed, in the form of 64-bit unsigned values.
+     *  \param domain Random domain. This is used to guarantee that different
+     *                applications of a random engine inside the code get different
+     *                streams of random numbers, without requiring the user
+     *                to provide lots of random seeds. Pick a value from the
+     *                RandomDomain class, or RandomDomain::Other if it is
+     *                not important. In the latter case you might want to use
+     *                \ref gmx::DefaultRandomEngine instead.
+     *
+     *  \note The random domain is really another 64-bit seed value.
+     *
+     *  Re-initialized the seed similar to the counter constructor.
+     *  Same rules apply: The highest few bits of the last word are
+     *  reserved to encode the number of internal counter bits, but
+     *  to save the user the trouble of making sure these are zero
+     *  when using e.g. a random device, we just ignore them.
+     */
+    void seed(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+    {
+        seed(key0, static_cast<gmx_uint64_t>(domain));
+    }
+
+    /*! \brief Seed random engine from 2x64-bit unsigned integers
+     *
+     *  This assigns the raw 128 bit key data from unsigned integers.
+     *  It is meant for the case when you want full control over the key,
+     *  for instance to compare with reference values of the ThreeFry
+     *  function during testing.
+     *
+     *  \param key0   First word of key/random seed.
+     *  \param key1   Second word of key/random seed.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
+     */
+    void seed(gmx_uint64_t key0, gmx_uint64_t key1)
+    {
+        const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? ( StaticLog2<internalCounterBits>::value + 1 ) : 0;
+
+        key_ = {{key0, key1}};
+
+        if (internalCounterBits > 0)
         {
-            seed(key0, domain);
+            internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBitsBits>(&key_);
+            internal::highBitCounter::increment<result_type, 2, internalCounterBitsBits>(&key_, internalCounterBits - 1);
         }
+        restart(0, 0);
+    }
 
-        /*! \brief Construct random engine from 2x64-bit unsigned integers
-         *
-         *  This constructor assigns the raw 128 bit key data from unsigned integers.
-         *  It is meant for the case when you want full control over the key,
-         *  for instance to compare with reference values of the ThreeFry
-         *  function during testing.
-         *
-         *  \param key0   First word of key/random seed.
-         *  \param key1   Second word of key/random seed.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
-         */
-        ThreeFry2x64General(gmx_uint64_t key0, gmx_uint64_t key1)
+    /*! \brief Restart 2x64 random engine counter from 2 64-bit values
+     *
+     *  \param ctr0 First word of new counter, in the form of 64-bit unsigned values.
+     *  \param ctr1 Second word of new counter
+     *
+     * Restarting the engine with a new counter is extremely fast with ThreeFry64,
+     * and basically just consists of storing the counter value, so you should
+     * use this liberally in your innermost loops to restart the engine with
+     * e.g. the current step and atom index as counter values.
+     *
+     * \throws InternalError if any of the highest bits that are reserved
+     *         for the internal part of the counter are set. The number of
+     *         reserved bits is to the last template parameter to the class.
+     */
+    void restart(gmx_uint64_t ctr0 = 0, gmx_uint64_t ctr1 = 0)
+    {
+
+        counter_ = {{ctr0, ctr1}};
+        if (!internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBits>(&counter_))
         {
-            seed(key0, key1);
+            GMX_THROW(InternalError("High bits of counter are reserved for the internal stream counter."));
         }
+        block_ = generateBlock(key_, counter_);
+        index_ = 0;
+    }
 
-        /*! \brief Seed 2x64 random engine with two 64-bit key values
-         *
-         *  \param key0   First word of random seed, in the form of 64-bit unsigned values.
-         *  \param domain Random domain. This is used to guarantee that different
-         *                applications of a random engine inside the code get different
-         *                streams of random numbers, without requiring the user
-         *                to provide lots of random seeds. Pick a value from the
-         *                RandomDomain class, or RandomDomain::Other if it is
-         *                not important. In the latter case you might want to use
-         *                \ref gmx::DefaultRandomEngine instead.
-         *
-         *  \note The random domain is really another 64-bit seed value.
-         *
-         *  Re-initialized the seed similar to the counter constructor.
-         *  Same rules apply: The highest few bits of the last word are
-         *  reserved to encode the number of internal counter bits, but
-         *  to save the user the trouble of making sure these are zero
-         *  when using e.g. a random device, we just ignore them.
-         */
-        void seed(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+    /*! \brief Generate the next random number
+     *
+     *  This will return the next stored 64-bit value if one is available,
+     *  and otherwise generate a new block, update the internal counters, and
+     *  return the first value while storing the others.
+     *
+     *  \throws InternalError if the internal counter space is exhausted.
+     */
+    result_type operator()()
+    {
+        if (index_ >= c_resultsPerCounter_)
         {
-            seed(key0, static_cast<gmx_uint64_t>(domain));
-        }
-
-        /*! \brief Seed random engine from 2x64-bit unsigned integers
-         *
-         *  This assigns the raw 128 bit key data from unsigned integers.
-         *  It is meant for the case when you want full control over the key,
-         *  for instance to compare with reference values of the ThreeFry
-         *  function during testing.
-         *
-         *  \param key0   First word of key/random seed.
-         *  \param key1   Second word of key/random seed.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
-         */
-        void seed(gmx_uint64_t key0, gmx_uint64_t key1)
-        {
-            const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? ( StaticLog2<internalCounterBits>::value + 1 ) : 0;
-
-            key_ = {{key0, key1}};
-
-            if (internalCounterBits > 0)
-            {
-                internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBitsBits>(&key_);
-                internal::highBitCounter::increment<result_type, 2, internalCounterBitsBits>(&key_, internalCounterBits - 1);
-            }
-            restart(0, 0);
-        }
-
-        /*! \brief Restart 2x64 random engine counter from 2 64-bit values
-         *
-         *  \param ctr0 First word of new counter, in the form of 64-bit unsigned values.
-         *  \param ctr1 Second word of new counter
-         *
-         * Restarting the engine with a new counter is extremely fast with ThreeFry64,
-         * and basically just consists of storing the counter value, so you should
-         * use this liberally in your innermost loops to restart the engine with
-         * e.g. the current step and atom index as counter values.
-         *
-         * \throws InternalError if any of the highest bits that are reserved
-         *         for the internal part of the counter are set. The number of
-         *         reserved bits is to the last template parameter to the class.
-         */
-        void restart(gmx_uint64_t ctr0 = 0, gmx_uint64_t ctr1 = 0)
-        {
-
-            counter_ = {{ctr0, ctr1}};
-            if (!internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBits>(&counter_))
-            {
-                GMX_THROW(InternalError("High bits of counter are reserved for the internal stream counter."));
-            }
+            internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&counter_);
             block_ = generateBlock(key_, counter_);
             index_ = 0;
         }
+        return block_[index_++];
+    }
 
-        /*! \brief Generate the next random number
-         *
-         *  This will return the next stored 64-bit value if one is available,
-         *  and otherwise generate a new block, update the internal counters, and
-         *  return the first value while storing the others.
-         *
-         *  \throws InternalError if the internal counter space is exhausted.
-         */
-        result_type operator()()
+    /*! \brief Skip next n random numbers
+     *
+     *  Moves the internal random stream for the give key/counter value
+     *  n positions forward. The count is based on the number of random values
+     *  returned, such that skipping 5 values gives exactly the same result as
+     *  drawing 5 values that are ignored.
+     *
+     *  \param n Number of values to jump forward.
+     *
+     *  \throws InternalError if the internal counter space is exhausted.
+     */
+    void discard(gmx_uint64_t n)
+    {
+        index_ += n % c_resultsPerCounter_;
+        n      /= c_resultsPerCounter_;
+
+        if (index_ > c_resultsPerCounter_)
         {
-            if (index_ >= c_resultsPerCounter_)
-            {
-                internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&counter_);
-                block_ = generateBlock(key_, counter_);
-                index_ = 0;
-            }
-            return block_[index_++];
+            index_ -= c_resultsPerCounter_;
+            n++;
         }
 
-        /*! \brief Skip next n random numbers
-         *
-         *  Moves the internal random stream for the give key/counter value
-         *  n positions forward. The count is based on the number of random values
-         *  returned, such that skipping 5 values gives exactly the same result as
-         *  drawing 5 values that are ignored.
-         *
-         *  \param n Number of values to jump forward.
-         *
-         *  \throws InternalError if the internal counter space is exhausted.
-         */
-        void discard(gmx_uint64_t n)
+        // Make sure the state is the same as if we came to this counter and
+        // index by natural generation.
+        if (index_ == 0 && n > 0)
         {
-            index_ += n % c_resultsPerCounter_;
-            n      /= c_resultsPerCounter_;
-
-            if (index_ > c_resultsPerCounter_)
-            {
-                index_ -= c_resultsPerCounter_;
-                n++;
-            }
-
-            // Make sure the state is the same as if we came to this counter and
-            // index by natural generation.
-            if (index_ == 0 && n > 0)
-            {
-                index_ = c_resultsPerCounter_;
-                n--;
-            }
-            internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&counter_, n);
-            block_ = generateBlock(key_, counter_);
+            index_ = c_resultsPerCounter_;
+            n--;
         }
+        internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&counter_, n);
+        block_ = generateBlock(key_, counter_);
+    }
 
-        /*! \brief Return true if two ThreeFry2x64 engines are identical
-         *
-         * \param  x    Instance to compare with.
-         *
-         * This routine should return true if the two engines will generate
-         * identical random streams when drawing.
-         */
-        bool operator==(const ThreeFry2x64General<rounds, internalCounterBits> &x) const
-        {
-            // block_ is uniquely specified by key_ and counter_.
-            return (key_ == x.key_ && counter_ == x.counter_ && index_ == x.index_);
-        }
+    /*! \brief Return true if two ThreeFry2x64 engines are identical
+     *
+     * \param  x    Instance to compare with.
+     *
+     * This routine should return true if the two engines will generate
+     * identical random streams when drawing.
+     */
+    bool operator==(const ThreeFry2x64General<rounds, internalCounterBits> &x) const
+    {
+        // block_ is uniquely specified by key_ and counter_.
+        return (key_ == x.key_ && counter_ == x.counter_ && index_ == x.index_);
+    }
 
-        /*! \brief Return true of two ThreeFry2x64 engines are not identical
-         *
-         * \param  x    Instance to compare with.
-         *
-         * This routine should return true if the two engines will generate
-         * different random streams when drawing.
-         */
-        bool operator!=(const ThreeFry2x64General<rounds, internalCounterBits> &x) const { return !operator==(x); }
+    /*! \brief Return true of two ThreeFry2x64 engines are not identical
+     *
+     * \param  x    Instance to compare with.
+     *
+     * This routine should return true if the two engines will generate
+     * different random streams when drawing.
+     */
+    bool operator!=(const ThreeFry2x64General<rounds, internalCounterBits> &x) const { return !operator==(x); }
 
-    private:
+private:
 
-        /*! \brief Number of results returned for each invocation of the block generation */
-        static const unsigned int c_resultsPerCounter_ = static_cast<unsigned int>(sizeof(counter_type) / sizeof(result_type));
+    /*! \brief Number of results returned for each invocation of the block generation */
+    static const unsigned int c_resultsPerCounter_ = static_cast<unsigned int>(sizeof(counter_type) / sizeof(result_type));
 
-        /*! \brief ThreeFry2x64 key, i.e. the random seed for this stream.
-         *
-         *  The highest few bits of the key are replaced to encode the value of
-         *  internalCounterBits, in order to make all streams unique.
-         */
-        counter_type key_;
+    /*! \brief ThreeFry2x64 key, i.e. the random seed for this stream.
+     *
+     *  The highest few bits of the key are replaced to encode the value of
+     *  internalCounterBits, in order to make all streams unique.
+     */
+    counter_type key_;
 
-        /*! \brief ThreeFry2x64 total counter.
-         *
-         *  The highest internalCounterBits are reserved for an internal counter
-         *  so that the combination of a key and counter provides a stream that
-         *  returns 2*2^internalCounterBits (ThreeFry2x64) random 64-bit values before
-         *  the internal counter space is exhausted and an exception is thrown.
-         */
-        counter_type counter_;
-        /*! \brief The present block encrypted from values of key and counter. */
-        counter_type block_;
-        /*! \brief Index of the next value in block_ to return from random engine */
-        unsigned int index_;
+    /*! \brief ThreeFry2x64 total counter.
+     *
+     *  The highest internalCounterBits are reserved for an internal counter
+     *  so that the combination of a key and counter provides a stream that
+     *  returns 2*2^internalCounterBits (ThreeFry2x64) random 64-bit values before
+     *  the internal counter space is exhausted and an exception is thrown.
+     */
+    counter_type counter_;
+    /*! \brief The present block encrypted from values of key and counter. */
+    counter_type block_;
+    /*! \brief Index of the next value in block_ to return from random engine */
+    unsigned int index_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(ThreeFry2x64General);
+    GMX_DISALLOW_COPY_AND_ASSIGN(ThreeFry2x64General);
 };
 
 
@@ -662,39 +662,39 @@ class ThreeFry2x64General
 template <unsigned int internalCounterBits = 64>
 class ThreeFry2x64 : public ThreeFry2x64General<20, internalCounterBits>
 {
-    public:
-        /*! \brief Construct ThreeFry random engine with 2x64 key values, 20 rounds.
-         *
-         *  \param key0   Random seed in the form of a 64-bit unsigned value.
-         *  \param domain Random domain. This is used to guarantee that different
-         *                applications of a random engine inside the code get different
-         *                streams of random numbers, without requiring the user
-         *                to provide lots of random seeds. Pick a value from the
-         *                RandomDomain class, or RandomDomain::Other if it is
-         *                not important. In the latter case you might want to use
-         *                \ref gmx::DefaultRandomEngine instead.
-         *
-         *  \note The random domain is really another 64-bit seed value.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero.
-         */
-        ThreeFry2x64(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<20, internalCounterBits>(key0, domain) {}
+public:
+    /*! \brief Construct ThreeFry random engine with 2x64 key values, 20 rounds.
+     *
+     *  \param key0   Random seed in the form of a 64-bit unsigned value.
+     *  \param domain Random domain. This is used to guarantee that different
+     *                applications of a random engine inside the code get different
+     *                streams of random numbers, without requiring the user
+     *                to provide lots of random seeds. Pick a value from the
+     *                RandomDomain class, or RandomDomain::Other if it is
+     *                not important. In the latter case you might want to use
+     *                \ref gmx::DefaultRandomEngine instead.
+     *
+     *  \note The random domain is really another 64-bit seed value.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero.
+     */
+    ThreeFry2x64(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<20, internalCounterBits>(key0, domain) {}
 
-        /*! \brief Construct random engine from 2x64-bit unsigned integers, 20 rounds
-         *
-         *  This constructor assigns the raw 128 bit key data from unsigned integers.
-         *  It is meant for the case when you want full control over the key,
-         *  for instance to compare with reference values of the ThreeFry
-         *  function during testing.
-         *
-         *  \param key0   First word of key/random seed.
-         *  \param key1   Second word of key/random seed.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
-         */
-        ThreeFry2x64(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<20, internalCounterBits>(key0, key1) {}
+    /*! \brief Construct random engine from 2x64-bit unsigned integers, 20 rounds
+     *
+     *  This constructor assigns the raw 128 bit key data from unsigned integers.
+     *  It is meant for the case when you want full control over the key,
+     *  for instance to compare with reference values of the ThreeFry
+     *  function during testing.
+     *
+     *  \param key0   First word of key/random seed.
+     *  \param key1   Second word of key/random seed.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
+     */
+    ThreeFry2x64(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<20, internalCounterBits>(key0, key1) {}
 };
 
 /*! \brief ThreeFry2x64 random engine with 13 iteractions.
@@ -710,39 +710,39 @@ class ThreeFry2x64 : public ThreeFry2x64General<20, internalCounterBits>
 template <unsigned int internalCounterBits = 64>
 class ThreeFry2x64Fast : public ThreeFry2x64General<13, internalCounterBits>
 {
-    public:
-        /*! \brief Construct ThreeFry random engine with 2x64 key values, 13 rounds.
-         *
-         *  \param key0   Random seed in the form of a 64-bit unsigned value.
-         *  \param domain Random domain. This is used to guarantee that different
-         *                applications of a random engine inside the code get different
-         *                streams of random numbers, without requiring the user
-         *                to provide lots of random seeds. Pick a value from the
-         *                RandomDomain class, or RandomDomain::Other if it is
-         *                not important. In the latter case you might want to use
-         *                \ref gmx::DefaultRandomEngine instead.
-         *
-         *  \note The random domain is really another 64-bit seed value.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero.
-         */
-        ThreeFry2x64Fast(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<13, internalCounterBits>(key0, domain) {}
+public:
+    /*! \brief Construct ThreeFry random engine with 2x64 key values, 13 rounds.
+     *
+     *  \param key0   Random seed in the form of a 64-bit unsigned value.
+     *  \param domain Random domain. This is used to guarantee that different
+     *                applications of a random engine inside the code get different
+     *                streams of random numbers, without requiring the user
+     *                to provide lots of random seeds. Pick a value from the
+     *                RandomDomain class, or RandomDomain::Other if it is
+     *                not important. In the latter case you might want to use
+     *                \ref gmx::DefaultRandomEngine instead.
+     *
+     *  \note The random domain is really another 64-bit seed value.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero.
+     */
+    ThreeFry2x64Fast(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<13, internalCounterBits>(key0, domain) {}
 
-        /*! \brief Construct ThreeFry random engine from 2x64-bit unsigned integers, 13 rounds.
-         *
-         *  This constructor assigns the raw 128 bit key data from unsigned integers.
-         *  It is meant for the case when you want full control over the key,
-         *  for instance to compare with reference values of the ThreeFry
-         *  function during testing.
-         *
-         *  \param key0   First word of key/random seed.
-         *  \param key1   Second word of key/random seed.
-         *
-         *  \throws InternalError if the high bits needed to encode the number of counter
-         *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
-         */
-        ThreeFry2x64Fast(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<13, internalCounterBits>(key0, key1) {}
+    /*! \brief Construct ThreeFry random engine from 2x64-bit unsigned integers, 13 rounds.
+     *
+     *  This constructor assigns the raw 128 bit key data from unsigned integers.
+     *  It is meant for the case when you want full control over the key,
+     *  for instance to compare with reference values of the ThreeFry
+     *  function during testing.
+     *
+     *  \param key0   First word of key/random seed.
+     *  \param key1   Second word of key/random seed.
+     *
+     *  \throws InternalError if the high bits needed to encode the number of counter
+     *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
+     */
+    ThreeFry2x64Fast(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<13, internalCounterBits>(key0, key1) {}
 };
 
 

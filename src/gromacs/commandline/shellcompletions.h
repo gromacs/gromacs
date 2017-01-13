@@ -71,26 +71,26 @@ enum ShellCompletionFormat
 
 class ShellCompletionWriter
 {
-    public:
-        typedef std::vector<std::string> ModuleNameList;
+public:
+    typedef std::vector<std::string> ModuleNameList;
 
-        ShellCompletionWriter(const std::string &   binaryName,
-                              ShellCompletionFormat format);
-        ~ShellCompletionWriter();
+    ShellCompletionWriter(const std::string &   binaryName,
+                          ShellCompletionFormat format);
+    ~ShellCompletionWriter();
 
-        TextWriter &outputWriter();
+    TextWriter &outputWriter();
 
-        void startCompletions();
-        void writeModuleCompletions(const char *   moduleName,
-                                    const Options &options);
-        void writeWrapperCompletions(const ModuleNameList &modules,
-                                     const Options &       options);
-        void finishCompletions();
+    void startCompletions();
+    void writeModuleCompletions(const char *   moduleName,
+                                const Options &options);
+    void writeWrapperCompletions(const ModuleNameList &modules,
+                                 const Options &       options);
+    void finishCompletions();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

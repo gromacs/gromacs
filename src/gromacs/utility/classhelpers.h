@@ -152,51 +152,51 @@ namespace gmx
 template <class Impl>
 class PrivateImplPointer
 {
-    public:
-        //! Allow implicit initialization from nullptr to support comparison.
-        PrivateImplPointer(std::nullptr_t) : ptr_(nullptr) {}
-        //! Initialize with the given implementation class.
-        explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
-        //! \cond
-        // Explicitly declared to work around MSVC problems.
-        PrivateImplPointer(PrivateImplPointer &&other) : ptr_(std::move(other.ptr_)) {}
-        PrivateImplPointer &operator=(PrivateImplPointer &&other)
-        {
-            ptr_ = std::move(other.ptr_);
-            return *this;
-        }
-        //! \endcond
+public:
+    //! Allow implicit initialization from nullptr to support comparison.
+    PrivateImplPointer(std::nullptr_t) : ptr_(nullptr) {}
+    //! Initialize with the given implementation class.
+    explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
+    //! \cond
+    // Explicitly declared to work around MSVC problems.
+    PrivateImplPointer(PrivateImplPointer &&other) : ptr_(std::move(other.ptr_)) {}
+    PrivateImplPointer &operator=(PrivateImplPointer &&other)
+    {
+        ptr_ = std::move(other.ptr_);
+        return *this;
+    }
+    //! \endcond
 
-        /*! \brief
-         * Sets a new implementation class and destructs the previous one.
-         *
-         * Needed, e.g., to implement lazily initializable or copy-assignable
-         * classes.
-         */
-        void reset(Impl *ptr) { ptr_.reset(ptr); }
-        //! Access the raw pointer.
-        Impl *get() { return ptr_.get(); }
-        //! Access the implementation class as with a raw pointer.
-        Impl *operator->() { return ptr_.get(); }
-        //! Access the implementation class as with a raw pointer.
-        Impl &operator*() { return *ptr_; }
-        //! Access the implementation class as with a raw pointer.
-        const Impl *operator->() const { return ptr_.get(); }
-        //! Access the implementation class as with a raw pointer.
-        const Impl &operator*() const { return *ptr_; }
+    /*! \brief
+     * Sets a new implementation class and destructs the previous one.
+     *
+     * Needed, e.g., to implement lazily initializable or copy-assignable
+     * classes.
+     */
+    void reset(Impl *ptr) { ptr_.reset(ptr); }
+    //! Access the raw pointer.
+    Impl *get() { return ptr_.get(); }
+    //! Access the implementation class as with a raw pointer.
+    Impl *operator->() { return ptr_.get(); }
+    //! Access the implementation class as with a raw pointer.
+    Impl &operator*() { return *ptr_; }
+    //! Access the implementation class as with a raw pointer.
+    const Impl *operator->() const { return ptr_.get(); }
+    //! Access the implementation class as with a raw pointer.
+    const Impl &operator*() const { return *ptr_; }
 
-        //! Allows testing whether the implementation is initialized.
-        explicit operator bool() const { return ptr_ != nullptr; }
+    //! Allows testing whether the implementation is initialized.
+    explicit operator bool() const { return ptr_ != nullptr; }
 
-        //! Tests for equality (mainly useful against nullptr).
-        bool operator==(const PrivateImplPointer &other) const { return ptr_ == other.ptr_; }
-        //! Tests for inequality (mainly useful against nullptr).
-        bool operator!=(const PrivateImplPointer &other) const { return ptr_ != other.ptr_; }
+    //! Tests for equality (mainly useful against nullptr).
+    bool operator==(const PrivateImplPointer &other) const { return ptr_ == other.ptr_; }
+    //! Tests for inequality (mainly useful against nullptr).
+    bool operator!=(const PrivateImplPointer &other) const { return ptr_ != other.ptr_; }
 
-    private:
-        std::unique_ptr<Impl> ptr_;
+private:
+    std::unique_ptr<Impl> ptr_;
 
-        // Copy construction and assignment disabled by the unique_ptr member.
+    // Copy construction and assignment disabled by the unique_ptr member.
 };
 
 } // namespace gmx

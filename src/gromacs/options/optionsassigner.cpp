@@ -67,50 +67,50 @@ namespace gmx
  */
 class OptionsAssigner::Impl
 {
-    public:
-        //! Shorthand for the internal type used to represent a section.
-        typedef internal::OptionSectionImpl Section;
+public:
+    //! Shorthand for the internal type used to represent a section.
+    typedef internal::OptionSectionImpl Section;
 
-        //! Sets the option object to assign to.
-        explicit Impl(Options *options);
+    //! Sets the option object to assign to.
+    explicit Impl(Options *options);
 
-        //! Returns true if a subsection has been set.
-        bool inSection() const { return sectionStack_.size() > 1; }
-        //! Returns the Options object for the current section.
-        Section &currentSection() const { return *sectionStack_.back(); }
-        /*! \brief
-         * Finds an option by the given name.
-         *
-         * \param[in] name  Name of the option to look for.
-         * \returns Pointer to the found option, or NULL if none found.
-         *
-         * This function takes into account the flags specified, and may change
-         * the internal state of the assigner to match the option found.
-         * If no option is found, the internal state is not modified.
-         */
-        AbstractOptionStorage *findOption(const char *name);
+    //! Returns true if a subsection has been set.
+    bool inSection() const { return sectionStack_.size() > 1; }
+    //! Returns the Options object for the current section.
+    Section &currentSection() const { return *sectionStack_.back(); }
+    /*! \brief
+     * Finds an option by the given name.
+     *
+     * \param[in] name  Name of the option to look for.
+     * \returns Pointer to the found option, or NULL if none found.
+     *
+     * This function takes into account the flags specified, and may change
+     * the internal state of the assigner to match the option found.
+     * If no option is found, the internal state is not modified.
+     */
+    AbstractOptionStorage *findOption(const char *name);
 
-        //! Options object to assign to.
-        Options &options_;
-        //! Recognize boolean option "name" also as "noname".
-        bool bAcceptBooleanNoPrefix_;
-        /*! \brief
-         * List of (sub)sections being assigned to.
-         *
-         * The first element always points to \a options_.
-         */
-        std::vector<Section *> sectionStack_;
-        //! Current option being assigned to, or NULL if none.
-        AbstractOptionStorage *currentOption_;
-        /*! \brief
-         * Number of values assigned so far to the current option.
-         *
-         * Counts the number of attempted assignments, whether they have been
-         * successful or not.
-         */
-        int currentValueCount_;
-        //! If true, a "no" prefix was given for the current boolean option.
-        bool reverseBoolean_;
+    //! Options object to assign to.
+    Options &options_;
+    //! Recognize boolean option "name" also as "noname".
+    bool bAcceptBooleanNoPrefix_;
+    /*! \brief
+     * List of (sub)sections being assigned to.
+     *
+     * The first element always points to \a options_.
+     */
+    std::vector<Section *> sectionStack_;
+    //! Current option being assigned to, or NULL if none.
+    AbstractOptionStorage *currentOption_;
+    /*! \brief
+     * Number of values assigned so far to the current option.
+     *
+     * Counts the number of attempted assignments, whether they have been
+     * successful or not.
+     */
+    int currentValueCount_;
+    //! If true, a "no" prefix was given for the current boolean option.
+    bool reverseBoolean_;
 };
 
 OptionsAssigner::Impl::Impl(Options *options)

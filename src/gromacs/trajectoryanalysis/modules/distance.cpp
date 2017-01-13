@@ -73,39 +73,39 @@ namespace
 
 class Distance : public TrajectoryAnalysisModule
 {
-    public:
-        Distance();
+public:
+    Distance();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        SelectionList sel_;
-        std::string   fnAverage_;
-        std::string   fnAll_;
-        std::string   fnXYZ_;
-        std::string   fnHistogram_;
-        std::string   fnAllStats_;
-        double        meanLength_;
-        double        lengthDev_;
-        double        binWidth_;
+private:
+    SelectionList sel_;
+    std::string   fnAverage_;
+    std::string   fnAll_;
+    std::string   fnXYZ_;
+    std::string   fnHistogram_;
+    std::string   fnAllStats_;
+    double        meanLength_;
+    double        lengthDev_;
+    double        binWidth_;
 
-        AnalysisData                             distances_;
-        AnalysisData                             xyz_;
-        AnalysisDataAverageModulePointer         summaryStatsModule_;
-        AnalysisDataAverageModulePointer         allStatsModule_;
-        AnalysisDataFrameAverageModulePointer    averageModule_;
-        AnalysisDataSimpleHistogramModulePointer histogramModule_;
+    AnalysisData                             distances_;
+    AnalysisData                             xyz_;
+    AnalysisDataAverageModulePointer         summaryStatsModule_;
+    AnalysisDataAverageModulePointer         allStatsModule_;
+    AnalysisDataFrameAverageModulePointer    averageModule_;
+    AnalysisDataSimpleHistogramModulePointer histogramModule_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 Distance::Distance()

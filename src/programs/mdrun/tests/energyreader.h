@@ -102,52 +102,52 @@ typedef unique_cptr<t_enxframe, done_enxframe> enxframe_ptr;
  * field values read from successive frames of an .edr file. */
 class EnergyFrameReader
 {
-    public:
-        /*! \brief Attempt to read the next frame from the energy file.
-         *
-         * \return Whether a frame was available to read.
-         *
-         * If true is returned, then frame() should be called
-         * to get access to the data. If false is returned, then no
-         * further data exists and no further call to
-         * readNextFrame() or frame() should occur.
-         *
-         * \throws APIError  if an earlier probe has not been properly handled
-         *                   (by calling frame(), or stopping trying to read
-         *                   from the file). */
-        bool readNextFrame();
-        /*! \brief Make an EnergyFrame from the contents of the next frame in the energy file.
-         *
-         * If the next frame has not been probed for, then probe for
-         * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrame() itself if this
-         * is possible. (This permits user code to avoid making calls
-         * to readNextFrame() in a case where it already knows that
-         * the frame exists.)
-         *
-         * \throws APIError        if no next frame exists.
-         * \throws std::bad_alloc  when out of memory. */
-        EnergyFrame frame();
-        /*! \brief Constructor
-         *
-         * \param[in] indicesOfEnergyFields  Looks up energy fields by name to get the index into a t_enxframe structure read by the legacy API.
-         * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
-        explicit EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyFields,
-                                   ener_file *energyFile);
-    private:
-        //! Convert energy field name to its index within a t_enxframe from this file.
-        std::map<std::string, int> indicesOfEnergyFields_;
-        //! Owning handle of an open energy file ready to read frames.
-        const ener_file_ptr energyFileGuard_;
-        //! Owning handle of contents of .edr file frame after reading.
-        const enxframe_ptr enxframeGuard_;
-        //! Whether the API has been used properly (ie. probe before reading).
-        bool haveProbedForNextFrame_;
-        //! Whether there has been a probe that found a next frame.
-        bool nextFrameExists_;
+public:
+    /*! \brief Attempt to read the next frame from the energy file.
+     *
+     * \return Whether a frame was available to read.
+     *
+     * If true is returned, then frame() should be called
+     * to get access to the data. If false is returned, then no
+     * further data exists and no further call to
+     * readNextFrame() or frame() should occur.
+     *
+     * \throws APIError  if an earlier probe has not been properly handled
+     *                   (by calling frame(), or stopping trying to read
+     *                   from the file). */
+    bool readNextFrame();
+    /*! \brief Make an EnergyFrame from the contents of the next frame in the energy file.
+     *
+     * If the next frame has not been probed for, then probe for
+     * it. If no next frame exists, then throw APIError, because
+     * user code should have called readNextFrame() itself if this
+     * is possible. (This permits user code to avoid making calls
+     * to readNextFrame() in a case where it already knows that
+     * the frame exists.)
+     *
+     * \throws APIError        if no next frame exists.
+     * \throws std::bad_alloc  when out of memory. */
+    EnergyFrame frame();
+    /*! \brief Constructor
+     *
+     * \param[in] indicesOfEnergyFields  Looks up energy fields by name to get the index into a t_enxframe structure read by the legacy API.
+     * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
+    explicit EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyFields,
+                               ener_file *energyFile);
+private:
+    //! Convert energy field name to its index within a t_enxframe from this file.
+    std::map<std::string, int> indicesOfEnergyFields_;
+    //! Owning handle of an open energy file ready to read frames.
+    const ener_file_ptr energyFileGuard_;
+    //! Owning handle of contents of .edr file frame after reading.
+    const enxframe_ptr enxframeGuard_;
+    //! Whether the API has been used properly (ie. probe before reading).
+    bool haveProbedForNextFrame_;
+    //! Whether there has been a probe that found a next frame.
+    bool nextFrameExists_;
 
-        // Multiple owners of these resources isn't very sensible, so prevent it
-        GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
+    // Multiple owners of these resources isn't very sensible, so prevent it
+    GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
 
 /*! \brief Compare all fields of reference with all matching fields from test
@@ -168,28 +168,28 @@ void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
  * data from an .edr file frame. */
 class EnergyFrame
 {
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        /*! \brief Return the value read for energy \c name.
-         *
-         * \throws APIError  if \c name was not registered with EnergyFileReader. */
-        const real &at(const std::string &name) const;
-        //! Constructor
-        EnergyFrame();
-    private:
-        //! Container for energy values, indexed by name
-        std::map<std::string, real> values_;
-        //! Step number read from the .edr file frame
-        std::int64_t step_;
-        //! Time read from the .edr file frame
-        double time_;
+public:
+    /*! \brief Return string that helps users identify this frame, containing time and step number.
+     *
+     * \throws std::bad_alloc  when out of memory */
+    std::string getFrameName() const;
+    /*! \brief Return the value read for energy \c name.
+     *
+     * \throws APIError  if \c name was not registered with EnergyFileReader. */
+    const real &at(const std::string &name) const;
+    //! Constructor
+    EnergyFrame();
+private:
+    //! Container for energy values, indexed by name
+    std::map<std::string, real> values_;
+    //! Step number read from the .edr file frame
+    std::int64_t step_;
+    //! Time read from the .edr file frame
+    double time_;
 
-        friend class EnergyFrameReader;
-        friend void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
-                                  FloatingPointTolerance tolerance);
+    friend class EnergyFrameReader;
+    friend void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
+                              FloatingPointTolerance tolerance);
 };
 
 } // namespace

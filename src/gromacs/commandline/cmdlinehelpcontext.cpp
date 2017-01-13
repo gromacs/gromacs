@@ -72,29 +72,29 @@ const CommandLineHelpContext *g_globalContext = nullptr;
  */
 class CommandLineHelpContext::Impl
 {
-    public:
-        //! Creates the implementation class and the low-level context.
-        Impl(TextWriter *writer, HelpOutputFormat format,
-             const HelpLinks *links)
-            : writerContext_(writer, format, links), moduleDisplayName_("gmx"),
-              completionWriter_(nullptr), bHidden_(false)
-        {
-        }
-        //! Creates an implementation class from a low-level context.
-        explicit Impl(const HelpWriterContext &writerContext)
-            : writerContext_(writerContext),
-              completionWriter_(nullptr), bHidden_(false)
-        {
-        }
+public:
+    //! Creates the implementation class and the low-level context.
+    Impl(TextWriter *writer, HelpOutputFormat format,
+         const HelpLinks *links)
+        : writerContext_(writer, format, links), moduleDisplayName_("gmx"),
+          completionWriter_(nullptr), bHidden_(false)
+    {
+    }
+    //! Creates an implementation class from a low-level context.
+    explicit Impl(const HelpWriterContext &writerContext)
+        : writerContext_(writerContext),
+          completionWriter_(nullptr), bHidden_(false)
+    {
+    }
 
-        //! Wrapped lower-level context.
-        HelpWriterContext writerContext_;
-        //! Display name for the module for which help is written.
-        std::string moduleDisplayName_;
-        //! Shell completion writer (`NULL` if not doing completions).
-        ShellCompletionWriter *completionWriter_;
-        //! Whether hidden options should be shown in help output.
-        bool bHidden_;
+    //! Wrapped lower-level context.
+    HelpWriterContext writerContext_;
+    //! Display name for the module for which help is written.
+    std::string moduleDisplayName_;
+    //! Shell completion writer (`NULL` if not doing completions).
+    ShellCompletionWriter *completionWriter_;
+    //! Whether hidden options should be shown in help output.
+    bool bHidden_;
 };
 
 CommandLineHelpContext::CommandLineHelpContext(

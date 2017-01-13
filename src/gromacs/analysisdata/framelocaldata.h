@@ -67,29 +67,29 @@ namespace gmx
 template <typename ValueType>
 class AnalysisDataFrameLocalDataSetHandle
 {
-    public:
-        //! Constructs a handle from an array of values.
-        explicit AnalysisDataFrameLocalDataSetHandle(ArrayRef<ValueType> values)
-            : values_(values)
-        {
-        }
+public:
+    //! Constructs a handle from an array of values.
+    explicit AnalysisDataFrameLocalDataSetHandle(ArrayRef<ValueType> values)
+        : values_(values)
+    {
+    }
 
-        //! Clears all values in the data set.
-        void clear()
-        {
-            std::fill(values_.begin(), values_.end(), ValueType());
-        }
+    //! Clears all values in the data set.
+    void clear()
+    {
+        std::fill(values_.begin(), values_.end(), ValueType());
+    }
 
-        //! Accesses a single value in the data set.
-        ValueType &value(int column)
-        {
-            GMX_ASSERT(column >= 0 && column < static_cast<int>(values_.size()),
-                       "Invalid column index");
-            return values_[column];
-        }
+    //! Accesses a single value in the data set.
+    ValueType &value(int column)
+    {
+        GMX_ASSERT(column >= 0 && column < static_cast<int>(values_.size()),
+                   "Invalid column index");
+        return values_[column];
+    }
 
-    private:
-        ArrayRef<ValueType> values_;
+private:
+    ArrayRef<ValueType> values_;
 };
 
 /*! \internal
@@ -103,56 +103,56 @@ class AnalysisDataFrameLocalDataSetHandle
 template <typename ValueType>
 class AnalysisDataFrameLocalDataHandle
 {
-    public:
-        //! Shorthand for the internal array of values.
-        typedef std::vector<ValueType> ValueArray;
-        //! Shorthand for a handle to a single data set.
-        typedef AnalysisDataFrameLocalDataSetHandle<ValueType> DataSetHandle;
+public:
+    //! Shorthand for the internal array of values.
+    typedef std::vector<ValueType> ValueArray;
+    //! Shorthand for a handle to a single data set.
+    typedef AnalysisDataFrameLocalDataSetHandle<ValueType> DataSetHandle;
 
-        //! Constructs a handle from specified frame data.
-        AnalysisDataFrameLocalDataHandle(const std::vector<int> *dataSetIndices,
-                                         ValueArray *            values)
-            : dataSetIndices_(dataSetIndices), values_(values)
-        {
-        }
+    //! Constructs a handle from specified frame data.
+    AnalysisDataFrameLocalDataHandle(const std::vector<int> *dataSetIndices,
+                                     ValueArray *            values)
+        : dataSetIndices_(dataSetIndices), values_(values)
+    {
+    }
 
-        //! Returns the number of data sets in the array.
-        int dataSetCount() const
-        {
-            return dataSetIndices_->size() - 1;
-        }
-        //! Clears all values in the frame.
-        void clear()
-        {
-            std::fill(values_->begin(), values_->end(), ValueType());
-        }
+    //! Returns the number of data sets in the array.
+    int dataSetCount() const
+    {
+        return dataSetIndices_->size() - 1;
+    }
+    //! Clears all values in the frame.
+    void clear()
+    {
+        std::fill(values_->begin(), values_->end(), ValueType());
+    }
 
-        //! Returns a handle for a single data set.
-        DataSetHandle dataSet(int dataSet)
-        {
-            GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
-                       "Invalid data set index");
-            const int firstIndex = (*dataSetIndices_)[dataSet];
-            const int lastIndex  = (*dataSetIndices_)[dataSet + 1];
-            typename ValueArray::iterator begin = values_->begin() + firstIndex;
-            typename ValueArray::iterator end   = values_->begin() + lastIndex;
-            return DataSetHandle(arrayRefFromVector<ValueType>(begin, end));
-        }
-        //! Accesses a single value in the frame.
-        ValueType &value(int dataSet, int column)
-        {
-            GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
-                       "Invalid data set index");
-            const int firstIndex = (*dataSetIndices_)[dataSet];
-            GMX_ASSERT(column >= 0
-                       && column < (*dataSetIndices_)[dataSet + 1] - firstIndex,
-                       "Invalid column index");
-            return (*values_)[firstIndex + column];
-        }
+    //! Returns a handle for a single data set.
+    DataSetHandle dataSet(int dataSet)
+    {
+        GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
+                   "Invalid data set index");
+        const int firstIndex = (*dataSetIndices_)[dataSet];
+        const int lastIndex  = (*dataSetIndices_)[dataSet + 1];
+        typename ValueArray::iterator begin = values_->begin() + firstIndex;
+        typename ValueArray::iterator end   = values_->begin() + lastIndex;
+        return DataSetHandle(arrayRefFromVector<ValueType>(begin, end));
+    }
+    //! Accesses a single value in the frame.
+    ValueType &value(int dataSet, int column)
+    {
+        GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
+                   "Invalid data set index");
+        const int firstIndex = (*dataSetIndices_)[dataSet];
+        GMX_ASSERT(column >= 0
+                   && column < (*dataSetIndices_)[dataSet + 1] - firstIndex,
+                   "Invalid column index");
+        return (*values_)[firstIndex + column];
+    }
 
-    private:
-        const std::vector<int> *dataSetIndices_;
-        ValueArray *            values_;
+private:
+    const std::vector<int> *dataSetIndices_;
+    ValueArray *            values_;
 };
 
 /*! \internal \brief
@@ -189,116 +189,116 @@ class AnalysisDataFrameLocalDataHandle
 template <typename ValueType>
 class AnalysisDataFrameLocalData
 {
-    public:
-        //! Shorthand for the internal array of values for a frame.
-        typedef std::vector<ValueType> ValueArray;
-        //! Shorthand for a handle to a single frame.
-        typedef AnalysisDataFrameLocalDataHandle<ValueType> FrameHandle;
-        //! Shorthand for a handle to a single data set.
-        typedef AnalysisDataFrameLocalDataSetHandle<ValueType> DataSetHandle;
+public:
+    //! Shorthand for the internal array of values for a frame.
+    typedef std::vector<ValueType> ValueArray;
+    //! Shorthand for a handle to a single frame.
+    typedef AnalysisDataFrameLocalDataHandle<ValueType> FrameHandle;
+    //! Shorthand for a handle to a single data set.
+    typedef AnalysisDataFrameLocalDataSetHandle<ValueType> DataSetHandle;
 
-        //! Constructs an empty container with a single data set.
-        AnalysisDataFrameLocalData()
-        {
-            dataSetColumns_.resize(2);
-        }
+    //! Constructs an empty container with a single data set.
+    AnalysisDataFrameLocalData()
+    {
+        dataSetColumns_.resize(2);
+    }
 
-        //! Whether init() has been called.
-        bool isInitialized() const { return !values_.empty(); }
-        /*! \brief
-         * Returns number of independent data frames in this object.
-         *
-         * This supports looping over all the frame arrays to, e.g., sum them
-         * up at the end in accumulation scenarios.
-         */
-        int frameCount() const { return values_.size(); }
+    //! Whether init() has been called.
+    bool isInitialized() const { return !values_.empty(); }
+    /*! \brief
+     * Returns number of independent data frames in this object.
+     *
+     * This supports looping over all the frame arrays to, e.g., sum them
+     * up at the end in accumulation scenarios.
+     */
+    int frameCount() const { return values_.size(); }
 
-        /*! \brief
-         * Sets the number of data sets stored for each frame.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * If not called, there is a single data set in the object.
-         * Cannot be called after init().
-         */
-        void setDataSetCount(int dataSetCount)
-        {
-            GMX_RELEASE_ASSERT(!isInitialized(),
-                               "Cannot change value count after init()");
-            GMX_RELEASE_ASSERT(dataSetCount >= 0,
-                               "Invalid data set count");
-            dataSetColumns_.resize(dataSetCount + 1);
-        }
-        /*! \brief
-         * Sets the number of columns stored for a data set.
-         *
-         * Must be called for each data set that needs to have values,
-         * otherwise there will be zero columns for that data set.
-         * Cannot be called after init().
-         */
-        void setColumnCount(int dataSet, int columnCount)
-        {
-            GMX_RELEASE_ASSERT(!isInitialized(),
-                               "Cannot change value count after init()");
-            GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < static_cast<int>(dataSetColumns_.size()) - 1,
-                               "Invalid data set index");
-            GMX_RELEASE_ASSERT(columnCount >= 0,
-                               "Invalid column count");
-            dataSetColumns_[dataSet + 1] = columnCount;
-        }
+    /*! \brief
+     * Sets the number of data sets stored for each frame.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * If not called, there is a single data set in the object.
+     * Cannot be called after init().
+     */
+    void setDataSetCount(int dataSetCount)
+    {
+        GMX_RELEASE_ASSERT(!isInitialized(),
+                           "Cannot change value count after init()");
+        GMX_RELEASE_ASSERT(dataSetCount >= 0,
+                           "Invalid data set count");
+        dataSetColumns_.resize(dataSetCount + 1);
+    }
+    /*! \brief
+     * Sets the number of columns stored for a data set.
+     *
+     * Must be called for each data set that needs to have values,
+     * otherwise there will be zero columns for that data set.
+     * Cannot be called after init().
+     */
+    void setColumnCount(int dataSet, int columnCount)
+    {
+        GMX_RELEASE_ASSERT(!isInitialized(),
+                           "Cannot change value count after init()");
+        GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < static_cast<int>(dataSetColumns_.size()) - 1,
+                           "Invalid data set index");
+        GMX_RELEASE_ASSERT(columnCount >= 0,
+                           "Invalid column count");
+        dataSetColumns_[dataSet + 1] = columnCount;
+    }
 
-        /*! \brief
-         * Initializes the storage to support specified parallelism.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        void init(const AnalysisDataParallelOptions &opt)
+    /*! \brief
+     * Initializes the storage to support specified parallelism.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    void init(const AnalysisDataParallelOptions &opt)
+    {
+        GMX_RELEASE_ASSERT(!isInitialized(), "init() called multiple times");
+        std::partial_sum(dataSetColumns_.begin(), dataSetColumns_.end(),
+                         dataSetColumns_.begin());
+        values_.resize(opt.parallelizationFactor());
+        typename std::vector<ValueArray>::iterator i;
+        for (i = values_.begin(); i != values_.end(); ++i)
         {
-            GMX_RELEASE_ASSERT(!isInitialized(), "init() called multiple times");
-            std::partial_sum(dataSetColumns_.begin(), dataSetColumns_.end(),
-                             dataSetColumns_.begin());
-            values_.resize(opt.parallelizationFactor());
-            typename std::vector<ValueArray>::iterator i;
-            for (i = values_.begin(); i != values_.end(); ++i)
-            {
-                i->resize(dataSetColumns_.back());
-            }
+            i->resize(dataSetColumns_.back());
         }
+    }
 
-        //! Returns a handle to access data for a frame.
-        FrameHandle frameData(int frameIndex)
-        {
-            GMX_ASSERT(frameIndex >= 0, "Invalid frame index");
-            GMX_ASSERT(isInitialized(), "Cannot access data before init()");
-            return FrameHandle(&dataSetColumns_,
-                               &values_[frameIndex % values_.size()]);
-        }
-        //! Returns a handle to access a single data set within a frame.
-        DataSetHandle frameDataSet(int frameIndex, int dataSet)
-        {
-            return frameData(frameIndex).dataSet(dataSet);
-        }
+    //! Returns a handle to access data for a frame.
+    FrameHandle frameData(int frameIndex)
+    {
+        GMX_ASSERT(frameIndex >= 0, "Invalid frame index");
+        GMX_ASSERT(isInitialized(), "Cannot access data before init()");
+        return FrameHandle(&dataSetColumns_,
+                           &values_[frameIndex % values_.size()]);
+    }
+    //! Returns a handle to access a single data set within a frame.
+    DataSetHandle frameDataSet(int frameIndex, int dataSet)
+    {
+        return frameData(frameIndex).dataSet(dataSet);
+    }
 
-    private:
-        /*! \brief
-         * Index to find data sets within a per-frame array in `values_`.
-         *
-         * The first entry is always zero, followed by one entry for each data
-         * set.  Before init(), the data set entries hold the numbers set with
-         * setColumnCount().  After init(), the data set entries hold the
-         * indices of the first column for that data set in the per-frame
-         * arrays in `values_`.
-         */
-        std::vector<int> dataSetColumns_;
-        /*! \brief
-         * Data array for each frame.
-         *
-         * This is a ring buffer whose size is specified by the desired
-         * parallelism level.  For each frame, there is a single array of
-         * values, where the individual data sets are indexed with
-         * `dataSetColumns_`.
-         */
-        std::vector<ValueArray> values_;
+private:
+    /*! \brief
+     * Index to find data sets within a per-frame array in `values_`.
+     *
+     * The first entry is always zero, followed by one entry for each data
+     * set.  Before init(), the data set entries hold the numbers set with
+     * setColumnCount().  After init(), the data set entries hold the
+     * indices of the first column for that data set in the per-frame
+     * arrays in `values_`.
+     */
+    std::vector<int> dataSetColumns_;
+    /*! \brief
+     * Data array for each frame.
+     *
+     * This is a ring buffer whose size is specified by the desired
+     * parallelism level.  For each frame, there is a single array of
+     * values, where the individual data sets are indexed with
+     * `dataSetColumns_`.
+     */
+    std::vector<ValueArray> values_;
 };
 
 //! \}

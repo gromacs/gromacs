@@ -68,163 +68,163 @@ class KeyValueTreeTransformerImpl;
 
 class IKeyValueTreeTransformRules
 {
-    public:
-        virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
+public:
+    virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
 
-    protected: ~IKeyValueTreeTransformRules();
+protected: ~IKeyValueTreeTransformRules();
 };
 
 class IKeyValueTreeBackMapping
 {
-    public:
-        virtual ~IKeyValueTreeBackMapping();
+public:
+    virtual ~IKeyValueTreeBackMapping();
 
-        virtual KeyValueTreePath
-        originalPath(const KeyValueTreePath &path) const = 0;
+    virtual KeyValueTreePath
+    originalPath(const KeyValueTreePath &path) const = 0;
 };
 
 class KeyValueTreeTransformResult
 {
-    public:
-        KeyValueTreeObject object() { return std::move(object_); }
-        const IKeyValueTreeBackMapping &backMapping() const { return *mapping_; }
+public:
+    KeyValueTreeObject object() { return std::move(object_); }
+    const IKeyValueTreeBackMapping &backMapping() const { return *mapping_; }
 
-    private:
-        typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
+private:
+    typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
 
-        KeyValueTreeTransformResult(KeyValueTreeObject &&object,
-                                    MappingPointer &&    mapping)
-            : object_(std::move(object)), mapping_(std::move(mapping))
-        {
-        }
+    KeyValueTreeTransformResult(KeyValueTreeObject &&object,
+                                MappingPointer &&    mapping)
+        : object_(std::move(object)), mapping_(std::move(mapping))
+    {
+    }
 
-        KeyValueTreeObject                        object_;
-        std::unique_ptr<IKeyValueTreeBackMapping> mapping_;
+    KeyValueTreeObject                        object_;
+    std::unique_ptr<IKeyValueTreeBackMapping> mapping_;
 
-        friend class internal::KeyValueTreeTransformerImpl;
+    friend class internal::KeyValueTreeTransformerImpl;
 };
 
 class KeyValueTreeTransformer
 {
-    public:
-        KeyValueTreeTransformer();
-        ~KeyValueTreeTransformer();
+public:
+    KeyValueTreeTransformer();
+    ~KeyValueTreeTransformer();
 
-        IKeyValueTreeTransformRules *rules();
+    IKeyValueTreeTransformRules *rules();
 
-        std::vector<KeyValueTreePath> mappedPaths() const;
+    std::vector<KeyValueTreePath> mappedPaths() const;
 
-        KeyValueTreeTransformResult
-        transform(const KeyValueTreeObject & tree,
-                  IKeyValueTreeErrorHandler *errorHandler) const;
+    KeyValueTreeTransformResult
+    transform(const KeyValueTreeObject & tree,
+              IKeyValueTreeErrorHandler *errorHandler) const;
 
-    private:
-        PrivateImplPointer<internal::KeyValueTreeTransformerImpl> impl_;
+private:
+    PrivateImplPointer<internal::KeyValueTreeTransformerImpl> impl_;
 };
 
 class KeyValueTreeTransformRuleBuilder
 {
+public:
+    class Base
+    {
+    protected:
+        explicit Base(KeyValueTreeTransformRuleBuilder *builder)
+            : builder_(builder)
+        {
+        }
+
+        KeyValueTreeTransformRuleBuilder *builder_;
+    };
+
+    template <typename FromType, typename ToType>
+    class ToValue : public Base
+    {
     public:
-        class Base
+        explicit ToValue(KeyValueTreeTransformRuleBuilder *builder)
+            : Base(builder)
         {
-            protected:
-                explicit Base(KeyValueTreeTransformRuleBuilder *builder)
-                    : builder_(builder)
-                {
-                }
-
-                KeyValueTreeTransformRuleBuilder *builder_;
-        };
-
-        template <typename FromType, typename ToType>
-        class ToValue : public Base
-        {
-            public:
-                explicit ToValue(KeyValueTreeTransformRuleBuilder *builder)
-                    : Base(builder)
-                {
-                }
-
-                void transformWith(std::function<ToType(const FromType &)> transform)
-                {
-                    builder_->addTransformToVariant(
-                            [transform] (const Variant &value)
-                            {
-                                return Variant::create<ToType>(transform(value.cast<FromType>()));
-                            });
-                }
-        };
-
-        template <typename FromType>
-        class ToObject : public Base
-        {
-            public:
-                explicit ToObject(KeyValueTreeTransformRuleBuilder *builder)
-                    : Base(builder)
-                {
-                }
-
-                void transformWith(std::function<void(KeyValueTreeObjectBuilder *, const FromType &)> transform)
-                {
-                    builder_->addTransformToObject(
-                            [transform] (KeyValueTreeObjectBuilder *builder, const Variant &value)
-                            {
-                                transform(builder, value.cast<FromType>());
-                            });
-                }
-        };
-
-        template <typename FromType>
-        class AfterFrom : public Base
-        {
-            public:
-                explicit AfterFrom(KeyValueTreeTransformRuleBuilder *builder)
-                    : Base(builder)
-                {
-                }
-
-                template <typename ToType>
-                ToValue<FromType, ToType> to(const std::string &path)
-                {
-                    builder_->setToPath(path);
-                    return ToValue<FromType, ToType>(builder_);
-                }
-
-                ToObject<FromType> toObject(const std::string &path)
-                {
-                    builder_->setToPath(path);
-                    return ToObject<FromType>(builder_);
-                }
-        };
-
-        explicit KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl *impl);
-        KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
-        KeyValueTreeTransformRuleBuilder &operator=(KeyValueTreeTransformRuleBuilder &&) = default;
-        ~KeyValueTreeTransformRuleBuilder();
-
-        template <typename FromType>
-        AfterFrom<FromType> from(const std::string &path)
-        {
-            setFromPath(path);
-            return AfterFrom<FromType>(this);
-        }
-        void keyMatchType(const std::string &path, StringCompareType keyMatchType)
-        {
-            setFromPath(path);
-            setKeyMatchType(keyMatchType);
         }
 
-    private:
-        void setFromPath(const std::string &path);
-        void setToPath(const std::string &path);
-        void setKeyMatchType(StringCompareType keyMatchType);
-        void addTransformToVariant(std::function<Variant(const Variant &)> transform);
-        void addTransformToObject(std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform);
+        void transformWith(std::function<ToType(const FromType &)> transform)
+        {
+            builder_->addTransformToVariant(
+                    [transform] (const Variant &value)
+                    {
+                        return Variant::create<ToType>(transform(value.cast<FromType>()));
+                    });
+        }
+    };
 
-        class Data;
+    template <typename FromType>
+    class ToObject : public Base
+    {
+    public:
+        explicit ToObject(KeyValueTreeTransformRuleBuilder *builder)
+            : Base(builder)
+        {
+        }
 
-        internal::KeyValueTreeTransformerImpl *impl_;
-        std::unique_ptr<Data>                  data_;
+        void transformWith(std::function<void(KeyValueTreeObjectBuilder *, const FromType &)> transform)
+        {
+            builder_->addTransformToObject(
+                    [transform] (KeyValueTreeObjectBuilder *builder, const Variant &value)
+                    {
+                        transform(builder, value.cast<FromType>());
+                    });
+        }
+    };
+
+    template <typename FromType>
+    class AfterFrom : public Base
+    {
+    public:
+        explicit AfterFrom(KeyValueTreeTransformRuleBuilder *builder)
+            : Base(builder)
+        {
+        }
+
+        template <typename ToType>
+        ToValue<FromType, ToType> to(const std::string &path)
+        {
+            builder_->setToPath(path);
+            return ToValue<FromType, ToType>(builder_);
+        }
+
+        ToObject<FromType> toObject(const std::string &path)
+        {
+            builder_->setToPath(path);
+            return ToObject<FromType>(builder_);
+        }
+    };
+
+    explicit KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl *impl);
+    KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
+    KeyValueTreeTransformRuleBuilder &operator=(KeyValueTreeTransformRuleBuilder &&) = default;
+    ~KeyValueTreeTransformRuleBuilder();
+
+    template <typename FromType>
+    AfterFrom<FromType> from(const std::string &path)
+    {
+        setFromPath(path);
+        return AfterFrom<FromType>(this);
+    }
+    void keyMatchType(const std::string &path, StringCompareType keyMatchType)
+    {
+        setFromPath(path);
+        setKeyMatchType(keyMatchType);
+    }
+
+private:
+    void setFromPath(const std::string &path);
+    void setToPath(const std::string &path);
+    void setKeyMatchType(StringCompareType keyMatchType);
+    void addTransformToVariant(std::function<Variant(const Variant &)> transform);
+    void addTransformToObject(std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform);
+
+    class Data;
+
+    internal::KeyValueTreeTransformerImpl *impl_;
+    std::unique_ptr<Data>                  data_;
 };
 
 } // namespace gmx

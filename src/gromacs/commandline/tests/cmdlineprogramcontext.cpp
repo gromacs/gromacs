@@ -75,25 +75,25 @@ namespace
 
 class TestExecutableEnvironment : public gmx::IExecutableEnvironment
 {
-    public:
-        TestExecutableEnvironment()
-            : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/commandline/tests/test-bin")
-        {
-        }
+public:
+    TestExecutableEnvironment()
+        : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/commandline/tests/test-bin")
+    {
+    }
 
-        virtual std::string getWorkingDirectory() const
-        {
-            return workingDirectory_;
-        }
-        virtual std::vector<std::string> getExecutablePaths() const
-        {
-            return path_;
-        }
+    virtual std::string getWorkingDirectory() const
+    {
+        return workingDirectory_;
+    }
+    virtual std::vector<std::string> getExecutablePaths() const
+    {
+        return path_;
+    }
 
-        std::string              workingDirectory_;
-        std::vector<std::string> path_;
+    std::string              workingDirectory_;
+    std::vector<std::string> path_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestExecutableEnvironment);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TestExecutableEnvironment);
 };
 
 //! Shorthand for a smart pointer to TestExecutableEnvironment.
@@ -102,29 +102,29 @@ typedef std::unique_ptr<TestExecutableEnvironment>
 
 class CommandLineProgramContextTest : public ::testing::Test
 {
-    public:
-        CommandLineProgramContextTest()
-            : env_(new TestExecutableEnvironment())
-        {
-            expectedExecutable_
-                = Path::normalize(
-                            Path::join(env_->getWorkingDirectory(),
-                                       "bin/test-exe" EXECUTABLE_EXTENSION));
-        }
+public:
+    CommandLineProgramContextTest()
+        : env_(new TestExecutableEnvironment())
+    {
+        expectedExecutable_
+            = Path::normalize(
+                        Path::join(env_->getWorkingDirectory(),
+                                   "bin/test-exe" EXECUTABLE_EXTENSION));
+    }
 
-        void testBinaryPathSearch(const char *argv0)
-        {
-            ASSERT_TRUE(env_.get() != nullptr);
-            gmx::CommandLineProgramContext info(1, &argv0, move(env_));
-            EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
-        }
-        void testBinaryPathSearch(const std::string &argv0)
-        {
-            testBinaryPathSearch(argv0.c_str());
-        }
+    void testBinaryPathSearch(const char *argv0)
+    {
+        ASSERT_TRUE(env_.get() != nullptr);
+        gmx::CommandLineProgramContext info(1, &argv0, move(env_));
+        EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
+    }
+    void testBinaryPathSearch(const std::string &argv0)
+    {
+        testBinaryPathSearch(argv0.c_str());
+    }
 
-        std::string                      expectedExecutable_;
-        TestExecutableEnvironmentPointer env_;
+    std::string                      expectedExecutable_;
+    TestExecutableEnvironmentPointer env_;
 };
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryWithAbsolutePath)

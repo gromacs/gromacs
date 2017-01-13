@@ -88,76 +88,76 @@ class IOptionsContainerWithSections;
  */
 class IInputRecExtension
 {
-    public:
-        virtual ~IInputRecExtension() {}
+public:
+    virtual ~IInputRecExtension() {}
 
-        /*! \brief Read or write tpr file
-         *
-         * Read or write the necessary data from a tpr file. The routine is responsible
-         * for consistency, such that all data belonging to this module is read or written.
-         * \param[inout] fio Gromacs file descriptor
-         * \param[in]    bRead boolean determines whether we are reading or writing
-         */
-        virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
+    /*! \brief Read or write tpr file
+     *
+     * Read or write the necessary data from a tpr file. The routine is responsible
+     * for consistency, such that all data belonging to this module is read or written.
+     * \param[inout] fio Gromacs file descriptor
+     * \param[in]    bRead boolean determines whether we are reading or writing
+     */
+    virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
 
-        /*! \brief
-         * Initializes a transform from mdp values to sectioned options.
-         *
-         * The transform is specified from a flat KeyValueTreeObject that
-         * contains each mdp value as a property, to a structure which is then
-         * assigned to the options defined with initMdpOptions().
-         */
-        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform) = 0;
-        /*! \brief
-         * Defines input (mdp) parameters for this extension.
-         */
-        virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
+    /*! \brief
+     * Initializes a transform from mdp values to sectioned options.
+     *
+     * The transform is specified from a flat KeyValueTreeObject that
+     * contains each mdp value as a property, to a structure which is then
+     * assigned to the options defined with initMdpOptions().
+     */
+    virtual void initMdpTransform(IKeyValueTreeTransformRules *transform) = 0;
+    /*! \brief
+     * Defines input (mdp) parameters for this extension.
+     */
+    virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
 
-        /*! \brief Broadcast input parameters to all ranks
-         *
-         * \param[in] cr  Communication record, gromacs structure
-         */
-        virtual void broadCast(const t_commrec *cr) = 0;
+    /*! \brief Broadcast input parameters to all ranks
+     *
+     * \param[in] cr  Communication record, gromacs structure
+     */
+    virtual void broadCast(const t_commrec *cr) = 0;
 
-        /*! \brief compare a section of two input record structures
-         *
-         * Routine is used in gmx check.
-         * \param[in]    fp     File pointer
-         * \param[inout] field2 Electric field
-         * \param[in]    reltol Relative tolerance
-         * \param[in]    abstol Absolute tolerance
-         */
-        virtual void compare(FILE *                         fp,
-                             const gmx::IInputRecExtension *field2,
-                             real                           reltol,
-                             real                           abstol) = 0;
+    /*! \brief compare a section of two input record structures
+     *
+     * Routine is used in gmx check.
+     * \param[in]    fp     File pointer
+     * \param[inout] field2 Electric field
+     * \param[in]    reltol Relative tolerance
+     * \param[in]    abstol Absolute tolerance
+     */
+    virtual void compare(FILE *                         fp,
+                         const gmx::IInputRecExtension *field2,
+                         real                           reltol,
+                         real                           abstol) = 0;
 
-        /*! \brief Print parameters belonging to this class to a file
-         *
-         * \param[in] fp     File pointer
-         * \param[in] indent Initial indentation level for printing
-         */
-        virtual void printParameters(FILE *fp, int indent) = 0;
+    /*! \brief Print parameters belonging to this class to a file
+     *
+     * \param[in] fp     File pointer
+     * \param[in] indent Initial indentation level for printing
+     */
+    virtual void printParameters(FILE *fp, int indent) = 0;
 
-        /*! \brief Initiate output parameters
-         *
-         * \param[in] fplog File pointer for log messages
-         * \param[in] nfile Number of files
-         * \param[in] fnm   Array of filenames and properties
-         * \param[in] bAppendFiles Whether or not we should append to files
-         * \param[in] oenv  The output environment for xvg files
-         */
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv) = 0;
+    /*! \brief Initiate output parameters
+     *
+     * \param[in] fplog File pointer for log messages
+     * \param[in] nfile Number of files
+     * \param[in] fnm   Array of filenames and properties
+     * \param[in] bAppendFiles Whether or not we should append to files
+     * \param[in] oenv  The output environment for xvg files
+     */
+    virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                            bool bAppendFiles, const gmx_output_env_t *oenv) = 0;
 
-        //! Finalize output
-        virtual void finishOutput() = 0;
+    //! Finalize output
+    virtual void finishOutput() = 0;
 
-        /*! \brief Set/initiate relevant options in the forcerec structure
-         *
-         * \param[inout] fr The forcerec structure
-         */
-        virtual void initForcerec(t_forcerec *fr) = 0;
+    /*! \brief Set/initiate relevant options in the forcerec structure
+     *
+     * \param[inout] fr The forcerec structure
+     */
+    virtual void initForcerec(t_forcerec *fr) = 0;
 };
 
 } // namespace gmx

@@ -66,54 +66,54 @@ namespace gmx
  */
 class AnalysisDataLifetimeModule::Impl
 {
-    public:
-        //! Container type for storing a histogram during the calculation.
-        typedef std::deque<int> LifetimeHistogram;
+public:
+    //! Container type for storing a histogram during the calculation.
+    typedef std::deque<int> LifetimeHistogram;
 
-        //! Initializes the implementation class with empty/default values.
-        Impl() : firstx_(0.0), lastx_(0.0), frameCount_(0), bCumulative_(false)
-        {
-        }
+    //! Initializes the implementation class with empty/default values.
+    Impl() : firstx_(0.0), lastx_(0.0), frameCount_(0), bCumulative_(false)
+    {
+    }
 
-        /*! \brief
-         * Increments a lifetime histogram with a single lifetime.
-         *
-         * \param[in] dataSet   Index of the histogram to increment.
-         * \param[in] lifetime  Lifetime to add to the histogram.
-         */
-        void addLifetime(int dataSet, int lifetime)
+    /*! \brief
+     * Increments a lifetime histogram with a single lifetime.
+     *
+     * \param[in] dataSet   Index of the histogram to increment.
+     * \param[in] lifetime  Lifetime to add to the histogram.
+     */
+    void addLifetime(int dataSet, int lifetime)
+    {
+        if (lifetime > 0)
         {
-            if (lifetime > 0)
+            LifetimeHistogram &histogram = lifetimeHistograms_[dataSet];
+            if (histogram.size() < static_cast<unsigned>(lifetime))
             {
-                LifetimeHistogram &histogram = lifetimeHistograms_[dataSet];
-                if (histogram.size() < static_cast<unsigned>(lifetime))
-                {
-                    histogram.resize(lifetime, 0);
-                }
-                ++histogram[lifetime - 1];
+                histogram.resize(lifetime, 0);
             }
+            ++histogram[lifetime - 1];
         }
+    }
 
-        //! X value of the first frame (used for determining output spacing).
-        real firstx_;
-        //! X value of the last frame (used for determining output spacing).
-        real lastx_;
-        //! Total number of frames (used for normalization and output spacing).
-        int frameCount_;
-        //! Whether to add subintervals of longer intervals explicitly.
-        bool bCumulative_;
-        /*! \brief
-         * Length of current continuously present interval for each data column.
-         *
-         * While frame N has been processed, stores the length of an interval
-         * for each data column where that column has been continuously present
-         * up to and including frame N.
-         */
-        std::vector<std::vector<int> > currentLifetimes_;
-        /*! \brief
-         * Accumulated lifetime histograms for each data set.
-         */
-        std::vector<LifetimeHistogram> lifetimeHistograms_;
+    //! X value of the first frame (used for determining output spacing).
+    real firstx_;
+    //! X value of the last frame (used for determining output spacing).
+    real lastx_;
+    //! Total number of frames (used for normalization and output spacing).
+    int frameCount_;
+    //! Whether to add subintervals of longer intervals explicitly.
+    bool bCumulative_;
+    /*! \brief
+     * Length of current continuously present interval for each data column.
+     *
+     * While frame N has been processed, stores the length of an interval
+     * for each data column where that column has been continuously present
+     * up to and including frame N.
+     */
+    std::vector<std::vector<int> > currentLifetimes_;
+    /*! \brief
+     * Accumulated lifetime histograms for each data set.
+     */
+    std::vector<LifetimeHistogram> lifetimeHistograms_;
 };
 
 AnalysisDataLifetimeModule::AnalysisDataLifetimeModule()

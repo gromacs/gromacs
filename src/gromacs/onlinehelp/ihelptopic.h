@@ -65,44 +65,44 @@ class HelpWriterContext;
  */
 class IHelpTopic
 {
-    public:
-        virtual ~IHelpTopic() {}
+public:
+    virtual ~IHelpTopic() {}
 
-        /*! \brief
-         * Returns the name of the topic.
-         *
-         * This should be a single lowercase word, used to identify the topic.
-         * It is not used for the root of the help topic tree.
-         */
-        virtual const char *name() const = 0;
-        /*! \brief
-         * Returns a title for the topic.
-         *
-         * May return NULL, in which case the topic is omitted from normal
-         * subtopic lists and no title is printed by the methods provided in
-         * helptopic.h.
-         */
-        virtual const char *title() const = 0;
+    /*! \brief
+     * Returns the name of the topic.
+     *
+     * This should be a single lowercase word, used to identify the topic.
+     * It is not used for the root of the help topic tree.
+     */
+    virtual const char *name() const = 0;
+    /*! \brief
+     * Returns a title for the topic.
+     *
+     * May return NULL, in which case the topic is omitted from normal
+     * subtopic lists and no title is printed by the methods provided in
+     * helptopic.h.
+     */
+    virtual const char *title() const = 0;
 
-        //! Returns whether the topic has any subtopics.
-        virtual bool hasSubTopics() const = 0;
-        /*! \brief
-         * Finds a subtopic by name.
-         *
-         * \param[in] name  Name of subtopic to find.
-         * \returns   Pointer to the found subtopic, or NULL if matching topic
-         *      is not found.
-         */
-        virtual const IHelpTopic *findSubTopic(const char *name) const = 0;
+    //! Returns whether the topic has any subtopics.
+    virtual bool hasSubTopics() const = 0;
+    /*! \brief
+     * Finds a subtopic by name.
+     *
+     * \param[in] name  Name of subtopic to find.
+     * \returns   Pointer to the found subtopic, or NULL if matching topic
+     *      is not found.
+     */
+    virtual const IHelpTopic *findSubTopic(const char *name) const = 0;
 
-        /*! \brief
-         * Prints the help text for this topic.
-         *
-         * \param[in] context  Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        virtual void writeHelp(const HelpWriterContext &context) const = 0;
+    /*! \brief
+     * Prints the help text for this topic.
+     *
+     * \param[in] context  Context object for writing the help.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     */
+    virtual void writeHelp(const HelpWriterContext &context) const = 0;
 };
 
 //! Smart pointer type to manage a IHelpTopic object.

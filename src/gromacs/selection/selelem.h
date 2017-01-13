@@ -279,230 +279,230 @@ struct SelectionLocation
  */
 class SelectionTreeElement
 {
-    public:
-        /*! \brief
-         * Allocates memory and performs common initialization.
-         *
-         * \param[in] type     Type of selection element to create.
-         * \param[in] location Location of the element.
-         *
-         * \a type is set to \p type,
-         * \a v::type is set to \ref GROUP_VALUE for boolean and comparison
-         * expressions and \ref NO_VALUE for others, and
-         * \ref SEL_ALLOCVAL is set for non-root elements (\ref SEL_ALLOCDATA
-         * is also set for \ref SEL_BOOLEAN elements).
-         * All the pointers are set to NULL.
-         */
-        SelectionTreeElement(e_selelem_t type, const SelectionLocation &location);
-        ~SelectionTreeElement();
+public:
+    /*! \brief
+     * Allocates memory and performs common initialization.
+     *
+     * \param[in] type     Type of selection element to create.
+     * \param[in] location Location of the element.
+     *
+     * \a type is set to \p type,
+     * \a v::type is set to \ref GROUP_VALUE for boolean and comparison
+     * expressions and \ref NO_VALUE for others, and
+     * \ref SEL_ALLOCVAL is set for non-root elements (\ref SEL_ALLOCDATA
+     * is also set for \ref SEL_BOOLEAN elements).
+     * All the pointers are set to NULL.
+     */
+    SelectionTreeElement(e_selelem_t type, const SelectionLocation &location);
+    ~SelectionTreeElement();
 
-        //! Frees the memory allocated for the \a v union.
-        void freeValues();
-        //! Frees the memory allocated for the \a u union.
-        void freeExpressionData();
-        /* In compiler.cpp */
-        /*! \brief
-         * Frees the memory allocated for the selection compiler.
-         *
-         * This function only frees the data for the given selection, not its
-         * children.  It is safe to call the function when compiler data has
-         * not been allocated or has already been freed; in such a case,
-         * nothing is done.
-         */
-        void freeCompilerData();
+    //! Frees the memory allocated for the \a v union.
+    void freeValues();
+    //! Frees the memory allocated for the \a u union.
+    void freeExpressionData();
+    /* In compiler.cpp */
+    /*! \brief
+     * Frees the memory allocated for the selection compiler.
+     *
+     * This function only frees the data for the given selection, not its
+     * children.  It is safe to call the function when compiler data has
+     * not been allocated or has already been freed; in such a case,
+     * nothing is done.
+     */
+    void freeCompilerData();
 
-        /*! \brief
-         * Reserves memory for value from a memory pool.
-         *
-         * \param[in]     count Number of values to reserve memory for.
-         *
-         * Reserves memory for the values of this element from the \a mempool
-         * memory pool.
-         * If no memory pool is set, nothing is done.
-         */
-        void mempoolReserve(int count);
-        /*! \brief
-         * Releases memory pool used for value.
-         *
-         * Releases the memory allocated for the values of this element from the
-         * \a mempool memory pool.
-         * If no memory pool is set, nothing is done.
-         */
-        void mempoolRelease();
+    /*! \brief
+     * Reserves memory for value from a memory pool.
+     *
+     * \param[in]     count Number of values to reserve memory for.
+     *
+     * Reserves memory for the values of this element from the \a mempool
+     * memory pool.
+     * If no memory pool is set, nothing is done.
+     */
+    void mempoolReserve(int count);
+    /*! \brief
+     * Releases memory pool used for value.
+     *
+     * Releases the memory allocated for the values of this element from the
+     * \a mempool memory pool.
+     * If no memory pool is set, nothing is done.
+     */
+    void mempoolRelease();
 
-        //! Returns the name of the element.
-        const std::string &name() const { return name_; }
-        //! Returns the location of the element.
-        const SelectionLocation &location() const { return location_; }
+    //! Returns the name of the element.
+    const std::string &name() const { return name_; }
+    //! Returns the location of the element.
+    const SelectionLocation &location() const { return location_; }
 
-        /*! \brief
-         * Sets the name of the element.
-         *
-         * \param[in] name  Name to set (can be NULL).
-         * \throws    std::bad_alloc if out of memory.
-         */
-        void setName(const char *name) { name_ = (name != nullptr ? name : ""); }
-        //! \copydoc setName(const char *)
-        void setName(const std::string &name) { name_ = name; }
-        /*! \brief
-         * Sets the name of a root element if it is missing.
-         *
-         * \param[in] selectionText  Full selection text to use as a fallback.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * If index groups have not yet been set and the selection is a result
-         * of a group reference, the name may still be empty after this call.
-         *
-         * Strong exception safety guarantee.
-         */
-        void fillNameIfMissing(const char *selectionText);
+    /*! \brief
+     * Sets the name of the element.
+     *
+     * \param[in] name  Name to set (can be NULL).
+     * \throws    std::bad_alloc if out of memory.
+     */
+    void setName(const char *name) { name_ = (name != nullptr ? name : ""); }
+    //! \copydoc setName(const char *)
+    void setName(const std::string &name) { name_ = name; }
+    /*! \brief
+     * Sets the name of a root element if it is missing.
+     *
+     * \param[in] selectionText  Full selection text to use as a fallback.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * If index groups have not yet been set and the selection is a result
+     * of a group reference, the name may still be empty after this call.
+     *
+     * Strong exception safety guarantee.
+     */
+    void fillNameIfMissing(const char *selectionText);
 
-        /*! \brief
-         * Returns which topology properties the selection element subtree requires
-         * for evaluation.
-         *
-         * \returns   List of topology properties required for evaluation.
-         */
-        SelectionTopologyProperties requiredTopologyProperties() const;
-        /*! \brief
-         * Checks that this element and its children do not contain unsupported
-         * elements with unsorted atoms.
-         *
-         * \param[in] bUnsortedAllowed Whether this element's parents allow it
-         *     to have unsorted atoms.
-         * \param     errors           Object for reporting any error messages.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Errors are reported as nested exceptions in \p errors.
-         */
-        void checkUnsortedAtoms(bool                  bUnsortedAllowed,
-                                ExceptionInitializer *errors) const;
-        /*! \brief
-         * Checks whether the element or its children have unresolved index
-         * group references.
-         *
-         * Does not throw.
-         */
-        bool requiresIndexGroups() const;
-        /*! \brief
-         * Resolves an unresolved reference to an index group.
-         *
-         * \param[in] grps   Index groups to use to resolve the reference.
-         * \param[in] natoms Maximum number of atoms the selections can evaluate to
-         *     (zero if the topology/atom count is not set yet).
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InconsistentInputError if the reference cannot be
-         *     resolved.
-         */
-        void resolveIndexGroupReference(gmx_ana_indexgrps_t *grps, int natoms);
-        /*! \brief
-         * Checks that an index group has valid atom indices.
-         *
-         * \param[in] natoms Maximum number of atoms the selections can evaluate to.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InconsistentInputError if there are invalid atom indices.
-         */
-        void checkIndexGroup(int natoms);
+    /*! \brief
+     * Returns which topology properties the selection element subtree requires
+     * for evaluation.
+     *
+     * \returns   List of topology properties required for evaluation.
+     */
+    SelectionTopologyProperties requiredTopologyProperties() const;
+    /*! \brief
+     * Checks that this element and its children do not contain unsupported
+     * elements with unsorted atoms.
+     *
+     * \param[in] bUnsortedAllowed Whether this element's parents allow it
+     *     to have unsorted atoms.
+     * \param     errors           Object for reporting any error messages.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * Errors are reported as nested exceptions in \p errors.
+     */
+    void checkUnsortedAtoms(bool                  bUnsortedAllowed,
+                            ExceptionInitializer *errors) const;
+    /*! \brief
+     * Checks whether the element or its children have unresolved index
+     * group references.
+     *
+     * Does not throw.
+     */
+    bool requiresIndexGroups() const;
+    /*! \brief
+     * Resolves an unresolved reference to an index group.
+     *
+     * \param[in] grps   Index groups to use to resolve the reference.
+     * \param[in] natoms Maximum number of atoms the selections can evaluate to
+     *     (zero if the topology/atom count is not set yet).
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InconsistentInputError if the reference cannot be
+     *     resolved.
+     */
+    void resolveIndexGroupReference(gmx_ana_indexgrps_t *grps, int natoms);
+    /*! \brief
+     * Checks that an index group has valid atom indices.
+     *
+     * \param[in] natoms Maximum number of atoms the selections can evaluate to.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InconsistentInputError if there are invalid atom indices.
+     */
+    void checkIndexGroup(int natoms);
 
-        //! Type of the element.
-        e_selelem_t type;
-        /*! \brief
-         * Value storage of the element.
+    //! Type of the element.
+    e_selelem_t type;
+    /*! \brief
+     * Value storage of the element.
+     *
+     * This field contains the evaluated value of the element, as well as
+     * the output value type.
+     */
+    gmx_ana_selvalue_t v;
+    /*! \brief
+     * Evaluation function for the element.
+     *
+     * Can be either NULL (if the expression is a constant and does not
+     * require evaluation) or point to one of the functions defined in
+     * evaluate.h.
+     */
+    sel_evalfunc evaluate;
+    /*! \brief
+     * Information flags about the element.
+     *
+     * Allowed flags are listed here:
+     * \ref selelem_flags "flags for gmx::SelectionTreeElement".
+     */
+    int flags;
+    //! Data required by the evaluation function.
+    union
+    {
+        /*! \brief Index group data for several element types.
          *
-         * This field contains the evaluated value of the element, as well as
-         * the output value type.
+         *  - \ref SEL_CONST : if the value type is \ref GROUP_VALUE,
+         *    this field holds the unprocessed group value.
+         *  - \ref SEL_ROOT : holds the group value for which the
+         *    selection subtree should be evaluated.
+         *  - \ref SEL_SUBEXPR : holds the group for which the subexpression
+         *    has been evaluated.
          */
-        gmx_ana_selvalue_t v;
-        /*! \brief
-         * Evaluation function for the element.
-         *
-         * Can be either NULL (if the expression is a constant and does not
-         * require evaluation) or point to one of the functions defined in
-         * evaluate.h.
-         */
-        sel_evalfunc evaluate;
-        /*! \brief
-         * Information flags about the element.
-         *
-         * Allowed flags are listed here:
-         * \ref selelem_flags "flags for gmx::SelectionTreeElement".
-         */
-        int flags;
-        //! Data required by the evaluation function.
-        union
+        gmx_ana_index_t cgrp;
+        //! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.
+        struct
         {
-            /*! \brief Index group data for several element types.
-             *
-             *  - \ref SEL_CONST : if the value type is \ref GROUP_VALUE,
-             *    this field holds the unprocessed group value.
-             *  - \ref SEL_ROOT : holds the group value for which the
-             *    selection subtree should be evaluated.
-             *  - \ref SEL_SUBEXPR : holds the group for which the subexpression
-             *    has been evaluated.
-             */
-            gmx_ana_index_t cgrp;
-            //! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.
-            struct
-            {
-                //! Pointer the the method used in this expression.
-                struct gmx_ana_selmethod_t *method;
-                //! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).
-                void *mdata;
-                //! Pointer to the position data passed to the method.
-                struct gmx_ana_pos_t *pos;
-                //! Pointer to the evaluation data for \p pos.
-                struct gmx_ana_poscalc_t *pc;
-            }                               expr;
-            //! Operation type for \ref SEL_BOOLEAN elements.
-            e_boolean_t boolt;
-            //! Operation type for \ref SEL_ARITHMETIC elements.
-            struct
-            {
-                //! Operation type.
-                e_arithmetic_t type;
-                //! String representation.
-                char *opstr;
-            }                               arith;
-            //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
-            struct gmx_ana_selparam_t *param;
-            //! The string/number used to reference the group.
-            struct
-            {
-                //! Name of the referenced external group.
-                char *name;
-                //! If \a name is NULL, the index number of the referenced group.
-                int id;
-            }                               gref;
-        }                                   u;
-        //! Memory pool to use for values, or NULL if standard memory handling.
-        struct gmx_sel_mempool_t *mempool;
-        //! Internal data for the selection compiler.
-        t_compiler_data *cdata;
+            //! Pointer the the method used in this expression.
+            struct gmx_ana_selmethod_t *method;
+            //! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).
+            void *mdata;
+            //! Pointer to the position data passed to the method.
+            struct gmx_ana_pos_t *pos;
+            //! Pointer to the evaluation data for \p pos.
+            struct gmx_ana_poscalc_t *pc;
+        }                               expr;
+        //! Operation type for \ref SEL_BOOLEAN elements.
+        e_boolean_t boolt;
+        //! Operation type for \ref SEL_ARITHMETIC elements.
+        struct
+        {
+            //! Operation type.
+            e_arithmetic_t type;
+            //! String representation.
+            char *opstr;
+        }                               arith;
+        //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
+        struct gmx_ana_selparam_t *param;
+        //! The string/number used to reference the group.
+        struct
+        {
+            //! Name of the referenced external group.
+            char *name;
+            //! If \a name is NULL, the index number of the referenced group.
+            int id;
+        }                               gref;
+    }                                   u;
+    //! Memory pool to use for values, or NULL if standard memory handling.
+    struct gmx_sel_mempool_t *mempool;
+    //! Internal data for the selection compiler.
+    t_compiler_data *cdata;
 
-        /*! \brief The first child element.
-         *
-         * Other children can be accessed through the \p next field of \p child.
-         */
-        SelectionTreeElementPointer child;
-        //! The next sibling element.
-        SelectionTreeElementPointer next;
+    /*! \brief The first child element.
+     *
+     * Other children can be accessed through the \p next field of \p child.
+     */
+    SelectionTreeElementPointer child;
+    //! The next sibling element.
+    SelectionTreeElementPointer next;
 
-    private:
-        /*! \brief
-         * Name of the element.
-         *
-         * This field is only used for diagnostic purposes.
-         */
-        std::string name_;
-        /*! \brief
-         * Location of the element in the selection text.
-         *
-         * This field is only used for diagnostic purposes (including error
-         * messages).
-         */
-        SelectionLocation location_;
+private:
+    /*! \brief
+     * Name of the element.
+     *
+     * This field is only used for diagnostic purposes.
+     */
+    std::string name_;
+    /*! \brief
+     * Location of the element in the selection text.
+     *
+     * This field is only used for diagnostic purposes (including error
+     * messages).
+     */
+    SelectionLocation location_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(SelectionTreeElement);
+    GMX_DISALLOW_COPY_AND_ASSIGN(SelectionTreeElement);
 };
 
 } // namespace gmx

@@ -87,61 +87,61 @@ namespace
  */
 class CMainCommandLineModule : public ICommandLineModule
 {
-    public:
-        //! \copydoc gmx::CommandLineModuleManager::CMainFunction
-        typedef CommandLineModuleManager::CMainFunction CMainFunction;
-        //! \copydoc gmx::CommandLineModuleManager::InitSettingsFunction
-        typedef CommandLineModuleManager::InitSettingsFunction InitSettingsFunction;
+public:
+    //! \copydoc gmx::CommandLineModuleManager::CMainFunction
+    typedef CommandLineModuleManager::CMainFunction CMainFunction;
+    //! \copydoc gmx::CommandLineModuleManager::InitSettingsFunction
+    typedef CommandLineModuleManager::InitSettingsFunction InitSettingsFunction;
 
-        /*! \brief
-         * Creates a wrapper module for the given main function.
-         *
-         * \param[in] name             Name for the module.
-         * \param[in] shortDescription One-line description for the module.
-         * \param[in] mainFunction     Main function to wrap.
-         * \param[in] settingsFunction Initializer for settings (can be null).
-         *
-         * Does not throw.  This is essential for correct implementation of
-         * CommandLineModuleManager::runAsMainCMain().
-         */
-        CMainCommandLineModule(const char *name, const char *shortDescription,
-                               CMainFunction mainFunction,
-                               InitSettingsFunction settingsFunction)
-            : name_(name), shortDescription_(shortDescription),
-              mainFunction_(mainFunction), settingsFunction_(settingsFunction)
-        {
-        }
+    /*! \brief
+     * Creates a wrapper module for the given main function.
+     *
+     * \param[in] name             Name for the module.
+     * \param[in] shortDescription One-line description for the module.
+     * \param[in] mainFunction     Main function to wrap.
+     * \param[in] settingsFunction Initializer for settings (can be null).
+     *
+     * Does not throw.  This is essential for correct implementation of
+     * CommandLineModuleManager::runAsMainCMain().
+     */
+    CMainCommandLineModule(const char *name, const char *shortDescription,
+                           CMainFunction mainFunction,
+                           InitSettingsFunction settingsFunction)
+        : name_(name), shortDescription_(shortDescription),
+          mainFunction_(mainFunction), settingsFunction_(settingsFunction)
+    {
+    }
 
-        virtual const char *name() const
-        {
-            return name_;
-        }
-        virtual const char *shortDescription() const
-        {
-            return shortDescription_;
-        }
+    virtual const char *name() const
+    {
+        return name_;
+    }
+    virtual const char *shortDescription() const
+    {
+        return shortDescription_;
+    }
 
-        virtual void init(CommandLineModuleSettings *settings)
+    virtual void init(CommandLineModuleSettings *settings)
+    {
+        if (settingsFunction_ != nullptr)
         {
-            if (settingsFunction_ != nullptr)
-            {
-                settingsFunction_(settings);
-            }
+            settingsFunction_(settings);
         }
-        virtual int run(int argc, char *argv[])
-        {
-            return mainFunction_(argc, argv);
-        }
-        virtual void writeHelp(const CommandLineHelpContext &context) const
-        {
-            writeCommandLineHelpCMain(context, name_, mainFunction_);
-        }
+    }
+    virtual int run(int argc, char *argv[])
+    {
+        return mainFunction_(argc, argv);
+    }
+    virtual void writeHelp(const CommandLineHelpContext &context) const
+    {
+        writeCommandLineHelpCMain(context, name_, mainFunction_);
+    }
 
-    private:
-        const char *         name_;
-        const char *         shortDescription_;
-        CMainFunction        mainFunction_;
-        InitSettingsFunction settingsFunction_;
+private:
+    const char *         name_;
+    const char *         shortDescription_;
+    CMainFunction        mainFunction_;
+    InitSettingsFunction settingsFunction_;
 };
 
 //! \}
@@ -220,97 +220,97 @@ void CommandLineCommonOptionsHolder::adjustFromSettings(
  */
 class CommandLineModuleManager::Impl
 {
-    public:
-        /*! \brief
-         * Initializes the implementation class.
-         *
-         * \param[in] binaryName     Name of the running binary
-         *     (without Gromacs binary suffix or .exe on Windows).
-         * \param     programContext Program information for the running binary.
-         */
-        Impl(const char *binaryName, CommandLineProgramContext *programContext);
+public:
+    /*! \brief
+     * Initializes the implementation class.
+     *
+     * \param[in] binaryName     Name of the running binary
+     *     (without Gromacs binary suffix or .exe on Windows).
+     * \param     programContext Program information for the running binary.
+     */
+    Impl(const char *binaryName, CommandLineProgramContext *programContext);
 
-        /*! \brief
-         * Helper method that adds a given module to the module manager.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         */
-        void addModule(CommandLineModulePointer module);
-        /*! \brief
-         * Creates the help module if it does not yet exist.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * This method should be called before accessing \a helpModule_.
-         */
-        void ensureHelpModuleExists();
+    /*! \brief
+     * Helper method that adds a given module to the module manager.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     */
+    void addModule(CommandLineModulePointer module);
+    /*! \brief
+     * Creates the help module if it does not yet exist.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * This method should be called before accessing \a helpModule_.
+     */
+    void ensureHelpModuleExists();
 
-        /*! \brief
-         * Finds a module that matches a name.
-         *
-         * \param[in] name  Module name to find.
-         * \returns   Iterator to the found module, or
-         *      \c modules_.end() if not found.
-         *
-         * Does not throw.
-         */
-        CommandLineModuleMap::const_iterator
-        findModuleByName(const std::string &name) const;
+    /*! \brief
+     * Finds a module that matches a name.
+     *
+     * \param[in] name  Module name to find.
+     * \returns   Iterator to the found module, or
+     *      \c modules_.end() if not found.
+     *
+     * Does not throw.
+     */
+    CommandLineModuleMap::const_iterator
+    findModuleByName(const std::string &name) const;
 
-        /*! \brief
-         * Processes command-line options for the wrapper binary.
-         *
-         * \param[in,out] optionsHolder Common options.
-         * \param[in,out] argc          On input, argc passed to run().
-         *     On output, argc to be passed to the module.
-         * \param[in,out] argv          On input, argv passed to run().
-         *     On output, argv to be passed to the module.
-         * \throws    InvalidInputError if there are invalid options.
-         * \returns   The module that should be run.
-         *
-         * Handles command-line options that affect the wrapper binary
-         * (potentially changing the members of \c this in response to the
-         * options).  Also finds the module that should be run and the
-         * arguments that should be passed to it.
-         */
-        ICommandLineModule *
-        processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
-                             int *argc, char ***argv);
+    /*! \brief
+     * Processes command-line options for the wrapper binary.
+     *
+     * \param[in,out] optionsHolder Common options.
+     * \param[in,out] argc          On input, argc passed to run().
+     *     On output, argc to be passed to the module.
+     * \param[in,out] argv          On input, argv passed to run().
+     *     On output, argv to be passed to the module.
+     * \throws    InvalidInputError if there are invalid options.
+     * \returns   The module that should be run.
+     *
+     * Handles command-line options that affect the wrapper binary
+     * (potentially changing the members of \c this in response to the
+     * options).  Also finds the module that should be run and the
+     * arguments that should be passed to it.
+     */
+    ICommandLineModule *
+    processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
+                         int *argc, char ***argv);
 
-        //! Prints the footer at the end of execution.
-        void printThanks(FILE *fp);
+    //! Prints the footer at the end of execution.
+    void printThanks(FILE *fp);
 
-        /*! \brief
-         * Maps module names to module objects.
-         *
-         * Owns the contained modules.
-         */
-        CommandLineModuleMap modules_;
-        /*! \brief
-         * List of groupings for modules for help output.
-         *
-         * Owns the contained module group data objects.
-         * CommandLineModuleGroup objects point to the data objects contained
-         * here.
-         */
-        CommandLineModuleGroupList moduleGroups_;
-        //! Information about the currently running program.
-        CommandLineProgramContext &programContext_;
-        //! Name of the binary.
-        std::string binaryName_;
-        /*! \brief
-         * Module that implements help for the binary.
-         *
-         * The pointed module is owned by the \a modules_ container.
-         */
-        CommandLineHelpModule *helpModule_;
-        //! If non-NULL, run this module in single-module mode.
-        ICommandLineModule *singleModule_;
-        //! Stores the value set with setQuiet().
-        bool bQuiet_;
+    /*! \brief
+     * Maps module names to module objects.
+     *
+     * Owns the contained modules.
+     */
+    CommandLineModuleMap modules_;
+    /*! \brief
+     * List of groupings for modules for help output.
+     *
+     * Owns the contained module group data objects.
+     * CommandLineModuleGroup objects point to the data objects contained
+     * here.
+     */
+    CommandLineModuleGroupList moduleGroups_;
+    //! Information about the currently running program.
+    CommandLineProgramContext &programContext_;
+    //! Name of the binary.
+    std::string binaryName_;
+    /*! \brief
+     * Module that implements help for the binary.
+     *
+     * The pointed module is owned by the \a modules_ container.
+     */
+    CommandLineHelpModule *helpModule_;
+    //! If non-NULL, run this module in single-module mode.
+    ICommandLineModule *singleModule_;
+    //! Stores the value set with setQuiet().
+    bool bQuiet_;
 
-    private:
-        GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
+private:
+    GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
 CommandLineModuleManager::Impl::Impl(const char *               binaryName,

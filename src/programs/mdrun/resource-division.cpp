@@ -299,35 +299,35 @@ namespace
 
 class SingleRankChecker
 {
-    public:
-        //! Constructor
-        SingleRankChecker() : value_(false), reasons_() {}
-        /*! \brief Call this function for each possible condition
-            under which a single rank is required, along with a string
-            describing the constraint when it is applied. */
-        void applyConstraint(bool condition, const char *description)
+public:
+    //! Constructor
+    SingleRankChecker() : value_(false), reasons_() {}
+    /*! \brief Call this function for each possible condition
+        under which a single rank is required, along with a string
+        describing the constraint when it is applied. */
+    void applyConstraint(bool condition, const char *description)
+    {
+        if (condition)
         {
-            if (condition)
-            {
-                value_ = true;
-                reasons_.push_back(gmx::formatString("%s only supports a single rank.", description));
-            }
+            value_ = true;
+            reasons_.push_back(gmx::formatString("%s only supports a single rank.", description));
         }
-        //! After applying any conditions, is a single rank required?
-        bool mustUseOneRank() const
-        {
-            return value_;
-        }
-        /*! \brief Return a formatted string to use when writing a
-            message when a single rank is required, (or empty if no
-            constraint exists.) */
-        std::string getMessage() const
-        {
-            return formatAndJoin(reasons_, "\n", gmx::IdentityFormatter());
-        }
-    private:
-        bool                     value_;
-        std::vector<std::string> reasons_;
+    }
+    //! After applying any conditions, is a single rank required?
+    bool mustUseOneRank() const
+    {
+        return value_;
+    }
+    /*! \brief Return a formatted string to use when writing a
+        message when a single rank is required, (or empty if no
+        constraint exists.) */
+    std::string getMessage() const
+    {
+        return formatAndJoin(reasons_, "\n", gmx::IdentityFormatter());
+    }
+private:
+    bool                     value_;
+    std::vector<std::string> reasons_;
 };
 
 } // namespace

@@ -47,56 +47,56 @@ namespace gmx
 
 class SimdFloat
 {
-    public:
-        SimdFloat() {}
+public:
+    SimdFloat() {}
 
-        // gcc-4.9 does not recognize that we use the parameter
-        SimdFloat(float gmx_unused f) : simdInternal_(vec_splats(f)) {}
+    // gcc-4.9 does not recognize that we use the parameter
+    SimdFloat(float gmx_unused f) : simdInternal_(vec_splats(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFloat(__vector float simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFloat(__vector float simd) : simdInternal_(simd) {}
 
-        __vector float simdInternal_;
+    __vector float simdInternal_;
 };
 
 class SimdFInt32
 {
-    public:
-        SimdFInt32() {}
+public:
+    SimdFInt32() {}
 
-        // gcc-4.9 does not recognize that we use the parameter
-        SimdFInt32(std::int32_t gmx_unused i) : simdInternal_(vec_splats(i)) {}
+    // gcc-4.9 does not recognize that we use the parameter
+    SimdFInt32(std::int32_t gmx_unused i) : simdInternal_(vec_splats(i)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFInt32(__vector signed int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFInt32(__vector signed int simd) : simdInternal_(simd) {}
 
-        __vector signed int simdInternal_;
+    __vector signed int simdInternal_;
 };
 
 class SimdFBool
 {
-    public:
-        SimdFBool() {}
+public:
+    SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
+    SimdFBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFBool(__vector vsxBool int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFBool(__vector vsxBool int simd) : simdInternal_(simd) {}
 
-        __vector vsxBool int simdInternal_;
+    __vector vsxBool int simdInternal_;
 };
 
 class SimdFIBool
 {
-    public:
-        SimdFIBool() {}
+public:
+    SimdFIBool() {}
 
-        SimdFIBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
+    SimdFIBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFIBool(__vector vsxBool int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFIBool(__vector vsxBool int simd) : simdInternal_(simd) {}
 
-        __vector vsxBool int simdInternal_;
+    __vector vsxBool int simdInternal_;
 };
 
 // The VSX load & store operations are a bit of a mess. The interface is different

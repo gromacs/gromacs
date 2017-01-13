@@ -48,30 +48,30 @@ namespace gmx
 
 class Simd4Float
 {
-    public:
-        Simd4Float() {}
+public:
+    Simd4Float() {}
 
-        // gcc-4.9 does not recognize that we use the parameter
-        Simd4Float(float gmx_unused f) : simdInternal_(vec_splats(f)) {}
+    // gcc-4.9 does not recognize that we use the parameter
+    Simd4Float(float gmx_unused f) : simdInternal_(vec_splats(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        Simd4Float(__vector float simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4Float(__vector float simd) : simdInternal_(simd) {}
 
-        __vector float simdInternal_;
+    __vector float simdInternal_;
 };
 
 class Simd4FBool
 {
-    public:
-        Simd4FBool() {}
+public:
+    Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
+    //! \brief Construct from scalar bool
+    Simd4FBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        Simd4FBool(__vector vsxBool int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4FBool(__vector vsxBool int simd) : simdInternal_(simd) {}
 
-        __vector vsxBool int simdInternal_;
+    __vector vsxBool int simdInternal_;
 };
 
 // The VSX load & store operations are a bit of a mess. The interface is different

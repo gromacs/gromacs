@@ -68,29 +68,29 @@ typedef gmx::test::AnalysisDataTestFixture AnalysisArrayDataTest;
 // Input data for gmx::AnalysisArrayData tests.
 class SimpleInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static SimpleInputData singleton;
-            return singleton.data_;
+        static SimpleInputData singleton;
+        return singleton.data_;
 #else
-            static SimpleInputData singleton_arraydata;
-            return singleton_arraydata.data_;
+        static SimpleInputData singleton_arraydata;
+        return singleton_arraydata.data_;
 #endif
-        }
+    }
 
-        SimpleInputData() : data_(1, false)
-        {
-            data_.setColumnCount(0, 3);
-            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
-            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
-            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
-            data_.addFrameWithValues(4.0,  3.0, 2.0, 1.0);
-        }
+    SimpleInputData() : data_(1, false)
+    {
+        data_.setColumnCount(0, 3);
+        data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
+        data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
+        data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+        data_.addFrameWithValues(4.0,  3.0, 2.0, 1.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)

@@ -151,19 +151,19 @@ TEST(TreeValueSupportAssignErrorTest, HandlesInvalidValue)
 
 class TreeValueSupportAdjustTest : public ::testing::Test
 {
-    public:
-        void runTest()
-        {
-            gmx::test::TestReferenceData    refdata;
-            gmx::test::TestReferenceChecker checker(refdata.rootChecker());
-            gmx::KeyValueTreeObject         tree(builder_.build());
-            checker.checkKeyValueTreeObject(tree, "Input");
-            ASSERT_NO_THROW_GMX(tree = gmx::adjustKeyValueTreeFromOptions(tree, options_));
-            checker.checkKeyValueTreeObject(tree, "Output");
-        }
+public:
+    void runTest()
+    {
+        gmx::test::TestReferenceData    refdata;
+        gmx::test::TestReferenceChecker checker(refdata.rootChecker());
+        gmx::KeyValueTreeObject         tree(builder_.build());
+        checker.checkKeyValueTreeObject(tree, "Input");
+        ASSERT_NO_THROW_GMX(tree = gmx::adjustKeyValueTreeFromOptions(tree, options_));
+        checker.checkKeyValueTreeObject(tree, "Output");
+    }
 
-        gmx::Options             options_;
-        gmx::KeyValueTreeBuilder builder_;
+    gmx::Options             options_;
+    gmx::KeyValueTreeBuilder builder_;
 };
 
 TEST_F(TreeValueSupportAdjustTest, FillsDefaultValues)

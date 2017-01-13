@@ -69,63 +69,63 @@ namespace gmx
 template <typename OutType>
 class OptionValueConverterSimple
 {
-    public:
-        /*! \brief
-         * Converts a Variant value to the output type.
-         *
-         * \returns  Converted value.
-         * \throws InvalidInputError If the input Variant has a type that is
-         *     not recognized by any conversion.
-         */
-        OutType convert(const Variant &value) const
+public:
+    /*! \brief
+     * Converts a Variant value to the output type.
+     *
+     * \returns  Converted value.
+     * \throws InvalidInputError If the input Variant has a type that is
+     *     not recognized by any conversion.
+     */
+    OutType convert(const Variant &value) const
+    {
+        std::type_index type(value.type());
+        auto            iter = converters_.find(type);
+        if (iter == converters_.end())
         {
-            std::type_index type(value.type());
-            auto            iter = converters_.find(type);
-            if (iter == converters_.end())
+            if (value.isType<OutType>())
             {
-                if (value.isType<OutType>())
-                {
-                    return value.cast<OutType>();
-                }
-                GMX_THROW(InvalidInputError("Invalid type of value"));
+                return value.cast<OutType>();
             }
-            return iter->second(value);
+            GMX_THROW(InvalidInputError("Invalid type of value"));
         }
+        return iter->second(value);
+    }
 
-        /*! \brief
-         * Adds a supported conversion.
-         *
-         * \tparam InType  Type to convert from.
-         * \param  func    Function to convert from `InType` to `OutType`.
-         */
-        template <typename InType>
-        void addConverter(std::function<OutType(const InType &)> func)
-        {
-            converters_[std::type_index(typeid(InType))]
-                = [func] (const Variant &value)
-                    {
-                        return func(value.cast<InType>());
-                    };
-        }
-        /*! \brief
-         * Adds a supported conversion from a type that can be directly cast.
-         *
-         * \tparam InType  Type to convert from with a simple cast.
-         */
-        template <typename InType>
-        void addCastConversion()
-        {
-            converters_[std::type_index(typeid(InType))]
-                = [] (const Variant &value)
-                    {
-                        return static_cast<OutType>(value.cast<InType>());
-                    };
-        }
+    /*! \brief
+     * Adds a supported conversion.
+     *
+     * \tparam InType  Type to convert from.
+     * \param  func    Function to convert from `InType` to `OutType`.
+     */
+    template <typename InType>
+    void addConverter(std::function<OutType(const InType &)> func)
+    {
+        converters_[std::type_index(typeid(InType))]
+            = [func] (const Variant &value)
+                {
+                    return func(value.cast<InType>());
+                };
+    }
+    /*! \brief
+     * Adds a supported conversion from a type that can be directly cast.
+     *
+     * \tparam InType  Type to convert from with a simple cast.
+     */
+    template <typename InType>
+    void addCastConversion()
+    {
+        converters_[std::type_index(typeid(InType))]
+            = [] (const Variant &value)
+                {
+                    return static_cast<OutType>(value.cast<InType>());
+                };
+    }
 
-    private:
-        typedef std::function<OutType(const Variant &value)> ConversionFunction;
+private:
+    typedef std::function<OutType(const Variant &value)> ConversionFunction;
 
-        std::map<std::type_index, ConversionFunction> converters_;
+    std::map<std::type_index, ConversionFunction> converters_;
 };
 
 } // namespace gmx

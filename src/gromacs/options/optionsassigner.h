@@ -87,126 +87,126 @@ class Variant;
  */
 class OptionsAssigner
 {
-    public:
-        /*! \brief
-         * Creates an object that assigns to the given object.
-         */
-        explicit OptionsAssigner(Options *options);
-        ~OptionsAssigner();
+public:
+    /*! \brief
+     * Creates an object that assigns to the given object.
+     */
+    explicit OptionsAssigner(Options *options);
+    ~OptionsAssigner();
 
-        /*! \brief
-         * Sets the assigner to recognize boolean options with a "no" prefix.
-         *
-         * With this option set, \c startOption("noname") is interpreted as
-         * \c startOption("name") followed by \c appendValue("no"), if there is
-         * no option by the name "noname", but there is a boolean option with
-         * name "name".
-         *
-         * By default, the prefix is not recognized.
-         *
-         * Can be set or cleared at any time, and will have effect on all
-         * subsequent calls of startOption().
-         *
-         * Does not throw.
-         */
-        void setAcceptBooleanNoPrefix(bool bEnabled);
+    /*! \brief
+     * Sets the assigner to recognize boolean options with a "no" prefix.
+     *
+     * With this option set, \c startOption("noname") is interpreted as
+     * \c startOption("name") followed by \c appendValue("no"), if there is
+     * no option by the name "noname", but there is a boolean option with
+     * name "name".
+     *
+     * By default, the prefix is not recognized.
+     *
+     * Can be set or cleared at any time, and will have effect on all
+     * subsequent calls of startOption().
+     *
+     * Does not throw.
+     */
+    void setAcceptBooleanNoPrefix(bool bEnabled);
 
-        /*! \brief
-         * Starts assigning values.
-         *
-         * Does not throw.
-         */
-        void start();
-        /*! \brief
-         * Starts assigning values to options in a subsection.
-         *
-         * \param[in] name  Name of the subsection to start assigning to.
-         * \throws InvalidInputError if such a subsection is not found.
-         *
-         * Strong exception safety guarantee.
-         */
-        void startSection(const char *name);
-        /*! \brief
-         * Starts assigning values for an option.
-         *
-         * \param[in] name  Name of the option to start assigning to.
-         * \throws InvalidInputError if such an option is not found, or if the
-         *      option is specified more than once but doesn't support it.
-         */
-        void startOption(const char *name);
-        /*! \brief
-         * Starts assigning values for an option.
-         *
-         * \param[in] name  Name of the option to start assigning to.
-         * \returns   true if \p name is a valid option name.
-         * \throws InvalidInputError if the option is specified more than once
-         *      but doesn't support it.
-         */
-        bool tryStartOption(const char *name);
-        /*! \brief
-         * Appends a value to the value list of the current option.
-         *
-         * \param[in] value  Value to assign.
-         * \throws InvalidInputError if the value cannot be converted or if
-         *      there are too many values for an option.
-         *
-         * Basic exception safety guarantee:
-         * If this method throws, erroneous values are ignored, but it is
-         * possible to continue assigning values to the same option.  However,
-         * if \p value would result in more than one value, and some of them
-         * can be converted, but some result in errors, it is currently
-         * possible that some values have been added to the option even if an
-         * exception is thrown.
-         *
-         * Strong exception safety guarantee if the option provides value
-         * conversion with the same guarantee.  All options where a single
-         * input value always results in a single output value provide this.
-         *
-         * \internal
-         * This method provides the same exception safety guarantee as the
-         * OptionStorageTemplate::convertValue() method of the storage class
-         * implementing the option where the value is assigned to.
-         */
-        void appendValue(const Variant &value);
-        /*! \brief
-         * Appends a value to the value list of the current option.
-         *
-         * \param[in] value  Value to assign.
-         *
-         * See appendValue(const Variant &) for more details.
-         */
-        void appendValue(const std::string &value);
-        /*! \brief
-         * Finish assigning values for the current option.
-         *
-         * \throws InvalidInputError if the set of values since startOption()
-         *      is not valid.
-         *
-         * If this method throws, it returns to the state where the option was
-         * before startOption(), i.e., all values added with appendValue()
-         * since the last startOption() are discarded.
-         *
-         * Independent of whether the method throws, the option opened with
-         * startOption() will be closed after the call.
-         */
-        void finishOption();
-        /*! \brief
-         * Finish assigning values to a subsection.
-         *
-         * Does not throw.
-         */
-        void finishSection();
-        /*! \brief
-         * Finish assigning options through the object.
-         *
-         * Does not throw.
-         */
-        void finish();
+    /*! \brief
+     * Starts assigning values.
+     *
+     * Does not throw.
+     */
+    void start();
+    /*! \brief
+     * Starts assigning values to options in a subsection.
+     *
+     * \param[in] name  Name of the subsection to start assigning to.
+     * \throws InvalidInputError if such a subsection is not found.
+     *
+     * Strong exception safety guarantee.
+     */
+    void startSection(const char *name);
+    /*! \brief
+     * Starts assigning values for an option.
+     *
+     * \param[in] name  Name of the option to start assigning to.
+     * \throws InvalidInputError if such an option is not found, or if the
+     *      option is specified more than once but doesn't support it.
+     */
+    void startOption(const char *name);
+    /*! \brief
+     * Starts assigning values for an option.
+     *
+     * \param[in] name  Name of the option to start assigning to.
+     * \returns   true if \p name is a valid option name.
+     * \throws InvalidInputError if the option is specified more than once
+     *      but doesn't support it.
+     */
+    bool tryStartOption(const char *name);
+    /*! \brief
+     * Appends a value to the value list of the current option.
+     *
+     * \param[in] value  Value to assign.
+     * \throws InvalidInputError if the value cannot be converted or if
+     *      there are too many values for an option.
+     *
+     * Basic exception safety guarantee:
+     * If this method throws, erroneous values are ignored, but it is
+     * possible to continue assigning values to the same option.  However,
+     * if \p value would result in more than one value, and some of them
+     * can be converted, but some result in errors, it is currently
+     * possible that some values have been added to the option even if an
+     * exception is thrown.
+     *
+     * Strong exception safety guarantee if the option provides value
+     * conversion with the same guarantee.  All options where a single
+     * input value always results in a single output value provide this.
+     *
+     * \internal
+     * This method provides the same exception safety guarantee as the
+     * OptionStorageTemplate::convertValue() method of the storage class
+     * implementing the option where the value is assigned to.
+     */
+    void appendValue(const Variant &value);
+    /*! \brief
+     * Appends a value to the value list of the current option.
+     *
+     * \param[in] value  Value to assign.
+     *
+     * See appendValue(const Variant &) for more details.
+     */
+    void appendValue(const std::string &value);
+    /*! \brief
+     * Finish assigning values for the current option.
+     *
+     * \throws InvalidInputError if the set of values since startOption()
+     *      is not valid.
+     *
+     * If this method throws, it returns to the state where the option was
+     * before startOption(), i.e., all values added with appendValue()
+     * since the last startOption() are discarded.
+     *
+     * Independent of whether the method throws, the option opened with
+     * startOption() will be closed after the call.
+     */
+    void finishOption();
+    /*! \brief
+     * Finish assigning values to a subsection.
+     *
+     * Does not throw.
+     */
+    void finishSection();
+    /*! \brief
+     * Finish assigning options through the object.
+     *
+     * Does not throw.
+     */
+    void finish();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

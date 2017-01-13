@@ -74,8 +74,8 @@ IExceptionInfo::~IExceptionInfo()
 
 class ExceptionData
 {
-    public:
-        std::map<std::type_index, ExceptionInfoPointer> infos_;
+public:
+    std::map<std::type_index, ExceptionInfoPointer> infos_;
 };
 
 }    // namespace internal
@@ -98,43 +98,43 @@ namespace
  */
 class ErrorMessage
 {
-    public:
-        /*! \brief
-         * Creates an error message object with the specified text.
-         *
-         * \param[in] text  Text for the message.
-         */
-        explicit ErrorMessage(const std::string &text);
+public:
+    /*! \brief
+     * Creates an error message object with the specified text.
+     *
+     * \param[in] text  Text for the message.
+     */
+    explicit ErrorMessage(const std::string &text);
 
-        //! Whether this object is a context string.
-        bool isContext() const { return static_cast<bool>(child_); }
-        //! Returns the text for this object.
-        const std::string &text() const { return text_; }
-        /*! \brief
-         * Returns the child object for a context object.
-         *
-         * Must not be called if isContext() returns false.
-         */
-        const ErrorMessage &child() const
-        {
-            GMX_ASSERT(isContext(),
-                       "Attempting to access nonexistent message object");
-            return *child_;
-        }
+    //! Whether this object is a context string.
+    bool isContext() const { return static_cast<bool>(child_); }
+    //! Returns the text for this object.
+    const std::string &text() const { return text_; }
+    /*! \brief
+     * Returns the child object for a context object.
+     *
+     * Must not be called if isContext() returns false.
+     */
+    const ErrorMessage &child() const
+    {
+        GMX_ASSERT(isContext(),
+                   "Attempting to access nonexistent message object");
+        return *child_;
+    }
 
-        /*! \brief
-         * Creates a new message object with context prepended.
-         *
-         * \param[in] context  Context string to add.
-         * \returns   New error message object that has \p context as its text
-         *      and \c this as its child.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        ErrorMessage prependContext(const std::string &context) const;
+    /*! \brief
+     * Creates a new message object with context prepended.
+     *
+     * \param[in] context  Context string to add.
+     * \returns   New error message object that has \p context as its text
+     *      and \c this as its child.
+     * \throws    std::bad_alloc if out of memory.
+     */
+    ErrorMessage prependContext(const std::string &context) const;
 
-    private:
-        std::string                   text_;
-        std::shared_ptr<ErrorMessage> child_;
+private:
+    std::string                   text_;
+    std::shared_ptr<ErrorMessage> child_;
 };
 
 /*! \internal \brief
@@ -295,25 +295,25 @@ namespace
  */
 class IMessageWriter
 {
-    public:
-        virtual ~IMessageWriter() {}
+public:
+    virtual ~IMessageWriter() {}
 
-        /*! \brief
-         * Writes a single line of text into the output.
-         *
-         * \param[in] text    Text to write on the line.
-         * \param[in] indent  Suggested number of spaces to indent the line.
-         */
-        virtual void writeLine(const char *text, int indent) = 0;
-        /*! \brief
-         * Writes information about a system error (errno-based).
-         *
-         * \param[in] errorNumber  errno value
-         * \param[in] funcName     Name of the system call (can be NULL).
-         * \param[in] indent       Suggested number of spaces to indent the output.
-         */
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent) = 0;
+    /*! \brief
+     * Writes a single line of text into the output.
+     *
+     * \param[in] text    Text to write on the line.
+     * \param[in] indent  Suggested number of spaces to indent the line.
+     */
+    virtual void writeLine(const char *text, int indent) = 0;
+    /*! \brief
+     * Writes information about a system error (errno-based).
+     *
+     * \param[in] errorNumber  errno value
+     * \param[in] funcName     Name of the system call (can be NULL).
+     * \param[in] indent       Suggested number of spaces to indent the output.
+     */
+    virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                int indent) = 0;
 };
 
 /*! \brief
@@ -324,28 +324,28 @@ class IMessageWriter
  */
 class MessageWriterFileNoThrow : public IMessageWriter
 {
-    public:
-        //! Initializes a writer that writes to the given file handle.
-        explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
+public:
+    //! Initializes a writer that writes to the given file handle.
+    explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
 
-        virtual void writeLine(const char *text, int indent)
+    virtual void writeLine(const char *text, int indent)
+    {
+        internal::printFatalErrorMessageLine(fp_, text, indent);
+    }
+    virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                int indent)
+    {
+        std::fprintf(fp_, "%*sReason: %s\n", indent, "",
+                     std::strerror(errorNumber));
+        if (funcName != nullptr)
         {
-            internal::printFatalErrorMessageLine(fp_, text, indent);
+            std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
+                         indent, "", funcName, errorNumber);
         }
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent)
-        {
-            std::fprintf(fp_, "%*sReason: %s\n", indent, "",
-                         std::strerror(errorNumber));
-            if (funcName != nullptr)
-            {
-                std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
-                             indent, "", funcName, errorNumber);
-            }
-        }
+    }
 
-    private:
-        FILE *fp_;
+private:
+    FILE *fp_;
 };
 
 /*! \brief
@@ -353,32 +353,32 @@ class MessageWriterFileNoThrow : public IMessageWriter
  */
 class MessageWriterTextWriter : public IMessageWriter
 {
-    public:
-        //! Initializes a writer that writes to the given stream.
-        explicit MessageWriterTextWriter(TextWriter *writer) : writer_(writer)
-        {
-        }
+public:
+    //! Initializes a writer that writes to the given stream.
+    explicit MessageWriterTextWriter(TextWriter *writer) : writer_(writer)
+    {
+    }
 
-        virtual void writeLine(const char *text, int indent)
+    virtual void writeLine(const char *text, int indent)
+    {
+        writer_->wrapperSettings().setIndent(indent);
+        writer_->writeLine(text);
+    }
+    virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                int indent)
+    {
+        writer_->wrapperSettings().setIndent(indent);
+        writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
+        if (funcName != nullptr)
         {
-            writer_->wrapperSettings().setIndent(indent);
-            writer_->writeLine(text);
+            writer_->writeLine(
+                    formatString("(call to %s() returned error code %d)",
+                                 funcName, errorNumber));
         }
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent)
-        {
-            writer_->wrapperSettings().setIndent(indent);
-            writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
-            if (funcName != nullptr)
-            {
-                writer_->writeLine(
-                        formatString("(call to %s() returned error code %d)",
-                                     funcName, errorNumber));
-            }
-        }
+    }
 
-    private:
-        TextWriter *writer_;
+private:
+    TextWriter *writer_;
 };
 
 /*! \brief
@@ -386,39 +386,39 @@ class MessageWriterTextWriter : public IMessageWriter
  */
 class MessageWriterString : public IMessageWriter
 {
-    public:
-        //! Post-processes the output string to not end in a line feed.
-        void removeTerminatingLineFeed()
+public:
+    //! Post-processes the output string to not end in a line feed.
+    void removeTerminatingLineFeed()
+    {
+        if (result_.size() > 0U)
         {
-            if (result_.size() > 0U)
-            {
-                result_.erase(result_.size() - 1);
-            }
+            result_.erase(result_.size() - 1);
         }
-        //! Returns the constructed string.
-        const std::string &result() const { return result_; }
+    }
+    //! Returns the constructed string.
+    const std::string &result() const { return result_; }
 
-        virtual void writeLine(const char *text, int indent)
+    virtual void writeLine(const char *text, int indent)
+    {
+        result_.append(indent, ' ');
+        result_.append(text);
+        result_.append("\n");
+    }
+    virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                int indent)
+    {
+        writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
+                  indent);
+        if (funcName != nullptr)
         {
-            result_.append(indent, ' ');
-            result_.append(text);
-            result_.append("\n");
-        }
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent)
-        {
-            writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
+            writeLine(formatString("(call to %s() returned error code %d)",
+                                   funcName, errorNumber).c_str(),
                       indent);
-            if (funcName != nullptr)
-            {
-                writeLine(formatString("(call to %s() returned error code %d)",
-                                       funcName, errorNumber).c_str(),
-                          indent);
-            }
         }
+    }
 
-    private:
-        std::string result_;
+private:
+    std::string result_;
 };
 
 /*! \brief

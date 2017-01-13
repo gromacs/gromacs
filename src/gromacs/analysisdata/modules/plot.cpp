@@ -106,27 +106,27 @@ void AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
 
 class AbstractPlotModule::Impl
 {
-    public:
-        explicit Impl(const AnalysisDataPlotSettings &settings);
-        ~Impl();
+public:
+    explicit Impl(const AnalysisDataPlotSettings &settings);
+    ~Impl();
 
-        void closeFile();
+    void closeFile();
 
-        AnalysisDataPlotSettings settings_;
-        std::string              filename_;
-        FILE *                   fp_;
+    AnalysisDataPlotSettings settings_;
+    std::string              filename_;
+    FILE *                   fp_;
 
-        bool                     bPlain_;
-        bool                     bOmitX_;
-        bool                     bErrorsAsSeparateColumn_;
-        std::string              title_;
-        std::string              subtitle_;
-        std::string              xlabel_;
-        std::string              ylabel_;
-        std::vector<std::string> legend_;
-        char                     xformat_[15];
-        char                     yformat_[15];
-        real                     xscale_;
+    bool                     bPlain_;
+    bool                     bOmitX_;
+    bool                     bErrorsAsSeparateColumn_;
+    std::string              title_;
+    std::string              subtitle_;
+    std::string              xlabel_;
+    std::string              ylabel_;
+    std::vector<std::string> legend_;
+    char                     xformat_[15];
+    char                     yformat_[15];
+    real                     xscale_;
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)

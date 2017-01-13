@@ -49,71 +49,71 @@ namespace gmx
 
 class SimdFloat
 {
-    public:
-        SimdFloat() {}
+public:
+    SimdFloat() {}
 
-        SimdFloat(float f)
-        {
-            __vector unsigned char perm;
+    SimdFloat(float f)
+    {
+        __vector unsigned char perm;
 
-            simdInternal_ = vec_lde(0, const_cast<float *>(&f));
-            perm          = vec_lvsl(0, const_cast<float *>(&f));
-            simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
-            simdInternal_ = vec_splat(simdInternal_, 0);
-        }
+        simdInternal_ = vec_lde(0, const_cast<float *>(&f));
+        perm          = vec_lvsl(0, const_cast<float *>(&f));
+        simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
+        simdInternal_ = vec_splat(simdInternal_, 0);
+    }
 
-        // Internal utility constructor to simplify return statements
-        SimdFloat(__vector float simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFloat(__vector float simd) : simdInternal_(simd) {}
 
-        __vector float simdInternal_;
+    __vector float simdInternal_;
 };
 
 class SimdFInt32
 {
-    public:
-        SimdFInt32() {}
+public:
+    SimdFInt32() {}
 
-        SimdFInt32(std::int32_t i)
-        {
-            __vector unsigned char perm;
+    SimdFInt32(std::int32_t i)
+    {
+        __vector unsigned char perm;
 
-            simdInternal_ = vec_lde(0, const_cast<int *>(&i));
-            perm          = vec_lvsl(0, const_cast<int *>(&i));
-            simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
-            simdInternal_ = vec_splat(simdInternal_, 0);
-        }
+        simdInternal_ = vec_lde(0, const_cast<int *>(&i));
+        perm          = vec_lvsl(0, const_cast<int *>(&i));
+        simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
+        simdInternal_ = vec_splat(simdInternal_, 0);
+    }
 
 
-        // Internal utility constructor to simplify return statements
-        SimdFInt32(__vector signed int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFInt32(__vector signed int simd) : simdInternal_(simd) {}
 
-        __vector signed int simdInternal_;
+    __vector signed int simdInternal_;
 };
 
 class SimdFBool
 {
-    public:
-        SimdFBool() {}
+public:
+    SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
+    SimdFBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFBool(__vector vmxBool int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFBool(__vector vmxBool int simd) : simdInternal_(simd) {}
 
-        __vector vmxBool int simdInternal_;
+    __vector vmxBool int simdInternal_;
 };
 
 class SimdFIBool
 {
-    public:
-        SimdFIBool() {}
+public:
+    SimdFIBool() {}
 
-        SimdFIBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
+    SimdFIBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFIBool(__vector vmxBool int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFIBool(__vector vmxBool int simd) : simdInternal_(simd) {}
 
-        __vector vmxBool int simdInternal_;
+    __vector vmxBool int simdInternal_;
 };
 
 static inline SimdFloat gmx_simdcall simdLoad(const float *m)

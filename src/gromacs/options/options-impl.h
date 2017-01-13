@@ -77,123 +77,123 @@ namespace internal
  */
 class OptionSectionImpl : public IOptionsContainerWithSections
 {
+public:
+    /*! \internal \brief
+     * Describes a group of options (see Options::addGroup()).
+     *
+     * \ingroup module_options
+     */
+    class Group : public IOptionsContainer
+    {
     public:
-        /*! \internal \brief
-         * Describes a group of options (see Options::addGroup()).
-         *
-         * \ingroup module_options
-         */
-        class Group : public IOptionsContainer
-        {
-            public:
-                //! Convenience typedef for list of options.
-                typedef std::vector<AbstractOptionStorage *> OptionList;
-                //! Convenience typedef for list of subgroups.
-                typedef std::list<Group> SubgroupList;
+        //! Convenience typedef for list of options.
+        typedef std::vector<AbstractOptionStorage *> OptionList;
+        //! Convenience typedef for list of subgroups.
+        typedef std::list<Group> SubgroupList;
 
-                //! Creates a group within the given Options.
-                explicit Group(OptionSectionImpl *parent) : parent_(parent) {}
-
-                // From IOptionsContainer
-                virtual IOptionsContainer &addGroup();
-                virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
-
-                //! Containing options object.
-                OptionSectionImpl *parent_;
-                /*! \brief
-                 * List of options, in insertion order.
-                 *
-                 * Pointers in this container point to the objects managed by
-                 * Impl::optionsMap_.
-                 */
-                OptionList options_;
-                //! List of groups, in insertion order.
-                SubgroupList subgroups_;
-        };
-
-        //! Smart pointer for managing an AbstractOptionStorage object.
-        typedef std::unique_ptr<AbstractOptionStorage>
-            AbstractOptionStoragePointer;
-        //! Convenience typedef for a map that contains all the options.
-        typedef std::map<std::string, AbstractOptionStoragePointer> OptionMap;
-        //! Smart pointer for managing subsections.
-        typedef std::unique_ptr<OptionSectionImpl> SectionPointer;
-        //! Convenience typedef for a container for subsections.
-        typedef std::vector<SectionPointer> SectionList;
-
-        //! Creates storage for a new section.
-        OptionSectionImpl(const OptionManagerContainer &         managers,
-                          std::unique_ptr<IOptionSectionStorage> storage,
-                          const char *                           name)
-            : managers_(managers), storage_(std::move(storage)), info_(this),
-              name_(name), rootGroup_(this), storageInitialized_(false)
-        {
-        }
-
-        // From IOptionsContainerWithSections
-        virtual OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section);
+        //! Creates a group within the given Options.
+        explicit Group(OptionSectionImpl *parent) : parent_(parent) {}
 
         // From IOptionsContainer
         virtual IOptionsContainer &addGroup();
         virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
 
-        //! Returns section info object for this section.
-        OptionSectionInfo &info() { return info_; }
-        //! Returns section info object for this section.
-        const OptionSectionInfo &info() const { return info_; }
+        //! Containing options object.
+        OptionSectionImpl *parent_;
+        /*! \brief
+         * List of options, in insertion order.
+         *
+         * Pointers in this container point to the objects managed by
+         * Impl::optionsMap_.
+         */
+        OptionList options_;
+        //! List of groups, in insertion order.
+        SubgroupList subgroups_;
+    };
 
-        /*! \brief
-         * Finds a subsection by name.
-         *
-         * \param[in] name  Name to search for.
-         * \returns Pointer to the found subsection, or NULL if not found.
-         *
-         * Does not throw.
-         */
-        OptionSectionImpl *findSection(const char *name) const;
-        /*! \brief
-         * Finds an option by name.
-         *
-         * \param[in] name  Name to search for.
-         * \returns Pointer to the found option, or NULL if not found.
-         *
-         * Does not throw.
-         */
-        AbstractOptionStorage *findOption(const char *name) const;
+    //! Smart pointer for managing an AbstractOptionStorage object.
+    typedef std::unique_ptr<AbstractOptionStorage>
+        AbstractOptionStoragePointer;
+    //! Convenience typedef for a map that contains all the options.
+    typedef std::map<std::string, AbstractOptionStoragePointer> OptionMap;
+    //! Smart pointer for managing subsections.
+    typedef std::unique_ptr<OptionSectionImpl> SectionPointer;
+    //! Convenience typedef for a container for subsections.
+    typedef std::vector<SectionPointer> SectionList;
 
-        /*! \brief
-         * Called when entering the section.
-         *
-         * Calls AbstractOptionStorage::startSource() for all options.
-         */
-        void start();
-        /*! \brief
-         * Calls AbstractOptionStorage::finish() for all options.
-         */
-        void finish();
+    //! Creates storage for a new section.
+    OptionSectionImpl(const OptionManagerContainer &         managers,
+                      std::unique_ptr<IOptionSectionStorage> storage,
+                      const char *                           name)
+        : managers_(managers), storage_(std::move(storage)), info_(this),
+          name_(name), rootGroup_(this), storageInitialized_(false)
+    {
+    }
 
-        //! Reference to the option managers in the parent Options object.
-        const OptionManagerContainer &managers_;
-        //! Type-specific storage object for this section.
-        std::unique_ptr<IOptionSectionStorage> storage_;
-        //! Info object for this section.
-        OptionSectionInfo info_;
-        //! Name of this section (empty and unused for the root section).
-        std::string name_;
-        /*! \brief
-         * Group that contains all options (and subgroups).
-         *
-         * This is used to store the insertion order of options.
-         */
-        Group rootGroup_;
-        //! Map from option names to options; owns the option storage objects.
-        OptionMap optionMap_;
-        //! List of subsections, in insertion order.
-        SectionList subsections_;
-        //! Whether initStorage() has been called for `storage_`.
-        bool storageInitialized_;
+    // From IOptionsContainerWithSections
+    virtual OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section);
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionSectionImpl);
+    // From IOptionsContainer
+    virtual IOptionsContainer &addGroup();
+    virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+
+    //! Returns section info object for this section.
+    OptionSectionInfo &info() { return info_; }
+    //! Returns section info object for this section.
+    const OptionSectionInfo &info() const { return info_; }
+
+    /*! \brief
+     * Finds a subsection by name.
+     *
+     * \param[in] name  Name to search for.
+     * \returns Pointer to the found subsection, or NULL if not found.
+     *
+     * Does not throw.
+     */
+    OptionSectionImpl *findSection(const char *name) const;
+    /*! \brief
+     * Finds an option by name.
+     *
+     * \param[in] name  Name to search for.
+     * \returns Pointer to the found option, or NULL if not found.
+     *
+     * Does not throw.
+     */
+    AbstractOptionStorage *findOption(const char *name) const;
+
+    /*! \brief
+     * Called when entering the section.
+     *
+     * Calls AbstractOptionStorage::startSource() for all options.
+     */
+    void start();
+    /*! \brief
+     * Calls AbstractOptionStorage::finish() for all options.
+     */
+    void finish();
+
+    //! Reference to the option managers in the parent Options object.
+    const OptionManagerContainer &managers_;
+    //! Type-specific storage object for this section.
+    std::unique_ptr<IOptionSectionStorage> storage_;
+    //! Info object for this section.
+    OptionSectionInfo info_;
+    //! Name of this section (empty and unused for the root section).
+    std::string name_;
+    /*! \brief
+     * Group that contains all options (and subgroups).
+     *
+     * This is used to store the insertion order of options.
+     */
+    Group rootGroup_;
+    //! Map from option names to options; owns the option storage objects.
+    OptionMap optionMap_;
+    //! List of subsections, in insertion order.
+    SectionList subsections_;
+    //! Whether initStorage() has been called for `storage_`.
+    bool storageInitialized_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionSectionImpl);
 };
 
 /*! \internal
@@ -207,13 +207,13 @@ class OptionSectionImpl : public IOptionsContainerWithSections
  */
 class OptionsImpl
 {
-    public:
-        OptionsImpl();
+public:
+    OptionsImpl();
 
-        //! Option managers set for this collection.
-        OptionManagerContainer managers_;
-        //! Root section for this collection.
-        OptionSectionImpl rootSection_;
+    //! Option managers set for this collection.
+    OptionManagerContainer managers_;
+    //! Root section for this collection.
+    OptionSectionImpl rootSection_;
 };
 
 } // namespace internal

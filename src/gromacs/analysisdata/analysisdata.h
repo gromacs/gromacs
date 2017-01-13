@@ -89,119 +89,119 @@ class AnalysisDataParallelOptions;
  */
 class AnalysisData : public AbstractAnalysisData
 {
-    public:
-        /*! \brief
-         * Creates an empty analysis data object.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        AnalysisData();
-        virtual ~AnalysisData();
+public:
+    /*! \brief
+     * Creates an empty analysis data object.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    AnalysisData();
+    virtual ~AnalysisData();
 
-        /*! \brief
-         * Sets the number of data sets.
-         *
-         * \param[in] dataSetCount  Number of data sets (must be > 0).
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    APIError if modules have been added that are not
-         *      compatible with the new data set count.
-         *
-         * Must not be called after startData() has been called.
-         * If not called, a single data set is assumed.
-         * If called multiple times, the last call takes effect.
-         */
-        void setDataSetCount(int dataSetCount);
-        /*! \brief
-         * Sets the number of columns in a data set.
-         *
-         * \param[in] dataSet      Zero-based data set index.
-         * \param[in] columnCount  Number of columns in the data (must be > 0).
-         * \throws    APIError if modules have been added that are not
-         *      compatible with the new column count.
-         *
-         * Must be called before startData() for each data set.
-         * Must not be called after startData() has been called.
-         * If called multiple times for a data set, the last call takes effect.
-         */
-        void setColumnCount(int dataSet, int columnCount);
-        /*! \brief
-         * Sets whether the data contains multiple points per column per frame.
-         *
-         * \param[in] bMultipoint  Whether the data will allow multiple points
-         *      per column within a single frame.
-         * \throws    APIError if modules have been added that are not
-         *      compatible with the new setting.
-         *
-         * If this method is not called, the data is not multipoint.
-         *
-         * Must not be called after startData() has been called.
-         *
-         * \see isMultipoint()
-         */
-        void setMultipoint(bool bMultipoint);
+    /*! \brief
+     * Sets the number of data sets.
+     *
+     * \param[in] dataSetCount  Number of data sets (must be > 0).
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    APIError if modules have been added that are not
+     *      compatible with the new data set count.
+     *
+     * Must not be called after startData() has been called.
+     * If not called, a single data set is assumed.
+     * If called multiple times, the last call takes effect.
+     */
+    void setDataSetCount(int dataSetCount);
+    /*! \brief
+     * Sets the number of columns in a data set.
+     *
+     * \param[in] dataSet      Zero-based data set index.
+     * \param[in] columnCount  Number of columns in the data (must be > 0).
+     * \throws    APIError if modules have been added that are not
+     *      compatible with the new column count.
+     *
+     * Must be called before startData() for each data set.
+     * Must not be called after startData() has been called.
+     * If called multiple times for a data set, the last call takes effect.
+     */
+    void setColumnCount(int dataSet, int columnCount);
+    /*! \brief
+     * Sets whether the data contains multiple points per column per frame.
+     *
+     * \param[in] bMultipoint  Whether the data will allow multiple points
+     *      per column within a single frame.
+     * \throws    APIError if modules have been added that are not
+     *      compatible with the new setting.
+     *
+     * If this method is not called, the data is not multipoint.
+     *
+     * Must not be called after startData() has been called.
+     *
+     * \see isMultipoint()
+     */
+    void setMultipoint(bool bMultipoint);
 
-        virtual int frameCount() const;
+    virtual int frameCount() const;
 
-        /*! \brief
-         * Creates a handle for adding data.
-         *
-         * \param[in]  opt     Options for setting how this handle will be
-         *     used.
-         * \returns The created handle.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  APIError if any attached data module is not compatible.
-         * \throws  unspecified  Any exception thrown by attached data modules
-         *      in IAnalysisDataModule::dataStarted().
-         *
-         * The caller should retain the returned handle (or a copy of it), and
-         * pass it to finishData() after successfully adding all data.
-         * The caller should discard the returned handle if an error occurs;
-         * memory allocated for the handle will be freed when the AnalysisData
-         * object is destroyed.
-         *
-         * The \p opt options should be the same for all calls to this method,
-         * and the number of calls should match the parallelization factor
-         * defined in \p opt.
-         */
-        AnalysisDataHandle startData(const AnalysisDataParallelOptions &opt);
-        /*! \brief
-         * Performs in-order sequential processing for the next frame.
-         *
-         * \param[in]  frameIndex Index of the frame that has been finished.
-         * \throws  unspecified  Any exception thrown by attached data modules
-         *      in IAnalysisDataModule::frameFinishedSerial().
-         *
-         * This method should be called sequentially for each frame, after data
-         * for that frame has been produced.  It is not necessary to call this
-         * method if there is no parallelism, i.e., if only a single data
-         * handle is created and the parallelization options provided at that
-         * time do not indicate parallelism.
-         */
-        void finishFrameSerial(int frameIndex);
-        /*! \brief
-         * Destroys a handle after all data has been added.
-         *
-         * \param[in]  handle  Handle to destroy.
-         * \throws  unspecified  Any exception thrown by attached data modules
-         *      in IAnalysisDataModule::dataFinished().
-         *
-         * \p handle must have been obtained from startData() of this object.
-         * The order of the calls with respect to the corresponding startData()
-         * calls is not important.
-         *
-         * The \p handle (and any copies) are invalid after the call.
-         */
-        void finishData(AnalysisDataHandle handle);
+    /*! \brief
+     * Creates a handle for adding data.
+     *
+     * \param[in]  opt     Options for setting how this handle will be
+     *     used.
+     * \returns The created handle.
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  APIError if any attached data module is not compatible.
+     * \throws  unspecified  Any exception thrown by attached data modules
+     *      in IAnalysisDataModule::dataStarted().
+     *
+     * The caller should retain the returned handle (or a copy of it), and
+     * pass it to finishData() after successfully adding all data.
+     * The caller should discard the returned handle if an error occurs;
+     * memory allocated for the handle will be freed when the AnalysisData
+     * object is destroyed.
+     *
+     * The \p opt options should be the same for all calls to this method,
+     * and the number of calls should match the parallelization factor
+     * defined in \p opt.
+     */
+    AnalysisDataHandle startData(const AnalysisDataParallelOptions &opt);
+    /*! \brief
+     * Performs in-order sequential processing for the next frame.
+     *
+     * \param[in]  frameIndex Index of the frame that has been finished.
+     * \throws  unspecified  Any exception thrown by attached data modules
+     *      in IAnalysisDataModule::frameFinishedSerial().
+     *
+     * This method should be called sequentially for each frame, after data
+     * for that frame has been produced.  It is not necessary to call this
+     * method if there is no parallelism, i.e., if only a single data
+     * handle is created and the parallelization options provided at that
+     * time do not indicate parallelism.
+     */
+    void finishFrameSerial(int frameIndex);
+    /*! \brief
+     * Destroys a handle after all data has been added.
+     *
+     * \param[in]  handle  Handle to destroy.
+     * \throws  unspecified  Any exception thrown by attached data modules
+     *      in IAnalysisDataModule::dataFinished().
+     *
+     * \p handle must have been obtained from startData() of this object.
+     * The order of the calls with respect to the corresponding startData()
+     * calls is not important.
+     *
+     * The \p handle (and any copies) are invalid after the call.
+     */
+    void finishData(AnalysisDataHandle handle);
 
-    private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+private:
+    virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+    virtual bool requestStorageInternal(int nframes);
 
-        class Impl;
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        friend class AnalysisDataHandle;
+    friend class AnalysisDataHandle;
 };
 
 namespace internal
@@ -245,145 +245,145 @@ class AnalysisDataHandleImpl;
  */
 class AnalysisDataHandle
 {
-    public:
-        /*! \brief
-         * Constructs an invalid data handle.
-         *
-         * This constructor is provided for convenience in cases where it is
-         * easiest to declare an AnalysisDataHandle without immediately
-         * assigning a value to it.  Any attempt to call methods without first
-         * assigning a value from AnalysisData::startData() to the handle
-         * causes an assert.
-         *
-         * Does not throw.
-         */
-        AnalysisDataHandle();
+public:
+    /*! \brief
+     * Constructs an invalid data handle.
+     *
+     * This constructor is provided for convenience in cases where it is
+     * easiest to declare an AnalysisDataHandle without immediately
+     * assigning a value to it.  Any attempt to call methods without first
+     * assigning a value from AnalysisData::startData() to the handle
+     * causes an assert.
+     *
+     * Does not throw.
+     */
+    AnalysisDataHandle();
 
-        //! Returns whether this data handle is valid.
-        bool isValid() const { return impl_ != nullptr; }
+    //! Returns whether this data handle is valid.
+    bool isValid() const { return impl_ != nullptr; }
 
-        /*! \brief
-         * Start data for a new frame.
-         *
-         * \param[in] index  Zero-based index for the frame to start.
-         * \param[in] x      x value for the frame.
-         * \param[in] dx     Error in x for the frame if applicable.
-         *
-         * \throws    unspecified  Any exception thrown by attached data
-         *      modules in IAnalysisDataModule::frameStarted().
-         *
-         * Each \p index value 0, 1, ..., N (where N is the total number of
-         * frames) should be started exactly once by exactly one handle of an
-         * AnalysisData object.  The frames may be started out of order, but
-         * currently the implementation places some limitations on how far
-         * the index can be in the future (as counted from the first frame that
-         * is not finished).
-         */
-        void startFrame(int index, real x, real dx = 0.0);
-        /*! \brief
-         * Selects a data set for subsequent setPoint()/setPoints() calls.
-         *
-         * \param[in] index  Zero-based data set index.
-         *
-         * After startFrame(), the first data set is always selected.
-         * The set value is remembered until the end of the current frame, also
-         * across finishPointSet() calls.
-         *
-         * Does not throw.
-         */
-        void selectDataSet(int index);
-        /*! \brief
-         * Set a value for a single column for the current frame.
-         *
-         * \param[in] column  Zero-based column index.
-         * \param[in] value   Value to set for the column.
-         * \param[in] bPresent Present flag to set for the column.
-         *
-         * If called multiple times for a column (within one point set for
-         * multipoint data), old values are overwritten.
-         *
-         * Does not throw.
-         */
-        void setPoint(int column, real value, bool bPresent = true);
-        /*! \brief
-         * Set a value and its error estimate for a single column for the
-         * current frame.
-         *
-         * \param[in] column  Zero-based column index.
-         * \param[in] value   Value to set for the column.
-         * \param[in] error   Error estimate to set for the column.
-         * \param[in] bPresent Present flag to set for the column.
-         *
-         * If called multiple times for a column (within one point set for
-         * multipoint data), old values are overwritten.
-         *
-         * Does not throw.
-         */
-        void setPoint(int column, real value, real error, bool bPresent = true);
-        /*! \brief
-         * Set values for consecutive columns for the current frame.
-         *
-         * \param[in] firstColumn  Zero-based column index.
-         * \param[in] count        Number of columns to set.
-         * \param[in] values       Value array of \p column items.
-         * \param[in] bPresent     Present flag to set for the column.
-         *
-         * Equivalent to calling setPoint(firstColumn + i, values[i], bPresent) for
-         * i from 0 to count.
-         *
-         * Does not throw.
-         */
-        void setPoints(int firstColumn, int count, const real *values, bool bPresent = true);
-        /*! \brief
-         * Finish data for the current point set.
-         *
-         * \throws    APIError if any attached data module is not compatible.
-         * \throws    unspecified  Any exception thrown by attached data
-         *      modules in IAnalysisDataModule::pointsAdded().
-         *
-         * Must be called after each point set for multipoint data, including
-         * the last (i.e., no values must be set between the last call to this
-         * method and AnalysisDataStorage::finishFrame()).
-         * Must not be called for non-multipoint data.
-         */
-        void finishPointSet();
-        /*! \brief
-         * Finish data for the current frame.
-         *
-         * \throws    APIError if any attached data module is not compatible.
-         * \throws    unspecified  Any exception thrown by attached data
-         *      modules in frame notification methods.
-         */
-        void finishFrame();
-        //! Calls AnalysisData::finishData() for this handle.
-        void finishData();
+    /*! \brief
+     * Start data for a new frame.
+     *
+     * \param[in] index  Zero-based index for the frame to start.
+     * \param[in] x      x value for the frame.
+     * \param[in] dx     Error in x for the frame if applicable.
+     *
+     * \throws    unspecified  Any exception thrown by attached data
+     *      modules in IAnalysisDataModule::frameStarted().
+     *
+     * Each \p index value 0, 1, ..., N (where N is the total number of
+     * frames) should be started exactly once by exactly one handle of an
+     * AnalysisData object.  The frames may be started out of order, but
+     * currently the implementation places some limitations on how far
+     * the index can be in the future (as counted from the first frame that
+     * is not finished).
+     */
+    void startFrame(int index, real x, real dx = 0.0);
+    /*! \brief
+     * Selects a data set for subsequent setPoint()/setPoints() calls.
+     *
+     * \param[in] index  Zero-based data set index.
+     *
+     * After startFrame(), the first data set is always selected.
+     * The set value is remembered until the end of the current frame, also
+     * across finishPointSet() calls.
+     *
+     * Does not throw.
+     */
+    void selectDataSet(int index);
+    /*! \brief
+     * Set a value for a single column for the current frame.
+     *
+     * \param[in] column  Zero-based column index.
+     * \param[in] value   Value to set for the column.
+     * \param[in] bPresent Present flag to set for the column.
+     *
+     * If called multiple times for a column (within one point set for
+     * multipoint data), old values are overwritten.
+     *
+     * Does not throw.
+     */
+    void setPoint(int column, real value, bool bPresent = true);
+    /*! \brief
+     * Set a value and its error estimate for a single column for the
+     * current frame.
+     *
+     * \param[in] column  Zero-based column index.
+     * \param[in] value   Value to set for the column.
+     * \param[in] error   Error estimate to set for the column.
+     * \param[in] bPresent Present flag to set for the column.
+     *
+     * If called multiple times for a column (within one point set for
+     * multipoint data), old values are overwritten.
+     *
+     * Does not throw.
+     */
+    void setPoint(int column, real value, real error, bool bPresent = true);
+    /*! \brief
+     * Set values for consecutive columns for the current frame.
+     *
+     * \param[in] firstColumn  Zero-based column index.
+     * \param[in] count        Number of columns to set.
+     * \param[in] values       Value array of \p column items.
+     * \param[in] bPresent     Present flag to set for the column.
+     *
+     * Equivalent to calling setPoint(firstColumn + i, values[i], bPresent) for
+     * i from 0 to count.
+     *
+     * Does not throw.
+     */
+    void setPoints(int firstColumn, int count, const real *values, bool bPresent = true);
+    /*! \brief
+     * Finish data for the current point set.
+     *
+     * \throws    APIError if any attached data module is not compatible.
+     * \throws    unspecified  Any exception thrown by attached data
+     *      modules in IAnalysisDataModule::pointsAdded().
+     *
+     * Must be called after each point set for multipoint data, including
+     * the last (i.e., no values must be set between the last call to this
+     * method and AnalysisDataStorage::finishFrame()).
+     * Must not be called for non-multipoint data.
+     */
+    void finishPointSet();
+    /*! \brief
+     * Finish data for the current frame.
+     *
+     * \throws    APIError if any attached data module is not compatible.
+     * \throws    unspecified  Any exception thrown by attached data
+     *      modules in frame notification methods.
+     */
+    void finishFrame();
+    //! Calls AnalysisData::finishData() for this handle.
+    void finishData();
 
-    private:
-        /*! \brief
-         * Creates a new data handle associated with \p data.
-         *
-         * \param  impl Data to associate the handle with.
-         *
-         * The constructor is private because data handles should only be
-         * constructed through AnalysisData::startData().
-         *
-         * Does not throw.
-         */
-        explicit AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl);
+private:
+    /*! \brief
+     * Creates a new data handle associated with \p data.
+     *
+     * \param  impl Data to associate the handle with.
+     *
+     * The constructor is private because data handles should only be
+     * constructed through AnalysisData::startData().
+     *
+     * Does not throw.
+     */
+    explicit AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl);
 
-        /*! \brief
-         * Pointer to the internal implementation class.
-         *
-         * The memory for this object is managed by the AnalysisData object,
-         * and AnalysisDataHandle simply provides a public interface for
-         * accessing the implementation.
-         */
-        internal::AnalysisDataHandleImpl *impl_;
+    /*! \brief
+     * Pointer to the internal implementation class.
+     *
+     * The memory for this object is managed by the AnalysisData object,
+     * and AnalysisDataHandle simply provides a public interface for
+     * accessing the implementation.
+     */
+    internal::AnalysisDataHandleImpl *impl_;
 
-        /*! \brief
-         * Needed to access the non-public implementation.
-         */
-        friend class AnalysisData;
+    /*! \brief
+     * Needed to access the non-public implementation.
+     */
+    friend class AnalysisData;
 };
 
 } // namespace gmx

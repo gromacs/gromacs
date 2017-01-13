@@ -51,9 +51,9 @@ namespace test
 
 class ImdTestFixture : public MdrunTestFixture
 {
-    protected:
-        ImdTestFixture();
-        ~ImdTestFixture();
+protected:
+    ImdTestFixture();
+    ~ImdTestFixture();
 };
 
 

@@ -67,27 +67,27 @@ class TestReferenceChecker;
  */
 class TestFileInputRedirector : public IFileInputRedirector
 {
-    public:
-        TestFileInputRedirector();
-        virtual ~TestFileInputRedirector();
+public:
+    TestFileInputRedirector();
+    virtual ~TestFileInputRedirector();
 
-        /*! \brief
-         * Marks the provided path as an existing file.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * Further checks for existence of the given path will return `true`.
-         */
-        void addExistingFile(const char *filename);
+    /*! \brief
+     * Marks the provided path as an existing file.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * Further checks for existence of the given path will return `true`.
+     */
+    void addExistingFile(const char *filename);
 
-        // From IFileInputRedirector
-        virtual bool fileExists(const char *          filename,
-                                File::NotFoundHandler onNotFound) const;
+    // From IFileInputRedirector
+    virtual bool fileExists(const char *          filename,
+                            File::NotFoundHandler onNotFound) const;
 
-    private:
-        std::set<std::string> existingFiles_;
+private:
+    std::set<std::string> existingFiles_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
 };
 
 /*! \libinternal \brief
@@ -100,28 +100,28 @@ class TestFileInputRedirector : public IFileInputRedirector
  */
 class TestFileOutputRedirector : public IFileOutputRedirector
 {
-    public:
-        TestFileOutputRedirector();
-        virtual ~TestFileOutputRedirector();
+public:
+    TestFileOutputRedirector();
+    virtual ~TestFileOutputRedirector();
 
-        /*! \brief
-         * Checks contents of all redirected files (including stdout).
-         *
-         * This method should not be called if the redirector will still be
-         * used for further output in the test.  Behavior is not designed for
-         * checking in the middle of the test, although that could potentially
-         * be changed if necessary.
-         */
-        void checkRedirectedFiles(TestReferenceChecker *checker);
+    /*! \brief
+     * Checks contents of all redirected files (including stdout).
+     *
+     * This method should not be called if the redirector will still be
+     * used for further output in the test.  Behavior is not designed for
+     * checking in the middle of the test, although that could potentially
+     * be changed if necessary.
+     */
+    void checkRedirectedFiles(TestReferenceChecker *checker);
 
-        // From IFileOutputRedirector
-        virtual TextOutputStream &standardOutput();
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename);
+    // From IFileOutputRedirector
+    virtual TextOutputStream &standardOutput();
+    virtual TextOutputStreamPointer openTextOutputFile(const char *filename);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

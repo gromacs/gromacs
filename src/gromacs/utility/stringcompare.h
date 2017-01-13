@@ -58,12 +58,12 @@ namespace gmx
  */
 enum class StringCompareType
 {
-    //! Only exact matches are accepted.
-    Exact,
-    //! Case-insensitive comparison.
-    CaseInsensitive,
-    //! Case-insensitive comparison that also ignores '-' and '_'.
-    CaseAndDashInsensitive
+//! Only exact matches are accepted.
+Exact,
+//! Case-insensitive comparison.
+CaseInsensitive,
+//! Case-insensitive comparison that also ignores '-' and '_'.
+CaseAndDashInsensitive
 };
 //! \endcond
 
@@ -76,33 +76,33 @@ enum class StringCompareType
  */
 class StringCompare
 {
-    public:
-        /*! \brief
-         * Creates a comparer with the given type
-         *
-         * This is not explicit, which allows passing \ref StringCompareType
-         * directly to, e.g., `std::map` constructors.
-         */
-        StringCompare(StringCompareType type = StringCompareType::Exact)
-            : type_(type) {}
+public:
+    /*! \brief
+     * Creates a comparer with the given type
+     *
+     * This is not explicit, which allows passing \ref StringCompareType
+     * directly to, e.g., `std::map` constructors.
+     */
+    StringCompare(StringCompareType type = StringCompareType::Exact)
+        : type_(type) {}
 
-        //! The comparison operation.
-        bool operator()(const std::string &a, const std::string &b) const
+    //! The comparison operation.
+    bool operator()(const std::string &a, const std::string &b) const
+    {
+        switch (type_)
         {
-            switch (type_)
-            {
-                case StringCompareType::Exact:
-                    return a < b;
-                case StringCompareType::CaseInsensitive:
-                    return gmx_strcasecmp(a.c_str(), b.c_str()) < 0;
-                case StringCompareType::CaseAndDashInsensitive:
-                    return gmx_strcasecmp_min(a.c_str(), b.c_str()) < 0;
-            }
-            return a < b;
+            case StringCompareType::Exact:
+                return a < b;
+            case StringCompareType::CaseInsensitive:
+                return gmx_strcasecmp(a.c_str(), b.c_str()) < 0;
+            case StringCompareType::CaseAndDashInsensitive:
+                return gmx_strcasecmp_min(a.c_str(), b.c_str()) < 0;
         }
+        return a < b;
+    }
 
-    private:
-        StringCompareType type_;
+private:
+    StringCompareType type_;
 };
 
 } // namespace gmx

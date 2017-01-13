@@ -98,95 +98,95 @@ class AnalysisNeighborhoodPairSearch;
  */
 class AnalysisNeighborhoodPositions
 {
-    public:
-        /*! \brief
-         * Initializes positions from a single position vector.
-         *
-         * For positions initialized this way, AnalysisNeighborhoodPair always
-         * returns zero in the corresponding index.
-         *
-         * This constructor is not explicit to allow directly passing an rvec
-         * to methods that accept positions.
-         */
-        AnalysisNeighborhoodPositions(const rvec &x)
-            : count_(1), index_(-1), x_(&x), exclusionIds_(nullptr), indices_(nullptr)
-        {
-        }
-        /*! \brief
-         * Initializes positions from an array of position vectors.
-         */
-        AnalysisNeighborhoodPositions(const rvec x[], int count)
-            : count_(count), index_(-1), x_(x), exclusionIds_(nullptr), indices_(nullptr)
-        {
-        }
-        /*! \brief
-         * Initializes positions from a vector of position vectors.
-         */
-        AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
-            : count_(x.size()), index_(-1), x_(as_rvec_array(x.data())),
-              exclusionIds_(nullptr), indices_(nullptr)
-        {
-        }
+public:
+    /*! \brief
+     * Initializes positions from a single position vector.
+     *
+     * For positions initialized this way, AnalysisNeighborhoodPair always
+     * returns zero in the corresponding index.
+     *
+     * This constructor is not explicit to allow directly passing an rvec
+     * to methods that accept positions.
+     */
+    AnalysisNeighborhoodPositions(const rvec &x)
+        : count_(1), index_(-1), x_(&x), exclusionIds_(nullptr), indices_(nullptr)
+    {
+    }
+    /*! \brief
+     * Initializes positions from an array of position vectors.
+     */
+    AnalysisNeighborhoodPositions(const rvec x[], int count)
+        : count_(count), index_(-1), x_(x), exclusionIds_(nullptr), indices_(nullptr)
+    {
+    }
+    /*! \brief
+     * Initializes positions from a vector of position vectors.
+     */
+    AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
+        : count_(x.size()), index_(-1), x_(as_rvec_array(x.data())),
+          exclusionIds_(nullptr), indices_(nullptr)
+    {
+    }
 
-        /*! \brief
-         * Sets indices to use for mapping exclusions to these positions.
-         *
-         * The exclusion IDs can always be set, but they are ignored unless
-         * actual exclusions have been set with
-         * AnalysisNeighborhood::setTopologyExclusions().
-         */
-        AnalysisNeighborhoodPositions &exclusionIds(ConstArrayRef<int> ids)
-        {
-            GMX_ASSERT(static_cast<int>(ids.size()) == count_,
-                       "Exclusion id array should match the number of positions");
-            exclusionIds_ = ids.data();
-            return *this;
-        }
-        /*! \brief
-         * Sets indices that select a subset of all positions from the array.
-         *
-         * If called, selected positions from the array of positions passed to
-         * the constructor is used instead of the whole array.
-         * All returned indices from AnalysisNeighborhoodPair objects are
-         * indices to the \p indices array passed here.
-         */
-        AnalysisNeighborhoodPositions &indexed(ConstArrayRef<int> indices)
-        {
-            count_   = indices.size();
-            indices_ = indices.data();
-            return *this;
-        }
+    /*! \brief
+     * Sets indices to use for mapping exclusions to these positions.
+     *
+     * The exclusion IDs can always be set, but they are ignored unless
+     * actual exclusions have been set with
+     * AnalysisNeighborhood::setTopologyExclusions().
+     */
+    AnalysisNeighborhoodPositions &exclusionIds(ConstArrayRef<int> ids)
+    {
+        GMX_ASSERT(static_cast<int>(ids.size()) == count_,
+                   "Exclusion id array should match the number of positions");
+        exclusionIds_ = ids.data();
+        return *this;
+    }
+    /*! \brief
+     * Sets indices that select a subset of all positions from the array.
+     *
+     * If called, selected positions from the array of positions passed to
+     * the constructor is used instead of the whole array.
+     * All returned indices from AnalysisNeighborhoodPair objects are
+     * indices to the \p indices array passed here.
+     */
+    AnalysisNeighborhoodPositions &indexed(ConstArrayRef<int> indices)
+    {
+        count_   = indices.size();
+        indices_ = indices.data();
+        return *this;
+    }
 
-        /*! \brief
-         * Selects a single position to use from an array.
-         *
-         * If called, a single position from the array of positions passed to
-         * the constructor is used instead of the whole array.
-         * In contrast to the AnalysisNeighborhoodPositions(const rvec &)
-         * constructor, AnalysisNeighborhoodPair objects return \p index
-         * instead of zero.
-         *
-         * If used together with indexed(), \p index references the index array
-         * passed to indexed() instead of the position array.
-         */
-        AnalysisNeighborhoodPositions &selectSingleFromArray(int index)
-        {
-            GMX_ASSERT(index >= 0 && index < count_, "Invalid position index");
-            index_ = index;
-            return *this;
-        }
+    /*! \brief
+     * Selects a single position to use from an array.
+     *
+     * If called, a single position from the array of positions passed to
+     * the constructor is used instead of the whole array.
+     * In contrast to the AnalysisNeighborhoodPositions(const rvec &)
+     * constructor, AnalysisNeighborhoodPair objects return \p index
+     * instead of zero.
+     *
+     * If used together with indexed(), \p index references the index array
+     * passed to indexed() instead of the position array.
+     */
+    AnalysisNeighborhoodPositions &selectSingleFromArray(int index)
+    {
+        GMX_ASSERT(index >= 0 && index < count_, "Invalid position index");
+        index_ = index;
+        return *this;
+    }
 
-    private:
-        int         count_;
-        int         index_;
-        const rvec *x_;
-        const int * exclusionIds_;
-        const int * indices_;
+private:
+    int         count_;
+    int         index_;
+    const rvec *x_;
+    const int * exclusionIds_;
+    const int * indices_;
 
-        //! To access the positions for initialization.
-        friend class internal::AnalysisNeighborhoodSearchImpl;
-        //! To access the positions for initialization.
-        friend class internal::AnalysisNeighborhoodPairSearchImpl;
+    //! To access the positions for initialization.
+    friend class internal::AnalysisNeighborhoodSearchImpl;
+    //! To access the positions for initialization.
+    friend class internal::AnalysisNeighborhoodPairSearchImpl;
 };
 
 /*! \brief
@@ -216,98 +216,98 @@ class AnalysisNeighborhoodPositions
  */
 class AnalysisNeighborhood
 {
-    public:
-        //! Searching algorithm to use.
-        enum SearchMode
-        {
-            //! Select algorithm based on heuristic efficiency considerations.
-            eSearchMode_Automatic,
-            //! Use a simple loop over all pairs.
-            eSearchMode_Simple,
-            //! Use grid-based searching whenever possible.
-            eSearchMode_Grid
-        };
+public:
+    //! Searching algorithm to use.
+    enum SearchMode
+    {
+        //! Select algorithm based on heuristic efficiency considerations.
+        eSearchMode_Automatic,
+        //! Use a simple loop over all pairs.
+        eSearchMode_Simple,
+        //! Use grid-based searching whenever possible.
+        eSearchMode_Grid
+    };
 
-        //! Creates an uninitialized neighborhood search.
-        AnalysisNeighborhood();
-        ~AnalysisNeighborhood();
+    //! Creates an uninitialized neighborhood search.
+    AnalysisNeighborhood();
+    ~AnalysisNeighborhood();
 
-        /*! \brief
-         * Sets cutoff distance for the neighborhood searching.
-         *
-         * \param[in]  cutoff Cutoff distance for the search
-         *   (<=0 stands for no cutoff).
-         *
-         * Currently, can only be called before the first call to initSearch().
-         * If this method is not called, no cutoff is used in the searches.
-         *
-         * Does not throw.
-         */
-        void setCutoff(real cutoff);
-        /*! \brief
-         * Sets the search to only happen in the XY plane.
-         *
-         * Z component of the coordinates is not used in the searching,
-         * and returned distances are computed in the XY plane.
-         * Only boxes with the third box vector parallel to the Z axis are
-         * currently implemented.
-         *
-         * Does not throw.
-         */
-        void setXYMode(bool bXY);
-        /*! \brief
-         * Sets atom exclusions from a topology.
-         *
-         * The \p excls structure specifies the exclusions from test positions
-         * to reference positions, i.e., a block starting at `excls->index[i]`
-         * specifies the exclusions for test position `i`, and the indices in
-         * `excls->a` are indices of the reference positions.  If `excls->nr`
-         * is smaller than a test position id, then such test positions do not
-         * have any exclusions.
-         * It is assumed that the indices within a block of indices in
-         * `excls->a` is ascending.
-         *
-         * Does not throw.
-         *
-         * \see AnalysisNeighborhoodPositions::exclusionIds()
-         */
-        void setTopologyExclusions(const t_blocka *excls);
-        /*! \brief
-         * Sets the algorithm to use for searching.
-         *
-         * \param[in] mode  Search mode to use.
-         *
-         * Note that if \p mode is \ref eSearchMode_Grid, it is still only a
-         * suggestion: grid-based searching may not be possible with the
-         * provided input, in which case a simple search is still used.
-         * This is mainly useful for testing purposes to force a mode.
-         *
-         * Does not throw.
-         */
-        void setMode(SearchMode mode);
-        //! Returns the currently active search mode.
-        SearchMode mode() const;
+    /*! \brief
+     * Sets cutoff distance for the neighborhood searching.
+     *
+     * \param[in]  cutoff Cutoff distance for the search
+     *   (<=0 stands for no cutoff).
+     *
+     * Currently, can only be called before the first call to initSearch().
+     * If this method is not called, no cutoff is used in the searches.
+     *
+     * Does not throw.
+     */
+    void setCutoff(real cutoff);
+    /*! \brief
+     * Sets the search to only happen in the XY plane.
+     *
+     * Z component of the coordinates is not used in the searching,
+     * and returned distances are computed in the XY plane.
+     * Only boxes with the third box vector parallel to the Z axis are
+     * currently implemented.
+     *
+     * Does not throw.
+     */
+    void setXYMode(bool bXY);
+    /*! \brief
+     * Sets atom exclusions from a topology.
+     *
+     * The \p excls structure specifies the exclusions from test positions
+     * to reference positions, i.e., a block starting at `excls->index[i]`
+     * specifies the exclusions for test position `i`, and the indices in
+     * `excls->a` are indices of the reference positions.  If `excls->nr`
+     * is smaller than a test position id, then such test positions do not
+     * have any exclusions.
+     * It is assumed that the indices within a block of indices in
+     * `excls->a` is ascending.
+     *
+     * Does not throw.
+     *
+     * \see AnalysisNeighborhoodPositions::exclusionIds()
+     */
+    void setTopologyExclusions(const t_blocka *excls);
+    /*! \brief
+     * Sets the algorithm to use for searching.
+     *
+     * \param[in] mode  Search mode to use.
+     *
+     * Note that if \p mode is \ref eSearchMode_Grid, it is still only a
+     * suggestion: grid-based searching may not be possible with the
+     * provided input, in which case a simple search is still used.
+     * This is mainly useful for testing purposes to force a mode.
+     *
+     * Does not throw.
+     */
+    void setMode(SearchMode mode);
+    //! Returns the currently active search mode.
+    SearchMode mode() const;
 
-        /*! \brief
-         * Initializes neighborhood search for a set of positions.
-         *
-         * \param[in] pbc        PBC information for the frame.
-         * \param[in] positions  Set of reference positions to use.
-         * \returns   Search object that can be used to find positions from
-         *      \p x within the given cutoff.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Currently, the input positions cannot use
-         * AnalysisNeighborhoodPositions::selectSingleFromArray().
-         */
-        AnalysisNeighborhoodSearch
-        initSearch(const t_pbc *                        pbc,
-                   const AnalysisNeighborhoodPositions &positions);
+    /*! \brief
+     * Initializes neighborhood search for a set of positions.
+     *
+     * \param[in] pbc        PBC information for the frame.
+     * \param[in] positions  Set of reference positions to use.
+     * \returns   Search object that can be used to find positions from
+     *      \p x within the given cutoff.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * Currently, the input positions cannot use
+     * AnalysisNeighborhoodPositions::selectSingleFromArray().
+     */
+    AnalysisNeighborhoodSearch
+    initSearch(const t_pbc *                        pbc,
+               const AnalysisNeighborhoodPositions &positions);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \brief
@@ -320,74 +320,74 @@ class AnalysisNeighborhood
  */
 class AnalysisNeighborhoodPair
 {
-    public:
-        //! Initializes an invalid pair.
-        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0)
-        {
-            clear_rvec(dx_);
-        }
-        //! Initializes a pair object with the given data.
-        AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2,
-                                 const rvec dx)
-            : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2)
-        {
-            copy_rvec(dx, dx_);
-        }
+public:
+    //! Initializes an invalid pair.
+    AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0)
+    {
+        clear_rvec(dx_);
+    }
+    //! Initializes a pair object with the given data.
+    AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2,
+                             const rvec dx)
+        : refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2)
+    {
+        copy_rvec(dx, dx_);
+    }
 
-        /*! \brief
-         * Whether this pair is valid.
-         *
-         * If isValid() returns false, other methods should not be called.
-         */
-        bool isValid() const { return refIndex_ >= 0; }
+    /*! \brief
+     * Whether this pair is valid.
+     *
+     * If isValid() returns false, other methods should not be called.
+     */
+    bool isValid() const { return refIndex_ >= 0; }
 
-        /*! \brief
-         * Returns the index of the reference position in the pair.
-         *
-         * This index is always the index into the position array provided to
-         * AnalysisNeighborhood::initSearch().
-         */
-        int refIndex() const
-        {
-            GMX_ASSERT(isValid(), "Accessing invalid object");
-            return refIndex_;
-        }
-        /*! \brief
-         * Returns the index of the test position in the pair.
-         *
-         * The contents of this index depends on the context (method call) that
-         * produces the pair.
-         * If there was no array in the call, this index is zero.
-         */
-        int testIndex() const
-        {
-            GMX_ASSERT(isValid(), "Accessing invalid object");
-            return testIndex_;
-        }
-        /*! \brief
-         * Returns the squared distance between the pair of positions.
-         */
-        real distance2() const
-        {
-            GMX_ASSERT(isValid(), "Accessing invalid object");
-            return distance2_;
-        }
-        /*! \brief
-         * Returns the shortest vector between the pair of positions.
-         *
-         * The vector is from the test position to the reference position.
-         */
-        const rvec &dx() const
-        {
-            GMX_ASSERT(isValid(), "Accessing invalid object");
-            return dx_;
-        }
+    /*! \brief
+     * Returns the index of the reference position in the pair.
+     *
+     * This index is always the index into the position array provided to
+     * AnalysisNeighborhood::initSearch().
+     */
+    int refIndex() const
+    {
+        GMX_ASSERT(isValid(), "Accessing invalid object");
+        return refIndex_;
+    }
+    /*! \brief
+     * Returns the index of the test position in the pair.
+     *
+     * The contents of this index depends on the context (method call) that
+     * produces the pair.
+     * If there was no array in the call, this index is zero.
+     */
+    int testIndex() const
+    {
+        GMX_ASSERT(isValid(), "Accessing invalid object");
+        return testIndex_;
+    }
+    /*! \brief
+     * Returns the squared distance between the pair of positions.
+     */
+    real distance2() const
+    {
+        GMX_ASSERT(isValid(), "Accessing invalid object");
+        return distance2_;
+    }
+    /*! \brief
+     * Returns the shortest vector between the pair of positions.
+     *
+     * The vector is from the test position to the reference position.
+     */
+    const rvec &dx() const
+    {
+        GMX_ASSERT(isValid(), "Accessing invalid object");
+        return dx_;
+    }
 
-    private:
-        int  refIndex_;
-        int  testIndex_;
-        real distance2_;
-        rvec dx_;
+private:
+    int  refIndex_;
+    int  testIndex_;
+    real distance2_;
+    rvec dx_;
 };
 
 /*! \brief
@@ -421,97 +421,97 @@ class AnalysisNeighborhoodPair
  */
 class AnalysisNeighborhoodSearch
 {
-    public:
-        /*! \brief
-         * Internal short-hand type for a pointer to the implementation class.
-         *
-         * shared_ptr is used here to automatically keep a reference count to
-         * track whether an implementation class is still used outside the
-         * AnalysisNeighborhood object.  Ownership currently always stays with
-         * AnalysisNeighborhood; it always keeps one instance of the pointer.
-         */
-        typedef std::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
-            ImplPointer;
+public:
+    /*! \brief
+     * Internal short-hand type for a pointer to the implementation class.
+     *
+     * shared_ptr is used here to automatically keep a reference count to
+     * track whether an implementation class is still used outside the
+     * AnalysisNeighborhood object.  Ownership currently always stays with
+     * AnalysisNeighborhood; it always keeps one instance of the pointer.
+     */
+    typedef std::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
+        ImplPointer;
 
-        /*! \brief
-         * Initializes an invalid search.
-         *
-         * Such an object cannot be used for searching.  It needs to be
-         * assigned a value from AnalysisNeighborhood::initSearch() before it
-         * can be used.  Provided to allow declaring a variable to hold the
-         * search before calling AnalysisNeighborhood::initSearch().
-         */
-        AnalysisNeighborhoodSearch();
-        /*! \brief
-         * Internally initialize the search.
-         *
-         * Used to implement AnalysisNeighborhood::initSearch().
-         * Cannot be called from user code.
-         */
-        explicit AnalysisNeighborhoodSearch(const ImplPointer &impl);
+    /*! \brief
+     * Initializes an invalid search.
+     *
+     * Such an object cannot be used for searching.  It needs to be
+     * assigned a value from AnalysisNeighborhood::initSearch() before it
+     * can be used.  Provided to allow declaring a variable to hold the
+     * search before calling AnalysisNeighborhood::initSearch().
+     */
+    AnalysisNeighborhoodSearch();
+    /*! \brief
+     * Internally initialize the search.
+     *
+     * Used to implement AnalysisNeighborhood::initSearch().
+     * Cannot be called from user code.
+     */
+    explicit AnalysisNeighborhoodSearch(const ImplPointer &impl);
 
-        /*! \brief
-         * Clears this search.
-         *
-         * Equivalent to \c "*this = AnalysisNeighborhoodSearch();".
-         * Currently, this is necessary to avoid unnecessary memory allocation
-         * if the previous search variable is still in scope when you want to
-         * call AnalysisNeighborhood::initSearch() again.
-         */
-        void reset();
+    /*! \brief
+     * Clears this search.
+     *
+     * Equivalent to \c "*this = AnalysisNeighborhoodSearch();".
+     * Currently, this is necessary to avoid unnecessary memory allocation
+     * if the previous search variable is still in scope when you want to
+     * call AnalysisNeighborhood::initSearch() again.
+     */
+    void reset();
 
-        /*! \brief
-         * Returns the searching algorithm that this search is using.
-         *
-         * The return value is never AnalysisNeighborhood::eSearchMode_Automatic.
-         */
-        AnalysisNeighborhood::SearchMode mode() const;
+    /*! \brief
+     * Returns the searching algorithm that this search is using.
+     *
+     * The return value is never AnalysisNeighborhood::eSearchMode_Automatic.
+     */
+    AnalysisNeighborhood::SearchMode mode() const;
 
-        /*! \brief
-         * Check whether a point is within a neighborhood.
-         *
-         * \param[in] positions  Set of test positions to use.
-         * \returns   true if any of the test positions is within the cutoff of
-         *     any reference position.
-         */
-        bool isWithin(const AnalysisNeighborhoodPositions &positions) const;
-        /*! \brief
-         * Calculates the minimum distance from the reference points.
-         *
-         * \param[in] positions  Set of test positions to use.
-         * \returns   The distance to the nearest reference position, or the
-         *     cutoff value if there are no reference positions within the
-         *     cutoff.
-         */
-        real minimumDistance(const AnalysisNeighborhoodPositions &positions) const;
-        /*! \brief
-         * Finds the closest reference point.
-         *
-         * \param[in] positions  Set of test positions to use.
-         * \returns   The reference index identifies the reference position
-         *     that is closest to the test positions.
-         *     The test index identifies the test position that is closest to
-         *     the provided test position.  The returned pair is invalid if
-         *     no reference position is within the cutoff.
-         */
-        AnalysisNeighborhoodPair
-        nearestPoint(const AnalysisNeighborhoodPositions &positions) const;
+    /*! \brief
+     * Check whether a point is within a neighborhood.
+     *
+     * \param[in] positions  Set of test positions to use.
+     * \returns   true if any of the test positions is within the cutoff of
+     *     any reference position.
+     */
+    bool isWithin(const AnalysisNeighborhoodPositions &positions) const;
+    /*! \brief
+     * Calculates the minimum distance from the reference points.
+     *
+     * \param[in] positions  Set of test positions to use.
+     * \returns   The distance to the nearest reference position, or the
+     *     cutoff value if there are no reference positions within the
+     *     cutoff.
+     */
+    real minimumDistance(const AnalysisNeighborhoodPositions &positions) const;
+    /*! \brief
+     * Finds the closest reference point.
+     *
+     * \param[in] positions  Set of test positions to use.
+     * \returns   The reference index identifies the reference position
+     *     that is closest to the test positions.
+     *     The test index identifies the test position that is closest to
+     *     the provided test position.  The returned pair is invalid if
+     *     no reference position is within the cutoff.
+     */
+    AnalysisNeighborhoodPair
+    nearestPoint(const AnalysisNeighborhoodPositions &positions) const;
 
-        /*! \brief
-         * Start a search to find reference positions within a cutoff.
-         *
-         * \param[in] positions  Set of test positions to use.
-         * \returns   Initialized search object to loop through all reference
-         *     positions within the configured cutoff.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        AnalysisNeighborhoodPairSearch
-        startPairSearch(const AnalysisNeighborhoodPositions &positions) const;
+    /*! \brief
+     * Start a search to find reference positions within a cutoff.
+     *
+     * \param[in] positions  Set of test positions to use.
+     * \returns   Initialized search object to loop through all reference
+     *     positions within the configured cutoff.
+     * \throws    std::bad_alloc if out of memory.
+     */
+    AnalysisNeighborhoodPairSearch
+    startPairSearch(const AnalysisNeighborhoodPositions &positions) const;
 
-    private:
-        typedef internal::AnalysisNeighborhoodSearchImpl Impl;
+private:
+    typedef internal::AnalysisNeighborhoodSearchImpl Impl;
 
-        ImplPointer impl_;
+    ImplPointer impl_;
 };
 
 /*! \brief
@@ -547,52 +547,52 @@ class AnalysisNeighborhoodSearch
  */
 class AnalysisNeighborhoodPairSearch
 {
-    public:
-        /*! \brief
-         * Internal short-hand type for a pointer to the implementation class.
-         *
-         * See AnalysisNeighborhoodSearch::ImplPointer for rationale of using
-         * shared_ptr and ownership semantics.
-         */
-        typedef std::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
-            ImplPointer;
+public:
+    /*! \brief
+     * Internal short-hand type for a pointer to the implementation class.
+     *
+     * See AnalysisNeighborhoodSearch::ImplPointer for rationale of using
+     * shared_ptr and ownership semantics.
+     */
+    typedef std::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
+        ImplPointer;
 
-        /*! \brief
-         * Internally initialize the search.
-         *
-         * Used to implement AnalysisNeighborhoodSearch::startPairSearch().
-         * Cannot be called from user code.
-         */
-        explicit AnalysisNeighborhoodPairSearch(const ImplPointer &impl);
+    /*! \brief
+     * Internally initialize the search.
+     *
+     * Used to implement AnalysisNeighborhoodSearch::startPairSearch().
+     * Cannot be called from user code.
+     */
+    explicit AnalysisNeighborhoodPairSearch(const ImplPointer &impl);
 
-        /*! \brief
-         * Finds the next pair within the cutoff.
-         *
-         * \param[out] pair  Information about the found pair.
-         * \returns    false if there were no more pairs.
-         *
-         * If the method returns false, \p pair will be invalid.
-         *
-         * \see AnalysisNeighborhoodPair
-         * \see AnalysisNeighborhoodSearch::startPairSearch()
-         */
-        bool findNextPair(AnalysisNeighborhoodPair *pair);
-        /*! \brief
-         * Skip remaining pairs for a test position in the search.
-         *
-         * When called after findNextPair(), makes subsequent calls to
-         * findNextPair() skip any pairs that have the same test position as
-         * that previously returned.
-         * This is useful if the caller wants to search whether any reference
-         * position within the cutoff satisfies some condition.  This method
-         * can be used to skip remaining pairs after the first such position
-         * has been found if the remaining pairs would not have an effect on
-         * the outcome.
-         */
-        void skipRemainingPairsForTestPosition();
+    /*! \brief
+     * Finds the next pair within the cutoff.
+     *
+     * \param[out] pair  Information about the found pair.
+     * \returns    false if there were no more pairs.
+     *
+     * If the method returns false, \p pair will be invalid.
+     *
+     * \see AnalysisNeighborhoodPair
+     * \see AnalysisNeighborhoodSearch::startPairSearch()
+     */
+    bool findNextPair(AnalysisNeighborhoodPair *pair);
+    /*! \brief
+     * Skip remaining pairs for a test position in the search.
+     *
+     * When called after findNextPair(), makes subsequent calls to
+     * findNextPair() skip any pairs that have the same test position as
+     * that previously returned.
+     * This is useful if the caller wants to search whether any reference
+     * position within the cutoff satisfies some condition.  This method
+     * can be used to skip remaining pairs after the first such position
+     * has been found if the remaining pairs would not have an effect on
+     * the outcome.
+     */
+    void skipRemainingPairsForTestPosition();
 
-    private:
-        ImplPointer impl_;
+private:
+    ImplPointer impl_;
 };
 
 } // namespace gmx

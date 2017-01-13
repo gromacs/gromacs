@@ -103,138 +103,138 @@ namespace
  */
 class AnglePositionIterator
 {
-    public:
-        /*! \brief
-         * Creates an iterator to loop over input selection positions.
-         *
-         * \param[in] selections       List of selections.
-         * \param[in] posCountPerValue Number of selection positions that
-         *     constitute a single value for the iteration.
-         *
-         * If \p selections is empty, and/or \p posCountPerValue is zero, the
-         * iterator can still be advanced and hasValue()/hasSingleValue()
-         * called, but values cannot be accessed.
-         */
-        AnglePositionIterator(const SelectionList &selections,
-                              int                  posCountPerValue)
-            : selections_(selections), posCountPerValue_(posCountPerValue),
-              currentSelection_(0), nextPosition_(0)
-        {
-        }
+public:
+    /*! \brief
+     * Creates an iterator to loop over input selection positions.
+     *
+     * \param[in] selections       List of selections.
+     * \param[in] posCountPerValue Number of selection positions that
+     *     constitute a single value for the iteration.
+     *
+     * If \p selections is empty, and/or \p posCountPerValue is zero, the
+     * iterator can still be advanced and hasValue()/hasSingleValue()
+     * called, but values cannot be accessed.
+     */
+    AnglePositionIterator(const SelectionList &selections,
+                          int                  posCountPerValue)
+        : selections_(selections), posCountPerValue_(posCountPerValue),
+          currentSelection_(0), nextPosition_(0)
+    {
+    }
 
-        //! Advances the iterator to the next group of angles.
-        void nextGroup()
+    //! Advances the iterator to the next group of angles.
+    void nextGroup()
+    {
+        if (selections_.size() > 1)
         {
-            if (selections_.size() > 1)
-            {
-                ++currentSelection_;
-            }
-            nextPosition_ = 0;
+            ++currentSelection_;
         }
-        //! Advances the iterator to the next angle in the current group.
-        void nextValue()
+        nextPosition_ = 0;
+    }
+    //! Advances the iterator to the next angle in the current group.
+    void nextValue()
+    {
+        if (!hasSingleValue())
         {
-            if (!hasSingleValue())
-            {
-                nextPosition_ += posCountPerValue_;
-            }
+            nextPosition_ += posCountPerValue_;
         }
+    }
 
-        /*! \brief
-         * Returns whether this iterator represents any values.
-         *
-         * If the return value is `false`, only nextGroup(), nextValue() and
-         * hasSingleValue() are allowed to be called.
-         */
-        bool hasValue() const
+    /*! \brief
+     * Returns whether this iterator represents any values.
+     *
+     * If the return value is `false`, only nextGroup(), nextValue() and
+     * hasSingleValue() are allowed to be called.
+     */
+    bool hasValue() const
+    {
+        return !selections_.empty();
+    }
+    /*! \brief
+     * Returns whether the current selection only contains a single value.
+     *
+     * Returns `false` if hasValue() returns false, which allows cutting
+     * some corners in consistency checks.
+     */
+    bool hasSingleValue() const
+    {
+        return hasValue() && currentSelection().posCount() == posCountPerValue_;
+    }
+    //! Returns whether the current selection is dynamic.
+    bool isDynamic() const
+    {
+        return currentSelection().isDynamic();
+    }
+    /*! \brief
+     * Returns whether positions in the current value are either all
+     * selected or all unselected.
+     */
+    bool allValuesConsistentlySelected() const
+    {
+        if (posCountPerValue_ <= 1)
         {
-            return !selections_.empty();
-        }
-        /*! \brief
-         * Returns whether the current selection only contains a single value.
-         *
-         * Returns `false` if hasValue() returns false, which allows cutting
-         * some corners in consistency checks.
-         */
-        bool hasSingleValue() const
-        {
-            return hasValue() && currentSelection().posCount() == posCountPerValue_;
-        }
-        //! Returns whether the current selection is dynamic.
-        bool isDynamic() const
-        {
-            return currentSelection().isDynamic();
-        }
-        /*! \brief
-         * Returns whether positions in the current value are either all
-         * selected or all unselected.
-         */
-        bool allValuesConsistentlySelected() const
-        {
-            if (posCountPerValue_ <= 1)
-            {
-                return true;
-            }
-            const bool bSelected = currentPosition(0).selected();
-            for (int i = 1; i < posCountPerValue_; ++i)
-            {
-                if (currentPosition(i).selected() != bSelected)
-                {
-                    return false;
-                }
-            }
             return true;
         }
-        /*! \brief
-         * Returns whether positions in the current value are selected.
-         *
-         * Only works reliably if allValuesConsistentlySelected() returns
-         * `true`.
-         */
-        bool currentValuesSelected() const
+        const bool bSelected = currentPosition(0).selected();
+        for (int i = 1; i < posCountPerValue_; ++i)
         {
-            return selections_.empty() || currentPosition(0).selected();
-        }
-
-        //! Returns the currently active selection.
-        const Selection &currentSelection() const
-        {
-            GMX_ASSERT(currentSelection_ < static_cast<int>(selections_.size()),
-                       "Accessing an invalid selection");
-            return selections_[currentSelection_];
-        }
-        //! Returns the `i`th position for the current value.
-        SelectionPosition currentPosition(int i) const
-        {
-            return currentSelection().position(nextPosition_ + i);
-        }
-        /*! \brief
-         * Extracts all coordinates corresponding to the current value.
-         *
-         * \param[out] x  Array to which the positions are extracted.
-         *
-         * \p x should contain at minimum the number of positions per value
-         * passed to the constructor.
-         */
-        void getCurrentPositions(rvec x[]) const
-        {
-            GMX_ASSERT(posCountPerValue_ > 0,
-                       "Accessing positions for an invalid angle type");
-            GMX_ASSERT(nextPosition_ + posCountPerValue_ <= currentSelection().posCount(),
-                       "Accessing an invalid position");
-            for (int i = 0; i < posCountPerValue_; ++i)
+            if (currentPosition(i).selected() != bSelected)
             {
-                copy_rvec(currentPosition(i).x(), x[i]);
+                return false;
             }
         }
+        return true;
+    }
+    /*! \brief
+     * Returns whether positions in the current value are selected.
+     *
+     * Only works reliably if allValuesConsistentlySelected() returns
+     * `true`.
+     */
+    bool currentValuesSelected() const
+    {
+        return selections_.empty() || currentPosition(0).selected();
+    }
 
-    private:
-        const SelectionList &selections_;
-        const int            posCountPerValue_;
-        int                  currentSelection_;
-        int                  nextPosition_;
+    //! Returns the currently active selection.
+    const Selection &currentSelection() const
+    {
+        GMX_ASSERT(currentSelection_ < static_cast<int>(selections_.size()),
+                   "Accessing an invalid selection");
+        return selections_[currentSelection_];
+    }
+    //! Returns the `i`th position for the current value.
+    SelectionPosition currentPosition(int i) const
+    {
+        return currentSelection().position(nextPosition_ + i);
+    }
+    /*! \brief
+     * Extracts all coordinates corresponding to the current value.
+     *
+     * \param[out] x  Array to which the positions are extracted.
+     *
+     * \p x should contain at minimum the number of positions per value
+     * passed to the constructor.
+     */
+    void getCurrentPositions(rvec x[]) const
+    {
+        GMX_ASSERT(posCountPerValue_ > 0,
+                   "Accessing positions for an invalid angle type");
+        GMX_ASSERT(nextPosition_ + posCountPerValue_ <= currentSelection().posCount(),
+                   "Accessing an invalid position");
+        for (int i = 0; i < posCountPerValue_; ++i)
+        {
+            copy_rvec(currentPosition(i).x(), x[i]);
+        }
+    }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AnglePositionIterator);
+private:
+    const SelectionList &selections_;
+    const int            posCountPerValue_;
+    int                  currentSelection_;
+    int                  nextPosition_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(AnglePositionIterator);
 };
 
 /********************************************************************
@@ -268,49 +268,49 @@ const char *const cGroup2TypeEnum[] =
 
 class Angle : public TrajectoryAnalysisModule
 {
-    public:
-        Angle();
+public:
+    Angle();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        void initFromSelections(const SelectionList &sel1,
-                                const SelectionList &sel2);
-        void checkSelections(const SelectionList &sel1,
-                             const SelectionList &sel2) const;
+private:
+    void initFromSelections(const SelectionList &sel1,
+                            const SelectionList &sel2);
+    void checkSelections(const SelectionList &sel1,
+                         const SelectionList &sel2) const;
 
-        SelectionList        sel1_;
-        SelectionList        sel2_;
-        SelectionOptionInfo *sel1info_;
-        SelectionOptionInfo *sel2info_;
-        std::string          fnAverage_;
-        std::string          fnAll_;
-        std::string          fnHistogram_;
+    SelectionList        sel1_;
+    SelectionList        sel2_;
+    SelectionOptionInfo *sel1info_;
+    SelectionOptionInfo *sel2info_;
+    std::string          fnAverage_;
+    std::string          fnAll_;
+    std::string          fnHistogram_;
 
-        Group1Type g1type_;
-        Group2Type g2type_;
-        double     binWidth_;
+    Group1Type g1type_;
+    Group2Type g2type_;
+    double     binWidth_;
 
-        AnalysisData                             angles_;
-        AnalysisDataFrameAverageModulePointer    averageModule_;
-        AnalysisDataSimpleHistogramModulePointer histogramModule_;
+    AnalysisData                             angles_;
+    AnalysisDataFrameAverageModulePointer    averageModule_;
+    AnalysisDataSimpleHistogramModulePointer histogramModule_;
 
-        std::vector<int>                angleCount_;
-        int                             natoms1_;
-        int                             natoms2_;
-        std::vector<std::vector<RVec> > vt0_;
+    std::vector<int>                angleCount_;
+    int                             natoms1_;
+    int                             natoms2_;
+    std::vector<std::vector<RVec> > vt0_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 Angle::Angle()

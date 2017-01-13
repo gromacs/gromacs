@@ -55,64 +55,64 @@ namespace gmx
 
 class TextWriter::Impl
 {
-    public:
-        explicit Impl(const TextOutputStreamPointer &stream)
-            : stream_(stream), newLineCount_(2), currentLineLength_(0),
-              pendingNewLine_(false)
-        {
-            wrapper_.settings().setKeepFinalSpaces(true);
-        }
+public:
+    explicit Impl(const TextOutputStreamPointer &stream)
+        : stream_(stream), newLineCount_(2), currentLineLength_(0),
+          pendingNewLine_(false)
+    {
+        wrapper_.settings().setKeepFinalSpaces(true);
+    }
 
-        void writeRawString(const char *str)
+    void writeRawString(const char *str)
+    {
+        if (pendingNewLine_ && str[0] != '\n')
         {
-            if (pendingNewLine_ && str[0] != '\n')
-            {
-                stream_->write("\n");
-            }
-            pendingNewLine_ = false;
-            const char *lastNewLine = std::strrchr(str, '\n');
-            if (lastNewLine == nullptr)
-            {
-                newLineCount_       = 0;
-                currentLineLength_ += std::strlen(str);
-            }
-            else if (lastNewLine[1] != '\0')
-            {
-                newLineCount_       = 0;
-                currentLineLength_ += std::strlen(lastNewLine + 1);
-            }
-            else
-            {
-                currentLineLength_ = 0;
-                int newLineCount = 0;
-                while (lastNewLine >= str && *lastNewLine == '\n')
-                {
-                    ++newLineCount;
-                    --lastNewLine;
-                }
-                if (lastNewLine >= str)
-                {
-                    newLineCount_ = 0;
-                }
-                newLineCount_ += newLineCount;
-            }
-            stream_->write(str);
+            stream_->write("\n");
         }
-        void writeRawString(const std::string &str)
+        pendingNewLine_ = false;
+        const char *lastNewLine = std::strrchr(str, '\n');
+        if (lastNewLine == nullptr)
         {
-            writeRawString(str.c_str());
+            newLineCount_       = 0;
+            currentLineLength_ += std::strlen(str);
         }
+        else if (lastNewLine[1] != '\0')
+        {
+            newLineCount_       = 0;
+            currentLineLength_ += std::strlen(lastNewLine + 1);
+        }
+        else
+        {
+            currentLineLength_ = 0;
+            int newLineCount = 0;
+            while (lastNewLine >= str && *lastNewLine == '\n')
+            {
+                ++newLineCount;
+                --lastNewLine;
+            }
+            if (lastNewLine >= str)
+            {
+                newLineCount_ = 0;
+            }
+            newLineCount_ += newLineCount;
+        }
+        stream_->write(str);
+    }
+    void writeRawString(const std::string &str)
+    {
+        writeRawString(str.c_str());
+    }
 
-        void writeWrappedString(const std::string &str)
-        {
-            writeRawString(wrapper_.wrapToString(str));
-        }
+    void writeWrappedString(const std::string &str)
+    {
+        writeRawString(wrapper_.wrapToString(str));
+    }
 
-        TextOutputStreamPointer stream_;
-        TextLineWrapper         wrapper_;
-        int                     newLineCount_;
-        int                     currentLineLength_;
-        bool                    pendingNewLine_;
+    TextOutputStreamPointer stream_;
+    TextLineWrapper         wrapper_;
+    int                     newLineCount_;
+    int                     currentLineLength_;
+    bool                    pendingNewLine_;
 };
 
 // static

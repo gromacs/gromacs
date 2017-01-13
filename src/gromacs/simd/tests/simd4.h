@@ -101,38 +101,38 @@ extern const Simd4Real rSimd4_Bits6; //!< Pattern 3C repeated to fill single/dou
  */
 class Simd4Test : public SimdBaseTest
 {
-    public:
-        /*! \brief Compare two real SIMD4 variables for approximate equality.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD4 test variable is within the class tolerances of the corresponding
-         * reference element.
-         */
-        ::testing::AssertionResult
-        compareSimd4RealUlp(const char * refExpr, const char * tstExpr,
-                            const Simd4Real ref, const Simd4Real tst);
+public:
+    /*! \brief Compare two real SIMD4 variables for approximate equality.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD4 test variable is within the class tolerances of the corresponding
+     * reference element.
+     */
+    ::testing::AssertionResult
+    compareSimd4RealUlp(const char * refExpr, const char * tstExpr,
+                        const Simd4Real ref, const Simd4Real tst);
 
-        /*! \brief Compare two real SIMD4 variables for exact equality.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD4 test variable is within the class tolerances of the corresponding
-         * reference element.
-         */
-        ::testing::AssertionResult
-        compareSimd4RealEq(const char * refExpr, const char * tstExpr,
-                           const Simd4Real ref, const Simd4Real tst);
+    /*! \brief Compare two real SIMD4 variables for exact equality.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD4 test variable is within the class tolerances of the corresponding
+     * reference element.
+     */
+    ::testing::AssertionResult
+    compareSimd4RealEq(const char * refExpr, const char * tstExpr,
+                       const Simd4Real ref, const Simd4Real tst);
 };
 
 /*! \brief Convert SIMD4 real to std::vector<real>.

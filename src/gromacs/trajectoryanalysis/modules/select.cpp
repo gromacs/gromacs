@@ -90,46 +90,46 @@ namespace
  */
 class IndexFileWriterModule : public AnalysisDataModuleSerial
 {
-    public:
-        IndexFileWriterModule();
-        virtual ~IndexFileWriterModule();
+public:
+    IndexFileWriterModule();
+    virtual ~IndexFileWriterModule();
 
-        //! Sets the file name to write the index file to.
-        void setFileName(const std::string &fnm);
-        /*! \brief
-         * Adds information about a group to be printed.
-         *
-         * Must be called for each group present in the input data.
-         */
-        void addGroup(const std::string &name, bool bDynamic);
+    //! Sets the file name to write the index file to.
+    void setFileName(const std::string &fnm);
+    /*! \brief
+     * Adds information about a group to be printed.
+     *
+     * Must be called for each group present in the input data.
+     */
+    void addGroup(const std::string &name, bool bDynamic);
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-    private:
-        void closeFile();
+private:
+    void closeFile();
 
-        struct GroupInfo
-        {
-            GroupInfo(const std::string &name, bool bDynamic)
-                : name(name), bDynamic(bDynamic)
-            { }
+    struct GroupInfo
+    {
+        GroupInfo(const std::string &name, bool bDynamic)
+            : name(name), bDynamic(bDynamic)
+        { }
 
-            std::string name;
-            bool        bDynamic;
-        };
+        std::string name;
+        bool        bDynamic;
+    };
 
-        std::string            fnm_;
-        std::vector<GroupInfo> groups_;
-        FILE *                 fp_;
-        int                    currentGroup_;
-        int                    currentSize_;
-        bool                   bAnyWritten_;
+    std::string            fnm_;
+    std::vector<GroupInfo> groups_;
+    FILE *                 fp_;
+    int                    currentGroup_;
+    int                    currentSize_;
+    bool                   bAnyWritten_;
 };
 
 /********************************************************************
@@ -275,47 +275,47 @@ const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
 
 class Select : public TrajectoryAnalysisModule
 {
-    public:
-        Select();
+public:
+    Select();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        SelectionList sel_;
+private:
+    SelectionList sel_;
 
-        std::string       fnSize_;
-        std::string       fnFrac_;
-        std::string       fnIndex_;
-        std::string       fnNdx_;
-        std::string       fnMask_;
-        std::string       fnOccupancy_;
-        std::string       fnPDB_;
-        std::string       fnLifetime_;
-        bool              bTotNorm_;
-        bool              bFracNorm_;
-        bool              bResInd_;
-        bool              bCumulativeLifetimes_;
-        ResidueNumbering  resNumberType_;
-        PdbAtomsSelection pdbAtoms_;
+    std::string       fnSize_;
+    std::string       fnFrac_;
+    std::string       fnIndex_;
+    std::string       fnNdx_;
+    std::string       fnMask_;
+    std::string       fnOccupancy_;
+    std::string       fnPDB_;
+    std::string       fnLifetime_;
+    bool              bTotNorm_;
+    bool              bFracNorm_;
+    bool              bResInd_;
+    bool              bCumulativeLifetimes_;
+    ResidueNumbering  resNumberType_;
+    PdbAtomsSelection pdbAtoms_;
 
-        const TopologyInformation *       top_;
-        std::vector<int>                  totsize_;
-        AnalysisData                      sdata_;
-        AnalysisData                      cdata_;
-        AnalysisData                      idata_;
-        AnalysisData                      mdata_;
-        AnalysisDataAverageModulePointer  occupancyModule_;
-        AnalysisDataLifetimeModulePointer lifetimeModule_;
+    const TopologyInformation *       top_;
+    std::vector<int>                  totsize_;
+    AnalysisData                      sdata_;
+    AnalysisData                      cdata_;
+    AnalysisData                      idata_;
+    AnalysisData                      mdata_;
+    AnalysisDataAverageModulePointer  occupancyModule_;
+    AnalysisDataLifetimeModulePointer lifetimeModule_;
 };
 
 Select::Select()

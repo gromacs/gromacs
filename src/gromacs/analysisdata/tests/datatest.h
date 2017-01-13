@@ -83,68 +83,68 @@ class FloatingPointTolerance;
  */
 class AnalysisDataTestInputPointSet
 {
-    public:
-        //! Returns zero-based index of this point set in its frame.
-        int index() const { return index_; }
-        //! Returns zero-based index of the data set of this point set.
-        int dataSetIndex() const { return dataSetIndex_; }
-        //! Returns zero-based index of the first column in this point set.
-        int firstColumn() const { return firstColumn_; }
-        //! Returns zero-based index of the last column in this point set.
-        int lastColumn() const { return firstColumn_ + size() - 1; }
-        //! Returns the number of columns in the point set.
-        int size() const { return values_.size(); }
-        //! Returns the value in column \p i.
-        real y(int i) const { return values_[i].y; }
-        //! Returns whether the error is present for column \p i.
-        bool hasError(int i) const { return values_[i].bError; }
-        //! Returns the error in column \p i.
-        real error(int i) const { return values_[i].error; }
-        //! Returns whether the value in column \p i is present.
-        bool present(int /*i*/) const { return true; }
-        //! Returns an AnalysisDataValue for column \p i.
-        AnalysisDataValue value(int i) const
+public:
+    //! Returns zero-based index of this point set in its frame.
+    int index() const { return index_; }
+    //! Returns zero-based index of the data set of this point set.
+    int dataSetIndex() const { return dataSetIndex_; }
+    //! Returns zero-based index of the first column in this point set.
+    int firstColumn() const { return firstColumn_; }
+    //! Returns zero-based index of the last column in this point set.
+    int lastColumn() const { return firstColumn_ + size() - 1; }
+    //! Returns the number of columns in the point set.
+    int size() const { return values_.size(); }
+    //! Returns the value in column \p i.
+    real y(int i) const { return values_[i].y; }
+    //! Returns whether the error is present for column \p i.
+    bool hasError(int i) const { return values_[i].bError; }
+    //! Returns the error in column \p i.
+    real error(int i) const { return values_[i].error; }
+    //! Returns whether the value in column \p i is present.
+    bool present(int /*i*/) const { return true; }
+    //! Returns an AnalysisDataValue for column \p i.
+    AnalysisDataValue value(int i) const
+    {
+        AnalysisDataValue result;
+        result.setValue(values_[i].y);
+        if (values_[i].bError)
         {
-            AnalysisDataValue result;
-            result.setValue(values_[i].y);
-            if (values_[i].bError)
-            {
-                result.setError(values_[i].error);
-            }
-            return result;
+            result.setError(values_[i].error);
         }
+        return result;
+    }
 
-        //! Appends a value to this point set.
-        void addValue(real y) { values_.emplace_back(y); }
-        //! Appends a value with an error estimate to this point set.
-        void addValueWithError(real y, real error)
-        {
-            values_.emplace_back(y, error);
-        }
+    //! Appends a value to this point set.
+    void addValue(real y) { values_.emplace_back(y); }
+    //! Appends a value with an error estimate to this point set.
+    void addValueWithError(real y, real error)
+    {
+        values_.emplace_back(y, error);
+    }
 
-    private:
-        //! Creates an empty point set.
-        AnalysisDataTestInputPointSet(int index, int dataSetIndex,
-                                      int firstColumn);
+private:
+    //! Creates an empty point set.
+    AnalysisDataTestInputPointSet(int index, int dataSetIndex,
+                                  int firstColumn);
 
-        struct Value
-        {
-            Value() : y(0.0), error(0.0), bError(false) {}
-            explicit Value(real y) : y(y), error(0.0), bError(false) {}
-            Value(real y, real error) : y(y), error(error), bError(true) {}
+    struct Value
+    {
+        Value() : y(0.0), error(0.0), bError(false) {}
+        explicit Value(real y) : y(y), error(0.0), bError(false) {}
+        Value(real y, real error) : y(y), error(error), bError(true) {}
 
-            real y;
-            real error;
-            bool bError;
-        };
+        real y;
+        real error;
+        bool bError;
+    };
 
-        int                index_;
-        int                dataSetIndex_;
-        int                firstColumn_;
-        std::vector<Value> values_;
+    int                index_;
+    int                dataSetIndex_;
+    int                firstColumn_;
+    std::vector<Value> values_;
 
-        //! For constructing new point sets.
-        friend class AnalysisDataTestInputFrame;
+    //! For constructing new point sets.
+    friend class AnalysisDataTestInputFrame;
 };
 
 /*! \libinternal \brief
@@ -155,48 +155,48 @@ class AnalysisDataTestInputPointSet
  */
 class AnalysisDataTestInputFrame
 {
-    public:
-        //! Returns zero-based index for the frame.
-        int index() const { return index_; }
-        //! Returns x coordinate for the frame.
-        real x() const { return x_; }
-        //! Returns error in the x coordinate for the frame.
-        real dx() const { return 0.0; }
+public:
+    //! Returns zero-based index for the frame.
+    int index() const { return index_; }
+    //! Returns x coordinate for the frame.
+    real x() const { return x_; }
+    //! Returns error in the x coordinate for the frame.
+    real dx() const { return 0.0; }
 
-        //! Number of individual point sets in the frame.
-        int pointSetCount() const { return pointSets_.size(); }
-        //! Returns a point set object for a given point set.
-        const AnalysisDataTestInputPointSet &pointSet(int index) const
-        {
-            GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < pointSets_.size(),
-                       "Point set index out of range");
-            return pointSets_[index];
-        }
+    //! Number of individual point sets in the frame.
+    int pointSetCount() const { return pointSets_.size(); }
+    //! Returns a point set object for a given point set.
+    const AnalysisDataTestInputPointSet &pointSet(int index) const
+    {
+        GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < pointSets_.size(),
+                   "Point set index out of range");
+        return pointSets_[index];
+    }
 
-        //! Appends an empty point set to this frame.
-        AnalysisDataTestInputPointSet &addPointSet(int dataSet, int firstColumn);
-        //! Adds a point set with given values to this frame.
-        void addPointSetWithValues(int dataSet, int firstColumn, real y1);
-        //! Adds a point set with given values to this frame.
-        void addPointSetWithValues(int dataSet, int firstColumn,
-                                   real y1, real y2);
-        //! Adds a point set with given values to this frame.
-        void addPointSetWithValues(int dataSet, int firstColumn,
-                                   real y1, real y2, real y3);
-        //! Adds a point set with given values to this frame.
-        void addPointSetWithValueAndError(int dataSet, int firstColumn,
-                                          real y1, real e1);
+    //! Appends an empty point set to this frame.
+    AnalysisDataTestInputPointSet &addPointSet(int dataSet, int firstColumn);
+    //! Adds a point set with given values to this frame.
+    void addPointSetWithValues(int dataSet, int firstColumn, real y1);
+    //! Adds a point set with given values to this frame.
+    void addPointSetWithValues(int dataSet, int firstColumn,
+                               real y1, real y2);
+    //! Adds a point set with given values to this frame.
+    void addPointSetWithValues(int dataSet, int firstColumn,
+                               real y1, real y2, real y3);
+    //! Adds a point set with given values to this frame.
+    void addPointSetWithValueAndError(int dataSet, int firstColumn,
+                                      real y1, real e1);
 
-    private:
-        //! Constructs a new frame object with the given values.
-        AnalysisDataTestInputFrame(int index, real x);
+private:
+    //! Constructs a new frame object with the given values.
+    AnalysisDataTestInputFrame(int index, real x);
 
-        int                                        index_;
-        real                                       x_;
-        std::vector<AnalysisDataTestInputPointSet> pointSets_;
+    int                                        index_;
+    real                                       x_;
+    std::vector<AnalysisDataTestInputPointSet> pointSets_;
 
-        //! For constructing new frames.
-        friend class AnalysisDataTestInput;
+    //! For constructing new frames.
+    friend class AnalysisDataTestInput;
 };
 
 /*! \libinternal \brief
@@ -212,47 +212,47 @@ class AnalysisDataTestInputFrame
  */
 class AnalysisDataTestInput
 {
-    public:
-        /*! \brief
-         * Constructs empty input data.
-         *
-         * \param[in] dataSetCount Number of data sets in the data.
-         * \param[in] bMultipoint  Whether the data will be multipoint.
-         *
-         * The column count for each data set must be set with
-         * setColumnCount().
-         */
-        AnalysisDataTestInput(int dataSetCount, bool bMultipoint);
-        ~AnalysisDataTestInput();
+public:
+    /*! \brief
+     * Constructs empty input data.
+     *
+     * \param[in] dataSetCount Number of data sets in the data.
+     * \param[in] bMultipoint  Whether the data will be multipoint.
+     *
+     * The column count for each data set must be set with
+     * setColumnCount().
+     */
+    AnalysisDataTestInput(int dataSetCount, bool bMultipoint);
+    ~AnalysisDataTestInput();
 
-        //! Whether the input data is multipoint.
-        bool isMultipoint() const { return bMultipoint_; }
-        //! Returns the number of data sets in the input data.
-        int dataSetCount() const { return columnCounts_.size(); }
-        //! Returns the number of columns in a given data set.
-        int columnCount(int dataSet) const { return columnCounts_[dataSet]; }
-        //! Returns the number of frames in the input data.
-        int frameCount() const { return frames_.size(); }
-        //! Returns a frame object for the given input frame.
-        const AnalysisDataTestInputFrame &frame(int index) const;
+    //! Whether the input data is multipoint.
+    bool isMultipoint() const { return bMultipoint_; }
+    //! Returns the number of data sets in the input data.
+    int dataSetCount() const { return columnCounts_.size(); }
+    //! Returns the number of columns in a given data set.
+    int columnCount(int dataSet) const { return columnCounts_[dataSet]; }
+    //! Returns the number of frames in the input data.
+    int frameCount() const { return frames_.size(); }
+    //! Returns a frame object for the given input frame.
+    const AnalysisDataTestInputFrame &frame(int index) const;
 
-        //! Sets the number of columns in a data set.
-        void setColumnCount(int dataSet, int columnCount);
-        //! Appends an empty frame to this data.
-        AnalysisDataTestInputFrame &addFrame(real x);
-        //! Adds a frame with a single point set and the given values.
-        void addFrameWithValues(real x, real y1);
-        //! Adds a frame with a single point set and the given values.
-        void addFrameWithValues(real x, real y1, real y2);
-        //! Adds a frame with a single point set and the given values.
-        void addFrameWithValues(real x, real y1, real y2, real y3);
-        //! Adds a frame with a single point set and the given values.
-        void addFrameWithValueAndError(real x, real y1, real e1);
+    //! Sets the number of columns in a data set.
+    void setColumnCount(int dataSet, int columnCount);
+    //! Appends an empty frame to this data.
+    AnalysisDataTestInputFrame &addFrame(real x);
+    //! Adds a frame with a single point set and the given values.
+    void addFrameWithValues(real x, real y1);
+    //! Adds a frame with a single point set and the given values.
+    void addFrameWithValues(real x, real y1, real y2);
+    //! Adds a frame with a single point set and the given values.
+    void addFrameWithValues(real x, real y1, real y2, real y3);
+    //! Adds a frame with a single point set and the given values.
+    void addFrameWithValueAndError(real x, real y1, real e1);
 
-    private:
-        std::vector<int>                        columnCounts_;
-        bool                                    bMultipoint_;
-        std::vector<AnalysisDataTestInputFrame> frames_;
+private:
+    std::vector<int>                        columnCounts_;
+    bool                                    bMultipoint_;
+    std::vector<AnalysisDataTestInputFrame> frames_;
 };
 
 /*! \libinternal \brief
@@ -295,172 +295,172 @@ class AnalysisDataTestInput
  */
 class AnalysisDataTestFixture : public ::testing::Test
 {
-    public:
-        AnalysisDataTestFixture();
+public:
+    AnalysisDataTestFixture();
 
-        /*! \brief
-         * Initializes an AnalysisData object from input data.
-         *
-         * Sets the column count and other properties based on the input data.
-         */
-        static void setupDataObject(const AnalysisDataTestInput &input,
-                                    AnalysisData *               data);
+    /*! \brief
+     * Initializes an AnalysisData object from input data.
+     *
+     * Sets the column count and other properties based on the input data.
+     */
+    static void setupDataObject(const AnalysisDataTestInput &input,
+                                AnalysisData *               data);
 
-        /*! \brief
-         * Adds all data from AnalysisDataTestInput into an AnalysisData.
-         */
-        static void presentAllData(const AnalysisDataTestInput &input,
-                                   AnalysisData *               data);
-        /*! \brief
-         * Adds a single frame from AnalysisDataTestInput into an AnalysisData.
-         */
-        static void presentDataFrame(const AnalysisDataTestInput &input, int row,
-                                     AnalysisDataHandle handle);
-        /*! \brief
-         * Initializes an array data object from AnalysisDataTestInput.
-         *
-         * \tparam ArrayData  Class derived from AbstractAnalysisArrayData.
-         *
-         * The ArrayData class should expose the setter methods
-         * (setColumnCount(), setRowCount(), allocateValues(), setValue())
-         * publicly or declare the fixture class as a friend.
-         * The X axis in \p data must be configured to match \p input before
-         * calling this method.
-         *
-         * Does not call AbstractAnalysisArrayData::valuesReady().
-         * The test must ensure that this method gets called, otherwise the
-         * mock modules never get called.
-         */
-        template <class ArrayData>
-        static void setupArrayData(const AnalysisDataTestInput &input,
-                                   ArrayData *                  data);
+    /*! \brief
+     * Adds all data from AnalysisDataTestInput into an AnalysisData.
+     */
+    static void presentAllData(const AnalysisDataTestInput &input,
+                               AnalysisData *               data);
+    /*! \brief
+     * Adds a single frame from AnalysisDataTestInput into an AnalysisData.
+     */
+    static void presentDataFrame(const AnalysisDataTestInput &input, int row,
+                                 AnalysisDataHandle handle);
+    /*! \brief
+     * Initializes an array data object from AnalysisDataTestInput.
+     *
+     * \tparam ArrayData  Class derived from AbstractAnalysisArrayData.
+     *
+     * The ArrayData class should expose the setter methods
+     * (setColumnCount(), setRowCount(), allocateValues(), setValue())
+     * publicly or declare the fixture class as a friend.
+     * The X axis in \p data must be configured to match \p input before
+     * calling this method.
+     *
+     * Does not call AbstractAnalysisArrayData::valuesReady().
+     * The test must ensure that this method gets called, otherwise the
+     * mock modules never get called.
+     */
+    template <class ArrayData>
+    static void setupArrayData(const AnalysisDataTestInput &input,
+                               ArrayData *                  data);
 
-        /*! \brief
-         * Adds a mock module that verifies output against
-         * AnalysisDataTestInput.
-         *
-         * \param[in]  data     Data to compare against.
-         * \param      source   Data object to verify.
-         *
-         * Creates a mock module that verifies that the
-         * IAnalysisDataModule methods are called correctly by
-         * \p source.  Parameters for the calls are verified against \p data.
-         * Adds the created module to \p source using \p data->addModule().
-         * Any exceptions from the called functions should be caught by the
-         * caller.
-         *
-         * \see AbstractAnalysisData::addModule()
-         */
-        static void addStaticCheckerModule(const AnalysisDataTestInput &data,
-                                           AbstractAnalysisData *       source);
-        /*! \brief
-         * Adds a mock module that verifies parallel output against
-         * AnalysisDataTestInput.
-         *
-         * \param[in]  data     Data to compare against.
-         * \param      source   Data object to verify.
-         *
-         * Creates a parallel mock module that verifies that the
-         * IAnalysisDataModule methods are called correctly by
-         * \p source.  Parameters for the calls are verified against \p data.
-         * Adds the created module to \p source using \p data->addModule().
-         * Any exceptions from the called functions should be caught by the
-         * caller.
-         *
-         * Differs from addStaticCheckerModule() in that the created mock
-         * module reports that it accepts parallel input data, and accepts and
-         * verifies notification calls following the parallel pattern.
-         *
-         * \see AbstractAnalysisData::addModule()
-         */
-        static void addStaticParallelCheckerModule(
-            const AnalysisDataTestInput &data,
-            AbstractAnalysisData *       source);
-        /*! \brief
-         * Adds a column mock module that verifies output against
-         * AnalysisDataTestInput.
-         *
-         * \param[in]  data     Data to compare against.
-         * \param[in]  firstcol First column to check.
-         * \param[in]  n        Number of columns to check.
-         * \param      source   Data object to verify.
-         *
-         * Creates a mock module that verifies that the
-         * IAnalysisDataModule methods are called correctly by
-         * \p source.  Parameters for the calls are verified against \p data.
-         * Adds the created module to \p source using
-         * \p data->addColumnModule().
-         * Any exceptions from the called functions should be caught by the
-         * caller.
-         *
-         * \see AbstractAnalysisData::addColumnModule()
-         */
-        static void addStaticColumnCheckerModule(const AnalysisDataTestInput &data,
-                                                 int firstcol, int n,
-                                                 AbstractAnalysisData *source);
-        /*! \brief
-         * Adds a mock module that verifies output and storage against
-         * AnalysisDataTestInput.
-         *
-         * \param[in]  data     Data to compare against.
-         * \param[in]  storageCount  Number of previous frames to check
-         *                      (-1 = all).
-         * \param      source   Data object to verify.
-         *
-         * Works like addStaticCheckerModule(), except that in addition, for
-         * each frame, the mock module also checks that previous frames can be
-         * accessed using AbstractAnalysisData::getDataFrame().  In the
-         * IAnalysisDataModule::dataStarted() callback, the mock module
-         * calls AbstractAnalysisData::requestStorage() with \p storageCount as
-         * the parameter.
-         */
-        static void addStaticStorageCheckerModule(const AnalysisDataTestInput &data,
-                                                  int                          storageCount,
-                                                  AbstractAnalysisData *       source);
-        /*! \brief
-         * Adds a mock module that verifies output against reference data.
-         *
-         * \param[in]  checker   Reference data checker to use for comparison.
-         * \param[in]  id        Identifier for reference data compound to use.
-         * \param      source    Data object to verify.
-         * \param[in]  tolerance Tolerance to use for comparison.
-         *
-         * Creates a mock module that verifies that the
-         * IAnalysisDataModule methods are called correctly by
-         * \p source.  Parameters for the calls are verified against reference
-         * data using a child compound \p id of \p checker.
-         * Adds the created module to \p source using \p data->addModule().
-         * Any exceptions from the called functions should be caught by the
-         * caller.
-         *
-         * \see TestReferenceData
-         */
-        static void addReferenceCheckerModule(const TestReferenceChecker &  checker,
-                                              const char *                  id,
-                                              AbstractAnalysisData *        source,
-                                              const FloatingPointTolerance &tolerance);
+    /*! \brief
+     * Adds a mock module that verifies output against
+     * AnalysisDataTestInput.
+     *
+     * \param[in]  data     Data to compare against.
+     * \param      source   Data object to verify.
+     *
+     * Creates a mock module that verifies that the
+     * IAnalysisDataModule methods are called correctly by
+     * \p source.  Parameters for the calls are verified against \p data.
+     * Adds the created module to \p source using \p data->addModule().
+     * Any exceptions from the called functions should be caught by the
+     * caller.
+     *
+     * \see AbstractAnalysisData::addModule()
+     */
+    static void addStaticCheckerModule(const AnalysisDataTestInput &data,
+                                       AbstractAnalysisData *       source);
+    /*! \brief
+     * Adds a mock module that verifies parallel output against
+     * AnalysisDataTestInput.
+     *
+     * \param[in]  data     Data to compare against.
+     * \param      source   Data object to verify.
+     *
+     * Creates a parallel mock module that verifies that the
+     * IAnalysisDataModule methods are called correctly by
+     * \p source.  Parameters for the calls are verified against \p data.
+     * Adds the created module to \p source using \p data->addModule().
+     * Any exceptions from the called functions should be caught by the
+     * caller.
+     *
+     * Differs from addStaticCheckerModule() in that the created mock
+     * module reports that it accepts parallel input data, and accepts and
+     * verifies notification calls following the parallel pattern.
+     *
+     * \see AbstractAnalysisData::addModule()
+     */
+    static void addStaticParallelCheckerModule(
+        const AnalysisDataTestInput &data,
+        AbstractAnalysisData *       source);
+    /*! \brief
+     * Adds a column mock module that verifies output against
+     * AnalysisDataTestInput.
+     *
+     * \param[in]  data     Data to compare against.
+     * \param[in]  firstcol First column to check.
+     * \param[in]  n        Number of columns to check.
+     * \param      source   Data object to verify.
+     *
+     * Creates a mock module that verifies that the
+     * IAnalysisDataModule methods are called correctly by
+     * \p source.  Parameters for the calls are verified against \p data.
+     * Adds the created module to \p source using
+     * \p data->addColumnModule().
+     * Any exceptions from the called functions should be caught by the
+     * caller.
+     *
+     * \see AbstractAnalysisData::addColumnModule()
+     */
+    static void addStaticColumnCheckerModule(const AnalysisDataTestInput &data,
+                                             int firstcol, int n,
+                                             AbstractAnalysisData *source);
+    /*! \brief
+     * Adds a mock module that verifies output and storage against
+     * AnalysisDataTestInput.
+     *
+     * \param[in]  data     Data to compare against.
+     * \param[in]  storageCount  Number of previous frames to check
+     *                      (-1 = all).
+     * \param      source   Data object to verify.
+     *
+     * Works like addStaticCheckerModule(), except that in addition, for
+     * each frame, the mock module also checks that previous frames can be
+     * accessed using AbstractAnalysisData::getDataFrame().  In the
+     * IAnalysisDataModule::dataStarted() callback, the mock module
+     * calls AbstractAnalysisData::requestStorage() with \p storageCount as
+     * the parameter.
+     */
+    static void addStaticStorageCheckerModule(const AnalysisDataTestInput &data,
+                                              int                          storageCount,
+                                              AbstractAnalysisData *       source);
+    /*! \brief
+     * Adds a mock module that verifies output against reference data.
+     *
+     * \param[in]  checker   Reference data checker to use for comparison.
+     * \param[in]  id        Identifier for reference data compound to use.
+     * \param      source    Data object to verify.
+     * \param[in]  tolerance Tolerance to use for comparison.
+     *
+     * Creates a mock module that verifies that the
+     * IAnalysisDataModule methods are called correctly by
+     * \p source.  Parameters for the calls are verified against reference
+     * data using a child compound \p id of \p checker.
+     * Adds the created module to \p source using \p data->addModule().
+     * Any exceptions from the called functions should be caught by the
+     * caller.
+     *
+     * \see TestReferenceData
+     */
+    static void addReferenceCheckerModule(const TestReferenceChecker &  checker,
+                                          const char *                  id,
+                                          AbstractAnalysisData *        source,
+                                          const FloatingPointTolerance &tolerance);
 
-        /*! \brief
-         * Adds a mock module that verifies output against reference data.
-         *
-         * \param[in]  id       Identifier for reference data compound to use.
-         * \param      source   Data object to verify.
-         *
-         * Creates a reference checker module using a compound checker with id
-         * \p id at the root level of \p data_.
-         *
-         * See the static overload for other details.
-         */
-        void addReferenceCheckerModule(const char *          id,
-                                       AbstractAnalysisData *source);
+    /*! \brief
+     * Adds a mock module that verifies output against reference data.
+     *
+     * \param[in]  id       Identifier for reference data compound to use.
+     * \param      source   Data object to verify.
+     *
+     * Creates a reference checker module using a compound checker with id
+     * \p id at the root level of \p data_.
+     *
+     * See the static overload for other details.
+     */
+    void addReferenceCheckerModule(const char *          id,
+                                   AbstractAnalysisData *source);
 
-    protected:
-        /*! \brief
-         * Reference data object used for the reference checker modules.
-         *
-         * Tests can use the data object also for their own purposes if needed.
-         */
-        gmx::test::TestReferenceData data_;
+protected:
+    /*! \brief
+     * Reference data object used for the reference checker modules.
+     *
+     * Tests can use the data object also for their own purposes if needed.
+     */
+    gmx::test::TestReferenceData data_;
 };
 
 

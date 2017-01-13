@@ -64,17 +64,17 @@ namespace
  */
 class DefaultProgramContext : public IProgramContext
 {
-    public:
-        DefaultProgramContext() {}
+public:
+    DefaultProgramContext() {}
 
-        virtual const char *programName() const { return "GROMACS"; }
-        virtual const char *displayName() const { return "GROMACS"; }
-        virtual const char *fullBinaryPath() const { return ""; }
-        virtual InstallationPrefixInfo installationPrefix() const
-        {
-            return InstallationPrefixInfo("", false);
-        }
-        virtual const char *commandLine() const { return ""; }
+    virtual const char *programName() const { return "GROMACS"; }
+    virtual const char *displayName() const { return "GROMACS"; }
+    virtual const char *fullBinaryPath() const { return ""; }
+    virtual InstallationPrefixInfo installationPrefix() const
+    {
+        return InstallationPrefixInfo("", false);
+    }
+    virtual const char *commandLine() const { return ""; }
 };
 
 //! Global program info; stores the object set with setProgramContext().

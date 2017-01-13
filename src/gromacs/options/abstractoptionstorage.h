@@ -86,246 +86,246 @@ class Variant;
  */
 class AbstractOptionStorage
 {
-    public:
-        virtual ~AbstractOptionStorage();
+public:
+    virtual ~AbstractOptionStorage();
 
-        //! Returns true if the option has been set.
-        bool isSet() const { return hasFlag(efOption_Set); }
-        /*! \brief
-         * Returns true if the option is a boolean option.
-         *
-         * This is used to optionally support an alternative syntax where an
-         * option provided with no value sets the value to true and an
-         * option prefixed with "no" clears the value.
-         */
-        bool isBoolean() const;
-        //! Returns true if the option is a hidden option.
-        bool isHidden() const { return hasFlag(efOption_Hidden); }
-        //! Returns true if the option is required.
-        bool isRequired() const { return hasFlag(efOption_Required); }
-        //! Returns true if the option is vector-valued.
-        bool isVector() const { return hasFlag(efOption_Vector); }
-        //! Returns the name of the option.
-        const std::string &name() const { return name_; }
-        //! Returns the description of the option set by the calling code.
-        const std::string &description() const { return descr_; }
+    //! Returns true if the option has been set.
+    bool isSet() const { return hasFlag(efOption_Set); }
+    /*! \brief
+     * Returns true if the option is a boolean option.
+     *
+     * This is used to optionally support an alternative syntax where an
+     * option provided with no value sets the value to true and an
+     * option prefixed with "no" clears the value.
+     */
+    bool isBoolean() const;
+    //! Returns true if the option is a hidden option.
+    bool isHidden() const { return hasFlag(efOption_Hidden); }
+    //! Returns true if the option is required.
+    bool isRequired() const { return hasFlag(efOption_Required); }
+    //! Returns true if the option is vector-valued.
+    bool isVector() const { return hasFlag(efOption_Vector); }
+    //! Returns the name of the option.
+    const std::string &name() const { return name_; }
+    //! Returns the description of the option set by the calling code.
+    const std::string &description() const { return descr_; }
 
-        //! Returns true if defaultValueIfSet() value is specified.
-        bool defaultValueIfSetExists() const
-        { return hasFlag(efOption_DefaultValueIfSetExists); }
-        //! Returns the minimum number of values required in one set.
-        int minValueCount() const { return minValueCount_; }
-        //! Returns the maximum allowed number of values in one set (-1 = no limit).
-        int maxValueCount() const { return maxValueCount_; }
+    //! Returns true if defaultValueIfSet() value is specified.
+    bool defaultValueIfSetExists() const
+    { return hasFlag(efOption_DefaultValueIfSetExists); }
+    //! Returns the minimum number of values required in one set.
+    int minValueCount() const { return minValueCount_; }
+    //! Returns the maximum allowed number of values in one set (-1 = no limit).
+    int maxValueCount() const { return maxValueCount_; }
 
-        /*! \brief
-         * Returns an option info object corresponding to this option.
-         */
-        virtual OptionInfo &optionInfo() = 0;
-        /*! \brief
-         * Returns a short string describing the type of the option.
-         */
-        virtual std::string typeString() const = 0;
-        /*! \brief
-         * Formats additional description for the option.
-         *
-         * If this method returns a non-empty string, it is appended to the
-         * plain description when printing help texts.
-         * The default implementation returns an empty string.
-         */
-        virtual std::string formatExtraDescription() const
-        { return std::string(); }
-        /*! \brief
-         * Returns the number of option values added so far.
-         */
-        virtual int valueCount() const = 0;
-        //! \copydoc OptionInfo::defaultValues()
-        virtual std::vector<Variant> defaultValues() const = 0;
-        //! \copydoc OptionInfo::defaultValuesAsStrings()
-        virtual std::vector<std::string> defaultValuesAsStrings() const = 0;
-        //! \copydoc OptionInfo::normalizeValues()
-        virtual std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const = 0;
+    /*! \brief
+     * Returns an option info object corresponding to this option.
+     */
+    virtual OptionInfo &optionInfo() = 0;
+    /*! \brief
+     * Returns a short string describing the type of the option.
+     */
+    virtual std::string typeString() const = 0;
+    /*! \brief
+     * Formats additional description for the option.
+     *
+     * If this method returns a non-empty string, it is appended to the
+     * plain description when printing help texts.
+     * The default implementation returns an empty string.
+     */
+    virtual std::string formatExtraDescription() const
+    { return std::string(); }
+    /*! \brief
+     * Returns the number of option values added so far.
+     */
+    virtual int valueCount() const = 0;
+    //! \copydoc OptionInfo::defaultValues()
+    virtual std::vector<Variant> defaultValues() const = 0;
+    //! \copydoc OptionInfo::defaultValuesAsStrings()
+    virtual std::vector<std::string> defaultValuesAsStrings() const = 0;
+    //! \copydoc OptionInfo::normalizeValues()
+    virtual std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const = 0;
 
-        /*! \brief
-         * Starts adding values from a new source for the option.
-         *
-         * This marks the vurrent value of the option as a default value,
-         * causing next call to startSet() to clear it.  This allows values
-         * from the new source to overwrite old values.
-         *
-         * This method does not throw.
-         */
-        void startSource();
-        /*! \brief
-         * Starts adding a new set of values for the option.
-         *
-         * \throws  InvalidInputError if option is specified multiple times,
-         *      but is not specified to accept it.
-         *
-         * If the parameter is specified multiple times, startSet() should be
-         * called before the values for each instance.
-         *
-         * Strong exception safety guarantee.
-         */
-        void startSet();
-        /*! \brief
-         * Adds a new value for the option.
-         *
-         * \param[in] value  Value to convert.
-         * \throws  InvalidInputError if value cannot be converted, or
-         *      if there are too many values.
-         *
-         * This method should only be called between startSet() and
-         * finishSet().
-         */
-        void appendValue(const Variant &value);
-        /*! \brief
-         * Performs validation and/or actions once a set of values has been
-         * added.
-         *
-         * \throws  InvalidInputError if too few values have been provided, or
-         *      if the valid values since previous startSet() are invalid as a
-         *      set.
-         *
-         * If the parameter is specified multiple times, finishSet() should be
-         * called after the values for each instance.
-         */
-        void finishSet();
-        /*! \brief
-         * Performs validation and/or actions once all values have been added.
-         *
-         * \throws InvalidInputError if the option is required but not set, or
-         *      if all valid values together are invalid as a set.
-         *
-         * This method should be called after all values have been provided
-         * with appendValue().
-         */
-        void finish();
+    /*! \brief
+     * Starts adding values from a new source for the option.
+     *
+     * This marks the vurrent value of the option as a default value,
+     * causing next call to startSet() to clear it.  This allows values
+     * from the new source to overwrite old values.
+     *
+     * This method does not throw.
+     */
+    void startSource();
+    /*! \brief
+     * Starts adding a new set of values for the option.
+     *
+     * \throws  InvalidInputError if option is specified multiple times,
+     *      but is not specified to accept it.
+     *
+     * If the parameter is specified multiple times, startSet() should be
+     * called before the values for each instance.
+     *
+     * Strong exception safety guarantee.
+     */
+    void startSet();
+    /*! \brief
+     * Adds a new value for the option.
+     *
+     * \param[in] value  Value to convert.
+     * \throws  InvalidInputError if value cannot be converted, or
+     *      if there are too many values.
+     *
+     * This method should only be called between startSet() and
+     * finishSet().
+     */
+    void appendValue(const Variant &value);
+    /*! \brief
+     * Performs validation and/or actions once a set of values has been
+     * added.
+     *
+     * \throws  InvalidInputError if too few values have been provided, or
+     *      if the valid values since previous startSet() are invalid as a
+     *      set.
+     *
+     * If the parameter is specified multiple times, finishSet() should be
+     * called after the values for each instance.
+     */
+    void finishSet();
+    /*! \brief
+     * Performs validation and/or actions once all values have been added.
+     *
+     * \throws InvalidInputError if the option is required but not set, or
+     *      if all valid values together are invalid as a set.
+     *
+     * This method should be called after all values have been provided
+     * with appendValue().
+     */
+    void finish();
 
-    protected:
-        /*! \brief
-         * Initializes the storage object from the settings object.
-         *
-         * \param[in] settings  Option settings.
-         * \param[in] staticFlags Option flags that are always set and specify
-         *      generic behavior of the option.
-         * \throws  APIError if invalid settings have been provided.
-         */
-        AbstractOptionStorage(const AbstractOption &settings,
-                              OptionFlags           staticFlags);
+protected:
+    /*! \brief
+     * Initializes the storage object from the settings object.
+     *
+     * \param[in] settings  Option settings.
+     * \param[in] staticFlags Option flags that are always set and specify
+     *      generic behavior of the option.
+     * \throws  APIError if invalid settings have been provided.
+     */
+    AbstractOptionStorage(const AbstractOption &settings,
+                          OptionFlags           staticFlags);
 
-        //! Marks the option as set.
-        void markAsSet();
-        //! Returns true if the given flag is set.
-        bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
-        //! Sets the given flag.
-        void setFlag(OptionFlag flag) { return flags_.set(flag); }
-        //! Clears the given flag.
-        void clearFlag(OptionFlag flag) { return flags_.clear(flag); }
+    //! Marks the option as set.
+    void markAsSet();
+    //! Returns true if the given flag is set.
+    bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
+    //! Sets the given flag.
+    void setFlag(OptionFlag flag) { return flags_.set(flag); }
+    //! Clears the given flag.
+    void clearFlag(OptionFlag flag) { return flags_.clear(flag); }
 
-        /*! \brief
-         * Sets a new minimum number of values required in one set.
-         *
-         * \param[in] count  New minimum number of values (must be > 0).
-         * \throws InvalidInputError if already provided values violate the limit.
-         *
-         * If values have already been provided, it is checked that there are
-         * enough.
-         *
-         * Cannot be called for options with ::efOption_MultipleTimes set,
-         * because it is impossible to check the requirement after the values
-         * have been set.
-         * If attempted, will assert.
-         */
-        void setMinValueCount(int count);
-        /*! \brief
-         * Sets a new maximum number of values required in one set.
-         *
-         * \param[in] count  New maximum number of values
-         *                   (must be > 0, or -1 for no limit).
-         * \throws InvalidInputError if already provided values violate the limit.
-         *
-         * If values have already been provided, it is checked that there are
-         * not too many.
-         *
-         * Cannot be called for options with ::efOption_MultipleTimes set,
-         * because it is impossible to check the requirement after the values
-         * have been set.
-         * If attempted, will assert.
-         */
-        void setMaxValueCount(int count);
+    /*! \brief
+     * Sets a new minimum number of values required in one set.
+     *
+     * \param[in] count  New minimum number of values (must be > 0).
+     * \throws InvalidInputError if already provided values violate the limit.
+     *
+     * If values have already been provided, it is checked that there are
+     * enough.
+     *
+     * Cannot be called for options with ::efOption_MultipleTimes set,
+     * because it is impossible to check the requirement after the values
+     * have been set.
+     * If attempted, will assert.
+     */
+    void setMinValueCount(int count);
+    /*! \brief
+     * Sets a new maximum number of values required in one set.
+     *
+     * \param[in] count  New maximum number of values
+     *                   (must be > 0, or -1 for no limit).
+     * \throws InvalidInputError if already provided values violate the limit.
+     *
+     * If values have already been provided, it is checked that there are
+     * not too many.
+     *
+     * Cannot be called for options with ::efOption_MultipleTimes set,
+     * because it is impossible to check the requirement after the values
+     * have been set.
+     * If attempted, will assert.
+     */
+    void setMaxValueCount(int count);
 
-        /*! \brief
-         * Removes all values from temporary storage for a set.
-         *
-         * This function is always called before starting to add values to
-         * a set, allowing the storage to clear its internal buffers.
-         *
-         * Should not throw.
-         */
-        virtual void clearSet() = 0;
-        /*! \brief
-         * Adds a new value.
-         *
-         * \param[in] value  Value to convert.
-         * \throws  InvalidInputError if \p value is not valid for this option
-         *      or if there have been too many values in the set.
-         *
-         * This method may be called multiple times if the underlying
-         * option is defined to accept multiple values.
-         *
-         * \see OptionStorageTemplate::convertValue()
-         */
-        virtual void convertValue(const Variant &value) = 0;
-        /*! \brief
-         * Performs validation and/or actions once a set of values has been
-         * added.
-         *
-         * \throws  InvalidInputError if the values in the set are not valid
-         *      as a whole.
-         *
-         * This method may be called multiple times if the underlying option
-         * can be specified multiple times.
-         * This method is not currently called if one of the convertValue()
-         * calls throwed.
-         *
-         * \todo
-         * Improve the call semantics.
-         *
-         * \see OptionStorageTemplate::processSetValues()
-         */
-        virtual void processSet() = 0;
-        /*! \brief
-         * Performs validation and/or actions once all values have been added.
-         *
-         * \throws  InvalidInputError if all provided values are not valid as
-         *      a set.
-         *
-         * This method is always called once.
-         *
-         * If the method throws, implementation should take care to leave the
-         * option in a consistent, meaningful state.  However, currently none
-         * of the implementations actually throw in any situation where the
-         * option may be left in an inconsistent state.
-         */
-        virtual void processAll() = 0;
+    /*! \brief
+     * Removes all values from temporary storage for a set.
+     *
+     * This function is always called before starting to add values to
+     * a set, allowing the storage to clear its internal buffers.
+     *
+     * Should not throw.
+     */
+    virtual void clearSet() = 0;
+    /*! \brief
+     * Adds a new value.
+     *
+     * \param[in] value  Value to convert.
+     * \throws  InvalidInputError if \p value is not valid for this option
+     *      or if there have been too many values in the set.
+     *
+     * This method may be called multiple times if the underlying
+     * option is defined to accept multiple values.
+     *
+     * \see OptionStorageTemplate::convertValue()
+     */
+    virtual void convertValue(const Variant &value) = 0;
+    /*! \brief
+     * Performs validation and/or actions once a set of values has been
+     * added.
+     *
+     * \throws  InvalidInputError if the values in the set are not valid
+     *      as a whole.
+     *
+     * This method may be called multiple times if the underlying option
+     * can be specified multiple times.
+     * This method is not currently called if one of the convertValue()
+     * calls throwed.
+     *
+     * \todo
+     * Improve the call semantics.
+     *
+     * \see OptionStorageTemplate::processSetValues()
+     */
+    virtual void processSet() = 0;
+    /*! \brief
+     * Performs validation and/or actions once all values have been added.
+     *
+     * \throws  InvalidInputError if all provided values are not valid as
+     *      a set.
+     *
+     * This method is always called once.
+     *
+     * If the method throws, implementation should take care to leave the
+     * option in a consistent, meaningful state.  However, currently none
+     * of the implementations actually throw in any situation where the
+     * option may be left in an inconsistent state.
+     */
+    virtual void processAll() = 0;
 
-    private:
-        std::string name_;
-        std::string descr_;
-        //! Flags for the option.
-        OptionFlags flags_;
-        bool *      storeIsSet_;
-        //! Minimum number of values required (in one set).
-        int minValueCount_;
-        //! Maximum allowed number of values (in one set), or -1 if no limit.
-        int maxValueCount_;
-        //! Whether we are currently assigning values to a set.
-        bool bInSet_;
-        //! Whether there were errors in set values.
-        bool bSetValuesHadErrors_;
+private:
+    std::string name_;
+    std::string descr_;
+    //! Flags for the option.
+    OptionFlags flags_;
+    bool *      storeIsSet_;
+    //! Minimum number of values required (in one set).
+    int minValueCount_;
+    //! Maximum allowed number of values (in one set), or -1 if no limit.
+    int maxValueCount_;
+    //! Whether we are currently assigning values to a set.
+    bool bInSet_;
+    //! Whether there were errors in set values.
+    bool bSetValuesHadErrors_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };
 
 } // namespace gmx

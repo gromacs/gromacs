@@ -111,60 +111,60 @@ struct InstallationPrefixInfo
  */
 class IProgramContext
 {
-    public:
-        /*! \brief
-         * Returns the name of the binary as it was invoked without any path.
-         *
-         * This is typically `argv[0]` with any leading directory stripped.
-         * Currently, this should be a valid file name.
-         */
-        virtual const char *programName() const = 0;
-        /*! \brief
-         * Returns a display name for the program.
-         *
-         * For simple programs, this can equal programName().  For the \Gromacs
-         * `gmx` wrapper binary, this includes the name of the module (e.g.,
-         * `gmx angle`).  This is used only for informational purposes, and
-         * there are no constraints on contents, except that it should not be
-         * `NULL`.
-         */
-        virtual const char *displayName() const = 0;
-        /*! \brief
-         * Returns the full path of the running binary.
-         *
-         * This is mainly used for informational purposes.  There are no
-         * constraints on contents, except that it should not be `NULL`.
-         * Currently, this is also used for sanity checks in checkpointing.
-         *
-         * The implementation can provide an empty string if the path to the
-         * binary is not available.  In such a case, the information is not
-         * shown.
-         */
-        virtual const char *fullBinaryPath() const = 0;
-        /*! \brief
-         * Returns the installation prefix for \Gromacs.
-         *
-         * This path is used to locate the data files that are in `share/top/`
-         * in the source directory.
-         * The implementation can provide an empty string if the path is not
-         * available; in such a case, functions that require data files may
-         * fail.
-         *
-         * The returned structure also contains a flag to indicate whether the
-         * prefix actually points to the source tree.  This is used for tests
-         * and to support running binaries directly from the build tree.
-         */
-        virtual InstallationPrefixInfo installationPrefix() const = 0;
-        /*! \brief
-         * Returns the full command line used to invoke the binary.
-         *
-         * The implementation can provide an empty string if no command line is
-         * available.
-         */
-        virtual const char *commandLine() const = 0;
+public:
+    /*! \brief
+     * Returns the name of the binary as it was invoked without any path.
+     *
+     * This is typically `argv[0]` with any leading directory stripped.
+     * Currently, this should be a valid file name.
+     */
+    virtual const char *programName() const = 0;
+    /*! \brief
+     * Returns a display name for the program.
+     *
+     * For simple programs, this can equal programName().  For the \Gromacs
+     * `gmx` wrapper binary, this includes the name of the module (e.g.,
+     * `gmx angle`).  This is used only for informational purposes, and
+     * there are no constraints on contents, except that it should not be
+     * `NULL`.
+     */
+    virtual const char *displayName() const = 0;
+    /*! \brief
+     * Returns the full path of the running binary.
+     *
+     * This is mainly used for informational purposes.  There are no
+     * constraints on contents, except that it should not be `NULL`.
+     * Currently, this is also used for sanity checks in checkpointing.
+     *
+     * The implementation can provide an empty string if the path to the
+     * binary is not available.  In such a case, the information is not
+     * shown.
+     */
+    virtual const char *fullBinaryPath() const = 0;
+    /*! \brief
+     * Returns the installation prefix for \Gromacs.
+     *
+     * This path is used to locate the data files that are in `share/top/`
+     * in the source directory.
+     * The implementation can provide an empty string if the path is not
+     * available; in such a case, functions that require data files may
+     * fail.
+     *
+     * The returned structure also contains a flag to indicate whether the
+     * prefix actually points to the source tree.  This is used for tests
+     * and to support running binaries directly from the build tree.
+     */
+    virtual InstallationPrefixInfo installationPrefix() const = 0;
+    /*! \brief
+     * Returns the full command line used to invoke the binary.
+     *
+     * The implementation can provide an empty string if no command line is
+     * available.
+     */
+    virtual const char *commandLine() const = 0;
 
-    protected:
-        virtual ~IProgramContext() {}
+protected:
+    virtual ~IProgramContext() {}
 };
 
 /*! \brief

@@ -72,57 +72,57 @@ namespace
 
 class OptionsListWriter : public OptionsVisitor
 {
-    public:
-        const std::string &optionList() const { return optionList_; }
+public:
+    const std::string &optionList() const { return optionList_; }
 
-        virtual void visitSection(const OptionSectionInfo &section)
+    virtual void visitSection(const OptionSectionInfo &section)
+    {
+        OptionsIterator iterator(section);
+        iterator.acceptSections(this);
+        iterator.acceptOptions(this);
+    }
+    virtual void visitOption(const OptionInfo &option)
+    {
+        if (option.isHidden())
         {
-            OptionsIterator iterator(section);
-            iterator.acceptSections(this);
-            iterator.acceptOptions(this);
+            return;
         }
-        virtual void visitOption(const OptionInfo &option)
+        if (!optionList_.empty())
         {
-            if (option.isHidden())
-            {
-                return;
-            }
-            if (!optionList_.empty())
-            {
-                optionList_.append("\\n");
-            }
-            optionList_.append("-");
-            const BooleanOptionInfo *booleanOption
-                = option.toType<BooleanOptionInfo>();
-            if (booleanOption != nullptr && booleanOption->defaultValue())
-            {
-                optionList_.append("no");
-            }
-            optionList_.append(option.name());
+            optionList_.append("\\n");
         }
+        optionList_.append("-");
+        const BooleanOptionInfo *booleanOption
+            = option.toType<BooleanOptionInfo>();
+        if (booleanOption != nullptr && booleanOption->defaultValue())
+        {
+            optionList_.append("no");
+        }
+        optionList_.append(option.name());
+    }
 
-    private:
-        std::string optionList_;
+private:
+    std::string optionList_;
 };
 
 class OptionCompletionWriter : public OptionsVisitor
 {
-    public:
-        explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
+public:
+    explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
 
-        virtual void visitSection(const OptionSectionInfo &section)
-        {
-            OptionsIterator iterator(section);
-            iterator.acceptSections(this);
-            iterator.acceptOptions(this);
-        }
-        virtual void visitOption(const OptionInfo &option);
+    virtual void visitSection(const OptionSectionInfo &section)
+    {
+        OptionsIterator iterator(section);
+        iterator.acceptSections(this);
+        iterator.acceptOptions(this);
+    }
+    virtual void visitOption(const OptionInfo &option);
 
-    private:
-        void writeOptionCompletion(const OptionInfo & option,
-                                   const std::string &completion);
+private:
+    void writeOptionCompletion(const OptionInfo & option,
+                               const std::string &completion);
 
-        TextWriter &out_;
+    TextWriter &out_;
 };
 
 void OptionCompletionWriter::visitOption(const OptionInfo &option)
@@ -185,23 +185,23 @@ void OptionCompletionWriter::writeOptionCompletion(
 
 class ShellCompletionWriter::Impl
 {
-    public:
-        Impl(const std::string &binaryName, ShellCompletionFormat /*format*/)
-            : binaryName_(binaryName)
-        {
-        }
+public:
+    Impl(const std::string &binaryName, ShellCompletionFormat /*format*/)
+        : binaryName_(binaryName)
+    {
+    }
 
-        std::string completionFunctionName(const char *moduleName) const
-        {
-            std::string result
-                = formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
-            std::replace(result.begin(), result.end(), '-', '_');
-            return result;
-        }
+    std::string completionFunctionName(const char *moduleName) const
+    {
+        std::string result
+            = formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
+        std::replace(result.begin(), result.end(), '-', '_');
+        return result;
+    }
 
-        std::string binaryName_;
-        // Never releases ownership.
-        std::unique_ptr<TextWriter> file_;
+    std::string binaryName_;
+    // Never releases ownership.
+    std::unique_ptr<TextWriter> file_;
 };
 
 ShellCompletionWriter::ShellCompletionWriter(const std::string &   binaryName,

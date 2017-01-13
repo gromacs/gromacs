@@ -88,198 +88,198 @@ class Options;
 template <typename T>
 class OptionStorageTemplate : public AbstractOptionStorage
 {
-    public:
-        //! Alias for the template class for use in base classes.
-        typedef OptionStorageTemplate<T> MyBase;
-        //! Type of the container that contains the current values.
-        typedef std::vector<T> ValueList;
+public:
+    //! Alias for the template class for use in base classes.
+    typedef OptionStorageTemplate<T> MyBase;
+    //! Type of the container that contains the current values.
+    typedef std::vector<T> ValueList;
 
-        // No implementation in this class for the pure virtual methods, but
-        // the declarations are still included for clarity.
-        // The various copydoc calls are needed with Doxygen 1.8.10, although
-        // things work without with 1.8.5...
-        virtual std::string typeString() const = 0;
-        //! \copydoc gmx::AbstractOptionStorage::valueCount()
-        virtual int valueCount() const { return store_->valueCount(); }
-        //! \copydoc gmx::AbstractOptionStorage::defaultValues()
-        virtual std::vector<Variant> defaultValues() const;
-        /*! \copydoc gmx::AbstractOptionStorage::defaultValuesAsStrings()
-         *
-         * OptionStorageTemplate implements handling of defaultValueIfSet()
-         * cases and composing the vector.
-         * Derived classes must implement formatSingleValue() to provide the
-         * actual formatting for a value of type \p T.
-         */
-        virtual std::vector<std::string> defaultValuesAsStrings() const;
+    // No implementation in this class for the pure virtual methods, but
+    // the declarations are still included for clarity.
+    // The various copydoc calls are needed with Doxygen 1.8.10, although
+    // things work without with 1.8.5...
+    virtual std::string typeString() const = 0;
+    //! \copydoc gmx::AbstractOptionStorage::valueCount()
+    virtual int valueCount() const { return store_->valueCount(); }
+    //! \copydoc gmx::AbstractOptionStorage::defaultValues()
+    virtual std::vector<Variant> defaultValues() const;
+    /*! \copydoc gmx::AbstractOptionStorage::defaultValuesAsStrings()
+     *
+     * OptionStorageTemplate implements handling of defaultValueIfSet()
+     * cases and composing the vector.
+     * Derived classes must implement formatSingleValue() to provide the
+     * actual formatting for a value of type \p T.
+     */
+    virtual std::vector<std::string> defaultValuesAsStrings() const;
 
-    protected:
-        //! Smart pointer for managing the final storage interface.
-        typedef std::unique_ptr<IOptionValueStore<T> > StorePointer;
+protected:
+    //! Smart pointer for managing the final storage interface.
+    typedef std::unique_ptr<IOptionValueStore<T> > StorePointer;
 
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings  Option settings.
-         * \param[in] staticFlags Option flags that are always set and specify
-         *      generic behavior of the option.
-         * \throws  APIError if invalid settings have been provided.
-         */
-        template <class U>
-        explicit OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                                       OptionFlags staticFlags = OptionFlags());
-        /*! \brief
-         * Initializes the storage from base option settings.
-         *
-         * \param[in] settings  Option settings.
-         * \param[in] store     Final storage location.
-         * \throws  APIError if invalid settings have been provided.
-         *
-         * This constructor works for cases where there is no matching
-         * OptionTemplate (e.g., EnumOption).
-         */
-        OptionStorageTemplate(const AbstractOption &settings,
-                              StorePointer          store);
+    /*! \brief
+     * Initializes the storage from option settings.
+     *
+     * \param[in] settings  Option settings.
+     * \param[in] staticFlags Option flags that are always set and specify
+     *      generic behavior of the option.
+     * \throws  APIError if invalid settings have been provided.
+     */
+    template <class U>
+    explicit OptionStorageTemplate(const OptionTemplate<T, U> &settings,
+                                   OptionFlags staticFlags = OptionFlags());
+    /*! \brief
+     * Initializes the storage from base option settings.
+     *
+     * \param[in] settings  Option settings.
+     * \param[in] store     Final storage location.
+     * \throws  APIError if invalid settings have been provided.
+     *
+     * This constructor works for cases where there is no matching
+     * OptionTemplate (e.g., EnumOption).
+     */
+    OptionStorageTemplate(const AbstractOption &settings,
+                          StorePointer          store);
 
-        //! \copydoc gmx::AbstractOptionStorage::clearSet()
-        virtual void clearSet();
-        /*! \copydoc gmx::AbstractOptionStorage::convertValue()
-         *
-         * Derived classes should call addValue() after they have converted
-         * \p value to the storage type.  It is allowed to call addValue()
-         * more than once, or not at all.  OptionsAssigner::appendValue()
-         * provides the same exception safety guarantee as this method, so it
-         * should be considered whether the implementation can be made strongly
-         * exception safe.
-         */
-        virtual void convertValue(const Variant &value) = 0;
-        /*! \brief
-         * Processes values for a set after all have been converted.
-         *
-         * \param[in,out] values Valid values in the set.
-         * \throws InvalidInputError if the values do not form a valid set.
-         *
-         * This method is called after all convertValue() calls for a set.
-         * \p values contains all values that were validly converted by
-         * convertValue().  The derived class may alter the values, but should
-         * in such a case ensure that a correct number of values is produced.
-         * If the derived class throws, all values in \p values are discarded.
-         */
-        virtual void processSetValues(ValueList *values)
-        {
-            GMX_UNUSED_VALUE(values);
-        }
-        /*! \copydoc gmx::AbstractOptionStorage::processSet()
-         *
-         * OptionStorageTemplate implements transaction support for a set of
-         * values in this method (see the class description), and provides a
-         * more detailed processSetValues() method that can be overridden in
-         * subclasses to process the actual values.  Derived classes should
-         * override that method instead of this one if set value processing is
-         * necessary.
-         */
-        virtual void processSet();
-        /*! \copydoc gmx::AbstractOptionStorage::processAll()
-         *
-         * The implementation in OptionStorageTemplate does nothing.
-         */
-        virtual void processAll()
-        {
-        }
-        /*! \brief
-         * Formats a single value as a string.
-         *
-         * \param[in] value  Value to format.
-         * \returns   \p value formatted as a string.
-         *
-         * The derived class must provide this method to format values a
-         * strings.  Called by defaultValuesAsStrings() to do the actual
-         * formatting.
-         */
-        virtual std::string formatSingleValue(const T &value) const = 0;
+    //! \copydoc gmx::AbstractOptionStorage::clearSet()
+    virtual void clearSet();
+    /*! \copydoc gmx::AbstractOptionStorage::convertValue()
+     *
+     * Derived classes should call addValue() after they have converted
+     * \p value to the storage type.  It is allowed to call addValue()
+     * more than once, or not at all.  OptionsAssigner::appendValue()
+     * provides the same exception safety guarantee as this method, so it
+     * should be considered whether the implementation can be made strongly
+     * exception safe.
+     */
+    virtual void convertValue(const Variant &value) = 0;
+    /*! \brief
+     * Processes values for a set after all have been converted.
+     *
+     * \param[in,out] values Valid values in the set.
+     * \throws InvalidInputError if the values do not form a valid set.
+     *
+     * This method is called after all convertValue() calls for a set.
+     * \p values contains all values that were validly converted by
+     * convertValue().  The derived class may alter the values, but should
+     * in such a case ensure that a correct number of values is produced.
+     * If the derived class throws, all values in \p values are discarded.
+     */
+    virtual void processSetValues(ValueList *values)
+    {
+        GMX_UNUSED_VALUE(values);
+    }
+    /*! \copydoc gmx::AbstractOptionStorage::processSet()
+     *
+     * OptionStorageTemplate implements transaction support for a set of
+     * values in this method (see the class description), and provides a
+     * more detailed processSetValues() method that can be overridden in
+     * subclasses to process the actual values.  Derived classes should
+     * override that method instead of this one if set value processing is
+     * necessary.
+     */
+    virtual void processSet();
+    /*! \copydoc gmx::AbstractOptionStorage::processAll()
+     *
+     * The implementation in OptionStorageTemplate does nothing.
+     */
+    virtual void processAll()
+    {
+    }
+    /*! \brief
+     * Formats a single value as a string.
+     *
+     * \param[in] value  Value to format.
+     * \returns   \p value formatted as a string.
+     *
+     * The derived class must provide this method to format values a
+     * strings.  Called by defaultValuesAsStrings() to do the actual
+     * formatting.
+     */
+    virtual std::string formatSingleValue(const T &value) const = 0;
 
-        /*! \brief
-         * Adds a value to a temporary storage.
-         *
-         * \param[in] value  Value to add. A copy is made.
-         * \throws std::bad_alloc if out of memory.
-         * \throws InvalidInputError if the maximum value count has been reached.
-         *
-         * Derived classes should call this function from the convertValue()
-         * implementation to add converted values to the storage.
-         * If the maximum value count has been reached, the value is discarded
-         * and an exception is thrown.
-         *
-         * If adding values outside convertValue() (e.g., to set a custom
-         * default value), derived classes should call clearSet() before adding
-         * values (unless in the constructor) and commitValues() once all
-         * values are added.
-         */
-        void addValue(const T &value);
-        /*! \brief
-         * Commits values added with addValue().
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * If this function succeeds, values added with addValue() since the
-         * previous clearSet() are added to the storage for the option.
-         * Only throws in out-of-memory conditions, and provides the strong
-         * exception safety guarantee as long as the copy constructor of `T`
-         * does not throw.
-         *
-         * See addValue() for cases where this method should be used in derived
-         * classes.
-         *
-         * Calls clearSet() if it is successful.
-         */
-        void commitValues();
+    /*! \brief
+     * Adds a value to a temporary storage.
+     *
+     * \param[in] value  Value to add. A copy is made.
+     * \throws std::bad_alloc if out of memory.
+     * \throws InvalidInputError if the maximum value count has been reached.
+     *
+     * Derived classes should call this function from the convertValue()
+     * implementation to add converted values to the storage.
+     * If the maximum value count has been reached, the value is discarded
+     * and an exception is thrown.
+     *
+     * If adding values outside convertValue() (e.g., to set a custom
+     * default value), derived classes should call clearSet() before adding
+     * values (unless in the constructor) and commitValues() once all
+     * values are added.
+     */
+    void addValue(const T &value);
+    /*! \brief
+     * Commits values added with addValue().
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * If this function succeeds, values added with addValue() since the
+     * previous clearSet() are added to the storage for the option.
+     * Only throws in out-of-memory conditions, and provides the strong
+     * exception safety guarantee as long as the copy constructor of `T`
+     * does not throw.
+     *
+     * See addValue() for cases where this method should be used in derived
+     * classes.
+     *
+     * Calls clearSet() if it is successful.
+     */
+    void commitValues();
 
-        /*! \brief
-         * Sets the default value for the option.
-         *
-         * \param[in] value  Default value to set.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * This method can be used from the derived class constructor to
-         * programmatically set a default value.
-         */
-        void setDefaultValue(const T &value);
-        /*! \brief
-         * Sets the default value if set for the option.
-         *
-         * \param[in] value  Default value to set.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * This method can be used from the derived class constructor to
-         * programmatically set a default value.
-         */
-        void setDefaultValueIfSet(const T &value);
+    /*! \brief
+     * Sets the default value for the option.
+     *
+     * \param[in] value  Default value to set.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * This method can be used from the derived class constructor to
+     * programmatically set a default value.
+     */
+    void setDefaultValue(const T &value);
+    /*! \brief
+     * Sets the default value if set for the option.
+     *
+     * \param[in] value  Default value to set.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * This method can be used from the derived class constructor to
+     * programmatically set a default value.
+     */
+    void setDefaultValueIfSet(const T &value);
 
-        /*! \brief
-         * Provides derived classes access to the current list of values.
-         *
-         * The non-const variant should only be used from processAll() in
-         * derived classes if necessary.
-         */
-        ArrayRef<T>      values() { return store_->values(); }
-        //! Provides derived classes access to the current list of values.
-        ConstArrayRef<T> values() const { return store_->values(); }
+    /*! \brief
+     * Provides derived classes access to the current list of values.
+     *
+     * The non-const variant should only be used from processAll() in
+     * derived classes if necessary.
+     */
+    ArrayRef<T>      values() { return store_->values(); }
+    //! Provides derived classes access to the current list of values.
+    ConstArrayRef<T> values() const { return store_->values(); }
 
-    private:
-        //! Creates the internal storage object for final values..
-        StorePointer createStore(ValueList *storeVector,
-                                 T *store, int *storeCount,
-                                 int initialCount);
+private:
+    //! Creates the internal storage object for final values..
+    StorePointer createStore(ValueList *storeVector,
+                             T *store, int *storeCount,
+                             int initialCount);
 
-        /*! \brief
-         * Vector for temporary storage of values before commitSet() is called.
-         */
-        ValueList setValues_;
-        //! Final storage for option values.
-        const StorePointer store_;
-        // This never releases ownership.
-        std::unique_ptr<T> defaultValueIfSet_;
+    /*! \brief
+     * Vector for temporary storage of values before commitSet() is called.
+     */
+    ValueList setValues_;
+    //! Final storage for option values.
+    const StorePointer store_;
+    // This never releases ownership.
+    std::unique_ptr<T> defaultValueIfSet_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 
@@ -305,78 +305,78 @@ class OptionStorageTemplate : public AbstractOptionStorage
 template <typename T>
 class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
 {
-    public:
-        //! Alias for the template class for use in base classes.
-        typedef OptionStorageTemplateSimple<T> MyBase;
+public:
+    //! Alias for the template class for use in base classes.
+    typedef OptionStorageTemplateSimple<T> MyBase;
 
-    protected:
-        //! Alias for the converter parameter type for initConverter().
-        typedef OptionValueConverterSimple<T> ConverterType;
+protected:
+    //! Alias for the converter parameter type for initConverter().
+    typedef OptionValueConverterSimple<T> ConverterType;
 
-        //! Initializes the storage.
-        template <class U>
-        explicit OptionStorageTemplateSimple(const OptionTemplate<T, U> &settings,
-                                             OptionFlags staticFlags = OptionFlags())
-            : OptionStorageTemplate<T>(settings, staticFlags), initialized_(false)
-        {
-        }
-        //! Initializes the storage.
-        OptionStorageTemplateSimple(const AbstractOption &                          settings,
-                                    typename OptionStorageTemplate<T>::StorePointer store)
-            : OptionStorageTemplate<T>(settings, std::move(store)), initialized_(false)
-        {
-        }
+    //! Initializes the storage.
+    template <class U>
+    explicit OptionStorageTemplateSimple(const OptionTemplate<T, U> &settings,
+                                         OptionFlags staticFlags = OptionFlags())
+        : OptionStorageTemplate<T>(settings, staticFlags), initialized_(false)
+    {
+    }
+    //! Initializes the storage.
+    OptionStorageTemplateSimple(const AbstractOption &                          settings,
+                                typename OptionStorageTemplate<T>::StorePointer store)
+        : OptionStorageTemplate<T>(settings, std::move(store)), initialized_(false)
+    {
+    }
 
-        virtual std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const
+    virtual std::vector<Variant>
+    normalizeValues(const std::vector<Variant> &values) const
+    {
+        const_cast<MyBase *>(this)->ensureConverterInitialized();
+        std::vector<Variant> result;
+        for (const auto &value : values)
         {
-            const_cast<MyBase *>(this)->ensureConverterInitialized();
-            std::vector<Variant> result;
-            for (const auto &value : values)
-            {
-                result.push_back(
-                        Variant::create<T>(
-                                processValue(converter_.convert(value))));
-            }
-            return result;
+            result.push_back(
+                    Variant::create<T>(
+                            processValue(converter_.convert(value))));
         }
+        return result;
+    }
 
-        /*! \brief
-         * Specifies how different types are converted.
-         *
-         * See OptionValueConverterSimple for more details.
-         */
-        virtual void initConverter(ConverterType *converter) = 0;
-        /*! \brief
-         * Post-processes a value after conversion to the output type.
-         *
-         * \param[in] value  Value after conversion.
-         * \returns   Value to store for the option.
-         *
-         * The default implementation only provides an identity mapping.
-         */
-        virtual T processValue(const T &value) const
-        {
-            return value;
-        }
+    /*! \brief
+     * Specifies how different types are converted.
+     *
+     * See OptionValueConverterSimple for more details.
+     */
+    virtual void initConverter(ConverterType *converter) = 0;
+    /*! \brief
+     * Post-processes a value after conversion to the output type.
+     *
+     * \param[in] value  Value after conversion.
+     * \returns   Value to store for the option.
+     *
+     * The default implementation only provides an identity mapping.
+     */
+    virtual T processValue(const T &value) const
+    {
+        return value;
+    }
 
-    private:
-        virtual void convertValue(const Variant &variant)
+private:
+    virtual void convertValue(const Variant &variant)
+    {
+        ensureConverterInitialized();
+        this->addValue(processValue(converter_.convert(variant)));
+    }
+    void ensureConverterInitialized()
+    {
+        if (!initialized_)
         {
-            ensureConverterInitialized();
-            this->addValue(processValue(converter_.convert(variant)));
+            initConverter(&converter_);
+            initialized_ = true;
         }
-        void ensureConverterInitialized()
-        {
-            if (!initialized_)
-            {
-                initConverter(&converter_);
-                initialized_ = true;
-            }
-        }
+    }
 
-        ConverterType converter_;
-        bool          initialized_;
+    ConverterType converter_;
+    bool          initialized_;
 };
 
 

@@ -84,9 +84,9 @@ typedef std::vector<std::exception_ptr> NestedExceptionList;
  */
 class IExceptionInfo
 {
-    public:
-        virtual ~IExceptionInfo();
-        GMX_DEFAULT_CONSTRUCTORS(IExceptionInfo);
+public:
+    virtual ~IExceptionInfo();
+    GMX_DEFAULT_CONSTRUCTORS(IExceptionInfo);
 };
 
 //! Smart pointer to manage IExceptionInfo ownership.
@@ -118,21 +118,21 @@ class ExceptionData;
 template <class Tag, typename T>
 class ExceptionInfo : public internal::IExceptionInfo
 {
-    public:
-        //! The type of value stored in this object.
-        typedef T value_type;
+public:
+    //! The type of value stored in this object.
+    typedef T value_type;
 
-        //! Creates an info object from given value.
-        explicit ExceptionInfo(const T &value)
-            : value_(value)
-        {
-        }
+    //! Creates an info object from given value.
+    explicit ExceptionInfo(const T &value)
+        : value_(value)
+    {
+    }
 
-        //! Returns the stored value.
-        const T &value() const { return value_; }
+    //! Returns the stored value.
+    const T &value() const { return value_; }
 
-    private:
-        T value_;
+private:
+    T value_;
 };
 
 /*! \internal
@@ -190,68 +190,68 @@ typedef ExceptionInfo<struct ExceptionInfoLocation_, ThrowLocation>
  */
 class ExceptionInitializer
 {
-    public:
-        /*! \brief
-         * Creates an initialized with the given string as the reason.
-         *
-         * \param[in] reason  Detailed reason for the exception.
-         * \throw     std::bad_alloc if out of memory.
-         *
-         * This constructor is not explicit to allow constructing exceptions
-         * with a plain string argument given to the constructor without adding
-         * extra code to each exception class.
-         */
-        ExceptionInitializer(const char *reason)
-            : reason_(reason)
-        {
-        }
-        //! \copydoc ExceptionInitializer(const char *)
-        ExceptionInitializer(const std::string &reason)
-            : reason_(reason)
-        {
-        }
+public:
+    /*! \brief
+     * Creates an initialized with the given string as the reason.
+     *
+     * \param[in] reason  Detailed reason for the exception.
+     * \throw     std::bad_alloc if out of memory.
+     *
+     * This constructor is not explicit to allow constructing exceptions
+     * with a plain string argument given to the constructor without adding
+     * extra code to each exception class.
+     */
+    ExceptionInitializer(const char *reason)
+        : reason_(reason)
+    {
+    }
+    //! \copydoc ExceptionInitializer(const char *)
+    ExceptionInitializer(const std::string &reason)
+        : reason_(reason)
+    {
+    }
 
-        /*! \brief
-         * Returns true if addCurrentExceptionAsNested() has been called.
-         *
-         * Provided for convenience for cases where exceptions will be added
-         * conditionally, and the caller wants to check whether any excetions
-         * were actually added.
-         */
-        bool hasNestedExceptions() const { return !nested_.empty(); }
-        /*! \brief
-         * Adds the currently caught exception as a nested exception.
-         *
-         * May be called multiple times; all provided exceptions will be added
-         * in a list of nested exceptions.
-         *
-         * Must not be called outside a catch block.
-         */
-        void addCurrentExceptionAsNested()
-        {
-            nested_.push_back(std::current_exception());
-        }
-        /*! \brief
-         * Adds the specified exception as a nested exception.
-         *
-         * May be called multiple times; all provided exceptions will be added
-         * in a list of nested exceptions.
-         *
-         * This is equivalent to throwing \p ex and calling
-         * addCurrentExceptionAsNested() in the catch block, but potentially
-         * more efficient.
-         */
-        template <class Exception>
-        void addNested(const Exception &ex)
-        {
-            nested_.push_back(std::make_exception_ptr(ex));
-        }
+    /*! \brief
+     * Returns true if addCurrentExceptionAsNested() has been called.
+     *
+     * Provided for convenience for cases where exceptions will be added
+     * conditionally, and the caller wants to check whether any excetions
+     * were actually added.
+     */
+    bool hasNestedExceptions() const { return !nested_.empty(); }
+    /*! \brief
+     * Adds the currently caught exception as a nested exception.
+     *
+     * May be called multiple times; all provided exceptions will be added
+     * in a list of nested exceptions.
+     *
+     * Must not be called outside a catch block.
+     */
+    void addCurrentExceptionAsNested()
+    {
+        nested_.push_back(std::current_exception());
+    }
+    /*! \brief
+     * Adds the specified exception as a nested exception.
+     *
+     * May be called multiple times; all provided exceptions will be added
+     * in a list of nested exceptions.
+     *
+     * This is equivalent to throwing \p ex and calling
+     * addCurrentExceptionAsNested() in the catch block, but potentially
+     * more efficient.
+     */
+    template <class Exception>
+    void addNested(const Exception &ex)
+    {
+        nested_.push_back(std::make_exception_ptr(ex));
+    }
 
-    private:
-        std::string                   reason_;
-        internal::NestedExceptionList nested_;
+private:
+    std::string                   reason_;
+    internal::NestedExceptionList nested_;
 
-        friend class GromacsException;
+    friend class GromacsException;
 };
 
 /*! \brief
@@ -261,98 +261,98 @@ class ExceptionInitializer
  */
 class GromacsException : public std::exception
 {
-    public:
-        // Explicitly declared because some compiler/library combinations warn
-        // about missing noexcept otherwise.
-        virtual ~GromacsException() noexcept {}
+public:
+    // Explicitly declared because some compiler/library combinations warn
+    // about missing noexcept otherwise.
+    virtual ~GromacsException() noexcept {}
 
-        GMX_DEFAULT_CONSTRUCTORS(GromacsException);
+    GMX_DEFAULT_CONSTRUCTORS(GromacsException);
 
-        /*! \brief
-         * Returns the reason string for the exception.
-         *
-         * The return value is the string that was passed to the constructor.
-         */
-        virtual const char *what() const noexcept;
-        /*! \brief
-         * Returns the error code corresponding to the exception type.
-         */
-        virtual int errorCode() const = 0;
+    /*! \brief
+     * Returns the reason string for the exception.
+     *
+     * The return value is the string that was passed to the constructor.
+     */
+    virtual const char *what() const noexcept;
+    /*! \brief
+     * Returns the error code corresponding to the exception type.
+     */
+    virtual int errorCode() const = 0;
 
-        /*! \brief
-         * Returns the value associated with given ExceptionInfo.
-         *
-         * \tparam  InfoType  ExceptionInfo type to get the value for.
-         * \returns Value set for `InfoType`, or `nullptr` if such info has not
-         *     been set.
-         *
-         * Does not throw.
-         */
-        template <class InfoType>
-        const typename InfoType::value_type *getInfo() const
+    /*! \brief
+     * Returns the value associated with given ExceptionInfo.
+     *
+     * \tparam  InfoType  ExceptionInfo type to get the value for.
+     * \returns Value set for `InfoType`, or `nullptr` if such info has not
+     *     been set.
+     *
+     * Does not throw.
+     */
+    template <class InfoType>
+    const typename InfoType::value_type *getInfo() const
+    {
+        const internal::IExceptionInfo *item = getInfo(typeid(InfoType));
+        if (item != nullptr)
         {
-            const internal::IExceptionInfo *item = getInfo(typeid(InfoType));
-            if (item != nullptr)
-            {
-                GMX_ASSERT(dynamic_cast<const InfoType *>(item) != nullptr,
-                           "Invalid exception info item found");
-                return &static_cast<const InfoType *>(item)->value();
-            }
-            return nullptr;
+            GMX_ASSERT(dynamic_cast<const InfoType *>(item) != nullptr,
+                       "Invalid exception info item found");
+            return &static_cast<const InfoType *>(item)->value();
         }
+        return nullptr;
+    }
 
-        /*! \brief
-         * Associates extra information with the exception.
-         *
-         * \tparam  Tag  ExceptionInfo tag type.
-         * \tparam  T          ExceptionInfo value type.
-         * \param[in] item  ExceptionInfo to associate.
-         * \throws std::bad_alloc if out of memory.
-         * \throws unspecified    any exception thrown by `T` copy construction.
-         *
-         * If an item of this type is already associated, it is overwritten.
-         */
-        template <class Tag, typename T>
-        void setInfo(const ExceptionInfo<Tag, T> &item)
-        {
-            typedef ExceptionInfo<Tag, T> ItemType;
-            internal::ExceptionInfoPointer itemPtr(new ItemType(item));
-            setInfo(typeid(ItemType), std::move(itemPtr));
-        }
+    /*! \brief
+     * Associates extra information with the exception.
+     *
+     * \tparam  Tag  ExceptionInfo tag type.
+     * \tparam  T          ExceptionInfo value type.
+     * \param[in] item  ExceptionInfo to associate.
+     * \throws std::bad_alloc if out of memory.
+     * \throws unspecified    any exception thrown by `T` copy construction.
+     *
+     * If an item of this type is already associated, it is overwritten.
+     */
+    template <class Tag, typename T>
+    void setInfo(const ExceptionInfo<Tag, T> &item)
+    {
+        typedef ExceptionInfo<Tag, T> ItemType;
+        internal::ExceptionInfoPointer itemPtr(new ItemType(item));
+        setInfo(typeid(ItemType), std::move(itemPtr));
+    }
 
-        /*! \brief
-         * Adds context information to this exception.
-         *
-         * \param[in] context  Context string to add.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Typical use is to add additional information higher up in the call
-         * stack using this function in a catch block and the rethrow the
-         * exception.
-         *
-         * \todo
-         * The added information is currently not accessible through what(),
-         * nor through any other means except for calling
-         * printFatalErrorMessage(), formatExceptionMessageToString() or
-         * formatExceptionMessageToFile(). See ExceptionInitializer for more
-         * discussion.
-         */
-        void prependContext(const std::string &context);
+    /*! \brief
+     * Adds context information to this exception.
+     *
+     * \param[in] context  Context string to add.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * Typical use is to add additional information higher up in the call
+     * stack using this function in a catch block and the rethrow the
+     * exception.
+     *
+     * \todo
+     * The added information is currently not accessible through what(),
+     * nor through any other means except for calling
+     * printFatalErrorMessage(), formatExceptionMessageToString() or
+     * formatExceptionMessageToFile(). See ExceptionInitializer for more
+     * discussion.
+     */
+    void prependContext(const std::string &context);
 
-    protected:
-        /*! \brief
-         * Creates an exception object with the provided initializer/reason.
-         *
-         * \param[in] details  Initializer for the exception.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        explicit GromacsException(const ExceptionInitializer &details);
+protected:
+    /*! \brief
+     * Creates an exception object with the provided initializer/reason.
+     *
+     * \param[in] details  Initializer for the exception.
+     * \throws    std::bad_alloc if out of memory.
+     */
+    explicit GromacsException(const ExceptionInitializer &details);
 
-    private:
-        const internal::IExceptionInfo *getInfo(const std::type_index &index) const;
-        void setInfo(const std::type_index &index, internal::ExceptionInfoPointer &&item);
+private:
+    const internal::IExceptionInfo *getInfo(const std::type_index &index) const;
+    void setInfo(const std::type_index &index, internal::ExceptionInfoPointer &&item);
 
-        std::shared_ptr<internal::ExceptionData> data_;
+    std::shared_ptr<internal::ExceptionData> data_;
 };
 
 /*! \brief
@@ -398,21 +398,21 @@ typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, con
  */
 class FileIOError : public GromacsException
 {
-    public:
-        /*! \brief
-         * Creates an exception object with the provided initializer/reason.
-         *
-         * \param[in] details  Initializer for the exception.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * It is possible to call this constructor either with an explicit
-         * ExceptionInitializer object (useful for more complex cases), or
-         * a simple string if only a reason string needs to be provided.
-         */
-        explicit FileIOError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+public:
+    /*! \brief
+     * Creates an exception object with the provided initializer/reason.
+     *
+     * \param[in] details  Initializer for the exception.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * It is possible to call this constructor either with an explicit
+     * ExceptionInitializer object (useful for more complex cases), or
+     * a simple string if only a reason string needs to be provided.
+     */
+    explicit FileIOError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -425,10 +425,10 @@ class FileIOError : public GromacsException
  */
 class UserInputError : public GromacsException
 {
-    protected:
-        //! \copydoc FileIOError::FileIOError()
-        explicit UserInputError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+protected:
+    //! \copydoc FileIOError::FileIOError()
+    explicit UserInputError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 };
 
 /*! \brief
@@ -438,12 +438,12 @@ class UserInputError : public GromacsException
  */
 class InvalidInputError : public UserInputError
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit InvalidInputError(const ExceptionInitializer &details)
-            : UserInputError(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit InvalidInputError(const ExceptionInitializer &details)
+        : UserInputError(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -453,12 +453,12 @@ class InvalidInputError : public UserInputError
  */
 class InconsistentInputError : public UserInputError
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit InconsistentInputError(const ExceptionInitializer &details)
-            : UserInputError(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit InconsistentInputError(const ExceptionInitializer &details)
+        : UserInputError(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -468,21 +468,21 @@ class InconsistentInputError : public UserInputError
  */
 class ToleranceError : public GromacsException
 {
-    public:
-        /*! \brief
-         * Creates an exception object with the provided initializer/reason.
-         *
-         * \param[in] details  Initializer for the exception.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * It is possible to call this constructor either with an explicit
-         * ExceptionInitializer object (useful for more complex cases), or
-         * a simple string if only a reason string needs to be provided.
-         */
-        explicit ToleranceError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+public:
+    /*! \brief
+     * Creates an exception object with the provided initializer/reason.
+     *
+     * \param[in] details  Initializer for the exception.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * It is possible to call this constructor either with an explicit
+     * ExceptionInitializer object (useful for more complex cases), or
+     * a simple string if only a reason string needs to be provided.
+     */
+    explicit ToleranceError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -492,12 +492,12 @@ class ToleranceError : public GromacsException
  */
 class SimulationInstabilityError : public GromacsException
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit SimulationInstabilityError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit SimulationInstabilityError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -507,12 +507,12 @@ class SimulationInstabilityError : public GromacsException
  */
 class InternalError : public GromacsException
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit InternalError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit InternalError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -522,12 +522,12 @@ class InternalError : public GromacsException
  */
 class APIError : public GromacsException
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit APIError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit APIError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -537,12 +537,12 @@ class APIError : public GromacsException
  */
 class RangeError : public GromacsException
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit RangeError(const ExceptionInitializer &details)
-            : GromacsException(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit RangeError(const ExceptionInitializer &details)
+        : GromacsException(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief
@@ -552,12 +552,12 @@ class RangeError : public GromacsException
  */
 class NotImplementedError : public APIError
 {
-    public:
-        //! \copydoc FileIOError::FileIOError()
-        explicit NotImplementedError(const ExceptionInitializer &details)
-            : APIError(details) {}
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit NotImplementedError(const ExceptionInitializer &details)
+        : APIError(details) {}
 
-        virtual int errorCode() const;
+    virtual int errorCode() const;
 };
 
 /*! \brief

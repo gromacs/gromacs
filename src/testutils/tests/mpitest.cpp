@@ -55,11 +55,11 @@ namespace
 
 class MpiSelfTest : public ::testing::Test
 {
-    public:
-        MpiSelfTest() : reached {0, 0}
-        {}
+public:
+    MpiSelfTest() : reached {0, 0}
+    {}
 
-        int reached[2];
+    int reached[2];
 };
 
 TEST_F(MpiSelfTest, Runs)

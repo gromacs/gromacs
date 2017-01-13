@@ -154,8 +154,8 @@ static bool isPressureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
 /*! \brief Sets the number of different temperature coupling values */
 enum class NumTempScaleValues
 {
-    single,   //!< Single T-scaling value (either one group or all values =1)
-    multiple  //!< Multiple T-scaling values, need to use T-group indices
+single,       //!< Single T-scaling value (either one group or all values =1)
+multiple      //!< Multiple T-scaling values, need to use T-group indices
 };
 
 /*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling
@@ -166,8 +166,8 @@ enum class NumTempScaleValues
  */
 enum class ApplyParrinelloRahmanVScaling
 {
-    no,       //!< Do not apply velocity scaling (not a PR-coupling run or step)
-    diagonal  //!< Apply velocity scaling using a diagonal matrix
+no,           //!< Do not apply velocity scaling (not a PR-coupling run or step)
+diagonal      //!< Apply velocity scaling using a diagonal matrix
 };
 
 /*! \brief Integrate using leap-frog with T-scaling and optionally diagonal Parrinello-Rahman p-coupling
@@ -244,7 +244,7 @@ static void updateMdLeapfrogSimple(int                       start,
 /*! \brief Sets the NEMD acceleration type */
 enum class AccelerationType
 {
-    none, group, cosine
+none, group, cosine
 };
 
 /*! \brief Integrate using leap-frog with support for everything

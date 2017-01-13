@@ -76,176 +76,176 @@ namespace gmx
  */
 class Variant
 {
+public:
+    /*! \brief
+     * Creates a variant that holds the given value.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * This method allows explicitly specifying the template argument,
+     * contrary to the templated constructor.
+     */
+    template <typename T>
+    static Variant create(const T &value) { return Variant(value); }
+    /*! \brief
+     * Creates a variant that holds the given value.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * In addition to allowing specifying the template argument, this
+     * method avoids copying when move-construction is possible.
+     */
+    template <typename T>
+    static Variant create(T &&value) { return Variant(std::move(value)); }
+
+    //! Creates an empty variant value.
+    Variant() {}
+    /*! \brief
+     * Creates a variant that holds the given value.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    template <typename T>
+    explicit Variant(const T &value)
+        : content_(new Content<typename std::decay<T>::type>(value))
+    {
+    }
+    /*! \brief
+     * Creates a variant that holds the given value.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    template <typename T>
+    explicit Variant(T &&value)
+        : content_(new Content<typename std::decay<T>::type>(std::move(value)))
+    {
+    }
+    /*! \brief
+     * Creates a deep copy of a variant.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    Variant(const Variant &other) : content_(other.cloneContent()) {}
+    //! Move-constructs a variant.
+    Variant(Variant &&other) noexcept : content_(std::move(other.content_)) {}
+    /*! \brief
+     * Assigns the variant.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    Variant &operator=(const Variant &other)
+    {
+        content_.reset(other.cloneContent());
+        return *this;
+    }
+    //! Move-assigns the variant.
+    Variant &operator=(Variant &&other) noexcept
+    {
+        content_ = std::move(other.content_);
+        return *this;
+    }
+
+    //! Whether any value is stored.
+    bool isEmpty() const { return content_ == nullptr; }
+    //! Returns the dynamic type of the value that is currently stored.
+    std::type_index type() const
+    {
+        const std::type_info &info
+            = !isEmpty() ? content_->typeInfo() : typeid(void);
+        return std::type_index(info);
+    }
+    //! Returns whether the type stored matches the template parameter.
+    template <typename T>
+    bool isType() const
+    {
+        return !isEmpty() && content_->typeInfo() == typeid(T);
+    }
+
+    /*! \brief
+     * Tries to get the value as the given type.
+     *
+     * \tparam T  Type to get.
+     * \returns Pointer to the value, or nullptr if the type does not match
+     *     the stored value.
+     */
+    template <typename T>
+    const T *tryCast() const
+    {
+        return isType<T>() ? &static_cast<Content<T> *>(content_.get())->value_ : nullptr;
+    }
+    /*! \brief
+     * Gets the value when the type is known.
+     *
+     * \tparam T  Type to get (which must match what the variant stores).
+     *
+     * Asserts if the variant is empty or does not contain the requested type.
+     */
+    template <typename T>
+    const T &cast() const
+    {
+        const T *value = tryCast<T>();
+        GMX_RELEASE_ASSERT(value != nullptr, "Cast to incorrect type");
+        return *value;
+    }
+    /*! \brief
+     * Tries to get the value as the given type as a non-const pointer.
+     *
+     * \tparam T  Type to get.
+     * \returns Pointer to the value, or nullptr if the type does not match
+     *     the stored value.
+     *
+     * This method allows modifying the value in-place, which is useful
+     * with more complicated data structures.
+     */
+    template <typename T>
+    T *tryCastRef()
+    {
+        return isType<T>() ? &static_cast<Content<T> *>(content_.get())->value_ : nullptr;
+    }
+    /*! \brief
+     * Gets the value when the type is known as a modifiable reference.
+     *
+     * \tparam T  Type to get (which must match what the variant stores).
+     *
+     * Asserts if the variant is empty or does not contain the requested type.
+     */
+    template <typename T>
+    T &castRef()
+    {
+        T *value = tryCastRef<T>();
+        GMX_RELEASE_ASSERT(value != nullptr, "Cast to incorrect type");
+        return *value;
+    }
+
+private:
+    class IContent
+    {
     public:
-        /*! \brief
-         * Creates a variant that holds the given value.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * This method allows explicitly specifying the template argument,
-         * contrary to the templated constructor.
-         */
-        template <typename T>
-        static Variant create(const T &value) { return Variant(value); }
-        /*! \brief
-         * Creates a variant that holds the given value.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * In addition to allowing specifying the template argument, this
-         * method avoids copying when move-construction is possible.
-         */
-        template <typename T>
-        static Variant create(T &&value) { return Variant(std::move(value)); }
+        virtual ~IContent() {}
+        virtual const std::type_info &typeInfo() const = 0;
+        virtual IContent *clone() const                = 0;
+    };
 
-        //! Creates an empty variant value.
-        Variant() {}
-        /*! \brief
-         * Creates a variant that holds the given value.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        template <typename T>
-        explicit Variant(const T &value)
-            : content_(new Content<typename std::decay<T>::type>(value))
-        {
-        }
-        /*! \brief
-         * Creates a variant that holds the given value.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        template <typename T>
-        explicit Variant(T &&value)
-            : content_(new Content<typename std::decay<T>::type>(std::move(value)))
-        {
-        }
-        /*! \brief
-         * Creates a deep copy of a variant.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        Variant(const Variant &other) : content_(other.cloneContent()) {}
-        //! Move-constructs a variant.
-        Variant(Variant &&other) noexcept : content_(std::move(other.content_)) {}
-        /*! \brief
-         * Assigns the variant.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        Variant &operator=(const Variant &other)
-        {
-            content_.reset(other.cloneContent());
-            return *this;
-        }
-        //! Move-assigns the variant.
-        Variant &operator=(Variant &&other) noexcept
-        {
-            content_ = std::move(other.content_);
-            return *this;
-        }
+    template <typename T>
+    class Content : public IContent
+    {
+    public:
+        explicit Content(const T &value) : value_(value) {}
+        explicit Content(T &&value) : value_(std::move(value)) {}
 
-        //! Whether any value is stored.
-        bool isEmpty() const { return content_ == nullptr; }
-        //! Returns the dynamic type of the value that is currently stored.
-        std::type_index type() const
-        {
-            const std::type_info &info
-                = !isEmpty() ? content_->typeInfo() : typeid(void);
-            return std::type_index(info);
-        }
-        //! Returns whether the type stored matches the template parameter.
-        template <typename T>
-        bool isType() const
-        {
-            return !isEmpty() && content_->typeInfo() == typeid(T);
-        }
+        virtual const std::type_info &typeInfo() const { return typeid(T); }
+        virtual IContent *clone() const { return new Content(value_); }
 
-        /*! \brief
-         * Tries to get the value as the given type.
-         *
-         * \tparam T  Type to get.
-         * \returns Pointer to the value, or nullptr if the type does not match
-         *     the stored value.
-         */
-        template <typename T>
-        const T *tryCast() const
-        {
-            return isType<T>() ? &static_cast<Content<T> *>(content_.get())->value_ : nullptr;
-        }
-        /*! \brief
-         * Gets the value when the type is known.
-         *
-         * \tparam T  Type to get (which must match what the variant stores).
-         *
-         * Asserts if the variant is empty or does not contain the requested type.
-         */
-        template <typename T>
-        const T &cast() const
-        {
-            const T *value = tryCast<T>();
-            GMX_RELEASE_ASSERT(value != nullptr, "Cast to incorrect type");
-            return *value;
-        }
-        /*! \brief
-         * Tries to get the value as the given type as a non-const pointer.
-         *
-         * \tparam T  Type to get.
-         * \returns Pointer to the value, or nullptr if the type does not match
-         *     the stored value.
-         *
-         * This method allows modifying the value in-place, which is useful
-         * with more complicated data structures.
-         */
-        template <typename T>
-        T *tryCastRef()
-        {
-            return isType<T>() ? &static_cast<Content<T> *>(content_.get())->value_ : nullptr;
-        }
-        /*! \brief
-         * Gets the value when the type is known as a modifiable reference.
-         *
-         * \tparam T  Type to get (which must match what the variant stores).
-         *
-         * Asserts if the variant is empty or does not contain the requested type.
-         */
-        template <typename T>
-        T &castRef()
-        {
-            T *value = tryCastRef<T>();
-            GMX_RELEASE_ASSERT(value != nullptr, "Cast to incorrect type");
-            return *value;
-        }
+        T value_;
+    };
 
-    private:
-        class IContent
-        {
-            public:
-                virtual ~IContent() {}
-                virtual const std::type_info &typeInfo() const = 0;
-                virtual IContent *clone() const                = 0;
-        };
+    //! Creates a deep copy of the content.
+    IContent *cloneContent() const
+    {
+        return content_ != nullptr ? content_->clone() : nullptr;
+    }
 
-        template <typename T>
-        class Content : public IContent
-        {
-            public:
-                explicit Content(const T &value) : value_(value) {}
-                explicit Content(T &&value) : value_(std::move(value)) {}
-
-                virtual const std::type_info &typeInfo() const { return typeid(T); }
-                virtual IContent *clone() const { return new Content(value_); }
-
-                T value_;
-        };
-
-        //! Creates a deep copy of the content.
-        IContent *cloneContent() const
-        {
-            return content_ != nullptr ? content_->clone() : nullptr;
-        }
-
-        std::unique_ptr<IContent> content_;
+    std::unique_ptr<IContent> content_;
 };
 
 } // namespace gmx

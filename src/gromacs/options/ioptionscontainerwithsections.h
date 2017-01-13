@@ -69,44 +69,44 @@ class OptionSectionImpl;
  */
 class IOptionsContainerWithSections : public IOptionsContainer
 {
-    public:
-        /*! \brief
-         * Adds a section to this collection.
-         *
-         * \tparam    SectionType Type of the section description object.
-         * \param[in] section     Section description.
-         * \returns   AbstractOptionSectionHandle object for the created option.
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * Options can be added to the section through the returned handle.
-         *
-         * \internal
-         * \p SectionType::HandleType must specify a type that derives from
-         * AbstractinOptionSectionHandle and has a suitable constructor.
-         */
-        template <class SectionType>
-        typename SectionType::HandleType addSection(const SectionType &section)
-        {
-            internal::OptionSectionImpl *storage
-                = addSectionImpl(static_cast<const AbstractOptionSection &>(section));
-            return typename SectionType::HandleType(storage);
-        }
+public:
+    /*! \brief
+     * Adds a section to this collection.
+     *
+     * \tparam    SectionType Type of the section description object.
+     * \param[in] section     Section description.
+     * \returns   AbstractOptionSectionHandle object for the created option.
+     * \throws    APIError if invalid option settings are provided.
+     *
+     * Options can be added to the section through the returned handle.
+     *
+     * \internal
+     * \p SectionType::HandleType must specify a type that derives from
+     * AbstractinOptionSectionHandle and has a suitable constructor.
+     */
+    template <class SectionType>
+    typename SectionType::HandleType addSection(const SectionType &section)
+    {
+        internal::OptionSectionImpl *storage
+            = addSectionImpl(static_cast<const AbstractOptionSection &>(section));
+        return typename SectionType::HandleType(storage);
+    }
 
-    protected:
-        // Disallow deletion through the interface.
-        // (no need for the virtual, but some compilers warn otherwise)
-        virtual ~IOptionsContainerWithSections();
+protected:
+    // Disallow deletion through the interface.
+    // (no need for the virtual, but some compilers warn otherwise)
+    virtual ~IOptionsContainerWithSections();
 
-        /*! \brief
-         * Adds a section to this container.
-         *
-         * \param[in] section     Section description.
-         * \returns   Pointer to the internal section representation object.
-         */
-        virtual internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section) = 0;
+    /*! \brief
+     * Adds a section to this container.
+     *
+     * \param[in] section     Section description.
+     * \returns   Pointer to the internal section representation object.
+     */
+    virtual internal::OptionSectionImpl *
+    addSectionImpl(const AbstractOptionSection &section) = 0;
 
-        GMX_DEFAULT_CONSTRUCTORS(IOptionsContainerWithSections);
+    GMX_DEFAULT_CONSTRUCTORS(IOptionsContainerWithSections);
 };
 
 } // namespace

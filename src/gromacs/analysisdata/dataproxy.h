@@ -67,43 +67,43 @@ namespace gmx
 class AnalysisDataProxy : public AbstractAnalysisData,
                           public IAnalysisDataModule
 {
-    public:
-        /*! \brief
-         * Creates a proxy object that only presents certain columns.
-         *
-         * \param[in] firstColumn  First column to present.
-         * \param[in] columnSpan   Number of columns to present.
-         * \param[in] data         Data object that should be wrapped.
-         *
-         * Does not throw.
-         */
-        AnalysisDataProxy(int firstColumn, int columnSpan,
-                          AbstractAnalysisData *data);
+public:
+    /*! \brief
+     * Creates a proxy object that only presents certain columns.
+     *
+     * \param[in] firstColumn  First column to present.
+     * \param[in] columnSpan   Number of columns to present.
+     * \param[in] data         Data object that should be wrapped.
+     *
+     * Does not throw.
+     */
+    AnalysisDataProxy(int firstColumn, int columnSpan,
+                      AbstractAnalysisData *data);
 
-        virtual int frameCount() const;
+    virtual int frameCount() const;
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual bool parallelDataStarted(
-            AbstractAnalysisData *             data,
-            const AnalysisDataParallelOptions &options);
-        virtual void frameStarted(const AnalysisDataFrameHeader &frame);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void frameFinishedSerial(int frameIndex);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual bool parallelDataStarted(
+        AbstractAnalysisData *             data,
+        const AnalysisDataParallelOptions &options);
+    virtual void frameStarted(const AnalysisDataFrameHeader &frame);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void frameFinishedSerial(int frameIndex);
+    virtual void dataFinished();
 
-    private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+private:
+    virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+    virtual bool requestStorageInternal(int nframes);
 
-        AbstractAnalysisData &source_;
-        int                   firstColumn_;
-        int                   columnSpan_;
-        bool                  bParallel_;
+    AbstractAnalysisData &source_;
+    int                   firstColumn_;
+    int                   columnSpan_;
+    bool                  bParallel_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 } // namespace gmx

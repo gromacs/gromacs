@@ -59,30 +59,30 @@ namespace test
 
 class TopologyManager
 {
-    public:
-        TopologyManager();
-        ~TopologyManager();
+public:
+    TopologyManager();
+    ~TopologyManager();
 
-        void requestFrame();
-        void requestVelocities();
-        void requestForces();
+    void requestFrame();
+    void requestVelocities();
+    void requestForces();
 
-        void loadTopology(const char *filename);
-        void initAtoms(int count);
-        void initAtomTypes(const ConstArrayRef<const char *> &types);
-        void initUniformResidues(int residueSize);
-        void initUniformMolecules(int moleculeSize);
+    void loadTopology(const char *filename);
+    void initAtoms(int count);
+    void initAtomTypes(const ConstArrayRef<const char *> &types);
+    void initUniformResidues(int residueSize);
+    void initUniformMolecules(int moleculeSize);
 
-        void initFrameIndices(const ConstArrayRef<int> &index);
+    void initFrameIndices(const ConstArrayRef<int> &index);
 
-        gmx_mtop_t *topology() { return mtop_; }
-        t_atoms &atoms();
-        t_trxframe *frame() { return frame_; }
+    gmx_mtop_t *topology() { return mtop_; }
+    t_atoms &atoms();
+    t_trxframe *frame() { return frame_; }
 
-    private:
-        gmx_mtop_t *        mtop_;
-        t_trxframe *        frame_;
-        std::vector<char *> atomtypes_;
+private:
+    gmx_mtop_t *        mtop_;
+    t_trxframe *        frame_;
+    std::vector<char *> atomtypes_;
 };
 
 } // namespace test

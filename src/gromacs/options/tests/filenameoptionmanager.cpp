@@ -61,21 +61,21 @@ using gmx::FileNameOption;
 
 class FileNameOptionManagerTest : public ::testing::Test
 {
-    public:
-        FileNameOptionManagerTest()
-        {
-            manager_.setInputRedirector(&redirector_);
-            options_.addManager(&manager_);
-        }
+public:
+    FileNameOptionManagerTest()
+    {
+        manager_.setInputRedirector(&redirector_);
+        options_.addManager(&manager_);
+    }
 
-        void addExistingFile(const char *filename)
-        {
-            redirector_.addExistingFile(filename);
-        }
+    void addExistingFile(const char *filename)
+    {
+        redirector_.addExistingFile(filename);
+    }
 
-        gmx::test::TestFileInputRedirector redirector_;
-        gmx::FileNameOptionManager         manager_;
-        gmx::Options                       options_;
+    gmx::test::TestFileInputRedirector redirector_;
+    gmx::FileNameOptionManager         manager_;
+    gmx::Options                       options_;
 };
 
 /********************************************************************

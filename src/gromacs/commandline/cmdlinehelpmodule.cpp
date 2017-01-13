@@ -89,45 +89,45 @@ class IHelpExport;
  */
 class RootHelpTopic : public AbstractCompositeHelpTopic
 {
-    public:
-        /*! \brief
-         * Creates a root help topic.
-         *
-         * Does not throw.
-         */
-        explicit RootHelpTopic(const CommandLineHelpModuleImpl &helpModule)
-            : helpModule_(helpModule)
+public:
+    /*! \brief
+     * Creates a root help topic.
+     *
+     * Does not throw.
+     */
+    explicit RootHelpTopic(const CommandLineHelpModuleImpl &helpModule)
+        : helpModule_(helpModule)
+    {
+    }
+
+    virtual const char *name() const;
+    virtual const char *title() const { return title_.c_str(); }
+
+    //! Adds a top-level topic and optionally marks it as exported.
+    void addTopic(HelpTopicPointer topic, bool bExported)
+    {
+        if (bExported)
         {
+            exportedTopics_.emplace_back(topic->name());
         }
+        addSubTopic(std::move(topic));
+    }
+    //! Exports all the top-level topics with the given exporter.
+    void exportHelp(IHelpExport *exporter);
 
-        virtual const char *name() const;
-        virtual const char *title() const { return title_.c_str(); }
+    virtual void writeHelp(const HelpWriterContext &context) const;
 
-        //! Adds a top-level topic and optionally marks it as exported.
-        void addTopic(HelpTopicPointer topic, bool bExported)
-        {
-            if (bExported)
-            {
-                exportedTopics_.emplace_back(topic->name());
-            }
-            addSubTopic(std::move(topic));
-        }
-        //! Exports all the top-level topics with the given exporter.
-        void exportHelp(IHelpExport *exporter);
+private:
+    // unused because of the writeHelp() override
+    virtual std::string helpText() const { return ""; }
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+    CommandLineHelpContext createContext(const HelpWriterContext &context) const;
 
-    private:
-        // unused because of the writeHelp() override
-        virtual std::string helpText() const { return ""; }
+    const CommandLineHelpModuleImpl &helpModule_;
+    std::string                      title_;
+    std::vector<std::string>         exportedTopics_;
 
-        CommandLineHelpContext createContext(const HelpWriterContext &context) const;
-
-        const CommandLineHelpModuleImpl &helpModule_;
-        std::string                      title_;
-        std::vector<std::string>         exportedTopics_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
+    GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
 
 }   // namespace
@@ -138,30 +138,30 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
 
 class CommandLineHelpModuleImpl
 {
-    public:
-        CommandLineHelpModuleImpl(const IProgramContext &           programContext,
-                                  const std::string &               binaryName,
-                                  const CommandLineModuleMap &      modules,
-                                  const CommandLineModuleGroupList &groups);
+public:
+    CommandLineHelpModuleImpl(const IProgramContext &           programContext,
+                              const std::string &               binaryName,
+                              const CommandLineModuleMap &      modules,
+                              const CommandLineModuleGroupList &groups);
 
-        std::unique_ptr<IHelpExport> createExporter(
-            const std::string &    format,
-            IFileOutputRedirector *redirector);
-        void exportHelp(IHelpExport *exporter);
+    std::unique_ptr<IHelpExport> createExporter(
+        const std::string &    format,
+        IFileOutputRedirector *redirector);
+    void exportHelp(IHelpExport *exporter);
 
-        RootHelpTopic                     rootTopic_;
-        const IProgramContext &           programContext_;
-        std::string                       binaryName_;
-        const CommandLineModuleMap &      modules_;
-        const CommandLineModuleGroupList &groups_;
+    RootHelpTopic                     rootTopic_;
+    const IProgramContext &           programContext_;
+    std::string                       binaryName_;
+    const CommandLineModuleMap &      modules_;
+    const CommandLineModuleGroupList &groups_;
 
-        CommandLineHelpContext *  context_;
-        const ICommandLineModule *moduleOverride_;
-        bool                      bHidden_;
+    CommandLineHelpContext *  context_;
+    const ICommandLineModule *moduleOverride_;
+    bool                      bHidden_;
 
-        IFileOutputRedirector *outputRedirector_;
+    IFileOutputRedirector *outputRedirector_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModuleImpl);
+    GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModuleImpl);
 };
 
 namespace
@@ -178,67 +178,67 @@ namespace
  */
 class IHelpExport
 {
-    public:
-        //! Shorthand for a list of modules contained in a group.
-        typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
+public:
+    //! Shorthand for a list of modules contained in a group.
+    typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
 
-        virtual ~IHelpExport() {};
+    virtual ~IHelpExport() {};
 
-        /*! \brief
-         * Called once before exporting individual modules.
-         *
-         * Can, e.g., open shared output files (e.g., if the output is written
-         * into a single file, or if a separate index is required) and write
-         * headers into them.
-         */
-        virtual void startModuleExport() = 0;
-        /*! \brief
-         * Called to export the help for each module.
-         *
-         * \param[in] module      Module for which the help should be exported.
-         * \param[in] tag         Unique tag for the module (gmx-something).
-         * \param[in] displayName Display name for the module (gmx something).
-         */
-        virtual void exportModuleHelp(
-            const ICommandLineModule &module,
-            const std::string &       tag,
-            const std::string &       displayName) = 0;
-        /*! \brief
-         * Called after all modules have been exported.
-         *
-         * Can close files opened in startModuleExport(), write footers to them
-         * etc.
-         */
-        virtual void finishModuleExport() = 0;
+    /*! \brief
+     * Called once before exporting individual modules.
+     *
+     * Can, e.g., open shared output files (e.g., if the output is written
+     * into a single file, or if a separate index is required) and write
+     * headers into them.
+     */
+    virtual void startModuleExport() = 0;
+    /*! \brief
+     * Called to export the help for each module.
+     *
+     * \param[in] module      Module for which the help should be exported.
+     * \param[in] tag         Unique tag for the module (gmx-something).
+     * \param[in] displayName Display name for the module (gmx something).
+     */
+    virtual void exportModuleHelp(
+        const ICommandLineModule &module,
+        const std::string &       tag,
+        const std::string &       displayName) = 0;
+    /*! \brief
+     * Called after all modules have been exported.
+     *
+     * Can close files opened in startModuleExport(), write footers to them
+     * etc.
+     */
+    virtual void finishModuleExport() = 0;
 
-        /*! \brief
-         * Called once before exporting module groups.
-         *
-         * Can, e.g., open a single output file for listing all the groups.
-         */
-        virtual void startModuleGroupExport() = 0;
-        /*! \brief
-         * Called to export the help for each module group.
-         *
-         * \param[in] title    Title for the group.
-         * \param[in] modules  List of modules in the group.
-         */
-        virtual void exportModuleGroup(const char *               title,
-                                       const ModuleGroupContents &modules) = 0;
-        /*! \brief
-         * Called after all module groups have been exported.
-         *
-         * Can close files opened in startModuleGroupExport(), write footers to them
-         * etc.
-         */
-        virtual void finishModuleGroupExport() = 0;
+    /*! \brief
+     * Called once before exporting module groups.
+     *
+     * Can, e.g., open a single output file for listing all the groups.
+     */
+    virtual void startModuleGroupExport() = 0;
+    /*! \brief
+     * Called to export the help for each module group.
+     *
+     * \param[in] title    Title for the group.
+     * \param[in] modules  List of modules in the group.
+     */
+    virtual void exportModuleGroup(const char *               title,
+                                   const ModuleGroupContents &modules) = 0;
+    /*! \brief
+     * Called after all module groups have been exported.
+     *
+     * Can close files opened in startModuleGroupExport(), write footers to them
+     * etc.
+     */
+    virtual void finishModuleGroupExport() = 0;
 
-        /*! \brief
-         * Called to export the help for a top-level topic.
-         *
-         * \param[in] topic   Topic to export.
-         */
-        virtual void exportTopic(const IHelpTopic &topic) = 0;
+    /*! \brief
+     * Called to export the help for a top-level topic.
+     *
+     * \param[in] topic   Topic to export.
+     */
+    virtual void exportTopic(const IHelpTopic &topic) = 0;
 };
 
 /********************************************************************
@@ -351,33 +351,33 @@ CommandLineHelpContext RootHelpTopic::createContext(const HelpWriterContext &con
  */
 class CommandsHelpTopic : public IHelpTopic
 {
-    public:
-        /*! \brief
-         * Creates a command list help topic.
-         *
-         * \param[in]     helpModule Help module to get module information from.
-         *
-         * Does not throw.
-         */
-        explicit CommandsHelpTopic(const CommandLineHelpModuleImpl &helpModule)
-            : helpModule_(helpModule)
-        {
-        }
+public:
+    /*! \brief
+     * Creates a command list help topic.
+     *
+     * \param[in]     helpModule Help module to get module information from.
+     *
+     * Does not throw.
+     */
+    explicit CommandsHelpTopic(const CommandLineHelpModuleImpl &helpModule)
+        : helpModule_(helpModule)
+    {
+    }
 
-        virtual const char *name() const { return "commands"; }
-        virtual const char *title() const { return "List of available commands"; }
-        virtual bool hasSubTopics() const { return false; }
-        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
-        {
-            return nullptr;
-        }
+    virtual const char *name() const { return "commands"; }
+    virtual const char *title() const { return "List of available commands"; }
+    virtual bool hasSubTopics() const { return false; }
+    virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
+    {
+        return nullptr;
+    }
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+    virtual void writeHelp(const HelpWriterContext &context) const;
 
-    private:
-        const CommandLineHelpModuleImpl &helpModule_;
+private:
+    const CommandLineHelpModuleImpl &helpModule_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(CommandsHelpTopic);
+    GMX_DISALLOW_COPY_AND_ASSIGN(CommandsHelpTopic);
 };
 
 void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
@@ -438,28 +438,28 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
  */
 class ModuleHelpTopic : public IHelpTopic
 {
-    public:
-        //! Constructs a help topic for a specific module.
-        ModuleHelpTopic(const ICommandLineModule &       module,
-                        const CommandLineHelpModuleImpl &helpModule)
-            : module_(module), helpModule_(helpModule)
-        {
-        }
+public:
+    //! Constructs a help topic for a specific module.
+    ModuleHelpTopic(const ICommandLineModule &       module,
+                    const CommandLineHelpModuleImpl &helpModule)
+        : module_(module), helpModule_(helpModule)
+    {
+    }
 
-        virtual const char *name() const { return module_.name(); }
-        virtual const char *title() const { return nullptr; }
-        virtual bool hasSubTopics() const { return false; }
-        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
-        {
-            return nullptr;
-        }
-        virtual void writeHelp(const HelpWriterContext &context) const;
+    virtual const char *name() const { return module_.name(); }
+    virtual const char *title() const { return nullptr; }
+    virtual bool hasSubTopics() const { return false; }
+    virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
+    {
+        return nullptr;
+    }
+    virtual void writeHelp(const HelpWriterContext &context) const;
 
-    private:
-        const ICommandLineModule &       module_;
-        const CommandLineHelpModuleImpl &helpModule_;
+private:
+    const ICommandLineModule &       module_;
+    const CommandLineHelpModuleImpl &helpModule_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
+    GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
 };
 
 void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
@@ -514,33 +514,33 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
  */
 class HelpExportReStructuredText : public IHelpExport
 {
-    public:
-        //! Initializes reST exporter.
-        HelpExportReStructuredText(
-            const CommandLineHelpModuleImpl &helpModule,
-            IFileOutputRedirector *          outputRedirector);
+public:
+    //! Initializes reST exporter.
+    HelpExportReStructuredText(
+        const CommandLineHelpModuleImpl &helpModule,
+        IFileOutputRedirector *          outputRedirector);
 
-        virtual void startModuleExport();
-        virtual void exportModuleHelp(
-            const ICommandLineModule &module,
-            const std::string &       tag,
-            const std::string &       displayName);
-        virtual void finishModuleExport();
+    virtual void startModuleExport();
+    virtual void exportModuleHelp(
+        const ICommandLineModule &module,
+        const std::string &       tag,
+        const std::string &       displayName);
+    virtual void finishModuleExport();
 
-        virtual void startModuleGroupExport();
-        virtual void exportModuleGroup(const char *               title,
-                                       const ModuleGroupContents &modules);
-        virtual void finishModuleGroupExport();
+    virtual void startModuleGroupExport();
+    virtual void exportModuleGroup(const char *               title,
+                                   const ModuleGroupContents &modules);
+    virtual void finishModuleGroupExport();
 
-        virtual void exportTopic(const IHelpTopic &topic);
+    virtual void exportTopic(const IHelpTopic &topic);
 
-    private:
-        IFileOutputRedirector *outputRedirector_;
-        const std::string &    binaryName_;
-        HelpLinks              links_;
-        // These never release ownership.
-        std::unique_ptr<TextWriter> indexFile_;
-        std::unique_ptr<TextWriter> manPagesFile_;
+private:
+    IFileOutputRedirector *outputRedirector_;
+    const std::string &    binaryName_;
+    HelpLinks              links_;
+    // These never release ownership.
+    std::unique_ptr<TextWriter> indexFile_;
+    std::unique_ptr<TextWriter> manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
@@ -703,27 +703,27 @@ void HelpExportReStructuredText::exportTopic(const IHelpTopic &topic)
  */
 class HelpExportCompletion : public IHelpExport
 {
-    public:
-        //! Initializes completion exporter.
-        explicit HelpExportCompletion(const CommandLineHelpModuleImpl &helpModule);
+public:
+    //! Initializes completion exporter.
+    explicit HelpExportCompletion(const CommandLineHelpModuleImpl &helpModule);
 
-        virtual void startModuleExport();
-        virtual void exportModuleHelp(
-            const ICommandLineModule &module,
-            const std::string &       tag,
-            const std::string &       displayName);
-        virtual void finishModuleExport();
+    virtual void startModuleExport();
+    virtual void exportModuleHelp(
+        const ICommandLineModule &module,
+        const std::string &       tag,
+        const std::string &       displayName);
+    virtual void finishModuleExport();
 
-        virtual void startModuleGroupExport() {}
-        virtual void exportModuleGroup(const char                * /*title*/,
-                                       const ModuleGroupContents & /*modules*/) {}
-        virtual void finishModuleGroupExport() {}
+    virtual void startModuleGroupExport() {}
+    virtual void exportModuleGroup(const char                * /*title*/,
+                                   const ModuleGroupContents & /*modules*/) {}
+    virtual void finishModuleGroupExport() {}
 
-        virtual void exportTopic(const IHelpTopic & /*topic*/) {}
+    virtual void exportTopic(const IHelpTopic & /*topic*/) {}
 
-    private:
-        ShellCompletionWriter    bashWriter_;
-        std::vector<std::string> modules_;
+private:
+    ShellCompletionWriter    bashWriter_;
+    std::vector<std::string> modules_;
 };
 
 HelpExportCompletion::HelpExportCompletion(
@@ -835,36 +835,36 @@ namespace
 
 class ModificationCheckingFileOutputStream : public TextOutputStream
 {
-    public:
-        ModificationCheckingFileOutputStream(
-            const char *           path,
-            IFileOutputRedirector *redirector)
-            : path_(path), redirector_(redirector)
-        {
-        }
+public:
+    ModificationCheckingFileOutputStream(
+        const char *           path,
+        IFileOutputRedirector *redirector)
+        : path_(path), redirector_(redirector)
+    {
+    }
 
-        virtual void write(const char *str) { contents_.write(str); }
-        virtual void close()
+    virtual void write(const char *str) { contents_.write(str); }
+    virtual void close()
+    {
+        const std::string &newContents = contents_.toString();
+        // TODO: Redirect these for unit tests.
+        if (File::exists(path_, File::returnFalseOnError))
         {
-            const std::string &newContents = contents_.toString();
-            // TODO: Redirect these for unit tests.
-            if (File::exists(path_, File::returnFalseOnError))
+            const std::string originalContents_
+                = TextReader::readFileToString(path_);
+            if (originalContents_ == newContents)
             {
-                const std::string originalContents_
-                    = TextReader::readFileToString(path_);
-                if (originalContents_ == newContents)
-                {
-                    return;
-                }
+                return;
             }
-            TextWriter writer(redirector_->openTextOutputFile(path_));
-            writer.writeString(newContents);
         }
+        TextWriter writer(redirector_->openTextOutputFile(path_));
+        writer.writeString(newContents);
+    }
 
-    private:
-        std::string            path_;
-        StringOutputStream     contents_;
-        IFileOutputRedirector *redirector_;
+private:
+    std::string            path_;
+    StringOutputStream     contents_;
+    IFileOutputRedirector *redirector_;
 };
 
 /********************************************************************
@@ -873,25 +873,25 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
 
 class ModificationCheckingFileOutputRedirector : public IFileOutputRedirector
 {
-    public:
-        explicit ModificationCheckingFileOutputRedirector(
-            IFileOutputRedirector *redirector)
-            : redirector_(redirector)
-        {
-        }
+public:
+    explicit ModificationCheckingFileOutputRedirector(
+        IFileOutputRedirector *redirector)
+        : redirector_(redirector)
+    {
+    }
 
-        virtual TextOutputStream &standardOutput()
-        {
-            return redirector_->standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(
-                    new ModificationCheckingFileOutputStream(filename, redirector_));
-        }
+    virtual TextOutputStream &standardOutput()
+    {
+        return redirector_->standardOutput();
+    }
+    virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+    {
+        return TextOutputStreamPointer(
+                new ModificationCheckingFileOutputStream(filename, redirector_));
+    }
 
-    private:
-        IFileOutputRedirector *redirector_;
+private:
+    IFileOutputRedirector *redirector_;
 };
 
 }   // namespace

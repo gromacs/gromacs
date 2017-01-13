@@ -52,12 +52,12 @@ namespace gmx
 
 class MessageStringCollector::Impl
 {
-    public:
-        Impl() : prevContext_(0) {}
+public:
+    Impl() : prevContext_(0) {}
 
-        std::vector<std::string> contexts_;
-        std::string              text_;
-        size_t                   prevContext_;
+    std::vector<std::string> contexts_;
+    std::string              text_;
+    size_t                   prevContext_;
 };
 
 MessageStringCollector::MessageStringCollector()

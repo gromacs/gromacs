@@ -61,45 +61,45 @@ class IHelpTopic;
  */
 class HelpManager
 {
-    public:
-        /*! \brief
-         * Creates a manager that uses a given root topic.
-         *
-         * \param[in] rootTopic  Help topic that can be accessed through this
-         *      manager.
-         * \param[in] context    Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * The provided topic and context objects must remain valid for the
-         * lifetime of this manager object.
-         */
-        HelpManager(const IHelpTopic &       rootTopic,
-                    const HelpWriterContext &context);
-        ~HelpManager();
+public:
+    /*! \brief
+     * Creates a manager that uses a given root topic.
+     *
+     * \param[in] rootTopic  Help topic that can be accessed through this
+     *      manager.
+     * \param[in] context    Context object for writing the help.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * The provided topic and context objects must remain valid for the
+     * lifetime of this manager object.
+     */
+    HelpManager(const IHelpTopic &       rootTopic,
+                const HelpWriterContext &context);
+    ~HelpManager();
 
-        /*! \brief
-         * Enters a subtopic with the given name under the active topic.
-         *
-         * \param[in] name  Subtopic name to enter.
-         * \throws    std::bad_allod if out of memory.
-         * \throws    InvalidInputError if topic with \p name is not found.
-         */
-        void enterTopic(const char *name);
-        //! \copydoc enterTopic(const char *)
-        void enterTopic(const std::string &name);
+    /*! \brief
+     * Enters a subtopic with the given name under the active topic.
+     *
+     * \param[in] name  Subtopic name to enter.
+     * \throws    std::bad_allod if out of memory.
+     * \throws    InvalidInputError if topic with \p name is not found.
+     */
+    void enterTopic(const char *name);
+    //! \copydoc enterTopic(const char *)
+    void enterTopic(const std::string &name);
 
-        /*! \brief
-         * Writes out the help for the currently active topic.
-         *
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  FileIOError on any I/O error.
-         */
-        void writeCurrentTopic() const;
+    /*! \brief
+     * Writes out the help for the currently active topic.
+     *
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  FileIOError on any I/O error.
+     */
+    void writeCurrentTopic() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

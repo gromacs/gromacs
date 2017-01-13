@@ -140,19 +140,19 @@ namespace gmx
 
 class FileIOXdrSerializer : public ISerializer
 {
-    public:
-        explicit FileIOXdrSerializer(t_fileio *fio) : fio_(fio) {}
+public:
+    explicit FileIOXdrSerializer(t_fileio *fio) : fio_(fio) {}
 
-        virtual bool reading() const;
+    virtual bool reading() const;
 
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+    virtual void doUChar(unsigned char *value);
+    virtual void doInt(int *value);
+    virtual void doFloat(float *value);
+    virtual void doDouble(double *value);
+    virtual void doString(std::string *value);
 
-    private:
-        t_fileio *fio_;
+private:
+    t_fileio *fio_;
 };
 
 } // namespace gmx

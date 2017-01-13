@@ -48,98 +48,98 @@ namespace
 
 class RefDataWriteSerializer : public gmx::ISerializer
 {
-    public:
-        RefDataWriteSerializer(gmx::test::TestReferenceChecker *parentChecker,
-                               const char *                     id)
-            : checker_(parentChecker->checkCompound("SerializedData", id))
-        {
-        }
+public:
+    RefDataWriteSerializer(gmx::test::TestReferenceChecker *parentChecker,
+                           const char *                     id)
+        : checker_(parentChecker->checkCompound("SerializedData", id))
+    {
+    }
 
-        virtual bool reading() const { return false; }
+    virtual bool reading() const { return false; }
 
-        virtual void doUChar(unsigned char *value)
-        {
-            checker_.checkUChar(*value, nullptr);
-        }
-        virtual void doInt(int *value)
-        {
-            checker_.checkInteger(*value, nullptr);
-        }
-        virtual void doFloat(float *value)
-        {
-            checker_.checkFloat(*value, nullptr);
-        }
-        virtual void doDouble(double *value)
-        {
-            checker_.checkDouble(*value, nullptr);
-        }
-        virtual void doString(std::string *value)
-        {
-            checker_.checkString(*value, nullptr);
-        }
+    virtual void doUChar(unsigned char *value)
+    {
+        checker_.checkUChar(*value, nullptr);
+    }
+    virtual void doInt(int *value)
+    {
+        checker_.checkInteger(*value, nullptr);
+    }
+    virtual void doFloat(float *value)
+    {
+        checker_.checkFloat(*value, nullptr);
+    }
+    virtual void doDouble(double *value)
+    {
+        checker_.checkDouble(*value, nullptr);
+    }
+    virtual void doString(std::string *value)
+    {
+        checker_.checkString(*value, nullptr);
+    }
 
-    private:
-        gmx::test::TestReferenceChecker checker_;
+private:
+    gmx::test::TestReferenceChecker checker_;
 };
 
 class RefDataReadSerializer : public gmx::ISerializer
 {
-    public:
-        RefDataReadSerializer(gmx::test::TestReferenceChecker *parentChecker,
-                              const char *                     id)
-            : checker_(parentChecker->checkCompound("SerializedData", id))
-        {
-        }
+public:
+    RefDataReadSerializer(gmx::test::TestReferenceChecker *parentChecker,
+                          const char *                     id)
+        : checker_(parentChecker->checkCompound("SerializedData", id))
+    {
+    }
 
-        virtual bool reading() const { return true; }
+    virtual bool reading() const { return true; }
 
-        virtual void doUChar(unsigned char *value)
-        {
-            *value = checker_.readUChar(nullptr);
-        }
-        virtual void doInt(int *value)
-        {
-            *value = checker_.readInteger(nullptr);
-        }
-        virtual void doFloat(float *value)
-        {
-            *value = checker_.readFloat(nullptr);
-        }
-        virtual void doDouble(double *value)
-        {
-            *value = checker_.readDouble(nullptr);
-        }
-        virtual void doString(std::string *value)
-        {
-            *value = checker_.readString(nullptr);
-        }
+    virtual void doUChar(unsigned char *value)
+    {
+        *value = checker_.readUChar(nullptr);
+    }
+    virtual void doInt(int *value)
+    {
+        *value = checker_.readInteger(nullptr);
+    }
+    virtual void doFloat(float *value)
+    {
+        *value = checker_.readFloat(nullptr);
+    }
+    virtual void doDouble(double *value)
+    {
+        *value = checker_.readDouble(nullptr);
+    }
+    virtual void doString(std::string *value)
+    {
+        *value = checker_.readString(nullptr);
+    }
 
-    private:
-        gmx::test::TestReferenceChecker checker_;
+private:
+    gmx::test::TestReferenceChecker checker_;
 };
 
 class KeyValueTreeSerializerTest : public ::testing::Test
 {
-    public:
-        void runTest()
+public:
+    void runTest()
+    {
+        gmx::KeyValueTreeObject         input(builder_.build());
+        gmx::test::TestReferenceData    data;
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(input, "Input");
         {
-            gmx::KeyValueTreeObject         input(builder_.build());
-            gmx::test::TestReferenceData    data;
-            gmx::test::TestReferenceChecker checker(data.rootChecker());
-            checker.checkKeyValueTreeObject(input, "Input");
-            {
-                RefDataWriteSerializer serializer(&checker, "Stream");
-                gmx::serializeKeyValueTree(input, &serializer);
-            }
-            {
-                RefDataReadSerializer   serializer(&checker, "Stream");
-                gmx::KeyValueTreeObject output
-                    = gmx::deserializeKeyValueTree(&serializer);
-                checker.checkKeyValueTreeObject(output, "Input");
-            }
+            RefDataWriteSerializer serializer(&checker, "Stream");
+            gmx::serializeKeyValueTree(input, &serializer);
         }
+        {
+            RefDataReadSerializer   serializer(&checker, "Stream");
+            gmx::KeyValueTreeObject output
+                = gmx::deserializeKeyValueTree(&serializer);
+            checker.checkKeyValueTreeObject(output, "Input");
+        }
+    }
 
-        gmx::KeyValueTreeBuilder builder_;
+    gmx::KeyValueTreeBuilder builder_;
 };
 
 TEST_F(KeyValueTreeSerializerTest, EmptyTree)

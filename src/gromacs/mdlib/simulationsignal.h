@@ -86,15 +86,15 @@ class ArrayRef;
  * coordinate this at run time when a SimulationSignaller is made. */
 class SimulationSignal
 {
-    public:
-        //! Constructor
-        SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {};
-        //! The signal set by this rank in do_md().
-        signed char sig;
-        //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.
-        signed char set;
-        //! Is the signal in one simulation independent of other simulations?
-        bool isLocal;
+public:
+    //! Constructor
+    SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {};
+    //! The signal set by this rank in do_md().
+    signed char sig;
+    //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.
+    signed char set;
+    //! Is the signal in one simulation independent of other simulations?
+    bool isLocal;
 };
 
 //! Convenience typedef for the group of signals used.
@@ -112,48 +112,48 @@ typedef std::array<SimulationSignal, eglsNR> SimulationSignals;
  * communication occurs. */
 class SimulationSignaller
 {
-    public:
-        //! Constructor
-        SimulationSignaller(SimulationSignals *signals,
-                            const t_commrec *  cr,
-                            bool               doInterSim,
-                            bool               doIntraSim);
-        /*! \brief Return a reference to an array of signal values to communicate.
-         *
-         * \return If intra-sim signalling will take place, fill and
-         * return a reference to the array of reals in which signals
-         * will be communicated with the signal values to be
-         * sent. Otherwise return a EmptyArrayRef. */
-        gmx::ArrayRef<real> getCommunicationBuffer();
-        /*! \brief Handle inter-simulation signal communication.
-         *
-         * If an inter-simulation signal should be handled, communicate between
-         * simulation-master ranks, then propagate from the masters to the
-         * rest of the ranks for each simulation. It is the responsibility of
-         * the calling code to ensure that any necessary intra-simulation
-         * signalling has already occurred, e.g. in global_stat(). */
-        void signalInterSim();
-        /*! \brief Propagate signals when appropriate.
-         *
-         * Always propagate an mdrun signal value when doing
-         * inter-simulation signalling; otherwise, propagate it only
-         * if should be propagated within this simulation,
-         * ie. locally. See documentation of SimulationSignal for
-         * details. */
-        void setSignals();
-        //! Convenience wrapper that calls signalInterSim() then setSignals().
-        void finalizeSignals();
-    private:
-        //! Source and sink for mdrun signals
-        SimulationSignals *signals_;
-        //! Communication object.
-        const t_commrec *cr_;
-        //! Do inter-sim communication at this step.
-        bool doInterSim_;
-        //! Do intra-sim communication at this step.
-        bool doIntraSim_;
-        //! Buffer for MPI communication.
-        std::array<real, eglsNR> mpiBuffer_;
+public:
+    //! Constructor
+    SimulationSignaller(SimulationSignals *signals,
+                        const t_commrec *  cr,
+                        bool               doInterSim,
+                        bool               doIntraSim);
+    /*! \brief Return a reference to an array of signal values to communicate.
+     *
+     * \return If intra-sim signalling will take place, fill and
+     * return a reference to the array of reals in which signals
+     * will be communicated with the signal values to be
+     * sent. Otherwise return a EmptyArrayRef. */
+    gmx::ArrayRef<real> getCommunicationBuffer();
+    /*! \brief Handle inter-simulation signal communication.
+     *
+     * If an inter-simulation signal should be handled, communicate between
+     * simulation-master ranks, then propagate from the masters to the
+     * rest of the ranks for each simulation. It is the responsibility of
+     * the calling code to ensure that any necessary intra-simulation
+     * signalling has already occurred, e.g. in global_stat(). */
+    void signalInterSim();
+    /*! \brief Propagate signals when appropriate.
+     *
+     * Always propagate an mdrun signal value when doing
+     * inter-simulation signalling; otherwise, propagate it only
+     * if should be propagated within this simulation,
+     * ie. locally. See documentation of SimulationSignal for
+     * details. */
+    void setSignals();
+    //! Convenience wrapper that calls signalInterSim() then setSignals().
+    void finalizeSignals();
+private:
+    //! Source and sink for mdrun signals
+    SimulationSignals *signals_;
+    //! Communication object.
+    const t_commrec *cr_;
+    //! Do inter-sim communication at this step.
+    bool doInterSim_;
+    //! Do intra-sim communication at this step.
+    bool doIntraSim_;
+    //! Buffer for MPI communication.
+    std::array<real, eglsNR> mpiBuffer_;
 };
 
 } // namespace

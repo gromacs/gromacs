@@ -67,24 +67,24 @@ namespace gmx
  */
 class AbstractSimpleHelpTopic : public IHelpTopic
 {
-    public:
-        virtual const char *name() const  = 0;
-        virtual const char *title() const = 0;
+public:
+    virtual const char *name() const  = 0;
+    virtual const char *title() const = 0;
 
-        virtual bool hasSubTopics() const;
-        virtual const IHelpTopic *findSubTopic(const char *name) const;
+    virtual bool hasSubTopics() const;
+    virtual const IHelpTopic *findSubTopic(const char *name) const;
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+    virtual void writeHelp(const HelpWriterContext &context) const;
 
-    protected:
-        /*! \brief
-         * Returns the help text for this topic.
-         *
-         * writeHelp() calls this method to obtain the actual text to format
-         * for the topic.  Markup substitution etc. is done automatically by
-         * writeHelp().
-         */
-        virtual std::string helpText() const = 0;
+protected:
+    /*! \brief
+     * Returns the help text for this topic.
+     *
+     * writeHelp() calls this method to obtain the actual text to format
+     * for the topic.  Markup substitution etc. is done automatically by
+     * writeHelp().
+     */
+    virtual std::string helpText() const = 0;
 };
 
 /*! \libinternal \brief
@@ -105,78 +105,78 @@ class AbstractSimpleHelpTopic : public IHelpTopic
  */
 class AbstractCompositeHelpTopic : public IHelpTopic
 {
-    public:
-        AbstractCompositeHelpTopic();
-        virtual ~AbstractCompositeHelpTopic();
+public:
+    AbstractCompositeHelpTopic();
+    virtual ~AbstractCompositeHelpTopic();
 
-        virtual const char *name() const  = 0;
-        virtual const char *title() const = 0;
+    virtual const char *name() const  = 0;
+    virtual const char *title() const = 0;
 
-        virtual bool hasSubTopics() const;
-        virtual const IHelpTopic *findSubTopic(const char *name) const;
+    virtual bool hasSubTopics() const;
+    virtual const IHelpTopic *findSubTopic(const char *name) const;
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+    virtual void writeHelp(const HelpWriterContext &context) const;
 
-        /*! \brief
-         * Adds a given topic as a subtopic of this topic.
-         *
-         * \param   topic  Topis to add.
-         * \throws  std::bad_alloc if out of memory.
-         *
-         * This topic takes ownership of the object.
-         *
-         * \see registerSubTopic()
-         */
-        void addSubTopic(HelpTopicPointer topic);
-        /*! \brief
-         * Registers a subtopic of a certain type to this topic.
-         *
-         * \tparam  Topic  Type of topic to register.
-         * \throws  std::bad_alloc if out of memory.
-         *
-         * \p Topic must be default-constructible and implement
-         * IHelpTopic.
-         *
-         * This method is provided as a convenient alternative to addSubTopic()
-         * for cases where each topic is implemented by a different type
-         * (which is a common case outside unit tests).
-         */
-        template <class Topic>
-        void registerSubTopic()
-        {
-            addSubTopic(HelpTopicPointer(new Topic));
-        }
+    /*! \brief
+     * Adds a given topic as a subtopic of this topic.
+     *
+     * \param   topic  Topis to add.
+     * \throws  std::bad_alloc if out of memory.
+     *
+     * This topic takes ownership of the object.
+     *
+     * \see registerSubTopic()
+     */
+    void addSubTopic(HelpTopicPointer topic);
+    /*! \brief
+     * Registers a subtopic of a certain type to this topic.
+     *
+     * \tparam  Topic  Type of topic to register.
+     * \throws  std::bad_alloc if out of memory.
+     *
+     * \p Topic must be default-constructible and implement
+     * IHelpTopic.
+     *
+     * This method is provided as a convenient alternative to addSubTopic()
+     * for cases where each topic is implemented by a different type
+     * (which is a common case outside unit tests).
+     */
+    template <class Topic>
+    void registerSubTopic()
+    {
+        addSubTopic(HelpTopicPointer(new Topic));
+    }
 
-    protected:
-        //! \copydoc gmx::AbstractSimpleHelpTopic::helpText()
-        virtual std::string helpText() const = 0;
+protected:
+    //! \copydoc gmx::AbstractSimpleHelpTopic::helpText()
+    virtual std::string helpText() const = 0;
 
-        /*! \brief
-         * Writes the list of subtopics.
-         *
-         * \param[in] context Context for writing the help.
-         * \param[in] title  Title for the written list.
-         * \returns   true if anything was printed.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Subtopics with empty titles are skipped from the list.
-         * If there would be no subtopics in the list, \p title is not printed
-         * either.
-         *
-         * This method is provided for cases where helpText() does not provide
-         * the needed flexibility and the derived class needs to override
-         * writeHelp().  This method can then be called to print the same
-         * subtopic list that is printed by the default writeHelp()
-         * implementation.
-         */
-        bool writeSubTopicList(const HelpWriterContext &context,
-                               const std::string &      title) const;
+    /*! \brief
+     * Writes the list of subtopics.
+     *
+     * \param[in] context Context for writing the help.
+     * \param[in] title  Title for the written list.
+     * \returns   true if anything was printed.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Subtopics with empty titles are skipped from the list.
+     * If there would be no subtopics in the list, \p title is not printed
+     * either.
+     *
+     * This method is provided for cases where helpText() does not provide
+     * the needed flexibility and the derived class needs to override
+     * writeHelp().  This method can then be called to print the same
+     * subtopic list that is printed by the default writeHelp()
+     * implementation.
+     */
+    bool writeSubTopicList(const HelpWriterContext &context,
+                           const std::string &      title) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \cond libapi */
@@ -223,21 +223,21 @@ typedef std::unique_ptr<AbstractCompositeHelpTopic>
 template <class HelpText>
 class SimpleHelpTopic : public AbstractSimpleHelpTopic
 {
-    public:
-        virtual const char *name() const
-        {
-            return HelpText::name;
-        }
-        virtual const char *title() const
-        {
-            return HelpText::title;
-        }
+public:
+    virtual const char *name() const
+    {
+        return HelpText::name;
+    }
+    virtual const char *title() const
+    {
+        return HelpText::title;
+    }
 
-    protected:
-        virtual std::string helpText() const
-        {
-            return joinStrings(HelpText::text, "\n");
-        }
+protected:
+    virtual std::string helpText() const
+    {
+        return joinStrings(HelpText::text, "\n");
+    }
 };
 
 /*! \libinternal \brief
@@ -256,25 +256,25 @@ class SimpleHelpTopic : public AbstractSimpleHelpTopic
 template <class HelpText>
 class CompositeHelpTopic : public AbstractCompositeHelpTopic
 {
-    public:
-        // copydocs are needed with Doxygen 1.8.10, but not 1.8.5...
-        //! \copydoc gmx::AbstractCompositeHelpTopic::name()
-        virtual const char *name() const
-        {
-            return HelpText::name;
-        }
-        //! \copydoc gmx::AbstractCompositeHelpTopic::title()
-        virtual const char *title() const
-        {
-            return HelpText::title;
-        }
+public:
+    // copydocs are needed with Doxygen 1.8.10, but not 1.8.5...
+    //! \copydoc gmx::AbstractCompositeHelpTopic::name()
+    virtual const char *name() const
+    {
+        return HelpText::name;
+    }
+    //! \copydoc gmx::AbstractCompositeHelpTopic::title()
+    virtual const char *title() const
+    {
+        return HelpText::title;
+    }
 
-    protected:
-        //! \copydoc gmx::AbstractCompositeHelpTopic::helpText()
-        virtual std::string helpText() const
-        {
-            return joinStrings(HelpText::text, "\n");
-        }
+protected:
+    //! \copydoc gmx::AbstractCompositeHelpTopic::helpText()
+    virtual std::string helpText() const
+    {
+        return joinStrings(HelpText::text, "\n");
+    }
 };
 
 } // namespace gmx

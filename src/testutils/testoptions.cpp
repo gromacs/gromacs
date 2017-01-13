@@ -63,33 +63,33 @@ namespace
  */
 class TestOptionsRegistry
 {
-    public:
-        //! Returns the singleton instance of this class.
-        static TestOptionsRegistry &getInstance()
-        {
-            static TestOptionsRegistry singleton;
-            return singleton;
-        }
+public:
+    //! Returns the singleton instance of this class.
+    static TestOptionsRegistry &getInstance()
+    {
+        static TestOptionsRegistry singleton;
+        return singleton;
+    }
 
-        //! Adds a provider into the registry.
-        void add(const char * /*name*/, TestOptionsProvider *provider)
-        {
-            lock_guard<Mutex> lock(listMutex_);
-            providerList_.push_back(provider);
-        }
+    //! Adds a provider into the registry.
+    void add(const char * /*name*/, TestOptionsProvider *provider)
+    {
+        lock_guard<Mutex> lock(listMutex_);
+        providerList_.push_back(provider);
+    }
 
-        //! Initializes the options from all the provides.
-        void initOptions(IOptionsContainer *options);
+    //! Initializes the options from all the provides.
+    void initOptions(IOptionsContainer *options);
 
-    private:
-        TestOptionsRegistry() {}
+private:
+    TestOptionsRegistry() {}
 
-        typedef std::list<TestOptionsProvider *> ProviderList;
+    typedef std::list<TestOptionsProvider *> ProviderList;
 
-        Mutex        listMutex_;
-        ProviderList providerList_;
+    Mutex        listMutex_;
+    ProviderList providerList_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
 };
 
 void TestOptionsRegistry::initOptions(IOptionsContainer *options)

@@ -67,12 +67,12 @@ namespace
 
 class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 {
-    public:
-        CommandLineHelpWriterTest() : bHidden_(false) {}
+public:
+    CommandLineHelpWriterTest() : bHidden_(false) {}
 
-        void checkHelp(gmx::CommandLineHelpWriter *writer);
+    void checkHelp(gmx::CommandLineHelpWriter *writer);
 
-        bool bHidden_;
+    bool bHidden_;
 };
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)

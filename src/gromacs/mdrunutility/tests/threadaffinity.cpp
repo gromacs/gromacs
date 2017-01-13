@@ -47,8 +47,8 @@ namespace
 
 class ThreadAffinityTest : public ::testing::Test
 {
-    public:
-        gmx::test::ThreadAffinityTestHelper helper_;
+public:
+    gmx::test::ThreadAffinityTestHelper helper_;
 };
 
 TEST_F(ThreadAffinityTest, DoesNothingWhenDisabled)

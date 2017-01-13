@@ -53,62 +53,62 @@ namespace gmx
 template <typename T>
 class OptionValueStorePlain : public IOptionValueStore<T>
 {
-    public:
-        OptionValueStorePlain(T *store, int *storeCount, int initialCount)
-            : count_(initialCount), store_(store), storeCount_(storeCount)
-        {
-        }
+public:
+    OptionValueStorePlain(T *store, int *storeCount, int initialCount)
+        : count_(initialCount), store_(store), storeCount_(storeCount)
+    {
+    }
 
-        virtual int valueCount() { return count_; }
-        virtual ArrayRef<T> values() { return ArrayRef<T>::fromArray(store_, count_); }
-        virtual void clear()
+    virtual int valueCount() { return count_; }
+    virtual ArrayRef<T> values() { return ArrayRef<T>::fromArray(store_, count_); }
+    virtual void clear()
+    {
+        count_ = 0;
+        if (storeCount_ != nullptr)
         {
-            count_ = 0;
-            if (storeCount_ != nullptr)
-            {
-                *storeCount_ = count_;
-            }
+            *storeCount_ = count_;
         }
-        virtual void reserve(size_t /*count*/)
+    }
+    virtual void reserve(size_t /*count*/)
+    {
+    }
+    virtual void append(const T &value)
+    {
+        store_[count_] = value;
+        ++count_;
+        if (storeCount_ != nullptr)
         {
+            *storeCount_ = count_;
         }
-        virtual void append(const T &value)
-        {
-            store_[count_] = value;
-            ++count_;
-            if (storeCount_ != nullptr)
-            {
-                *storeCount_ = count_;
-            }
-        }
+    }
 
-    private:
-        int  count_;
-        T *  store_;
-        int *storeCount_;
+private:
+    int  count_;
+    T *  store_;
+    int *storeCount_;
 };
 
 template <typename T>
 class OptionValueStoreVector : public IOptionValueStore<T>
 {
-    public:
-        // cppcheck-suppress uninitMemberVar
-        explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
+public:
+    // cppcheck-suppress uninitMemberVar
+    explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
 
-        virtual int valueCount() { return static_cast<int>(store_->size()); }
-        virtual ArrayRef<T> values() { return *store_; }
-        virtual void clear() { store_->clear(); }
-        virtual void reserve(size_t count)
-        {
-            store_->reserve(store_->size() + count);
-        }
-        virtual void append(const T &value)
-        {
-            store_->push_back(value);
-        }
+    virtual int valueCount() { return static_cast<int>(store_->size()); }
+    virtual ArrayRef<T> values() { return *store_; }
+    virtual void clear() { store_->clear(); }
+    virtual void reserve(size_t count)
+    {
+        store_->reserve(store_->size() + count);
+    }
+    virtual void append(const T &value)
+    {
+        store_->push_back(value);
+    }
 
-    private:
-        std::vector<T> *store_;
+private:
+    std::vector<T> *store_;
 };
 
 // Specialization that works around std::vector<bool> specialities.
@@ -116,41 +116,41 @@ template <>
 // cppcheck-suppress noConstructor
 class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 {
-    public:
-        explicit OptionValueStoreVector(std::vector<bool> *store) : store_(store)
-        {
-        }
+public:
+    explicit OptionValueStoreVector(std::vector<bool> *store) : store_(store)
+    {
+    }
 
-        virtual int valueCount() { return static_cast<int>(store_->size()); }
-        virtual ArrayRef<bool> values()
-        {
-            return ArrayRef<bool>::fromArray(reinterpret_cast<bool *>(boolStore_.data()),
-                                             boolStore_.size());
-        }
-        virtual void clear()
-        {
-            boolStore_.clear();
-            store_->clear();
-        }
-        virtual void reserve(size_t count)
-        {
-            boolStore_.reserve(boolStore_.size() + count);
-            store_->reserve(store_->size() + count);
-        }
-        virtual void append(const bool &value)
-        {
-            boolStore_.push_back({value});
-            store_->push_back(value);
-        }
+    virtual int valueCount() { return static_cast<int>(store_->size()); }
+    virtual ArrayRef<bool> values()
+    {
+        return ArrayRef<bool>::fromArray(reinterpret_cast<bool *>(boolStore_.data()),
+                                         boolStore_.size());
+    }
+    virtual void clear()
+    {
+        boolStore_.clear();
+        store_->clear();
+    }
+    virtual void reserve(size_t count)
+    {
+        boolStore_.reserve(boolStore_.size() + count);
+        store_->reserve(store_->size() + count);
+    }
+    virtual void append(const bool &value)
+    {
+        boolStore_.push_back({value});
+        store_->push_back(value);
+    }
 
-    private:
-        struct Bool
-        {
-            bool value;
-        };
+private:
+    struct Bool
+    {
+        bool value;
+    };
 
-        std::vector<Bool>  boolStore_;
-        std::vector<bool> *store_;
+    std::vector<Bool>  boolStore_;
+    std::vector<bool> *store_;
 };
 
 /*! \internal
@@ -165,18 +165,18 @@ class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 template <typename T>
 class OptionValueStoreNull : public IOptionValueStore<T>
 {
-    public:
-        OptionValueStoreNull() : store_(&vector_) {}
+public:
+    OptionValueStoreNull() : store_(&vector_) {}
 
-        virtual int valueCount() { return store_.valueCount(); }
-        virtual ArrayRef<T> values() { return store_.values(); }
-        virtual void clear() { store_.clear(); }
-        virtual void reserve(size_t count) { store_.reserve(count); }
-        virtual void append(const T &value) { store_.append(value); }
+    virtual int valueCount() { return store_.valueCount(); }
+    virtual ArrayRef<T> values() { return store_.values(); }
+    virtual void clear() { store_.clear(); }
+    virtual void reserve(size_t count) { store_.reserve(count); }
+    virtual void append(const T &value) { store_.append(value); }
 
-    private:
-        std::vector<T>            vector_;
-        OptionValueStoreVector<T> store_;
+private:
+    std::vector<T>            vector_;
+    OptionValueStoreVector<T> store_;
 };
 
 } // namespace gmx

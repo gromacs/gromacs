@@ -67,20 +67,20 @@ namespace
 
 class XvgMatcher : public ITextBlockMatcher
 {
-    public:
-        explicit XvgMatcher(const XvgMatchSettings &settings)
-            : settings_(settings)
-        {
-        }
+public:
+    explicit XvgMatcher(const XvgMatchSettings &settings)
+        : settings_(settings)
+    {
+    }
 
-        virtual void checkStream(TextInputStream *     stream,
-                                 TestReferenceChecker *checker)
-        {
-            checkXvgFile(stream, checker, settings_);
-        }
+    virtual void checkStream(TextInputStream *     stream,
+                             TestReferenceChecker *checker)
+    {
+        checkXvgFile(stream, checker, settings_);
+    }
 
-    private:
-        XvgMatchSettings settings_;
+private:
+    XvgMatchSettings settings_;
 };
 
 //! Helper function to identify which @ lines in xvg files should be tested.

@@ -70,65 +70,65 @@ class ShellCompletionWriter;
  */
 class CommandLineHelpContext
 {
-    public:
-        /*! \brief
-         * Creates a context for help export.
-         *
-         * Wraps the constructor of HelpWriterContext.
-         */
-        CommandLineHelpContext(TextWriter *writer,
-                               HelpOutputFormat format, const HelpLinks *links,
-                               const std::string &programName);
-        //! Creates a context for a particular HelpWriterContext.
-        explicit CommandLineHelpContext(const HelpWriterContext &writerContext);
-        /*! \brief
-         * Creates a context for shell completion.
-         */
-        explicit CommandLineHelpContext(ShellCompletionWriter *writer);
-        //! Creates a copy of the context.
-        explicit CommandLineHelpContext(const CommandLineHelpContext &other);
-        //! Moves the context.
-        CommandLineHelpContext(CommandLineHelpContext &&other);
-        //! Move-assigns the context.
-        CommandLineHelpContext &operator=(CommandLineHelpContext &&other);
-        ~CommandLineHelpContext();
+public:
+    /*! \brief
+     * Creates a context for help export.
+     *
+     * Wraps the constructor of HelpWriterContext.
+     */
+    CommandLineHelpContext(TextWriter *writer,
+                           HelpOutputFormat format, const HelpLinks *links,
+                           const std::string &programName);
+    //! Creates a context for a particular HelpWriterContext.
+    explicit CommandLineHelpContext(const HelpWriterContext &writerContext);
+    /*! \brief
+     * Creates a context for shell completion.
+     */
+    explicit CommandLineHelpContext(ShellCompletionWriter *writer);
+    //! Creates a copy of the context.
+    explicit CommandLineHelpContext(const CommandLineHelpContext &other);
+    //! Moves the context.
+    CommandLineHelpContext(CommandLineHelpContext &&other);
+    //! Move-assigns the context.
+    CommandLineHelpContext &operator=(CommandLineHelpContext &&other);
+    ~CommandLineHelpContext();
 
-        /*! \brief
-         * Sets a display name for the module for which help is being written.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        void setModuleDisplayName(const std::string &name);
-        //! Sets whether hidden options should be shown in help output.
-        void setShowHidden(bool bHidden);
-        //! \copydoc HelpWriterContext::enterSubSection()
-        void enterSubSection(const std::string &title);
+    /*! \brief
+     * Sets a display name for the module for which help is being written.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    void setModuleDisplayName(const std::string &name);
+    //! Sets whether hidden options should be shown in help output.
+    void setShowHidden(bool bHidden);
+    //! \copydoc HelpWriterContext::enterSubSection()
+    void enterSubSection(const std::string &title);
 
-        //! Returns the lower-level context for writing the help.
-        const HelpWriterContext &writerContext() const;
-        /*! \brief
-         * Returns a display name for the module for which help is being written.
-         *
-         * Does not throw.
-         */
-        const char *moduleDisplayName() const;
-        //! Returns whether hidden options should be shown in help output.
-        bool showHidden() const;
-        //! Returns whether this context is for exporting shell completions.
-        bool isCompletionExport() const;
-        /*! \brief
-         * Returns the shell completion writer for this context.
-         *
-         * Can only be called if isCompletionExport() returns `true`.
-         */
-        ShellCompletionWriter &shellCompletionWriter() const;
+    //! Returns the lower-level context for writing the help.
+    const HelpWriterContext &writerContext() const;
+    /*! \brief
+     * Returns a display name for the module for which help is being written.
+     *
+     * Does not throw.
+     */
+    const char *moduleDisplayName() const;
+    //! Returns whether hidden options should be shown in help output.
+    bool showHidden() const;
+    //! Returns whether this context is for exporting shell completions.
+    bool isCompletionExport() const;
+    /*! \brief
+     * Returns the shell completion writer for this context.
+     *
+     * Can only be called if isCompletionExport() returns `true`.
+     */
+    ShellCompletionWriter &shellCompletionWriter() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        GMX_DISALLOW_ASSIGN(CommandLineHelpContext);
+    GMX_DISALLOW_ASSIGN(CommandLineHelpContext);
 };
 
 /*! \libinternal \brief
@@ -146,21 +146,21 @@ class CommandLineHelpContext
  */
 class GlobalCommandLineHelpContext
 {
-    public:
-        //! Returns the global context, or NULL if not set.
-        static const CommandLineHelpContext *get();
+public:
+    //! Returns the global context, or NULL if not set.
+    static const CommandLineHelpContext *get();
 
-        /*! \brief
-         * Sets the global context for the scope.
-         *
-         * The global context is cleared when this object goes out of scope.
-         *
-         * It is an error to have more than one GlobalCommandLineHelpContext
-         * object in existence at the same time.
-         */
-        explicit GlobalCommandLineHelpContext(const CommandLineHelpContext &context);
-        //! Clears the global context.
-        ~GlobalCommandLineHelpContext();
+    /*! \brief
+     * Sets the global context for the scope.
+     *
+     * The global context is cleared when this object goes out of scope.
+     *
+     * It is an error to have more than one GlobalCommandLineHelpContext
+     * object in existence at the same time.
+     */
+    explicit GlobalCommandLineHelpContext(const CommandLineHelpContext &context);
+    //! Clears the global context.
+    ~GlobalCommandLineHelpContext();
 };
 
 } // namespace gmx

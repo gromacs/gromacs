@@ -77,13 +77,13 @@ namespace test
 
 class CommandLine::Impl
 {
-    public:
-        Impl(const char *const cmdline[], size_t count);
-        ~Impl();
+public:
+    Impl(const char *const cmdline[], size_t count);
+    ~Impl();
 
-        std::vector<char *> args_;
-        std::vector<char *> argv_;
-        int                 argc_;
+    std::vector<char *> args_;
+    std::vector<char *> argv_;
+    int                 argc_;
 };
 
 CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
@@ -241,42 +241,42 @@ std::string CommandLine::toString() const
 
 class CommandLineTestHelper::Impl
 {
-    public:
-        struct OutputFileInfo
+public:
+    struct OutputFileInfo
+    {
+        OutputFileInfo(const char *option, const std::string &path,
+                       TextBlockMatcherPointer matcher)
+            : option(option), path(path), matcher(move(matcher))
         {
-            OutputFileInfo(const char *option, const std::string &path,
-                           TextBlockMatcherPointer matcher)
-                : option(option), path(path), matcher(move(matcher))
-            {
-            }
-            OutputFileInfo(OutputFileInfo &&other)
-                : option(std::move(other.option)), path(std::move(other.path)),
-                  matcher(std::move(other.matcher))
-            {
-            }
-
-            OutputFileInfo &operator=(OutputFileInfo &&other)
-            {
-                option  = std::move(other.option);
-                path    = std::move(other.path);
-                matcher = std::move(other.matcher);
-                return *this;
-            }
-
-            std::string             option;
-            std::string             path;
-            TextBlockMatcherPointer matcher;
-        };
-
-        typedef std::vector<OutputFileInfo>        OutputFileList;
-
-        explicit Impl(TestFileManager *fileManager)
-            : fileManager_(*fileManager)
+        }
+        OutputFileInfo(OutputFileInfo &&other)
+            : option(std::move(other.option)), path(std::move(other.path)),
+              matcher(std::move(other.matcher))
         {
         }
 
-        TestFileManager &fileManager_;
-        OutputFileList   outputFiles_;
+        OutputFileInfo &operator=(OutputFileInfo &&other)
+        {
+            option  = std::move(other.option);
+            path    = std::move(other.path);
+            matcher = std::move(other.matcher);
+            return *this;
+        }
+
+        std::string             option;
+        std::string             path;
+        TextBlockMatcherPointer matcher;
+    };
+
+    typedef std::vector<OutputFileInfo>        OutputFileList;
+
+    explicit Impl(TestFileManager *fileManager)
+        : fileManager_(*fileManager)
+    {
+    }
+
+    TestFileManager &fileManager_;
+    OutputFileList   outputFiles_;
 };
 
 /********************************************************************
@@ -387,16 +387,16 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
 
 class CommandLineTestBase::Impl
 {
-    public:
-        Impl() : helper_(&tempFiles_)
-        {
-            cmdline_.append("module");
-        }
+public:
+    Impl() : helper_(&tempFiles_)
+    {
+        cmdline_.append("module");
+    }
 
-        TestReferenceData     data_;
-        TestFileManager       tempFiles_;
-        CommandLineTestHelper helper_;
-        CommandLine           cmdline_;
+    TestReferenceData     data_;
+    TestFileManager       tempFiles_;
+    CommandLineTestHelper helper_;
+    CommandLine           cmdline_;
 };
 
 /********************************************************************

@@ -67,11 +67,11 @@ class MockOptionStorage;
 
 class MockOptionInfo : public gmx::OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit MockOptionInfo(MockOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit MockOptionInfo(MockOptionStorage *option);
 
-        MockOptionStorage &option();
+    MockOptionStorage &option();
 };
 
 /*! \brief
@@ -84,49 +84,49 @@ class MockOptionInfo : public gmx::OptionInfo
  */
 class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
 {
-    public:
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings   Storage settings.
-         */
-        explicit MockOptionStorage(const MockOption &settings);
+public:
+    /*! \brief
+     * Initializes the storage from option settings.
+     *
+     * \param[in] settings   Storage settings.
+     */
+    explicit MockOptionStorage(const MockOption &settings);
 
-        /*! \brief
-         * Calls addValue("dummy") in the base class.
-         */
-        void addDummyValue()
-        {
-            addValue("dummy");
-        }
-        using MyBase::markAsSet;
-        using MyBase::addValue;
-        using MyBase::commitValues;
+    /*! \brief
+     * Calls addValue("dummy") in the base class.
+     */
+    void addDummyValue()
+    {
+        addValue("dummy");
+    }
+    using MyBase::markAsSet;
+    using MyBase::addValue;
+    using MyBase::commitValues;
 
-        virtual gmx::OptionInfo &optionInfo() { return info_; }
-        // These are not used.
-        virtual std::string typeString() const { return "mock"; }
-        virtual std::string formatSingleValue(const std::string & /*value*/) const
-        {
-            return "";
-        }
-        virtual std::vector<gmx::Variant>
-        normalizeValues(const std::vector<gmx::Variant> &values) const
-        {
-            return values;
-        }
+    virtual gmx::OptionInfo &optionInfo() { return info_; }
+    // These are not used.
+    virtual std::string typeString() const { return "mock"; }
+    virtual std::string formatSingleValue(const std::string & /*value*/) const
+    {
+        return "";
+    }
+    virtual std::vector<gmx::Variant>
+    normalizeValues(const std::vector<gmx::Variant> &values) const
+    {
+        return values;
+    }
 
-        virtual void convertValue(const gmx::Variant &value)
-        {
-            convertValue(value.cast<std::string>());
-        }
+    virtual void convertValue(const gmx::Variant &value)
+    {
+        convertValue(value.cast<std::string>());
+    }
 
-        MOCK_METHOD1(convertValue, void(const std::string & value));
-        MOCK_METHOD1(processSetValues, void(ValueList * values));
-        MOCK_METHOD0(processAll, void());
+    MOCK_METHOD1(convertValue, void(const std::string & value));
+    MOCK_METHOD1(processSetValues, void(ValueList * values));
+    MOCK_METHOD0(processAll, void());
 
-    private:
-        MockOptionInfo info_;
+private:
+    MockOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -136,22 +136,22 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
  */
 class MockOption : public gmx::OptionTemplate<std::string, MockOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef MockOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef MockOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit MockOption(const char *name)
-            : MyBase(name)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit MockOption(const char *name)
+        : MyBase(name)
+    {
+    }
 
-    private:
-        virtual gmx::AbstractOptionStorage *createStorage(
-            const gmx::OptionManagerContainer & /*managers*/) const
-        {
-            return new MockOptionStorage(*this);
-        }
+private:
+    virtual gmx::AbstractOptionStorage *createStorage(
+        const gmx::OptionManagerContainer & /*managers*/) const
+    {
+        return new MockOptionStorage(*this);
+    }
 };
 
 MockOptionStorage::MockOptionStorage(const MockOption &settings)

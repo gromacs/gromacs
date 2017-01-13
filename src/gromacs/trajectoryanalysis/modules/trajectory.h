@@ -52,10 +52,10 @@ namespace analysismodules
 
 class TrajectoryInfo
 {
-    public:
-        static const char name[];
-        static const char shortDescription[];
-        static TrajectoryAnalysisModulePointer create();
+public:
+    static const char name[];
+    static const char shortDescription[];
+    static TrajectoryAnalysisModulePointer create();
 };
 
 } // namespace analysismodules

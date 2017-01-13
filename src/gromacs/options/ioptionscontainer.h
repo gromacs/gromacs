@@ -79,70 +79,70 @@ namespace gmx
  */
 class IOptionsContainer
 {
-    public:
-        /*! \brief
-         * Creates a subgroup of options within the current options.
-         *
-         * To add options to the group, use the returned interface.
-         *
-         * Currently, this is only used to influence the order of options:
-         * all options in a group appear before options in a group added after
-         * it, no matter in which order the options are added to the groups.
-         * In the future, the groups could also be used to influence the help
-         * output.
-         */
-        virtual IOptionsContainer &addGroup() = 0;
-        /*! \brief
-         * Adds a recognized option.
-         *
-         * \tparam    OptionType Type of the options description object.
-         * \param[in] settings   Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * The return value is a pointer for more convenient use in callers:
-         * often callers need to declare the variable that will hold the return
-         * value in wider scope than would be achieved by declaring it at the
-         * site where addOption() is called.
-         * The returned pointer must not be freed.
-         *
-         * See \link Options class documentation \endlink for example usage.
-         *
-         * \libinternal
-         * \p OptionType::InfoType must specify a type that derives from
-         * OptionInfo and matches the type that is returned by
-         * AbstractOptionStorage::optionInfo() for the storage object that
-         * corresponds to \p OptionType.
-         */
-        template <class OptionType>
-        typename OptionType::InfoType *addOption(const OptionType &settings)
-        {
-            OptionInfo *info
-                = addOptionImpl(static_cast<const AbstractOption &>(settings));
-            GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
-                       "Mismatching option info type declaration and implementation");
-            return info->toType<typename OptionType::InfoType>();
-        }
+public:
+    /*! \brief
+     * Creates a subgroup of options within the current options.
+     *
+     * To add options to the group, use the returned interface.
+     *
+     * Currently, this is only used to influence the order of options:
+     * all options in a group appear before options in a group added after
+     * it, no matter in which order the options are added to the groups.
+     * In the future, the groups could also be used to influence the help
+     * output.
+     */
+    virtual IOptionsContainer &addGroup() = 0;
+    /*! \brief
+     * Adds a recognized option.
+     *
+     * \tparam    OptionType Type of the options description object.
+     * \param[in] settings   Option description.
+     * \returns   OptionInfo object for the created option (never NULL).
+     * \throws    APIError if invalid option settings are provided.
+     *
+     * The return value is a pointer for more convenient use in callers:
+     * often callers need to declare the variable that will hold the return
+     * value in wider scope than would be achieved by declaring it at the
+     * site where addOption() is called.
+     * The returned pointer must not be freed.
+     *
+     * See \link Options class documentation \endlink for example usage.
+     *
+     * \libinternal
+     * \p OptionType::InfoType must specify a type that derives from
+     * OptionInfo and matches the type that is returned by
+     * AbstractOptionStorage::optionInfo() for the storage object that
+     * corresponds to \p OptionType.
+     */
+    template <class OptionType>
+    typename OptionType::InfoType *addOption(const OptionType &settings)
+    {
+        OptionInfo *info
+            = addOptionImpl(static_cast<const AbstractOption &>(settings));
+        GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
+                   "Mismatching option info type declaration and implementation");
+        return info->toType<typename OptionType::InfoType>();
+    }
 
-    protected:
-        // Disallow deletion through the interface.
-        // (no need for the virtual, but some compilers warn otherwise)
-        virtual ~IOptionsContainer();
+protected:
+    // Disallow deletion through the interface.
+    // (no need for the virtual, but some compilers warn otherwise)
+    virtual ~IOptionsContainer();
 
-        /*! \brief
-         * Adds a recognized option.
-         *
-         * \param[in] settings Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * This method provides the internal implementation, but the templated
-         * method is called from user code.  See the templated method for more
-         * details.
-         */
-        virtual OptionInfo *addOptionImpl(const AbstractOption &settings) = 0;
+    /*! \brief
+     * Adds a recognized option.
+     *
+     * \param[in] settings Option description.
+     * \returns   OptionInfo object for the created option (never NULL).
+     * \throws    APIError if invalid option settings are provided.
+     *
+     * This method provides the internal implementation, but the templated
+     * method is called from user code.  See the templated method for more
+     * details.
+     */
+    virtual OptionInfo *addOptionImpl(const AbstractOption &settings) = 0;
 
-        GMX_DEFAULT_CONSTRUCTORS(IOptionsContainer);
+    GMX_DEFAULT_CONSTRUCTORS(IOptionsContainer);
 };
 
 } // namespace

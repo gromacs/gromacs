@@ -177,174 +177,174 @@ namespace gmx
  */
 class PositionCalculationCollection
 {
-    public:
-        //! Describes what topology information is needed for position calculation.
-        enum class RequiredTopologyInfo
-        {
-            None,              //!< No topology is needed.
-            Topology,          //!< Topology is needed (residue/molecule info).
-            TopologyAndMasses  //!< Masses are needed.
-        };
+public:
+    //! Describes what topology information is needed for position calculation.
+    enum class RequiredTopologyInfo
+    {
+    None,                      //!< No topology is needed.
+    Topology,                  //!< Topology is needed (residue/molecule info).
+    TopologyAndMasses          //!< Masses are needed.
+    };
 
-        /*! \brief
-         * Array of strings acceptable for position calculation type enum.
-         *
-         * This array contains the acceptable values for typeFromEnum() and
-         * createCalculationFromEnum().
-         * The array contains a NULL pointer after the last item to indicate
-         * the end of the list.
-         */
-        static const char * const typeEnumValues[];
+    /*! \brief
+     * Array of strings acceptable for position calculation type enum.
+     *
+     * This array contains the acceptable values for typeFromEnum() and
+     * createCalculationFromEnum().
+     * The array contains a NULL pointer after the last item to indicate
+     * the end of the list.
+     */
+    static const char * const typeEnumValues[];
 
-        /*! \brief
-         * Converts a string to parameters for createCalculationFromEnum().
-         *
-         * \param[in]     post  String (typically an enum argument).
-         *     Allowed values: 'atom', 'res_com', 'res_cog', 'mol_com', 'mol_cog',
-         *     or one of the last four prepended by 'whole_', 'part_', or 'dyn_'.
-         * \param[out]    type  \c e_poscalc_t corresponding to \p post.
-         * \param[in,out] flags Flags corresponding to \p post.
-         *     On input, the flags should contain the default flags.
-         *     On exit, the flags \ref POS_MASS, \ref POS_COMPLMAX and
-         *     \ref POS_COMPLWHOLE have been set according to \p post
-         *     (the completion flags are left at the default values if no
-         *     completion prefix is given).
-         * \throws  InternalError  if post is not recognized.
-         *
-         * \attention
-         * Checking is not complete, and other values than those listed above
-         * may be accepted for \p post, but the results are undefined.
-         *
-         * \see typeEnumValues
-         */
-        static void typeFromEnum(const char *post, e_poscalc_t *type, int *flags);
-        /*! \brief
-         * Returns what information is needed for position evaluation.
-         *
-         * \param[in] post   Position type (see typeFromEnum()).
-         * \param[in] forces Whether forces are needed.
-         * \returns   What topology information is required for initializing
-         *     and/or evaluating the positions.
-         */
-        static RequiredTopologyInfo requiredTopologyInfoForType(const char *post, bool forces);
+    /*! \brief
+     * Converts a string to parameters for createCalculationFromEnum().
+     *
+     * \param[in]     post  String (typically an enum argument).
+     *     Allowed values: 'atom', 'res_com', 'res_cog', 'mol_com', 'mol_cog',
+     *     or one of the last four prepended by 'whole_', 'part_', or 'dyn_'.
+     * \param[out]    type  \c e_poscalc_t corresponding to \p post.
+     * \param[in,out] flags Flags corresponding to \p post.
+     *     On input, the flags should contain the default flags.
+     *     On exit, the flags \ref POS_MASS, \ref POS_COMPLMAX and
+     *     \ref POS_COMPLWHOLE have been set according to \p post
+     *     (the completion flags are left at the default values if no
+     *     completion prefix is given).
+     * \throws  InternalError  if post is not recognized.
+     *
+     * \attention
+     * Checking is not complete, and other values than those listed above
+     * may be accepted for \p post, but the results are undefined.
+     *
+     * \see typeEnumValues
+     */
+    static void typeFromEnum(const char *post, e_poscalc_t *type, int *flags);
+    /*! \brief
+     * Returns what information is needed for position evaluation.
+     *
+     * \param[in] post   Position type (see typeFromEnum()).
+     * \param[in] forces Whether forces are needed.
+     * \returns   What topology information is required for initializing
+     *     and/or evaluating the positions.
+     */
+    static RequiredTopologyInfo requiredTopologyInfoForType(const char *post, bool forces);
 
-        /*! \brief
-         * Creates a new position calculation collection object.
-         *
-         * \throws  std::bad_alloc if out of memory.
-         */
-        PositionCalculationCollection();
-        /*! \brief
-         * Destroys a position calculation collection and its calculations.
-         *
-         * Any calculations in the collection are also freed, even if
-         * references to them are left.
-         */
-        ~PositionCalculationCollection();
+    /*! \brief
+     * Creates a new position calculation collection object.
+     *
+     * \throws  std::bad_alloc if out of memory.
+     */
+    PositionCalculationCollection();
+    /*! \brief
+     * Destroys a position calculation collection and its calculations.
+     *
+     * Any calculations in the collection are also freed, even if
+     * references to them are left.
+     */
+    ~PositionCalculationCollection();
 
-        /*! \brief
-         * Sets the topology used for the calculations.
-         *
-         * \param[in]     top   Topology data structure.
-         *
-         * This function should be called to set the topology before using
-         * gmx_ana_poscalc_set_maxindex() for any calculation that requires
-         * topology information.
-         *
-         * Does not throw.
-         */
-        void setTopology(const gmx_mtop_t *top);
-        /*! \brief
-         * Prints information about calculations.
-         *
-         * \param[in] fp    File handle to receive the output.
-         *
-         * The output is very technical, making this function mainly useful for
-         * debugging purposes.
-         *
-         * Does not throw.
-         */
-        void printTree(FILE *fp) const;
+    /*! \brief
+     * Sets the topology used for the calculations.
+     *
+     * \param[in]     top   Topology data structure.
+     *
+     * This function should be called to set the topology before using
+     * gmx_ana_poscalc_set_maxindex() for any calculation that requires
+     * topology information.
+     *
+     * Does not throw.
+     */
+    void setTopology(const gmx_mtop_t *top);
+    /*! \brief
+     * Prints information about calculations.
+     *
+     * \param[in] fp    File handle to receive the output.
+     *
+     * The output is very technical, making this function mainly useful for
+     * debugging purposes.
+     *
+     * Does not throw.
+     */
+    void printTree(FILE *fp) const;
 
-        /*! \brief
-         * Creates a new position calculation.
-         *
-         * \param[in]  type  Type of calculation.
-         * \param[in]  flags Flags for setting calculation options
-         *   (see \ref poscalc_flags "documentation of the flags").
-         *
-         * Does not throw currently, but may throw std::bad_alloc in the
-         * future.
-         */
-        gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
-        /*! \brief
-         * Creates a new position calculation based on an enum value.
-         *
-         * \param[in]  post  One of the strings acceptable for
-         *      typeFromEnum().
-         * \param[in]  flags Flags for setting calculation options
-         *      (see \ref poscalc_flags "documentation of the flags").
-         * \throws     InternalError  if post is not recognized.
-         *
-         * This is a convenience wrapper for createCalculation().
-         * \p flags sets the default calculation options if not overridden by
-         * \p post; see typeFromEnum().
-         *
-         * May also throw std::bad_alloc in the future.
-         *
-         * \see createCalculation(), typeFromEnum()
-         */
-        gmx_ana_poscalc_t *createCalculationFromEnum(const char *post, int flags);
+    /*! \brief
+     * Creates a new position calculation.
+     *
+     * \param[in]  type  Type of calculation.
+     * \param[in]  flags Flags for setting calculation options
+     *   (see \ref poscalc_flags "documentation of the flags").
+     *
+     * Does not throw currently, but may throw std::bad_alloc in the
+     * future.
+     */
+    gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
+    /*! \brief
+     * Creates a new position calculation based on an enum value.
+     *
+     * \param[in]  post  One of the strings acceptable for
+     *      typeFromEnum().
+     * \param[in]  flags Flags for setting calculation options
+     *      (see \ref poscalc_flags "documentation of the flags").
+     * \throws     InternalError  if post is not recognized.
+     *
+     * This is a convenience wrapper for createCalculation().
+     * \p flags sets the default calculation options if not overridden by
+     * \p post; see typeFromEnum().
+     *
+     * May also throw std::bad_alloc in the future.
+     *
+     * \see createCalculation(), typeFromEnum()
+     */
+    gmx_ana_poscalc_t *createCalculationFromEnum(const char *post, int flags);
 
-        /*! \brief
-         * Computes the atoms required to evaluate this collection.
-         *
-         * \param[out] out  Maximal group of atoms required to evaluate the
-         *     positions.
-         *
-         * Does not throw.
-         */
-        void getRequiredAtoms(gmx_ana_index_t *out) const;
+    /*! \brief
+     * Computes the atoms required to evaluate this collection.
+     *
+     * \param[out] out  Maximal group of atoms required to evaluate the
+     *     positions.
+     *
+     * Does not throw.
+     */
+    void getRequiredAtoms(gmx_ana_index_t *out) const;
 
-        /*! \brief
-         * Initializes evaluation for a position calculation collection.
-         *
-         * This function does some final initialization of the data structures
-         * in the collection to prepare them for evaluation.
-         * After this function has been called, it is no longer possible to add
-         * new calculations to the collection.
-         *
-         * Multiple calls to the function are ignored.
-         *
-         * Does not throw currently, but may throw std::bad_alloc in the
-         * future.
-         */
-        void initEvaluation();
-        /*! \brief
-         * Initializes a position calculation collection for a new frame.
-         *
-         * \param[in] fr  Frame to initialize evaluation for.
-         *
-         * Should be called for each frame before calling
-         * gmx_ana_poscalc_update().
-         *
-         * This function calls initEvaluation() automatically if it has not
-         * been called earlier.
-         *
-         * Does not currently throw, but may throw std::bad_alloc in the
-         * future.
-         */
-        void initFrame(const t_trxframe *fr);
+    /*! \brief
+     * Initializes evaluation for a position calculation collection.
+     *
+     * This function does some final initialization of the data structures
+     * in the collection to prepare them for evaluation.
+     * After this function has been called, it is no longer possible to add
+     * new calculations to the collection.
+     *
+     * Multiple calls to the function are ignored.
+     *
+     * Does not throw currently, but may throw std::bad_alloc in the
+     * future.
+     */
+    void initEvaluation();
+    /*! \brief
+     * Initializes a position calculation collection for a new frame.
+     *
+     * \param[in] fr  Frame to initialize evaluation for.
+     *
+     * Should be called for each frame before calling
+     * gmx_ana_poscalc_update().
+     *
+     * This function calls initEvaluation() automatically if it has not
+     * been called earlier.
+     *
+     * Does not currently throw, but may throw std::bad_alloc in the
+     * future.
+     */
+    void initFrame(const t_trxframe *fr);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed to access the implementation class from the C code.
-         */
-        friend struct ::gmx_ana_poscalc_t;
+    /*! \brief
+     * Needed to access the implementation class from the C code.
+     */
+    friend struct ::gmx_ana_poscalc_t;
 };
 
 } // namespace gmx

@@ -65,143 +65,143 @@ namespace gmx
  */
 class TextTableFormatter::Impl
 {
-    public:
-        /*! \internal \brief
-         * Manages a single column for TextTableFormatter.
-         *
-         * \ingroup module_onlinehelp
-         */
-        struct ColumnData
+public:
+    /*! \internal \brief
+     * Manages a single column for TextTableFormatter.
+     *
+     * \ingroup module_onlinehelp
+     */
+    struct ColumnData
+    {
+        //! Initializes a text table column with given values.
+        ColumnData(const char *title, int width, bool bWrap)
+            : title_(title != nullptr ? title : ""),
+              width_(width), bWrap_(bWrap), firstLine_(0),
+              nextLineIndex_(0), nextLineOffset_(0)
         {
-            //! Initializes a text table column with given values.
-            ColumnData(const char *title, int width, bool bWrap)
-                : title_(title != nullptr ? title : ""),
-                  width_(width), bWrap_(bWrap), firstLine_(0),
-                  nextLineIndex_(0), nextLineOffset_(0)
-            {
-                GMX_ASSERT(width >= 0, "Negative width not possible");
-                GMX_ASSERT(title_.length() <= static_cast<size_t>(width),
-                           "Title too long for column width");
-            }
+            GMX_ASSERT(width >= 0, "Negative width not possible");
+            GMX_ASSERT(title_.length() <= static_cast<size_t>(width),
+                       "Title too long for column width");
+        }
 
-            //! Returns the title of the column.
-            const std::string &title() const { return title_; }
-            //! Returns the width of the column.
-            int width() const { return width_; }
-            /*! \brief
-             * Returns the first line offset for the current row.
-             *
-             * Note that the return value may be outside the printed lines if
-             * there is no text.
-             */
-            int firstLine() const { return firstLine_; }
+        //! Returns the title of the column.
+        const std::string &title() const { return title_; }
+        //! Returns the width of the column.
+        int width() const { return width_; }
+        /*! \brief
+         * Returns the first line offset for the current row.
+         *
+         * Note that the return value may be outside the printed lines if
+         * there is no text.
+         */
+        int firstLine() const { return firstLine_; }
 
-            /*! \brief
-             * Resets the formatting state.
-             *
-             * After this call, textForNextLine() and hasLinesRemaining() can
-             * be used to format the lines for the column.
-             */
-            void startFormatting()
+        /*! \brief
+         * Resets the formatting state.
+         *
+         * After this call, textForNextLine() and hasLinesRemaining() can
+         * be used to format the lines for the column.
+         */
+        void startFormatting()
+        {
+            nextLineIndex_  = (!lines_.empty() ? -firstLine_ : 0);
+            nextLineOffset_ = 0;
+        }
+        //! Whether there are lines remaining for textForNextLine().
+        bool hasLinesRemaining() const
+        {
+            return nextLineIndex_ < static_cast<int>(lines_.size());
+        }
+        /*! \brief
+         * Returns the text for the next line.
+         *
+         * \param[in] columnWidth  Width to wrap the text to.
+         * \returns   Text for the next line, or empty string if there is
+         *   no text for this column.
+         */
+        std::string textForNextLine(int columnWidth)
+        {
+            if (nextLineIndex_ < 0 || !hasLinesRemaining())
             {
-                nextLineIndex_  = (!lines_.empty() ? -firstLine_ : 0);
-                nextLineOffset_ = 0;
+                ++nextLineIndex_;
+                return std::string();
             }
-            //! Whether there are lines remaining for textForNextLine().
-            bool hasLinesRemaining() const
+            if (bWrap_)
             {
-                return nextLineIndex_ < static_cast<int>(lines_.size());
-            }
-            /*! \brief
-             * Returns the text for the next line.
-             *
-             * \param[in] columnWidth  Width to wrap the text to.
-             * \returns   Text for the next line, or empty string if there is
-             *   no text for this column.
-             */
-            std::string textForNextLine(int columnWidth)
-            {
-                if (nextLineIndex_ < 0 || !hasLinesRemaining())
+                TextLineWrapperSettings settings;
+                settings.setLineLength(columnWidth);
+                TextLineWrapper    wrapper(settings);
+                const std::string &currentLine = lines_[nextLineIndex_];
+                const size_t       prevOffset  = nextLineOffset_;
+                const size_t       nextOffset
+                    = wrapper.findNextLine(currentLine, prevOffset);
+                if (nextOffset >= currentLine.size())
                 {
                     ++nextLineIndex_;
-                    return std::string();
-                }
-                if (bWrap_)
-                {
-                    TextLineWrapperSettings settings;
-                    settings.setLineLength(columnWidth);
-                    TextLineWrapper    wrapper(settings);
-                    const std::string &currentLine = lines_[nextLineIndex_];
-                    const size_t       prevOffset  = nextLineOffset_;
-                    const size_t       nextOffset
-                        = wrapper.findNextLine(currentLine, prevOffset);
-                    if (nextOffset >= currentLine.size())
-                    {
-                        ++nextLineIndex_;
-                        nextLineOffset_ = 0;
-                    }
-                    else
-                    {
-                        nextLineOffset_ = nextOffset;
-                    }
-                    return wrapper.formatLine(currentLine, prevOffset, nextOffset);
+                    nextLineOffset_ = 0;
                 }
                 else
                 {
-                    return lines_[nextLineIndex_++];
+                    nextLineOffset_ = nextOffset;
                 }
+                return wrapper.formatLine(currentLine, prevOffset, nextOffset);
             }
-
-            //! Statit data: title of the column.
-            std::string title_;
-            //! Static data: width of the column.
-            int width_;
-            //! Static data: whether to automatically wrap input text.
-            bool bWrap_;
-            //! First line offset for the current row.
-            int firstLine_;
-            //! Text lines for the current row.
-            std::vector<std::string> lines_;
-            //! Formatting state: index in `lines_` for the next line.
-            int nextLineIndex_;
-            //! Formatting state: offset within line `nextLineIndex_` for the next line.
-            size_t nextLineOffset_;
-        };
-
-        //! Container type for column data.
-        typedef std::vector<ColumnData> ColumnList;
-
-        //! Initializes data for an empty formatter.
-        Impl();
-
-        /*! \brief
-         * Convenience method for checked access to data for a column.
-         *
-         * \param[in] index  Zero-based column index.
-         * \returns   \c columns_[index]
-         */
-        ColumnData &columnData(int index)
-        {
-            GMX_ASSERT(index >= 0 && index < static_cast<int>(columns_.size()),
-                       "Invalid column index");
-            return columns_[index];
-        }
-        //! \copydoc columnData()
-        const ColumnData &columnData(int index) const
-        {
-            return const_cast<Impl *>(this)->columnData(index);
+            else
+            {
+                return lines_[nextLineIndex_++];
+            }
         }
 
-        //! Container for column data.
-        ColumnList columns_;
-        //! Indentation before the first column.
-        int firstColumnIndent_;
-        //! Indentation before the last column if folded.
-        int foldLastColumnToNextLineIndent_;
-        //! If true, no output has yet been produced.
-        bool bFirstRow_;
-        //! If true, a header will be printed before the first row.
-        bool bPrintHeader_;
+        //! Statit data: title of the column.
+        std::string title_;
+        //! Static data: width of the column.
+        int width_;
+        //! Static data: whether to automatically wrap input text.
+        bool bWrap_;
+        //! First line offset for the current row.
+        int firstLine_;
+        //! Text lines for the current row.
+        std::vector<std::string> lines_;
+        //! Formatting state: index in `lines_` for the next line.
+        int nextLineIndex_;
+        //! Formatting state: offset within line `nextLineIndex_` for the next line.
+        size_t nextLineOffset_;
+    };
+
+    //! Container type for column data.
+    typedef std::vector<ColumnData> ColumnList;
+
+    //! Initializes data for an empty formatter.
+    Impl();
+
+    /*! \brief
+     * Convenience method for checked access to data for a column.
+     *
+     * \param[in] index  Zero-based column index.
+     * \returns   \c columns_[index]
+     */
+    ColumnData &columnData(int index)
+    {
+        GMX_ASSERT(index >= 0 && index < static_cast<int>(columns_.size()),
+                   "Invalid column index");
+        return columns_[index];
+    }
+    //! \copydoc columnData()
+    const ColumnData &columnData(int index) const
+    {
+        return const_cast<Impl *>(this)->columnData(index);
+    }
+
+    //! Container for column data.
+    ColumnList columns_;
+    //! Indentation before the first column.
+    int firstColumnIndent_;
+    //! Indentation before the last column if folded.
+    int foldLastColumnToNextLineIndent_;
+    //! If true, no output has yet been produced.
+    bool bFirstRow_;
+    //! If true, a header will be printed before the first row.
+    bool bPrintHeader_;
 };
 
 TextTableFormatter::Impl::Impl()

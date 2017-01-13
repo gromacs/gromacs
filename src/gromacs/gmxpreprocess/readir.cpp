@@ -1772,41 +1772,41 @@ namespace
 
 class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 {
-    public:
-        explicit MdpErrorHandler(warninp_t wi)
-            : wi_(wi), mapping_(nullptr)
-        {
-        }
+public:
+    explicit MdpErrorHandler(warninp_t wi)
+        : wi_(wi), mapping_(nullptr)
+    {
+    }
 
-        void setBackMapping(const gmx::IKeyValueTreeBackMapping &mapping)
-        {
-            mapping_ = &mapping;
-        }
+    void setBackMapping(const gmx::IKeyValueTreeBackMapping &mapping)
+    {
+        mapping_ = &mapping;
+    }
 
-        virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
-        {
-            ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
-                                                 getOptionName(context).c_str()));
-            std::string message = gmx::formatExceptionMessageToString(*ex);
-            warning_error(wi_, message.c_str());
-            return true;
-        }
+    virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
+    {
+        ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
+                                             getOptionName(context).c_str()));
+        std::string message = gmx::formatExceptionMessageToString(*ex);
+        warning_error(wi_, message.c_str());
+        return true;
+    }
 
-    private:
-        std::string getOptionName(const gmx::KeyValueTreePath &context)
+private:
+    std::string getOptionName(const gmx::KeyValueTreePath &context)
+    {
+        if (mapping_ != nullptr)
         {
-            if (mapping_ != nullptr)
-            {
-                gmx::KeyValueTreePath path = mapping_->originalPath(context);
-                GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
-                return path[0];
-            }
-            GMX_ASSERT(context.size() == 1, "Inconsistent context for mdp option parsing");
-            return context[0];
+            gmx::KeyValueTreePath path = mapping_->originalPath(context);
+            GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
+            return path[0];
         }
+        GMX_ASSERT(context.size() == 1, "Inconsistent context for mdp option parsing");
+        return context[0];
+    }
 
-        warninp_t                            wi_;
-        const gmx::IKeyValueTreeBackMapping *mapping_;
+    warninp_t                            wi_;
+    const gmx::IKeyValueTreeBackMapping *mapping_;
 };
 
 } // namespace

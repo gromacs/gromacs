@@ -62,27 +62,27 @@ class TrajectoryWritingTest :
     public gmx::test::MdrunTestFixture,
     public ::testing::WithParamInterface<const char *>
 {
-    public:
-        //! The file name of the MDP file
-        std::string theMdpFile;
+public:
+    //! The file name of the MDP file
+    std::string theMdpFile;
 
-        //! Execute the trajectory writing test
-        void runTest()
-        {
-            runner_.useStringAsMdpFile(theMdpFile);
-            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
-            EXPECT_EQ(0, runner_.callGrompp());
+    //! Execute the trajectory writing test
+    void runTest()
+    {
+        runner_.useStringAsMdpFile(theMdpFile);
+        runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+        EXPECT_EQ(0, runner_.callGrompp());
 
-            runner_.fullPrecisionTrajectoryFileName_    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
-            runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
-            ASSERT_EQ(0, runner_.callMdrun());
-            // TODO When there is a way to sense something like the
-            // output of gmx check, compare the result with that from
-            // writing .trr and .xtc and assert the behaviour is
-            // correct. Note that TNG will always write the box, even
-            // when constant - this will be a source of
-            // trajectory-file differences.
-        }
+        runner_.fullPrecisionTrajectoryFileName_    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
+        runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
+        ASSERT_EQ(0, runner_.callMdrun());
+        // TODO When there is a way to sense something like the
+        // output of gmx check, compare the result with that from
+        // writing .trr and .xtc and assert the behaviour is
+        // correct. Note that TNG will always write the box, even
+        // when constant - this will be a source of
+        // trajectory-file differences.
+    }
 };
 
 //! Helper typedef for naming test cases like sentences

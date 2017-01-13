@@ -69,75 +69,75 @@ namespace
 
 class PositionCalculationTest : public ::testing::Test
 {
-    public:
-        PositionCalculationTest();
-        ~PositionCalculationTest();
+public:
+    PositionCalculationTest();
+    ~PositionCalculationTest();
 
-        void generateCoordinates();
+    void generateCoordinates();
 
-        gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
-        void setMaximumGroup(gmx_ana_poscalc_t *pc, const gmx::ConstArrayRef<int> &atoms);
-        gmx_ana_pos_t *initPositions(gmx_ana_poscalc_t *pc, const char *name);
+    gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
+    void setMaximumGroup(gmx_ana_poscalc_t *pc, const gmx::ConstArrayRef<int> &atoms);
+    gmx_ana_pos_t *initPositions(gmx_ana_poscalc_t *pc, const char *name);
 
-        void checkInitialized();
-        void updateAndCheck(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
-                            const gmx::ConstArrayRef<int> &atoms,
-                            gmx::test::TestReferenceChecker *checker,
-                            const char *name);
+    void checkInitialized();
+    void updateAndCheck(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
+                        const gmx::ConstArrayRef<int> &atoms,
+                        gmx::test::TestReferenceChecker *checker,
+                        const char *name);
 
-        void testSingleStatic(e_poscalc_t type, int flags, bool bExpectTop,
-                              const gmx::ConstArrayRef<int> &atoms,
-                              const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
-        void testSingleDynamic(e_poscalc_t type, int flags, bool bExpectTop,
-                               const gmx::ConstArrayRef<int> &initAtoms,
-                               const gmx::ConstArrayRef<int> &evalAtoms,
-                               const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
+    void testSingleStatic(e_poscalc_t type, int flags, bool bExpectTop,
+                          const gmx::ConstArrayRef<int> &atoms,
+                          const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
+    void testSingleDynamic(e_poscalc_t type, int flags, bool bExpectTop,
+                           const gmx::ConstArrayRef<int> &initAtoms,
+                           const gmx::ConstArrayRef<int> &evalAtoms,
+                           const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
 
-        gmx::test::TestReferenceData       data_;
-        gmx::test::TestReferenceChecker    checker_;
-        gmx::test::TopologyManager         topManager_;
-        gmx::PositionCalculationCollection pcc_;
+    gmx::test::TestReferenceData       data_;
+    gmx::test::TestReferenceChecker    checker_;
+    gmx::test::TopologyManager         topManager_;
+    gmx::PositionCalculationCollection pcc_;
 
-    private:
-        typedef std::unique_ptr<gmx_ana_pos_t> PositionPointer;
+private:
+    typedef std::unique_ptr<gmx_ana_pos_t> PositionPointer;
 
-        struct PositionTest
+    struct PositionTest
+    {
+        PositionTest(PositionPointer pos, gmx_ana_poscalc_t *pc,
+                     const char *name)
+            : pos(std::move(pos)), pc(pc), name(name)
         {
-            PositionTest(PositionPointer pos, gmx_ana_poscalc_t *pc,
-                         const char *name)
-                : pos(std::move(pos)), pc(pc), name(name)
-            {
-            }
+        }
 
-            // Default move constructor and assignment. Only needed for old compilers.
-            PositionTest(PositionTest &&o)
-                : pos(std::move(o.pos)), pc(o.pc), name(o.name)
-            {
-            }
+        // Default move constructor and assignment. Only needed for old compilers.
+        PositionTest(PositionTest &&o)
+            : pos(std::move(o.pos)), pc(o.pc), name(o.name)
+        {
+        }
 
-            PositionTest &operator= (PositionTest &&o)
-            {
-                pos  = std::move(o.pos);
-                pc   = o.pc;
-                name = o.name;
-                return *this;
-            }
+        PositionTest &operator= (PositionTest &&o)
+        {
+            pos  = std::move(o.pos);
+            pc   = o.pc;
+            name = o.name;
+            return *this;
+        }
 
-            PositionPointer    pos;
-            gmx_ana_poscalc_t *pc;
-            const char *       name;
-        };
+        PositionPointer    pos;
+        gmx_ana_poscalc_t *pc;
+        const char *       name;
+    };
 
-        typedef std::vector<PositionTest> PositionTestList;
+    typedef std::vector<PositionTest> PositionTestList;
 
-        void setTopologyIfRequired();
-        void checkPositions(gmx::test::TestReferenceChecker *checker,
-                            const char *name, gmx_ana_pos_t *p,
-                            bool bCoordinates);
+    void setTopologyIfRequired();
+    void checkPositions(gmx::test::TestReferenceChecker *checker,
+                        const char *name, gmx_ana_pos_t *p,
+                        bool bCoordinates);
 
-        std::vector<gmx_ana_poscalc_t *> pcList_;
-        PositionTestList                 posList_;
-        bool                             bTopSet_;
+    std::vector<gmx_ana_poscalc_t *> pcList_;
+    PositionTestList                 posList_;
+    bool                             bTopSet_;
 };
 
 PositionCalculationTest::PositionCalculationTest()

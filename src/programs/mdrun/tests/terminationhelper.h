@@ -71,24 +71,24 @@ namespace test
  */
 class TerminationHelper
 {
-    public:
-        //! Constructor
-        TerminationHelper(TestFileManager * fileManager,
-                          CommandLine *     mdrunCaller,
-                          SimulationRunner *runner);
-        /*! \brief Do a short simulation, likely terminated by -maxh
-         *
-         * \param[in] expectedCptFileName The name of the checkpoint
-         * file that mdrun will write (which has to be customizable,
-         * if we are testing a multi-simulation). */
-        void runFirstMdrun(const std::string &expectedCptFileName);
-        //! Check that the restart works, but don't do any more MD steps.
-        void runSecondMdrun();
-    protected:
-        //! Object to help call mdrun
-        CommandLine *mdrunCaller_;
-        //! Object to coordinate running a simulation
-        SimulationRunner *runner_;
+public:
+    //! Constructor
+    TerminationHelper(TestFileManager * fileManager,
+                      CommandLine *     mdrunCaller,
+                      SimulationRunner *runner);
+    /*! \brief Do a short simulation, likely terminated by -maxh
+     *
+     * \param[in] expectedCptFileName The name of the checkpoint
+     * file that mdrun will write (which has to be customizable,
+     * if we are testing a multi-simulation). */
+    void runFirstMdrun(const std::string &expectedCptFileName);
+    //! Check that the restart works, but don't do any more MD steps.
+    void runSecondMdrun();
+protected:
+    //! Object to help call mdrun
+    CommandLine *mdrunCaller_;
+    //! Object to coordinate running a simulation
+    SimulationRunner *runner_;
 };
 
 } // namespace

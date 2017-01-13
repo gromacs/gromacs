@@ -79,20 +79,20 @@ namespace gmx
  */
 class Simd4Double
 {
-    public:
-        Simd4Double() {}
+public:
+    Simd4Double() {}
 
-        //! \brief Construct from scalar
-        Simd4Double(double d) { simdInternal_.fill(d); }
+    //! \brief Construct from scalar
+    Simd4Double(double d) { simdInternal_.fill(d); }
 
-        /*! \brief Internal SIMD data. Implementation dependent, don't touch.
-         *
-         * This has to be public to enable usage in combination with static inline
-         * functions, but it should never, EVER, be accessed by any code outside
-         * the corresponding implementation directory since the type will depend
-         * on the architecture.
-         */
-        std::array<double, GMX_SIMD4_WIDTH> simdInternal_;
+    /*! \brief Internal SIMD data. Implementation dependent, don't touch.
+     *
+     * This has to be public to enable usage in combination with static inline
+     * functions, but it should never, EVER, be accessed by any code outside
+     * the corresponding implementation directory since the type will depend
+     * on the architecture.
+     */
+    std::array<double, GMX_SIMD4_WIDTH> simdInternal_;
 };
 
 /*! \libinternal  \brief SIMD4 variable type to use for logical comparisons on doubles.
@@ -106,20 +106,20 @@ class Simd4Double
  */
 class Simd4DBool
 {
-    public:
-        Simd4DBool() {}
+public:
+    Simd4DBool() {}
 
-        //! \brief Construct from scalar
-        Simd4DBool(bool b) { simdInternal_.fill(b); }
+    //! \brief Construct from scalar
+    Simd4DBool(bool b) { simdInternal_.fill(b); }
 
-        /*! \brief Internal SIMD data. Implementation dependent, don't touch.
-         *
-         * This has to be public to enable usage in combination with static inline
-         * functions, but it should never, EVER, be accessed by any code outside
-         * the corresponding implementation directory since the type will depend
-         * on the architecture.
-         */
-        std::array<bool, GMX_SIMD4_WIDTH> simdInternal_;
+    /*! \brief Internal SIMD data. Implementation dependent, don't touch.
+     *
+     * This has to be public to enable usage in combination with static inline
+     * functions, but it should never, EVER, be accessed by any code outside
+     * the corresponding implementation directory since the type will depend
+     * on the architecture.
+     */
+    std::array<bool, GMX_SIMD4_WIDTH> simdInternal_;
 };
 
 /*! \brief Load 4 double values from aligned memory into SIMD4 variable.

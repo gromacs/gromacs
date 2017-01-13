@@ -72,55 +72,55 @@ namespace
 
 class ElectricFieldTest : public ::testing::Test
 {
-    public:
-        ElectricFieldTest() {}
+public:
+    ElectricFieldTest() {}
 
-        void test(int  dim,
-                  real E0,
-                  real omega,
-                  real t0,
-                  real sigma,
-                  real expectedValue)
-        {
-            gmx::test::FloatingPointTolerance tolerance(
-                    gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
-            gmx::MDModules module;
-            t_inputrec *   inputrec = module.inputrec();
+    void test(int  dim,
+              real E0,
+              real omega,
+              real t0,
+              real sigma,
+              real expectedValue)
+    {
+        gmx::test::FloatingPointTolerance tolerance(
+                gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
+        gmx::MDModules module;
+        t_inputrec *   inputrec = module.inputrec();
 
-            // Prepare MDP inputs
-            const char *dimXYZ[3] = { "x", "y", "z" };
-            GMX_RELEASE_ASSERT((dim >= 0 && dim < 3), "Dimension should be 0, 1 or 2");
+        // Prepare MDP inputs
+        const char *dimXYZ[3] = { "x", "y", "z" };
+        GMX_RELEASE_ASSERT((dim >= 0 && dim < 3), "Dimension should be 0, 1 or 2");
 
-            gmx::KeyValueTreeBuilder mdpValues;
-            mdpValues.rootObject().addValue(gmx::formatString("E%s", dimXYZ[dim]),
-                                            gmx::formatString("1 %g 0", E0));
-            mdpValues.rootObject().addValue(gmx::formatString("E%s-t", dimXYZ[dim]),
-                                            gmx::formatString("3 %g 0 %g 0 %g 0", omega, t0, sigma));
+        gmx::KeyValueTreeBuilder mdpValues;
+        mdpValues.rootObject().addValue(gmx::formatString("E%s", dimXYZ[dim]),
+                                        gmx::formatString("1 %g 0", E0));
+        mdpValues.rootObject().addValue(gmx::formatString("E%s-t", dimXYZ[dim]),
+                                        gmx::formatString("3 %g 0 %g 0 %g 0", omega, t0, sigma));
 
-            gmx::KeyValueTreeTransformer transform;
-            transform.rules()->addRule()
-                .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-            inputrec->efield->initMdpTransform(transform.rules());
-            gmx::Options options;
-            inputrec->efield->initMdpOptions(&options);
-            auto result = transform.transform(mdpValues.build(), nullptr);
-            gmx::assignOptionsFromKeyValueTree(&options, result.object(), nullptr);
+        gmx::KeyValueTreeTransformer transform;
+        transform.rules()->addRule()
+            .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+        inputrec->efield->initMdpTransform(transform.rules());
+        gmx::Options options;
+        inputrec->efield->initMdpOptions(&options);
+        auto result = transform.transform(mdpValues.build(), nullptr);
+        gmx::assignOptionsFromKeyValueTree(&options, result.object(), nullptr);
 
-            t_mdatoms        md;
-            PaddedRVecVector f = { { 0, 0, 0 } };
-            md.homenr = 1;
-            snew(md.chargeA, md.homenr);
-            md.chargeA[0] = 1;
+        t_mdatoms        md;
+        PaddedRVecVector f = { { 0, 0, 0 } };
+        md.homenr = 1;
+        snew(md.chargeA, md.homenr);
+        md.chargeA[0] = 1;
 
-            t_commrec * cr       = init_commrec();
-            t_forcerec *forcerec = mk_forcerec();
-            inputrec->efield->initForcerec(forcerec);
-            forcerec->efield->calculateForces(cr, &md, &f, 0);
-            done_commrec(cr);
-            EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
-            sfree(forcerec);
-            sfree(md.chargeA);
-        }
+        t_commrec * cr       = init_commrec();
+        t_forcerec *forcerec = mk_forcerec();
+        inputrec->efield->initForcerec(forcerec);
+        forcerec->efield->calculateForces(cr, &md, &f, 0);
+        done_commrec(cr);
+        EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
+        sfree(forcerec);
+        sfree(md.chargeA);
+    }
 };
 
 TEST_F(ElectricFieldTest, Static)

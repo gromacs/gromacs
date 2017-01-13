@@ -157,19 +157,19 @@ const char *edfh_names[edfhNR] =
 //! Higher level vector element type, only used for formatting checkpoint dumps
 enum class CptElementType
 {
-    integer,   //!< integer
-    real,      //!< float or double, not linked to precision of type real
-    real3,     //!< float[3] or double[3], not linked to precision of type real
-    matrix3x3  //!< float[3][3] or double[3][3], not linked to precision of type real
+integer,       //!< integer
+real,          //!< float or double, not linked to precision of type real
+real3,         //!< float[3] or double[3], not linked to precision of type real
+matrix3x3      //!< float[3][3] or double[3][3], not linked to precision of type real
 };
 
 //! \brief Parts of the checkpoint state, only used for reporting
 enum class StatePart
 {
-    microState,       //!< The microstate of the simulated system
-    kineticEnergy,    //!< Kinetic energy, needed for T/P-coupling state
-    energyHistory,    //!< Energy observable statistics
-    freeEnergyHistory //!< Free-energy state and observable statistics
+microState,           //!< The microstate of the simulated system
+kineticEnergy,        //!< Kinetic energy, needed for T/P-coupling state
+energyHistory,        //!< Energy observable statistics
+freeEnergyHistory     //!< Free-energy state and observable statistics
 };
 
 //! \brief Return the name of a checkpoint entry based on part and part entry

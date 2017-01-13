@@ -102,68 +102,68 @@ const char *const c_groupTypes[] = { "all", "res", "mol", "none" };
  */
 class PairDistance : public TrajectoryAnalysisModule
 {
-    public:
-        PairDistance();
+public:
+    PairDistance();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
-            const SelectionCollection &        selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        const AnalysisDataParallelOptions &opt,
+        const SelectionCollection &        selections);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        /*! \brief
-         * Computed distances as a function of time.
-         *
-         * There is one data set for each selection in `sel_`.
-         * Within each data set, there is one column for each distance to be
-         * computed, as explained in the `-h` text.
-         */
-        AnalysisData distances_;
+private:
+    /*! \brief
+     * Computed distances as a function of time.
+     *
+     * There is one data set for each selection in `sel_`.
+     * Within each data set, there is one column for each distance to be
+     * computed, as explained in the `-h` text.
+     */
+    AnalysisData distances_;
 
-        /*! \brief
-         * Reference selection to compute distances to.
-         *
-         * mappedId() identifies the group (of type `refGroupType_`) into which
-         * each position belogs.
-         */
-        Selection refSel_;
-        /*! \brief
-         * Selections to compute distances from.
-         *
-         * mappedId() identifies the group (of type `selGroupType_`) into which
-         * each position belogs.
-         */
-        SelectionList sel_;
+    /*! \brief
+     * Reference selection to compute distances to.
+     *
+     * mappedId() identifies the group (of type `refGroupType_`) into which
+     * each position belogs.
+     */
+    Selection refSel_;
+    /*! \brief
+     * Selections to compute distances from.
+     *
+     * mappedId() identifies the group (of type `selGroupType_`) into which
+     * each position belogs.
+     */
+    SelectionList sel_;
 
-        std::string fnDist_;
+    std::string fnDist_;
 
-        double       cutoff_;
-        DistanceType distanceType_;
-        GroupType    refGroupType_;
-        GroupType    selGroupType_;
+    double       cutoff_;
+    DistanceType distanceType_;
+    GroupType    refGroupType_;
+    GroupType    selGroupType_;
 
-        //! Number of groups in `refSel_`.
-        int refGroupCount_;
-        //! Maximum number of pairs of groups for one selection.
-        int maxGroupCount_;
-        //! Initial squared distance for distance accumulation.
-        real initialDist2_;
-        //! Cutoff squared for use in the actual calculation.
-        real cutoff2_;
+    //! Number of groups in `refSel_`.
+    int refGroupCount_;
+    //! Maximum number of pairs of groups for one selection.
+    int maxGroupCount_;
+    //! Initial squared distance for distance accumulation.
+    real initialDist2_;
+    //! Cutoff squared for use in the actual calculation.
+    real cutoff2_;
 
-        //! Neighborhood search object for the pair search.
-        AnalysisNeighborhood nb_;
+    //! Neighborhood search object for the pair search.
+    AnalysisNeighborhood nb_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 PairDistance::PairDistance()
@@ -314,79 +314,79 @@ void PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
  */
 class PairDistanceModuleData : public TrajectoryAnalysisModuleData
 {
-    public:
-        /*! \brief
-         * Reserves memory for the frame-local data.
-         */
-        PairDistanceModuleData(TrajectoryAnalysisModule *         module,
-                               const AnalysisDataParallelOptions &opt,
-                               const SelectionCollection &        selections,
-                               int                                refGroupCount,
-                               const Selection &                  refSel,
-                               int                                maxGroupCount)
-            : TrajectoryAnalysisModuleData(module, opt, selections)
+public:
+    /*! \brief
+     * Reserves memory for the frame-local data.
+     */
+    PairDistanceModuleData(TrajectoryAnalysisModule *         module,
+                           const AnalysisDataParallelOptions &opt,
+                           const SelectionCollection &        selections,
+                           int                                refGroupCount,
+                           const Selection &                  refSel,
+                           int                                maxGroupCount)
+        : TrajectoryAnalysisModuleData(module, opt, selections)
+    {
+        distArray_.resize(maxGroupCount);
+        countArray_.resize(maxGroupCount);
+        refCountArray_.resize(refGroupCount);
+        if (!refSel.isDynamic())
         {
-            distArray_.resize(maxGroupCount);
-            countArray_.resize(maxGroupCount);
-            refCountArray_.resize(refGroupCount);
-            if (!refSel.isDynamic())
-            {
-                initRefCountArray(refSel);
-            }
+            initRefCountArray(refSel);
         }
+    }
 
-        virtual void finish() { finishDataHandles(); }
+    virtual void finish() { finishDataHandles(); }
 
-        /*! \brief
-         * Computes the number of positions in each group in \p refSel
-         * and stores them into `refCountArray_`.
-         */
-        void initRefCountArray(const Selection &refSel)
+    /*! \brief
+     * Computes the number of positions in each group in \p refSel
+     * and stores them into `refCountArray_`.
+     */
+    void initRefCountArray(const Selection &refSel)
+    {
+        std::fill(refCountArray_.begin(), refCountArray_.end(), 0);
+        int refPos = 0;
+        while (refPos < refSel.posCount())
         {
-            std::fill(refCountArray_.begin(), refCountArray_.end(), 0);
-            int refPos = 0;
-            while (refPos < refSel.posCount())
+            const int refIndex = refSel.position(refPos).mappedId();
+            const int startPos = refPos;
+            ++refPos;
+            while (refPos < refSel.posCount()
+                   && refSel.position(refPos).mappedId() == refIndex)
             {
-                const int refIndex = refSel.position(refPos).mappedId();
-                const int startPos = refPos;
                 ++refPos;
-                while (refPos < refSel.posCount()
-                       && refSel.position(refPos).mappedId() == refIndex)
-                {
-                    ++refPos;
-                }
-                refCountArray_[refIndex] = refPos - startPos;
             }
+            refCountArray_[refIndex] = refPos - startPos;
         }
+    }
 
-        /*! \brief
-         * Squared distance between each group
-         *
-         * One entry for each group pair for the current selection.
-         * Enough memory is allocated to fit the largest calculation selection.
-         * This is needed to support neighborhood searching, which may not
-         * return the pairs in order: for each group pair, we need to search
-         * through all the position pairs and update this array to find the
-         * minimum/maximum distance between them.
-         */
-        std::vector<real> distArray_;
-        /*! \brief
-         * Number of pairs within the cutoff that have contributed to the value
-         * in `distArray_`.
-         *
-         * This is needed to identify whether there were any pairs inside the
-         * cutoff and whether there were additional pairs outside the cutoff
-         * that were not covered by the neihborhood search.
-         */
-        std::vector<int> countArray_;
-        /*! \brief
-         * Number of positions within each reference group.
-         *
-         * This is used to more efficiently compute the total number of pairs
-         * (for comparison with `countArray_`), as otherwise these numbers
-         * would need to be recomputed for each selection.
-         */
-        std::vector<int> refCountArray_;
+    /*! \brief
+     * Squared distance between each group
+     *
+     * One entry for each group pair for the current selection.
+     * Enough memory is allocated to fit the largest calculation selection.
+     * This is needed to support neighborhood searching, which may not
+     * return the pairs in order: for each group pair, we need to search
+     * through all the position pairs and update this array to find the
+     * minimum/maximum distance between them.
+     */
+    std::vector<real> distArray_;
+    /*! \brief
+     * Number of pairs within the cutoff that have contributed to the value
+     * in `distArray_`.
+     *
+     * This is needed to identify whether there were any pairs inside the
+     * cutoff and whether there were additional pairs outside the cutoff
+     * that were not covered by the neihborhood search.
+     */
+    std::vector<int> countArray_;
+    /*! \brief
+     * Number of positions within each reference group.
+     *
+     * This is used to more efficiently compute the total number of pairs
+     * (for comparison with `countArray_`), as otherwise these numbers
+     * would need to be recomputed for each selection.
+     */
+    std::vector<int> refCountArray_;
 };
 
 TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(

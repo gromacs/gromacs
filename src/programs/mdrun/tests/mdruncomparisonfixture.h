@@ -75,66 +75,66 @@ class FloatingPointTolerance;
  */
 class MdrunComparisonFixture : public MdrunTestFixture
 {
-    public:
-        //! Destructor
-        virtual ~MdrunComparisonFixture();
-        //! Helper typedef
-        typedef std::map<std::string, std::string> MdpFieldValues;
-        /*! \brief Prepare .mdp values to do a simulation
-         *
-         * A database of several kinds of simulation useful for different
-         * kinds of tests is available.
-         *     - argon12
-         *     - argon5832
-         *     - spc5
-         *     - spc216
-         *     - alanine_vsite_vacuo
-         *     - alanine_vsite_solvated
-         *     - nonanol
-         *
-         * Some of these systems are pretty minimal, because having
-         * few atoms means few interactions, highly reproducible
-         * forces, and allows tests to focus on the correctness of the
-         * implementation of high-level mdrun features. The boxes are
-         * of a reasonable size so that domain decomposition is
-         * possible. The pressure-coupling parameters are isotropic,
-         * and set up so that there will not be dramatic collapse of
-         * volume over the handful of MD steps that will be run. A
-         * single temperature-coupling group is used.
-         *
-         * This is separate from prepareMdpFile, so that derived
-         * classes can react to the .mdp settings, e.g. by stopping a
-         * run after half the steps.
-         *
-         * \throws  std::bad_alloc     if out of memory
-         *          std::out_of_range  if \c simulationName is not in the database */
-        MdpFieldValues prepareMdpFieldValues(const char *simulationName);
-        /*! \brief Set up an .mdp file that permits a highly reproducible
-         * simulation.
-         *
-         * \throws  std::bad_alloc     if out of memory */
-        void prepareMdpFile(const MdpFieldValues &mdpFieldValues,
-                            const char *          integrator,
-                            const char *          tcoupl,
-                            const char *          pcoupl);
-        /*! \brief Run mdrun two ways in a test. Subclasses must override this method.
-         *
-         * It is expected that this method calls
-         * prepareMdpFieldValues() and prepareMdpFile() to help set up
-         * a call to grompp with gromppCallerRef. Then mdrun will be
-         * called and perhaps energies and forces compared. */
-        virtual void runTest(const CommandLine &    gromppCallerRef,
-                             const char *           simulationName,
-                             const char *           integrator,
-                             const char *           tcoupl,
-                             const char *           pcoupl,
-                             FloatingPointTolerance tolerance) = 0;
-        //! Convenience overload of runTest() for cases that don't need to customize the command line for grompp
-        virtual void runTest(const char *           simulationName,
-                             const char *           integrator,
-                             const char *           tcoupl,
-                             const char *           pcoupl,
-                             FloatingPointTolerance tolerance);
+public:
+    //! Destructor
+    virtual ~MdrunComparisonFixture();
+    //! Helper typedef
+    typedef std::map<std::string, std::string> MdpFieldValues;
+    /*! \brief Prepare .mdp values to do a simulation
+     *
+     * A database of several kinds of simulation useful for different
+     * kinds of tests is available.
+     *     - argon12
+     *     - argon5832
+     *     - spc5
+     *     - spc216
+     *     - alanine_vsite_vacuo
+     *     - alanine_vsite_solvated
+     *     - nonanol
+     *
+     * Some of these systems are pretty minimal, because having
+     * few atoms means few interactions, highly reproducible
+     * forces, and allows tests to focus on the correctness of the
+     * implementation of high-level mdrun features. The boxes are
+     * of a reasonable size so that domain decomposition is
+     * possible. The pressure-coupling parameters are isotropic,
+     * and set up so that there will not be dramatic collapse of
+     * volume over the handful of MD steps that will be run. A
+     * single temperature-coupling group is used.
+     *
+     * This is separate from prepareMdpFile, so that derived
+     * classes can react to the .mdp settings, e.g. by stopping a
+     * run after half the steps.
+     *
+     * \throws  std::bad_alloc     if out of memory
+     *          std::out_of_range  if \c simulationName is not in the database */
+    MdpFieldValues prepareMdpFieldValues(const char *simulationName);
+    /*! \brief Set up an .mdp file that permits a highly reproducible
+     * simulation.
+     *
+     * \throws  std::bad_alloc     if out of memory */
+    void prepareMdpFile(const MdpFieldValues &mdpFieldValues,
+                        const char *          integrator,
+                        const char *          tcoupl,
+                        const char *          pcoupl);
+    /*! \brief Run mdrun two ways in a test. Subclasses must override this method.
+     *
+     * It is expected that this method calls
+     * prepareMdpFieldValues() and prepareMdpFile() to help set up
+     * a call to grompp with gromppCallerRef. Then mdrun will be
+     * called and perhaps energies and forces compared. */
+    virtual void runTest(const CommandLine &    gromppCallerRef,
+                         const char *           simulationName,
+                         const char *           integrator,
+                         const char *           tcoupl,
+                         const char *           pcoupl,
+                         FloatingPointTolerance tolerance) = 0;
+    //! Convenience overload of runTest() for cases that don't need to customize the command line for grompp
+    virtual void runTest(const char *           simulationName,
+                         const char *           integrator,
+                         const char *           tcoupl,
+                         const char *           pcoupl,
+                         FloatingPointTolerance tolerance);
 };
 
 } // namespace test

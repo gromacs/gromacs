@@ -59,51 +59,51 @@
 //! \brief Energy history for delta_h histograms in between energy file frames
 class delta_h_history_t
 {
-    public:
-        //! Vector (size number of intermediate data points) of vector of Hamiltonian differences for each foreign lambda
-        std::vector<std::vector<real> > dh;
-        //! The start time of these energy diff blocks
-        double start_time;
-        //! Lambda at start time
-        double start_lambda;
-        //! Whether the lambda value is set. Here for backward-compatibility.
-        gmx_bool start_lambda_set;
+public:
+    //! Vector (size number of intermediate data points) of vector of Hamiltonian differences for each foreign lambda
+    std::vector<std::vector<real> > dh;
+    //! The start time of these energy diff blocks
+    double start_time;
+    //! Lambda at start time
+    double start_lambda;
+    //! Whether the lambda value is set. Here for backward-compatibility.
+    gmx_bool start_lambda_set;
 
-        //! Constructor
-        delta_h_history_t() : dh(),
-                              start_time(0),
-                              start_lambda(0),
-                              start_lambda_set(false)
-        {
-        }
+    //! Constructor
+    delta_h_history_t() : dh(),
+                          start_time(0),
+                          start_lambda(0),
+                          start_lambda_set(false)
+    {
+    }
 };
 
 
 //! \brief Energy statistics history, only used for output and reporting
 class energyhistory_t
 {
-    public:
-        gmx_int64_t         nsteps;       //! The number of steps in the history
-        gmx_int64_t         nsum;         //! Nr. of steps in the ener_ave and ener_sum
-        std::vector<double> ener_ave;     //! Energy terms difference^2 sum to get fluctuations
-        std::vector<double> ener_sum;     //! Energy terms sum
-        gmx_int64_t         nsteps_sim;   //! The number of steps in ener_sum_sim
-        gmx_int64_t         nsum_sim;     //! The number of frames in ener_sum_sim
-        std::vector<double> ener_sum_sim; //! Energy term history sum of the whole sim
+public:
+    gmx_int64_t         nsteps;           //! The number of steps in the history
+    gmx_int64_t         nsum;             //! Nr. of steps in the ener_ave and ener_sum
+    std::vector<double> ener_ave;         //! Energy terms difference^2 sum to get fluctuations
+    std::vector<double> ener_sum;         //! Energy terms sum
+    gmx_int64_t         nsteps_sim;       //! The number of steps in ener_sum_sim
+    gmx_int64_t         nsum_sim;         //! The number of frames in ener_sum_sim
+    std::vector<double> ener_sum_sim;     //! Energy term history sum of the whole sim
 
-        //! History for energy difference for foreign lambdas (useful for BAR)
-        std::unique_ptr<delta_h_history_t> deltaHForeignLambdas;
+    //! History for energy difference for foreign lambdas (useful for BAR)
+    std::unique_ptr<delta_h_history_t> deltaHForeignLambdas;
 
-        //! Constructor
-        energyhistory_t() : nsteps(0),
-                            nsum(0),
-                            ener_ave(),
-                            ener_sum(),
-                            nsteps_sim(0),
-                            nsum_sim(0),
-                            ener_sum_sim(0)
-        {
-        }
+    //! Constructor
+    energyhistory_t() : nsteps(0),
+                        nsum(0),
+                        ener_ave(),
+                        ener_sum(),
+                        nsteps_sim(0),
+                        nsum_sim(0),
+                        ener_sum_sim(0)
+    {
+    }
 };
 
 //! \endcond

@@ -65,22 +65,22 @@ namespace gmx
  */
 class TrajectoryAnalysisModule::Impl
 {
-    public:
-        //! Container that associates a data set with its name.
-        typedef std::map<std::string, AbstractAnalysisData *> DatasetContainer;
-        //! Container that associates a AnalysisData object with its name.
-        typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
+public:
+    //! Container that associates a data set with its name.
+    typedef std::map<std::string, AbstractAnalysisData *> DatasetContainer;
+    //! Container that associates a AnalysisData object with its name.
+    typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
 
-        //! List of registered data set names.
-        std::vector<std::string> datasetNames_;
-        /*! \brief
-         * Keeps all registered data sets.
-         *
-         * This container also includes datasets from \a analysisDatasets_.
-         */
-        DatasetContainer datasets_;
-        //! Keeps registered AnalysisData objects.
-        AnalysisDatasetContainer analysisDatasets_;
+    //! List of registered data set names.
+    std::vector<std::string> datasetNames_;
+    /*! \brief
+     * Keeps all registered data sets.
+     *
+     * This container also includes datasets from \a analysisDatasets_.
+     */
+    DatasetContainer datasets_;
+    //! Keeps registered AnalysisData objects.
+    AnalysisDatasetContainer analysisDatasets_;
 };
 
 /********************************************************************
@@ -94,23 +94,23 @@ class TrajectoryAnalysisModule::Impl
  */
 class TrajectoryAnalysisModuleData::Impl
 {
-    public:
-        //! Container that associates a data handle to its AnalysisData object.
-        typedef std::map<const AnalysisData *, AnalysisDataHandle>
-            HandleContainer;
+public:
+    //! Container that associates a data handle to its AnalysisData object.
+    typedef std::map<const AnalysisData *, AnalysisDataHandle>
+        HandleContainer;
 
-        //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
-        Impl(TrajectoryAnalysisModule *         module,
-             const AnalysisDataParallelOptions &opt,
-             const SelectionCollection &        selections);
+    //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
+    Impl(TrajectoryAnalysisModule *         module,
+         const AnalysisDataParallelOptions &opt,
+         const SelectionCollection &        selections);
 
-        //! Checks whether the given AnalysisData has been initialized.
-        bool isInitialized(const AnalysisData &data) const;
+    //! Checks whether the given AnalysisData has been initialized.
+    bool isInitialized(const AnalysisData &data) const;
 
-        //! Keeps a data handle for each AnalysisData object.
-        HandleContainer handles_;
-        //! Stores thread-local selections.
-        const SelectionCollection &selections_;
+    //! Keeps a data handle for each AnalysisData object.
+    HandleContainer handles_;
+    //! Stores thread-local selections.
+    const SelectionCollection &selections_;
 };
 
 TrajectoryAnalysisModuleData::Impl::Impl(
@@ -228,19 +228,19 @@ namespace
  */
 class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 {
-    public:
-        /*! \brief
-         * Initializes thread-local storage for data handles and selections.
-         *
-         * \param[in] module     Analysis module to use for data objects.
-         * \param[in] opt        Data parallelization options.
-         * \param[in] selections Thread-local selection collection.
-         */
-        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *         module,
-                                          const AnalysisDataParallelOptions &opt,
-                                          const SelectionCollection &        selections);
+public:
+    /*! \brief
+     * Initializes thread-local storage for data handles and selections.
+     *
+     * \param[in] module     Analysis module to use for data objects.
+     * \param[in] opt        Data parallelization options.
+     * \param[in] selections Thread-local selection collection.
+     */
+    TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *         module,
+                                      const AnalysisDataParallelOptions &opt,
+                                      const SelectionCollection &        selections);
 
-        virtual void finish();
+    virtual void finish();
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(

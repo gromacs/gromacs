@@ -67,68 +67,68 @@ class TrajectoryAnalysisSettings;
  */
 class TrajectoryAnalysisRunnerCommon
 {
-    public:
-        /*! \brief
-         * Initializes a new runner helper.
-         *
-         * \param    settings  Settings object to use.
-         */
-        explicit TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings *settings);
-        ~TrajectoryAnalysisRunnerCommon();
+public:
+    /*! \brief
+     * Initializes a new runner helper.
+     *
+     * \param    settings  Settings object to use.
+     */
+    explicit TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings *settings);
+    ~TrajectoryAnalysisRunnerCommon();
 
-        //! Returns a topology provider for SelectionOptionBehavior.
-        ITopologyProvider *topologyProvider();
+    //! Returns a topology provider for SelectionOptionBehavior.
+    ITopologyProvider *topologyProvider();
 
-        /*! \brief
-         * Initializes common options for trajectory analysis.
-         *
-         * \param[in,out] options  Options object to add the options to.
-         * \param[in,out] timeUnitBehavior  Time unit behavior to use for adding
-         *    and handling the `-tu` option.
-         */
-        void initOptions(IOptionsContainer *options, TimeUnitBehavior *timeUnitBehavior);
-        //! Processes common option values after they have been parsed.
-        void optionsFinished();
-        //! Load topology information if provided and/or required.
-        void initTopology();
-        /*! \brief
-         * Reads the first frame from the trajectory.
-         *
-         * After this call, frame() returns the first frame.
-         */
-        void initFirstFrame();
-        /*! \brief
-         * Initializes the index in frame() that specifies the atoms contained.
-         *
-         * Can be called after selections have been compiled.
-         */
-        void initFrameIndexGroup();
-        /*! \brief
-         * Reads the next frame from the trajectory.
-         *
-         * \returns false if there were no more frames.
-         *
-         * After this call, frame() returns the newly loaded frame.
-         */
-        bool readNextFrame();
-        /*! \brief
-         * Performs common initialization for the currently loaded frame.
-         *
-         * Currently, makes molecules whole if requested.
-         */
-        void initFrame();
+    /*! \brief
+     * Initializes common options for trajectory analysis.
+     *
+     * \param[in,out] options  Options object to add the options to.
+     * \param[in,out] timeUnitBehavior  Time unit behavior to use for adding
+     *    and handling the `-tu` option.
+     */
+    void initOptions(IOptionsContainer *options, TimeUnitBehavior *timeUnitBehavior);
+    //! Processes common option values after they have been parsed.
+    void optionsFinished();
+    //! Load topology information if provided and/or required.
+    void initTopology();
+    /*! \brief
+     * Reads the first frame from the trajectory.
+     *
+     * After this call, frame() returns the first frame.
+     */
+    void initFirstFrame();
+    /*! \brief
+     * Initializes the index in frame() that specifies the atoms contained.
+     *
+     * Can be called after selections have been compiled.
+     */
+    void initFrameIndexGroup();
+    /*! \brief
+     * Reads the next frame from the trajectory.
+     *
+     * \returns false if there were no more frames.
+     *
+     * After this call, frame() returns the newly loaded frame.
+     */
+    bool readNextFrame();
+    /*! \brief
+     * Performs common initialization for the currently loaded frame.
+     *
+     * Currently, makes molecules whole if requested.
+     */
+    void initFrame();
 
-        //! Returns true if input data comes from a trajectory.
-        bool hasTrajectory() const;
-        //! Returns the topology information object.
-        const TopologyInformation &topologyInformation() const;
-        //! Returns the currently loaded frame.
-        t_trxframe &frame() const;
+    //! Returns true if input data comes from a trajectory.
+    bool hasTrajectory() const;
+    //! Returns the topology information object.
+    const TopologyInformation &topologyInformation() const;
+    //! Returns the currently loaded frame.
+    t_trxframe &frame() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

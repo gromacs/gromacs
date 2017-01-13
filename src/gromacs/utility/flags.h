@@ -65,67 +65,67 @@ namespace gmx
 template <typename FlagType>
 class FlagsTemplate
 {
-    public:
-        //! Creates a flags object with no flags set.
-        FlagsTemplate() : flags_(0) {}
-        //! Creates a flags object from a single flag.
-        FlagsTemplate(FlagType flag) : flags_(flag) {}
+public:
+    //! Creates a flags object with no flags set.
+    FlagsTemplate() : flags_(0) {}
+    //! Creates a flags object from a single flag.
+    FlagsTemplate(FlagType flag) : flags_(flag) {}
 
-        /*! \brief
-         * Tests if the given flag is set.
-         *
-         * Note that if \p flag has more than a single bit set, then returns
-         * true if any of them is set.
-         */
-        bool test(FlagType flag) const { return (flags_ & flag) != 0; }
-        //! Clears all flags.
-        void clearAll() { flags_ = 0; }
-        //! Sets the given flag.
-        void set(FlagType flag) { flags_ |= flag; }
-        //! Clears the given flag.
-        void clear(FlagType flag) { flags_ &= ~flag; }
-        //! Sets or clears the given flag.
-        void set(FlagType flag, bool bSet)
+    /*! \brief
+     * Tests if the given flag is set.
+     *
+     * Note that if \p flag has more than a single bit set, then returns
+     * true if any of them is set.
+     */
+    bool test(FlagType flag) const { return (flags_ & flag) != 0; }
+    //! Clears all flags.
+    void clearAll() { flags_ = 0; }
+    //! Sets the given flag.
+    void set(FlagType flag) { flags_ |= flag; }
+    //! Clears the given flag.
+    void clear(FlagType flag) { flags_ &= ~flag; }
+    //! Sets or clears the given flag.
+    void set(FlagType flag, bool bSet)
+    {
+        if (bSet)
         {
-            if (bSet)
-            {
-                set(flag);
-            }
-            else
-            {
-                clear(flag);
-            }
+            set(flag);
         }
+        else
+        {
+            clear(flag);
+        }
+    }
 
-        //! Combines flags from two flags objects.
-        FlagsTemplate<FlagType>
-        operator|(const FlagsTemplate<FlagType> &other) const
-        {
-            return FlagsTemplate<FlagType>(flags_ | other.flags_);
-        }
-        //! Combines flags from another flag object.
-        FlagsTemplate<FlagType> &operator|=(const FlagsTemplate<FlagType> &other)
-        {
-            flags_ |= other.flags_;
-            return *this;
-        }
-        //! Combined flags from two flags objects.
-        FlagsTemplate<FlagType>
-        operator&(const FlagsTemplate<FlagType> &other) const
-        {
-            return FlagsTemplate<FlagType>(flags_ & other.flags_);
-        }
-        //! Returns an object with all flags flipped.
-        FlagsTemplate<FlagType> operator~() const
-        {
-            return FlagsTemplate<FlagType>(~flags_);
-        }
+    //! Combines flags from two flags objects.
+    FlagsTemplate<FlagType>
+    operator|(const FlagsTemplate<FlagType> &other) const
+    {
+        return FlagsTemplate<FlagType>(flags_ | other.flags_);
+    }
+    //! Combines flags from another flag object.
+    FlagsTemplate<FlagType> &operator|=(const FlagsTemplate<FlagType> &other)
+    {
+        flags_ |= other.flags_;
+        return *this;
+    }
+    //! Combined flags from two flags objects.
+    FlagsTemplate<FlagType>
+    operator&(const FlagsTemplate<FlagType> &other) const
+    {
+        return FlagsTemplate<FlagType>(flags_ & other.flags_);
+    }
+    //! Returns an object with all flags flipped.
+    FlagsTemplate<FlagType> operator~() const
+    {
+        return FlagsTemplate<FlagType>(~flags_);
+    }
 
-    private:
-        //! Creates a flags object with the given flags.
-        explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
+private:
+    //! Creates a flags object with the given flags.
+    explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
-        unsigned long flags_;
+    unsigned long flags_;
 };
 
 } // namespace gmx

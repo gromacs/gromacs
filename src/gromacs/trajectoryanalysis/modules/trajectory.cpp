@@ -71,33 +71,33 @@ namespace
 
 class Trajectory : public TrajectoryAnalysisModule
 {
-    public:
-        Trajectory();
+public:
+    Trajectory();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        SelectionList sel_;
+private:
+    SelectionList sel_;
 
-        std::string fnX_;
-        std::string fnV_;
-        std::string fnF_;
-        bool        dimMask_[4];
-        bool        maskSet_[4];
+    std::string fnX_;
+    std::string fnV_;
+    std::string fnF_;
+    bool        dimMask_[4];
+    bool        maskSet_[4];
 
-        AnalysisData xdata_;
-        AnalysisData vdata_;
-        AnalysisData fdata_;
+    AnalysisData xdata_;
+    AnalysisData vdata_;
+    AnalysisData fdata_;
 };
 
 Trajectory::Trajectory()

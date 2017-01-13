@@ -93,44 +93,44 @@ bool regexMatch(const std::string &str, const Regex &regex);
  */
 class Regex
 {
-    public:
-        /*! \brief
-         * Returns true if regular expression support has been compiled in.
-         *
-         * Does not throw.
-         */
-        static bool isSupported();
+public:
+    /*! \brief
+     * Returns true if regular expression support has been compiled in.
+     *
+     * Does not throw.
+     */
+    static bool isSupported();
 
-        /*! \brief
-         * Constructs a regular expression that matches nothing.
-         *
-         * Does not throw.
-         */
-        Regex();
-        /*! \brief
-         * Constructs a regular expression from a string.
-         *
-         * \param[in] value  String to compile into a regular expression.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if \p value is not a valid regular
-         *      expression.
-         *
-         * \todo
-         * Consider whether some other exception type would be better.
-         */
-        explicit Regex(const char *value);
-        //! \copydoc Regex(const char *)
-        explicit Regex(const std::string &value);
-        //! Frees memory allocated for the regular expression.
-        ~Regex();
+    /*! \brief
+     * Constructs a regular expression that matches nothing.
+     *
+     * Does not throw.
+     */
+    Regex();
+    /*! \brief
+     * Constructs a regular expression from a string.
+     *
+     * \param[in] value  String to compile into a regular expression.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if \p value is not a valid regular
+     *      expression.
+     *
+     * \todo
+     * Consider whether some other exception type would be better.
+     */
+    explicit Regex(const char *value);
+    //! \copydoc Regex(const char *)
+    explicit Regex(const std::string &value);
+    //! Frees memory allocated for the regular expression.
+    ~Regex();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        friend bool regexMatch(const char *str, const Regex &regex);
-        friend bool regexMatch(const std::string &str, const Regex &regex);
+    friend bool regexMatch(const char *str, const Regex &regex);
+    friend bool regexMatch(const std::string &str, const Regex &regex);
 };
 
 } // namespace gmx

@@ -60,178 +60,178 @@ namespace
 
 class TreeAssignHelper
 {
-    public:
-        TreeAssignHelper(Options *options, IKeyValueTreeErrorHandler *errorHandler)
-            : assigner_(options), errorHandler_(errorHandler)
+public:
+    TreeAssignHelper(Options *options, IKeyValueTreeErrorHandler *errorHandler)
+        : assigner_(options), errorHandler_(errorHandler)
+    {
+        if (errorHandler_ == nullptr)
         {
-            if (errorHandler_ == nullptr)
+            errorHandler_ = defaultKeyValueTreeErrorHandler();
+        }
+    }
+
+    void assignAll(const KeyValueTreeObject &root)
+    {
+        assigner_.start();
+        assignSubTree(root);
+        assigner_.finish();
+    }
+
+private:
+    void assignSubTree(const KeyValueTreeObject &tree)
+    {
+        // TODO: Use the error handler also in other case.
+        for (const KeyValueTreeProperty &prop : tree.properties())
+        {
+            context_.append(prop.key());
+            if (prop.value().isArray())
             {
-                errorHandler_ = defaultKeyValueTreeErrorHandler();
+                assignArray(prop.key(), prop.value().asArray());
             }
-        }
-
-        void assignAll(const KeyValueTreeObject &root)
-        {
-            assigner_.start();
-            assignSubTree(root);
-            assigner_.finish();
-        }
-
-    private:
-        void assignSubTree(const KeyValueTreeObject &tree)
-        {
-            // TODO: Use the error handler also in other case.
-            for (const KeyValueTreeProperty &prop : tree.properties())
+            else if (prop.value().isObject())
             {
-                context_.append(prop.key());
-                if (prop.value().isArray())
-                {
-                    assignArray(prop.key(), prop.value().asArray());
-                }
-                else if (prop.value().isObject())
-                {
-                    assigner_.startSection(prop.key().c_str());
-                    assignSubTree(prop.value().asObject());
-                    assigner_.finishSection();
-                }
-                else
-                {
-                    assigner_.startOption(prop.key().c_str());
-                    try
-                    {
-                        assigner_.appendValue(prop.value().asVariant());
-                    }
-                    catch (UserInputError &ex)
-                    {
-                        if (!errorHandler_->onError(&ex, context_))
-                        {
-                            throw;
-                        }
-                    }
-                    assigner_.finishOption();
-                }
-                context_.pop_back();
-            }
-        }
-
-        void assignArray(const std::string &      key,
-                         const KeyValueTreeArray &array)
-        {
-            if (array.isObjectArray())
-            {
-                for (const KeyValueTreeValue &value : array.values())
-                {
-                    assigner_.startSection(key.c_str());
-                    assignSubTree(value.asObject());
-                    assigner_.finishSection();
-                }
+                assigner_.startSection(prop.key().c_str());
+                assignSubTree(prop.value().asObject());
+                assigner_.finishSection();
             }
             else
             {
-                assigner_.startOption(key.c_str());
-                for (const KeyValueTreeValue &value : array.values())
+                assigner_.startOption(prop.key().c_str());
+                try
                 {
-                    assigner_.appendValue(value.asVariant());
+                    assigner_.appendValue(prop.value().asVariant());
+                }
+                catch (UserInputError &ex)
+                {
+                    if (!errorHandler_->onError(&ex, context_))
+                    {
+                        throw;
+                    }
                 }
                 assigner_.finishOption();
             }
+            context_.pop_back();
         }
+    }
 
-        OptionsAssigner            assigner_;
-        IKeyValueTreeErrorHandler *errorHandler_;
-        KeyValueTreePath           context_;
+    void assignArray(const std::string &      key,
+                     const KeyValueTreeArray &array)
+    {
+        if (array.isObjectArray())
+        {
+            for (const KeyValueTreeValue &value : array.values())
+            {
+                assigner_.startSection(key.c_str());
+                assignSubTree(value.asObject());
+                assigner_.finishSection();
+            }
+        }
+        else
+        {
+            assigner_.startOption(key.c_str());
+            for (const KeyValueTreeValue &value : array.values())
+            {
+                assigner_.appendValue(value.asVariant());
+            }
+            assigner_.finishOption();
+        }
+    }
+
+    OptionsAssigner            assigner_;
+    IKeyValueTreeErrorHandler *errorHandler_;
+    KeyValueTreePath           context_;
 };
 
 class TreeIterationHelper : private OptionsVisitor
 {
-    public:
-        TreeIterationHelper(const KeyValueTreeObject &root,
-                            KeyValueTreeBuilder *     builder)
-            : currentSourceObject_(&root),
-              currentObjectBuilder_(builder->rootObject())
-        {
-        }
+public:
+    TreeIterationHelper(const KeyValueTreeObject &root,
+                        KeyValueTreeBuilder *     builder)
+        : currentSourceObject_(&root),
+          currentObjectBuilder_(builder->rootObject())
+    {
+    }
 
-        void processOptionSection(const OptionSectionInfo &section)
-        {
-            OptionsIterator iterator(section);
-            iterator.acceptOptions(this);
-            iterator.acceptSections(this);
-        }
+    void processOptionSection(const OptionSectionInfo &section)
+    {
+        OptionsIterator iterator(section);
+        iterator.acceptOptions(this);
+        iterator.acceptSections(this);
+    }
 
-    private:
-        virtual void visitSection(const OptionSectionInfo &section)
+private:
+    virtual void visitSection(const OptionSectionInfo &section)
+    {
+        const std::string &name          = section.name();
+        auto               parentBuilder = currentObjectBuilder_;
+        auto               parentObject  = currentSourceObject_;
+        currentObjectBuilder_ = currentObjectBuilder_.addObject(name);
+        currentSourceObject_
+            = (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
+               ? &(*currentSourceObject_)[name].asObject()
+               : nullptr);
+        processOptionSection(section);
+        currentSourceObject_  = parentObject;
+        currentObjectBuilder_ = parentBuilder;
+    }
+    virtual void visitOption(const OptionInfo &option)
+    {
+        const std::string &name = option.name();
+        if (currentSourceObject_ == nullptr || !currentSourceObject_->keyExists(name))
         {
-            const std::string &name          = section.name();
-            auto               parentBuilder = currentObjectBuilder_;
-            auto               parentObject  = currentSourceObject_;
-            currentObjectBuilder_ = currentObjectBuilder_.addObject(name);
-            currentSourceObject_
-                = (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
-                   ? &(*currentSourceObject_)[name].asObject()
-                   : nullptr);
-            processOptionSection(section);
-            currentSourceObject_  = parentObject;
-            currentObjectBuilder_ = parentBuilder;
-        }
-        virtual void visitOption(const OptionInfo &option)
-        {
-            const std::string &name = option.name();
-            if (currentSourceObject_ == nullptr || !currentSourceObject_->keyExists(name))
+            std::vector<Variant> values = option.defaultValues();
+            if (values.size() == 1)
             {
-                std::vector<Variant> values = option.defaultValues();
-                if (values.size() == 1)
+                currentObjectBuilder_.addRawValue(name, std::move(values[0]));
+            }
+            else if (values.size() > 1)
+            {
+                auto arrayBuilder = currentObjectBuilder_.addArray(name);
+                for (Variant &value : values)
                 {
-                    currentObjectBuilder_.addRawValue(name, std::move(values[0]));
+                    arrayBuilder.addRawValue(std::move(value));
                 }
-                else if (values.size() > 1)
+            }
+        }
+        else
+        {
+            const KeyValueTreeValue &value = (*currentSourceObject_)[name];
+            GMX_RELEASE_ASSERT(!value.isObject(), "Value objects not supported in this context");
+            std::vector<Variant> values;
+            if (value.isArray())
+            {
+                for (const auto &arrayValue : value.asArray().values())
                 {
-                    auto arrayBuilder = currentObjectBuilder_.addArray(name);
-                    for (Variant &value : values)
-                    {
-                        arrayBuilder.addRawValue(std::move(value));
-                    }
+                    GMX_RELEASE_ASSERT(!value.isObject() && !value.isArray(),
+                                       "Complex values not supported in this context");
+                    values.push_back(arrayValue.asVariant());
                 }
             }
             else
             {
-                const KeyValueTreeValue &value = (*currentSourceObject_)[name];
-                GMX_RELEASE_ASSERT(!value.isObject(), "Value objects not supported in this context");
-                std::vector<Variant> values;
-                if (value.isArray())
+                values.push_back(value.asVariant());
+            }
+            values = option.normalizeValues(values);
+            if (values.empty())
+            {
+            }
+            else if (values.size() == 1)
+            {
+                currentObjectBuilder_.addRawValue(name, std::move(values[0]));
+            }
+            else
+            {
+                auto array = currentObjectBuilder_.addArray(name);
+                for (auto &arrayValue : values)
                 {
-                    for (const auto &arrayValue : value.asArray().values())
-                    {
-                        GMX_RELEASE_ASSERT(!value.isObject() && !value.isArray(),
-                                           "Complex values not supported in this context");
-                        values.push_back(arrayValue.asVariant());
-                    }
-                }
-                else
-                {
-                    values.push_back(value.asVariant());
-                }
-                values = option.normalizeValues(values);
-                if (values.empty())
-                {
-                }
-                else if (values.size() == 1)
-                {
-                    currentObjectBuilder_.addRawValue(name, std::move(values[0]));
-                }
-                else
-                {
-                    auto array = currentObjectBuilder_.addArray(name);
-                    for (auto &arrayValue : values)
-                    {
-                        array.addRawValue(std::move(arrayValue));
-                    }
+                    array.addRawValue(std::move(arrayValue));
                 }
             }
         }
+    }
 
-        const KeyValueTreeObject *currentSourceObject_;
-        KeyValueTreeObjectBuilder currentObjectBuilder_;
+    const KeyValueTreeObject *currentSourceObject_;
+    KeyValueTreeObjectBuilder currentObjectBuilder_;
 };
 
 }   // namespace

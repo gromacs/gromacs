@@ -53,25 +53,25 @@ namespace gmx
  */
 class IOptionSectionStorage
 {
-    public:
-        virtual ~IOptionSectionStorage();
+public:
+    virtual ~IOptionSectionStorage();
 
-        /*! \brief
-         * Called once before the first call to startSection().
-         *
-         * This is called once all options have been added to the section.
-         * The current implementation does not call this if startSection() is
-         * never called.
-         */
-        virtual void initStorage() = 0;
-        /*! \brief
-         * Called when option assignment enters this section.
-         */
-        virtual void startSection() = 0;
-        /*! \brief
-         * Called when option assignment leaves this section.
-         */
-        virtual void finishSection() = 0;
+    /*! \brief
+     * Called once before the first call to startSection().
+     *
+     * This is called once all options have been added to the section.
+     * The current implementation does not call this if startSection() is
+     * never called.
+     */
+    virtual void initStorage() = 0;
+    /*! \brief
+     * Called when option assignment enters this section.
+     */
+    virtual void startSection() = 0;
+    /*! \brief
+     * Called when option assignment leaves this section.
+     */
+    virtual void finishSection() = 0;
 };
 
 } // namespace gmx

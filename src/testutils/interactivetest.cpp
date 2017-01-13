@@ -67,78 +67,78 @@ namespace test
 
 class MockTextInputStream : public TextInputStream
 {
-    public:
-        MOCK_METHOD1(readLine, bool(std::string *));
-        MOCK_METHOD0(close, void());
+public:
+    MOCK_METHOD1(readLine, bool(std::string *));
+    MOCK_METHOD0(close, void());
 };
 
 class MockTextOutputStream : public TextOutputStream
 {
-    public:
-        MOCK_METHOD1(write, void(const char *));
-        MOCK_METHOD0(close, void());
+public:
+    MOCK_METHOD1(write, void(const char *));
+    MOCK_METHOD0(close, void());
 };
 
 class InteractiveTestHelper::Impl
 {
-    public:
-        explicit Impl(TestReferenceChecker checker)
-            : checker_(checker), bLastNewline_(true),
-              currentLine_(0), bHasOutput_(false)
-        {
-            using ::testing::_;
-            using ::testing::Invoke;
-            EXPECT_CALL(inputStream_, readLine(_))
-                .WillRepeatedly(Invoke(this, &Impl::readInputLine));
-            EXPECT_CALL(inputStream_, close()).Times(0);
-            EXPECT_CALL(outputStream_, write(_))
-                .WillRepeatedly(Invoke(this, &Impl::addOutput));
-            EXPECT_CALL(outputStream_, close()).Times(0);
-        }
+public:
+    explicit Impl(TestReferenceChecker checker)
+        : checker_(checker), bLastNewline_(true),
+          currentLine_(0), bHasOutput_(false)
+    {
+        using ::testing::_;
+        using ::testing::Invoke;
+        EXPECT_CALL(inputStream_, readLine(_))
+            .WillRepeatedly(Invoke(this, &Impl::readInputLine));
+        EXPECT_CALL(inputStream_, close()).Times(0);
+        EXPECT_CALL(outputStream_, write(_))
+            .WillRepeatedly(Invoke(this, &Impl::addOutput));
+        EXPECT_CALL(outputStream_, close()).Times(0);
+    }
 
-        bool readInputLine(std::string *line)
+    bool readInputLine(std::string *line)
+    {
+        checkOutput();
+        line->clear();
+        const bool bPresent = (currentLine_ < inputLines_.size());
+        if (bPresent)
         {
-            checkOutput();
-            line->clear();
-            const bool bPresent = (currentLine_ < inputLines_.size());
-            if (bPresent)
+            line->assign(inputLines_[currentLine_]);
+            if (bLastNewline_ || currentLine_ + 1 < inputLines_.size())
             {
-                line->assign(inputLines_[currentLine_]);
-                if (bLastNewline_ || currentLine_ + 1 < inputLines_.size())
-                {
-                    line->append("\n");
-                }
+                line->append("\n");
             }
-            ++currentLine_;
-            const std::string id = formatString("Input%d", static_cast<int>(currentLine_));
-            StringTestBase::checkText(&checker_, *line, id.c_str());
-            return bPresent;
         }
-        void addOutput(const char *str)
-        {
-            bHasOutput_ = true;
-            currentOutput_.append(str);
-        }
+        ++currentLine_;
+        const std::string id = formatString("Input%d", static_cast<int>(currentLine_));
+        StringTestBase::checkText(&checker_, *line, id.c_str());
+        return bPresent;
+    }
+    void addOutput(const char *str)
+    {
+        bHasOutput_ = true;
+        currentOutput_.append(str);
+    }
 
-        void checkOutput()
+    void checkOutput()
+    {
+        if (bHasOutput_)
         {
-            if (bHasOutput_)
-            {
-                const std::string id = formatString("Output%d", static_cast<int>(currentLine_));
-                StringTestBase::checkText(&checker_, currentOutput_, id.c_str());
-                bHasOutput_ = false;
-            }
-            currentOutput_.clear();
+            const std::string id = formatString("Output%d", static_cast<int>(currentLine_));
+            StringTestBase::checkText(&checker_, currentOutput_, id.c_str());
+            bHasOutput_ = false;
         }
+        currentOutput_.clear();
+    }
 
-        TestReferenceChecker        checker_;
-        ConstArrayRef<const char *> inputLines_;
-        bool                        bLastNewline_;
-        size_t                      currentLine_;
-        bool                        bHasOutput_;
-        std::string                 currentOutput_;
-        MockTextInputStream         inputStream_;
-        MockTextOutputStream        outputStream_;
+    TestReferenceChecker        checker_;
+    ConstArrayRef<const char *> inputLines_;
+    bool                        bLastNewline_;
+    size_t                      currentLine_;
+    bool                        bHasOutput_;
+    std::string                 currentOutput_;
+    MockTextInputStream         inputStream_;
+    MockTextOutputStream        outputStream_;
 };
 
 InteractiveTestHelper::InteractiveTestHelper(TestReferenceChecker checker)

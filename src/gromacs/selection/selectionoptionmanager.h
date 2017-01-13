@@ -80,149 +80,149 @@ class SelectionOptionStorage;
  */
 class SelectionOptionManager : public IOptionManager
 {
-    public:
-        /*! \brief
-         * Creates a manager for selection options.
-         *
-         * \throws  std::bad_alloc if out of memory.
-         */
-        explicit SelectionOptionManager(SelectionCollection *selections);
-        virtual ~SelectionOptionManager();
+public:
+    /*! \brief
+     * Creates a manager for selection options.
+     *
+     * \throws  std::bad_alloc if out of memory.
+     */
+    explicit SelectionOptionManager(SelectionCollection *selections);
+    virtual ~SelectionOptionManager();
 
-        /*! \brief
-         * Adds a selection option to be managed.
-         *
-         * \param     storage  Storage object for the option to register.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * This is only for internal use by the selection module.
-         * It is not possible to obtain a SelectionOptionStorage pointer
-         * through any public or library API.
-         *
-         * Strong exception safety.
-         */
-        void registerOption(SelectionOptionStorage *storage);
-        /*! \brief
-         * Converts a string value to selections for an option.
-         *
-         * \param     storage  Storage object to receive the selections.
-         * \param[in] value    Value to convert.
-         * \param[in] bFullValue  If true, the provided selections are the full
-         *      value of the option, and additional checks are performed.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if the selection string is not valid,
-         *      or uses a feature not supported by the option.
-         *
-         * This is only for internal use by the selection module.
-         * It is not possible to obtain a SelectionOptionStorage pointer
-         * through any public or library API.
-         */
-        void convertOptionValue(SelectionOptionStorage *storage,
-                                const std::string &     value,
-                                bool                    bFullValue);
-        /*! \brief
-         * Adds a selection option for delayed user input.
-         *
-         * \param     storage  Storage object for the option to request.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * This is only for internal use by the selection module.
-         * It is not possible to obtain a SelectionOptionStorage pointer
-         * through any public or library API.
-         *
-         * Strong exception safety.
-         */
-        void requestOptionDelayedParsing(SelectionOptionStorage *storage);
+    /*! \brief
+     * Adds a selection option to be managed.
+     *
+     * \param     storage  Storage object for the option to register.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * This is only for internal use by the selection module.
+     * It is not possible to obtain a SelectionOptionStorage pointer
+     * through any public or library API.
+     *
+     * Strong exception safety.
+     */
+    void registerOption(SelectionOptionStorage *storage);
+    /*! \brief
+     * Converts a string value to selections for an option.
+     *
+     * \param     storage  Storage object to receive the selections.
+     * \param[in] value    Value to convert.
+     * \param[in] bFullValue  If true, the provided selections are the full
+     *      value of the option, and additional checks are performed.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if the selection string is not valid,
+     *      or uses a feature not supported by the option.
+     *
+     * This is only for internal use by the selection module.
+     * It is not possible to obtain a SelectionOptionStorage pointer
+     * through any public or library API.
+     */
+    void convertOptionValue(SelectionOptionStorage *storage,
+                            const std::string &     value,
+                            bool                    bFullValue);
+    /*! \brief
+     * Adds a selection option for delayed user input.
+     *
+     * \param     storage  Storage object for the option to request.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * This is only for internal use by the selection module.
+     * It is not possible to obtain a SelectionOptionStorage pointer
+     * through any public or library API.
+     *
+     * Strong exception safety.
+     */
+    void requestOptionDelayedParsing(SelectionOptionStorage *storage);
 
-        /*! \brief
-         * Returns whether there are requested selections that need input from
-         * parseRequestedFrom*().
-         */
-        bool hasRequestedSelections() const;
+    /*! \brief
+     * Returns whether there are requested selections that need input from
+     * parseRequestedFrom*().
+     */
+    bool hasRequestedSelections() const;
 
-        /*! \brief
-         * Initializes options for setting global selection properties.
-         *
-         * \param[in,out] options Options object to initialize.
-         * \throws        std::bad_alloc if out of memory.
-         *
-         * \see SelectionCollection::initOptions()
-         */
-        void initOptions(IOptionsContainer *options);
+    /*! \brief
+     * Initializes options for setting global selection properties.
+     *
+     * \param[in,out] options Options object to initialize.
+     * \throws        std::bad_alloc if out of memory.
+     *
+     * \see SelectionCollection::initOptions()
+     */
+    void initOptions(IOptionsContainer *options);
 
-        /*! \brief
-         * Parses selection(s) from standard input for options not yet
-         * provided.
-         *
-         * \param[in]  bInteractive Whether the parser should behave
-         *      interactively.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      SelectionCollection::parseFromStdin().
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * This method cooperates with SelectionOption to allow interactive
-         * input of requested selections after all options have been processed.
-         * It should be called after the Options::finish() method has been
-         * called on all options that add selections to this collection.
-         * For each required selection option that has not been given, as well
-         * as for optional selection options that have been specified without
-         * values, it will prompt the user to input the necessary selections.
-         */
-        void parseRequestedFromStdin(bool bInteractive);
-        /*! \brief
-         * Parses selection(s) from a file for options not yet provided.
-         *
-         * \param[in]  filename Name of the file to parse selections from.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      SelectionCollection::parseFromFile().
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     InvalidInputError if
-         *      - the number of selections in \p filename doesn't match the
-         *        number requested.
-         *      - any selection uses a feature that is not allowed for the
-         *        corresponding option.
-         *      - if there is a request for any number of selections that is
-         *        not the last (in which case it is not possible to determine
-         *        which selections belong to which request).
-         *
-         * This method behaves as parseRequestedFromStdin(), with two
-         * exceptions:
-         *  -# It reads the selections from a file instead of standard input.
-         *  -# If no requests are pending, assigns values to all required
-         *     options that have not yet been set.
-         *
-         * This method used to implement SelectionFileOption.
-         *
-         * \see parseRequestedFromStdin()
-         */
-        void parseRequestedFromFile(const std::string &filename);
-        /*! \brief
-         * Parses selection(s) from a string for options not yet provided.
-         *
-         * \param[in]  str     String to parse.
-         * \throws     unspecified  Can throw any exception thrown by
-         *      SelectionCollection::parseFromString().
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     InvalidInputError in same conditions as
-         *      parseRequestedFromFile().
-         *
-         * This method behaves as parseRequestedFromFile(), but reads the
-         * selections from a string instead of a file.
-         * This method is mainly used for testing.
-         *
-         * \see parseRequestedFromFile()
-         */
-        void parseRequestedFromString(const std::string &str);
+    /*! \brief
+     * Parses selection(s) from standard input for options not yet
+     * provided.
+     *
+     * \param[in]  bInteractive Whether the parser should behave
+     *      interactively.
+     * \throws     unspecified  Can throw any exception thrown by
+     *      SelectionCollection::parseFromStdin().
+     * \throws     std::bad_alloc if out of memory.
+     *
+     * This method cooperates with SelectionOption to allow interactive
+     * input of requested selections after all options have been processed.
+     * It should be called after the Options::finish() method has been
+     * called on all options that add selections to this collection.
+     * For each required selection option that has not been given, as well
+     * as for optional selection options that have been specified without
+     * values, it will prompt the user to input the necessary selections.
+     */
+    void parseRequestedFromStdin(bool bInteractive);
+    /*! \brief
+     * Parses selection(s) from a file for options not yet provided.
+     *
+     * \param[in]  filename Name of the file to parse selections from.
+     * \throws     unspecified  Can throw any exception thrown by
+     *      SelectionCollection::parseFromFile().
+     * \throws     std::bad_alloc if out of memory.
+     * \throws     InvalidInputError if
+     *      - the number of selections in \p filename doesn't match the
+     *        number requested.
+     *      - any selection uses a feature that is not allowed for the
+     *        corresponding option.
+     *      - if there is a request for any number of selections that is
+     *        not the last (in which case it is not possible to determine
+     *        which selections belong to which request).
+     *
+     * This method behaves as parseRequestedFromStdin(), with two
+     * exceptions:
+     *  -# It reads the selections from a file instead of standard input.
+     *  -# If no requests are pending, assigns values to all required
+     *     options that have not yet been set.
+     *
+     * This method used to implement SelectionFileOption.
+     *
+     * \see parseRequestedFromStdin()
+     */
+    void parseRequestedFromFile(const std::string &filename);
+    /*! \brief
+     * Parses selection(s) from a string for options not yet provided.
+     *
+     * \param[in]  str     String to parse.
+     * \throws     unspecified  Can throw any exception thrown by
+     *      SelectionCollection::parseFromString().
+     * \throws     std::bad_alloc if out of memory.
+     * \throws     InvalidInputError in same conditions as
+     *      parseRequestedFromFile().
+     *
+     * This method behaves as parseRequestedFromFile(), but reads the
+     * selections from a string instead of a file.
+     * This method is mainly used for testing.
+     *
+     * \see parseRequestedFromFile()
+     */
+    void parseRequestedFromString(const std::string &str);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed for handling delayed selection parsing requests.
-         */
-        friend class SelectionOptionStorage;
+    /*! \brief
+     * Needed for handling delayed selection parsing requests.
+     */
+    friend class SelectionOptionStorage;
 };
 
 } // namespace gmx

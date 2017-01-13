@@ -83,58 +83,58 @@ typedef unique_cptr<t_trxframe, done_trxframe> trxframe_ptr;
  * successive frames of an trajectory file. */
 class TrajectoryFrameReader
 {
-    public:
-        /*! \brief Attempt to read the next frame from the trajectory file.
-         *
-         * \return Whether a frame was available to read.
-         *
-         * This call wraps the read_first_frame()/read_next_frame()
-         * API, which does the file opening as a side effect of
-         * reading the first frame.
-         *
-         * If true is returned, then frame() should be called
-         * to get access to the data. If false is returned, then no
-         * further data exists and no further call to
-         * readNextFrame() or frame() should occur.
-         *
-         * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
-         * \throws APIError    if an earlier probe has not been properly handled
-         *                     (by calling frame(), or stopping trying to read
-         *                     from the file). */
-        bool readNextFrame();
-        /*! \brief Return the next frame from the trajectory file.
-         *
-         * If the next frame has not been probed for, then probe for
-         * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrame() itself if this
-         * is possible. (This permits user code to avoid making calls
-         * to readNextFrame() in a case where it already knows that
-         * the frame exists.)
-         *
-         * \throws APIError  if no next frame exists, or if it lacks either time or step number. */
-        TrajectoryFrame frame();
-        /*! \brief Constructor
-         *
-         * \param[in] filename  Name of trajectory file to open and read. */
-        explicit TrajectoryFrameReader(const std::string &filename);
-    private:
-        //! Name of trajectory file to open and read
-        std::string filename_;
-        //! Owning handle of output environment object
-        oenv_ptr oenvGuard_;
-        //! Owning handle of an open trajectory file ready to read frames.
-        trxstatus_file_ptr trajectoryFileGuard_;
-        //! Owning handle of contents of trajectory file frame after reading.
-        const trxframe_ptr trxframeGuard_;
-        //! Whether the first frame has been read
-        bool haveReadFirstFrame_;
-        //! Whether the API has been used properly (ie. probe before reading).
-        bool haveProbedForNextFrame_;
-        //! Whether there has been a probe that found a next frame.
-        bool nextFrameExists_;
+public:
+    /*! \brief Attempt to read the next frame from the trajectory file.
+     *
+     * \return Whether a frame was available to read.
+     *
+     * This call wraps the read_first_frame()/read_next_frame()
+     * API, which does the file opening as a side effect of
+     * reading the first frame.
+     *
+     * If true is returned, then frame() should be called
+     * to get access to the data. If false is returned, then no
+     * further data exists and no further call to
+     * readNextFrame() or frame() should occur.
+     *
+     * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
+     * \throws APIError    if an earlier probe has not been properly handled
+     *                     (by calling frame(), or stopping trying to read
+     *                     from the file). */
+    bool readNextFrame();
+    /*! \brief Return the next frame from the trajectory file.
+     *
+     * If the next frame has not been probed for, then probe for
+     * it. If no next frame exists, then throw APIError, because
+     * user code should have called readNextFrame() itself if this
+     * is possible. (This permits user code to avoid making calls
+     * to readNextFrame() in a case where it already knows that
+     * the frame exists.)
+     *
+     * \throws APIError  if no next frame exists, or if it lacks either time or step number. */
+    TrajectoryFrame frame();
+    /*! \brief Constructor
+     *
+     * \param[in] filename  Name of trajectory file to open and read. */
+    explicit TrajectoryFrameReader(const std::string &filename);
+private:
+    //! Name of trajectory file to open and read
+    std::string filename_;
+    //! Owning handle of output environment object
+    oenv_ptr oenvGuard_;
+    //! Owning handle of an open trajectory file ready to read frames.
+    trxstatus_file_ptr trajectoryFileGuard_;
+    //! Owning handle of contents of trajectory file frame after reading.
+    const trxframe_ptr trxframeGuard_;
+    //! Whether the first frame has been read
+    bool haveReadFirstFrame_;
+    //! Whether the API has been used properly (ie. probe before reading).
+    bool haveProbedForNextFrame_;
+    //! Whether there has been a probe that found a next frame.
+    bool nextFrameExists_;
 
-        // Multiple owners of these resources isn't very sensible, so prevent it
-        GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);
+    // Multiple owners of these resources isn't very sensible, so prevent it
+    GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);
 };
 
 //! Convenience smart pointer typedef
@@ -158,16 +158,16 @@ void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
  * data from an trajectory file frame. */
 class TrajectoryFrame
 {
-    public:
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string getFrameName() const;
-        //! Constructor
-        TrajectoryFrame();
+public:
+    /*! \brief Return string that helps users identify this frame, containing time and step number.
+     *
+     * \throws std::bad_alloc  when out of memory */
+    std::string getFrameName() const;
+    //! Constructor
+    TrajectoryFrame();
 
-        //! Handle to trajectory data
-        t_trxframe *frame_;
+    //! Handle to trajectory data
+    t_trxframe *frame_;
 };
 
 } // namespace

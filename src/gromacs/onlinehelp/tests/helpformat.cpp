@@ -61,10 +61,10 @@ const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 
 class TextTableFormatterTest : public gmx::test::StringTestBase
 {
-    public:
-        void setupStandardColumns();
+public:
+    void setupStandardColumns();
 
-        gmx::TextTableFormatter formatter_;
+    gmx::TextTableFormatter formatter_;
 };
 
 void TextTableFormatterTest::setupStandardColumns()

@@ -82,63 +82,63 @@ namespace gmx
 class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
                                   public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataAverageModule();
-        virtual ~AnalysisDataAverageModule();
+public:
+    AnalysisDataAverageModule();
+    virtual ~AnalysisDataAverageModule();
 
-        using AbstractAnalysisArrayData::setXAxis;
-        using AbstractAnalysisArrayData::setXAxisValue;
+    using AbstractAnalysisArrayData::setXAxis;
+    using AbstractAnalysisArrayData::setXAxisValue;
 
-        /*! \brief
-         * Sets the averaging to happen over entire data sets.
-         *
-         * If \p bDataSets is false (the default), the module averages each
-         * column separately.  The output will have a column for each data set,
-         * and a row for each column.
-         *
-         * If \p bDataSets is true, the module averages all values within
-         * a single data set into a single average/standard deviation.
-         * The output will have only one column, with one row for each data
-         * set.
-         */
-        void setAverageDataSets(bool bDataSets);
+    /*! \brief
+     * Sets the averaging to happen over entire data sets.
+     *
+     * If \p bDataSets is false (the default), the module averages each
+     * column separately.  The output will have a column for each data set,
+     * and a row for each column.
+     *
+     * If \p bDataSets is true, the module averages all values within
+     * a single data set into a single average/standard deviation.
+     * The output will have only one column, with one row for each data
+     * set.
+     */
+    void setAverageDataSets(bool bDataSets);
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-        /*! \brief
-         * Convenience access to the average of a data column.
-         *
-         * Note that the interpretation of the parameters follows their naming:
-         * with \c setAverageDataSets(false), \p dataSet corresponds to a
-         * column in the output, but with \c setAverageDataSets(false) it
-         * corresponds to an output row.  In both cases, it selects the data
-         * set; with \c setAverageDataSets(false), \p column should always be
-         * zero as there is only one value per data set.
-         */
-        real average(int dataSet, int column) const;
-        /*! \brief
-         * Convenience access to the standard deviation of a data column.
-         *
-         * See average() for the interpretation of the parameters.
-         */
-        real standardDeviation(int dataSet, int column) const;
-        /*! \brief
-         * Access the number of samples for a data column.
-         *
-         * See average() for the interpretation of the parameters.
-         */
-        int sampleCount(int dataSet, int column) const;
+    /*! \brief
+     * Convenience access to the average of a data column.
+     *
+     * Note that the interpretation of the parameters follows their naming:
+     * with \c setAverageDataSets(false), \p dataSet corresponds to a
+     * column in the output, but with \c setAverageDataSets(false) it
+     * corresponds to an output row.  In both cases, it selects the data
+     * set; with \c setAverageDataSets(false), \p column should always be
+     * zero as there is only one value per data set.
+     */
+    real average(int dataSet, int column) const;
+    /*! \brief
+     * Convenience access to the standard deviation of a data column.
+     *
+     * See average() for the interpretation of the parameters.
+     */
+    real standardDeviation(int dataSet, int column) const;
+    /*! \brief
+     * Access the number of samples for a data column.
+     *
+     * See average() for the interpretation of the parameters.
+     */
+    int sampleCount(int dataSet, int column) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
@@ -164,27 +164,27 @@ typedef std::shared_ptr<AnalysisDataAverageModule>
 class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
                                        public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataFrameAverageModule();
-        virtual ~AnalysisDataFrameAverageModule();
+public:
+    AnalysisDataFrameAverageModule();
+    virtual ~AnalysisDataFrameAverageModule();
 
-        virtual int frameCount() const;
+    virtual int frameCount() const;
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-    private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+private:
+    virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+    virtual bool requestStorageInternal(int nframes);
 
-        class Impl;
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataFrameAverageModule object.

@@ -57,56 +57,56 @@ namespace gmx
 
 class AtomsBuilder
 {
-    public:
-        AtomsBuilder(t_atoms *atoms, t_symtab *symtab);
-        ~AtomsBuilder();
+public:
+    AtomsBuilder(t_atoms *atoms, t_symtab *symtab);
+    ~AtomsBuilder();
 
-        void reserve(int atomCount, int residueCount);
-        void clearAtoms();
+    void reserve(int atomCount, int residueCount);
+    void clearAtoms();
 
-        int currentAtomCount() const;
+    int currentAtomCount() const;
 
-        void setNextResidueNumber(int number);
-        void addAtom(const t_atoms &atoms, int i);
-        void startResidue(const t_resinfo &resinfo);
-        void finishResidue(const t_resinfo &resinfo);
-        void discardCurrentResidue();
+    void setNextResidueNumber(int number);
+    void addAtom(const t_atoms &atoms, int i);
+    void startResidue(const t_resinfo &resinfo);
+    void finishResidue(const t_resinfo &resinfo);
+    void discardCurrentResidue();
 
-        void mergeAtoms(const t_atoms &atoms);
+    void mergeAtoms(const t_atoms &atoms);
 
-    private:
-        char **symtabString(char **source);
+private:
+    char **symtabString(char **source);
 
-        t_atoms * atoms_;
-        t_symtab *symtab_;
-        int       nrAlloc_;
-        int       nresAlloc_;
-        int       currentResidueIndex_;
-        int       nextResidueNumber_;
+    t_atoms * atoms_;
+    t_symtab *symtab_;
+    int       nrAlloc_;
+    int       nresAlloc_;
+    int       currentResidueIndex_;
+    int       nextResidueNumber_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AtomsBuilder);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AtomsBuilder);
 };
 
 class AtomsRemover
 {
-    public:
-        explicit AtomsRemover(const t_atoms &atoms);
-        ~AtomsRemover();
+public:
+    explicit AtomsRemover(const t_atoms &atoms);
+    ~AtomsRemover();
 
-        void refreshAtomCount(const t_atoms &atoms);
+    void refreshAtomCount(const t_atoms &atoms);
 
-        void markAll();
-        void markResidue(const t_atoms &atoms, int atomIndex, bool bStatus);
-        bool isMarked(int atomIndex) const { return removed_[atomIndex] != 0; }
+    void markAll();
+    void markResidue(const t_atoms &atoms, int atomIndex, bool bStatus);
+    bool isMarked(int atomIndex) const { return removed_[atomIndex] != 0; }
 
-        void removeMarkedElements(std::vector<RVec> *container) const;
-        void removeMarkedElements(std::vector<real> *container) const;
-        void removeMarkedAtoms(t_atoms *atoms) const;
+    void removeMarkedElements(std::vector<RVec> *container) const;
+    void removeMarkedElements(std::vector<real> *container) const;
+    void removeMarkedAtoms(t_atoms *atoms) const;
 
-    private:
-        std::vector<char> removed_;
+private:
+    std::vector<char> removed_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AtomsRemover);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AtomsRemover);
 };
 
 } // namespace gmx

@@ -56,23 +56,23 @@ namespace gmx
 /*! \brief Enumerated options for SIMD architectures */
 enum class SimdType
 {
-    None,           //!< Disable all SIMD support
-    Reference,      //!< Gromacs reference software SIMD
-    Generic,        //!< Placeholder for future support for gcc generic SIMD
-    X86_Sse2,       //!< SSE2
-    X86_Sse4_1,     //!< SSE4.1
-    X86_Avx128Fma,  //!< 128-bit Avx with FMA (Amd)
-    X86_Avx,        //!< 256-bit Avx
-    X86_Avx2,       //!< AVX2
-    X86_Avx512,     //!< AVX_512
-    X86_Avx512Knl,  //!< AVX_512_KNL
-    X86_Mic,        //!< Knight's corner
-    Arm_Neon,       //!< 32-bit ARM NEON
-    Arm_NeonAsimd,  //!< 64-bit ARM AArch64 Advanced SIMD
-    Ibm_Qpx,        //!< IBM QPX SIMD (BlueGene/Q and later)
-    Ibm_Vmx,        //!< IBM VMX SIMD (Altivec on Power6 and later)
-    Ibm_Vsx,        //!< IBM VSX SIMD (Power7 and later)
-    Fujitsu_HpcAce  //!< Fujitsu K-computer
+None,               //!< Disable all SIMD support
+Reference,          //!< Gromacs reference software SIMD
+Generic,            //!< Placeholder for future support for gcc generic SIMD
+X86_Sse2,           //!< SSE2
+X86_Sse4_1,         //!< SSE4.1
+X86_Avx128Fma,      //!< 128-bit Avx with FMA (Amd)
+X86_Avx,            //!< 256-bit Avx
+X86_Avx2,           //!< AVX2
+X86_Avx512,         //!< AVX_512
+X86_Avx512Knl,      //!< AVX_512_KNL
+X86_Mic,            //!< Knight's corner
+Arm_Neon,           //!< 32-bit ARM NEON
+Arm_NeonAsimd,      //!< 64-bit ARM AArch64 Advanced SIMD
+Ibm_Qpx,            //!< IBM QPX SIMD (BlueGene/Q and later)
+Ibm_Vmx,            //!< IBM VMX SIMD (Altivec on Power6 and later)
+Ibm_Vsx,            //!< IBM VSX SIMD (Power7 and later)
+Fujitsu_HpcAce      //!< Fujitsu K-computer
 };
 
 /*! \libinternal \brief Return a string with the name of a SIMD type

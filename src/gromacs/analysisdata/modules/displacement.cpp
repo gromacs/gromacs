@@ -65,39 +65,39 @@ namespace gmx
  */
 class AnalysisDataDisplacementModule::Impl
 {
-    public:
-        Impl();
-        ~Impl();
+public:
+    Impl();
+    ~Impl();
 
-        //! Maximum number of particles for which the displacements are calculated.
-        int nmax;
-        //! Maximum time for which the displacements are needed.
-        real tmax;
-        //! Number of dimensions per data point.
-        int ndim;
+    //! Maximum number of particles for which the displacements are calculated.
+    int nmax;
+    //! Maximum time for which the displacements are needed.
+    real tmax;
+    //! Number of dimensions per data point.
+    int ndim;
 
-        //! true if no frames have been read.
-        bool bFirst;
-        //! Stores the time of the first frame.
-        real t0;
-        //! Stores the time interval between frames.
-        real dt;
-        //! Stores the time of the current frame.
-        real t;
-        //! Stores the index in the store for the current positions.
-        int ci;
+    //! true if no frames have been read.
+    bool bFirst;
+    //! Stores the time of the first frame.
+    real t0;
+    //! Stores the time interval between frames.
+    real dt;
+    //! Stores the time of the current frame.
+    real t;
+    //! Stores the index in the store for the current positions.
+    int ci;
 
-        //! Maximum number of positions to store for a particle.
-        int max_store;
-        //! The total number of positions ever stored (can be larger than \p max_store).
-        int nstored;
-        //! Old values.
-        real *oldval;
-        //! The most recently calculated displacements.
-        std::vector<AnalysisDataValue> currValues_;
+    //! Maximum number of positions to store for a particle.
+    int max_store;
+    //! The total number of positions ever stored (can be larger than \p max_store).
+    int nstored;
+    //! Old values.
+    real *oldval;
+    //! The most recently calculated displacements.
+    std::vector<AnalysisDataValue> currValues_;
 
-        //! Histogram module for calculating MSD histograms, or NULL if not set.
-        AnalysisDataBinAverageModule *histm;
+    //! Histogram module for calculating MSD histograms, or NULL if not set.
+    AnalysisDataBinAverageModule *histm;
 };
 
 AnalysisDataDisplacementModule::Impl::Impl()

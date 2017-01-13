@@ -60,24 +60,24 @@ namespace gmx
  */
 class AnalysisDataParallelOptions
 {
-    public:
-        //! Constructs options for serial execution.
-        AnalysisDataParallelOptions();
-        /*! \brief
-         * Constructs options for parallel execution with given number of
-         * concurrent frames.
-         *
-         * \param[in] parallelizationFactor
-         *      Number of frames that may be constructed concurrently.
-         *      Must be >= 1.
-         */
-        explicit AnalysisDataParallelOptions(int parallelizationFactor);
+public:
+    //! Constructs options for serial execution.
+    AnalysisDataParallelOptions();
+    /*! \brief
+     * Constructs options for parallel execution with given number of
+     * concurrent frames.
+     *
+     * \param[in] parallelizationFactor
+     *      Number of frames that may be constructed concurrently.
+     *      Must be >= 1.
+     */
+    explicit AnalysisDataParallelOptions(int parallelizationFactor);
 
-        //! Returns the number of frames that may be constructed concurrently.
-        int parallelizationFactor() const { return parallelizationFactor_; }
+    //! Returns the number of frames that may be constructed concurrently.
+    int parallelizationFactor() const { return parallelizationFactor_; }
 
-    private:
-        int parallelizationFactor_;
+private:
+    int parallelizationFactor_;
 };
 
 } // namespace gmx

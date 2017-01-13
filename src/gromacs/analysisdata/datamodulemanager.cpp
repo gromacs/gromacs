@@ -66,99 +66,99 @@ namespace gmx
  */
 class AnalysisDataModuleManager::Impl
 {
-    public:
-        //! Stores information about an attached module.
-        struct ModuleInfo
+public:
+    //! Stores information about an attached module.
+    struct ModuleInfo
+    {
+        //! Initializes the module information.
+        explicit ModuleInfo(AnalysisDataModulePointer module)
+            : module(module), bParallel(false)
         {
-            //! Initializes the module information.
-            explicit ModuleInfo(AnalysisDataModulePointer module)
-                : module(module), bParallel(false)
-            {
-            }
+        }
 
-            //! Pointer to the actual module.
-            AnalysisDataModulePointer module;
-            //! Whether the module supports parallel processing.
-            bool bParallel;
-        };
+        //! Pointer to the actual module.
+        AnalysisDataModulePointer module;
+        //! Whether the module supports parallel processing.
+        bool bParallel;
+    };
 
-        //! Shorthand for list of modules added to the data.
-        typedef std::vector<ModuleInfo> ModuleList;
+    //! Shorthand for list of modules added to the data.
+    typedef std::vector<ModuleInfo> ModuleList;
 
-        //! Describes the current state of the notification methods.
-        enum State
-        {
-            eNotStarted, //!< Initial state (nothing called).
-            eInData,     //!< notifyDataStart() called, no frame in progress.
-            eInFrame,    //!< notifyFrameStart() called, but notifyFrameFinish() not.
-            eFinished    //!< notifyDataFinish() called.
-        };
+    //! Describes the current state of the notification methods.
+    enum State
+    {
+        eNotStarted,     //!< Initial state (nothing called).
+        eInData,         //!< notifyDataStart() called, no frame in progress.
+        eInFrame,        //!< notifyFrameStart() called, but notifyFrameFinish() not.
+        eFinished        //!< notifyDataFinish() called.
+    };
 
-        Impl();
+    Impl();
 
-        /*! \brief
-         * Checks whether a module is compatible with a given data property.
-         *
-         * \param[in] module   Module to check.
-         * \param[in] property Property to check.
-         * \param[in] bSet     Value of the property to check against.
-         * \throws    APIError if \p module is not compatible with the data.
-         */
-        void checkModuleProperty(const IAnalysisDataModule &module,
-                                 DataProperty property, bool bSet) const;
-        /*! \brief
-         * Checks whether a module is compatible with the data properties.
-         *
-         * \param[in] module Module to check.
-         * \throws    APIError if \p module is not compatible with the data.
-         *
-         * Does not currently check the actual data (e.g., missing values), but
-         * only the dimensionality and other preset properties of the data.
-         */
-        void checkModuleProperties(const IAnalysisDataModule &module) const;
+    /*! \brief
+     * Checks whether a module is compatible with a given data property.
+     *
+     * \param[in] module   Module to check.
+     * \param[in] property Property to check.
+     * \param[in] bSet     Value of the property to check against.
+     * \throws    APIError if \p module is not compatible with the data.
+     */
+    void checkModuleProperty(const IAnalysisDataModule &module,
+                             DataProperty property, bool bSet) const;
+    /*! \brief
+     * Checks whether a module is compatible with the data properties.
+     *
+     * \param[in] module Module to check.
+     * \throws    APIError if \p module is not compatible with the data.
+     *
+     * Does not currently check the actual data (e.g., missing values), but
+     * only the dimensionality and other preset properties of the data.
+     */
+    void checkModuleProperties(const IAnalysisDataModule &module) const;
 
-        /*! \brief
-         * Present data already added to the data object to a module.
-         *
-         * \param[in] data   Data object to read data from.
-         * \param[in] module Module to present the data to.
-         * \throws    APIError if \p module is not compatible with the data.
-         * \throws    APIError if all data is not available through
-         *      getDataFrame().
-         * \throws    unspecified Any exception thrown by \p module in its data
-         *      notification methods.
-         *
-         * Uses getDataFrame() in \p data to access all data in the object, and
-         * calls the notification functions in \p module as if the module had
-         * been registered to the data object when the data was added.
-         */
-        void presentData(AbstractAnalysisData *data,
-                         IAnalysisDataModule * module);
+    /*! \brief
+     * Present data already added to the data object to a module.
+     *
+     * \param[in] data   Data object to read data from.
+     * \param[in] module Module to present the data to.
+     * \throws    APIError if \p module is not compatible with the data.
+     * \throws    APIError if all data is not available through
+     *      getDataFrame().
+     * \throws    unspecified Any exception thrown by \p module in its data
+     *      notification methods.
+     *
+     * Uses getDataFrame() in \p data to access all data in the object, and
+     * calls the notification functions in \p module as if the module had
+     * been registered to the data object when the data was added.
+     */
+    void presentData(AbstractAnalysisData *data,
+                     IAnalysisDataModule * module);
 
-        //! List of modules added to the data.
-        ModuleList modules_;
-        //! Properties of the owning data for module checking.
-        bool bDataProperty_[eDataPropertyNR];
-        //! true if all modules support missing data.
-        bool bAllowMissing_;
-        //! true if there are modules that do not support parallel processing.
-        bool bSerialModules_;
-        //! true if there are modules that support parallel processing.
-        bool bParallelModules_;
+    //! List of modules added to the data.
+    ModuleList modules_;
+    //! Properties of the owning data for module checking.
+    bool bDataProperty_[eDataPropertyNR];
+    //! true if all modules support missing data.
+    bool bAllowMissing_;
+    //! true if there are modules that do not support parallel processing.
+    bool bSerialModules_;
+    //! true if there are modules that support parallel processing.
+    bool bParallelModules_;
 
-        /*! \brief
-         * Current state of the notification methods.
-         *
-         * This is used together with \a currIndex_ for sanity checks on the
-         * input data; invalid call sequences trigger asserts.
-         * The state of these variables does not otherwise affect the behavior
-         * of this class; this is the reason they can be changed in const
-         * methods.
-         */
-        //! Whether notifyDataStart() has been called.
-        mutable State state_;
-        //! Index of currently active frame or the next frame if not in frame.
-        mutable int currIndex_;
+    /*! \brief
+     * Current state of the notification methods.
+     *
+     * This is used together with \a currIndex_ for sanity checks on the
+     * input data; invalid call sequences trigger asserts.
+     * The state of these variables does not otherwise affect the behavior
+     * of this class; this is the reason they can be changed in const
+     * methods.
+     */
+    //! Whether notifyDataStart() has been called.
+    mutable State state_;
+    //! Index of currently active frame or the next frame if not in frame.
+    mutable int currIndex_;
 };
 
 AnalysisDataModuleManager::Impl::Impl()

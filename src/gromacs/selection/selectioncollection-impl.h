@@ -124,69 +124,69 @@ class ExceptionInitializer;
  */
 class SelectionCollection::Impl
 {
-    public:
-        /*! \brief
-         * Creates a new selection collection.
-         *
-         * \throws  std::bad_alloc if out of memory.
-         */
-        Impl();
-        ~Impl();
+public:
+    /*! \brief
+     * Creates a new selection collection.
+     *
+     * \throws  std::bad_alloc if out of memory.
+     */
+    Impl();
+    ~Impl();
 
-        /*! \brief
-         * Clears the symbol table of the selection collection.
-         *
-         * Does not throw.
-         */
-        void clearSymbolTable();
-        /*! \brief
-         * Replace group references by group contents.
-         *
-         * \param[in]    root    Root of selection tree to process.
-         * \param        errors  Object for reporting any error messages.
-         * \throws std::bad_alloc if out of memory.
-         *
-         * Recursively searches the selection tree for unresolved external
-         * references.  If one is found, finds the referenced group in
-         * \a grps_ and replaces the reference with a constant element that
-         * contains the atoms from the referenced group.  Any failures to
-         * resolve references are reported to \p errors.
-         */
-        void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
-                                   ExceptionInitializer *                  errors);
+    /*! \brief
+     * Clears the symbol table of the selection collection.
+     *
+     * Does not throw.
+     */
+    void clearSymbolTable();
+    /*! \brief
+     * Replace group references by group contents.
+     *
+     * \param[in]    root    Root of selection tree to process.
+     * \param        errors  Object for reporting any error messages.
+     * \throws std::bad_alloc if out of memory.
+     *
+     * Recursively searches the selection tree for unresolved external
+     * references.  If one is found, finds the referenced group in
+     * \a grps_ and replaces the reference with a constant element that
+     * contains the atoms from the referenced group.  Any failures to
+     * resolve references are reported to \p errors.
+     */
+    void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
+                               ExceptionInitializer *                  errors);
 
-        //! Whether forces have been requested for some selection.
-        bool areForcesRequested() const;
-        /*! \brief
-         * Returns topology properties needed for a certain position type.
-         */
-        SelectionTopologyProperties
-        requiredTopologyPropertiesForPositionType(const std::string &post,
-                                                  bool               forces) const;
+    //! Whether forces have been requested for some selection.
+    bool areForcesRequested() const;
+    /*! \brief
+     * Returns topology properties needed for a certain position type.
+     */
+    SelectionTopologyProperties
+    requiredTopologyPropertiesForPositionType(const std::string &post,
+                                              bool               forces) const;
 
-        //! Internal data, used for interfacing with old C code.
-        gmx_ana_selcollection_t sc_;
-        //! Default reference position type for selections.
-        std::string rpost_;
-        //! Default output position type for selections.
-        std::string spost_;
-        //! Atoms needed for evaluating the selections.
-        gmx_ana_index_t requiredAtoms_;
-        /*! \brief
-         * Debugging level for the collection.
-         *
-         * Possible values:
-         *  - 0: no debugging
-         *  - 1: print selection trees after parsing and compilation
-         *  - 2: like 1, also print intermediate compilation trees
-         *  - 3: like 1, also print the tree after evaluation
-         *  - 4: combine 2 and 3
-         */
-        int debugLevel_;
-        //! Whether setIndexGroups() has been called.
-        bool bExternalGroupsSet_;
-        //! External index groups (can be NULL).
-        gmx_ana_indexgrps_t *grps_;
+    //! Internal data, used for interfacing with old C code.
+    gmx_ana_selcollection_t sc_;
+    //! Default reference position type for selections.
+    std::string rpost_;
+    //! Default output position type for selections.
+    std::string spost_;
+    //! Atoms needed for evaluating the selections.
+    gmx_ana_index_t requiredAtoms_;
+    /*! \brief
+     * Debugging level for the collection.
+     *
+     * Possible values:
+     *  - 0: no debugging
+     *  - 1: print selection trees after parsing and compilation
+     *  - 2: like 1, also print intermediate compilation trees
+     *  - 3: like 1, also print the tree after evaluation
+     *  - 4: combine 2 and 3
+     */
+    int debugLevel_;
+    //! Whether setIndexGroups() has been called.
+    bool bExternalGroupsSet_;
+    //! External index groups (can be NULL).
+    gmx_ana_indexgrps_t *grps_;
 };
 
 /*! \internal
@@ -200,17 +200,17 @@ class SelectionCollection::Impl
  */
 class SelectionEvaluator
 {
-    public:
-        SelectionEvaluator();
+public:
+    SelectionEvaluator();
 
-        /*! \brief
-         * Evaluates selections in a collection.
-         */
-        void evaluate(SelectionCollection *sc, t_trxframe *fr, t_pbc *pbc);
-        /*! \brief
-         * Evaluates the final state for dynamic selections.
-         */
-        void evaluateFinal(SelectionCollection *sc, int nframes);
+    /*! \brief
+     * Evaluates selections in a collection.
+     */
+    void evaluate(SelectionCollection *sc, t_trxframe *fr, t_pbc *pbc);
+    /*! \brief
+     * Evaluates the final state for dynamic selections.
+     */
+    void evaluateFinal(SelectionCollection *sc, int nframes);
 };
 
 } // namespace gmx

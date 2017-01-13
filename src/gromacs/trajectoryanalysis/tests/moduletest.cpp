@@ -67,30 +67,30 @@ namespace test
 
 class AbstractTrajectoryAnalysisModuleTestFixture::Impl
 {
-    public:
-        struct DatasetInfo
+public:
+    struct DatasetInfo
+    {
+        DatasetInfo()
+            : bCheck(true), tolerance(defaultRealTolerance())
         {
-            DatasetInfo()
-                : bCheck(true), tolerance(defaultRealTolerance())
-            {
-            }
+        }
 
-            bool                   bCheck;
-            FloatingPointTolerance tolerance;
-        };
+        bool                   bCheck;
+        FloatingPointTolerance tolerance;
+    };
 
-        typedef std::map<std::string, DatasetInfo> DatasetList;
+    typedef std::map<std::string, DatasetInfo> DatasetList;
 
-        explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture *parent);
+    explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture *parent);
 
-        TrajectoryAnalysisModule &module();
-        void ensureModuleCreated();
-        bool hasCheckedDatasets() const;
+    TrajectoryAnalysisModule &module();
+    void ensureModuleCreated();
+    bool hasCheckedDatasets() const;
 
-        AbstractTrajectoryAnalysisModuleTestFixture &parent_;
-        TrajectoryAnalysisModulePointer              module_;
-        DatasetList                                  datasets_;
-        bool                                         bDatasetsIncluded_;
+    AbstractTrajectoryAnalysisModuleTestFixture &parent_;
+    TrajectoryAnalysisModulePointer              module_;
+    DatasetList                                  datasets_;
+    bool                                         bDatasetsIncluded_;
 };
 
 AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(

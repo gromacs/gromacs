@@ -68,16 +68,16 @@ class SelectionOptionManager;
  */
 class SelectionFileOption : public AbstractOption
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef SelectionFileOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef SelectionFileOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit SelectionFileOption(const char *name);
+    //! Initializes an option with the given name.
+    explicit SelectionFileOption(const char *name);
 
-    private:
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 };
 
 /*! \libinternal \brief
@@ -88,13 +88,13 @@ class SelectionFileOption : public AbstractOption
  */
 class SelectionFileOptionInfo : public OptionInfo
 {
-    public:
-        /*! \brief
-         * Creates option info object for given storage object.
-         *
-         * Does not throw.
-         */
-        explicit SelectionFileOptionInfo(SelectionFileOptionStorage *option);
+public:
+    /*! \brief
+     * Creates option info object for given storage object.
+     *
+     * Does not throw.
+     */
+    explicit SelectionFileOptionInfo(SelectionFileOptionStorage *option);
 };
 
 } // namespace gmx

@@ -66,16 +66,16 @@ namespace test
  */
 class TestOptionsProvider
 {
-    public:
-        /*! \brief
-         * Initializes the options from this provider.
-         *
-         * \param   options  The options need to be added here.
-         */
-        virtual void initOptions(IOptionsContainer *options) = 0;
+public:
+    /*! \brief
+     * Initializes the options from this provider.
+     *
+     * \param   options  The options need to be added here.
+     */
+    virtual void initOptions(IOptionsContainer *options) = 0;
 
-    protected:
-        virtual ~TestOptionsProvider() {}
+protected:
+    virtual ~TestOptionsProvider() {}
 };
 
 /*! \libinternal \brief
@@ -165,12 +165,12 @@ void initTestOptions(IOptionsContainer *options);
 #define GMX_TEST_OPTIONS(name, options) \
     class name : public ::gmx::test::TestOptionsProvider \
     { \
-        public: \
-            name() \
-            { \
-                ::gmx::test::registerTestOptions(#name, this); \
-            } \
-            virtual void initOptions(::gmx::IOptionsContainer * options); \
+    public: \
+        name() \
+        { \
+            ::gmx::test::registerTestOptions(#name, this); \
+        } \
+        virtual void initOptions(::gmx::IOptionsContainer * options); \
     }; \
     \
     static name s_ ## name ## Instance; \

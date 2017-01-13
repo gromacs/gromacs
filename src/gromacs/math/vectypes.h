@@ -85,51 +85,51 @@ namespace gmx
 template <typename ValueType>
 class BasicVector
 {
-    public:
-        //! Underlying raw C array type (rvec/dvec/ivec).
-        typedef ValueType RawArray[DIM];
+public:
+    //! Underlying raw C array type (rvec/dvec/ivec).
+    typedef ValueType RawArray[DIM];
 
-        //! Constructs default (uninitialized) vector.
-        BasicVector() {}
-        //! Constructs a vector from given values.
-        BasicVector(ValueType x, ValueType y, ValueType z)
-        {
-            x_[XX] = x;
-            x_[YY] = y;
-            x_[ZZ] = z;
-        }
-        /*! \brief
-         * Constructs a vector from given values.
-         *
-         * This constructor is not explicit to support implicit conversions
-         * that allow, e.g., calling `std::vector<RVec>:``:push_back()` directly
-         * with an `rvec` parameter.
-         */
-        BasicVector(const RawArray x)
-        {
-            x_[XX] = x[XX];
-            x_[YY] = x[YY];
-            x_[ZZ] = x[ZZ];
-        }
-        //! Indexing operator to make the class work as the raw array.
-        ValueType &operator[](int i) { return x_[i]; }
-        //! Indexing operator to make the class work as the raw array.
-        ValueType operator[](int i) const { return x_[i]; }
-        // The conversion functions below could more accurately return
-        // RawArray &, but this fails with cppcheck and does not solve the
-        // issue with MSVC, so as_vec() should be used instead.
-        //! Makes BasicVector usable in contexts where a raw C array is expected.
-        operator ValueType *() { return x_; }
-        //! Makes BasicVector usable in contexts where a raw C array is expected.
-        operator const ValueType *() const { return x_; }
+    //! Constructs default (uninitialized) vector.
+    BasicVector() {}
+    //! Constructs a vector from given values.
+    BasicVector(ValueType x, ValueType y, ValueType z)
+    {
+        x_[XX] = x;
+        x_[YY] = y;
+        x_[ZZ] = z;
+    }
+    /*! \brief
+     * Constructs a vector from given values.
+     *
+     * This constructor is not explicit to support implicit conversions
+     * that allow, e.g., calling `std::vector<RVec>:``:push_back()` directly
+     * with an `rvec` parameter.
+     */
+    BasicVector(const RawArray x)
+    {
+        x_[XX] = x[XX];
+        x_[YY] = x[YY];
+        x_[ZZ] = x[ZZ];
+    }
+    //! Indexing operator to make the class work as the raw array.
+    ValueType &operator[](int i) { return x_[i]; }
+    //! Indexing operator to make the class work as the raw array.
+    ValueType operator[](int i) const { return x_[i]; }
+    // The conversion functions below could more accurately return
+    // RawArray &, but this fails with cppcheck and does not solve the
+    // issue with MSVC, so as_vec() should be used instead.
+    //! Makes BasicVector usable in contexts where a raw C array is expected.
+    operator ValueType *() { return x_; }
+    //! Makes BasicVector usable in contexts where a raw C array is expected.
+    operator const ValueType *() const { return x_; }
 
-        //! Converts to a raw C array where implicit conversion does not work.
-        RawArray &as_vec() { return x_; }
-        //! Converts to a raw C array where implicit conversion does not work.
-        const RawArray &as_vec() const { return x_; }
+    //! Converts to a raw C array where implicit conversion does not work.
+    RawArray &as_vec() { return x_; }
+    //! Converts to a raw C array where implicit conversion does not work.
+    const RawArray &as_vec() const { return x_; }
 
-    private:
-        RawArray x_;
+private:
+    RawArray x_;
 };
 
 /*! \brief

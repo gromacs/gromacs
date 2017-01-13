@@ -233,85 +233,85 @@ int getDefaultXvgFormat(gmx::ConstArrayRef<const char *> xvgFormats)
  */
 class OptionsAdapter
 {
-    public:
-        /*! \brief
-         * Initializes the adapter to convert from a specified command line.
-         *
-         * The command line is required, because t_pargs wants to return
-         * strings by reference to the original command line.
-         * OptionsAdapter creates a copy of the `argv` array (but not the
-         * strings) to make this possible, even if the parser removes
-         * options it has recognized.
-         */
-        OptionsAdapter(int argc, const char *const argv[])
-            : argv_(argv, argv + argc)
+public:
+    /*! \brief
+     * Initializes the adapter to convert from a specified command line.
+     *
+     * The command line is required, because t_pargs wants to return
+     * strings by reference to the original command line.
+     * OptionsAdapter creates a copy of the `argv` array (but not the
+     * strings) to make this possible, even if the parser removes
+     * options it has recognized.
+     */
+    OptionsAdapter(int argc, const char *const argv[])
+        : argv_(argv, argv + argc)
+    {
+    }
+
+    /*! \brief
+     * Converts a t_filenm option into an Options option.
+     *
+     * \param options Options object to add the new option to.
+     * \param fnm     t_filenm option to convert.
+     */
+    void filenmToOptions(Options *options, t_filenm *fnm);
+    /*! \brief
+     * Converts a t_pargs option into an Options option.
+     *
+     * \param     options Options object to add the new option to.
+     * \param     pa      t_pargs option to convert.
+     */
+    void pargsToOptions(Options *options, t_pargs *pa);
+
+    /*! \brief
+     * Copies values back from options to t_pargs/t_filenm.
+     */
+    void copyValues(bool bReadNode);
+
+private:
+    struct FileNameData
+    {
+        //! Creates a conversion helper for a given `t_filenm` struct.
+        explicit FileNameData(t_filenm *fnm) : fnm(fnm), optionInfo(nullptr)
         {
         }
 
-        /*! \brief
-         * Converts a t_filenm option into an Options option.
-         *
-         * \param options Options object to add the new option to.
-         * \param fnm     t_filenm option to convert.
-         */
-        void filenmToOptions(Options *options, t_filenm *fnm);
-        /*! \brief
-         * Converts a t_pargs option into an Options option.
-         *
-         * \param     options Options object to add the new option to.
-         * \param     pa      t_pargs option to convert.
-         */
-        void pargsToOptions(Options *options, t_pargs *pa);
-
-        /*! \brief
-         * Copies values back from options to t_pargs/t_filenm.
-         */
-        void copyValues(bool bReadNode);
-
-    private:
-        struct FileNameData
+        //! t_filenm structure to receive the final values.
+        t_filenm *fnm;
+        //! Option info object for the created FileNameOption.
+        FileNameOptionInfo *optionInfo;
+        //! Value storage for the created FileNameOption.
+        std::vector<std::string> values;
+    };
+    struct ProgramArgData
+    {
+        //! Creates a conversion helper for a given `t_pargs` struct.
+        explicit ProgramArgData(t_pargs *pa)
+            : pa(pa), optionInfo(nullptr), enumIndex(0), boolValue(false)
         {
-            //! Creates a conversion helper for a given `t_filenm` struct.
-            explicit FileNameData(t_filenm *fnm) : fnm(fnm), optionInfo(nullptr)
-            {
-            }
+        }
 
-            //! t_filenm structure to receive the final values.
-            t_filenm *fnm;
-            //! Option info object for the created FileNameOption.
-            FileNameOptionInfo *optionInfo;
-            //! Value storage for the created FileNameOption.
-            std::vector<std::string> values;
-        };
-        struct ProgramArgData
-        {
-            //! Creates a conversion helper for a given `t_pargs` struct.
-            explicit ProgramArgData(t_pargs *pa)
-                : pa(pa), optionInfo(nullptr), enumIndex(0), boolValue(false)
-            {
-            }
+        //! t_pargs structure to receive the final values.
+        t_pargs *pa;
+        //! Option info object for the created option.
+        OptionInfo *optionInfo;
+        //! Value storage for a non-enum StringOption (unused for other types).
+        std::string stringValue;
+        //! Value storage for an enum option (unused for other types).
+        int enumIndex;
+        //! Value storage for a BooleanOption (unused for other types).
+        bool boolValue;
+    };
 
-            //! t_pargs structure to receive the final values.
-            t_pargs *pa;
-            //! Option info object for the created option.
-            OptionInfo *optionInfo;
-            //! Value storage for a non-enum StringOption (unused for other types).
-            std::string stringValue;
-            //! Value storage for an enum option (unused for other types).
-            int enumIndex;
-            //! Value storage for a BooleanOption (unused for other types).
-            bool boolValue;
-        };
+    std::vector<const char *> argv_;
+    // These are lists instead of vectors to avoid relocating existing
+    // objects in case the container is reallocated (the Options object
+    // contains pointes to members of the objects, which would get
+    // invalidated).
+    std::list<FileNameData>   fileNameOptions_;
+    std::list<ProgramArgData> programArgs_;
 
-        std::vector<const char *> argv_;
-        // These are lists instead of vectors to avoid relocating existing
-        // objects in case the container is reallocated (the Options object
-        // contains pointes to members of the objects, which would get
-        // invalidated).
-        std::list<FileNameData>   fileNameOptions_;
-        std::list<ProgramArgData> programArgs_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsAdapter);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionsAdapter);
 };
 
 void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)

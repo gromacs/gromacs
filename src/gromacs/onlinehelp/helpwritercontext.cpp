@@ -216,19 +216,19 @@ std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
  */
 class IWrapper
 {
-    public:
-        virtual ~IWrapper() {}
+public:
+    virtual ~IWrapper() {}
 
-        /*! \brief
-         * Provides the wrapping settings.
-         *
-         * HelpWriterContext::Impl::processMarkup() may provide some default
-         * values for the settings if they are not set; this is the reason the
-         * return value is not const.
-         */
-        virtual TextLineWrapperSettings &settings() = 0;
-        //! Appends the given string to output.
-        virtual void wrap(const std::string &text) = 0;
+    /*! \brief
+     * Provides the wrapping settings.
+     *
+     * HelpWriterContext::Impl::processMarkup() may provide some default
+     * values for the settings if they are not set; this is the reason the
+     * return value is not const.
+     */
+    virtual TextLineWrapperSettings &settings() = 0;
+    //! Appends the given string to output.
+    virtual void wrap(const std::string &text) = 0;
 };
 
 /*! \brief
@@ -236,27 +236,27 @@ class IWrapper
  */
 class WrapperToString : public IWrapper
 {
-    public:
-        //! Creates a wrapper with the given settings.
-        explicit WrapperToString(const TextLineWrapperSettings &settings)
-            : wrapper_(settings)
-        {
-        }
+public:
+    //! Creates a wrapper with the given settings.
+    explicit WrapperToString(const TextLineWrapperSettings &settings)
+        : wrapper_(settings)
+    {
+    }
 
-        virtual TextLineWrapperSettings &settings()
-        {
-            return wrapper_.settings();
-        }
-        virtual void wrap(const std::string &text)
-        {
-            result_.append(wrapper_.wrapToString(text));
-        }
-        //! Returns the result string.
-        const std::string &result() const { return result_; }
+    virtual TextLineWrapperSettings &settings()
+    {
+        return wrapper_.settings();
+    }
+    virtual void wrap(const std::string &text)
+    {
+        result_.append(wrapper_.wrapToString(text));
+    }
+    //! Returns the result string.
+    const std::string &result() const { return result_; }
 
-    private:
-        TextLineWrapper wrapper_;
-        std::string     result_;
+private:
+    TextLineWrapper wrapper_;
+    std::string     result_;
 };
 
 /*! \brief
@@ -264,28 +264,28 @@ class WrapperToString : public IWrapper
  */
 class WrapperToVector : public IWrapper
 {
-    public:
-        //! Creates a wrapper with the given settings.
-        explicit WrapperToVector(const TextLineWrapperSettings &settings)
-            : wrapper_(settings)
-        {
-        }
+public:
+    //! Creates a wrapper with the given settings.
+    explicit WrapperToVector(const TextLineWrapperSettings &settings)
+        : wrapper_(settings)
+    {
+    }
 
-        virtual TextLineWrapperSettings &settings()
-        {
-            return wrapper_.settings();
-        }
-        virtual void wrap(const std::string &text)
-        {
-            const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
-            result_.insert(result_.end(), lines.begin(), lines.end());
-        }
-        //! Returns a vector with the output lines.
-        const std::vector<std::string> &result() const { return result_; }
+    virtual TextLineWrapperSettings &settings()
+    {
+        return wrapper_.settings();
+    }
+    virtual void wrap(const std::string &text)
+    {
+        const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
+        result_.insert(result_.end(), lines.begin(), lines.end());
+    }
+    //! Returns a vector with the output lines.
+    const std::vector<std::string> &result() const { return result_; }
 
-    private:
-        TextLineWrapper          wrapper_;
-        std::vector<std::string> result_;
+private:
+    TextLineWrapper          wrapper_;
+    std::vector<std::string> result_;
 };
 
 /*! \brief
@@ -355,30 +355,30 @@ std::string removeExtraNewlinesRst(const std::string &text)
  */
 class HelpLinks::Impl
 {
-    public:
-        struct LinkItem
-        {
-            LinkItem(const std::string &linkName,
-                     const std::string &replacement)
-                : linkName(linkName), replacement(replacement)
-            {
-            }
-            std::string linkName;
-            std::string replacement;
-        };
-
-        //! Shorthand for a list of links.
-        typedef std::vector<LinkItem> LinkList;
-
-        //! Initializes empty links with the given format.
-        explicit Impl(HelpOutputFormat format) : format_(format)
+public:
+    struct LinkItem
+    {
+        LinkItem(const std::string &linkName,
+                 const std::string &replacement)
+            : linkName(linkName), replacement(replacement)
         {
         }
+        std::string linkName;
+        std::string replacement;
+    };
 
-        //! List of links.
-        LinkList links_;
-        //! Output format for which the links are formatted.
-        HelpOutputFormat format_;
+    //! Shorthand for a list of links.
+    typedef std::vector<LinkItem> LinkList;
+
+    //! Initializes empty links with the given format.
+    explicit Impl(HelpOutputFormat format) : format_(format)
+    {
+    }
+
+    //! List of links.
+    LinkList links_;
+    //! Output format for which the links are formatted.
+    HelpOutputFormat format_;
 };
 
 /********************************************************************
@@ -423,118 +423,118 @@ void HelpLinks::addLink(const std::string &linkName,
  */
 class HelpWriterContext::Impl
 {
+public:
+    /*! \brief
+     * Shared, non-modifiable state for context objects.
+     *
+     * Contents of this structure are shared between all context objects
+     * that are created from a common parent.
+     * This state should not be modified after construction.
+     *
+     * \ingroup module_onlinehelp
+     */
+    class SharedState
+    {
     public:
+        //! Initializes the state with the given parameters.
+        SharedState(TextWriter *writer, HelpOutputFormat format,
+                    const HelpLinks *links)
+            : file_(*writer), format_(format), links_(links)
+        {
+        }
+
         /*! \brief
-         * Shared, non-modifiable state for context objects.
+         * Returns a formatter for formatting options lists for console
+         * output.
          *
-         * Contents of this structure are shared between all context objects
-         * that are created from a common parent.
-         * This state should not be modified after construction.
-         *
-         * \ingroup module_onlinehelp
+         * The formatter is lazily initialized on first access.
          */
-        class SharedState
+        TextTableFormatter &consoleOptionsFormatter() const
         {
-            public:
-                //! Initializes the state with the given parameters.
-                SharedState(TextWriter *writer, HelpOutputFormat format,
-                            const HelpLinks *links)
-                    : file_(*writer), format_(format), links_(links)
-                {
-                }
-
-                /*! \brief
-                 * Returns a formatter for formatting options lists for console
-                 * output.
-                 *
-                 * The formatter is lazily initialized on first access.
-                 */
-                TextTableFormatter &consoleOptionsFormatter() const
-                {
-                    GMX_RELEASE_ASSERT(format_ == eHelpOutputFormat_Console,
-                                       "Accessing console formatter for non-console output");
-                    if (!consoleOptionsFormatter_)
-                    {
-                        consoleOptionsFormatter_.reset(new TextTableFormatter());
-                        consoleOptionsFormatter_->setFirstColumnIndent(1);
-                        consoleOptionsFormatter_->addColumn(nullptr, 7, false);
-                        consoleOptionsFormatter_->addColumn(nullptr, 18, false);
-                        consoleOptionsFormatter_->addColumn(nullptr, 16, false);
-                        consoleOptionsFormatter_->addColumn(nullptr, 28, false);
-                    }
-                    return *consoleOptionsFormatter_;
-                }
-
-                //! Writer for writing the help.
-                TextWriter &file_;
-                //! Output format for the help output.
-                HelpOutputFormat format_;
-                //! Links to use.
-                const HelpLinks *links_;
-
-            private:
-                //! Formatter for console output options.
-                // Never releases ownership.
-                mutable std::unique_ptr<TextTableFormatter> consoleOptionsFormatter_;
-
-                GMX_DISALLOW_COPY_AND_ASSIGN(SharedState);
-        };
-
-        struct ReplaceItem
-        {
-            ReplaceItem(const std::string &search,
-                        const std::string &replace)
-                : search(search), replace(replace)
+            GMX_RELEASE_ASSERT(format_ == eHelpOutputFormat_Console,
+                               "Accessing console formatter for non-console output");
+            if (!consoleOptionsFormatter_)
             {
+                consoleOptionsFormatter_.reset(new TextTableFormatter());
+                consoleOptionsFormatter_->setFirstColumnIndent(1);
+                consoleOptionsFormatter_->addColumn(nullptr, 7, false);
+                consoleOptionsFormatter_->addColumn(nullptr, 18, false);
+                consoleOptionsFormatter_->addColumn(nullptr, 16, false);
+                consoleOptionsFormatter_->addColumn(nullptr, 28, false);
             }
-            std::string search;
-            std::string replace;
-        };
-
-        //! Smart pointer type for managing the shared state.
-        typedef std::shared_ptr<const SharedState> StatePointer;
-        //! Shorthand for a list of markup/other replacements.
-        typedef std::vector<ReplaceItem> ReplaceList;
-
-        //! Initializes the context with the given state and section depth.
-        Impl(const StatePointer &state, int sectionDepth)
-            : state_(state), sectionDepth_(sectionDepth)
-        {
-        }
-        //! Copies the context.
-        Impl(const Impl &) = default;
-
-        //! Adds a new replacement.
-        void addReplacement(const std::string &search,
-                            const std::string &replace)
-        {
-            replacements_.emplace_back(search, replace);
+            return *consoleOptionsFormatter_;
         }
 
-        //! Replaces links in a given string.
-        std::string replaceLinks(const std::string &input) const;
-
-        /*! \brief
-         * Process markup and wrap lines within a block of text.
-         *
-         * \param[in] text     Text to process.
-         * \param     wrapper  Object used to wrap the text.
-         *
-         * The \p wrapper should take care of either writing the text to output
-         * or providing an interface for the caller to retrieve the output.
-         */
-        void processMarkup(const std::string &text,
-                           IWrapper *         wrapper) const;
-
-        //! Constant state shared by all child context objects.
-        StatePointer state_;
-        //! List of markup/other replacements.
-        ReplaceList replacements_;
-        //! Number of subsections above this context.
-        int sectionDepth_;
+        //! Writer for writing the help.
+        TextWriter &file_;
+        //! Output format for the help output.
+        HelpOutputFormat format_;
+        //! Links to use.
+        const HelpLinks *links_;
 
     private:
-        GMX_DISALLOW_ASSIGN(Impl);
+        //! Formatter for console output options.
+        // Never releases ownership.
+        mutable std::unique_ptr<TextTableFormatter> consoleOptionsFormatter_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SharedState);
+    };
+
+    struct ReplaceItem
+    {
+        ReplaceItem(const std::string &search,
+                    const std::string &replace)
+            : search(search), replace(replace)
+        {
+        }
+        std::string search;
+        std::string replace;
+    };
+
+    //! Smart pointer type for managing the shared state.
+    typedef std::shared_ptr<const SharedState> StatePointer;
+    //! Shorthand for a list of markup/other replacements.
+    typedef std::vector<ReplaceItem> ReplaceList;
+
+    //! Initializes the context with the given state and section depth.
+    Impl(const StatePointer &state, int sectionDepth)
+        : state_(state), sectionDepth_(sectionDepth)
+    {
+    }
+    //! Copies the context.
+    Impl(const Impl &) = default;
+
+    //! Adds a new replacement.
+    void addReplacement(const std::string &search,
+                        const std::string &replace)
+    {
+        replacements_.emplace_back(search, replace);
+    }
+
+    //! Replaces links in a given string.
+    std::string replaceLinks(const std::string &input) const;
+
+    /*! \brief
+     * Process markup and wrap lines within a block of text.
+     *
+     * \param[in] text     Text to process.
+     * \param     wrapper  Object used to wrap the text.
+     *
+     * The \p wrapper should take care of either writing the text to output
+     * or providing an interface for the caller to retrieve the output.
+     */
+    void processMarkup(const std::string &text,
+                       IWrapper *         wrapper) const;
+
+    //! Constant state shared by all child context objects.
+    StatePointer state_;
+    //! List of markup/other replacements.
+    ReplaceList replacements_;
+    //! Number of subsections above this context.
+    int sectionDepth_;
+
+private:
+    GMX_DISALLOW_ASSIGN(Impl);
 };
 
 std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const

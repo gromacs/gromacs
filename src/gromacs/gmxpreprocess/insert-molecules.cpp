@@ -326,62 +326,62 @@ namespace
 
 class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvider
 {
-    public:
-        InsertMolecules()
-            : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
-              defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
-              top_(nullptr), ePBC_(-1)
+public:
+    InsertMolecules()
+        : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
+          defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
+          top_(nullptr), ePBC_(-1)
+    {
+        clear_rvec(newBox_);
+        clear_rvec(deltaR_);
+        clear_mat(box_);
+    }
+    virtual ~InsertMolecules()
+    {
+        if (top_ != nullptr)
         {
-            clear_rvec(newBox_);
-            clear_rvec(deltaR_);
-            clear_mat(box_);
+            done_mtop(top_);
+            sfree(top_);
         }
-        virtual ~InsertMolecules()
-        {
-            if (top_ != nullptr)
-            {
-                done_mtop(top_);
-                sfree(top_);
-            }
-        }
+    }
 
-        // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
-        virtual int getAtomCount() { return 0; }
+    // From ITopologyProvider
+    virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
+    virtual int getAtomCount() { return 0; }
 
-        // From ICommandLineOptionsModule
-        virtual void init(CommandLineModuleSettings * /*settings*/)
-        {
-        }
-        virtual void initOptions(IOptionsContainer *                options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+    // From ICommandLineOptionsModule
+    virtual void init(CommandLineModuleSettings * /*settings*/)
+    {
+    }
+    virtual void initOptions(IOptionsContainer *                options,
+                             ICommandLineOptionsModuleSettings *settings);
+    virtual void optionsFinished();
+    virtual int run();
 
-    private:
-        void loadSolute();
+private:
+    void loadSolute();
 
-        SelectionCollection selections_;
+    SelectionCollection selections_;
 
-        std::string  inputConfFile_;
-        std::string  insertConfFile_;
-        std::string  positionFile_;
-        std::string  outputConfFile_;
-        rvec         newBox_;
-        bool         bBox_;
-        int          nmolIns_;
-        int          nmolTry_;
-        int          seed_;
-        real         defaultDistance_;
-        real         scaleFactor_;
-        rvec         deltaR_;
-        RotationType enumRot_;
-        Selection    replaceSel_;
+    std::string  inputConfFile_;
+    std::string  insertConfFile_;
+    std::string  positionFile_;
+    std::string  outputConfFile_;
+    rvec         newBox_;
+    bool         bBox_;
+    int          nmolIns_;
+    int          nmolTry_;
+    int          seed_;
+    real         defaultDistance_;
+    real         scaleFactor_;
+    rvec         deltaR_;
+    RotationType enumRot_;
+    Selection    replaceSel_;
 
-        gmx_mtop_t *      top_;
-        std::vector<RVec> x_;
-        matrix            box_;
-        int               ePBC_;
+    gmx_mtop_t *      top_;
+    std::vector<RVec> x_;
+    matrix            box_;
+    int               ePBC_;
 };
 
 void InsertMolecules::initOptions(IOptionsContainer *                options,

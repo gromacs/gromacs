@@ -160,57 +160,57 @@ extern const SimdInt32 iSimd_0xCCCCCCCC; //!< Bitpattern to test integer logical
  */
 class SimdTest : public SimdBaseTest
 {
-    public:
+public:
 #if GMX_SIMD_HAVE_REAL
-        /*! \brief Compare two real SIMD variables for approximate equality.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD_REAL_NEAR() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD test variable is within the class tolerances of the corresponding
-         * reference element.
-         */
+    /*! \brief Compare two real SIMD variables for approximate equality.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD_REAL_NEAR() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD test variable is within the class tolerances of the corresponding
+     * reference element.
+     */
 
 
-            ::testing::AssertionResult
-        compareSimdRealUlp(const char * refExpr, const char * tstExpr,
-                           const SimdReal ref, const SimdReal tst);
-
-        /*! \brief Compare two real SIMD variables for exact equality.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD_REAL_NEAR() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD test variable is within the class tolerances of the corresponding
-         * reference element.
-         */
         ::testing::AssertionResult
-        compareSimdRealEq(const char * refExpr, const char * tstExpr,
-                          const SimdReal ref, const SimdReal tst);
+    compareSimdRealUlp(const char * refExpr, const char * tstExpr,
+                       const SimdReal ref, const SimdReal tst);
 
-        /*! \brief Compare two 32-bit integer SIMD variables.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD_INT_EQ() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro, while the SIMD and
-         * tolerance arguments are used to decide if the values are approximately equal.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD variable tst is identical to the corresponding reference element.
-         */
-        ::testing::AssertionResult
-        compareSimdInt32(const char * refExpr, const char *  tstExpr,
-                         const SimdInt32 ref, const SimdInt32 tst);
+    /*! \brief Compare two real SIMD variables for exact equality.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD_REAL_NEAR() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD test variable is within the class tolerances of the corresponding
+     * reference element.
+     */
+    ::testing::AssertionResult
+    compareSimdRealEq(const char * refExpr, const char * tstExpr,
+                      const SimdReal ref, const SimdReal tst);
+
+    /*! \brief Compare two 32-bit integer SIMD variables.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD_INT_EQ() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro, while the SIMD and
+     * tolerance arguments are used to decide if the values are approximately equal.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD variable tst is identical to the corresponding reference element.
+     */
+    ::testing::AssertionResult
+    compareSimdInt32(const char * refExpr, const char *  tstExpr,
+                     const SimdInt32 ref, const SimdInt32 tst);
 #endif
 };
 

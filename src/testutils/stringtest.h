@@ -70,59 +70,59 @@ class TestReferenceChecker;
  */
 class StringTestBase : public ::testing::Test
 {
-    public:
-        /*! \brief
-         * Checks a block of text.
-         *
-         * This static method is provided for code that does not derive from
-         * StringTestBase to use the same functionality, e.g., implementing the
-         * `-stdout` option.
-         */
-        static void checkText(TestReferenceChecker *checker,
-                              const std::string &text, const char *id);
+public:
+    /*! \brief
+     * Checks a block of text.
+     *
+     * This static method is provided for code that does not derive from
+     * StringTestBase to use the same functionality, e.g., implementing the
+     * `-stdout` option.
+     */
+    static void checkText(TestReferenceChecker *checker,
+                          const std::string &text, const char *id);
 
-        StringTestBase();
-        ~StringTestBase();
+    StringTestBase();
+    ~StringTestBase();
 
-        /*! \brief
-         * Returns the root checker for this test's reference data.
-         *
-         * Can be used to perform custom checks against reference data (e.g.,
-         * if the test needs to check some other values than plain strings.
-         */
-        TestReferenceChecker &checker();
+    /*! \brief
+     * Returns the root checker for this test's reference data.
+     *
+     * Can be used to perform custom checks against reference data (e.g.,
+     * if the test needs to check some other values than plain strings.
+     */
+    TestReferenceChecker &checker();
 
-        /*! \brief
-         * Checks a string.
-         *
-         * \param[in] text  String to check.
-         * \param[in] id    Unique (within a single test) id for the string.
-         */
-        void checkText(const std::string &text, const char *id);
-        /*! \brief
-         * Checks contents of a file as a single string.
-         *
-         * \param[in] filename  Name of the file to check.
-         * \param[in] id        Unique (within a single test) id for the string.
-         *
-         * Provided for convenience.  Reads the contents of \p filename into a
-         * single string and calls checkText().
-         */
-        void checkFileContents(const std::string &filename, const char *id);
+    /*! \brief
+     * Checks a string.
+     *
+     * \param[in] text  String to check.
+     * \param[in] id    Unique (within a single test) id for the string.
+     */
+    void checkText(const std::string &text, const char *id);
+    /*! \brief
+     * Checks contents of a file as a single string.
+     *
+     * \param[in] filename  Name of the file to check.
+     * \param[in] id        Unique (within a single test) id for the string.
+     *
+     * Provided for convenience.  Reads the contents of \p filename into a
+     * single string and calls checkText().
+     */
+    void checkFileContents(const std::string &filename, const char *id);
 
-        /*! \brief
-         * Tests that contents of two files are equal.
-         *
-         * \param[in] refFilename   File with the expected contents.
-         * \param[in] testFilename  File with the contents to be tested.
-         */
-        void testFilesEqual(const std::string &refFilename,
-                            const std::string &testFilename);
+    /*! \brief
+     * Tests that contents of two files are equal.
+     *
+     * \param[in] refFilename   File with the expected contents.
+     * \param[in] testFilename  File with the contents to be tested.
+     */
+    void testFilesEqual(const std::string &refFilename,
+                        const std::string &testFilename);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

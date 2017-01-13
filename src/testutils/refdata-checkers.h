@@ -66,79 +66,79 @@ namespace test
 
 class IReferenceDataEntryChecker
 {
-    public:
-        virtual void fillEntry(ReferenceDataEntry *entry) const = 0;
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const = 0;
+public:
+    virtual void fillEntry(ReferenceDataEntry *entry) const = 0;
+    virtual ::testing::AssertionResult
+    checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const = 0;
 
-    protected:
-        virtual ~IReferenceDataEntryChecker() {}
+protected:
+    virtual ~IReferenceDataEntryChecker() {}
 };
 
 class NullChecker : public IReferenceDataEntryChecker
 {
-    public:
-        virtual void fillEntry(ReferenceDataEntry *) const {}
-        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &, const std::string &) const
-        {
-            return ::testing::AssertionSuccess();
-        }
+public:
+    virtual void fillEntry(ReferenceDataEntry *) const {}
+    virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &, const std::string &) const
+    {
+        return ::testing::AssertionSuccess();
+    }
 };
 
 class ExactStringChecker : public IReferenceDataEntryChecker
 {
-    public:
-        explicit ExactStringChecker(const std::string &value)
-            : value_(value)
-        {
-        }
+public:
+    explicit ExactStringChecker(const std::string &value)
+        : value_(value)
+    {
+    }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+    virtual void fillEntry(ReferenceDataEntry *entry) const
+    {
+        entry->setValue(value_);
+    }
+    virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+    {
+        if (entry.value() == value_)
         {
-            entry->setValue(value_);
+            return ::testing::AssertionSuccess();
         }
-        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
-        {
-            if (entry.value() == value_)
-            {
-                return ::testing::AssertionSuccess();
-            }
-            return ::testing::AssertionFailure()
-                   << "  In item: " << fullId << std::endl
-                   << "   Actual: '" << value_ << "'" << std::endl
-                   << "Reference: '" << entry.value() << "'";
-        }
+        return ::testing::AssertionFailure()
+               << "  In item: " << fullId << std::endl
+               << "   Actual: '" << value_ << "'" << std::endl
+               << "Reference: '" << entry.value() << "'";
+    }
 
-    private:
-        std::string value_;
+private:
+    std::string value_;
 };
 
 class ExactStringBlockChecker : public IReferenceDataEntryChecker
 {
-    public:
-        explicit ExactStringBlockChecker(const std::string &value)
-            : value_(value)
-        {
-        }
+public:
+    explicit ExactStringBlockChecker(const std::string &value)
+        : value_(value)
+    {
+    }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+    virtual void fillEntry(ReferenceDataEntry *entry) const
+    {
+        entry->setTextBlockValue(value_);
+    }
+    virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+    {
+        if (entry.value() == value_)
         {
-            entry->setTextBlockValue(value_);
+            return ::testing::AssertionSuccess();
         }
-        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
-        {
-            if (entry.value() == value_)
-            {
-                return ::testing::AssertionSuccess();
-            }
-            return ::testing::AssertionFailure()
-                   << "  In item: " << fullId << std::endl
-                   << "   Actual: '" << value_ << "'" << std::endl
-                   << "Reference: '" << entry.value() << "'";
-        }
+        return ::testing::AssertionFailure()
+               << "  In item: " << fullId << std::endl
+               << "   Actual: '" << value_ << "'" << std::endl
+               << "Reference: '" << entry.value() << "'";
+    }
 
-    private:
-        std::string value_;
+private:
+    std::string value_;
 };
 
 
@@ -158,100 +158,100 @@ double convertDoubleReferenceValue(const std::string &value)
 template <typename FloatType>
 class FloatingPointChecker : public IReferenceDataEntryChecker
 {
-    public:
-        FloatingPointChecker(FloatType value, const FloatingPointTolerance &tolerance)
-            : value_(value), tolerance_(tolerance)
-        {
-        }
+public:
+    FloatingPointChecker(FloatType value, const FloatingPointTolerance &tolerance)
+        : value_(value), tolerance_(tolerance)
+    {
+    }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+    virtual void fillEntry(ReferenceDataEntry *entry) const
+    {
+        const int prec = std::numeric_limits<FloatType>::digits10 + 2;
+        entry->setValue(formatString("%.*g", prec, value_));
+    }
+    virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+    {
+        FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
+        FloatingPointDifference diff(refValue, value_);
+        if (tolerance_.isWithin(diff))
         {
-            const int prec = std::numeric_limits<FloatType>::digits10 + 2;
-            entry->setValue(formatString("%.*g", prec, value_));
+            return ::testing::AssertionSuccess();
         }
-        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
-        {
-            FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
-            FloatingPointDifference diff(refValue, value_);
-            if (tolerance_.isWithin(diff))
-            {
-                return ::testing::AssertionSuccess();
-            }
-            return ::testing::AssertionFailure()
-                   << "   In item: " << fullId << std::endl
-                   << "    Actual: " << value_ << std::endl
-                   << " Reference: " << refValue << std::endl
-                   << "Difference: " << diff.toString() << std::endl
-                   << " Tolerance: " << tolerance_.toString(diff);
-        }
+        return ::testing::AssertionFailure()
+               << "   In item: " << fullId << std::endl
+               << "    Actual: " << value_ << std::endl
+               << " Reference: " << refValue << std::endl
+               << "Difference: " << diff.toString() << std::endl
+               << " Tolerance: " << tolerance_.toString(diff);
+    }
 
-    private:
-        FloatType              value_;
-        FloatingPointTolerance tolerance_;
+private:
+    FloatType              value_;
+    FloatingPointTolerance tolerance_;
 };
 
 template <typename FloatType>
 class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
 {
-    public:
-        FloatingPointFromStringChecker(
-            const std::string &value, const FloatingPointTolerance &tolerance)
-            : value_(value), tolerance_(tolerance)
-        {
-        }
+public:
+    FloatingPointFromStringChecker(
+        const std::string &value, const FloatingPointTolerance &tolerance)
+        : value_(value), tolerance_(tolerance)
+    {
+    }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+    virtual void fillEntry(ReferenceDataEntry *entry) const
+    {
+        entry->setValue(value_);
+    }
+    virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+    {
+        FloatType               value    = fromString<FloatType>(value_);
+        FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
+        FloatingPointDifference diff(refValue, value);
+        if (tolerance_.isWithin(diff))
         {
-            entry->setValue(value_);
+            return ::testing::AssertionSuccess();
         }
-        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
-        {
-            FloatType               value    = fromString<FloatType>(value_);
-            FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
-            FloatingPointDifference diff(refValue, value);
-            if (tolerance_.isWithin(diff))
-            {
-                return ::testing::AssertionSuccess();
-            }
-            return ::testing::AssertionFailure()
-                   << "   In item: " << fullId << std::endl
-                   << "    Actual: " << value << std::endl
-                   << " Reference: " << entry.value() << std::endl
-                   << "Difference: " << diff.toString() << std::endl
-                   << " Tolerance: " << tolerance_.toString(diff);
-        }
+        return ::testing::AssertionFailure()
+               << "   In item: " << fullId << std::endl
+               << "    Actual: " << value << std::endl
+               << " Reference: " << entry.value() << std::endl
+               << "Difference: " << diff.toString() << std::endl
+               << " Tolerance: " << tolerance_.toString(diff);
+    }
 
-    private:
-        std::string            value_;
-        FloatingPointTolerance tolerance_;
+private:
+    std::string            value_;
+    FloatingPointTolerance tolerance_;
 };
 
 template <typename ValueType>
 class ValueExtractor : public IReferenceDataEntryChecker
 {
-    public:
-        explicit ValueExtractor(ValueType *value)
-            : value_(value)
-        {
-        }
+public:
+    explicit ValueExtractor(ValueType *value)
+        : value_(value)
+    {
+    }
 
-        virtual void fillEntry(ReferenceDataEntry *) const
-        {
-            GMX_THROW(TestException("Extracting value from non-existent reference data entry"));
-        }
-        virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &) const
-        {
-            extractValue(entry.value());
-            return ::testing::AssertionSuccess();
-        }
+    virtual void fillEntry(ReferenceDataEntry *) const
+    {
+        GMX_THROW(TestException("Extracting value from non-existent reference data entry"));
+    }
+    virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &) const
+    {
+        extractValue(entry.value());
+        return ::testing::AssertionSuccess();
+    }
 
-        void extractValue(const std::string &value) const
-        {
-            *value_ = fromString<ValueType>(value);
-        }
+    void extractValue(const std::string &value) const
+    {
+        *value_ = fromString<ValueType>(value);
+    }
 
-    private:
-        ValueType *value_;
+private:
+    ValueType *value_;
 };
 
 template <> inline void ValueExtractor<std::string>::extractValue(const std::string &value) const

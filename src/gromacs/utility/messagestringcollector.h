@@ -61,63 +61,63 @@ namespace gmx
  */
 class MessageStringCollector
 {
-    public:
-        MessageStringCollector();
-        ~MessageStringCollector();
+public:
+    MessageStringCollector();
+    ~MessageStringCollector();
 
-        /*! \brief
-         * Starts a context for messages.
-         *
-         * \param[in] name  Short description of the context.
-         *
-         * \see finishContext()
-         * \see MessageStringContext
-         */
-        void startContext(const char *name);
-        /*! \brief
-         * Convenience wrapper for startContext(const char *).
-         */
-        void startContext(const std::string &name)
-        { startContext(name.c_str()); }
-        /*! \brief
-         * Adds a new message.
-         */
-        void append(const char *message)
-        { append(std::string(message)); }
-        /*! \brief
-         * Adds a new message.
-         */
-        void append(const std::string &message);
-        /*! \brief
-         * Ends a context started with startContext().
-         *
-         * \see MessageStringContext
-         */
-        void finishContext();
-        /*! \brief
-         * Clears all collected messages.
-         */
-        void clear();
+    /*! \brief
+     * Starts a context for messages.
+     *
+     * \param[in] name  Short description of the context.
+     *
+     * \see finishContext()
+     * \see MessageStringContext
+     */
+    void startContext(const char *name);
+    /*! \brief
+     * Convenience wrapper for startContext(const char *).
+     */
+    void startContext(const std::string &name)
+    { startContext(name.c_str()); }
+    /*! \brief
+     * Adds a new message.
+     */
+    void append(const char *message)
+    { append(std::string(message)); }
+    /*! \brief
+     * Adds a new message.
+     */
+    void append(const std::string &message);
+    /*! \brief
+     * Ends a context started with startContext().
+     *
+     * \see MessageStringContext
+     */
+    void finishContext();
+    /*! \brief
+     * Clears all collected messages.
+     */
+    void clear();
 
-        /*! \brief
-         * Returns true if any messages have been added.
-         *
-         * \returns true if append() has been called at least once.
-         *
-         * The return value is identical to `toString().empty()`.
-         * Calls to startContext() or finishContext() only do not cause this
-         * function to return true.
-         */
-        bool isEmpty() const;
-        /*! \brief
-         * Returns all collected messages as one string.
-         */
-        std::string toString() const;
+    /*! \brief
+     * Returns true if any messages have been added.
+     *
+     * \returns true if append() has been called at least once.
+     *
+     * The return value is identical to `toString().empty()`.
+     * Calls to startContext() or finishContext() only do not cause this
+     * function to return true.
+     */
+    bool isEmpty() const;
+    /*! \brief
+     * Returns all collected messages as one string.
+     */
+    std::string toString() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -147,37 +147,37 @@ class MessageStringCollector
  */
 class MessageStringContext
 {
-    public:
-        /*! \brief
-         * Adds a context for the given object.
-         */
-        MessageStringContext(MessageStringCollector *collector, const char *name)
-            : collector_(*collector)
-        {
-            collector_.startContext(name);
-        }
-        /*! \brief
-         * Adds a context for the given object.
-         */
-        MessageStringContext(MessageStringCollector *collector,
-                             const std::string &     name)
-            : collector_(*collector)
-        {
-            collector_.startContext(name);
-        }
-        /*! \brief
-         * Calls MessageStringCollector::finishContext() on the wrapped object.
-         */
-        ~MessageStringContext()
-        {
-            collector_.finishContext();
-        }
+public:
+    /*! \brief
+     * Adds a context for the given object.
+     */
+    MessageStringContext(MessageStringCollector *collector, const char *name)
+        : collector_(*collector)
+    {
+        collector_.startContext(name);
+    }
+    /*! \brief
+     * Adds a context for the given object.
+     */
+    MessageStringContext(MessageStringCollector *collector,
+                         const std::string &     name)
+        : collector_(*collector)
+    {
+        collector_.startContext(name);
+    }
+    /*! \brief
+     * Calls MessageStringCollector::finishContext() on the wrapped object.
+     */
+    ~MessageStringContext()
+    {
+        collector_.finishContext();
+    }
 
-    private:
-        //! The wrapped object.
-        MessageStringCollector &collector_;
+private:
+    //! The wrapped object.
+    MessageStringCollector &collector_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(MessageStringContext);
+    GMX_DISALLOW_COPY_AND_ASSIGN(MessageStringContext);
 };
 
 } // namespace gmx

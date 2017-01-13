@@ -64,11 +64,11 @@ struct LogEntry
  */
 class ILogTarget
 {
-    public:
-        virtual ~ILogTarget();
+public:
+    virtual ~ILogTarget();
 
-        //! Writes a log entry to this target.
-        virtual void writeEntry(const LogEntry &entry) = 0;
+    //! Writes a log entry to this target.
+    virtual void writeEntry(const LogEntry &entry) = 0;
 };
 
 /*! \libinternal \brief
@@ -78,32 +78,32 @@ class ILogTarget
  */
 class LogEntryWriter
 {
-    public:
-        //! Appends given text to the log entry.
-        LogEntryWriter &appendText(const char *text)
-        {
-            entry_.text.append(text);
-            return *this;
-        }
-        //! Appends given text to the log entry.
-        LogEntryWriter &appendText(const std::string &text)
-        {
-            entry_.text.append(text);
-            return *this;
-        }
-        //! Appends given text to the log entry, with printf-style formatting.
-        LogEntryWriter &appendTextFormatted(const char *fmt, ...);
-        //! Writes the log entry with empty lines before and after.
-        LogEntryWriter &asParagraph()
-        {
-            entry_.asParagraph = true;
-            return *this;
-        }
+public:
+    //! Appends given text to the log entry.
+    LogEntryWriter &appendText(const char *text)
+    {
+        entry_.text.append(text);
+        return *this;
+    }
+    //! Appends given text to the log entry.
+    LogEntryWriter &appendText(const std::string &text)
+    {
+        entry_.text.append(text);
+        return *this;
+    }
+    //! Appends given text to the log entry, with printf-style formatting.
+    LogEntryWriter &appendTextFormatted(const char *fmt, ...);
+    //! Writes the log entry with empty lines before and after.
+    LogEntryWriter &asParagraph()
+    {
+        entry_.asParagraph = true;
+        return *this;
+    }
 
-    private:
-        LogEntry entry_;
+private:
+    LogEntry entry_;
 
-        friend class LogWriteHelper;
+    friend class LogWriteHelper;
 };
 
 /*! \internal \brief
@@ -113,34 +113,34 @@ class LogEntryWriter
  */
 class LogWriteHelper
 {
-    public:
-        //! Initializes a helper for writing to the given target.
-        explicit LogWriteHelper(ILogTarget *target) : target_(target) {}
+public:
+    //! Initializes a helper for writing to the given target.
+    explicit LogWriteHelper(ILogTarget *target) : target_(target) {}
 
-        // Should be explicit, once that works in CUDA.
-        /*! \brief
-         * Returns whether anything needs to be written.
-         *
-         * Note that the return value is unintuitively `false` when the target
-         * is active, to allow implementing ::GMX_LOG like it is now.
-         */
-        operator bool() const { return target_ == nullptr; }
+    // Should be explicit, once that works in CUDA.
+    /*! \brief
+     * Returns whether anything needs to be written.
+     *
+     * Note that the return value is unintuitively `false` when the target
+     * is active, to allow implementing ::GMX_LOG like it is now.
+     */
+    operator bool() const { return target_ == nullptr; }
 
-        /*! \brief
-         * Writes the entry from the given writer to the log target.
-         *
-         * This is implemented as an assignment operator to get proper
-         * precedence for operations for the ::GMX_LOG macro; this is a common
-         * technique for implementing macros that allow streming information to
-         * them (see, e.g., Google Test).
-         */
-        void operator=(const LogEntryWriter &entryWriter)
-        {
-            target_->writeEntry(entryWriter.entry_);
-        }
+    /*! \brief
+     * Writes the entry from the given writer to the log target.
+     *
+     * This is implemented as an assignment operator to get proper
+     * precedence for operations for the ::GMX_LOG macro; this is a common
+     * technique for implementing macros that allow streming information to
+     * them (see, e.g., Google Test).
+     */
+    void operator=(const LogEntryWriter &entryWriter)
+    {
+        target_->writeEntry(entryWriter.entry_);
+    }
 
-    private:
-        ILogTarget *target_;
+private:
+    ILogTarget *target_;
 };
 
 /*! \libinternal \brief
@@ -153,19 +153,19 @@ class LogWriteHelper
  */
 class LogLevelHelper
 {
-    public:
-        //! Initializes a helper for writing to the given target.
-        explicit LogLevelHelper(ILogTarget *target) : target_(target) {}
+public:
+    //! Initializes a helper for writing to the given target.
+    explicit LogLevelHelper(ILogTarget *target) : target_(target) {}
 
-        // Both of the below should be explicit, once that works in CUDA.
-        //! Returns whether the output for this log level goes anywhere.
-        operator bool() const { return target_ != nullptr; }
+    // Both of the below should be explicit, once that works in CUDA.
+    //! Returns whether the output for this log level goes anywhere.
+    operator bool() const { return target_ != nullptr; }
 
-        //! Creates a helper for ::GMX_LOG.
-        operator LogWriteHelper() const { return LogWriteHelper(target_); }
+    //! Creates a helper for ::GMX_LOG.
+    operator LogWriteHelper() const { return LogWriteHelper(target_); }
 
-    private:
-        ILogTarget *target_;
+private:
+    ILogTarget *target_;
 };
 
 /*! \libinternal \brief
@@ -184,24 +184,24 @@ class LogLevelHelper
  */
 class MDLogger
 {
-    public:
-        //! Supported logging levels.
-        enum LogLevel
-        {
-            Warning,
-            Info
-        };
-        //! Number of logging levels.
-        static const int LogLevelCount = static_cast<int>(Info) + 1;
+public:
+    //! Supported logging levels.
+    enum LogLevel
+    {
+        Warning,
+        Info
+    };
+    //! Number of logging levels.
+    static const int LogLevelCount = static_cast<int>(Info) + 1;
 
-        MDLogger();
-        //! Creates a logger with the given targets.
-        explicit MDLogger(ILogTarget *targets[LogLevelCount]);
+    MDLogger();
+    //! Creates a logger with the given targets.
+    explicit MDLogger(ILogTarget *targets[LogLevelCount]);
 
-        //! For writing at LogLevel::Warning level.
-        LogLevelHelper warning;
-        //! For writing at LogLevel::Info level.
-        LogLevelHelper info;
+    //! For writing at LogLevel::Warning level.
+    LogLevelHelper warning;
+    //! For writing at LogLevel::Info level.
+    LogLevelHelper info;
 };
 
 /*! \brief

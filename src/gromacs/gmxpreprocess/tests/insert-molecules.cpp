@@ -55,25 +55,25 @@ using gmx::test::ExactTextMatch;
 
 class InsertMoleculesTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        InsertMoleculesTest()
-        {
-            setOutputFile("-o", "out.gro", ExactTextMatch());
-        }
+public:
+    InsertMoleculesTest()
+    {
+        setOutputFile("-o", "out.gro", ExactTextMatch());
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
+    void runTest(const CommandLine &args)
+    {
+        CommandLine &cmdline = commandLine();
+        cmdline.merge(args);
 
-            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
-            rootChecker.checkString(args.toString(), "CommandLine");
+        gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
+        rootChecker.checkString(args.toString(), "CommandLine");
 
-            ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                              &gmx::InsertMoleculesInfo::create, &cmdline));
+        ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
+                          &gmx::InsertMoleculesInfo::create, &cmdline));
 
-            checkOutputFiles();
-        }
+        checkOutputFiles();
+    }
 };
 
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoExistingConfiguration)

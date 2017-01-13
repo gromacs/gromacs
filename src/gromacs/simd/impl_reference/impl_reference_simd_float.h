@@ -77,20 +77,20 @@ namespace gmx
  */
 class SimdFloat
 {
-    public:
-        SimdFloat() {}
+public:
+    SimdFloat() {}
 
-        //! \brief Construct from scalar
-        SimdFloat(float f) { simdInternal_.fill(f); }
+    //! \brief Construct from scalar
+    SimdFloat(float f) { simdInternal_.fill(f); }
 
-        /*! \brief Internal SIMD data. Implementation dependent, don't touch.
-         *
-         * This has to be public to enable usage in combination with static inline
-         * functions, but it should never, EVER, be accessed by any code outside
-         * the corresponding implementation directory since the type will depend
-         * on the architecture.
-         */
-        std::array<float, GMX_SIMD_FLOAT_WIDTH> simdInternal_;
+    /*! \brief Internal SIMD data. Implementation dependent, don't touch.
+     *
+     * This has to be public to enable usage in combination with static inline
+     * functions, but it should never, EVER, be accessed by any code outside
+     * the corresponding implementation directory since the type will depend
+     * on the architecture.
+     */
+    std::array<float, GMX_SIMD_FLOAT_WIDTH> simdInternal_;
 };
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
@@ -109,20 +109,20 @@ class SimdFloat
  */
 class SimdFInt32
 {
-    public:
-        SimdFInt32() {}
+public:
+    SimdFInt32() {}
 
-        //! \brief Construct from scalar
-        SimdFInt32(std::int32_t i) { simdInternal_.fill(i); }
+    //! \brief Construct from scalar
+    SimdFInt32(std::int32_t i) { simdInternal_.fill(i); }
 
-        /*! \brief Internal SIMD data. Implementation dependent, don't touch.
-         *
-         * This has to be public to enable usage in combination with static inline
-         * functions, but it should never, EVER, be accessed by any code outside
-         * the corresponding implementation directory since the type will depend
-         * on the architecture.
-         */
-        std::array<std::int32_t, GMX_SIMD_FINT32_WIDTH> simdInternal_;
+    /*! \brief Internal SIMD data. Implementation dependent, don't touch.
+     *
+     * This has to be public to enable usage in combination with static inline
+     * functions, but it should never, EVER, be accessed by any code outside
+     * the corresponding implementation directory since the type will depend
+     * on the architecture.
+     */
+    std::array<std::int32_t, GMX_SIMD_FINT32_WIDTH> simdInternal_;
 };
 
 /*! \libinternal \brief Boolean type for float SIMD data.
@@ -136,20 +136,20 @@ class SimdFInt32
  */
 class SimdFBool
 {
-    public:
-        SimdFBool() {}
+public:
+    SimdFBool() {}
 
-        //! \brief Construct from scalar
-        SimdFBool(bool b) { simdInternal_.fill(b); }
+    //! \brief Construct from scalar
+    SimdFBool(bool b) { simdInternal_.fill(b); }
 
-        /*! \brief Internal SIMD data. Implementation dependent, don't touch.
-         *
-         * This has to be public to enable usage in combination with static inline
-         * functions, but it should never, EVER, be accessed by any code outside
-         * the corresponding implementation directory since the type will depend
-         * on the architecture.
-         */
-        std::array<bool, GMX_SIMD_FLOAT_WIDTH> simdInternal_;
+    /*! \brief Internal SIMD data. Implementation dependent, don't touch.
+     *
+     * This has to be public to enable usage in combination with static inline
+     * functions, but it should never, EVER, be accessed by any code outside
+     * the corresponding implementation directory since the type will depend
+     * on the architecture.
+     */
+    std::array<bool, GMX_SIMD_FLOAT_WIDTH> simdInternal_;
 };
 
 /*! \libinternal \brief Boolean type for integer datatypes corresponding to float SIMD.
@@ -163,20 +163,20 @@ class SimdFBool
  */
 class SimdFIBool
 {
-    public:
-        SimdFIBool() {}
+public:
+    SimdFIBool() {}
 
-        //! \brief Construct from scalar
-        SimdFIBool(bool b) { simdInternal_.fill(b); }
+    //! \brief Construct from scalar
+    SimdFIBool(bool b) { simdInternal_.fill(b); }
 
-        /*! \brief Internal SIMD data. Implementation dependent, don't touch.
-         *
-         * This has to be public to enable usage in combination with static inline
-         * functions, but it should never, EVER, be accessed by any code outside
-         * the corresponding implementation directory since the type will depend
-         * on the architecture.
-         */
-        std::array<bool, GMX_SIMD_FINT32_WIDTH> simdInternal_;
+    /*! \brief Internal SIMD data. Implementation dependent, don't touch.
+     *
+     * This has to be public to enable usage in combination with static inline
+     * functions, but it should never, EVER, be accessed by any code outside
+     * the corresponding implementation directory since the type will depend
+     * on the architecture.
+     */
+    std::array<bool, GMX_SIMD_FINT32_WIDTH> simdInternal_;
 };
 
 /*! \}

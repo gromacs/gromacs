@@ -46,10 +46,10 @@ namespace
 
 class OptionSectionStorage : public IOptionSectionStorage
 {
-    public:
-        virtual void initStorage() {}
-        virtual void startSection() {}
-        virtual void finishSection() {}
+public:
+    virtual void initStorage() {}
+    virtual void startSection() {}
+    virtual void finishSection() {}
 };
 
 }   // namespace

@@ -70,29 +70,29 @@ namespace gmx
  */
 class SelectionParserSymbol::Impl
 {
-    public:
-        /*! \brief
-         * Initializes a symbol.
-         *
-         * \param[in] type  Type for the symbol.
-         * \param[in] name  Name for the symbol.
-         *
-         * The symbol table is responsible for initializing the \a meth_ and
-         * \a var_ members as appropriate.
-         */
-        Impl(SymbolType type, const char *name)
-            : name_(name), type_(type), meth_(nullptr)
-        {
-        }
+public:
+    /*! \brief
+     * Initializes a symbol.
+     *
+     * \param[in] type  Type for the symbol.
+     * \param[in] name  Name for the symbol.
+     *
+     * The symbol table is responsible for initializing the \a meth_ and
+     * \a var_ members as appropriate.
+     */
+    Impl(SymbolType type, const char *name)
+        : name_(name), type_(type), meth_(nullptr)
+    {
+    }
 
-        //! Name of the symbol.
-        std::string name_;
-        //! Type of the symbol.
-        SymbolType type_;
-        //! Pointer to the method structure (\ref MethodSymbol).
-        gmx_ana_selmethod_t *meth_;
-        //! Pointer to the variable value (\ref VariableSymbol).
-        SelectionTreeElementPointer var_;
+    //! Name of the symbol.
+    std::string name_;
+    //! Type of the symbol.
+    SymbolType type_;
+    //! Pointer to the method structure (\ref MethodSymbol).
+    gmx_ana_selmethod_t *meth_;
+    //! Pointer to the variable value (\ref VariableSymbol).
+    SelectionTreeElementPointer var_;
 };
 
 SelectionParserSymbol::SelectionParserSymbol(Impl *impl)
@@ -142,26 +142,26 @@ const gmx::SelectionTreeElementPointer &SelectionParserSymbol::variableValue() c
  */
 class SelectionParserSymbolTable::Impl
 {
-    public:
-        //! Smart pointer type for managing a SelectionParserSymbol.
-        typedef std::unique_ptr<SelectionParserSymbol>
-            SymbolPointer;
-        //! Container type for the list of symbols.
-        typedef std::map<std::string, SymbolPointer> SymbolMap;
+public:
+    //! Smart pointer type for managing a SelectionParserSymbol.
+    typedef std::unique_ptr<SelectionParserSymbol>
+        SymbolPointer;
+    //! Container type for the list of symbols.
+    typedef std::map<std::string, SymbolPointer> SymbolMap;
 
-        /*! \brief
-         * Adds a symbol to the symbol list.
-         *
-         * \param[in] symbol  Symbol to add.
-         */
-        void addSymbol(SymbolPointer symbol);
-        //! Adds the reserved symbols to this symbol table.
-        void addReservedSymbols();
-        //! Adds the position symbols to this symbol table.
-        void addPositionSymbols();
+    /*! \brief
+     * Adds a symbol to the symbol list.
+     *
+     * \param[in] symbol  Symbol to add.
+     */
+    void addSymbol(SymbolPointer symbol);
+    //! Adds the reserved symbols to this symbol table.
+    void addReservedSymbols();
+    //! Adds the position symbols to this symbol table.
+    void addPositionSymbols();
 
-        //! Symbols in this symbol table.
-        SymbolMap symbols_;
+    //! Symbols in this symbol table.
+    SymbolMap symbols_;
 };
 
 void SelectionParserSymbolTable::Impl::addSymbol(SymbolPointer symbol)
@@ -217,35 +217,35 @@ void SelectionParserSymbolTable::Impl::addPositionSymbols()
  */
 class SelectionParserSymbolIterator::Impl
 {
-    public:
-        //! Shorthand for the underlying iterator type.
-        typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
-            IteratorType;
+public:
+    //! Shorthand for the underlying iterator type.
+    typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
+        IteratorType;
 
-        /*! \brief
-         * Constructs an end iterator.
-         *
-         * \param[in] end  Iterator to the end of the iterated container.
-         */
-        explicit Impl(IteratorType end)
-            : iter_(end), end_(end)
-        {
-        }
-        /*! \brief
-         * Constructs an iterator.
-         *
-         * \param[in] iter Iterator to the current symbol.
-         * \param[in] end  Iterator to the end of the iterated container.
-         */
-        Impl(IteratorType iter, IteratorType end)
-            : iter_(iter), end_(end)
-        {
-        }
+    /*! \brief
+     * Constructs an end iterator.
+     *
+     * \param[in] end  Iterator to the end of the iterated container.
+     */
+    explicit Impl(IteratorType end)
+        : iter_(end), end_(end)
+    {
+    }
+    /*! \brief
+     * Constructs an iterator.
+     *
+     * \param[in] iter Iterator to the current symbol.
+     * \param[in] end  Iterator to the end of the iterated container.
+     */
+    Impl(IteratorType iter, IteratorType end)
+        : iter_(iter), end_(end)
+    {
+    }
 
-        //! Underlying iterator to the symbol container.
-        IteratorType iter_;
-        //! End of the symbol container being iterated.
-        IteratorType end_;
+    //! Underlying iterator to the symbol container.
+    IteratorType iter_;
+    //! End of the symbol container being iterated.
+    IteratorType end_;
 };
 
 SelectionParserSymbolIterator::SelectionParserSymbolIterator(Impl *impl)

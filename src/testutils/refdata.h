@@ -177,41 +177,41 @@ class TestReferenceDataImpl;
  */
 class TestReferenceData
 {
-    public:
-        /*! \brief
-         * Initializes the reference data in the global mode.
-         */
-        TestReferenceData();
-        /*! \brief
-         * Initializes the reference data in a specific mode.
-         *
-         * This function is only useful for self-testing the reference data
-         * framework.  As such, it also puts the framework in a state where it
-         * logs additional internal information for failures to help diagnosing
-         * problems in the framework, and stores the reference data in a
-         * temporary directory instead of the source tree.
-         * The default constructor should be used in tests utilizing this class.
-         */
-        explicit TestReferenceData(ReferenceDataMode mode);
-        /*! \brief
-         * Frees reference data structures.
-         *
-         * The reference data is written out if necessary automatically when
-         * the test finishes.
-         */
-        ~TestReferenceData();
+public:
+    /*! \brief
+     * Initializes the reference data in the global mode.
+     */
+    TestReferenceData();
+    /*! \brief
+     * Initializes the reference data in a specific mode.
+     *
+     * This function is only useful for self-testing the reference data
+     * framework.  As such, it also puts the framework in a state where it
+     * logs additional internal information for failures to help diagnosing
+     * problems in the framework, and stores the reference data in a
+     * temporary directory instead of the source tree.
+     * The default constructor should be used in tests utilizing this class.
+     */
+    explicit TestReferenceData(ReferenceDataMode mode);
+    /*! \brief
+     * Frees reference data structures.
+     *
+     * The reference data is written out if necessary automatically when
+     * the test finishes.
+     */
+    ~TestReferenceData();
 
-        /*! \brief
-         * Returns a root-level checker object for comparisons.
-         *
-         * Each call returns an independent instance.
-         */
-        TestReferenceChecker rootChecker();
+    /*! \brief
+     * Returns a root-level checker object for comparisons.
+     *
+     * Each call returns an independent instance.
+     */
+    TestReferenceChecker rootChecker();
 
-    private:
-        std::shared_ptr<internal::TestReferenceDataImpl> impl_;
+private:
+    std::shared_ptr<internal::TestReferenceDataImpl> impl_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestReferenceData);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TestReferenceData);
 };
 
 /*! \libinternal \brief
@@ -237,363 +237,363 @@ class TestReferenceData
  */
 class TestReferenceChecker
 {
-    public:
-        /*! \brief
-         * Creates a checker that cannot be used for checking.
-         *
-         * Attempting to call the check methods generates an assert.
-         * It is possible to check whether the checker is initialized by
-         * calling isValid().
-         * This constructor exists to allow declaring checker variables that
-         * will receive their value later without resorting to dynamic
-         * allocation.
-         */
-        TestReferenceChecker();
-        //! Creates a deep copy of the other checker.
-        explicit TestReferenceChecker(const TestReferenceChecker &other);
-        //! Moves the checker.
-        TestReferenceChecker(TestReferenceChecker &&other);
-        ~TestReferenceChecker();
+public:
+    /*! \brief
+     * Creates a checker that cannot be used for checking.
+     *
+     * Attempting to call the check methods generates an assert.
+     * It is possible to check whether the checker is initialized by
+     * calling isValid().
+     * This constructor exists to allow declaring checker variables that
+     * will receive their value later without resorting to dynamic
+     * allocation.
+     */
+    TestReferenceChecker();
+    //! Creates a deep copy of the other checker.
+    explicit TestReferenceChecker(const TestReferenceChecker &other);
+    //! Moves the checker.
+    TestReferenceChecker(TestReferenceChecker &&other);
+    ~TestReferenceChecker();
 
-        //! Prevents implicit copying during assignment.
-        TestReferenceChecker &operator=(const TestReferenceChecker &) = delete;
-        //! Assigns a test reference checker.
-        TestReferenceChecker &operator=(TestReferenceChecker &&other);
+    //! Prevents implicit copying during assignment.
+    TestReferenceChecker &operator=(const TestReferenceChecker &) = delete;
+    //! Assigns a test reference checker.
+    TestReferenceChecker &operator=(TestReferenceChecker &&other);
 
-        //! Returns whether the checker is initialized.
-        bool isValid() const;
-        //! Allows testing whether the checker is initialized directly with if.
-        explicit operator bool() const { return isValid(); }
+    //! Returns whether the checker is initialized.
+    bool isValid() const;
+    //! Allows testing whether the checker is initialized directly with if.
+    explicit operator bool() const { return isValid(); }
 
-        /*! \brief
-         * Sets the tolerance for floating-point comparisons.
-         *
-         * All following floating-point comparisons using this checker will use
-         * the new tolerance.  Child checkers created with checkCompound()
-         * will inherit the tolerance from their parent checker at the time
-         * checkCompound() is called.
-         *
-         * Does not throw.
-         */
-        void setDefaultTolerance(const FloatingPointTolerance &tolerance);
+    /*! \brief
+     * Sets the tolerance for floating-point comparisons.
+     *
+     * All following floating-point comparisons using this checker will use
+     * the new tolerance.  Child checkers created with checkCompound()
+     * will inherit the tolerance from their parent checker at the time
+     * checkCompound() is called.
+     *
+     * Does not throw.
+     */
+    void setDefaultTolerance(const FloatingPointTolerance &tolerance);
 
-        /*! \brief
-         * Checks that all reference values have been compared against.
-         *
-         * All values under the compound represented by this checker are
-         * checked, and a non-fatal Google Test assertion is produced if some
-         * values have not been used.
-         *
-         * If not called explicitly, the same check will be done for all
-         * reference data values when the test ends.
-         *
-         * This method also marks the values used, so that subsequent checks
-         * (including the check at the end of the test) will not produce
-         * another assertion about the same values.
-         */
-        void checkUnusedEntries();
+    /*! \brief
+     * Checks that all reference values have been compared against.
+     *
+     * All values under the compound represented by this checker are
+     * checked, and a non-fatal Google Test assertion is produced if some
+     * values have not been used.
+     *
+     * If not called explicitly, the same check will be done for all
+     * reference data values when the test ends.
+     *
+     * This method also marks the values used, so that subsequent checks
+     * (including the check at the end of the test) will not produce
+     * another assertion about the same values.
+     */
+    void checkUnusedEntries();
 
-        /*! \brief
-         * Checks whether a data item is present.
-         *
-         * \param[in] bPresent  Whether to check for presence or absence.
-         * \param[in] id        Unique identifier of the item to check.
-         * \returns   true if bPresent was true and the data item was found.
-         *
-         * If \p bPresent is true, checks that a data item with \p id is
-         * present, otherwise checks that the data item is absent.
-         * If the check fails, a non-fatal Google Test assertion is generated.
-         *
-         * If reference data is being written, the check always succeeds and the
-         * return value is \p bPresent.
-         *
-         * The main use of this method is to assign meaning for missing
-         * reference data.  Example use:
-         * \code
-           if (checker.checkPresent(bHaveVelocities, "Velocities"))
-           {
-               // <check the velocities>
-           }
-         * \endcode
-         */
-        bool checkPresent(bool bPresent, const char *id);
+    /*! \brief
+     * Checks whether a data item is present.
+     *
+     * \param[in] bPresent  Whether to check for presence or absence.
+     * \param[in] id        Unique identifier of the item to check.
+     * \returns   true if bPresent was true and the data item was found.
+     *
+     * If \p bPresent is true, checks that a data item with \p id is
+     * present, otherwise checks that the data item is absent.
+     * If the check fails, a non-fatal Google Test assertion is generated.
+     *
+     * If reference data is being written, the check always succeeds and the
+     * return value is \p bPresent.
+     *
+     * The main use of this method is to assign meaning for missing
+     * reference data.  Example use:
+     * \code
+       if (checker.checkPresent(bHaveVelocities, "Velocities"))
+       {
+           // <check the velocities>
+       }
+     * \endcode
+     */
+    bool checkPresent(bool bPresent, const char *id);
 
-        /*! \brief
-         * Initializes comparison of a group of related data items.
-         *
-         * \param[in] type Informational type for the compound.
-         * \param[in] id   Unique identifier for the compound among its
-         *                 siblings.
-         * \returns   Checker to use for comparison within the compound.
-         *
-         * All checks performed with the returned checker only
-         * need to have unique ids within the compound, not globally.
-         *
-         * Compound structures can be nested.
-         */
-        TestReferenceChecker checkCompound(const char *type, const char *id);
+    /*! \brief
+     * Initializes comparison of a group of related data items.
+     *
+     * \param[in] type Informational type for the compound.
+     * \param[in] id   Unique identifier for the compound among its
+     *                 siblings.
+     * \returns   Checker to use for comparison within the compound.
+     *
+     * All checks performed with the returned checker only
+     * need to have unique ids within the compound, not globally.
+     *
+     * Compound structures can be nested.
+     */
+    TestReferenceChecker checkCompound(const char *type, const char *id);
 
-        //! Check a single boolean value.
-        void checkBoolean(bool value, const char *id);
-        //! Check a single string value.
-        void checkString(const char *value, const char *id);
-        //! Check a single string value.
-        void checkString(const std::string &value, const char *id);
-        /*! \brief
-         * Check a multi-line string value.
-         *
-         * This method works as checkString(), but should be used for long
-         * strings that may contain, e.g., newlines.  Typically used to check
-         * formatted output, and attempts to make the output XML such that it
-         * is easier to edit by hand to set the desired output formatting.
-         */
-        void checkTextBlock(const std::string &value, const char *id);
-        //! Check a single unsigned char value.
-        void checkUChar(unsigned char value, const char *id);
-        //! Check a single integer value.
-        void checkInteger(int value, const char *id);
-        //! Check a single int64 value.
-        void checkInt64(gmx_int64_t value, const char *id);
-        //! Check a single uint64 value.
-        void checkUInt64(gmx_uint64_t value, const char *id);
-        //! Check a single single-precision floating point value.
-        void checkFloat(float value, const char *id);
-        //! Check a single double-precision floating point value.
-        void checkDouble(double value, const char *id);
-        //! Check a single floating point value.
-        void checkReal(float value, const char *id);
-        //! Check a single floating point value.
-        void checkReal(double value, const char *id);
-        //! Check a vector of three integer values.
-        void checkVector(const int value[3], const char *id);
-        //! Check a vector of three single-precision floating point values.
-        void checkVector(const float value[3], const char *id);
-        //! Check a vector of three double-precision floating point values.
-        void checkVector(const double value[3], const char *id);
-        //! Check a single floating-point value from a string.
-        void checkRealFromString(const std::string &value, const char *id);
-        //! Checks a variant value that contains a supported simple type.
-        void checkVariant(const Variant &value, const char *id);
-        //! Checks a key-value tree rooted at a object.
-        void checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id);
-        //! Checks a generic key-value tree value.
-        void checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id);
+    //! Check a single boolean value.
+    void checkBoolean(bool value, const char *id);
+    //! Check a single string value.
+    void checkString(const char *value, const char *id);
+    //! Check a single string value.
+    void checkString(const std::string &value, const char *id);
+    /*! \brief
+     * Check a multi-line string value.
+     *
+     * This method works as checkString(), but should be used for long
+     * strings that may contain, e.g., newlines.  Typically used to check
+     * formatted output, and attempts to make the output XML such that it
+     * is easier to edit by hand to set the desired output formatting.
+     */
+    void checkTextBlock(const std::string &value, const char *id);
+    //! Check a single unsigned char value.
+    void checkUChar(unsigned char value, const char *id);
+    //! Check a single integer value.
+    void checkInteger(int value, const char *id);
+    //! Check a single int64 value.
+    void checkInt64(gmx_int64_t value, const char *id);
+    //! Check a single uint64 value.
+    void checkUInt64(gmx_uint64_t value, const char *id);
+    //! Check a single single-precision floating point value.
+    void checkFloat(float value, const char *id);
+    //! Check a single double-precision floating point value.
+    void checkDouble(double value, const char *id);
+    //! Check a single floating point value.
+    void checkReal(float value, const char *id);
+    //! Check a single floating point value.
+    void checkReal(double value, const char *id);
+    //! Check a vector of three integer values.
+    void checkVector(const int value[3], const char *id);
+    //! Check a vector of three single-precision floating point values.
+    void checkVector(const float value[3], const char *id);
+    //! Check a vector of three double-precision floating point values.
+    void checkVector(const double value[3], const char *id);
+    //! Check a single floating-point value from a string.
+    void checkRealFromString(const std::string &value, const char *id);
+    //! Checks a variant value that contains a supported simple type.
+    void checkVariant(const Variant &value, const char *id);
+    //! Checks a key-value tree rooted at a object.
+    void checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id);
+    //! Checks a generic key-value tree value.
+    void checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id);
 
-        /*! \name Methods to read values from reference data
-         *
-         * These methods assume that a value with the given `id` has already
-         * been created in the test with `check*()` methods, and that it has
-         * the correct type.
-         *
-         * Currently, these methods do not work correctly if the reference data
-         * file does not exist, so a test using them may fail with exceptions
-         * before the reference data has been generated.
-         * \{
-         */
-        //! Reads an unsigned char value.
-        unsigned char readUChar(const char *id);
-        //! Reads an integer value.
-        int readInteger(const char *id);
-        //! Reads a float value.
-        float readFloat(const char *id);
-        //! Reads a double value.
-        double readDouble(const char *id);
-        //! Reads a string value.
-        std::string readString(const char *id);
-        //! \}
+    /*! \name Methods to read values from reference data
+     *
+     * These methods assume that a value with the given `id` has already
+     * been created in the test with `check*()` methods, and that it has
+     * the correct type.
+     *
+     * Currently, these methods do not work correctly if the reference data
+     * file does not exist, so a test using them may fail with exceptions
+     * before the reference data has been generated.
+     * \{
+     */
+    //! Reads an unsigned char value.
+    unsigned char readUChar(const char *id);
+    //! Reads an integer value.
+    int readInteger(const char *id);
+    //! Reads a float value.
+    float readFloat(const char *id);
+    //! Reads a double value.
+    double readDouble(const char *id);
+    //! Reads a string value.
+    std::string readString(const char *id);
+    //! \}
 
-        /*! \name Overloaded versions of simple checker methods
-         *
-         * These methods provide overloads under a single name for all the
-         * methods checkBoolean(), checkString(), checkReal() and checkVector().
-         * They are provided mainly to allow template implementations (such as
-         * checkSequence()).  Typically callers should use the individually
-         * named versions for greater clarity.
-         * \{
-         */
-        //! Check a single boolean value.
-        void checkValue(bool value, const char *id)
-        {
-            checkBoolean(value, id);
-        }
-        //! Check a single string value.
-        void checkValue(const char *value, const char *id)
-        {
-            checkString(value, id);
-        }
-        //! Check a single string value.
-        void checkValue(const std::string &value, const char *id)
-        {
-            checkString(value, id);
-        }
-        //! Check a single integer value.
-        void checkValue(int value, const char *id)
-        {
-            checkInteger(value, id);
-        }
-        //! Check a single integer value.
-        void checkValue(gmx_int64_t value, const char *id)
-        {
-            checkInt64(value, id);
-        }
-        //! Check a single integer value.
-        void checkValue(gmx_uint64_t value, const char *id)
-        {
-            checkUInt64(value, id);
-        }
-        //! Check a single single-precision floating point value.
-        void checkValue(float value, const char *id)
-        {
-            checkFloat(value, id);
-        }
-        //! Check a single double-precision floating point value.
-        void checkValue(double value, const char *id)
-        {
-            checkDouble(value, id);
-        }
-        //! Check a vector of three integer values.
-        void checkValue(const int value[3], const char *id)
-        {
-            checkVector(value, id);
-        }
-        //! Check a vector of three single-precision floating point values.
-        void checkValue(const float value[3], const char *id)
-        {
-            checkVector(value, id);
-        }
-        //! Check a vector of three double-precision floating point values.
-        void checkValue(const double value[3], const char *id)
-        {
-            checkVector(value, id);
-        }
-        //! Check a generic key-value tree value.
-        void checkValue(const KeyValueTreeValue &value, const char *id)
-        {
-            checkKeyValueTreeValue(value, id);
-        }
-        /*!\}*/
+    /*! \name Overloaded versions of simple checker methods
+     *
+     * These methods provide overloads under a single name for all the
+     * methods checkBoolean(), checkString(), checkReal() and checkVector().
+     * They are provided mainly to allow template implementations (such as
+     * checkSequence()).  Typically callers should use the individually
+     * named versions for greater clarity.
+     * \{
+     */
+    //! Check a single boolean value.
+    void checkValue(bool value, const char *id)
+    {
+        checkBoolean(value, id);
+    }
+    //! Check a single string value.
+    void checkValue(const char *value, const char *id)
+    {
+        checkString(value, id);
+    }
+    //! Check a single string value.
+    void checkValue(const std::string &value, const char *id)
+    {
+        checkString(value, id);
+    }
+    //! Check a single integer value.
+    void checkValue(int value, const char *id)
+    {
+        checkInteger(value, id);
+    }
+    //! Check a single integer value.
+    void checkValue(gmx_int64_t value, const char *id)
+    {
+        checkInt64(value, id);
+    }
+    //! Check a single integer value.
+    void checkValue(gmx_uint64_t value, const char *id)
+    {
+        checkUInt64(value, id);
+    }
+    //! Check a single single-precision floating point value.
+    void checkValue(float value, const char *id)
+    {
+        checkFloat(value, id);
+    }
+    //! Check a single double-precision floating point value.
+    void checkValue(double value, const char *id)
+    {
+        checkDouble(value, id);
+    }
+    //! Check a vector of three integer values.
+    void checkValue(const int value[3], const char *id)
+    {
+        checkVector(value, id);
+    }
+    //! Check a vector of three single-precision floating point values.
+    void checkValue(const float value[3], const char *id)
+    {
+        checkVector(value, id);
+    }
+    //! Check a vector of three double-precision floating point values.
+    void checkValue(const double value[3], const char *id)
+    {
+        checkVector(value, id);
+    }
+    //! Check a generic key-value tree value.
+    void checkValue(const KeyValueTreeValue &value, const char *id)
+    {
+        checkKeyValueTreeValue(value, id);
+    }
+    /*!\}*/
 
-        /*! \brief
-         * Generic method to check a sequence of simple values.
-         *
-         * \tparam Iterator  Input iterator that allows multiple (two) passes.
-         *      Value type must be one of those accepted by checkValue(), or
-         *      implicitly convertible to one.
-         * \param[in] begin  Iterator to the start of the range to check.
-         * \param[in] end    Iterator to the end of the range to check.
-         * \param[in] id     Unique identifier for the sequence among its
-         *                   siblings.
-         */
-        template <class Iterator>
-        void checkSequence(Iterator begin, Iterator end, const char *id)
+    /*! \brief
+     * Generic method to check a sequence of simple values.
+     *
+     * \tparam Iterator  Input iterator that allows multiple (two) passes.
+     *      Value type must be one of those accepted by checkValue(), or
+     *      implicitly convertible to one.
+     * \param[in] begin  Iterator to the start of the range to check.
+     * \param[in] end    Iterator to the end of the range to check.
+     * \param[in] id     Unique identifier for the sequence among its
+     *                   siblings.
+     */
+    template <class Iterator>
+    void checkSequence(Iterator begin, Iterator end, const char *id)
+    {
+        typename std::iterator_traits<Iterator>::difference_type length
+            = std::distance(begin, end);
+        TestReferenceChecker compound(checkSequenceCompound(id, length));
+        for (Iterator i = begin; i != end; ++i)
         {
-            typename std::iterator_traits<Iterator>::difference_type length
-                = std::distance(begin, end);
-            TestReferenceChecker compound(checkSequenceCompound(id, length));
-            for (Iterator i = begin; i != end; ++i)
-            {
-                compound.checkValue(*i, nullptr);
-            }
+            compound.checkValue(*i, nullptr);
         }
-        /*! \brief
-         * Generic method to check a sequence of custom values.
-         *
-         * \tparam Iterator    Input iterator that allows multiple (two) passes.
-         * \tparam ItemChecker Functor to check an individual value. Signature
-         *      void(TestReferenceChecker *, const T &), where T is the value
-         *      type of \p Iterator.
-         * \param[in] begin  Iterator to the start of the range to check.
-         * \param[in] end    Iterator to the end of the range to check.
-         * \param[in] id     Unique identifier for the sequence among its
-         *                   siblings.
-         * \param[in] checkItem  Functor to check an individual item.
-         *
-         * This method creates a compound checker \c compound within which all
-         * values of the sequence are checked.  Calls \c checkItem(&compound, *i)
-         * with that compound for each iterator \c i in the range [begin, end).
-         * \p checkItem should use the various check methods in the passed
-         * checker to check each value.
-         *
-         * This method can be used to check a sequence made of compound types.
-         * Typically \p checkItem will create a compound within the passed
-         * checker to check different aspects of the value that was passed
-         * to it. Either NULL or a unique identifier string must be used for
-         * the id value of that compound. */
-        template <class Iterator, class ItemChecker>
-        void checkSequence(Iterator begin, Iterator end, const char *id,
-                           ItemChecker checkItem)
+    }
+    /*! \brief
+     * Generic method to check a sequence of custom values.
+     *
+     * \tparam Iterator    Input iterator that allows multiple (two) passes.
+     * \tparam ItemChecker Functor to check an individual value. Signature
+     *      void(TestReferenceChecker *, const T &), where T is the value
+     *      type of \p Iterator.
+     * \param[in] begin  Iterator to the start of the range to check.
+     * \param[in] end    Iterator to the end of the range to check.
+     * \param[in] id     Unique identifier for the sequence among its
+     *                   siblings.
+     * \param[in] checkItem  Functor to check an individual item.
+     *
+     * This method creates a compound checker \c compound within which all
+     * values of the sequence are checked.  Calls \c checkItem(&compound, *i)
+     * with that compound for each iterator \c i in the range [begin, end).
+     * \p checkItem should use the various check methods in the passed
+     * checker to check each value.
+     *
+     * This method can be used to check a sequence made of compound types.
+     * Typically \p checkItem will create a compound within the passed
+     * checker to check different aspects of the value that was passed
+     * to it. Either NULL or a unique identifier string must be used for
+     * the id value of that compound. */
+    template <class Iterator, class ItemChecker>
+    void checkSequence(Iterator begin, Iterator end, const char *id,
+                       ItemChecker checkItem)
+    {
+        typename std::iterator_traits<Iterator>::difference_type length
+            = std::distance(begin, end);
+        TestReferenceChecker compound(checkSequenceCompound(id, length));
+        for (Iterator i = begin; i != end; ++i)
         {
-            typename std::iterator_traits<Iterator>::difference_type length
-                = std::distance(begin, end);
-            TestReferenceChecker compound(checkSequenceCompound(id, length));
-            for (Iterator i = begin; i != end; ++i)
-            {
-                checkItem(&compound, *i);
-            }
+            checkItem(&compound, *i);
         }
-        /*! \brief
-         * Check an array of values.
-         *
-         * \tparam T  Type of values to check. Should be one of those accepted
-         *      by checkValue(), or implicitly convertible to one.
-         *
-         * \param[in] length  Number of values to check.
-         * \param[in] values  Pointer to the first value to check.
-         * \param[in] id     Unique identifier for the sequence among its
-         *                   siblings.
-         *
-         * This is a convenience method that delegates all work to
-         * checkSequence().
-         */
-        template <typename T>
-        void checkSequenceArray(size_t length, const T *values, const char *id)
-        {
-            checkSequence(values, values + length, id);
-        }
-        /*! \brief
-         * Convenience method for checking that a sequence is empty.
-         *
-         * \param[in] id     Unique identifier for the sequence among its
-         *                   siblings.
-         *
-         * This method provides a convenient solution for a case where there is
-         * implicitly a sequence to be checked, but there is no pointer
-         * available to the values since the sequence is empty.
-         * Since this method does not require the type of the values, it can be
-         * used in such cases easily.
-         */
-        void checkEmptySequence(const char *id);
-        /*! \brief
-         * Initializes a compound for a sequence of items.
-         *
-         * \param[in] id     Unique identifier for the sequence among its
-         *                   siblings.
-         * \param[in] length Number of items that will be in the sequence.
-         * \returns   Checker to use for comparison within the sequence.
-         *
-         * This method can be used to check custom sequences where
-         * checkSequence() is not appropriate.
-         */
-        TestReferenceChecker checkSequenceCompound(const char *id, size_t length);
+    }
+    /*! \brief
+     * Check an array of values.
+     *
+     * \tparam T  Type of values to check. Should be one of those accepted
+     *      by checkValue(), or implicitly convertible to one.
+     *
+     * \param[in] length  Number of values to check.
+     * \param[in] values  Pointer to the first value to check.
+     * \param[in] id     Unique identifier for the sequence among its
+     *                   siblings.
+     *
+     * This is a convenience method that delegates all work to
+     * checkSequence().
+     */
+    template <typename T>
+    void checkSequenceArray(size_t length, const T *values, const char *id)
+    {
+        checkSequence(values, values + length, id);
+    }
+    /*! \brief
+     * Convenience method for checking that a sequence is empty.
+     *
+     * \param[in] id     Unique identifier for the sequence among its
+     *                   siblings.
+     *
+     * This method provides a convenient solution for a case where there is
+     * implicitly a sequence to be checked, but there is no pointer
+     * available to the values since the sequence is empty.
+     * Since this method does not require the type of the values, it can be
+     * used in such cases easily.
+     */
+    void checkEmptySequence(const char *id);
+    /*! \brief
+     * Initializes a compound for a sequence of items.
+     *
+     * \param[in] id     Unique identifier for the sequence among its
+     *                   siblings.
+     * \param[in] length Number of items that will be in the sequence.
+     * \returns   Checker to use for comparison within the sequence.
+     *
+     * This method can be used to check custom sequences where
+     * checkSequence() is not appropriate.
+     */
+    TestReferenceChecker checkSequenceCompound(const char *id, size_t length);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        /*! \brief
-         * Constructs a checker with a specific internal state.
-         *
-         * Is private to only allow users of this class to create instances
-         * using TestReferenceData::rootChecker() or checkCompound()
-         * (or by copying).
-         */
-        explicit TestReferenceChecker(Impl *impl);
+    /*! \brief
+     * Constructs a checker with a specific internal state.
+     *
+     * Is private to only allow users of this class to create instances
+     * using TestReferenceData::rootChecker() or checkCompound()
+     * (or by copying).
+     */
+    explicit TestReferenceChecker(Impl *impl);
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed to expose the constructor only to TestReferenceData.
-         */
-        friend class TestReferenceData;
+    /*! \brief
+     * Needed to expose the constructor only to TestReferenceData.
+     */
+    friend class TestReferenceData;
 };
 
 } // namespace test

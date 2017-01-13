@@ -73,20 +73,20 @@ namespace gmx
  */
 class IExecutableEnvironment
 {
-    public:
-        virtual ~IExecutableEnvironment() {}
+public:
+    virtual ~IExecutableEnvironment() {}
 
-        /*! \brief
-         * Returns the working directory when the program was launched.
-         */
-        virtual std::string getWorkingDirectory() const = 0;
-        /*! \brief
-         * Returns list of paths where executables are searched for.
-         *
-         * The returned list should be in priority order.  An empty string in
-         * the returned list corresponds to getWorkindDirectory().
-         */
-        virtual std::vector<std::string> getExecutablePaths() const = 0;
+    /*! \brief
+     * Returns the working directory when the program was launched.
+     */
+    virtual std::string getWorkingDirectory() const = 0;
+    /*! \brief
+     * Returns list of paths where executables are searched for.
+     *
+     * The returned list should be in priority order.  An empty string in
+     * the returned list corresponds to getWorkindDirectory().
+     */
+    virtual std::vector<std::string> getExecutablePaths() const = 0;
 };
 
 //! Shorthand for a smart pointer to IExecutableEnvironment.
@@ -109,111 +109,111 @@ typedef std::unique_ptr<IExecutableEnvironment> ExecutableEnvironmentPointer;
  */
 class CommandLineProgramContext : public IProgramContext
 {
-    public:
-        /*! \brief
-         * Constructs an empty context object.
-         *
-         * All methods in the constructed object return dummy values.
-         */
-        CommandLineProgramContext();
-        /*! \brief
-         * Initializes a program context object with binary name only.
-         *
-         * \param[in] binaryName  Name of the binary.
-         *
-         * This is needed for unit testing purposes.
-         * The constructed object works as if the command line consisted of
-         * only of the binary name.
-         */
-        explicit CommandLineProgramContext(const char *binaryName);
-        /*! \brief
-         * Initializes a program context object based on command line.
-         *
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         */
-        CommandLineProgramContext(int argc, const char *const argv[]);
-        /*! \brief
-         * Initializes a program context object based on command line.
-         *
-         * \param[in] argc  argc value passed to main().
-         * \param[in] argv  argv array passed to main().
-         * \param[in] env   Customizes the way the binary name is handled.
-         *
-         * This overload allows one to customize the way the binary is located
-         * by providing a custom IExecutableEnvironment implementation.
-         * This is mainly useful for testing purposes to make it possible to
-         * test different paths without setting environment variables, changing
-         * the working directory or doing other process-wide operations.
-         * It may also be useful for making Gromacs behave better when linked
-         * into a non-Gromacs executable (with possible extensions in
-         * IExecutableEnvironment).
-         */
-        CommandLineProgramContext(int argc, const char *const argv[],
-                                  ExecutableEnvironmentPointer env);
-        virtual ~CommandLineProgramContext();
+public:
+    /*! \brief
+     * Constructs an empty context object.
+     *
+     * All methods in the constructed object return dummy values.
+     */
+    CommandLineProgramContext();
+    /*! \brief
+     * Initializes a program context object with binary name only.
+     *
+     * \param[in] binaryName  Name of the binary.
+     *
+     * This is needed for unit testing purposes.
+     * The constructed object works as if the command line consisted of
+     * only of the binary name.
+     */
+    explicit CommandLineProgramContext(const char *binaryName);
+    /*! \brief
+     * Initializes a program context object based on command line.
+     *
+     * \param[in] argc  argc value passed to main().
+     * \param[in] argv  argv array passed to main().
+     */
+    CommandLineProgramContext(int argc, const char *const argv[]);
+    /*! \brief
+     * Initializes a program context object based on command line.
+     *
+     * \param[in] argc  argc value passed to main().
+     * \param[in] argv  argv array passed to main().
+     * \param[in] env   Customizes the way the binary name is handled.
+     *
+     * This overload allows one to customize the way the binary is located
+     * by providing a custom IExecutableEnvironment implementation.
+     * This is mainly useful for testing purposes to make it possible to
+     * test different paths without setting environment variables, changing
+     * the working directory or doing other process-wide operations.
+     * It may also be useful for making Gromacs behave better when linked
+     * into a non-Gromacs executable (with possible extensions in
+     * IExecutableEnvironment).
+     */
+    CommandLineProgramContext(int argc, const char *const argv[],
+                              ExecutableEnvironmentPointer env);
+    virtual ~CommandLineProgramContext();
 
-        /*! \brief
-         * Sets a display name for the binary.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * This is used with the wrapper binary to add the name of the invoked
-         * module to the name of the binary shown.
-         *
-         * It is not threadsafe if there are concurrent calls to displayName()
-         * before this method has returned.  Thread safety is not required for
-         * the normal initialization sequence of command line programs; it is
-         * called in the wrapper binary before the control passes to the actual
-         * module which may create threads.
-         */
-        void setDisplayName(const std::string &name);
+    /*! \brief
+     * Sets a display name for the binary.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * This is used with the wrapper binary to add the name of the invoked
+     * module to the name of the binary shown.
+     *
+     * It is not threadsafe if there are concurrent calls to displayName()
+     * before this method has returned.  Thread safety is not required for
+     * the normal initialization sequence of command line programs; it is
+     * called in the wrapper binary before the control passes to the actual
+     * module which may create threads.
+     */
+    void setDisplayName(const std::string &name);
 
-        /*! \brief
-         * Returns the name of the binary as it was invoked without any path.
-         *
-         * Does not throw.
-         */
-        virtual const char *programName() const;
-        /*! \brief
-         * Returns a display name of the current module.
-         *
-         * The returned value equals programName(), unless a separate display
-         * name has been set with setDisplayName().
-         *
-         * Does not throw.
-         */
-        virtual const char *displayName() const;
-        /*! \brief
-         * Returns the full path of the running binary.
-         *
-         * \throws std::bad_alloc if out of memory.
-         * \throws tMPI::system_error on thread synchronization errors.
-         *
-         * Returns argv[0] if there was an error in finding the absolute path.
-         */
-        virtual const char *fullBinaryPath() const;
-        /*! \brief
-         * Returns the installation prefix (for finding \Gromacs data files).
-         *
-         * \throws std::bad_alloc if out of memory.
-         * \throws tMPI::system_error on thread synchronization errors.
-         *
-         * Returns a hardcoded path set during configuration time if there is
-         * an error in finding the library data files.
-         */
-        virtual InstallationPrefixInfo installationPrefix() const;
-        /*! \brief
-         * Returns the full command line used to invoke the binary.
-         *
-         * Does not throw.
-         */
-        virtual const char *commandLine() const;
+    /*! \brief
+     * Returns the name of the binary as it was invoked without any path.
+     *
+     * Does not throw.
+     */
+    virtual const char *programName() const;
+    /*! \brief
+     * Returns a display name of the current module.
+     *
+     * The returned value equals programName(), unless a separate display
+     * name has been set with setDisplayName().
+     *
+     * Does not throw.
+     */
+    virtual const char *displayName() const;
+    /*! \brief
+     * Returns the full path of the running binary.
+     *
+     * \throws std::bad_alloc if out of memory.
+     * \throws tMPI::system_error on thread synchronization errors.
+     *
+     * Returns argv[0] if there was an error in finding the absolute path.
+     */
+    virtual const char *fullBinaryPath() const;
+    /*! \brief
+     * Returns the installation prefix (for finding \Gromacs data files).
+     *
+     * \throws std::bad_alloc if out of memory.
+     * \throws tMPI::system_error on thread synchronization errors.
+     *
+     * Returns a hardcoded path set during configuration time if there is
+     * an error in finding the library data files.
+     */
+    virtual InstallationPrefixInfo installationPrefix() const;
+    /*! \brief
+     * Returns the full command line used to invoke the binary.
+     *
+     * Does not throw.
+     */
+    virtual const char *commandLine() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

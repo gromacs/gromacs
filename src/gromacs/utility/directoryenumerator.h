@@ -63,66 +63,66 @@ namespace gmx
  */
 class DirectoryEnumerator
 {
-    public:
-        /*! \brief
-         * Convenience function to list files with certain extension from a
-         * directory.
-         *
-         * \param[in]  dirname   Path to the directory to list.
-         * \param[in]  extension List files with the given extension
-         *     (or suffix in file name).
-         * \param[in]  bThrow    Whether failure to open the directory should throw.
-         * \returns    List of files with the given extension in \p dirname.
-         * \throws std::bad_alloc if out of memory.
-         * \throws FileIOError if opening the directory fails and `bThrow == true`.
-         * \throws FileIOError if some other I/O error occurs.
-         */
-        static std::vector<std::string> enumerateFilesWithExtension(
-            const char *dirname, const char *extension, bool bThrow);
+public:
+    /*! \brief
+     * Convenience function to list files with certain extension from a
+     * directory.
+     *
+     * \param[in]  dirname   Path to the directory to list.
+     * \param[in]  extension List files with the given extension
+     *     (or suffix in file name).
+     * \param[in]  bThrow    Whether failure to open the directory should throw.
+     * \returns    List of files with the given extension in \p dirname.
+     * \throws std::bad_alloc if out of memory.
+     * \throws FileIOError if opening the directory fails and `bThrow == true`.
+     * \throws FileIOError if some other I/O error occurs.
+     */
+    static std::vector<std::string> enumerateFilesWithExtension(
+        const char *dirname, const char *extension, bool bThrow);
 
-        /*! \brief
-         * Opens a directory for listing.
-         *
-         * \param[in] dirname Path to the directory to list.
-         * \param[in] bThrow  Whether failure to open the directory should throw.
-         * \throws std::bad_alloc if out of memory.
-         * \throws FileIOError if opening the directory fails and `bThrow == true`
-         */
-        explicit DirectoryEnumerator(const char *dirname, bool bThrow = true);
-        //! \copydoc DirectoryEnumerator(const char *, bool)
-        explicit DirectoryEnumerator(const std::string &dirname, bool bThrow = true);
-        ~DirectoryEnumerator();
+    /*! \brief
+     * Opens a directory for listing.
+     *
+     * \param[in] dirname Path to the directory to list.
+     * \param[in] bThrow  Whether failure to open the directory should throw.
+     * \throws std::bad_alloc if out of memory.
+     * \throws FileIOError if opening the directory fails and `bThrow == true`
+     */
+    explicit DirectoryEnumerator(const char *dirname, bool bThrow = true);
+    //! \copydoc DirectoryEnumerator(const char *, bool)
+    explicit DirectoryEnumerator(const std::string &dirname, bool bThrow = true);
+    ~DirectoryEnumerator();
 
-        /*! \brief
-         * Gets next file in a directory.
-         *
-         * \param[out] filename  Name of the next file.
-         * \returns `false` if there were no more files.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  FileIOError if listing the next file fails.
-         *
-         * If all files from the directory have been returned (or there are no
-         * files in the directory and this is the first call), the method
-         * returns `false` and \p filename is cleared.
-         * Otherwise, the return value is `true` and the first/next file name
-         * is returned in \p filename.
-         * \p filename will not contain any path information, only the name of
-         * the file.
-         *
-         * If `bThrow` passed to the constructor was `false` and the directory
-         * was not successfully opened, the first call to this function will
-         * return `false`.
-         *
-         * This method is not thread safe when called on the same
-         * object by multiple threads. Such use requires external
-         * synchronization.
-         */
-        bool nextFile(std::string *filename);
+    /*! \brief
+     * Gets next file in a directory.
+     *
+     * \param[out] filename  Name of the next file.
+     * \returns `false` if there were no more files.
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  FileIOError if listing the next file fails.
+     *
+     * If all files from the directory have been returned (or there are no
+     * files in the directory and this is the first call), the method
+     * returns `false` and \p filename is cleared.
+     * Otherwise, the return value is `true` and the first/next file name
+     * is returned in \p filename.
+     * \p filename will not contain any path information, only the name of
+     * the file.
+     *
+     * If `bThrow` passed to the constructor was `false` and the directory
+     * was not successfully opened, the first call to this function will
+     * return `false`.
+     *
+     * This method is not thread safe when called on the same
+     * object by multiple threads. Such use requires external
+     * synchronization.
+     */
+    bool nextFile(std::string *filename);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

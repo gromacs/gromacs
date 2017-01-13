@@ -157,38 +157,38 @@ typedef gmx::test::AnalysisDataTestFixture SimpleHistogramModuleTest;
 // Input data for gmx::AnalysisDataSimpleHistogramModule tests.
 class SimpleInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static SimpleInputData singleton;
-            return singleton.data_;
+        static SimpleInputData singleton;
+        return singleton.data_;
 #else
-            static SimpleInputData singleton_histogram;
-            return singleton_histogram.data_;
+        static SimpleInputData singleton_histogram;
+        return singleton_histogram.data_;
 #endif
-        }
+    }
 
-        SimpleInputData() : data_(1, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 1);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.7);
-            frame1.addPointSetWithValues(0, 0, 1.1);
-            frame1.addPointSetWithValues(0, 0, 2.3);
-            frame1.addPointSetWithValues(0, 0, 2.9);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.3);
-            frame2.addPointSetWithValues(0, 0, 2.2);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 3.3);
-            frame3.addPointSetWithValues(0, 0, 1.2);
-            frame3.addPointSetWithValues(0, 0, 1.3);
-        }
+    SimpleInputData() : data_(1, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 1);
+        AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.7);
+        frame1.addPointSetWithValues(0, 0, 1.1);
+        frame1.addPointSetWithValues(0, 0, 2.3);
+        frame1.addPointSetWithValues(0, 0, 2.9);
+        AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.3);
+        frame2.addPointSetWithValues(0, 0, 2.2);
+        AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 3.3);
+        frame3.addPointSetWithValues(0, 0, 1.2);
+        frame3.addPointSetWithValues(0, 0, 1.3);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
@@ -243,76 +243,76 @@ typedef gmx::test::AnalysisDataTestFixture WeightedHistogramModuleTest;
 // Input data for both weighted histogram and bin average module tests.
 class WeightedSimpleInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static WeightedSimpleInputData singleton;
-            return singleton.data_;
+        static WeightedSimpleInputData singleton;
+        return singleton.data_;
 #else
-            static WeightedSimpleInputData singleton_histogram;
-            return singleton_histogram.data_;
+        static WeightedSimpleInputData singleton_histogram;
+        return singleton_histogram.data_;
 #endif
-        }
+    }
 
-        WeightedSimpleInputData() : data_(1, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 2);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.7, 0.5);
-            frame1.addPointSetWithValues(0, 0, 1.1, 1.0);
-            frame1.addPointSetWithValues(0, 0, 2.3, 1.0);
-            frame1.addPointSetWithValues(0, 0, 2.9, 2.0);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.3, 1.0);
-            frame2.addPointSetWithValues(0, 0, 2.2, 3.0);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 3.3, 0.5);
-            frame3.addPointSetWithValues(0, 0, 1.2, 2.0);
-            frame3.addPointSetWithValues(0, 0, 1.3, 1.0);
-        }
+    WeightedSimpleInputData() : data_(1, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 2);
+        AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.7, 0.5);
+        frame1.addPointSetWithValues(0, 0, 1.1, 1.0);
+        frame1.addPointSetWithValues(0, 0, 2.3, 1.0);
+        frame1.addPointSetWithValues(0, 0, 2.9, 2.0);
+        AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.3, 1.0);
+        frame2.addPointSetWithValues(0, 0, 2.2, 3.0);
+        AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 3.3, 0.5);
+        frame3.addPointSetWithValues(0, 0, 1.2, 2.0);
+        frame3.addPointSetWithValues(0, 0, 1.3, 1.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 // Input data for both weighted histogram and bin average module tests.
 class WeightedDataSetInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static WeightedDataSetInputData singleton;
-            return singleton.data_;
+        static WeightedDataSetInputData singleton;
+        return singleton.data_;
 #else
-            static WeightedDataSetInputData singleton_histogram;
-            return singleton_histogram.data_;
+        static WeightedDataSetInputData singleton_histogram;
+        return singleton_histogram.data_;
 #endif
-        }
+    }
 
-        WeightedDataSetInputData() : data_(2, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 2);
-            data_.setColumnCount(1, 2);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.7, 0.5);
-            frame1.addPointSetWithValues(0, 0, 1.1, 1.0);
-            frame1.addPointSetWithValues(1, 0, 2.3, 1.0);
-            frame1.addPointSetWithValues(1, 0, 2.9, 2.0);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.3, 1.0);
-            frame2.addPointSetWithValues(1, 0, 2.2, 3.0);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 3.3, 0.5);
-            frame3.addPointSetWithValues(0, 0, 1.2, 2.0);
-            frame3.addPointSetWithValues(1, 0, 1.3, 1.0);
-        }
+    WeightedDataSetInputData() : data_(2, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 2);
+        data_.setColumnCount(1, 2);
+        AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.7, 0.5);
+        frame1.addPointSetWithValues(0, 0, 1.1, 1.0);
+        frame1.addPointSetWithValues(1, 0, 2.3, 1.0);
+        frame1.addPointSetWithValues(1, 0, 2.9, 2.0);
+        AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.3, 1.0);
+        frame2.addPointSetWithValues(1, 0, 2.2, 3.0);
+        AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 3.3, 0.5);
+        frame3.addPointSetWithValues(0, 0, 1.2, 2.0);
+        frame3.addPointSetWithValues(1, 0, 1.3, 1.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
@@ -452,32 +452,32 @@ typedef gmx::test::AnalysisDataTestFixture AbstractAverageHistogramTest;
 // Input data for gmx::AbstractAverageHistogram tests.
 class AverageInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput &get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static AverageInputData singleton;
-            return singleton.data_;
+        static AverageInputData singleton;
+        return singleton.data_;
 #else
-            static AverageInputData singleton_histogram;
-            return singleton_histogram.data_;
+        static AverageInputData singleton_histogram;
+        return singleton_histogram.data_;
 #endif
-        }
+    }
 
-        AverageInputData() : data_(1, false)
-        {
-            data_.setColumnCount(0, 1);
-            data_.addFrameWithValueAndError(1.0,  2.0, 1.0);
-            data_.addFrameWithValueAndError(1.5,  1.0, 1.0);
-            data_.addFrameWithValueAndError(2.0,  3.0, 2.0);
-            data_.addFrameWithValueAndError(2.5,  4.0, 2.0);
-            data_.addFrameWithValueAndError(3.0,  2.0, 1.0);
-            data_.addFrameWithValueAndError(3.5,  0.0, 3.0);
-            data_.addFrameWithValueAndError(4.0,  1.0, 3.0);
-        }
+    AverageInputData() : data_(1, false)
+    {
+        data_.setColumnCount(0, 1);
+        data_.addFrameWithValueAndError(1.0,  2.0, 1.0);
+        data_.addFrameWithValueAndError(1.5,  1.0, 1.0);
+        data_.addFrameWithValueAndError(2.0,  3.0, 2.0);
+        data_.addFrameWithValueAndError(2.5,  4.0, 2.0);
+        data_.addFrameWithValueAndError(3.0,  2.0, 1.0);
+        data_.addFrameWithValueAndError(3.5,  0.0, 3.0);
+        data_.addFrameWithValueAndError(4.0,  1.0, 3.0);
+    }
 
-    private:
-        AnalysisDataTestInput data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 /*! \brief
@@ -490,18 +490,18 @@ class AverageInputData
  */
 class MockAverageHistogram : public gmx::AbstractAverageHistogram
 {
-    public:
-        //! Creates a histogram module with defined bin parameters.
-        explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
-            : AbstractAverageHistogram(settings)
-        {
-        }
+public:
+    //! Creates a histogram module with defined bin parameters.
+    explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
+        : AbstractAverageHistogram(settings)
+    {
+    }
 
-        using AbstractAverageHistogram::init;
-        using AbstractAverageHistogram::setColumnCount;
-        using AbstractAverageHistogram::setRowCount;
-        using AbstractAverageHistogram::allocateValues;
-        using AbstractAverageHistogram::value;
+    using AbstractAverageHistogram::init;
+    using AbstractAverageHistogram::setColumnCount;
+    using AbstractAverageHistogram::setRowCount;
+    using AbstractAverageHistogram::allocateValues;
+    using AbstractAverageHistogram::value;
 };
 
 

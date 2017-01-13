@@ -57,13 +57,13 @@ namespace
 class GromppTest :
     public gmx::test::MdrunTestFixture
 {
-    public:
-        //! Execute the trajectory writing test
-        void runTest()
-        {
-            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
-            EXPECT_EQ(0, runner_.callGrompp());
-        }
+public:
+    //! Execute the trajectory writing test
+    void runTest()
+    {
+        runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+        EXPECT_EQ(0, runner_.callGrompp());
+    }
 };
 
 /* This test ensures that an empty .mdp file (ie. all default values) works. */

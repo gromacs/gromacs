@@ -72,152 +72,152 @@ namespace gmx
  */
 class AbstractAnalysisArrayData : public AbstractAnalysisData
 {
-    public:
-        virtual ~AbstractAnalysisArrayData();
+public:
+    virtual ~AbstractAnalysisArrayData();
 
-        virtual int frameCount() const
-        {
-            return bReady_ ? rowCount_ : 0;
-        }
+    virtual int frameCount() const
+    {
+        return bReady_ ? rowCount_ : 0;
+    }
 
-        /*! \brief
-         * Returns the number of rows in the data array.
-         *
-         * This function is identical to frameCount(), except that frameCount()
-         * returns 0 before valuesReady() has been called.
-         */
-        int rowCount() const { return rowCount_; }
-        //! Returns true if values have been allocated.
-        bool isAllocated() const { return !value_.empty(); }
-        //! Returns the x value of the first frame.
-        real xstart() const { return xvalue_[0]; }
-        //! Returns the step between frame x values.
-        real xstep() const
-        {
-            GMX_ASSERT(bUniformX_, "Accessing x step for non-uniform data");
-            return xstep_;
-        }
-        //! Returns the x value of a row.
-        real xvalue(int row) const
-        {
-            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-            return xvalue_[row];
-        }
-        //! Returns a given array element.
-        const AnalysisDataValue &value(int row, int col) const
-        {
-            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-            GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
-            GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return value_[row * columnCount() + col];
-        }
+    /*! \brief
+     * Returns the number of rows in the data array.
+     *
+     * This function is identical to frameCount(), except that frameCount()
+     * returns 0 before valuesReady() has been called.
+     */
+    int rowCount() const { return rowCount_; }
+    //! Returns true if values have been allocated.
+    bool isAllocated() const { return !value_.empty(); }
+    //! Returns the x value of the first frame.
+    real xstart() const { return xvalue_[0]; }
+    //! Returns the step between frame x values.
+    real xstep() const
+    {
+        GMX_ASSERT(bUniformX_, "Accessing x step for non-uniform data");
+        return xstep_;
+    }
+    //! Returns the x value of a row.
+    real xvalue(int row) const
+    {
+        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        return xvalue_[row];
+    }
+    //! Returns a given array element.
+    const AnalysisDataValue &value(int row, int col) const
+    {
+        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+        GMX_ASSERT(isAllocated(), "Data array not allocated");
+        return value_[row * columnCount() + col];
+    }
 
-    protected:
-        /*! \brief
-         * Initializes an empty array data object.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        AbstractAnalysisArrayData();
+protected:
+    /*! \brief
+     * Initializes an empty array data object.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    AbstractAnalysisArrayData();
 
-        /*! \brief
-         * Sets the number of columns in the data array.
-         *
-         * \param[in] ncols  Number of columns in the data.
-         *
-         * Cannot be called after allocateValues().
-         *
-         * See AbstractAnalysisData::setColumnCount() for exception behavior.
-         */
-        void setColumnCount(int ncols);
-        /*! \brief
-         * Sets the number of rows in the data array.
-         *
-         * \param[in] rowCount  Number of rows in the data.
-         *
-         * Cannot be called after allocateValues().
-         *
-         * Does not throw.
-         */
-        void setRowCount(int rowCount);
-        /*! \brief
-         * Allocates memory for the values.
-         *
-         * \throws std::bad_alloc if memory allocation fails.
-         *
-         * setColumnCount() and setRowCount() must have been called.
-         *
-         * Strong exception safety guarantee.
-         */
-        void allocateValues();
-        /*! \brief
-         * Sets the values reported as x values for frames.
-         *
-         * \param[in] start  x value for the first frame.
-         * \param[in] step   Step between x values of successive frames.
-         *
-         * Must not be called after valuesReady().
-         * Any values set with setXAxisValue() are overwritten.
-         *
-         * Does not throw.
-         */
-        void setXAxis(real start, real step);
-        /*! \brief
-         * Sets a single value reported as x value for frames.
-         *
-         * \param[in] row    Row/frame for which to set the value.
-         * \param[in] value  x value for the frame specified by \p row.
-         *
-         * Must not be called after valuesReady().
-         *
-         * Does not throw.
-         */
-        void setXAxisValue(int row, real value);
-        //! Returns a reference to a given array element.
-        AnalysisDataValue &value(int row, int col)
-        {
-            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-            GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
-            GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return value_[row * columnCount() + col];
-        }
-        /*! \brief
-         * Notifies modules of the data.
-         *
-         * \throws    unspecified Any exception thrown by attached data modules
-         *      in data notification methods.
-         *
-         * This function should be called once the values in the array
-         * have been initialized.  The values should not be changed after this
-         * function has been called.
-         */
-        void valuesReady();
+    /*! \brief
+     * Sets the number of columns in the data array.
+     *
+     * \param[in] ncols  Number of columns in the data.
+     *
+     * Cannot be called after allocateValues().
+     *
+     * See AbstractAnalysisData::setColumnCount() for exception behavior.
+     */
+    void setColumnCount(int ncols);
+    /*! \brief
+     * Sets the number of rows in the data array.
+     *
+     * \param[in] rowCount  Number of rows in the data.
+     *
+     * Cannot be called after allocateValues().
+     *
+     * Does not throw.
+     */
+    void setRowCount(int rowCount);
+    /*! \brief
+     * Allocates memory for the values.
+     *
+     * \throws std::bad_alloc if memory allocation fails.
+     *
+     * setColumnCount() and setRowCount() must have been called.
+     *
+     * Strong exception safety guarantee.
+     */
+    void allocateValues();
+    /*! \brief
+     * Sets the values reported as x values for frames.
+     *
+     * \param[in] start  x value for the first frame.
+     * \param[in] step   Step between x values of successive frames.
+     *
+     * Must not be called after valuesReady().
+     * Any values set with setXAxisValue() are overwritten.
+     *
+     * Does not throw.
+     */
+    void setXAxis(real start, real step);
+    /*! \brief
+     * Sets a single value reported as x value for frames.
+     *
+     * \param[in] row    Row/frame for which to set the value.
+     * \param[in] value  x value for the frame specified by \p row.
+     *
+     * Must not be called after valuesReady().
+     *
+     * Does not throw.
+     */
+    void setXAxisValue(int row, real value);
+    //! Returns a reference to a given array element.
+    AnalysisDataValue &value(int row, int col)
+    {
+        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+        GMX_ASSERT(isAllocated(), "Data array not allocated");
+        return value_[row * columnCount() + col];
+    }
+    /*! \brief
+     * Notifies modules of the data.
+     *
+     * \throws    unspecified Any exception thrown by attached data modules
+     *      in data notification methods.
+     *
+     * This function should be called once the values in the array
+     * have been initialized.  The values should not be changed after this
+     * function has been called.
+     */
+    void valuesReady();
 
-        /*! \brief
-         * Copies the contents into a new object.
-         *
-         * \param[in]     src  Object to copy data from.
-         * \param[in,out] dest Empty array data object to copy data to.
-         * \throws std::bad_alloc if memory allocation for \p dest fails.
-         *
-         * \p dest should not have previous contents.
-         */
-        static void copyContents(const AbstractAnalysisArrayData *src,
-                                 AbstractAnalysisArrayData *      dest);
+    /*! \brief
+     * Copies the contents into a new object.
+     *
+     * \param[in]     src  Object to copy data from.
+     * \param[in,out] dest Empty array data object to copy data to.
+     * \throws std::bad_alloc if memory allocation for \p dest fails.
+     *
+     * \p dest should not have previous contents.
+     */
+    static void copyContents(const AbstractAnalysisArrayData *src,
+                             AbstractAnalysisArrayData *      dest);
 
-    private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+private:
+    virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+    virtual bool requestStorageInternal(int nframes);
 
-        int                            rowCount_;
-        AnalysisDataPointSetInfo       pointSetInfo_;
-        std::vector<AnalysisDataValue> value_;
-        std::vector<real>              xvalue_;
-        real                           xstep_;
-        bool                           bUniformX_;
-        bool                           bReady_;
+    int                            rowCount_;
+    AnalysisDataPointSetInfo       pointSetInfo_;
+    std::vector<AnalysisDataValue> value_;
+    std::vector<real>              xvalue_;
+    real                           xstep_;
+    bool                           bUniformX_;
+    bool                           bReady_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 /*! \brief
@@ -239,25 +239,25 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
  */
 class AnalysisArrayData : public AbstractAnalysisArrayData
 {
-    public:
-        /*! \brief
-         * Initializes an empty array data object.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        AnalysisArrayData() {}
+public:
+    /*! \brief
+     * Initializes an empty array data object.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    AnalysisArrayData() {}
 
-        // TODO: These statements cause Doxygen to generate confusing
-        // documentation.
-        using AbstractAnalysisArrayData::setColumnCount;
-        using AbstractAnalysisArrayData::setRowCount;
-        using AbstractAnalysisArrayData::allocateValues;
-        using AbstractAnalysisArrayData::setXAxis;
-        using AbstractAnalysisArrayData::setXAxisValue;
-        using AbstractAnalysisArrayData::value;
-        using AbstractAnalysisArrayData::valuesReady;
+    // TODO: These statements cause Doxygen to generate confusing
+    // documentation.
+    using AbstractAnalysisArrayData::setColumnCount;
+    using AbstractAnalysisArrayData::setRowCount;
+    using AbstractAnalysisArrayData::allocateValues;
+    using AbstractAnalysisArrayData::setXAxis;
+    using AbstractAnalysisArrayData::setXAxisValue;
+    using AbstractAnalysisArrayData::value;
+    using AbstractAnalysisArrayData::valuesReady;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 } // namespace gmx

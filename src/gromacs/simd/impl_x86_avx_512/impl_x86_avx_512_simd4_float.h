@@ -51,26 +51,26 @@ namespace gmx
 
 class Simd4Float
 {
-    public:
-        Simd4Float() {}
+public:
+    Simd4Float() {}
 
-        Simd4Float(float f) : simdInternal_(_mm_set1_ps(f)) {}
+    Simd4Float(float f) : simdInternal_(_mm_set1_ps(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        Simd4Float(__m128 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4Float(__m128 simd) : simdInternal_(simd) {}
 
-        __m128 simdInternal_;
+    __m128 simdInternal_;
 };
 
 class Simd4FBool
 {
-    public:
-        Simd4FBool() {}
+public:
+    Simd4FBool() {}
 
-        // Internal utility constructor to simplify return statements
-        Simd4FBool(__mmask16 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4FBool(__mmask16 simd) : simdInternal_(simd) {}
 
-        __mmask16 simdInternal_;
+    __mmask16 simdInternal_;
 };
 
 static inline Simd4Float gmx_simdcall load4(const float *m)

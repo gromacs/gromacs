@@ -75,107 +75,107 @@ namespace gmx
  */
 class SurfaceAreaCalculator
 {
-    public:
-        /*! \brief
-         * Initializes a surface area calculator.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        SurfaceAreaCalculator();
-        ~SurfaceAreaCalculator();
+public:
+    /*! \brief
+     * Initializes a surface area calculator.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    SurfaceAreaCalculator();
+    ~SurfaceAreaCalculator();
 
-        /*! \brief
-         * Sets the number of surface dots per sphere to use.
-         *
-         * This function must be called before calculate() to set the desired
-         * accuracy/computational cost.
-         */
-        void setDotCount(int dotCount);
-        /*! \brief
-         * Sets the radii of spheres to use in the calculation.
-         *
-         * \param[in]  radius  Radius for each atom/sphere.
-         *
-         * This function must be called before calculate() to set the radii for
-         * the spheres.  All calculations must use the same set of radii to
-         * share the same grid search.
-         * These radii are used as-is, without adding any probe radius.
-         * The passed array must remain valid for the lifetime of this object.
-         *
-         * Does not throw.
-         */
-        void setRadii(const ConstArrayRef<real> &radius);
+    /*! \brief
+     * Sets the number of surface dots per sphere to use.
+     *
+     * This function must be called before calculate() to set the desired
+     * accuracy/computational cost.
+     */
+    void setDotCount(int dotCount);
+    /*! \brief
+     * Sets the radii of spheres to use in the calculation.
+     *
+     * \param[in]  radius  Radius for each atom/sphere.
+     *
+     * This function must be called before calculate() to set the radii for
+     * the spheres.  All calculations must use the same set of radii to
+     * share the same grid search.
+     * These radii are used as-is, without adding any probe radius.
+     * The passed array must remain valid for the lifetime of this object.
+     *
+     * Does not throw.
+     */
+    void setRadii(const ConstArrayRef<real> &radius);
 
-        /*! \brief
-         * Requests calculation of volume.
-         *
-         * If not called, and FLAG_VOLUME is not passed to calculate(), the
-         * volume output is not produced.
-         *
-         * Does not throw.
-         */
-        void setCalculateVolume(bool bVolume);
-        /*! \brief
-         * Requests output of per-atom areas.
-         *
-         * If not called, and FLAG_ATOM_AREA is not passed to calculate(), the
-         * atom area output is not produced.
-         *
-         * Does not throw.
-         */
-        void setCalculateAtomArea(bool bAtomArea);
-        /*! \brief
-         * Requests output of all surface dots.
-         *
-         * If not called, and FLAG_DOTS is not passed to calculate(), the
-         * surface dot output is not produced.
-         *
-         * Does not throw.
-         */
-        void setCalculateSurfaceDots(bool bDots);
+    /*! \brief
+     * Requests calculation of volume.
+     *
+     * If not called, and FLAG_VOLUME is not passed to calculate(), the
+     * volume output is not produced.
+     *
+     * Does not throw.
+     */
+    void setCalculateVolume(bool bVolume);
+    /*! \brief
+     * Requests output of per-atom areas.
+     *
+     * If not called, and FLAG_ATOM_AREA is not passed to calculate(), the
+     * atom area output is not produced.
+     *
+     * Does not throw.
+     */
+    void setCalculateAtomArea(bool bAtomArea);
+    /*! \brief
+     * Requests output of all surface dots.
+     *
+     * If not called, and FLAG_DOTS is not passed to calculate(), the
+     * surface dot output is not produced.
+     *
+     * Does not throw.
+     */
+    void setCalculateSurfaceDots(bool bDots);
 
-        /*! \brief
-         * Calculates the surface area for a set of positions.
-         *
-         * \param[in]  x       Atom positions (sphere centers).
-         * \param[in]  pbc     PBC information (if `NULL`, calculation is done
-         *     without PBC).
-         * \param[in]  nat     Number of atoms to calculate.
-         * \param[in]  index   Atom indices to include in the calculation.
-         * \param[in]  flags   Additional flags for the calculation.
-         * \param[out] area    Total surface area (must be non-`NULL`).
-         * \param[out] volume  Total volume (can be `NULL`).
-         * \param[out] at_area Surface area for each atom in \p index
-         *     (\p nat values) (can be `NULL`).
-         * \param[out] lidots  Surface dots as x,y,z triplets (`3*lidots` values)
-         *     (can be `NULL`).
-         * \param[out] n_dots Number of surface dots in \p lidots
-         *     (can be `NULL`).
-         *
-         * Calculates the surface area of spheres centered at `x[index[0]]`,
-         * ..., `x[index[nat-1]]`, with radii `radii[index[0]]`, ..., where
-         * `radii` is the array passed to setRadii().
-         *
-         * If \p flags is 0, the calculation is done for the items specified
-         * with setCalculateVolume(), setCalculateAtomArea(), and
-         * setCalculateSurfaceDots().  Flags can specify FLAG_VOLUME,
-         * FLAG_ATOM_AREA, and/or FLAG_DOTS to request additional output for
-         * this particular calculation.  If any output is `NULL`, that output
-         * is not calculated, irrespective of the calculation mode set.
-         *
-         * \todo
-         * Make the output options more C++-like, in particular for the array
-         * outputs.
-         */
-        void calculate(const rvec *x, const t_pbc *pbc,
-                       int nat, int index[], int flags, real *area,
-                       real *volume, real **at_area,
-                       real **lidots, int *n_dots) const;
+    /*! \brief
+     * Calculates the surface area for a set of positions.
+     *
+     * \param[in]  x       Atom positions (sphere centers).
+     * \param[in]  pbc     PBC information (if `NULL`, calculation is done
+     *     without PBC).
+     * \param[in]  nat     Number of atoms to calculate.
+     * \param[in]  index   Atom indices to include in the calculation.
+     * \param[in]  flags   Additional flags for the calculation.
+     * \param[out] area    Total surface area (must be non-`NULL`).
+     * \param[out] volume  Total volume (can be `NULL`).
+     * \param[out] at_area Surface area for each atom in \p index
+     *     (\p nat values) (can be `NULL`).
+     * \param[out] lidots  Surface dots as x,y,z triplets (`3*lidots` values)
+     *     (can be `NULL`).
+     * \param[out] n_dots Number of surface dots in \p lidots
+     *     (can be `NULL`).
+     *
+     * Calculates the surface area of spheres centered at `x[index[0]]`,
+     * ..., `x[index[nat-1]]`, with radii `radii[index[0]]`, ..., where
+     * `radii` is the array passed to setRadii().
+     *
+     * If \p flags is 0, the calculation is done for the items specified
+     * with setCalculateVolume(), setCalculateAtomArea(), and
+     * setCalculateSurfaceDots().  Flags can specify FLAG_VOLUME,
+     * FLAG_ATOM_AREA, and/or FLAG_DOTS to request additional output for
+     * this particular calculation.  If any output is `NULL`, that output
+     * is not calculated, irrespective of the calculation mode set.
+     *
+     * \todo
+     * Make the output options more C++-like, in particular for the array
+     * outputs.
+     */
+    void calculate(const rvec *x, const t_pbc *pbc,
+                   int nat, int index[], int flags, real *area,
+                   real *volume, real **at_area,
+                   real **lidots, int *n_dots) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

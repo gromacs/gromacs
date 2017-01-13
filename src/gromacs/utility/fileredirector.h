@@ -70,25 +70,25 @@ namespace gmx
  */
 class IFileInputRedirector
 {
-    public:
-        virtual ~IFileInputRedirector();
+public:
+    virtual ~IFileInputRedirector();
 
-        /*! \brief
-         * Checks whether the provided path exists (and is a file).
-         *
-         * The \p onNotFound can be used to influence the behavior on error
-         * conditions.  Functions to pass as this parameter are provided as
-         * members of gmx::File.
-         */
-        virtual bool fileExists(const char *          filename,
-                                File::NotFoundHandler onNotFound) const = 0;
+    /*! \brief
+     * Checks whether the provided path exists (and is a file).
+     *
+     * The \p onNotFound can be used to influence the behavior on error
+     * conditions.  Functions to pass as this parameter are provided as
+     * members of gmx::File.
+     */
+    virtual bool fileExists(const char *          filename,
+                            File::NotFoundHandler onNotFound) const = 0;
 
-        //! Convenience method to check file existence using an std::string path.
-        bool fileExists(const std::string &   filename,
-                        File::NotFoundHandler onNotFound) const
-        {
-            return fileExists(filename.c_str(), onNotFound);
-        }
+    //! Convenience method to check file existence using an std::string path.
+    bool fileExists(const std::string &   filename,
+                    File::NotFoundHandler onNotFound) const
+    {
+        return fileExists(filename.c_str(), onNotFound);
+    }
 };
 
 /*! \libinternal \brief
@@ -119,25 +119,25 @@ class IFileInputRedirector
  */
 class IFileOutputRedirector
 {
-    public:
-        virtual ~IFileOutputRedirector();
+public:
+    virtual ~IFileOutputRedirector();
 
-        /*! \brief
-         * Returns a stream to use for `stdout` output.
-         */
-        virtual TextOutputStream &standardOutput() = 0;
-        /*! \brief
-         * Returns a stream to use for output to a file at a given path.
-         *
-         * \param[in] filename  Requested file name.
-         */
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename) = 0;
+    /*! \brief
+     * Returns a stream to use for `stdout` output.
+     */
+    virtual TextOutputStream &standardOutput() = 0;
+    /*! \brief
+     * Returns a stream to use for output to a file at a given path.
+     *
+     * \param[in] filename  Requested file name.
+     */
+    virtual TextOutputStreamPointer openTextOutputFile(const char *filename) = 0;
 
-        //! Convenience method to open a stream using an std::string path.
-        TextOutputStreamPointer openTextOutputFile(const std::string &filename)
-        {
-            return openTextOutputFile(filename.c_str());
-        }
+    //! Convenience method to open a stream using an std::string path.
+    TextOutputStreamPointer openTextOutputFile(const std::string &filename)
+    {
+        return openTextOutputFile(filename.c_str());
+    }
 };
 
 //! \cond libapi

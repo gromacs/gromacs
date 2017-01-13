@@ -190,71 +190,71 @@ namespace
  */
 class StringKeywordMatchItem
 {
-    public:
-        /*! \brief
-         * Constructs a matcher from a string.
-         *
-         * \param[in] matchType String matching type.
-         * \param[in] str       String to use for matching.
-         */
-        StringKeywordMatchItem(gmx::SelectionStringMatchType matchType,
-                               const char *                  str)
-            : str_(str)
+public:
+    /*! \brief
+     * Constructs a matcher from a string.
+     *
+     * \param[in] matchType String matching type.
+     * \param[in] str       String to use for matching.
+     */
+    StringKeywordMatchItem(gmx::SelectionStringMatchType matchType,
+                           const char *                  str)
+        : str_(str)
+    {
+        bool bRegExp = (matchType == gmx::eStringMatchType_RegularExpression);
+        if (matchType == gmx::eStringMatchType_Auto)
         {
-            bool bRegExp = (matchType == gmx::eStringMatchType_RegularExpression);
-            if (matchType == gmx::eStringMatchType_Auto)
+            for (size_t j = 0; j < std::strlen(str); ++j)
             {
-                for (size_t j = 0; j < std::strlen(str); ++j)
+                if (std::ispunct(str[j]) && str[j] != '?' && str[j] != '*')
                 {
-                    if (std::ispunct(str[j]) && str[j] != '?' && str[j] != '*')
-                    {
-                        bRegExp = true;
-                        break;
-                    }
+                    bRegExp = true;
+                    break;
                 }
             }
-            if (bRegExp)
-            {
-                if (!gmx::Regex::isSupported())
-                {
-                    std::string message
-                        = gmx::formatString("No regular expression support, "
-                                            "cannot match \"%s\"", str);
-                    GMX_THROW(gmx::InvalidInputError(message));
-                }
-                regex_.reset(new gmx::Regex(str));
-            }
         }
-
-        /*! \brief
-         * Checks whether this item matches a string.
-         *
-         * \param[in] matchType String matching type.
-         * \param[in] value     String to match.
-         * \returns   true if this item matches \p value.
-         */
-        bool match(gmx::SelectionStringMatchType matchType,
-                   const char *                  value) const
+        if (bRegExp)
         {
-            if (matchType == gmx::eStringMatchType_Exact)
+            if (!gmx::Regex::isSupported())
             {
-                return str_ == value;
+                std::string message
+                    = gmx::formatString("No regular expression support, "
+                                        "cannot match \"%s\"", str);
+                GMX_THROW(gmx::InvalidInputError(message));
             }
-            else if (regex_)
-            {
-                return gmx::regexMatch(value, *regex_);
-            }
-            else
-            {
-                return gmx_wcmatch(str_.c_str(), value) == 0;
-            }
+            regex_.reset(new gmx::Regex(str));
         }
+    }
 
-    private:
-        //! The raw string passed for the matcher.
-        std::string str_;
-        //! Regular expression compiled from \p str_, if applicable.
-        std::shared_ptr<gmx::Regex> regex_;
+    /*! \brief
+     * Checks whether this item matches a string.
+     *
+     * \param[in] matchType String matching type.
+     * \param[in] value     String to match.
+     * \returns   true if this item matches \p value.
+     */
+    bool match(gmx::SelectionStringMatchType matchType,
+               const char *                  value) const
+    {
+        if (matchType == gmx::eStringMatchType_Exact)
+        {
+            return str_ == value;
+        }
+        else if (regex_)
+        {
+            return gmx::regexMatch(value, *regex_);
+        }
+        else
+        {
+            return gmx_wcmatch(str_.c_str(), value) == 0;
+        }
+    }
+
+private:
+    //! The raw string passed for the matcher.
+    std::string str_;
+    //! Regular expression compiled from \p str_, if applicable.
+    std::shared_ptr<gmx::Regex> regex_;
 };
 
 /*! \internal \brief

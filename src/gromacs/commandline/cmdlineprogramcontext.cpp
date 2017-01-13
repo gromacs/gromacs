@@ -91,29 +91,29 @@ std::string quoteIfNecessary(const char *str)
  */
 class DefaultExecutableEnvironment : public IExecutableEnvironment
 {
-    public:
-        //! Allocates a default environment.
-        static ExecutableEnvironmentPointer create()
-        {
-            return ExecutableEnvironmentPointer(new DefaultExecutableEnvironment());
-        }
+public:
+    //! Allocates a default environment.
+    static ExecutableEnvironmentPointer create()
+    {
+        return ExecutableEnvironmentPointer(new DefaultExecutableEnvironment());
+    }
 
-        DefaultExecutableEnvironment()
-            : initialWorkingDirectory_(Path::getWorkingDirectory())
-        {
-        }
+    DefaultExecutableEnvironment()
+        : initialWorkingDirectory_(Path::getWorkingDirectory())
+    {
+    }
 
-        virtual std::string getWorkingDirectory() const
-        {
-            return initialWorkingDirectory_;
-        }
-        virtual std::vector<std::string> getExecutablePaths() const
-        {
-            return Path::getExecutablePaths();
-        }
+    virtual std::string getWorkingDirectory() const
+    {
+        return initialWorkingDirectory_;
+    }
+    virtual std::vector<std::string> getExecutablePaths() const
+    {
+        return Path::getExecutablePaths();
+    }
 
-    private:
-        std::string initialWorkingDirectory_;
+private:
+    std::string initialWorkingDirectory_;
 };
 
 /*! \brief
@@ -295,30 +295,30 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
 
 class CommandLineProgramContext::Impl
 {
-    public:
-        Impl();
-        Impl(int argc, const char *const argv[],
-             ExecutableEnvironmentPointer env);
+public:
+    Impl();
+    Impl(int argc, const char *const argv[],
+         ExecutableEnvironmentPointer env);
 
-        /*! \brief
-         * Finds the full binary path if it isn't searched yet.
-         *
-         * Sets \a fullBinaryPath_ if it isn't set yet.
-         *
-         * The \a binaryPathMutex_ should be locked by the caller before
-         * calling this function.
-         */
-        void findBinaryPath() const;
+    /*! \brief
+     * Finds the full binary path if it isn't searched yet.
+     *
+     * Sets \a fullBinaryPath_ if it isn't set yet.
+     *
+     * The \a binaryPathMutex_ should be locked by the caller before
+     * calling this function.
+     */
+    void findBinaryPath() const;
 
-        ExecutableEnvironmentPointer executableEnv_;
-        std::string                  invokedName_;
-        std::string                  programName_;
-        std::string                  displayName_;
-        std::string                  commandLine_;
-        mutable std::string          fullBinaryPath_;
-        mutable std::string          installationPrefix_;
-        mutable bool                 bSourceLayout_;
-        mutable Mutex                binaryPathMutex_;
+    ExecutableEnvironmentPointer executableEnv_;
+    std::string                  invokedName_;
+    std::string                  programName_;
+    std::string                  displayName_;
+    std::string                  commandLine_;
+    mutable std::string          fullBinaryPath_;
+    mutable std::string          installationPrefix_;
+    mutable bool                 bSourceLayout_;
+    mutable Mutex                binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl()

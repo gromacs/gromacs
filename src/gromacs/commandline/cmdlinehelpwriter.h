@@ -63,54 +63,54 @@ template <typename T> class ConstArrayRef;
  */
 class CommandLineHelpWriter
 {
-    public:
-        /*! \brief
-         * Creates an object that writer ascii-formatted help for Options.
-         *
-         * \param[in] options  Options for which help should be printed.
-         */
-        explicit CommandLineHelpWriter(const Options &options);
-        ~CommandLineHelpWriter();
+public:
+    /*! \brief
+     * Creates an object that writer ascii-formatted help for Options.
+     *
+     * \param[in] options  Options for which help should be printed.
+     */
+    explicit CommandLineHelpWriter(const Options &options);
+    ~CommandLineHelpWriter();
 
-        /*! \brief
-         * Sets the help text to print as description.
-         *
-         * \param[in] help  Help text to show.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * If `help` is empty, or this method is not called, only a list of
-         * options is printed.
-         * Formatting for the help text is described on \ref page_onlinehelp.
-         */
-        CommandLineHelpWriter &setHelpText(const std::string &help);
-        //! \copydoc setHelpText(const std::string &)
-        CommandLineHelpWriter &
-        setHelpText(const ConstArrayRef<const char *> &help);
-        /*! \brief
-         * Sets the list of known bugs/limitations.
-         *
-         * \param[in] bugs  Array of bugs/limitations.
-         *
-         * Each entry in the input array identifies a separate issue.
-         * The array passed should remain valid for the lifetime of the writer
-         * object.
-         */
-        CommandLineHelpWriter &
-        setKnownIssues(const ConstArrayRef<const char *> &bugs);
+    /*! \brief
+     * Sets the help text to print as description.
+     *
+     * \param[in] help  Help text to show.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * If `help` is empty, or this method is not called, only a list of
+     * options is printed.
+     * Formatting for the help text is described on \ref page_onlinehelp.
+     */
+    CommandLineHelpWriter &setHelpText(const std::string &help);
+    //! \copydoc setHelpText(const std::string &)
+    CommandLineHelpWriter &
+    setHelpText(const ConstArrayRef<const char *> &help);
+    /*! \brief
+     * Sets the list of known bugs/limitations.
+     *
+     * \param[in] bugs  Array of bugs/limitations.
+     *
+     * Each entry in the input array identifies a separate issue.
+     * The array passed should remain valid for the lifetime of the writer
+     * object.
+     */
+    CommandLineHelpWriter &
+    setKnownIssues(const ConstArrayRef<const char *> &bugs);
 
-        /*! \brief
-         * Writes the help.
-         *
-         * \param[in] context  Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        void writeHelp(const CommandLineHelpContext &context);
+    /*! \brief
+     * Writes the help.
+     *
+     * \param[in] context  Context object for writing the help.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     */
+    void writeHelp(const CommandLineHelpContext &context);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

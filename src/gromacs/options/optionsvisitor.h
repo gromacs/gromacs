@@ -71,13 +71,13 @@ class OptionSectionImpl;
  */
 class OptionsVisitor
 {
-    public:
-        virtual ~OptionsVisitor() {}
+public:
+    virtual ~OptionsVisitor() {}
 
-        //! Called for each section.
-        virtual void visitSection(const OptionSectionInfo &section) = 0;
-        //! Called for each option.
-        virtual void visitOption(const OptionInfo &option) = 0;
+    //! Called for each section.
+    virtual void visitSection(const OptionSectionInfo &section) = 0;
+    //! Called for each option.
+    virtual void visitOption(const OptionInfo &option) = 0;
 };
 
 /*! \libinternal \brief
@@ -92,24 +92,24 @@ class OptionsVisitor
 template <class InfoType>
 class OptionsTypeVisitor : public OptionsVisitor
 {
-    public:
-        virtual ~OptionsTypeVisitor() {}
+public:
+    virtual ~OptionsTypeVisitor() {}
 
-        virtual void visitSection(const OptionSectionInfo &section) = 0;
-        /*! \brief
-         * Called for each option of type \p InfoType.
-         */
-        virtual void visitOptionType(const InfoType &option) = 0;
+    virtual void visitSection(const OptionSectionInfo &section) = 0;
+    /*! \brief
+     * Called for each option of type \p InfoType.
+     */
+    virtual void visitOptionType(const InfoType &option) = 0;
 
-    private:
-        virtual void visitOption(const OptionInfo &option)
+private:
+    virtual void visitOption(const OptionInfo &option)
+    {
+        const InfoType *subtype = option.toType<InfoType>();
+        if (subtype != NULL)
         {
-            const InfoType *subtype = option.toType<InfoType>();
-            if (subtype != NULL)
-            {
-                visitOptionType(*subtype);
-            }
+            visitOptionType(*subtype);
         }
+    }
 };
 
 /*! \libinternal \brief
@@ -145,27 +145,27 @@ class OptionsTypeVisitor : public OptionsVisitor
  */
 class OptionsIterator
 {
-    public:
-        /*! \brief
-         * Creates an object for visiting options in a Options object.
-         *
-         * The created iterator iterates over the "root" section in the Options
-         * object.
-         */
-        explicit OptionsIterator(const Options &options);
-        //! Creates an object for visiting options in an options section.
-        explicit OptionsIterator(const OptionSectionInfo &section);
+public:
+    /*! \brief
+     * Creates an object for visiting options in a Options object.
+     *
+     * The created iterator iterates over the "root" section in the Options
+     * object.
+     */
+    explicit OptionsIterator(const Options &options);
+    //! Creates an object for visiting options in an options section.
+    explicit OptionsIterator(const OptionSectionInfo &section);
 
-        //! Visits each section in the wrapped section.
-        void acceptSections(OptionsVisitor *visitor) const;
-        //! Visits each option in the wrapped section.
-        void acceptOptions(OptionsVisitor *visitor) const;
+    //! Visits each section in the wrapped section.
+    void acceptSections(OptionsVisitor *visitor) const;
+    //! Visits each option in the wrapped section.
+    void acceptOptions(OptionsVisitor *visitor) const;
 
-    private:
-        //! The wrapped section object.
-        const internal::OptionSectionImpl &section_;
+private:
+    //! The wrapped section object.
+    const internal::OptionSectionImpl &section_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsIterator);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionsIterator);
 };
 
 /*! \libinternal \brief
@@ -179,13 +179,13 @@ class OptionsIterator
  */
 class OptionsModifyingVisitor
 {
-    public:
-        virtual ~OptionsModifyingVisitor() {}
+public:
+    virtual ~OptionsModifyingVisitor() {}
 
-        //! Called for each section.
-        virtual void visitSection(OptionSectionInfo *section) = 0;
-        //! Called for each option.
-        virtual void visitOption(OptionInfo *option) = 0;
+    //! Called for each section.
+    virtual void visitSection(OptionSectionInfo *section) = 0;
+    //! Called for each option.
+    virtual void visitOption(OptionInfo *option) = 0;
 };
 
 /*! \libinternal \brief
@@ -201,24 +201,24 @@ class OptionsModifyingVisitor
 template <class InfoType>
 class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
 {
-    public:
-        virtual ~OptionsModifyingTypeVisitor() {}
+public:
+    virtual ~OptionsModifyingTypeVisitor() {}
 
-        virtual void visitSection(OptionSectionInfo *section) = 0;
-        /*! \brief
-         * Called for each option of type \p InfoType.
-         */
-        virtual void visitOptionType(InfoType *option) = 0;
+    virtual void visitSection(OptionSectionInfo *section) = 0;
+    /*! \brief
+     * Called for each option of type \p InfoType.
+     */
+    virtual void visitOptionType(InfoType *option) = 0;
 
-    private:
-        virtual void visitOption(OptionInfo *option)
+private:
+    virtual void visitOption(OptionInfo *option)
+    {
+        InfoType *subtype = option->toType<InfoType>();
+        if (subtype != nullptr)
         {
-            InfoType *subtype = option->toType<InfoType>();
-            if (subtype != nullptr)
-            {
-                visitOptionType(subtype);
-            }
+            visitOptionType(subtype);
         }
+    }
 };
 
 /*! \libinternal \brief
@@ -234,27 +234,27 @@ class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
  */
 class OptionsModifyingIterator
 {
-    public:
-        /*! \brief
-         * Creates an object for visiting options in a Options object.
-         *
-         * The created iterator iterates over the "root" section in the Options
-         * object.
-         */
-        explicit OptionsModifyingIterator(Options *options);
-        //! Creates an object for visiting options in an options section.
-        explicit OptionsModifyingIterator(OptionSectionInfo *section);
+public:
+    /*! \brief
+     * Creates an object for visiting options in a Options object.
+     *
+     * The created iterator iterates over the "root" section in the Options
+     * object.
+     */
+    explicit OptionsModifyingIterator(Options *options);
+    //! Creates an object for visiting options in an options section.
+    explicit OptionsModifyingIterator(OptionSectionInfo *section);
 
-        //! Visits each section in the wrapped section.
-        void acceptSections(OptionsModifyingVisitor *visitor) const;
-        //! Visits each option in the wrapped section.
-        void acceptOptions(OptionsModifyingVisitor *visitor) const;
+    //! Visits each section in the wrapped section.
+    void acceptSections(OptionsModifyingVisitor *visitor) const;
+    //! Visits each option in the wrapped section.
+    void acceptOptions(OptionsModifyingVisitor *visitor) const;
 
-    private:
-        //! The wrapped section object.
-        internal::OptionSectionImpl &section_;
+private:
+    //! The wrapped section object.
+    internal::OptionSectionImpl &section_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsModifyingIterator);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionsModifyingIterator);
 };
 
 } // namespace gmx

@@ -92,49 +92,49 @@ namespace
  */
 class TestProgramContext : public IProgramContext
 {
-    public:
-        /*! \brief
-         * Initializes a test program context.
-         *
-         * \param[in] context  Current \Gromacs program context.
-         */
-        explicit TestProgramContext(const IProgramContext &context)
-            : context_(context), dataPath_(CMAKE_SOURCE_DIR)
-        {
-        }
+public:
+    /*! \brief
+     * Initializes a test program context.
+     *
+     * \param[in] context  Current \Gromacs program context.
+     */
+    explicit TestProgramContext(const IProgramContext &context)
+        : context_(context), dataPath_(CMAKE_SOURCE_DIR)
+    {
+    }
 
-        /*! \brief
-         * Sets the source directory root from which to look for data files.
-         */
-        void overrideSourceRoot(const std::string &sourceRoot)
-        {
-            dataPath_ = sourceRoot;
-        }
+    /*! \brief
+     * Sets the source directory root from which to look for data files.
+     */
+    void overrideSourceRoot(const std::string &sourceRoot)
+    {
+        dataPath_ = sourceRoot;
+    }
 
-        virtual const char *programName() const
-        {
-            return context_.programName();
-        }
-        virtual const char *displayName() const
-        {
-            return context_.displayName();
-        }
-        virtual const char *fullBinaryPath() const
-        {
-            return context_.fullBinaryPath();
-        }
-        virtual InstallationPrefixInfo installationPrefix() const
-        {
-            return InstallationPrefixInfo(dataPath_.c_str(), true);
-        }
-        virtual const char *commandLine() const
-        {
-            return context_.commandLine();
-        }
+    virtual const char *programName() const
+    {
+        return context_.programName();
+    }
+    virtual const char *displayName() const
+    {
+        return context_.displayName();
+    }
+    virtual const char *fullBinaryPath() const
+    {
+        return context_.fullBinaryPath();
+    }
+    virtual InstallationPrefixInfo installationPrefix() const
+    {
+        return InstallationPrefixInfo(dataPath_.c_str(), true);
+    }
+    virtual const char *commandLine() const
+    {
+        return context_.commandLine();
+    }
 
-    private:
-        const IProgramContext &context_;
-        std::string            dataPath_;
+private:
+    const IProgramContext &context_;
+    std::string            dataPath_;
 };
 
 //! Prints the command-line options for the unit test binary.

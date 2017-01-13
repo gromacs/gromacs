@@ -62,38 +62,38 @@ namespace
 
 class HelpWriterContextTest : public gmx::test::StringTestBase
 {
-    public:
-        void testFormatting(const std::string &   text,
-                            gmx::HelpOutputFormat format,
-                            const char *          id)
+public:
+    void testFormatting(const std::string &   text,
+                        gmx::HelpOutputFormat format,
+                        const char *          id)
+    {
+        gmx::HelpWriterContext context(nullptr, format);
+        std::string            result
+            = context.substituteMarkupAndWrapToString(settings_, text);
+        if (id == nullptr)
         {
-            gmx::HelpWriterContext context(nullptr, format);
-            std::string            result
-                = context.substituteMarkupAndWrapToString(settings_, text);
-            if (id == nullptr)
+            switch (format)
             {
-                switch (format)
-                {
-                    case gmx::eHelpOutputFormat_Console:
-                        id = "Console";
-                        break;
-                    case gmx::eHelpOutputFormat_Rst:
-                        id = "reStructuredText";
-                        break;
-                    default:
-                        GMX_RELEASE_ASSERT(false, "Help output format testing not implemented");
-                }
+                case gmx::eHelpOutputFormat_Console:
+                    id = "Console";
+                    break;
+                case gmx::eHelpOutputFormat_Rst:
+                    id = "reStructuredText";
+                    break;
+                default:
+                    GMX_RELEASE_ASSERT(false, "Help output format testing not implemented");
             }
-            checkText(result, id);
         }
-        void testFormatting(const gmx::ConstArrayRef<const char *> &text)
-        {
-            std::string testText = gmx::joinStrings(text, "\n");
-            testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);
-            testFormatting(testText, gmx::eHelpOutputFormat_Rst, nullptr);
-        }
+        checkText(result, id);
+    }
+    void testFormatting(const gmx::ConstArrayRef<const char *> &text)
+    {
+        std::string testText = gmx::joinStrings(text, "\n");
+        testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);
+        testFormatting(testText, gmx::eHelpOutputFormat_Rst, nullptr);
+    }
 
-        gmx::TextLineWrapperSettings settings_;
+    gmx::TextLineWrapperSettings settings_;
 };
 
 TEST_F(HelpWriterContextTest, FormatsParagraphs)

@@ -62,25 +62,25 @@ namespace test
  */
 class TestException : public GromacsException
 {
-    public:
-        /*! \brief
-         * Creates a test exception object with the provided detailed reason.
-         *
-         * \param[in] reason Detailed reason for the exception.
-         */
-        explicit TestException(const std::string &reason)
-            : GromacsException(reason) {}
-        /*! \brief
-         * Creates a test exception based on another GromacsException object.
-         *
-         * \param[in] base  Exception to wrap.
-         *
-         * \see GMX_THROW_WRAPPER_TESTEXCEPTION
-         */
-        explicit TestException(const GromacsException &base)
-            : GromacsException(base) {}
+public:
+    /*! \brief
+     * Creates a test exception object with the provided detailed reason.
+     *
+     * \param[in] reason Detailed reason for the exception.
+     */
+    explicit TestException(const std::string &reason)
+        : GromacsException(reason) {}
+    /*! \brief
+     * Creates a test exception based on another GromacsException object.
+     *
+     * \param[in] base  Exception to wrap.
+     *
+     * \see GMX_THROW_WRAPPER_TESTEXCEPTION
+     */
+    explicit TestException(const GromacsException &base)
+        : GromacsException(base) {}
 
-        virtual int errorCode() const { return -1; }
+    virtual int errorCode() const { return -1; }
 };
 
 /*! \brief

@@ -69,26 +69,26 @@ class FileStreamImpl;
  */
 class StandardInputStream : public TextInputStream
 {
-    public:
-        /*! \brief
-         * Returns whether `stdin` is an interactive terminal.
-         *
-         * Only works on Unix, otherwise always returns true.
-         *
-         * Does not throw.
-         */
-        bool isInteractive() const;
+public:
+    /*! \brief
+     * Returns whether `stdin` is an interactive terminal.
+     *
+     * Only works on Unix, otherwise always returns true.
+     *
+     * Does not throw.
+     */
+    bool isInteractive() const;
 
-        // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close() {}
+    // From TextInputStream
+    virtual bool readLine(std::string *line);
+    virtual void close() {}
 
-        /*! \brief
-         * Returns a stream for accessing `stdin`.
-         *
-         * Does not throw.
-         */
-        static StandardInputStream &instance();
+    /*! \brief
+     * Returns a stream for accessing `stdin`.
+     *
+     * Does not throw.
+     */
+    static StandardInputStream &instance();
 };
 
 /*! \libinternal \brief
@@ -102,53 +102,53 @@ class StandardInputStream : public TextInputStream
  */
 class TextInputFile : public TextInputStream
 {
-    public:
-        /*! \brief
-         * Opens a file and returns a `FILE` handle.
-         *
-         * \param[in] filename  Path of the file to open.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Instead of returning `NULL` on errors, throws an exception with
-         * additional details (including the file name and `errno`).
-         */
-        static FILE *openRawHandle(const char *filename);
-        //! \copydoc openRawHandle(const char *)
-        static FILE *openRawHandle(const std::string &filename);
+public:
+    /*! \brief
+     * Opens a file and returns a `FILE` handle.
+     *
+     * \param[in] filename  Path of the file to open.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Instead of returning `NULL` on errors, throws an exception with
+     * additional details (including the file name and `errno`).
+     */
+    static FILE *openRawHandle(const char *filename);
+    //! \copydoc openRawHandle(const char *)
+    static FILE *openRawHandle(const std::string &filename);
 
-        /*! \brief
-         * Opens a text file as a stream.
-         *
-         * \param[in]  filename  Path to the file to open.
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     FileIOError on any I/O error.
-         */
-        explicit TextInputFile(const std::string &filename);
-        /*! \brief
-         * Initializes file object from an existing file handle.
-         *
-         * \param[in]  fp     File handle to use.
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * The caller is responsible of closing the file; close() does nothing
-         * for an object constructed this way.
-         */
-        explicit TextInputFile(FILE *fp);
-        virtual ~TextInputFile();
+    /*! \brief
+     * Opens a text file as a stream.
+     *
+     * \param[in]  filename  Path to the file to open.
+     * \throws     std::bad_alloc if out of memory.
+     * \throws     FileIOError on any I/O error.
+     */
+    explicit TextInputFile(const std::string &filename);
+    /*! \brief
+     * Initializes file object from an existing file handle.
+     *
+     * \param[in]  fp     File handle to use.
+     * \throws     std::bad_alloc if out of memory.
+     *
+     * The caller is responsible of closing the file; close() does nothing
+     * for an object constructed this way.
+     */
+    explicit TextInputFile(FILE *fp);
+    virtual ~TextInputFile();
 
-        /*! \brief
-         * Returns a raw handle to the input file.
-         *
-         * This is provided for interoperability with older C-like code.
-         */
-        FILE *handle();
+    /*! \brief
+     * Returns a raw handle to the input file.
+     *
+     * This is provided for interoperability with older C-like code.
+     */
+    FILE *handle();
 
-        // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close();
+    // From TextInputStream
+    virtual bool readLine(std::string *line);
+    virtual void close();
 
-    private:
-        PrivateImplPointer<internal::FileStreamImpl> impl_;
+private:
+    PrivateImplPointer<internal::FileStreamImpl> impl_;
 };
 
 /*! \libinternal \brief
@@ -162,32 +162,32 @@ class TextInputFile : public TextInputStream
  */
 class TextOutputFile : public TextOutputStream
 {
-    public:
-        //! \copydoc TextInputFile::TextInputFile(const std::string &)
-        explicit TextOutputFile(const std::string &filename);
-        //! \copydoc TextInputFile::TextInputFile(FILE *)
-        explicit TextOutputFile(FILE *fp);
-        virtual ~TextOutputFile();
+public:
+    //! \copydoc TextInputFile::TextInputFile(const std::string &)
+    explicit TextOutputFile(const std::string &filename);
+    //! \copydoc TextInputFile::TextInputFile(FILE *)
+    explicit TextOutputFile(FILE *fp);
+    virtual ~TextOutputFile();
 
-        // From TextOutputStream
-        virtual void write(const char *text);
-        virtual void close();
+    // From TextOutputStream
+    virtual void write(const char *text);
+    virtual void close();
 
-        /*! \brief
-         * Returns a stream for accessing `stdout`.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static TextOutputFile &standardOutput();
-        /*! \brief
-         * Returns a stream for accessing `stderr`.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static TextOutputFile &standardError();
+    /*! \brief
+     * Returns a stream for accessing `stdout`.
+     *
+     * \throws    std::bad_alloc if out of memory (only on first call).
+     */
+    static TextOutputFile &standardOutput();
+    /*! \brief
+     * Returns a stream for accessing `stderr`.
+     *
+     * \throws    std::bad_alloc if out of memory (only on first call).
+     */
+    static TextOutputFile &standardError();
 
-    private:
-        PrivateImplPointer<internal::FileStreamImpl> impl_;
+private:
+    PrivateImplPointer<internal::FileStreamImpl> impl_;
 };
 
 } // namespace gmx

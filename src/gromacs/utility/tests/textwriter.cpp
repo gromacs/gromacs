@@ -57,18 +57,18 @@ namespace
 
 class TextWriterTest : public gmx::test::StringTestBase
 {
-    public:
-        TextWriterTest() : writer_(&stream_)
-        {
-        }
+public:
+    TextWriterTest() : writer_(&stream_)
+    {
+    }
 
-        void checkOutput()
-        {
-            checkText(stream_.toString(), "Output");
-        }
+    void checkOutput()
+    {
+        checkText(stream_.toString(), "Output");
+    }
 
-        gmx::StringOutputStream stream_;
-        gmx::TextWriter         writer_;
+    gmx::StringOutputStream stream_;
+    gmx::TextWriter         writer_;
 };
 
 TEST_F(TextWriterTest, WritesLines)

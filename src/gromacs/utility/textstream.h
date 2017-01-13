@@ -67,27 +67,27 @@ namespace gmx
  */
 class TextInputStream
 {
-    public:
-        virtual ~TextInputStream() {}
+public:
+    virtual ~TextInputStream() {}
 
-        /*! \brief
-         * Reads a line (with newline included) from the stream.
-         *
-         * \param[out] line    String to receive the line.
-         * \returns    `false` if nothing was read because the stream ended.
-         *
-         * On error or when `false` is returned, \p line will be empty.
-         */
-        virtual bool readLine(std::string *line) = 0;
-        /*! \brief
-         * Closes the stream.
-         *
-         * It is not allowed to read from a stream after it has been closed.
-         * See TextOutputStream::close() for rationale for a close() method
-         * separate from the destructor.  For input, failures during close
-         * should be rare, but it is clearer to keep the interface symmetric.
-         */
-        virtual void close() = 0;
+    /*! \brief
+     * Reads a line (with newline included) from the stream.
+     *
+     * \param[out] line    String to receive the line.
+     * \returns    `false` if nothing was read because the stream ended.
+     *
+     * On error or when `false` is returned, \p line will be empty.
+     */
+    virtual bool readLine(std::string *line) = 0;
+    /*! \brief
+     * Closes the stream.
+     *
+     * It is not allowed to read from a stream after it has been closed.
+     * See TextOutputStream::close() for rationale for a close() method
+     * separate from the destructor.  For input, failures during close
+     * should be rare, but it is clearer to keep the interface symmetric.
+     */
+    virtual void close() = 0;
 };
 
 /*! \libinternal \brief
@@ -117,25 +117,25 @@ class TextInputStream
  */
 class TextOutputStream
 {
-    public:
-        virtual ~TextOutputStream() {}
+public:
+    virtual ~TextOutputStream() {}
 
-        /*! \brief
-         * Writes a given string to the stream.
-         */
-        virtual void write(const char *text) = 0;
-        /*! \brief
-         * Closes the stream.
-         *
-         * It is not allowed to write to a stream after it has been closed.
-         * A method separate from the destructor is provided such that errors
-         * that occur while closing the stream (e.g., when closing the file)
-         * can be handled using exceptions.
-         * The destructor is not allowed to throw, so code that wants to
-         * observe such errors needs to call close() after it has finished
-         * writing to the stream.
-         */
-        virtual void close() = 0;
+    /*! \brief
+     * Writes a given string to the stream.
+     */
+    virtual void write(const char *text) = 0;
+    /*! \brief
+     * Closes the stream.
+     *
+     * It is not allowed to write to a stream after it has been closed.
+     * A method separate from the destructor is provided such that errors
+     * that occur while closing the stream (e.g., when closing the file)
+     * can be handled using exceptions.
+     * The destructor is not allowed to throw, so code that wants to
+     * observe such errors needs to call close() after it has finished
+     * writing to the stream.
+     */
+    virtual void close() = 0;
 };
 
 //! Shorthand for a smart pointer to a TextInputStream.

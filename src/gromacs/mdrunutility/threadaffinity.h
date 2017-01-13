@@ -57,12 +57,12 @@ class MDLogger;
 
 class IThreadAffinityAccess
 {
-    public:
-        virtual bool isThreadAffinitySupported() const        = 0;
-        virtual bool setCurrentThreadAffinityToCore(int core) = 0;
+public:
+    virtual bool isThreadAffinitySupported() const        = 0;
+    virtual bool setCurrentThreadAffinityToCore(int core) = 0;
 
-    protected:
-        virtual ~IThreadAffinityAccess();
+protected:
+    virtual ~IThreadAffinityAccess();
 };
 
 } // namespace gmx

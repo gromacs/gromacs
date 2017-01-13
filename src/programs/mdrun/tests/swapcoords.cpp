@@ -51,9 +51,9 @@ namespace test
 
 class SwapTestFixture : public MdrunTestFixture
 {
-    protected:
-        SwapTestFixture();
-        ~SwapTestFixture();
+protected:
+    SwapTestFixture();
+    ~SwapTestFixture();
 };
 
 

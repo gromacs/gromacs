@@ -61,24 +61,24 @@ class CommandLineHelpContext;
  */
 class CommandLineModuleSettings
 {
-    public:
-        CommandLineModuleSettings();
-        ~CommandLineModuleSettings();
+public:
+    CommandLineModuleSettings();
+    ~CommandLineModuleSettings();
 
-        //! Returns the default nice level for this module.
-        int defaultNiceLevel() const;
+    //! Returns the default nice level for this module.
+    int defaultNiceLevel() const;
 
-        /*! \brief
-         * Sets the default nice level for this module.
-         *
-         * If not called, the module will be niced.
-         */
-        void setDefaultNiceLevel(int niceLevel);
+    /*! \brief
+     * Sets the default nice level for this module.
+     *
+     * If not called, the module will be niced.
+     */
+    void setDefaultNiceLevel(int niceLevel);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \brief
@@ -92,47 +92,47 @@ class CommandLineModuleSettings
  */
 class ICommandLineModule
 {
-    public:
-        virtual ~ICommandLineModule() {}
+public:
+    virtual ~ICommandLineModule() {}
 
-        //! Returns the name of the module.
-        virtual const char *name() const = 0;
-        //! Returns a one-line description of the module.
-        virtual const char *shortDescription() const = 0;
+    //! Returns the name of the module.
+    virtual const char *name() const = 0;
+    //! Returns a one-line description of the module.
+    virtual const char *shortDescription() const = 0;
 
-        /*! \brief
-         * Initializes the module and provides settings for the runner.
-         *
-         * This will be called before run(), and can be used to adjust
-         * initialization that the runner does.
-         *
-         * This method is currently not called when writing the help.
-         */
-        virtual void init(CommandLineModuleSettings *settings) = 0;
-        /*! \brief
-         * Runs the module with the given arguments.
-         *
-         * \param[in] argc  Number of elements in \p argv.
-         * \param[in] argv  Command-line arguments.
-         * \throws   unspecified  May throw exceptions to indicate errors.
-         * \returns  Exit code for the program.
-         * \retval   0 on successful termination.
-         *
-         * \p argv[0] is the name of the module, i.e., the arguments are as if
-         * the module was run as a standalone executable.
-         */
-        virtual int run(int argc, char *argv[]) = 0;
-        /*! \brief
-         * Prints help for the module.
-         *
-         * \param[in] context  Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Note that for MPI-enabled builds, this is called only on the master
-         * rank.
-         */
-        virtual void writeHelp(const CommandLineHelpContext &context) const = 0;
+    /*! \brief
+     * Initializes the module and provides settings for the runner.
+     *
+     * This will be called before run(), and can be used to adjust
+     * initialization that the runner does.
+     *
+     * This method is currently not called when writing the help.
+     */
+    virtual void init(CommandLineModuleSettings *settings) = 0;
+    /*! \brief
+     * Runs the module with the given arguments.
+     *
+     * \param[in] argc  Number of elements in \p argv.
+     * \param[in] argv  Command-line arguments.
+     * \throws   unspecified  May throw exceptions to indicate errors.
+     * \returns  Exit code for the program.
+     * \retval   0 on successful termination.
+     *
+     * \p argv[0] is the name of the module, i.e., the arguments are as if
+     * the module was run as a standalone executable.
+     */
+    virtual int run(int argc, char *argv[]) = 0;
+    /*! \brief
+     * Prints help for the module.
+     *
+     * \param[in] context  Context object for writing the help.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Note that for MPI-enabled builds, this is called only on the master
+     * rank.
+     */
+    virtual void writeHelp(const CommandLineHelpContext &context) const = 0;
 };
 
 //! \cond libapi

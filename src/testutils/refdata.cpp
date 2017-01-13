@@ -88,47 +88,47 @@ namespace internal
  */
 class TestReferenceDataImpl
 {
-    public:
-        //! Initializes a checker in the given mode.
-        TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
+public:
+    //! Initializes a checker in the given mode.
+    TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
 
-        //! Performs final reference data processing when test ends.
-        void onTestEnd(bool testPassed);
+    //! Performs final reference data processing when test ends.
+    void onTestEnd(bool testPassed);
 
-        //! Full path of the reference data file.
-        std::string fullFilename_;
-        /*! \brief
-         * Root entry for comparing the reference data.
-         *
-         * Null after construction iff in compare mode and reference data was
-         * not loaded successfully.
-         * In all write modes, copies are present for nodes added to
-         * \a outputRootEntry_, and ReferenceDataEntry::correspondingOutputEntry()
-         * points to the copy in the output tree.
-         */
-        ReferenceDataEntry::EntryPointer compareRootEntry_;
-        /*! \brief
-         * Root entry for writing new reference data.
-         *
-         * Null if only comparing against existing data.  Otherwise, starts
-         * always as empty.
-         * When creating new reference data, this is maintained as a copy of
-         * \a compareRootEntry_.
-         * When updating existing data, entries are added either by copying
-         * from \a compareRootEntry_ (if they exist and comparison passes), or
-         * by creating new ones.
-         */
-        ReferenceDataEntry::EntryPointer outputRootEntry_;
-        /*! \brief
-         * Whether updating existing reference data.
-         */
-        bool updateMismatchingEntries_;
-        //! `true` if self-testing (enables extra failure messages).
-        bool bSelfTestMode_;
-        /*! \brief
-         * Whether any reference checkers have been created for this data.
-         */
-        bool bInUse_;
+    //! Full path of the reference data file.
+    std::string fullFilename_;
+    /*! \brief
+     * Root entry for comparing the reference data.
+     *
+     * Null after construction iff in compare mode and reference data was
+     * not loaded successfully.
+     * In all write modes, copies are present for nodes added to
+     * \a outputRootEntry_, and ReferenceDataEntry::correspondingOutputEntry()
+     * points to the copy in the output tree.
+     */
+    ReferenceDataEntry::EntryPointer compareRootEntry_;
+    /*! \brief
+     * Root entry for writing new reference data.
+     *
+     * Null if only comparing against existing data.  Otherwise, starts
+     * always as empty.
+     * When creating new reference data, this is maintained as a copy of
+     * \a compareRootEntry_.
+     * When updating existing data, entries are added either by copying
+     * from \a compareRootEntry_ (if they exist and comparison passes), or
+     * by creating new ones.
+     */
+    ReferenceDataEntry::EntryPointer outputRootEntry_;
+    /*! \brief
+     * Whether updating existing reference data.
+     */
+    bool updateMismatchingEntries_;
+    //! `true` if self-testing (enables extra failure messages).
+    bool bSelfTestMode_;
+    /*! \brief
+     * Whether any reference checkers have been created for this data.
+     */
+    bool bInUse_;
 };
 
 }       // namespace internal
@@ -187,22 +187,22 @@ TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataM
 
 class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
 {
-    public:
-        virtual void OnTestEnd(const ::testing::TestInfo &test_info)
+public:
+    virtual void OnTestEnd(const ::testing::TestInfo &test_info)
+    {
+        if (g_referenceData)
         {
-            if (g_referenceData)
-            {
-                GMX_RELEASE_ASSERT(g_referenceData.unique(),
-                                   "Test leaked TestRefeferenceData objects");
-                g_referenceData->onTestEnd(test_info.result()->Passed());
-                g_referenceData.reset();
-            }
+            GMX_RELEASE_ASSERT(g_referenceData.unique(),
+                               "Test leaked TestRefeferenceData objects");
+            g_referenceData->onTestEnd(test_info.result()->Passed());
+            g_referenceData.reset();
         }
+    }
 
-        virtual void OnTestProgramEnd(const ::testing::UnitTest &)
-        {
-            // Could be used e.g. to free internal buffers allocated by an XML parsing library
-        }
+    virtual void OnTestProgramEnd(const ::testing::UnitTest &)
+    {
+        // Could be used e.g. to free internal buffers allocated by an XML parsing library
+    }
 };
 
 //! Formats a path to a reference data entry with a non-null id.
@@ -379,174 +379,174 @@ void TestReferenceDataImpl::onTestEnd(bool testPassed)
  */
 class TestReferenceChecker::Impl
 {
-    public:
-        //! String constant for naming XML elements for boolean values.
-        static const char * const cBooleanNodeName;
-        //! String constant for naming XML elements for string values.
-        static const char * const cStringNodeName;
-        //! String constant for naming XML elements for unsigned char values.
-        static const char * const cUCharNodeName;
-        //! String constant for naming XML elements for integer values.
-        static const char * const cIntegerNodeName;
-        //! String constant for naming XML elements for int64 values.
-        static const char * const cInt64NodeName;
-        //! String constant for naming XML elements for unsigned int64 values.
-        static const char * const cUInt64NodeName;
-        //! String constant for naming XML elements for floating-point values.
-        static const char * const cRealNodeName;
-        //! String constant for naming XML attribute for value identifiers.
-        static const char * const cIdAttrName;
-        //! String constant for naming compounds for vectors.
-        static const char * const cVectorType;
-        //! String constant for naming compounds for key-value tree objects.
-        static const char * const cObjectType;
-        //! String constant for naming compounds for sequences.
-        static const char * const cSequenceType;
-        //! String constant for value identifier for sequence length.
-        static const char * const cSequenceLengthName;
+public:
+    //! String constant for naming XML elements for boolean values.
+    static const char * const cBooleanNodeName;
+    //! String constant for naming XML elements for string values.
+    static const char * const cStringNodeName;
+    //! String constant for naming XML elements for unsigned char values.
+    static const char * const cUCharNodeName;
+    //! String constant for naming XML elements for integer values.
+    static const char * const cIntegerNodeName;
+    //! String constant for naming XML elements for int64 values.
+    static const char * const cInt64NodeName;
+    //! String constant for naming XML elements for unsigned int64 values.
+    static const char * const cUInt64NodeName;
+    //! String constant for naming XML elements for floating-point values.
+    static const char * const cRealNodeName;
+    //! String constant for naming XML attribute for value identifiers.
+    static const char * const cIdAttrName;
+    //! String constant for naming compounds for vectors.
+    static const char * const cVectorType;
+    //! String constant for naming compounds for key-value tree objects.
+    static const char * const cObjectType;
+    //! String constant for naming compounds for sequences.
+    static const char * const cSequenceType;
+    //! String constant for value identifier for sequence length.
+    static const char * const cSequenceLengthName;
 
-        //! Creates a checker that does nothing.
-        explicit Impl(bool initialized);
-        //! Creates a checker with a given root entry.
-        Impl(const std::string &path, ReferenceDataEntry *compareRootEntry,
-             ReferenceDataEntry *outputRootEntry, bool updateMismatchingEntries,
-             bool bSelfTestMode, const FloatingPointTolerance &defaultTolerance);
+    //! Creates a checker that does nothing.
+    explicit Impl(bool initialized);
+    //! Creates a checker with a given root entry.
+    Impl(const std::string &path, ReferenceDataEntry *compareRootEntry,
+         ReferenceDataEntry *outputRootEntry, bool updateMismatchingEntries,
+         bool bSelfTestMode, const FloatingPointTolerance &defaultTolerance);
 
-        //! Returns the path of this checker with \p id appended.
-        std::string appendPath(const char *id) const;
+    //! Returns the path of this checker with \p id appended.
+    std::string appendPath(const char *id) const;
 
-        //! Creates an entry with given parameters and fills it with \p checker.
-        ReferenceDataEntry::EntryPointer createEntry(const char *type, const char *id,
-                                                     const IReferenceDataEntryChecker &checker) const
+    //! Creates an entry with given parameters and fills it with \p checker.
+    ReferenceDataEntry::EntryPointer createEntry(const char *type, const char *id,
+                                                 const IReferenceDataEntryChecker &checker) const
+    {
+        ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
+        checker.fillEntry(entry.get());
+        return entry;
+    }
+    //! Checks an entry for correct type and using \p checker.
+    ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId,
+                                          const char *type, const IReferenceDataEntryChecker &checker) const
+    {
+        if (entry.type() != type)
         {
-            ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
-            checker.fillEntry(entry.get());
-            return entry;
+            return ::testing::AssertionFailure()
+                   << "Mismatching reference data item type" << std::endl
+                   << "  In item: " << fullId << std::endl
+                   << "   Actual: " << type << std::endl
+                   << "Reference: " << entry.type();
         }
-        //! Checks an entry for correct type and using \p checker.
-        ::testing::AssertionResult checkEntry(const ReferenceDataEntry &entry, const std::string &fullId,
-                                              const char *type, const IReferenceDataEntryChecker &checker) const
-        {
-            if (entry.type() != type)
-            {
-                return ::testing::AssertionFailure()
-                       << "Mismatching reference data item type" << std::endl
-                       << "  In item: " << fullId << std::endl
-                       << "   Actual: " << type << std::endl
-                       << "Reference: " << entry.type();
-            }
-            return checker.checkEntry(entry, fullId);
-        }
-        //! Finds an entry by id and updates the last found entry pointer.
-        ReferenceDataEntry *findEntry(const char *id);
-        /*! \brief
-         * Finds/creates a reference data entry to match against.
-         *
-         * \param[in]  type   Type of entry to create.
-         * \param[in]  id     Unique identifier of the entry (can be NULL, in
-         *      which case the next entry without an id is matched).
-         * \param[out] checker  Checker to use for filling out created entries.
-         * \returns    Matching entry, or NULL if no matching entry found
-         *      (NULL is never returned in write mode; new entries are created
-         *      instead).
-         */
-        ReferenceDataEntry *
-        findOrCreateEntry(const char *type, const char *id,
-                          const IReferenceDataEntryChecker &checker);
-        /*! \brief
-         * Helper method for checking a reference data value.
-         *
-         * \param[in]  name   Type of entry to find.
-         * \param[in]  id     Unique identifier of the entry (can be NULL, in
-         *     which case the next entry without an id is matched).
-         * \param[in]  checker  Checker that provides logic specific to the
-         *     type of the entry.
-         * \returns    Whether the reference data matched, including details
-         *     of the mismatch if the comparison failed.
-         * \throws     TestException if there is a problem parsing the
-         *     reference data.
-         *
-         * Performs common tasks in checking a reference value, such as
-         * finding or creating the correct entry.
-         * Caller needs to provide a checker object that provides the string
-         * value for a newly created entry and performs the actual comparison
-         * against a found entry.
-         */
-        ::testing::AssertionResult
-        processItem(const char *name, const char *id,
-                    const IReferenceDataEntryChecker &checker);
-        /*! \brief
-         * Whether the checker is initialized.
-         */
-        bool initialized() const { return initialized_; }
-        /*! \brief
-         * Whether the checker should ignore all validation calls.
-         *
-         * This is used to ignore any calls within compounds for which
-         * reference data could not be found, such that only one error is
-         * issued for the missing compound, instead of every individual value.
-         */
-        bool shouldIgnore() const
-        {
-            GMX_RELEASE_ASSERT(initialized(),
-                               "Accessing uninitialized reference data checker.");
-            return compareRootEntry_ == nullptr;
-        }
+        return checker.checkEntry(entry, fullId);
+    }
+    //! Finds an entry by id and updates the last found entry pointer.
+    ReferenceDataEntry *findEntry(const char *id);
+    /*! \brief
+     * Finds/creates a reference data entry to match against.
+     *
+     * \param[in]  type   Type of entry to create.
+     * \param[in]  id     Unique identifier of the entry (can be NULL, in
+     *      which case the next entry without an id is matched).
+     * \param[out] checker  Checker to use for filling out created entries.
+     * \returns    Matching entry, or NULL if no matching entry found
+     *      (NULL is never returned in write mode; new entries are created
+     *      instead).
+     */
+    ReferenceDataEntry *
+    findOrCreateEntry(const char *type, const char *id,
+                      const IReferenceDataEntryChecker &checker);
+    /*! \brief
+     * Helper method for checking a reference data value.
+     *
+     * \param[in]  name   Type of entry to find.
+     * \param[in]  id     Unique identifier of the entry (can be NULL, in
+     *     which case the next entry without an id is matched).
+     * \param[in]  checker  Checker that provides logic specific to the
+     *     type of the entry.
+     * \returns    Whether the reference data matched, including details
+     *     of the mismatch if the comparison failed.
+     * \throws     TestException if there is a problem parsing the
+     *     reference data.
+     *
+     * Performs common tasks in checking a reference value, such as
+     * finding or creating the correct entry.
+     * Caller needs to provide a checker object that provides the string
+     * value for a newly created entry and performs the actual comparison
+     * against a found entry.
+     */
+    ::testing::AssertionResult
+    processItem(const char *name, const char *id,
+                const IReferenceDataEntryChecker &checker);
+    /*! \brief
+     * Whether the checker is initialized.
+     */
+    bool initialized() const { return initialized_; }
+    /*! \brief
+     * Whether the checker should ignore all validation calls.
+     *
+     * This is used to ignore any calls within compounds for which
+     * reference data could not be found, such that only one error is
+     * issued for the missing compound, instead of every individual value.
+     */
+    bool shouldIgnore() const
+    {
+        GMX_RELEASE_ASSERT(initialized(),
+                           "Accessing uninitialized reference data checker.");
+        return compareRootEntry_ == nullptr;
+    }
 
-        //! Whether initialized with other means than the default constructor.
-        bool initialized_;
-        //! Default floating-point comparison tolerance.
-        FloatingPointTolerance defaultTolerance_;
-        /*! \brief
-         * Human-readable path to the root node of this checker.
-         *
-         * For the root checker, this will be "/", and for each compound, the
-         * id of the compound is added.  Used for reporting comparison
-         * mismatches.
-         */
-        std::string path_;
-        /*! \brief
-         * Current entry under which reference data is searched for comparison.
-         *
-         * Points to either the TestReferenceDataImpl::compareRootEntry_, or to
-         * a compound entry in the tree rooted at that entry.
-         *
-         * Can be NULL, in which case this checker does nothing (doesn't even
-         * report errors, see shouldIgnore()).
-         */
-        ReferenceDataEntry *compareRootEntry_;
-        /*! \brief
-         * Current entry under which entries for writing are created.
-         *
-         * Points to either the TestReferenceDataImpl::outputRootEntry_, or to
-         * a compound entry in the tree rooted at that entry.  NULL if only
-         * comparing, or if shouldIgnore() returns `false`.
-         */
-        ReferenceDataEntry *outputRootEntry_;
-        /*! \brief
-         * Iterator to a child of \a compareRootEntry_ that was last found.
-         *
-         * If `compareRootEntry_->isValidChild()` returns false, no entry has
-         * been found yet.
-         * After every check, is updated to point to the entry that was used
-         * for the check.
-         * Subsequent checks start the search for the matching node on this
-         * node.
-         */
-        ReferenceDataEntry::ChildIterator lastFoundEntry_;
-        /*! \brief
-         * Whether the reference data is being written (true) or compared
-         * (false).
-         */
-        bool updateMismatchingEntries_;
-        //! `true` if self-testing (enables extra failure messages).
-        bool bSelfTestMode_;
-        /*! \brief
-         * Current number of unnamed elements in a sequence.
-         *
-         * It is the index of the current unnamed element.
-         */
-        int seqIndex_;
+    //! Whether initialized with other means than the default constructor.
+    bool initialized_;
+    //! Default floating-point comparison tolerance.
+    FloatingPointTolerance defaultTolerance_;
+    /*! \brief
+     * Human-readable path to the root node of this checker.
+     *
+     * For the root checker, this will be "/", and for each compound, the
+     * id of the compound is added.  Used for reporting comparison
+     * mismatches.
+     */
+    std::string path_;
+    /*! \brief
+     * Current entry under which reference data is searched for comparison.
+     *
+     * Points to either the TestReferenceDataImpl::compareRootEntry_, or to
+     * a compound entry in the tree rooted at that entry.
+     *
+     * Can be NULL, in which case this checker does nothing (doesn't even
+     * report errors, see shouldIgnore()).
+     */
+    ReferenceDataEntry *compareRootEntry_;
+    /*! \brief
+     * Current entry under which entries for writing are created.
+     *
+     * Points to either the TestReferenceDataImpl::outputRootEntry_, or to
+     * a compound entry in the tree rooted at that entry.  NULL if only
+     * comparing, or if shouldIgnore() returns `false`.
+     */
+    ReferenceDataEntry *outputRootEntry_;
+    /*! \brief
+     * Iterator to a child of \a compareRootEntry_ that was last found.
+     *
+     * If `compareRootEntry_->isValidChild()` returns false, no entry has
+     * been found yet.
+     * After every check, is updated to point to the entry that was used
+     * for the check.
+     * Subsequent checks start the search for the matching node on this
+     * node.
+     */
+    ReferenceDataEntry::ChildIterator lastFoundEntry_;
+    /*! \brief
+     * Whether the reference data is being written (true) or compared
+     * (false).
+     */
+    bool updateMismatchingEntries_;
+    //! `true` if self-testing (enables extra failure messages).
+    bool bSelfTestMode_;
+    /*! \brief
+     * Current number of unnamed elements in a sequence.
+     *
+     * It is the index of the current unnamed element.
+     */
+    int seqIndex_;
 };
 
 const char *const TestReferenceChecker::Impl::cBooleanNodeName    = "Bool";

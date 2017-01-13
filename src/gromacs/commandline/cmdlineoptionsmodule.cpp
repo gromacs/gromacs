@@ -68,27 +68,27 @@ namespace
 
 class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSettings
 {
-    public:
-        explicit CommandLineOptionsModuleSettings(
-            OptionsBehaviorCollection *behaviors)
-            : behaviors_(*behaviors)
-        {
-        }
+public:
+    explicit CommandLineOptionsModuleSettings(
+        OptionsBehaviorCollection *behaviors)
+        : behaviors_(*behaviors)
+    {
+    }
 
-        const std::string &helpText() const { return helpText_; }
+    const std::string &helpText() const { return helpText_; }
 
-        virtual void setHelpText(const ConstArrayRef<const char *> &help)
-        {
-            helpText_ = joinStrings(help, "\n");
-        }
-        virtual void addOptionsBehavior(const OptionsBehaviorPointer &behavior)
-        {
-            behaviors_.addBehavior(behavior);
-        }
+    virtual void setHelpText(const ConstArrayRef<const char *> &help)
+    {
+        helpText_ = joinStrings(help, "\n");
+    }
+    virtual void addOptionsBehavior(const OptionsBehaviorPointer &behavior)
+    {
+        behaviors_.addBehavior(behavior);
+    }
 
-    private:
-        std::string                helpText_;
-        OptionsBehaviorCollection &behaviors_;
+private:
+    std::string                helpText_;
+    OptionsBehaviorCollection &behaviors_;
 };
 
 /********************************************************************
@@ -97,34 +97,34 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 
 class CommandLineOptionsModule : public ICommandLineModule
 {
-    public:
-        //! Shorthand for the factory function pointer type.
-        typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
+public:
+    //! Shorthand for the factory function pointer type.
+    typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
 
-        CommandLineOptionsModule(const char *name, const char *description,
-                                 FactoryMethod factory)
-            : name_(name), description_(description), factory_(factory)
-        {
-        }
-        CommandLineOptionsModule(const char *name, const char *description,
-                                 ICommandLineOptionsModulePointer module)
-            : name_(name), description_(description), module_(std::move(module))
-        {
-        }
-        virtual const char *name() const { return name_; }
-        virtual const char *shortDescription() const { return description_; }
+    CommandLineOptionsModule(const char *name, const char *description,
+                             FactoryMethod factory)
+        : name_(name), description_(description), factory_(factory)
+    {
+    }
+    CommandLineOptionsModule(const char *name, const char *description,
+                             ICommandLineOptionsModulePointer module)
+        : name_(name), description_(description), module_(std::move(module))
+    {
+    }
+    virtual const char *name() const { return name_; }
+    virtual const char *shortDescription() const { return description_; }
 
-        virtual void init(CommandLineModuleSettings *settings);
-        virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const CommandLineHelpContext &context) const;
+    virtual void init(CommandLineModuleSettings *settings);
+    virtual int run(int argc, char *argv[]);
+    virtual void writeHelp(const CommandLineHelpContext &context) const;
 
-    private:
-        void parseOptions(int argc, char *argv[]);
+private:
+    void parseOptions(int argc, char *argv[]);
 
-        const char *                     name_;
-        const char *                     description_;
-        FactoryMethod                    factory_;
-        ICommandLineOptionsModulePointer module_;
+    const char *                     name_;
+    const char *                     description_;
+    FactoryMethod                    factory_;
+    ICommandLineOptionsModulePointer module_;
 };
 
 void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)

@@ -544,35 +544,35 @@ namespace
  */
 class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
 {
-    public:
-        //! Initialize help topic for the given selection method.
-        KeywordDetailsHelpTopic(const std::string &        name,
-                                const gmx_ana_selmethod_t &method)
-            : name_(name), method_(method)
-        {
-        }
+public:
+    //! Initialize help topic for the given selection method.
+    KeywordDetailsHelpTopic(const std::string &        name,
+                            const gmx_ana_selmethod_t &method)
+        : name_(name), method_(method)
+    {
+    }
 
-        virtual const char *name() const
-        {
-            return name_.c_str();
-        }
-        virtual const char *title() const
-        {
-            return method_.help.helpTitle;
-        }
+    virtual const char *name() const
+    {
+        return name_.c_str();
+    }
+    virtual const char *title() const
+    {
+        return method_.help.helpTitle;
+    }
 
-    protected:
-        virtual std::string helpText() const
-        {
-            return joinStrings(method_.help.help,
-                               method_.help.help + method_.help.nlhelp, "\n");
-        }
+protected:
+    virtual std::string helpText() const
+    {
+        return joinStrings(method_.help.help,
+                           method_.help.help + method_.help.nlhelp, "\n");
+    }
 
-    private:
-        std::string                name_;
-        const gmx_ana_selmethod_t &method_;
+private:
+    std::string                name_;
+    const gmx_ana_selmethod_t &method_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(KeywordDetailsHelpTopic);
+    GMX_DISALLOW_COPY_AND_ASSIGN(KeywordDetailsHelpTopic);
 };
 
 /*! \internal \brief
@@ -582,53 +582,53 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
  */
 class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
 {
-    public:
-        KeywordsHelpTopic();
+public:
+    KeywordsHelpTopic();
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+    virtual void writeHelp(const HelpWriterContext &context) const;
 
-    private:
-        /*! \brief
-         * Container for known selection methods.
-         *
-         * The first item in the pair is the name of the selection method, and
-         * the second points to the static data structure that describes the
-         * method.
-         * The name in the first item may differ from the name of the static
-         * data structure if an alias is defined for that method.
-         */
-        typedef std::vector<std::pair<std::string,
-                                      const gmx_ana_selmethod_t *> >
-            MethodList;
+private:
+    /*! \brief
+     * Container for known selection methods.
+     *
+     * The first item in the pair is the name of the selection method, and
+     * the second points to the static data structure that describes the
+     * method.
+     * The name in the first item may differ from the name of the static
+     * data structure if an alias is defined for that method.
+     */
+    typedef std::vector<std::pair<std::string,
+                                  const gmx_ana_selmethod_t *> >
+        MethodList;
 
-        /*! \brief
-         * Prints markup for starting a list of keywords.
-         */
-        void writeKeywordListStart(const HelpWriterContext &context,
-                                   const char *             heading) const;
-        /*! \brief
-         * Prints markup for ending a list of keywords.
-         */
-        void writeKeywordListEnd(const HelpWriterContext &context,
-                                 const char *             extraInfo) const;
+    /*! \brief
+     * Prints markup for starting a list of keywords.
+     */
+    void writeKeywordListStart(const HelpWriterContext &context,
+                               const char *             heading) const;
+    /*! \brief
+     * Prints markup for ending a list of keywords.
+     */
+    void writeKeywordListEnd(const HelpWriterContext &context,
+                             const char *             extraInfo) const;
 
-        /*! \brief
-         * Prints a brief list of keywords (selection methods) available.
-         *
-         * \param[in] context  Context for printing the help.
-         * \param[in] type     Only methods that return this type are printed.
-         * \param[in] bModifiers  If false, \ref SMETH_MODIFIER methods are
-         *      excluded, otherwise only them are printed.
-         */
-        void printKeywordList(const HelpWriterContext &context,
-                              e_selvalue_t type, bool bModifiers) const;
+    /*! \brief
+     * Prints a brief list of keywords (selection methods) available.
+     *
+     * \param[in] context  Context for printing the help.
+     * \param[in] type     Only methods that return this type are printed.
+     * \param[in] bModifiers  If false, \ref SMETH_MODIFIER methods are
+     *      excluded, otherwise only them are printed.
+     */
+    void printKeywordList(const HelpWriterContext &context,
+                          e_selvalue_t type, bool bModifiers) const;
 
-        /*! \brief
-         * Prints the detailed help for keywords for rst export.
-         */
-        void writeKeywordSubTopics(const HelpWriterContext &context) const;
+    /*! \brief
+     * Prints the detailed help for keywords for rst export.
+     */
+    void writeKeywordSubTopics(const HelpWriterContext &context) const;
 
-        MethodList methods_;
+    MethodList methods_;
 };
 
 KeywordsHelpTopic::KeywordsHelpTopic()

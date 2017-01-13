@@ -72,30 +72,30 @@ template <class T> class RepeatingOptionSectionStorage;
 template <class T>
 class RepeatingOptionSection : public AbstractOptionSection
 {
-    public:
-        //! AbstractOptionSectionHandle corresponding to this option type.
-        typedef RepeatingOptionSectionHandle<T> HandleType;
+public:
+    //! AbstractOptionSectionHandle corresponding to this option type.
+    typedef RepeatingOptionSectionHandle<T> HandleType;
 
-        //! Creates a section with the given name.
-        explicit RepeatingOptionSection(const char *name)
-            : AbstractOptionSection(name), values_(nullptr)
-        {
-        }
+    //! Creates a section with the given name.
+    explicit RepeatingOptionSection(const char *name)
+        : AbstractOptionSection(name), values_(nullptr)
+    {
+    }
 
-        //! Specifies a vector to receive the section structures.
-        RepeatingOptionSection &storeVector(std::vector<T> *values)
-        {
-            values_ = values;
-            return *this;
-        }
+    //! Specifies a vector to receive the section structures.
+    RepeatingOptionSection &storeVector(std::vector<T> *values)
+    {
+        values_ = values;
+        return *this;
+    }
 
-    private:
-        virtual IOptionSectionStorage *createStorage() const;
+private:
+    virtual IOptionSectionStorage *createStorage() const;
 
-        std::vector<T> *values_;
+    std::vector<T> *values_;
 
-        //! Allows accessing the properties when initializing the storage.
-        friend class RepeatingOptionSectionStorage<T>;
+    //! Allows accessing the properties when initializing the storage.
+    friend class RepeatingOptionSectionStorage<T>;
 };
 
 /*! \internal
@@ -107,46 +107,46 @@ class RepeatingOptionSection : public AbstractOptionSection
 template <class T>
 class RepeatingOptionSectionStorage : public IOptionSectionStorage
 {
-    public:
-        //! Initializes the storage for given section properties.
-        explicit RepeatingOptionSectionStorage(const RepeatingOptionSection<T> &section)
-            : store_(new OptionValueStoreVector<T>(section.values_)), currentData_()
-        {
-        }
+public:
+    //! Initializes the storage for given section properties.
+    explicit RepeatingOptionSectionStorage(const RepeatingOptionSection<T> &section)
+        : store_(new OptionValueStoreVector<T>(section.values_)), currentData_()
+    {
+    }
 
-        virtual void initStorage()
-        {
-            defaultValues_ = currentData_;
-        }
-        virtual void startSection()
-        {
-            resetSection();
-        }
-        virtual void finishSection()
-        {
-            store_->append(currentData_);
-            resetSection();
-        }
+    virtual void initStorage()
+    {
+        defaultValues_ = currentData_;
+    }
+    virtual void startSection()
+    {
+        resetSection();
+    }
+    virtual void finishSection()
+    {
+        store_->append(currentData_);
+        resetSection();
+    }
 
-    private:
-        void resetSection()
-        {
-            currentData_ = defaultValues_;
-        }
+private:
+    void resetSection()
+    {
+        currentData_ = defaultValues_;
+    }
 
-        //! Final storage location for the section structures.
-        const std::unique_ptr<IOptionValueStore<T> > store_;
-        T                                            defaultValues_;
-        /*! \brief
-         * Stores the values for the current in-process section.
-         *
-         * Options within the section store their values to this structure, and
-         * they are then copied to the final storage when the section finishes.
-         */
-        T currentData_;
+    //! Final storage location for the section structures.
+    const std::unique_ptr<IOptionValueStore<T> > store_;
+    T                                            defaultValues_;
+    /*! \brief
+     * Stores the values for the current in-process section.
+     *
+     * Options within the section store their values to this structure, and
+     * they are then copied to the final storage when the section finishes.
+     */
+    T currentData_;
 
-        //! Allows binding option storage to the current section data structure.
-        friend class RepeatingOptionSectionHandle<T>;
+    //! Allows binding option storage to the current section data structure.
+    friend class RepeatingOptionSectionHandle<T>;
 };
 
 template <class T>
@@ -181,26 +181,26 @@ IOptionSectionStorage *RepeatingOptionSection<T>::createStorage() const
 template <class T>
 class RepeatingOptionSectionHandle : public AbstractOptionSectionHandle
 {
-    public:
-        //! Wraps a given section storage object.
-        explicit RepeatingOptionSectionHandle(internal::OptionSectionImpl *section)
-            : AbstractOptionSectionHandle(section),
-              storage_(getStorage<RepeatingOptionSectionStorage<T> >(section))
-        {
-        }
+public:
+    //! Wraps a given section storage object.
+    explicit RepeatingOptionSectionHandle(internal::OptionSectionImpl *section)
+        : AbstractOptionSectionHandle(section),
+          storage_(getStorage<RepeatingOptionSectionStorage<T> >(section))
+    {
+    }
 
-        /*! \brief
-         * Supports storing option values within the per-section data structure.
-         *
-         * See class documentation for an example.
-         */
-        T &bind()
-        {
-            return storage_->currentData_;
-        }
+    /*! \brief
+     * Supports storing option values within the per-section data structure.
+     *
+     * See class documentation for an example.
+     */
+    T &bind()
+    {
+        return storage_->currentData_;
+    }
 
-    private:
-        RepeatingOptionSectionStorage<T> *storage_;
+private:
+    RepeatingOptionSectionStorage<T> *storage_;
 };
 
 } // namespace gmx

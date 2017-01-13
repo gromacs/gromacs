@@ -96,33 +96,33 @@ enum TimeUnit
  */
 class TimeUnitManager
 {
-    public:
-        //! Creates a time unit manager with the default (ps) time unit.
-        TimeUnitManager();
-        //! Creates a time unit manager with the given time unit.
-        explicit TimeUnitManager(TimeUnit unit);
+public:
+    //! Creates a time unit manager with the default (ps) time unit.
+    TimeUnitManager();
+    //! Creates a time unit manager with the given time unit.
+    explicit TimeUnitManager(TimeUnit unit);
 
-        //! Returns the currently selected time unit.
-        TimeUnit timeUnit() const
-        {
-            GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
-                       "Time unit index has become out-of-range");
-            return timeUnit_;
-        }
-        //! Set a new time unit for the manager.
-        void setTimeUnit(TimeUnit unit);
+    //! Returns the currently selected time unit.
+    TimeUnit timeUnit() const
+    {
+        GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
+                   "Time unit index has become out-of-range");
+        return timeUnit_;
+    }
+    //! Set a new time unit for the manager.
+    void setTimeUnit(TimeUnit unit);
 
-        //! Returns a string constant corresponding to the current time unit.
-        const char *timeUnitAsString() const;
+    //! Returns a string constant corresponding to the current time unit.
+    const char *timeUnitAsString() const;
 
-        //! Returns the scaling factor to convert times to ps.
-        double timeScaleFactor() const;
-        //! Returns the scaling factor to convert times from ps.
-        double inverseTimeScaleFactor() const;
+    //! Returns the scaling factor to convert times to ps.
+    double timeScaleFactor() const;
+    //! Returns the scaling factor to convert times from ps.
+    double inverseTimeScaleFactor() const;
 
-    private:
-        //! Currently set time unit for this manager.
-        TimeUnit timeUnit_;
+private:
+    //! Currently set time unit for this manager.
+    TimeUnit timeUnit_;
 };
 
 /*! \brief
@@ -140,58 +140,58 @@ class TimeUnitManager
  */
 class TimeUnitBehavior : public IOptionsBehavior
 {
-    public:
-        TimeUnitBehavior();
+public:
+    TimeUnitBehavior();
 
-        //! Returns the current time unit.
-        TimeUnit timeUnit() const
-        {
-            GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
-                       "Time unit index has become out-of-range");
-            return static_cast<TimeUnit>(timeUnit_);
-        }
-        //! Sets the time unit.
-        void setTimeUnit(TimeUnit unit);
+    //! Returns the current time unit.
+    TimeUnit timeUnit() const
+    {
+        GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
+                   "Time unit index has become out-of-range");
+        return static_cast<TimeUnit>(timeUnit_);
+    }
+    //! Sets the time unit.
+    void setTimeUnit(TimeUnit unit);
 
-        /*! \brief
-         * Sets a storage location for the selected time unit.
-         *
-         * \param[in] store  Location that will receive the selected time unit.
-         *
-         * \p *store will be set to the time unit selected by the user (or
-         * programmatically).  The value is guaranteed to be set once the
-         * options have been finished.
-         */
-        void setTimeUnitStore(TimeUnit *store);
+    /*! \brief
+     * Sets a storage location for the selected time unit.
+     *
+     * \param[in] store  Location that will receive the selected time unit.
+     *
+     * \p *store will be set to the time unit selected by the user (or
+     * programmatically).  The value is guaranteed to be set once the
+     * options have been finished.
+     */
+    void setTimeUnitStore(TimeUnit *store);
 
-        /*! \brief
-         * Sets the default time unit from an environment variable.
-         *
-         * This should be called before addTimeUnitOption() for consistent
-         * behavior.
-         */
-        void setTimeUnitFromEnvironment();
-        /*! \brief
-         * Adds a common option for selecting the time unit.
-         *
-         * \param[in,out] options Options to which the common option is added.
-         * \param[in]     name    Name of the option to add.
-         *
-         * Adds an enum option to \p options to select the time unit for this
-         * behavior.
-         */
-        void addTimeUnitOption(IOptionsContainer *options, const char *name);
+    /*! \brief
+     * Sets the default time unit from an environment variable.
+     *
+     * This should be called before addTimeUnitOption() for consistent
+     * behavior.
+     */
+    void setTimeUnitFromEnvironment();
+    /*! \brief
+     * Adds a common option for selecting the time unit.
+     *
+     * \param[in,out] options Options to which the common option is added.
+     * \param[in]     name    Name of the option to add.
+     *
+     * Adds an enum option to \p options to select the time unit for this
+     * behavior.
+     */
+    void addTimeUnitOption(IOptionsContainer *options, const char *name);
 
-        // From IOptionsBehavior
-        virtual void initBehavior(Options * /*options*/) {}
-        virtual void optionsFinishing(Options *options);
-        virtual void optionsFinished() {}
+    // From IOptionsBehavior
+    virtual void initBehavior(Options * /*options*/) {}
+    virtual void optionsFinishing(Options *options);
+    virtual void optionsFinished() {}
 
-    private:
-        TimeUnit  timeUnit_;
-        TimeUnit *timeUnitStore_;
+private:
+    TimeUnit  timeUnit_;
+    TimeUnit *timeUnitStore_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TimeUnitBehavior);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TimeUnitBehavior);
 };
 
 } // namespace gmx

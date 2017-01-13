@@ -62,13 +62,13 @@ namespace gmx
 
 class AnalysisDataAverageModule::Impl
 {
-    public:
-        Impl() : bDataSets_(false) {}
+public:
+    Impl() : bDataSets_(false) {}
 
-        //! Averaging helper objects for each input data set.
-        std::vector<AnalysisDataFrameAverager> averagers_;
-        //! Whether to average all columns in a data set into a single value.
-        bool bDataSets_;
+    //! Averaging helper objects for each input data set.
+    std::vector<AnalysisDataFrameAverager> averagers_;
+    //! Whether to average all columns in a data set into a single value.
+    bool bDataSets_;
 };
 
 AnalysisDataAverageModule::AnalysisDataAverageModule()
@@ -201,11 +201,11 @@ int AnalysisDataAverageModule::sampleCount(int dataSet, int column) const
 
 class AnalysisDataFrameAverageModule::Impl
 {
-    public:
-        //! Storage implementation object.
-        AnalysisDataStorage storage_;
-        //! Number of samples in a frame for each data set.
-        std::vector<int> sampleCount_;
+public:
+    //! Storage implementation object.
+    AnalysisDataStorage storage_;
+    //! Number of samples in a frame for each data set.
+    std::vector<int> sampleCount_;
 };
 
 AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()

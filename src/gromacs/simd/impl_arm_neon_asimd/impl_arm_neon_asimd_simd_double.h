@@ -49,54 +49,54 @@ namespace gmx
 
 class SimdDouble
 {
-    public:
-        SimdDouble() {}
+public:
+    SimdDouble() {}
 
-        SimdDouble(double d) : simdInternal_(vdupq_n_f64(d)) {}
+    SimdDouble(double d) : simdInternal_(vdupq_n_f64(d)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDouble(float64x2_t simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDouble(float64x2_t simd) : simdInternal_(simd) {}
 
-        float64x2_t simdInternal_;
+    float64x2_t simdInternal_;
 };
 
 class SimdDInt32
 {
-    public:
-        SimdDInt32() {}
+public:
+    SimdDInt32() {}
 
-        SimdDInt32(std::int32_t i) : simdInternal_(vdup_n_s32(i)) {}
+    SimdDInt32(std::int32_t i) : simdInternal_(vdup_n_s32(i)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDInt32(int32x2_t simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDInt32(int32x2_t simd) : simdInternal_(simd) {}
 
-        int32x2_t simdInternal_;
+    int32x2_t simdInternal_;
 };
 
 class SimdDBool
 {
-    public:
-        SimdDBool() {}
+public:
+    SimdDBool() {}
 
-        SimdDBool(bool b) : simdInternal_(vdupq_n_u64( b ? 0xFFFFFFFFFFFFFFFF : 0)) {}
+    SimdDBool(bool b) : simdInternal_(vdupq_n_u64( b ? 0xFFFFFFFFFFFFFFFF : 0)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDBool(uint64x2_t simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDBool(uint64x2_t simd) : simdInternal_(simd) {}
 
-        uint64x2_t simdInternal_;
+    uint64x2_t simdInternal_;
 };
 
 class SimdDIBool
 {
-    public:
-        SimdDIBool() {}
+public:
+    SimdDIBool() {}
 
-        SimdDIBool(bool b) : simdInternal_(vdup_n_u32( b ? 0xFFFFFFFF : 0)) {}
+    SimdDIBool(bool b) : simdInternal_(vdup_n_u32( b ? 0xFFFFFFFF : 0)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDIBool(uint32x2_t simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDIBool(uint32x2_t simd) : simdInternal_(simd) {}
 
-        uint32x2_t simdInternal_;
+    uint32x2_t simdInternal_;
 };
 
 static inline SimdDouble gmx_simdcall simdLoad(const double *m)

@@ -61,19 +61,19 @@ template <typename T> class ArrayRef;
 template <typename T>
 class IOptionValueStore
 {
-    public:
-        virtual ~IOptionValueStore() {}
+public:
+    virtual ~IOptionValueStore() {}
 
-        //! Returns the number of values stored so far.
-        virtual int valueCount() = 0;
-        //! Returns a reference to the actual values.
-        virtual ArrayRef<T> values() = 0;
-        //! Removes all stored values.
-        virtual void clear() = 0;
-        //! Reserves memory for additional `count` entries.
-        virtual void reserve(size_t count) = 0;
-        //! Appends a value to the store.
-        virtual void append(const T &value) = 0;
+    //! Returns the number of values stored so far.
+    virtual int valueCount() = 0;
+    //! Returns a reference to the actual values.
+    virtual ArrayRef<T> values() = 0;
+    //! Removes all stored values.
+    virtual void clear() = 0;
+    //! Reserves memory for additional `count` entries.
+    virtual void reserve(size_t count) = 0;
+    //! Appends a value to the store.
+    virtual void append(const T &value) = 0;
 };
 
 } // namespace gmx

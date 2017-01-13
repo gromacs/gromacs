@@ -68,171 +68,171 @@ namespace
 
 class SurfaceAreaTest : public ::testing::Test
 {
-    public:
-        SurfaceAreaTest()
-            : rng_(12345), area_(0.0), volume_(0.0),
-              atomArea_(nullptr), dotCount_(0), dots_(nullptr)
-        {
-            clear_mat(box_);
-        }
-        ~SurfaceAreaTest()
-        {
-            sfree(atomArea_);
-            sfree(dots_);
-        }
+public:
+    SurfaceAreaTest()
+        : rng_(12345), area_(0.0), volume_(0.0),
+          atomArea_(nullptr), dotCount_(0), dots_(nullptr)
+    {
+        clear_mat(box_);
+    }
+    ~SurfaceAreaTest()
+    {
+        sfree(atomArea_);
+        sfree(dots_);
+    }
 
-        void addSphere(real x, real y, real z, real radius,
-                       bool bAddToIndex = true)
+    void addSphere(real x, real y, real z, real radius,
+                   bool bAddToIndex = true)
+    {
+        if (bAddToIndex)
         {
-            if (bAddToIndex)
-            {
-                index_.push_back(x_.size());
-            }
-            x_.emplace_back(x, y, z);
-            radius_.push_back(radius);
+            index_.push_back(x_.size());
         }
+        x_.emplace_back(x, y, z);
+        radius_.push_back(radius);
+    }
 
-        void generateRandomPosition(rvec x, real *radius)
+    void generateRandomPosition(rvec x, real *radius)
+    {
+        rvec                               fx;
+        gmx::UniformRealDistribution<real> dist;
+
+        fx[XX] = dist(rng_);
+        fx[YY] = dist(rng_);
+        fx[ZZ] = dist(rng_);
+        mvmul(box_, fx, x);
+        *radius = 1.5 * dist(rng_) + 0.5;
+    }
+
+    void addDummySpheres(int count)
+    {
+        for (int i = 0; i < count; ++i)
         {
-            rvec                               fx;
-            gmx::UniformRealDistribution<real> dist;
-
-            fx[XX] = dist(rng_);
-            fx[YY] = dist(rng_);
-            fx[ZZ] = dist(rng_);
-            mvmul(box_, fx, x);
-            *radius = 1.5 * dist(rng_) + 0.5;
+            rvec x;
+            real radius;
+            generateRandomPosition(x, &radius);
+            addSphere(x[XX], x[YY], x[ZZ], radius, false);
         }
+    }
 
-        void addDummySpheres(int count)
+    void generateRandomPositions(int count)
+    {
+        x_.reserve(count);
+        radius_.reserve(count);
+        index_.reserve(count);
+        for (int i = 0; i < count; ++i)
         {
-            for (int i = 0; i < count; ++i)
-            {
-                rvec x;
-                real radius;
-                generateRandomPosition(x, &radius);
-                addSphere(x[XX], x[YY], x[ZZ], radius, false);
-            }
+            rvec x;
+            real radius;
+            generateRandomPosition(x, &radius);
+            addSphere(x[XX], x[YY], x[ZZ], radius);
         }
+    }
+    void translatePoints(real x, real y, real z)
+    {
+        for (size_t i = 0; i < x_.size(); ++i)
+        {
+            x_[i][XX] += x;
+            x_[i][YY] += y;
+            x_[i][ZZ] += z;
+        }
+    }
 
-        void generateRandomPositions(int count)
+    void calculate(int ndots, int flags, bool bPBC)
+    {
+        volume_ = 0.0;
+        sfree(atomArea_);
+        atomArea_ = nullptr;
+        dotCount_ = 0;
+        sfree(dots_);
+        dots_ = nullptr;
+        t_pbc pbc;
+        if (bPBC)
         {
-            x_.reserve(count);
-            radius_.reserve(count);
-            index_.reserve(count);
-            for (int i = 0; i < count; ++i)
-            {
-                rvec x;
-                real radius;
-                generateRandomPosition(x, &radius);
-                addSphere(x[XX], x[YY], x[ZZ], radius);
-            }
+            set_pbc(&pbc, epbcXYZ, box_);
         }
-        void translatePoints(real x, real y, real z)
-        {
-            for (size_t i = 0; i < x_.size(); ++i)
-            {
-                x_[i][XX] += x;
-                x_[i][YY] += y;
-                x_[i][ZZ] += z;
-            }
-        }
-
-        void calculate(int ndots, int flags, bool bPBC)
-        {
-            volume_ = 0.0;
-            sfree(atomArea_);
-            atomArea_ = nullptr;
-            dotCount_ = 0;
-            sfree(dots_);
-            dots_ = nullptr;
-            t_pbc pbc;
-            if (bPBC)
-            {
-                set_pbc(&pbc, epbcXYZ, box_);
-            }
-            ASSERT_NO_THROW_GMX(
-                    {
-                        gmx::SurfaceAreaCalculator calculator;
-                        calculator.setDotCount(ndots);
-                        calculator.setRadii(radius_);
-                        calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : nullptr,
-                                             index_.size(), index_.data(), flags,
-                                             &area_, &volume_, &atomArea_,
-                                             &dots_, &dotCount_);
-                    });
-        }
-        real resultArea() const { return area_; }
-        real resultVolume() const { return volume_; }
-        real atomArea(int index) const { return atomArea_[index]; }
-
-        void checkReference(gmx::test::TestReferenceChecker *checker, const char *id,
-                            bool checkDotCoordinates)
-        {
-            gmx::test::TestReferenceChecker compound(
-                    checker->checkCompound("SASA", id));
-            compound.checkReal(area_, "Area");
-            if (volume_ > 0.0)
-            {
-                compound.checkReal(volume_, "Volume");
-            }
-            if (atomArea_ != nullptr)
-            {
-                compound.checkSequenceArray(index_.size(), atomArea_, "AtomArea");
-            }
-            if (dots_ != nullptr)
-            {
-                if (checkDotCoordinates)
+        ASSERT_NO_THROW_GMX(
                 {
-                    // The algorithm may produce the dots in different order in
-                    // single and double precision due to some internal
-                    // sorting...
-                    std::qsort(dots_, dotCount_, sizeof(rvec), &dotComparer);
-                    compound.checkSequenceArray(3 * dotCount_, dots_, "Dots");
-                }
-                else
-                {
-                    compound.checkInteger(dotCount_, "DotCount");
-                }
-            }
-        }
+                    gmx::SurfaceAreaCalculator calculator;
+                    calculator.setDotCount(ndots);
+                    calculator.setRadii(radius_);
+                    calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : nullptr,
+                                         index_.size(), index_.data(), flags,
+                                         &area_, &volume_, &atomArea_,
+                                         &dots_, &dotCount_);
+                });
+    }
+    real resultArea() const { return area_; }
+    real resultVolume() const { return volume_; }
+    real atomArea(int index) const { return atomArea_[index]; }
 
-        gmx::test::TestReferenceData data_;
-        matrix                       box_;
-
-    private:
-        static int dotComparer(const void *a, const void *b)
+    void checkReference(gmx::test::TestReferenceChecker *checker, const char *id,
+                        bool checkDotCoordinates)
+    {
+        gmx::test::TestReferenceChecker compound(
+                checker->checkCompound("SASA", id));
+        compound.checkReal(area_, "Area");
+        if (volume_ > 0.0)
         {
-            for (int d = DIM - 1; d >= 0; --d)
-            {
-                const real ad = reinterpret_cast<const real *>(a)[d];
-                const real bd = reinterpret_cast<const real *>(b)[d];
-                // A fudge factor is needed to get an ordering that is the same
-                // in single and double precision, since the points are not
-                // exactly on the same Z plane even though in exact arithmetic
-                // they probably would be.
-                if (ad < bd - 0.001)
-                {
-                    return -1;
-                }
-                else if (ad > bd + 0.001)
-                {
-                    return 1;
-                }
-            }
-            return 0;
+            compound.checkReal(volume_, "Volume");
         }
+        if (atomArea_ != nullptr)
+        {
+            compound.checkSequenceArray(index_.size(), atomArea_, "AtomArea");
+        }
+        if (dots_ != nullptr)
+        {
+            if (checkDotCoordinates)
+            {
+                // The algorithm may produce the dots in different order in
+                // single and double precision due to some internal
+                // sorting...
+                std::qsort(dots_, dotCount_, sizeof(rvec), &dotComparer);
+                compound.checkSequenceArray(3 * dotCount_, dots_, "Dots");
+            }
+            else
+            {
+                compound.checkInteger(dotCount_, "DotCount");
+            }
+        }
+    }
 
-        gmx::DefaultRandomEngine rng_;
-        std::vector<gmx::RVec>   x_;
-        std::vector<real>        radius_;
-        std::vector<int>         index_;
+    gmx::test::TestReferenceData data_;
+    matrix                       box_;
 
-        real  area_;
-        real  volume_;
-        real *atomArea_;
-        int   dotCount_;
-        real *dots_;
+private:
+    static int dotComparer(const void *a, const void *b)
+    {
+        for (int d = DIM - 1; d >= 0; --d)
+        {
+            const real ad = reinterpret_cast<const real *>(a)[d];
+            const real bd = reinterpret_cast<const real *>(b)[d];
+            // A fudge factor is needed to get an ordering that is the same
+            // in single and double precision, since the points are not
+            // exactly on the same Z plane even though in exact arithmetic
+            // they probably would be.
+            if (ad < bd - 0.001)
+            {
+                return -1;
+            }
+            else if (ad > bd + 0.001)
+            {
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    gmx::DefaultRandomEngine rng_;
+    std::vector<gmx::RVec>   x_;
+    std::vector<real>        radius_;
+    std::vector<int>         index_;
+
+    real  area_;
+    real  volume_;
+    real *atomArea_;
+    int   dotCount_;
+    real *dots_;
 };
 
 TEST_F(SurfaceAreaTest, ComputesSinglePoint)

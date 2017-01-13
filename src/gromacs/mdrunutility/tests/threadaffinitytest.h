@@ -56,75 +56,75 @@ namespace test
 
 class MockThreadAffinityAccess : public IThreadAffinityAccess
 {
-    public:
-        MockThreadAffinityAccess();
-        ~MockThreadAffinityAccess();
+public:
+    MockThreadAffinityAccess();
+    ~MockThreadAffinityAccess();
 
-        void setSupported(bool supported) { supported_ = supported; }
+    void setSupported(bool supported) { supported_ = supported; }
 
-        virtual bool isThreadAffinitySupported() const { return supported_; }
-        MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
+    virtual bool isThreadAffinitySupported() const { return supported_; }
+    MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
 
-    private:
-        bool supported_;
+private:
+    bool supported_;
 };
 
 class ThreadAffinityTestHelper
 {
-    public:
-        ThreadAffinityTestHelper();
-        ~ThreadAffinityTestHelper();
+public:
+    ThreadAffinityTestHelper();
+    ~ThreadAffinityTestHelper();
 
-        void setAffinitySupported(bool supported)
-        {
-            affinityAccess_.setSupported(supported);
-        }
-        void setAffinityOption(int affinityOption)
-        {
-            hwOpt_->thread_affinity = affinityOption;
-        }
-        void setOffsetAndStride(int offset, int stride)
-        {
-            hwOpt_->core_pinning_offset = offset;
-            hwOpt_->core_pinning_stride = stride;
-        }
+    void setAffinitySupported(bool supported)
+    {
+        affinityAccess_.setSupported(supported);
+    }
+    void setAffinityOption(int affinityOption)
+    {
+        hwOpt_->thread_affinity = affinityOption;
+    }
+    void setOffsetAndStride(int offset, int stride)
+    {
+        hwOpt_->core_pinning_offset = offset;
+        hwOpt_->core_pinning_stride = stride;
+    }
 
-        void setLogicalProcessorCount(int logicalProcessorCount);
+    void setLogicalProcessorCount(int logicalProcessorCount);
 
-        void expectAffinitySet(int core)
+    void expectAffinitySet(int core)
+    {
+        EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core));
+    }
+    void expectAffinitySet(std::initializer_list<int> cores)
+    {
+        for (int core : cores)
         {
-            EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core));
+            expectAffinitySet(core);
         }
-        void expectAffinitySet(std::initializer_list<int> cores)
-        {
-            for (int core : cores)
-            {
-                expectAffinitySet(core);
-            }
-        }
-        void expectAffinitySetThatFails(int core)
-        {
-            using ::testing::Return;
-            EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core))
-                .WillOnce(Return(false));
-        }
+    }
+    void expectAffinitySetThatFails(int core)
+    {
+        using ::testing::Return;
+        EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core))
+            .WillOnce(Return(false));
+    }
 
-        void setAffinity(int nthread_local)
+    void setAffinity(int nthread_local)
+    {
+        if (hwTop_ == nullptr)
         {
-            if (hwTop_ == nullptr)
-            {
-                setLogicalProcessorCount(1);
-            }
-            MDLogger mdlog;
-            gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_, *hwTop_,
-                                    nthread_local, &affinityAccess_);
+            setLogicalProcessorCount(1);
         }
+        MDLogger mdlog;
+        gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_, *hwTop_,
+                                nthread_local, &affinityAccess_);
+    }
 
-    private:
-        t_commrec *                       cr_;
-        gmx_hw_opt_t *                    hwOpt_;
-        std::unique_ptr<HardwareTopology> hwTop_;
-        MockThreadAffinityAccess          affinityAccess_;
+private:
+    t_commrec *                       cr_;
+    gmx_hw_opt_t *                    hwOpt_;
+    std::unique_ptr<HardwareTopology> hwTop_;
+    MockThreadAffinityAccess          affinityAccess_;
 };
 
 } // namespace test

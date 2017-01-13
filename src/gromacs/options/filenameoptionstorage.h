@@ -60,58 +60,58 @@ class FileNameOptionManager;
  */
 class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
 {
-    public:
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings   Storage settings.
-         * \param     manager    Manager for this object (can be NULL).
-         */
-        FileNameOptionStorage(const FileNameOption & settings,
-                              FileNameOptionManager *manager);
+public:
+    /*! \brief
+     * Initializes the storage from option settings.
+     *
+     * \param[in] settings   Storage settings.
+     * \param     manager    Manager for this object (can be NULL).
+     */
+    FileNameOptionStorage(const FileNameOption & settings,
+                          FileNameOptionManager *manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const;
-        virtual std::string formatExtraDescription() const;
-        virtual std::string formatSingleValue(const std::string &value) const;
+    virtual OptionInfo &optionInfo() { return info_; }
+    virtual std::string typeString() const;
+    virtual std::string formatExtraDescription() const;
+    virtual std::string formatSingleValue(const std::string &value) const;
 
-        //! \copydoc FileNameOptionInfo::isInputFile()
-        bool isInputFile() const { return bRead_ && !bWrite_; }
-        //! \copydoc FileNameOptionInfo::isOutputFile()
-        bool isOutputFile() const { return !bRead_ && bWrite_; }
-        //! \copydoc FileNameOptionInfo::isInputOutputFile()
-        bool isInputOutputFile() const { return bRead_ && bWrite_; }
-        //! \copydoc FileNameOptionInfo::isLibraryFile()
-        bool isLibraryFile() const { return bLibrary_; }
-        //! \copydoc FileNameOptionInfo::allowMissing()
-        bool allowMissing() const { return bAllowMissing_; }
+    //! \copydoc FileNameOptionInfo::isInputFile()
+    bool isInputFile() const { return bRead_ && !bWrite_; }
+    //! \copydoc FileNameOptionInfo::isOutputFile()
+    bool isOutputFile() const { return !bRead_ && bWrite_; }
+    //! \copydoc FileNameOptionInfo::isInputOutputFile()
+    bool isInputOutputFile() const { return bRead_ && bWrite_; }
+    //! \copydoc FileNameOptionInfo::isLibraryFile()
+    bool isLibraryFile() const { return bLibrary_; }
+    //! \copydoc FileNameOptionInfo::allowMissing()
+    bool allowMissing() const { return bAllowMissing_; }
 
-        //! \copydoc FileNameOptionInfo::isDirectoryOption()
-        bool isDirectoryOption() const;
-        //! \copydoc FileNameOptionInfo::isTrajectoryOption()
-        bool isTrajectoryOption() const;
-        //! \copydoc FileNameOptionInfo::defaultExtension()
-        const char *defaultExtension() const;
-        //! \copydoc FileNameOptionInfo::extensions()
-        std::vector<const char *> extensions() const;
-        //! \copydoc FileNameOptionInfo::isValidType()
-        bool isValidType(int fileType) const;
-        //! \copydoc FileNameOptionInfo::fileTypes()
-        ConstArrayRef<int> fileTypes() const;
+    //! \copydoc FileNameOptionInfo::isDirectoryOption()
+    bool isDirectoryOption() const;
+    //! \copydoc FileNameOptionInfo::isTrajectoryOption()
+    bool isTrajectoryOption() const;
+    //! \copydoc FileNameOptionInfo::defaultExtension()
+    const char *defaultExtension() const;
+    //! \copydoc FileNameOptionInfo::extensions()
+    std::vector<const char *> extensions() const;
+    //! \copydoc FileNameOptionInfo::isValidType()
+    bool isValidType(int fileType) const;
+    //! \copydoc FileNameOptionInfo::fileTypes()
+    ConstArrayRef<int> fileTypes() const;
 
-    private:
-        virtual void initConverter(ConverterType *converter);
-        virtual std::string processValue(const std::string &value) const;
-        virtual void processAll();
+private:
+    virtual void initConverter(ConverterType *converter);
+    virtual std::string processValue(const std::string &value) const;
+    virtual void processAll();
 
-        FileNameOptionInfo     info_;
-        FileNameOptionManager *manager_;
-        int                    fileType_;
-        const char *           defaultExtension_;
-        bool                   bRead_;
-        bool                   bWrite_;
-        bool                   bLibrary_;
-        bool                   bAllowMissing_;
+    FileNameOptionInfo     info_;
+    FileNameOptionManager *manager_;
+    int                    fileType_;
+    const char *           defaultExtension_;
+    bool                   bRead_;
+    bool                   bWrite_;
+    bool                   bLibrary_;
+    bool                   bAllowMissing_;
 };
 
 } // namespace gmx

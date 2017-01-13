@@ -50,62 +50,62 @@
 
 class CorrelationDataSet
 {
-    double ** tempValues_;
+double ** tempValues_;
 
-    int    nrLines_;
-    int    nrColumns_;
-    double startTime_;
-    double endTime_;
-    double dt_;
+int    nrLines_;
+int    nrColumns_;
+double startTime_;
+double endTime_;
+double dt_;
 
-    public:
+public:
 
-        /*! \brief
-         * Constructor
-         * \param[in] fileName containing function to test. *.xvg
-         */
-        explicit CorrelationDataSet(const std::string &fileName);
+    /*! \brief
+     * Constructor
+     * \param[in] fileName containing function to test. *.xvg
+     */
+    explicit CorrelationDataSet(const std::string &fileName);
 
-        /*! \brief
-         * Return a value at an index
-         * \param[in] set the set number
-         * \param[in] t the time index of the value
-         */
-        real getValue(int set, int t) const;
+    /*! \brief
+     * Return a value at an index
+     * \param[in] set the set number
+     * \param[in] t the time index of the value
+     */
+    real getValue(int set, int t) const;
 
-        /*! \brief
-         * Return the nummber of columns
-         */
-        int getNrColumns() const { return nrColumns_; }
+    /*! \brief
+     * Return the nummber of columns
+     */
+    int getNrColumns() const { return nrColumns_; }
 
-        /*! \brief
-         * Return the nummber of Lines
-         */
-        int getNrLines() const { return nrLines_; }
+    /*! \brief
+     * Return the nummber of Lines
+     */
+    int getNrLines() const { return nrLines_; }
 
-        /*! \brief
-         * Return the time witch the function starts at
-         */
-        real getStartTime() const { return startTime_; }
+    /*! \brief
+     * Return the time witch the function starts at
+     */
+    real getStartTime() const { return startTime_; }
 
-        /*! \brief
-         * Return the time the function ends at
-         */
-        real getEndTime() const { return endTime_; }
+    /*! \brief
+     * Return the time the function ends at
+     */
+    real getEndTime() const { return endTime_; }
 
-        /*! \brief
-         * return delta time
-         */
-        real getDt() const { return dt_; }
+    /*! \brief
+     * return delta time
+     */
+    real getDt() const { return dt_; }
 
-        /*! \brief
-         * Destructor
-         */
-        ~CorrelationDataSet();
+    /*! \brief
+     * Destructor
+     */
+    ~CorrelationDataSet();
 
-    private:
-        //! This class should not be copyable or assignable
-        GMX_DISALLOW_COPY_AND_ASSIGN(CorrelationDataSet);
+private:
+    //! This class should not be copyable or assignable
+    GMX_DISALLOW_COPY_AND_ASSIGN(CorrelationDataSet);
 };
 
 #endif

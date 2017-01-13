@@ -67,15 +67,15 @@ namespace gmx
  */
 class AbstractAnalysisData::Impl
 {
-    public:
-        Impl();
+public:
+    Impl();
 
-        //! Column counts for each data set in the data.
-        std::vector<int> columnCounts_;
-        //! Whether the data is multipoint.
-        bool bMultipoint_;
-        //! Manager for the added modules.
-        AnalysisDataModuleManager modules_;
+    //! Column counts for each data set in the data.
+    std::vector<int> columnCounts_;
+    //! Whether the data is multipoint.
+    bool bMultipoint_;
+    //! Manager for the added modules.
+    AnalysisDataModuleManager modules_;
 };
 
 AbstractAnalysisData::Impl::Impl()

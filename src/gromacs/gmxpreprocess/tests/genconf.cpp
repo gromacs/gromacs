@@ -56,27 +56,27 @@ using gmx::test::ExactTextMatch;
 
 class GenconfTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        GenconfTest()
-        {
-            std::string confFileName = fileManager().getInputFilePath("spc-and-methanol.gro");
-            commandLine().addOption("-f", confFileName);
-            commandLine().addOption("-seed", "1993"); // make random operations reproducible
-            setOutputFile("-o", "out.gro", ExactTextMatch());
-        }
+public:
+    GenconfTest()
+    {
+        std::string confFileName = fileManager().getInputFilePath("spc-and-methanol.gro");
+        commandLine().addOption("-f", confFileName);
+        commandLine().addOption("-seed", "1993");     // make random operations reproducible
+        setOutputFile("-o", "out.gro", ExactTextMatch());
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
+    void runTest(const CommandLine &args)
+    {
+        CommandLine &cmdline = commandLine();
+        cmdline.merge(args);
 
-            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
-            rootChecker.checkString(args.toString(), "CommandLine");
+        gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
+        rootChecker.checkString(args.toString(), "CommandLine");
 
-            ASSERT_EQ(0, gmx_genconf(cmdline.argc(), cmdline.argv()));
+        ASSERT_EQ(0, gmx_genconf(cmdline.argc(), cmdline.argv()));
 
-            checkOutputFiles();
-        }
+        checkOutputFiles();
+    }
 };
 
 TEST_F(GenconfTest, nbox_Works)

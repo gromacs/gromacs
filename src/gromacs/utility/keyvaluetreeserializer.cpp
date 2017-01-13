@@ -49,28 +49,28 @@ namespace
 
 class ValueSerializer
 {
-    public:
-        static void initSerializers();
+public:
+    static void initSerializers();
 
-        static void serialize(const KeyValueTreeValue &value, ISerializer *serializer);
-        static KeyValueTreeValue deserialize(ISerializer *serializer);
+    static void serialize(const KeyValueTreeValue &value, ISerializer *serializer);
+    static KeyValueTreeValue deserialize(ISerializer *serializer);
 
-    private:
-        ValueSerializer();
+private:
+    ValueSerializer();
 
-        typedef void (*SerializerFunction)(const KeyValueTreeValue &value, ISerializer *serializer);
-        typedef void (*DeserializerFunction)(KeyValueTreeValueBuilder *builder, ISerializer *serializer);
+    typedef void (*SerializerFunction)(const KeyValueTreeValue &value, ISerializer *serializer);
+    typedef void (*DeserializerFunction)(KeyValueTreeValueBuilder *builder, ISerializer *serializer);
 
-        struct Serializer
-        {
-            unsigned char        typeTag;
-            SerializerFunction   serialize;
-            DeserializerFunction deserialize;
-        };
+    struct Serializer
+    {
+        unsigned char        typeTag;
+        SerializerFunction   serialize;
+        DeserializerFunction deserialize;
+    };
 
-        static Mutex                                         s_initMutex;
-        static std::map<std::type_index, Serializer>         s_serializers;
-        static std::map<unsigned char, DeserializerFunction> s_deserializers;
+    static Mutex                                         s_initMutex;
+    static std::map<std::type_index, Serializer>         s_serializers;
+    static std::map<unsigned char, DeserializerFunction> s_deserializers;
 };
 
 Mutex                                                          ValueSerializer::s_initMutex;

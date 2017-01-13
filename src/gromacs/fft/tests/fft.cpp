@@ -94,57 +94,57 @@ const double inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint
 
 class BaseFFTTest : public ::testing::Test
 {
-    public:
-        BaseFFTTest()
-            : checker_(data_.rootChecker()), flags_(GMX_FFT_FLAG_CONSERVATIVE)
-        {
-            // TODO: These tolerances are just something that has been observed
-            // to be sufficient to pass the tests.  It would be nicer to
-            // actually argue about why they are sufficient (or what is).
-            checker_.setDefaultTolerance(
-                    gmx::test::relativeToleranceAsPrecisionDependentUlp(10.0, 64, 512));
-        }
-        ~BaseFFTTest()
-        {
-            gmx_fft_cleanup();
-        }
+public:
+    BaseFFTTest()
+        : checker_(data_.rootChecker()), flags_(GMX_FFT_FLAG_CONSERVATIVE)
+    {
+        // TODO: These tolerances are just something that has been observed
+        // to be sufficient to pass the tests.  It would be nicer to
+        // actually argue about why they are sufficient (or what is).
+        checker_.setDefaultTolerance(
+                gmx::test::relativeToleranceAsPrecisionDependentUlp(10.0, 64, 512));
+    }
+    ~BaseFFTTest()
+    {
+        gmx_fft_cleanup();
+    }
 
-        gmx::test::TestReferenceData    data_;
-        gmx::test::TestReferenceChecker checker_;
-        std::vector<real>               in_, out_;
-        int                             flags_;
+    gmx::test::TestReferenceData    data_;
+    gmx::test::TestReferenceChecker checker_;
+    std::vector<real>               in_, out_;
+    int                             flags_;
 };
 
 class FFTTest : public BaseFFTTest
 {
-    public:
-        FFTTest() : fft_(nullptr)
+public:
+    FFTTest() : fft_(nullptr)
+    {
+    }
+    ~FFTTest()
+    {
+        if (fft_)
         {
+            gmx_fft_destroy(fft_);
         }
-        ~FFTTest()
-        {
-            if (fft_)
-            {
-                gmx_fft_destroy(fft_);
-            }
-        }
-        gmx_fft_t fft_;
+    }
+    gmx_fft_t fft_;
 };
 
 class ManyFFTTest : public BaseFFTTest
 {
-    public:
-        ManyFFTTest() : fft_(nullptr)
+public:
+    ManyFFTTest() : fft_(nullptr)
+    {
+    }
+    ~ManyFFTTest()
+    {
+        if (fft_)
         {
+            gmx_many_fft_destroy(fft_);
         }
-        ~ManyFFTTest()
-        {
-            if (fft_)
-            {
-                gmx_many_fft_destroy(fft_);
-            }
-        }
-        gmx_fft_t fft_;
+    }
+    gmx_fft_t fft_;
 };
 
 
@@ -157,18 +157,18 @@ class FFTTest1D : public FFTTest, public ::testing::WithParamInterface<int>
 
 class FFFTest3D : public BaseFFTTest
 {
-    public:
-        FFFTest3D() : fft_(nullptr)
+public:
+    FFFTest3D() : fft_(nullptr)
+    {
+    }
+    ~FFFTest3D()
+    {
+        if (fft_)
         {
+            gmx_parallel_3dfft_destroy(fft_);
         }
-        ~FFFTest3D()
-        {
-            if (fft_)
-            {
-                gmx_parallel_3dfft_destroy(fft_);
-            }
-        }
-        gmx_parallel_3dfft_t fft_;
+    }
+    gmx_parallel_3dfft_t fft_;
 };
 
 

@@ -65,14 +65,14 @@ namespace gmx
 
 class DataFileFinder::Impl
 {
-    public:
-        static std::string getDefaultPath();
+public:
+    static std::string getDefaultPath();
 
-        Impl() : envName_(nullptr), bEnvIsSet_(false) {}
+    Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
-        const char *             envName_;
-        bool                     bEnvIsSet_;
-        std::vector<std::string> searchPath_;
+    const char *             envName_;
+    bool                     bEnvIsSet_;
+    std::vector<std::string> searchPath_;
 };
 
 std::string DataFileFinder::Impl::getDefaultPath()

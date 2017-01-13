@@ -71,8 +71,8 @@ namespace
 
 class SplineTableTestBase : public ::testing::Test
 {
-    public:
-        static int s_testPoints_;  //!< Number of points to use. Public so we can set it as option
+public:
+    static int s_testPoints_;      //!< Number of points to use. Public so we can set it as option
 };
 
 int
@@ -95,30 +95,30 @@ GMX_TEST_OPTIONS(SplineTableTestOptions, options)
 template <typename T>
 class SplineTableTest : public SplineTableTestBase
 {
-    public:
-        SplineTableTest() : tolerance_(T::defaultTolerance) {}
+public:
+    SplineTableTest() : tolerance_(T::defaultTolerance) {}
 
-        /*! \brief Set a new tolerance to be used in table function comparison
-         *
-         *  \param tol New tolerance to use
-         */
-        void setTolerance(real tol) { tolerance_ = tol; }
+    /*! \brief Set a new tolerance to be used in table function comparison
+     *
+     *  \param tol New tolerance to use
+     */
+    void setTolerance(real tol) { tolerance_ = tol; }
 
-        //! \cond internal
-        /*! \internal \brief
-         * Assertion predicate formatter for comparing table with function/derivative
-         */
-        template <int numFuncInTable = 1, int funcIndex = 0>
-        void
-        testSplineTableAgainstFunctions(const std::string &desc,
-                                        const std::function<double(double)> &refFunc,
-                                        const std::function<double(double)> &refDer,
-                                        const T &table,
-                                        const std::pair<real, real>          &testRange);
-        //! \endcond
+    //! \cond internal
+    /*! \internal \brief
+     * Assertion predicate formatter for comparing table with function/derivative
+     */
+    template <int numFuncInTable = 1, int funcIndex = 0>
+    void
+    testSplineTableAgainstFunctions(const std::string &desc,
+                                    const std::function<double(double)> &refFunc,
+                                    const std::function<double(double)> &refDer,
+                                    const T &table,
+                                    const std::pair<real, real>          &testRange);
+    //! \endcond
 
-    private:
-        real tolerance_;           //!< Tolerance to use
+private:
+    real tolerance_;               //!< Tolerance to use
 };
 
 template <class T>

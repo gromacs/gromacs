@@ -61,12 +61,12 @@ class SelectionCollection;
  */
 class SelectionCompiler
 {
-    public:
-        //! Creates a selection compiler.
-        SelectionCompiler();
+public:
+    //! Creates a selection compiler.
+    SelectionCompiler();
 
-        //! Compiles the given selection collection.
-        void compile(SelectionCollection *coll);
+    //! Compiles the given selection collection.
+    void compile(SelectionCollection *coll);
 };
 
 } // namespace gmx

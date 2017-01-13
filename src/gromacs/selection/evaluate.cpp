@@ -88,51 +88,51 @@ namespace
  */
 class MempoolSelelemReserver
 {
-    public:
-        //! Constructs a reserver without initial reservation.
-        MempoolSelelemReserver() {}
-        /*! \brief
-         * Constructs a reserver with initial reservation.
-         *
-         * \param[in,out] sel    Selection element for which to reserve.
-         * \param[in]     count  Number of values to reserve.
-         *
-         * \see reserve()
-         */
-        MempoolSelelemReserver(const SelectionTreeElementPointer &sel, int count)
+public:
+    //! Constructs a reserver without initial reservation.
+    MempoolSelelemReserver() {}
+    /*! \brief
+     * Constructs a reserver with initial reservation.
+     *
+     * \param[in,out] sel    Selection element for which to reserve.
+     * \param[in]     count  Number of values to reserve.
+     *
+     * \see reserve()
+     */
+    MempoolSelelemReserver(const SelectionTreeElementPointer &sel, int count)
+    {
+        reserve(sel, count);
+    }
+    //! Frees any memory allocated using this reserver.
+    ~MempoolSelelemReserver()
+    {
+        if (sel_)
         {
-            reserve(sel, count);
+            sel_->mempoolRelease();
         }
-        //! Frees any memory allocated using this reserver.
-        ~MempoolSelelemReserver()
-        {
-            if (sel_)
-            {
-                sel_->mempoolRelease();
-            }
-        }
+    }
 
-        /*! \brief
-         * Reserves memory for selection element values using this reserver.
-         *
-         * \param[in,out] sel    Selection element for which to reserve.
-         * \param[in]     count  Number of values to reserve.
-         *
-         * Allocates space to store \p count output values in \p sel from the
-         * memory pool associated with \p sel, or from the heap if there is no
-         * memory pool.  Type of values to allocate is automatically determined
-         * from \p sel.
-         */
-        void reserve(const SelectionTreeElementPointer &sel, int count)
-        {
-            GMX_RELEASE_ASSERT(!sel_,
-                               "Can only reserve one element with one instance");
-            sel->mempoolReserve(count);
-            sel_ = sel;
-        }
+    /*! \brief
+     * Reserves memory for selection element values using this reserver.
+     *
+     * \param[in,out] sel    Selection element for which to reserve.
+     * \param[in]     count  Number of values to reserve.
+     *
+     * Allocates space to store \p count output values in \p sel from the
+     * memory pool associated with \p sel, or from the heap if there is no
+     * memory pool.  Type of values to allocate is automatically determined
+     * from \p sel.
+     */
+    void reserve(const SelectionTreeElementPointer &sel, int count)
+    {
+        GMX_RELEASE_ASSERT(!sel_,
+                           "Can only reserve one element with one instance");
+        sel->mempoolReserve(count);
+        sel_ = sel;
+    }
 
-    private:
-        SelectionTreeElementPointer sel_;
+private:
+    SelectionTreeElementPointer sel_;
 };
 
 /*! \brief
@@ -145,44 +145,44 @@ class MempoolSelelemReserver
  */
 class MempoolGroupReserver
 {
-    public:
-        /*! \brief
-         * Creates a reserver associated with a given memory pool.
-         *
-         * \param    mp  Memory pool from which to reserve memory.
-         */
-        explicit MempoolGroupReserver(gmx_sel_mempool_t *mp)
-            : mp_(mp), g_(nullptr)
+public:
+    /*! \brief
+     * Creates a reserver associated with a given memory pool.
+     *
+     * \param    mp  Memory pool from which to reserve memory.
+     */
+    explicit MempoolGroupReserver(gmx_sel_mempool_t *mp)
+        : mp_(mp), g_(nullptr)
+    {
+    }
+    //! Frees any memory allocated using this reserver.
+    ~MempoolGroupReserver()
+    {
+        if (g_ != nullptr)
         {
+            _gmx_sel_mempool_free_group(mp_, g_);
         }
-        //! Frees any memory allocated using this reserver.
-        ~MempoolGroupReserver()
-        {
-            if (g_ != nullptr)
-            {
-                _gmx_sel_mempool_free_group(mp_, g_);
-            }
-        }
+    }
 
-        /*! \brief
-         * Reserves memory for an index group using this reserver.
-         *
-         * \param[in,out] g      Index group to reserve.
-         * \param[in]     count  Number of atoms to reserve space for.
-         *
-         * Allocates memory from the memory pool to store \p count atoms in
-         * \p g.
-         */
-        void reserve(gmx_ana_index_t *g, int count)
-        {
-            GMX_RELEASE_ASSERT(g_ == nullptr, "Can only reserve one element with one instance");
-            _gmx_sel_mempool_alloc_group(mp_, g, count);
-            g_ = g;
-        }
+    /*! \brief
+     * Reserves memory for an index group using this reserver.
+     *
+     * \param[in,out] g      Index group to reserve.
+     * \param[in]     count  Number of atoms to reserve space for.
+     *
+     * Allocates memory from the memory pool to store \p count atoms in
+     * \p g.
+     */
+    void reserve(gmx_ana_index_t *g, int count)
+    {
+        GMX_RELEASE_ASSERT(g_ == nullptr, "Can only reserve one element with one instance");
+        _gmx_sel_mempool_alloc_group(mp_, g, count);
+        g_ = g;
+    }
 
-    private:
-        gmx_sel_mempool_t *mp_;
-        gmx_ana_index_t *  g_;
+private:
+    gmx_sel_mempool_t *mp_;
+    gmx_ana_index_t *  g_;
 };
 
 /*! \brief
@@ -195,60 +195,60 @@ class MempoolGroupReserver
  */
 class SelelemTemporaryValueAssigner
 {
-    public:
-        //! Constructs an assigner without an initial assignment.
-        SelelemTemporaryValueAssigner()
-            : old_ptr_(nullptr), old_nalloc_(0)
+public:
+    //! Constructs an assigner without an initial assignment.
+    SelelemTemporaryValueAssigner()
+        : old_ptr_(nullptr), old_nalloc_(0)
+    {
+    }
+    /*! \brief
+     * Constructs an assigner with an initial assignment.
+     *
+     * \param[in,out] sel     Selection element for which to assign.
+     * \param[in]     vsource Element to which \p sel values will point to.
+     *
+     * \see assign()
+     */
+    SelelemTemporaryValueAssigner(const SelectionTreeElementPointer &sel,
+                                  const SelectionTreeElement &       vsource)
+    {
+        assign(sel, vsource);
+    }
+    //! Undoes any temporary assignment done using this assigner.
+    ~SelelemTemporaryValueAssigner()
+    {
+        if (sel_)
         {
+            _gmx_selvalue_setstore_alloc(&sel_->v, old_ptr_, old_nalloc_);
         }
-        /*! \brief
-         * Constructs an assigner with an initial assignment.
-         *
-         * \param[in,out] sel     Selection element for which to assign.
-         * \param[in]     vsource Element to which \p sel values will point to.
-         *
-         * \see assign()
-         */
-        SelelemTemporaryValueAssigner(const SelectionTreeElementPointer &sel,
-                                      const SelectionTreeElement &       vsource)
-        {
-            assign(sel, vsource);
-        }
-        //! Undoes any temporary assignment done using this assigner.
-        ~SelelemTemporaryValueAssigner()
-        {
-            if (sel_)
-            {
-                _gmx_selvalue_setstore_alloc(&sel_->v, old_ptr_, old_nalloc_);
-            }
-        }
+    }
 
-        /*! \brief
-         * Assigns a temporary value pointer.
-         *
-         * \param[in,out] sel     Selection element for which to assign.
-         * \param[in]     vsource Element to which \p sel values will point to.
-         *
-         * Assigns the value pointer in \p sel to point to the values in
-         * \p vsource, i.e., any access/modification to values in \p sel
-         * actually accesses values in \p vsource.
-         */
-        void assign(const SelectionTreeElementPointer &sel,
-                    const SelectionTreeElement &       vsource)
-        {
-            GMX_RELEASE_ASSERT(!sel_,
-                               "Can only assign one element with one instance");
-            GMX_RELEASE_ASSERT(sel->v.type == vsource.v.type,
-                               "Mismatching selection value types");
-            _gmx_selvalue_getstore_and_release(&sel->v, &old_ptr_, &old_nalloc_);
-            _gmx_selvalue_setstore(&sel->v, vsource.v.u.ptr);
-            sel_ = sel;
-        }
+    /*! \brief
+     * Assigns a temporary value pointer.
+     *
+     * \param[in,out] sel     Selection element for which to assign.
+     * \param[in]     vsource Element to which \p sel values will point to.
+     *
+     * Assigns the value pointer in \p sel to point to the values in
+     * \p vsource, i.e., any access/modification to values in \p sel
+     * actually accesses values in \p vsource.
+     */
+    void assign(const SelectionTreeElementPointer &sel,
+                const SelectionTreeElement &       vsource)
+    {
+        GMX_RELEASE_ASSERT(!sel_,
+                           "Can only assign one element with one instance");
+        GMX_RELEASE_ASSERT(sel->v.type == vsource.v.type,
+                           "Mismatching selection value types");
+        _gmx_selvalue_getstore_and_release(&sel->v, &old_ptr_, &old_nalloc_);
+        _gmx_selvalue_setstore(&sel->v, vsource.v.u.ptr);
+        sel_ = sel;
+    }
 
-    private:
-        SelectionTreeElementPointer sel_;
-        void *                      old_ptr_;
-        int                         old_nalloc_;
+private:
+    SelectionTreeElementPointer sel_;
+    void *                      old_ptr_;
+    int                         old_nalloc_;
 };
 
 /*! \brief

@@ -76,110 +76,110 @@ ITopologyProvider::~ITopologyProvider()
 
 class SelectionOptionBehavior::Impl
 {
-    public:
-        Impl(SelectionCollection *selections,
-             ITopologyProvider *  topologyProvider)
-            : selections_(*selections), topologyProvider_(*topologyProvider),
-              manager_(selections), grps_(nullptr)
+public:
+    Impl(SelectionCollection *selections,
+         ITopologyProvider *  topologyProvider)
+        : selections_(*selections), topologyProvider_(*topologyProvider),
+          manager_(selections), grps_(nullptr)
+    {
+    }
+    ~Impl()
+    {
+        if (grps_ != nullptr)
         {
+            gmx_ana_indexgrps_free(grps_);
         }
-        ~Impl()
-        {
-            if (grps_ != nullptr)
-            {
-                gmx_ana_indexgrps_free(grps_);
-            }
-        }
+    }
 
-        void promptSelections()
+    void promptSelections()
+    {
+        const bool isInteractive = StandardInputStream::instance().isInteractive();
+        initIndexGroups();
+        manager_.parseRequestedFromStdin(isInteractive);
+        doneIndexGroups();
+    }
+    void initIndexGroups()
+    {
+        if (!selections_.requiresIndexGroups()
+            && !manager_.hasRequestedSelections())
         {
-            const bool isInteractive = StandardInputStream::instance().isInteractive();
-            initIndexGroups();
-            manager_.parseRequestedFromStdin(isInteractive);
-            doneIndexGroups();
+            if (!ndxfile_.empty())
+            {
+                std::fprintf(stderr, "NOTE: You provided an index file\n"
+                             "  %s\n(with -n), but it was not used by any selection.\n",
+                             ndxfile_.c_str());
+            }
+            selections_.setIndexGroups(nullptr);
+            return;
         }
-        void initIndexGroups()
+        if (ndxfile_.empty())
         {
-            if (!selections_.requiresIndexGroups()
-                && !manager_.hasRequestedSelections())
-            {
-                if (!ndxfile_.empty())
-                {
-                    std::fprintf(stderr, "NOTE: You provided an index file\n"
-                                 "  %s\n(with -n), but it was not used by any selection.\n",
-                                 ndxfile_.c_str());
-                }
-                selections_.setIndexGroups(nullptr);
-                return;
-            }
-            if (ndxfile_.empty())
-            {
-                gmx_mtop_t *top = topologyProvider_.getTopology(false);
-                gmx_ana_indexgrps_init(&grps_, top, nullptr);
-            }
-            else
-            {
-                gmx_ana_indexgrps_init(&grps_, nullptr, ndxfile_.c_str());
-            }
-            selections_.setIndexGroups(grps_);
+            gmx_mtop_t *top = topologyProvider_.getTopology(false);
+            gmx_ana_indexgrps_init(&grps_, top, nullptr);
         }
-        void doneIndexGroups()
+        else
         {
-            if (grps_ != nullptr)
-            {
-                selections_.setIndexGroups(nullptr);
-                gmx_ana_indexgrps_free(grps_);
-                grps_ = nullptr;
-            }
+            gmx_ana_indexgrps_init(&grps_, nullptr, ndxfile_.c_str());
         }
+        selections_.setIndexGroups(grps_);
+    }
+    void doneIndexGroups()
+    {
+        if (grps_ != nullptr)
+        {
+            selections_.setIndexGroups(nullptr);
+            gmx_ana_indexgrps_free(grps_);
+            grps_ = nullptr;
+        }
+    }
 
-        void compileSelections()
+    void compileSelections()
+    {
+        const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
+        gmx_mtop_t *top         = topologyProvider_.getTopology(topRequired);
+        int         natoms      = -1;
+        if (top == nullptr)
         {
-            const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
-            gmx_mtop_t *top         = topologyProvider_.getTopology(topRequired);
-            int         natoms      = -1;
-            if (top == nullptr)
-            {
-                natoms = topologyProvider_.getAtomCount();
-            }
-            getMassesIfRequired(top);
-            selections_.setTopology(top, natoms);
-            selections_.compile();
-            // Situation may have changed after compilation.
-            getMassesIfRequired(top);
+            natoms = topologyProvider_.getAtomCount();
         }
+        getMassesIfRequired(top);
+        selections_.setTopology(top, natoms);
+        selections_.compile();
+        // Situation may have changed after compilation.
+        getMassesIfRequired(top);
+    }
 
-        void getMassesIfRequired(gmx_mtop_t *top)
+    void getMassesIfRequired(gmx_mtop_t *top)
+    {
+        const bool massRequired = selections_.requiredTopologyProperties().needsMasses;
+        if (!massRequired)
         {
-            const bool massRequired = selections_.requiredTopologyProperties().needsMasses;
-            if (!massRequired)
+            return;
+        }
+        // TODO: There can be some corner cases that still hit this assert
+        // when the user has not provided the topology.
+        GMX_RELEASE_ASSERT(top != nullptr,
+                           "Masses are required, but no topology is loaded");
+        for (int i = 0; i < top->nmoltype; ++i)
+        {
+            gmx_moltype_t &moltype = top->moltype[i];
+            if (!moltype.atoms.haveMass)
             {
-                return;
-            }
-            // TODO: There can be some corner cases that still hit this assert
-            // when the user has not provided the topology.
-            GMX_RELEASE_ASSERT(top != nullptr,
-                               "Masses are required, but no topology is loaded");
-            for (int i = 0; i < top->nmoltype; ++i)
-            {
-                gmx_moltype_t &moltype = top->moltype[i];
+                atomsSetMassesBasedOnNames(&moltype.atoms, TRUE);
                 if (!moltype.atoms.haveMass)
                 {
-                    atomsSetMassesBasedOnNames(&moltype.atoms, TRUE);
-                    if (!moltype.atoms.haveMass)
-                    {
-                        GMX_THROW(InconsistentInputError("Selections require mass information for evaluation, but it is not available in the input and could not be determined for all atoms based on atom names."));
-                    }
+                    GMX_THROW(InconsistentInputError("Selections require mass information for evaluation, but it is not available in the input and could not be determined for all atoms based on atom names."));
                 }
             }
         }
+    }
 
-        SelectionCollection &  selections_;
-        ITopologyProvider &    topologyProvider_;
-        SelectionOptionManager manager_;
-        //! Name of the index file (empty if no index file provided).
-        std::string          ndxfile_;
-        gmx_ana_indexgrps_t *grps_;
+    SelectionCollection &  selections_;
+    ITopologyProvider &    topologyProvider_;
+    SelectionOptionManager manager_;
+    //! Name of the index file (empty if no index file provided).
+    std::string          ndxfile_;
+    gmx_ana_indexgrps_t *grps_;
 };
 
 SelectionOptionBehavior::SelectionOptionBehavior(

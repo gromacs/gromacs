@@ -48,54 +48,54 @@ namespace gmx
 
 class SimdFloat
 {
-    public:
-        SimdFloat() {}
+public:
+    SimdFloat() {}
 
-        SimdFloat(float f) : simdInternal_(_mm_set1_ps(f)) {}
+    SimdFloat(float f) : simdInternal_(_mm_set1_ps(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFloat(__m128 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFloat(__m128 simd) : simdInternal_(simd) {}
 
-        __m128 simdInternal_;
+    __m128 simdInternal_;
 };
 
 class SimdFInt32
 {
-    public:
-        SimdFInt32() {}
+public:
+    SimdFInt32() {}
 
-        SimdFInt32(std::int32_t i) : simdInternal_(_mm_set1_epi32(i)) {}
+    SimdFInt32(std::int32_t i) : simdInternal_(_mm_set1_epi32(i)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFInt32(__m128i simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFInt32(__m128i simd) : simdInternal_(simd) {}
 
-        __m128i simdInternal_;
+    __m128i simdInternal_;
 };
 
 class SimdFBool
 {
-    public:
-        SimdFBool() {}
+public:
+    SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_(_mm_castsi128_ps(_mm_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
+    SimdFBool(bool b) : simdInternal_(_mm_castsi128_ps(_mm_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFBool(__m128 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFBool(__m128 simd) : simdInternal_(simd) {}
 
-        __m128 simdInternal_;
+    __m128 simdInternal_;
 };
 
 class SimdFIBool
 {
-    public:
-        SimdFIBool() {}
+public:
+    SimdFIBool() {}
 
-        SimdFIBool(bool b) : simdInternal_(_mm_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
+    SimdFIBool(bool b) : simdInternal_(_mm_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFIBool(__m128i simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFIBool(__m128i simd) : simdInternal_(simd) {}
 
-        __m128i simdInternal_;
+    __m128i simdInternal_;
 };
 
 static inline SimdFloat gmx_simdcall simdLoad(const float *m)

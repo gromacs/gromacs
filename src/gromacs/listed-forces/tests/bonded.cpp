@@ -67,93 +67,93 @@ namespace
 
 class BondedTest : public ::testing::Test
 {
-    protected:
-        rvec                       x[NATOMS];
-        matrix                     box;
-        test::TestReferenceData    refData_;
-        test::TestReferenceChecker checker_;
-        BondedTest( ) :
-            checker_(refData_.rootChecker())
+protected:
+    rvec                       x[NATOMS];
+    matrix                     box;
+    test::TestReferenceData    refData_;
+    test::TestReferenceChecker checker_;
+    BondedTest( ) :
+        checker_(refData_.rootChecker())
+    {
+        test::FloatingPointTolerance tolerance(test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
+        checker_.setDefaultTolerance(tolerance);
+        clear_rvecs(NATOMS, x);
+        x[1][2] = 1;
+        x[2][1] = x[2][2] = 1;
+        x[3][0] = x[3][1] = x[3][2] = 1;
+
+        clear_mat(box);
+        box[0][0] = box[1][1] = box[2][2] = 1.5;
+    }
+
+    void testBondAngle(int epbc)
+    {
+        rvec  r_ij, r_kj;
+        real  cosine_angle, angle;
+        int   t1, t2;
+        t_pbc pbc;
+
+        set_pbc(&pbc, epbc, box);
+        angle = bond_angle(x[0], x[1], x[2], &pbc,
+                           r_ij, r_kj, &cosine_angle,
+                           &t1, &t2);
+        checker_.checkReal(angle, "angle");
+        checker_.checkReal(cosine_angle, "cosine_angle");
+        checker_.checkInteger(t1, "t1");
+        checker_.checkInteger(t2, "t2");
+    }
+
+    void testDihedralAngle(int epbc)
+    {
+        rvec  r_ij, r_kj, r_kl, m, n;
+        real  cosine_angle, angle;
+        int   t1, t2, t3;
+        t_pbc pbc;
+
+        set_pbc(&pbc, epbc, box);
+        angle = dih_angle(x[0], x[1], x[2], x[3], &pbc,
+                          r_ij, r_kj, r_kl, m, n, &cosine_angle,
+                          &t1, &t2, &t3);
+
+        checker_.checkReal(angle, "angle");
+        checker_.checkReal(cosine_angle, "cosine_angle");
+        checker_.checkInteger(t1, "t1");
+        checker_.checkInteger(t2, "t2");
+        checker_.checkInteger(t3, "t3");
+    }
+
+    void testIfunc(int                         ftype,
+                   const std::vector<t_iatom> &iatoms,
+                   const t_iparams             iparams[],
+                   int                         epbc)
+    {
+        real  lambda = 0;
+        real  dvdlambda;
+        rvec4 f[NATOMS];
+        for (int i = 0; i < NATOMS; i++)
         {
-            test::FloatingPointTolerance tolerance(test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
-            checker_.setDefaultTolerance(tolerance);
-            clear_rvecs(NATOMS, x);
-            x[1][2] = 1;
-            x[2][1] = x[2][2] = 1;
-            x[3][0] = x[3][1] = x[3][2] = 1;
-
-            clear_mat(box);
-            box[0][0] = box[1][1] = box[2][2] = 1.5;
-        }
-
-        void testBondAngle(int epbc)
-        {
-            rvec  r_ij, r_kj;
-            real  cosine_angle, angle;
-            int   t1, t2;
-            t_pbc pbc;
-
-            set_pbc(&pbc, epbc, box);
-            angle = bond_angle(x[0], x[1], x[2], &pbc,
-                               r_ij, r_kj, &cosine_angle,
-                               &t1, &t2);
-            checker_.checkReal(angle, "angle");
-            checker_.checkReal(cosine_angle, "cosine_angle");
-            checker_.checkInteger(t1, "t1");
-            checker_.checkInteger(t2, "t2");
-        }
-
-        void testDihedralAngle(int epbc)
-        {
-            rvec  r_ij, r_kj, r_kl, m, n;
-            real  cosine_angle, angle;
-            int   t1, t2, t3;
-            t_pbc pbc;
-
-            set_pbc(&pbc, epbc, box);
-            angle = dih_angle(x[0], x[1], x[2], x[3], &pbc,
-                              r_ij, r_kj, r_kl, m, n, &cosine_angle,
-                              &t1, &t2, &t3);
-
-            checker_.checkReal(angle, "angle");
-            checker_.checkReal(cosine_angle, "cosine_angle");
-            checker_.checkInteger(t1, "t1");
-            checker_.checkInteger(t2, "t2");
-            checker_.checkInteger(t3, "t3");
-        }
-
-        void testIfunc(int                         ftype,
-                       const std::vector<t_iatom> &iatoms,
-                       const t_iparams             iparams[],
-                       int                         epbc)
-        {
-            real  lambda = 0;
-            real  dvdlambda;
-            rvec4 f[NATOMS];
-            for (int i = 0; i < NATOMS; i++)
+            for (int j = 0; j < 4; j++)
             {
-                for (int j = 0; j < 4; j++)
-                {
-                    f[i][j] = 0;
-                }
+                f[i][j] = 0;
             }
-            rvec fshift[N_IVEC];
-            clear_rvecs(N_IVEC, fshift);
-            t_pbc pbc;
-            set_pbc(&pbc, epbc, box);
-            int  ddgatindex = 0;
-            real energy     = interaction_function[ftype].ifunc(iatoms.size(),
-                                                                iatoms.data(),
-                                                                iparams,
-                                                                x, f, fshift,
-                                                                &pbc,
-                                                                /* const struct t_graph *g */ nullptr,
-                                                                lambda, &dvdlambda,
-                                                                /* const struct t_mdatoms *md */ nullptr,
-                                                                /* struct t_fcdata *fcd */ nullptr,
-                                                                &ddgatindex);
-            checker_.checkReal(energy, interaction_function[ftype].longname);
         }
+        rvec fshift[N_IVEC];
+        clear_rvecs(N_IVEC, fshift);
+        t_pbc pbc;
+        set_pbc(&pbc, epbc, box);
+        int  ddgatindex = 0;
+        real energy     = interaction_function[ftype].ifunc(iatoms.size(),
+                                                            iatoms.data(),
+                                                            iparams,
+                                                            x, f, fshift,
+                                                            &pbc,
+                                                            /* const struct t_graph *g */ nullptr,
+                                                            lambda, &dvdlambda,
+                                                            /* const struct t_mdatoms *md */ nullptr,
+                                                            /* struct t_fcdata *fcd */ nullptr,
+                                                            &ddgatindex);
+        checker_.checkReal(energy, interaction_function[ftype].longname);
+    }
 
 };
 

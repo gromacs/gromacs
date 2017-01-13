@@ -64,38 +64,38 @@ class TestReferenceChecker;
 
 class MockAnalysisDataModule : public IAnalysisDataModule
 {
-    public:
-        explicit MockAnalysisDataModule(int flags);
-        virtual ~MockAnalysisDataModule();
+public:
+    explicit MockAnalysisDataModule(int flags);
+    virtual ~MockAnalysisDataModule();
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        MOCK_METHOD2(parallelDataStarted,
-                     bool(AbstractAnalysisData              * data,
-                          const AnalysisDataParallelOptions &options));
-        MOCK_METHOD1(dataStarted, void(AbstractAnalysisData * data));
-        MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
-        MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
-        MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader &header));
-        MOCK_METHOD1(frameFinishedSerial, void(int frameIndex));
-        MOCK_METHOD0(dataFinished, void());
+    MOCK_METHOD2(parallelDataStarted,
+                 bool(AbstractAnalysisData              * data,
+                      const AnalysisDataParallelOptions &options));
+    MOCK_METHOD1(dataStarted, void(AbstractAnalysisData * data));
+    MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
+    MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
+    MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader &header));
+    MOCK_METHOD1(frameFinishedSerial, void(int frameIndex));
+    MOCK_METHOD0(dataFinished, void());
 
-        void setupStaticCheck(const AnalysisDataTestInput &data,
-                              AbstractAnalysisData *       source,
-                              bool                         bParallel);
-        void setupStaticColumnCheck(const AnalysisDataTestInput &data,
-                                    int firstcol, int n,
-                                    AbstractAnalysisData *source);
-        void setupStaticStorageCheck(const AnalysisDataTestInput &data,
-                                     int                          storageCount,
-                                     AbstractAnalysisData *       source);
-        void setupReferenceCheck(const TestReferenceChecker &checker,
-                                 AbstractAnalysisData *      source);
+    void setupStaticCheck(const AnalysisDataTestInput &data,
+                          AbstractAnalysisData *       source,
+                          bool                         bParallel);
+    void setupStaticColumnCheck(const AnalysisDataTestInput &data,
+                                int firstcol, int n,
+                                AbstractAnalysisData *source);
+    void setupStaticStorageCheck(const AnalysisDataTestInput &data,
+                                 int                          storageCount,
+                                 AbstractAnalysisData *       source);
+    void setupReferenceCheck(const TestReferenceChecker &checker,
+                             AbstractAnalysisData *      source);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an MockAnalysisDataModule object.

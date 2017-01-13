@@ -68,59 +68,59 @@ class SelectionParserSymbolTable;
  */
 class SelectionParserSymbol
 {
-    public:
-        //! Defines the type of the symbol.
-        enum SymbolType
-        {
-            ReservedSymbol,     //!< The symbol is a reserved keyword.
-            VariableSymbol,     //!< The symbol is a variable.
-            MethodSymbol,       //!< The symbol is a selection method.
-            PositionSymbol      //!< The symbol is a position keyword.
-        };
+public:
+    //! Defines the type of the symbol.
+    enum SymbolType
+    {
+        ReservedSymbol,         //!< The symbol is a reserved keyword.
+        VariableSymbol,         //!< The symbol is a variable.
+        MethodSymbol,           //!< The symbol is a selection method.
+        PositionSymbol          //!< The symbol is a position keyword.
+    };
 
-        ~SelectionParserSymbol();
+    ~SelectionParserSymbol();
 
-        //! Returns the name of the symbol.
-        const std::string &name() const;
-        //! Returns the type of the symbol.
-        SymbolType type() const;
+    //! Returns the name of the symbol.
+    const std::string &name() const;
+    //! Returns the type of the symbol.
+    SymbolType type() const;
 
-        /*! \brief
-         * Returns the method associated with a \ref MethodSymbol symbol.
-         *
-         * \returns   The method associated with the symbol.
-         *
-         * Must only be called if type() returns \ref MethodSymbol.
-         */
-        gmx_ana_selmethod_t *methodValue() const;
-        /*! \brief
-         * Returns the selection tree associated with a \ref VariableSymbol symbol.
-         *
-         * \returns   The variable expression associated with the symbol.
-         *
-         * Must only be called if type() returns \ref VariableSymbol.
-         */
-        const SelectionTreeElementPointer &variableValue() const;
+    /*! \brief
+     * Returns the method associated with a \ref MethodSymbol symbol.
+     *
+     * \returns   The method associated with the symbol.
+     *
+     * Must only be called if type() returns \ref MethodSymbol.
+     */
+    gmx_ana_selmethod_t *methodValue() const;
+    /*! \brief
+     * Returns the selection tree associated with a \ref VariableSymbol symbol.
+     *
+     * \returns   The variable expression associated with the symbol.
+     *
+     * Must only be called if type() returns \ref VariableSymbol.
+     */
+    const SelectionTreeElementPointer &variableValue() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        /*! \brief
-         * Initializes a new symbol with the given data.
-         *
-         * \param  impl  Implementation data.
-         * \throws std::bad_alloc if out of memory.
-         *
-         * Only the parent symbol table creates symbol objects.
-         */
-        explicit SelectionParserSymbol(Impl *impl);
+    /*! \brief
+     * Initializes a new symbol with the given data.
+     *
+     * \param  impl  Implementation data.
+     * \throws std::bad_alloc if out of memory.
+     *
+     * Only the parent symbol table creates symbol objects.
+     */
+    explicit SelectionParserSymbol(Impl *impl);
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed to call the constructor and for other initialization.
-         */
-        friend class SelectionParserSymbolTable;
+    /*! \brief
+     * Needed to call the constructor and for other initialization.
+     */
+    friend class SelectionParserSymbolTable;
 };
 
 /*! \internal
@@ -144,55 +144,55 @@ class SelectionParserSymbol
 class SelectionParserSymbolIterator
     : public std::iterator<std::input_iterator_tag, const SelectionParserSymbol>
 {
-    public:
-        //! Creates an independent copy of an iterator.
-        SelectionParserSymbolIterator(const SelectionParserSymbolIterator &other);
-        ~SelectionParserSymbolIterator();
+public:
+    //! Creates an independent copy of an iterator.
+    SelectionParserSymbolIterator(const SelectionParserSymbolIterator &other);
+    ~SelectionParserSymbolIterator();
 
-        //! Creates an independent copy of an iterator.
-        SelectionParserSymbolIterator &
-        operator=(const SelectionParserSymbolIterator &other);
+    //! Creates an independent copy of an iterator.
+    SelectionParserSymbolIterator &
+    operator=(const SelectionParserSymbolIterator &other);
 
-        //! Equality comparison for iterators.
-        bool operator==(const SelectionParserSymbolIterator &other) const;
-        //! Inequality comparison for iterators.
-        bool operator!=(const SelectionParserSymbolIterator &other) const
-        {
-            return !operator==(other);
-        }
-        //! Dereferences the iterator.
-        reference operator*() const;
-        //! Dereferences the iterator.
-        pointer operator->() const { return &operator*(); }
-        //! Moves the iterator to the next symbol.
-        SelectionParserSymbolIterator &operator++();
-        //! Moves the iterator to the next symbol.
-        SelectionParserSymbolIterator operator++(int)
-        {
-            SelectionParserSymbolIterator tmp(*this);
-            operator++();
-            return tmp;
-        }
+    //! Equality comparison for iterators.
+    bool operator==(const SelectionParserSymbolIterator &other) const;
+    //! Inequality comparison for iterators.
+    bool operator!=(const SelectionParserSymbolIterator &other) const
+    {
+        return !operator==(other);
+    }
+    //! Dereferences the iterator.
+    reference operator*() const;
+    //! Dereferences the iterator.
+    pointer operator->() const { return &operator*(); }
+    //! Moves the iterator to the next symbol.
+    SelectionParserSymbolIterator &operator++();
+    //! Moves the iterator to the next symbol.
+    SelectionParserSymbolIterator operator++(int)
+    {
+        SelectionParserSymbolIterator tmp(*this);
+        operator++();
+        return tmp;
+    }
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        /*! \brief
-         * Initializes a new iterator with the given data.
-         *
-         * \param  impl  Implementation data.
-         *
-         * Only the parent symbol table can create non-default-constructed
-         * iterators.
-         */
-        explicit SelectionParserSymbolIterator(Impl *impl);
+    /*! \brief
+     * Initializes a new iterator with the given data.
+     *
+     * \param  impl  Implementation data.
+     *
+     * Only the parent symbol table can create non-default-constructed
+     * iterators.
+     */
+    explicit SelectionParserSymbolIterator(Impl *impl);
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed to access the constructor.
-         */
-        friend class SelectionParserSymbolTable;
+    /*! \brief
+     * Needed to access the constructor.
+     */
+    friend class SelectionParserSymbolTable;
 };
 
 /*! \internal \brief
@@ -202,81 +202,81 @@ class SelectionParserSymbolIterator
  */
 class SelectionParserSymbolTable
 {
-    public:
-        /*! \brief
-         * Creates a new symbol table.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * The created table is initialized with reserved and position symbols.
-         */
-        SelectionParserSymbolTable();
-        ~SelectionParserSymbolTable();
+public:
+    /*! \brief
+     * Creates a new symbol table.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * The created table is initialized with reserved and position symbols.
+     */
+    SelectionParserSymbolTable();
+    ~SelectionParserSymbolTable();
 
-        /*! \brief
-         * Finds a symbol by name.
-         *
-         * \param[in] name   Symbol name to find.
-         * \returns   Pointer to the symbol with name \p name, or
-         *      NULL if not found.
-         *
-         * Does not throw.
-         */
-        const SelectionParserSymbol *
-        findSymbol(const std::string &name) const;
+    /*! \brief
+     * Finds a symbol by name.
+     *
+     * \param[in] name   Symbol name to find.
+     * \returns   Pointer to the symbol with name \p name, or
+     *      NULL if not found.
+     *
+     * Does not throw.
+     */
+    const SelectionParserSymbol *
+    findSymbol(const std::string &name) const;
 
-        /*! \brief
-         * Returns the start iterator for iterating symbols of a given type.
-         *
-         * \param[in] type  Type of symbols to iterate over.
-         * \returns   Iterator that points to the first symbol of type \p type.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * \see SelectionParserSymbolIterator
-         */
-        SelectionParserSymbolIterator
-        beginIterator(SelectionParserSymbol::SymbolType type) const;
-        /*! \brief
-         * Returns the end iterator for symbol iteration.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Currently, the end value is the same for all symbol types.
-         *
-         * \see SelectionParserSymbolIterator
-         */
-        SelectionParserSymbolIterator endIterator() const;
+    /*! \brief
+     * Returns the start iterator for iterating symbols of a given type.
+     *
+     * \param[in] type  Type of symbols to iterate over.
+     * \returns   Iterator that points to the first symbol of type \p type.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * \see SelectionParserSymbolIterator
+     */
+    SelectionParserSymbolIterator
+    beginIterator(SelectionParserSymbol::SymbolType type) const;
+    /*! \brief
+     * Returns the end iterator for symbol iteration.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * Currently, the end value is the same for all symbol types.
+     *
+     * \see SelectionParserSymbolIterator
+     */
+    SelectionParserSymbolIterator endIterator() const;
 
-        /*! \brief
-         * Adds a new variable symbol.
-         *
-         * \param[in] name   Name of the new symbol.
-         * \param[in] sel    Value of the variable.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if there was a symbol with the same
-         *      name.
-         */
-        void addVariable(const char *                       name,
-                         const SelectionTreeElementPointer &sel);
-        /*! \brief
-         * Adds a new method symbol.
-         *
-         * \param[in] name   Name of the new symbol.
-         * \param[in] method Method that this symbol represents.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    APIError if there was a symbol with the same name.
-         */
-        void addMethod(const char *name, gmx_ana_selmethod_t *method);
+    /*! \brief
+     * Adds a new variable symbol.
+     *
+     * \param[in] name   Name of the new symbol.
+     * \param[in] sel    Value of the variable.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if there was a symbol with the same
+     *      name.
+     */
+    void addVariable(const char *                       name,
+                     const SelectionTreeElementPointer &sel);
+    /*! \brief
+     * Adds a new method symbol.
+     *
+     * \param[in] name   Name of the new symbol.
+     * \param[in] method Method that this symbol represents.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    APIError if there was a symbol with the same name.
+     */
+    void addMethod(const char *name, gmx_ana_selmethod_t *method);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed to access implementation types.
-         */
-        friend class SelectionParserSymbolIterator;
+    /*! \brief
+     * Needed to access implementation types.
+     */
+    friend class SelectionParserSymbolIterator;
 };
 
 } // namespace gmx

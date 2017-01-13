@@ -92,32 +92,32 @@ Butane                   1\n\
 //! Test fixture for bonded interactions
 class BondedInteractionsTest : public gmx::test::MdrunTestFixture
 {
-    public:
-        //! Execute the trajectory writing test
-        void setupGrompp(const char *interaction)
-        {
-            runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
-            TextWriter::writeFileFromString(runner_.topFileName_, formatString(g_butaneTopFileFormatString, interaction));
-            runner_.groFileName_ = fileManager_.getInputFilePath("butane1.gro");
-            runner_.ndxFileName_ = fileManager_.getInputFilePath("butane1.ndx");
-            /* TODO Now that Verlet is the default, change the implementation
-               of useEmptyMdpFile() to do that. */
-            runner_.useStringAsMdpFile("");
-        }
-        //! Prepare an mdrun caller
-        CommandLine setupMdrun()
-        {
-            CommandLine rerunCaller;
-            rerunCaller.append("mdrun");
-            rerunCaller.addOption("-rerun", runner_.groFileName_);
-            return rerunCaller;
-        }
-        //! Check the output of mdrun
-        void checkMdrun()
-        {
-            // TODO verifying some energies and forces would be good,
-            // once other code in gerrit is reviewed
-        }
+public:
+    //! Execute the trajectory writing test
+    void setupGrompp(const char *interaction)
+    {
+        runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
+        TextWriter::writeFileFromString(runner_.topFileName_, formatString(g_butaneTopFileFormatString, interaction));
+        runner_.groFileName_ = fileManager_.getInputFilePath("butane1.gro");
+        runner_.ndxFileName_ = fileManager_.getInputFilePath("butane1.ndx");
+        /* TODO Now that Verlet is the default, change the implementation
+           of useEmptyMdpFile() to do that. */
+        runner_.useStringAsMdpFile("");
+    }
+    //! Prepare an mdrun caller
+    CommandLine setupMdrun()
+    {
+        CommandLine rerunCaller;
+        rerunCaller.append("mdrun");
+        rerunCaller.addOption("-rerun", runner_.groFileName_);
+        return rerunCaller;
+    }
+    //! Check the output of mdrun
+    void checkMdrun()
+    {
+        // TODO verifying some energies and forces would be good,
+        // once other code in gerrit is reviewed
+    }
 };
 
 // This test ensures that a normal non-tabulated bond interaction works

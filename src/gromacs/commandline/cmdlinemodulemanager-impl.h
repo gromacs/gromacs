@@ -73,57 +73,57 @@ typedef std::map<std::string, CommandLineModulePointer> CommandLineModuleMap;
  */
 class CommandLineModuleGroupData
 {
-    public:
-        /*! \brief
-         * Shorthand for a list of modules contained in the group.
-         *
-         * The first element in the contained pair contains the tag
-         * (gmx-something) of the module, and the second element contains the
-         * description.  The second element is never NULL.
-         */
-        typedef std::vector<std::pair<std::string, const char *> > ModuleList;
+public:
+    /*! \brief
+     * Shorthand for a list of modules contained in the group.
+     *
+     * The first element in the contained pair contains the tag
+     * (gmx-something) of the module, and the second element contains the
+     * description.  The second element is never NULL.
+     */
+    typedef std::vector<std::pair<std::string, const char *> > ModuleList;
 
-        /*! \brief
-         * Constructs an empty module group.
-         *
-         * \param[in] modules     List of all modules
-         *     (used for checking and default descriptions).
-         * \param[in] binaryName  Name of the binary containing the modules.
-         * \param[in] title       Title of the group.
-         *
-         * Does not throw.
-         */
-        CommandLineModuleGroupData(const CommandLineModuleMap &modules,
-                                   const char *                binaryName,
-                                   const char *                title)
-            : allModules_(modules), binaryName_(binaryName), title_(title)
-        {
-        }
+    /*! \brief
+     * Constructs an empty module group.
+     *
+     * \param[in] modules     List of all modules
+     *     (used for checking and default descriptions).
+     * \param[in] binaryName  Name of the binary containing the modules.
+     * \param[in] title       Title of the group.
+     *
+     * Does not throw.
+     */
+    CommandLineModuleGroupData(const CommandLineModuleMap &modules,
+                               const char *                binaryName,
+                               const char *                title)
+        : allModules_(modules), binaryName_(binaryName), title_(title)
+    {
+    }
 
-        //! Returns the title for the group.
-        const char *title() const { return title_; }
-        //! Returns the list of modules in the group.
-        const ModuleList &modules() const { return modules_; }
+    //! Returns the title for the group.
+    const char *title() const { return title_; }
+    //! Returns the list of modules in the group.
+    const ModuleList &modules() const { return modules_; }
 
-        /*! \brief
-         * Adds a module to the group.
-         *
-         * \param[in] name        Name of the module.
-         * \param[in] description Description of the module in this group.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * If \p description is NULL, the description returned by the module is
-         * used.
-         */
-        void addModule(const char *name, const char *description);
+    /*! \brief
+     * Adds a module to the group.
+     *
+     * \param[in] name        Name of the module.
+     * \param[in] description Description of the module in this group.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * If \p description is NULL, the description returned by the module is
+     * used.
+     */
+    void addModule(const char *name, const char *description);
 
-    private:
-        const CommandLineModuleMap &allModules_;
-        const char *                binaryName_;
-        const char *                title_;
-        ModuleList                  modules_;
+private:
+    const CommandLineModuleMap &allModules_;
+    const char *                binaryName_;
+    const char *                title_;
+    ModuleList                  modules_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineModuleGroupData);
+    GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineModuleGroupData);
 };
 
 //! Smart pointer type for managing a CommandLineModuleGroup.
@@ -139,77 +139,77 @@ typedef std::vector<CommandLineModuleGroupDataPointer>
  */
 class CommandLineCommonOptionsHolder
 {
-    public:
-        CommandLineCommonOptionsHolder();
-        ~CommandLineCommonOptionsHolder();
+public:
+    CommandLineCommonOptionsHolder();
+    ~CommandLineCommonOptionsHolder();
 
-        //! Initializes the common options.
-        void initOptions();
-        /*! \brief
-         * Finishes option parsing.
-         *
-         * \returns `false` if the wrapper binary should quit without executing
-         *     any module.
-         */
-        bool finishOptions();
+    //! Initializes the common options.
+    void initOptions();
+    /*! \brief
+     * Finishes option parsing.
+     *
+     * \returns `false` if the wrapper binary should quit without executing
+     *     any module.
+     */
+    bool finishOptions();
 
-        //! Adjust defaults based on module settings.
-        void adjustFromSettings(const CommandLineModuleSettings &settings);
+    //! Adjust defaults based on module settings.
+    void adjustFromSettings(const CommandLineModuleSettings &settings);
 
-        //! Returns the internal Options object.
-        Options *options() { return &options_; }
-        //! Returns the settings for printing startup information.
-        const BinaryInformationSettings &binaryInfoSettings() const
-        {
-            return binaryInfoSettings_;
-        }
+    //! Returns the internal Options object.
+    Options *options() { return &options_; }
+    //! Returns the settings for printing startup information.
+    const BinaryInformationSettings &binaryInfoSettings() const
+    {
+        return binaryInfoSettings_;
+    }
 
-        /*! \brief
-         * Returns `true` if common options are set such that the wrapper
-         * binary should quit, without running the actual module.
-         */
-        bool shouldIgnoreActualModule() const
-        {
-            return bHelp_ || bVersion_;
-        }
-        //! Returns whether common options specify showing help.
-        bool shouldShowHelp() const { return bHelp_; }
-        //! Returns whether common options specify showing hidden options in help.
-        bool shouldShowHidden() const { return bHidden_; }
-        //! Returns whether common options specify quiet execution.
-        bool shouldBeQuiet() const
-        {
-            return bQuiet_ && !bVersion_;
-        }
-        //! Returns whether backups should be made.
-        bool shouldBackup() const { return bBackup_; }
+    /*! \brief
+     * Returns `true` if common options are set such that the wrapper
+     * binary should quit, without running the actual module.
+     */
+    bool shouldIgnoreActualModule() const
+    {
+        return bHelp_ || bVersion_;
+    }
+    //! Returns whether common options specify showing help.
+    bool shouldShowHelp() const { return bHelp_; }
+    //! Returns whether common options specify showing hidden options in help.
+    bool shouldShowHidden() const { return bHidden_; }
+    //! Returns whether common options specify quiet execution.
+    bool shouldBeQuiet() const
+    {
+        return bQuiet_ && !bVersion_;
+    }
+    //! Returns whether backups should be made.
+    bool shouldBackup() const { return bBackup_; }
 
-        //! Returns the nice level.
-        int niceLevel() const { return niceLevel_; }
-        //! Returns whether floating-point exception should be enabled
-        bool enableFPExceptions() const { return bFpexcept_; }
-        //! Returns the debug level.
-        int debugLevel() const { return debugLevel_; }
+    //! Returns the nice level.
+    int niceLevel() const { return niceLevel_; }
+    //! Returns whether floating-point exception should be enabled
+    bool enableFPExceptions() const { return bFpexcept_; }
+    //! Returns the debug level.
+    int debugLevel() const { return debugLevel_; }
 
-        //! Returns the file to which startup information should be printed.
-        FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
+    //! Returns the file to which startup information should be printed.
+    FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
 
-    private:
-        Options options_;
-        //! Settings for what to write in the startup header.
-        BinaryInformationSettings binaryInfoSettings_;
-        bool                      bHelp_;
-        bool                      bHidden_;
-        bool                      bQuiet_;
-        bool                      bVersion_;
-        bool                      bCopyright_;
-        int                       niceLevel_;
-        bool                      bNiceSet_;
-        bool                      bBackup_;
-        bool                      bFpexcept_;
-        int                       debugLevel_;
+private:
+    Options options_;
+    //! Settings for what to write in the startup header.
+    BinaryInformationSettings binaryInfoSettings_;
+    bool                      bHelp_;
+    bool                      bHidden_;
+    bool                      bQuiet_;
+    bool                      bVersion_;
+    bool                      bCopyright_;
+    int                       niceLevel_;
+    bool                      bNiceSet_;
+    bool                      bBackup_;
+    bool                      bFpexcept_;
+    int                       debugLevel_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);
+    GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);
 };
 
 //! \}

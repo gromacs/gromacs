@@ -66,207 +66,207 @@ namespace gmx
 class CpuInfo
 {
 
-    public:
+public:
 
-        /*! \brief Amount of cpu information present (incremental) */
-        enum class SupportLevel
-        {
-            None,                  //!< No cpu information whatsoever. Sorry.
-            Name,                  //!< Only vendor and/or brand is set
-            Features,              //!< Some features are set
-            LogicalProcessorInfo   //!< Everything includling logical processor information
-        };
+    /*! \brief Amount of cpu information present (incremental) */
+    enum class SupportLevel
+    {
+    None,                          //!< No cpu information whatsoever. Sorry.
+    Name,                          //!< Only vendor and/or brand is set
+    Features,                      //!< Some features are set
+    LogicalProcessorInfo           //!< Everything includling logical processor information
+    };
 
-        /*! \brief Processor/system vendors */
-        enum class Vendor
-        {
-            Unknown,      //!< Unidentified
-            Intel,        //!< GenuineIntel
-            Amd,          //!< AuthenticAMD
-            Fujitsu,      //!< Only works on Linux (parsed from /proc/cpuinfo)
-            Ibm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
-            Arm,          //!< Only works on Linux (parsed from /proc/cpuinfo)
-        };
+    /*! \brief Processor/system vendors */
+    enum class Vendor
+    {
+    Unknown,              //!< Unidentified
+    Intel,                //!< GenuineIntel
+    Amd,                  //!< AuthenticAMD
+    Fujitsu,              //!< Only works on Linux (parsed from /proc/cpuinfo)
+    Ibm,                  //!< Only works on Linux (parsed from /proc/cpuinfo)
+    Arm,                  //!< Only works on Linux (parsed from /proc/cpuinfo)
+    };
 
-        /*! \brief List of CPU features
-         *
-         *  These values can be used as arguments to the feature() method
-         *  to check whether a specific feature was found on the CPU we are
-         *  running on.
-         */
-        enum class Feature
-        {
-            X86_Aes,         //!< x86 advanced encryption standard accel.
-            X86_Apic,        //!< APIC support
-            X86_Avx,         //!< Advanced vector extensions
-            X86_Avx2,        //!< AVX2 including gather support (not used yet)
-            X86_Avx512F,     //!< Foundation AVX-512 instructions
-            X86_Avx512PF,    //!< Extended gather/scatter for AVX-512
-            X86_Avx512ER,    //!< AVX-512 exponential and recpirocal extensions
-            X86_Avx512CD,    //!< Memory conflict-detection for AVX-512
-            X86_Avx512BW,    //!< AVX-512 byte and word instructions
-            X86_Avx512VL,    //!< AVX-512 vector length extensions
-            X86_Clfsh,       //!< Supports CLFLUSH instruction
-            X86_Cmov,        //!< Conditional move insn support
-            X86_Cx8,         //!< Supports CMPXCHG8B (8-byte compare-exchange)
-            X86_Cx16,        //!< Supports CMPXCHG16B (16-byte compare-exchg)
-            X86_F16C,        //!< Supports 16-bit FP conversion instructions
-            X86_Fma,         //!< Fused-multiply add support (mainly for AVX)
-            X86_Fma4,        //!< 4-operand FMA, only on AMD for now
-            X86_Hle,         //!< Hardware lock elision
-            X86_Htt,         //!< Hyper-Threading supported (but maybe not enabled)
-            X86_Lahf,        //!< LAHF/SAHF support in 64 bits
-            X86_MisalignSse, //!< Support for misaligned SSE data instructions
-            X86_Mmx,         //!< MMX registers and instructions
-            X86_Msr,         //!< Supports Intel model-specific-registers
-            X86_NonstopTsc,  //!< Invariant TSC (constant rate in ACPI states)
-            X86_Pcid,        //!< Process context identifier support
-            X86_Pclmuldq,    //!< Carry-less 64-bit multiplication supported
-            X86_Pdcm,        //!< Perfmon and Debug Capability
-            X86_PDPE1GB,     //!< Support for 1GB pages
-            X86_Popcnt,      //!< Supports the POPCNT (population count) insn
-            X86_Pse,         //!< Supports 4MB-pages (page size extension)
-            X86_Rdrnd,       //!< RDRAND high-quality hardware random numbers
-            X86_Rdtscp,      //!< Serializing rdtscp instruction available
-            X86_Rtm,         //!< Restricted transactional memory
-            X86_Sha,         //!< Intel SHA extensions
-            X86_Sse2,        //!< SSE 2
-            X86_Sse3,        //!< SSE 3
-            X86_Sse4A,       //!< SSE 4A
-            X86_Sse4_1,      //!< SSE 4.1
-            X86_Sse4_2,      //!< SSE 4.2
-            X86_Ssse3,       //!< Supplemental SSE3
-            X86_Tdt,         //!< TSC deadline timer
-            X86_X2Apic,      //!< Extended xAPIC Support
-            X86_Xop,         //!< AMD extended instructions, only AMD for now
-            Arm_Neon,        //!< 32-bit ARM NEON
-            Arm_NeonAsimd,   //!< 64-bit ARM AArch64 Advanced SIMD
-            Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q and later)
-            Ibm_Vmx,         //!< IBM VMX SIMD (Altivec on Power6 and later)
-            Ibm_Vsx,         //!< IBM VSX SIMD (Power7 and later)
-            Fujitsu_HpcAce   //!< Fujitsu Sparc64 HPC-ACE
-        };
+    /*! \brief List of CPU features
+     *
+     *  These values can be used as arguments to the feature() method
+     *  to check whether a specific feature was found on the CPU we are
+     *  running on.
+     */
+    enum class Feature
+    {
+    X86_Aes,                 //!< x86 advanced encryption standard accel.
+    X86_Apic,                //!< APIC support
+    X86_Avx,                 //!< Advanced vector extensions
+    X86_Avx2,                //!< AVX2 including gather support (not used yet)
+    X86_Avx512F,             //!< Foundation AVX-512 instructions
+    X86_Avx512PF,            //!< Extended gather/scatter for AVX-512
+    X86_Avx512ER,            //!< AVX-512 exponential and recpirocal extensions
+    X86_Avx512CD,            //!< Memory conflict-detection for AVX-512
+    X86_Avx512BW,            //!< AVX-512 byte and word instructions
+    X86_Avx512VL,            //!< AVX-512 vector length extensions
+    X86_Clfsh,               //!< Supports CLFLUSH instruction
+    X86_Cmov,                //!< Conditional move insn support
+    X86_Cx8,                 //!< Supports CMPXCHG8B (8-byte compare-exchange)
+    X86_Cx16,                //!< Supports CMPXCHG16B (16-byte compare-exchg)
+    X86_F16C,                //!< Supports 16-bit FP conversion instructions
+    X86_Fma,                 //!< Fused-multiply add support (mainly for AVX)
+    X86_Fma4,                //!< 4-operand FMA, only on AMD for now
+    X86_Hle,                 //!< Hardware lock elision
+    X86_Htt,                 //!< Hyper-Threading supported (but maybe not enabled)
+    X86_Lahf,                //!< LAHF/SAHF support in 64 bits
+    X86_MisalignSse,         //!< Support for misaligned SSE data instructions
+    X86_Mmx,                 //!< MMX registers and instructions
+    X86_Msr,                 //!< Supports Intel model-specific-registers
+    X86_NonstopTsc,          //!< Invariant TSC (constant rate in ACPI states)
+    X86_Pcid,                //!< Process context identifier support
+    X86_Pclmuldq,            //!< Carry-less 64-bit multiplication supported
+    X86_Pdcm,                //!< Perfmon and Debug Capability
+    X86_PDPE1GB,             //!< Support for 1GB pages
+    X86_Popcnt,              //!< Supports the POPCNT (population count) insn
+    X86_Pse,                 //!< Supports 4MB-pages (page size extension)
+    X86_Rdrnd,               //!< RDRAND high-quality hardware random numbers
+    X86_Rdtscp,              //!< Serializing rdtscp instruction available
+    X86_Rtm,                 //!< Restricted transactional memory
+    X86_Sha,                 //!< Intel SHA extensions
+    X86_Sse2,                //!< SSE 2
+    X86_Sse3,                //!< SSE 3
+    X86_Sse4A,               //!< SSE 4A
+    X86_Sse4_1,              //!< SSE 4.1
+    X86_Sse4_2,              //!< SSE 4.2
+    X86_Ssse3,               //!< Supplemental SSE3
+    X86_Tdt,                 //!< TSC deadline timer
+    X86_X2Apic,              //!< Extended xAPIC Support
+    X86_Xop,                 //!< AMD extended instructions, only AMD for now
+    Arm_Neon,                //!< 32-bit ARM NEON
+    Arm_NeonAsimd,           //!< 64-bit ARM AArch64 Advanced SIMD
+    Ibm_Qpx,                 //!< IBM QPX SIMD (BlueGene/Q and later)
+    Ibm_Vmx,                 //!< IBM VMX SIMD (Altivec on Power6 and later)
+    Ibm_Vsx,                 //!< IBM VSX SIMD (Power7 and later)
+    Fujitsu_HpcAce           //!< Fujitsu Sparc64 HPC-ACE
+    };
 
-        /*! \libinternal \brief Entry with basic information for a single logical processor */
-        struct LogicalProcessor
-        {
-            int socketRankInMachine; //!< Relative rank of the current socket in the system
-            int coreRankInSocket;    //!< Relative rank of the current core in its socket
-            int hwThreadRankInCore;  //!< Relative rank of logical processor in its core
-        };
+    /*! \libinternal \brief Entry with basic information for a single logical processor */
+    struct LogicalProcessor
+    {
+        int socketRankInMachine;     //!< Relative rank of the current socket in the system
+        int coreRankInSocket;        //!< Relative rank of the current core in its socket
+        int hwThreadRankInCore;      //!< Relative rank of logical processor in its core
+    };
 
-    public:
-        /*! \brief Perform detection and construct a CpuInfo class from the results.
-         *
-         *  \note The detection should generally be performed again in different
-         *        contexts.  This might seem like overkill, but there
-         *        are systems (e.g. Arm) where processors can go completely offline
-         *        during deep sleep, so at least in theory it is good to have a
-         *        possibility of forcing re-detection if necessary.
-         */
-        static CpuInfo detect();
+public:
+    /*! \brief Perform detection and construct a CpuInfo class from the results.
+     *
+     *  \note The detection should generally be performed again in different
+     *        contexts.  This might seem like overkill, but there
+     *        are systems (e.g. Arm) where processors can go completely offline
+     *        during deep sleep, so at least in theory it is good to have a
+     *        possibility of forcing re-detection if necessary.
+     */
+    static CpuInfo detect();
 
-        /*! \brief Check what cpu information is available
-         *
-         *  The amount of cpu information that can be detected depends on the
-         *  OS, compiler, and CPU, and on non-x86 platforms it can be fragile.
-         *  Before basing decisions on the output or warning the user about
-         *  optimizations, you want to check whether it was possible to detect
-         *  the information you need.
-         */
-        SupportLevel supportLevel() const { return supportLevel_; }
+    /*! \brief Check what cpu information is available
+     *
+     *  The amount of cpu information that can be detected depends on the
+     *  OS, compiler, and CPU, and on non-x86 platforms it can be fragile.
+     *  Before basing decisions on the output or warning the user about
+     *  optimizations, you want to check whether it was possible to detect
+     *  the information you need.
+     */
+    SupportLevel supportLevel() const { return supportLevel_; }
 
-        /*! \brief Enumerated value for vendor */
-        Vendor vendor() const { return vendor_; }
+    /*! \brief Enumerated value for vendor */
+    Vendor vendor() const { return vendor_; }
 
-        /*! \brief String description of vendor:
-         *
-         *  \throws std::out_of_range if the vendor is not present in the internal
-         *          map of vendor names. This can only happen if we extend the enum
-         *          type but forget to add the string with the vendor name.
-         */
-        const std::string &vendorString() const
-        {
-            return s_vendorStrings_.at(vendor_);
-        }
+    /*! \brief String description of vendor:
+     *
+     *  \throws std::out_of_range if the vendor is not present in the internal
+     *          map of vendor names. This can only happen if we extend the enum
+     *          type but forget to add the string with the vendor name.
+     */
+    const std::string &vendorString() const
+    {
+        return s_vendorStrings_.at(vendor_);
+    }
 
-        /*! \brief String description of processor */
-        const std::string &brandString() const { return brandString_; }
+    /*! \brief String description of processor */
+    const std::string &brandString() const { return brandString_; }
 
-        /*! \brief Major version/generation of the processor */
-        int family() const { return family_; }
+    /*! \brief Major version/generation of the processor */
+    int family() const { return family_; }
 
-        /*! \brief Middle version of the processor */
-        int model() const { return model_; }
+    /*! \brief Middle version of the processor */
+    int model() const { return model_; }
 
-        /*! \brief Minor version of the processor */
-        int stepping() const { return stepping_; }
+    /*! \brief Minor version of the processor */
+    int stepping() const { return stepping_; }
 
-        /*! \brief Check for availability of specific feature
-         *
-         *  \param f  feature to query support for
-         *
-         *  \return True if the feature is available, otherwise false.
-         */
-        bool feature(Feature f) const
-        {
-            // If the entry is present in the set it is supported
-            return (features_.count(f) != 0);
-        }
+    /*! \brief Check for availability of specific feature
+     *
+     *  \param f  feature to query support for
+     *
+     *  \return True if the feature is available, otherwise false.
+     */
+    bool feature(Feature f) const
+    {
+        // If the entry is present in the set it is supported
+        return (features_.count(f) != 0);
+    }
 
-        /*! \brief String description of a specific feature
-         *
-         *  \throws std::out_of_range if the feature is not present in the internal
-         *          map of feature names. This can only happen if we extend the enum
-         *          type but forget to add the string with the feature name.
-         */
-        static const std::string &featureString(Feature f)
-        {
-            return s_featureStrings_.at(f);
-        }
+    /*! \brief String description of a specific feature
+     *
+     *  \throws std::out_of_range if the feature is not present in the internal
+     *          map of feature names. This can only happen if we extend the enum
+     *          type but forget to add the string with the feature name.
+     */
+    static const std::string &featureString(Feature f)
+    {
+        return s_featureStrings_.at(f);
+    }
 
-        /*! \brief Set of all supported features on this processor
-         *
-         *  This is only intended for logfiles, debugging or similar output when we
-         *  need a full list of all the features available on the CPU.
-         */
-        const std::set<Feature> &featureSet() const
-        {
-            return features_;
-        }
+    /*! \brief Set of all supported features on this processor
+     *
+     *  This is only intended for logfiles, debugging or similar output when we
+     *  need a full list of all the features available on the CPU.
+     */
+    const std::set<Feature> &featureSet() const
+    {
+        return features_;
+    }
 
-        /*! \brief Reference to processing unit topology
-         *
-         *  Only a few systems (x86) provide logical processor information in cpuinfo.
-         *  This method returns a reference to a vector, whose length will either be
-         *  zero (if topology information is not available) or the number of enabled
-         *  processing units, as defined by the operating system. In the latter
-         *  case, each entry will contain information about the relative rank in the
-         *  core and socket of this hardware thread.
-         *
-         *  This is only meant to be use as a fallback implementation for our
-         *  HardwareTopology class; any user code that needs access to hardware
-         *  topology information should use that class instead.
-         *
-         *  \note For clarity, it is likely better to use the supportLevel()
-         *        method to check if this information is available rather than
-         *        relying on the length of the vector.
-         */
-        const std::vector<LogicalProcessor> &logicalProcessors() const { return logicalProcessors_; }
+    /*! \brief Reference to processing unit topology
+     *
+     *  Only a few systems (x86) provide logical processor information in cpuinfo.
+     *  This method returns a reference to a vector, whose length will either be
+     *  zero (if topology information is not available) or the number of enabled
+     *  processing units, as defined by the operating system. In the latter
+     *  case, each entry will contain information about the relative rank in the
+     *  core and socket of this hardware thread.
+     *
+     *  This is only meant to be use as a fallback implementation for our
+     *  HardwareTopology class; any user code that needs access to hardware
+     *  topology information should use that class instead.
+     *
+     *  \note For clarity, it is likely better to use the supportLevel()
+     *        method to check if this information is available rather than
+     *        relying on the length of the vector.
+     */
+    const std::vector<LogicalProcessor> &logicalProcessors() const { return logicalProcessors_; }
 
-    private:
-        CpuInfo();
+private:
+    CpuInfo();
 
-        SupportLevel                                supportLevel_;       //!< Available cpuinfo information
-        Vendor                                      vendor_;             //!<  Value of vendor for current cpu
-        std::string                                 brandString_;        //!<  Text description of cpu
-        int                                         family_;             //!<  Major version of current cpu
-        int                                         model_;              //!<  Middle version of current cpu
-        int                                         stepping_;           //!<  Minor version of current cpu
-        std::set<Feature>                           features_;           //!< Set of features supported on this cpu
-        std::vector<LogicalProcessor>               logicalProcessors_;  //!< Simple logical processor topology
-        static const std::map<Vendor, std::string>  s_vendorStrings_;    //!< Text description of each vendor
-        static const std::map<Feature, std::string> s_featureStrings_;   //!< Text description of each feature
+    SupportLevel                                supportLevel_;           //!< Available cpuinfo information
+    Vendor                                      vendor_;                 //!<  Value of vendor for current cpu
+    std::string                                 brandString_;            //!<  Text description of cpu
+    int                                         family_;                 //!<  Major version of current cpu
+    int                                         model_;                  //!<  Middle version of current cpu
+    int                                         stepping_;               //!<  Minor version of current cpu
+    std::set<Feature>                           features_;               //!< Set of features supported on this cpu
+    std::vector<LogicalProcessor>               logicalProcessors_;      //!< Simple logical processor topology
+    static const std::map<Vendor, std::string>  s_vendorStrings_;        //!< Text description of each vendor
+    static const std::map<Feature, std::string> s_featureStrings_;       //!< Text description of each feature
 };                                                                       // class CpuInfo
 
 /*! \brief Return true if the CPU is an Intel x86 Nehalem

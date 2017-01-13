@@ -70,37 +70,37 @@ typedef std::unique_ptr<CommandLine> CommandLinePointer;
  */
 class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
 {
-    public:
-        //! Constructor
-        MultiSimTest();
+public:
+    //! Constructor
+    MultiSimTest();
 
-        /*! \brief Organize the .mdp file for this rank
-         *
-         * For testing multi-simulation, this .mdp file is more
-         * complicated than it needs to be, but it does little harm,
-         * and doing it this way allows this function to be re-used
-         * for testing replica-exchange.
-         *
-         * \param controlVariable Allows parameterization to work with
-         * T, P or (later) lambda as the control variable, by passing a
-         * string with "mdp-param = value" such that different paths
-         * in init_replica_exchange() are followed.
-         * \param numSteps        Number of MD steps to perform.
-         */
-        void organizeMdpFile(const char *controlVariable,
-                             int         numSteps = 2);
-        //! Test that a basic simulation works
-        void runExitsNormallyTest();
-        //! Test that mdrun -maxh and restart works
-        void runMaxhTest();
-        //! Number of MPI ranks
-        int size_;
-        //! MPI rank of this process
-        int rank_;
-        //! Object for building the mdrun command line
-        CommandLinePointer mdrunCaller_;
-        //! Name of .tpr file to be used by mdrun
-        std::string mdrunTprFileName_;
+    /*! \brief Organize the .mdp file for this rank
+     *
+     * For testing multi-simulation, this .mdp file is more
+     * complicated than it needs to be, but it does little harm,
+     * and doing it this way allows this function to be re-used
+     * for testing replica-exchange.
+     *
+     * \param controlVariable Allows parameterization to work with
+     * T, P or (later) lambda as the control variable, by passing a
+     * string with "mdp-param = value" such that different paths
+     * in init_replica_exchange() are followed.
+     * \param numSteps        Number of MD steps to perform.
+     */
+    void organizeMdpFile(const char *controlVariable,
+                         int         numSteps = 2);
+    //! Test that a basic simulation works
+    void runExitsNormallyTest();
+    //! Test that mdrun -maxh and restart works
+    void runMaxhTest();
+    //! Number of MPI ranks
+    int size_;
+    //! MPI rank of this process
+    int rank_;
+    //! Object for building the mdrun command line
+    CommandLinePointer mdrunCaller_;
+    //! Name of .tpr file to be used by mdrun
+    std::string mdrunTprFileName_;
 };
 
 } // namespace

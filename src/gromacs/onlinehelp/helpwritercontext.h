@@ -83,35 +83,35 @@ enum HelpOutputFormat
  */
 class HelpLinks
 {
-    public:
-        /*! \brief
-         * Initializes an empty links collection for the given output format.
-         */
-        explicit HelpLinks(HelpOutputFormat format);
-        ~HelpLinks();
+public:
+    /*! \brief
+     * Initializes an empty links collection for the given output format.
+     */
+    explicit HelpLinks(HelpOutputFormat format);
+    ~HelpLinks();
 
-        /*! \brief
-         * Adds a link.
-         *
-         * \param[in] linkName     Name of the link in input text.
-         * \param[in] targetName   Hyperlink target.
-         * \param[in] displayName  Text to show as the link.
-         *
-         * Any occurrence of \p linkName in the text passed to markup
-         * substitution methods in HelpWriterContext is made into a hyperlink
-         * to \p targetName if the markup format supports that.
-         */
-        void addLink(const std::string &linkName,
-                     const std::string &targetName,
-                     const std::string &displayName);
+    /*! \brief
+     * Adds a link.
+     *
+     * \param[in] linkName     Name of the link in input text.
+     * \param[in] targetName   Hyperlink target.
+     * \param[in] displayName  Text to show as the link.
+     *
+     * Any occurrence of \p linkName in the text passed to markup
+     * substitution methods in HelpWriterContext is made into a hyperlink
+     * to \p targetName if the markup format supports that.
+     */
+    void addLink(const std::string &linkName,
+                 const std::string &targetName,
+                 const std::string &displayName);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        //! Allows the context to use the links.
-        friend class HelpWriterContext;
+    //! Allows the context to use the links.
+    friend class HelpWriterContext;
 };
 
 /*! \libinternal \brief
@@ -130,181 +130,181 @@ class HelpLinks
  */
 class HelpWriterContext
 {
-    public:
-        /*! \brief
-         * Initializes a context with the given output writer and format.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        HelpWriterContext(TextWriter *writer, HelpOutputFormat format);
-        /*! \brief
-         * Initializes a context with the given output writer, format and links.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * A reference to \p links is stored until the HelpWriterContext
-         * is destructed.  The caller is responsible for ensuring that the
-         * links object remains valid long enough.
-         */
-        HelpWriterContext(TextWriter *writer, HelpOutputFormat format,
-                          const HelpLinks *links);
-        //! Creates a copy of the context.
-        HelpWriterContext(const HelpWriterContext &other);
-        ~HelpWriterContext();
+public:
+    /*! \brief
+     * Initializes a context with the given output writer and format.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    HelpWriterContext(TextWriter *writer, HelpOutputFormat format);
+    /*! \brief
+     * Initializes a context with the given output writer, format and links.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * A reference to \p links is stored until the HelpWriterContext
+     * is destructed.  The caller is responsible for ensuring that the
+     * links object remains valid long enough.
+     */
+    HelpWriterContext(TextWriter *writer, HelpOutputFormat format,
+                      const HelpLinks *links);
+    //! Creates a copy of the context.
+    HelpWriterContext(const HelpWriterContext &other);
+    ~HelpWriterContext();
 
-        /*! \brief
-         * Adds a string replacement for markup subsitution.
-         *
-         * \param[in] search   Text to replace in input.
-         * \param[in] replace  Text that each occurrence of \p search is
-         *     replaced with.
-         * \throws std::bad_alloc if out of memory.
-         *
-         * \todo
-         * Improve semantics if the same \p search item is set multiple
-         * times.
-         */
-        void setReplacement(const std::string &search,
-                            const std::string &replace);
+    /*! \brief
+     * Adds a string replacement for markup subsitution.
+     *
+     * \param[in] search   Text to replace in input.
+     * \param[in] replace  Text that each occurrence of \p search is
+     *     replaced with.
+     * \throws std::bad_alloc if out of memory.
+     *
+     * \todo
+     * Improve semantics if the same \p search item is set multiple
+     * times.
+     */
+    void setReplacement(const std::string &search,
+                        const std::string &replace);
 
-        /*! \brief
-         * Returns the active output format.
-         *
-         * Does not throw.
-         */
-        HelpOutputFormat outputFormat() const;
-        /*! \brief
-         * Returns the raw writer for writing the help.
-         *
-         * Using this writer directly should be avoided, as it requires one to
-         * have different code for each output format.
-         * Using other methods in this class should be preferred.
-         *
-         * Does not throw.
-         */
-        TextWriter &outputFile() const;
+    /*! \brief
+     * Returns the active output format.
+     *
+     * Does not throw.
+     */
+    HelpOutputFormat outputFormat() const;
+    /*! \brief
+     * Returns the raw writer for writing the help.
+     *
+     * Using this writer directly should be avoided, as it requires one to
+     * have different code for each output format.
+     * Using other methods in this class should be preferred.
+     *
+     * Does not throw.
+     */
+    TextWriter &outputFile() const;
 
-        /*! \brief
-         * Creates a subsection in the output help.
-         *
-         * \param[in] title  Title for the subsection.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Writes \p title using writeTitle() and makes any further
-         * writeTitle() calls write headings one level deeper.
-         *
-         * Typical use for writing a subsection is to create a copy of the
-         * context for the parent section, and then call enterSubSection() on
-         * the copy.
-         * The whole subsection should be written out using the returned
-         * context before calling any further methods in the parent context.
-         *
-         * This method is only necessary if the subsection will contain further
-         * subsections.  If there is only one level of subsections, it is
-         * possible to use writeTitle() directly.
-         */
-        void enterSubSection(const std::string &title);
+    /*! \brief
+     * Creates a subsection in the output help.
+     *
+     * \param[in] title  Title for the subsection.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Writes \p title using writeTitle() and makes any further
+     * writeTitle() calls write headings one level deeper.
+     *
+     * Typical use for writing a subsection is to create a copy of the
+     * context for the parent section, and then call enterSubSection() on
+     * the copy.
+     * The whole subsection should be written out using the returned
+     * context before calling any further methods in the parent context.
+     *
+     * This method is only necessary if the subsection will contain further
+     * subsections.  If there is only one level of subsections, it is
+     * possible to use writeTitle() directly.
+     */
+    void enterSubSection(const std::string &title);
 
-        /*! \brief
-         * Substitutes markup used in help text and wraps lines.
-         *
-         * \param[in] settings Line wrapper settings.
-         * \param[in] text     Text to substitute.
-         * \returns   \p text with markup substituted and wrapped.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * \see TextLineWrapper::wrapToString()
-         */
-        std::string
-        substituteMarkupAndWrapToString(const TextLineWrapperSettings &settings,
-                                        const std::string &            text) const;
-        /*! \brief
-         * Substitutes markup used in help text and wraps lines.
-         *
-         * \param[in] settings Line wrapper settings.
-         * \param[in] text     Text to substitute.
-         * \returns   \p text with markup substituted and wrapped as a list of
-         *      lines.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * \see TextLineWrapper::wrapToVector()
-         */
-        std::vector<std::string>
-        substituteMarkupAndWrapToVector(const TextLineWrapperSettings &settings,
-                                        const std::string &            text) const;
-        /*! \brief
-         * Writes a title for the current help topic.
-         *
-         * \param[in] title  Title to write.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        void writeTitle(const std::string &title) const;
-        /*! \brief
-         * Writes a formatted text block into the output.
-         *
-         * \param[in] text  Text to format.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Convenience function that calls substituteMarkupAndWrapToString()
-         * and writes the result directly to the output file.
-         */
-        void writeTextBlock(const std::string &text) const;
-        /*! \brief
-         * Ensures a paragraph break (empty line) in the output.
-         *
-         * Calls at the beginning and end of output do not produce extra empty
-         * lines, and consencutive calls only result in a single empty line.
-         * This allows calling the method before and after all output that
-         * needs to appear separated as empty lines.
-         */
-        void paragraphBreak() const;
-        /*! \brief
-         * Starts writing a list of options.
-         *
-         * Prints any necessary headers for a list of options formatted with
-         * writeOptionItem().
-         */
-        void writeOptionListStart() const;
-        /*! \brief
-         * Writes an entry for a single option into the output.
-         *
-         * \param[in] name  Name of the option.
-         * \param[in] value        Placeholder for option value.
-         * \param[in] defaultValue Default value for the option.
-         * \param[in] info         Additional (brief) info/attributes for the
-         *      option.
-         * \param[in] description  Full description of the option.
-         */
-        void writeOptionItem(
-            const std::string &name, const std::string &value,
-            const std::string &defaultValue, const std::string &info,
-            const std::string &description) const;
-        /*! \brief
-         * Finishes writing a list of options.
-         *
-         * Prints any necessary footers for a list of options formatted with
-         * writeOptionItem().
-         */
-        void writeOptionListEnd() const;
+    /*! \brief
+     * Substitutes markup used in help text and wraps lines.
+     *
+     * \param[in] settings Line wrapper settings.
+     * \param[in] text     Text to substitute.
+     * \returns   \p text with markup substituted and wrapped.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * \see TextLineWrapper::wrapToString()
+     */
+    std::string
+    substituteMarkupAndWrapToString(const TextLineWrapperSettings &settings,
+                                    const std::string &            text) const;
+    /*! \brief
+     * Substitutes markup used in help text and wraps lines.
+     *
+     * \param[in] settings Line wrapper settings.
+     * \param[in] text     Text to substitute.
+     * \returns   \p text with markup substituted and wrapped as a list of
+     *      lines.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * \see TextLineWrapper::wrapToVector()
+     */
+    std::vector<std::string>
+    substituteMarkupAndWrapToVector(const TextLineWrapperSettings &settings,
+                                    const std::string &            text) const;
+    /*! \brief
+     * Writes a title for the current help topic.
+     *
+     * \param[in] title  Title to write.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     */
+    void writeTitle(const std::string &title) const;
+    /*! \brief
+     * Writes a formatted text block into the output.
+     *
+     * \param[in] text  Text to format.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Convenience function that calls substituteMarkupAndWrapToString()
+     * and writes the result directly to the output file.
+     */
+    void writeTextBlock(const std::string &text) const;
+    /*! \brief
+     * Ensures a paragraph break (empty line) in the output.
+     *
+     * Calls at the beginning and end of output do not produce extra empty
+     * lines, and consencutive calls only result in a single empty line.
+     * This allows calling the method before and after all output that
+     * needs to appear separated as empty lines.
+     */
+    void paragraphBreak() const;
+    /*! \brief
+     * Starts writing a list of options.
+     *
+     * Prints any necessary headers for a list of options formatted with
+     * writeOptionItem().
+     */
+    void writeOptionListStart() const;
+    /*! \brief
+     * Writes an entry for a single option into the output.
+     *
+     * \param[in] name  Name of the option.
+     * \param[in] value        Placeholder for option value.
+     * \param[in] defaultValue Default value for the option.
+     * \param[in] info         Additional (brief) info/attributes for the
+     *      option.
+     * \param[in] description  Full description of the option.
+     */
+    void writeOptionItem(
+        const std::string &name, const std::string &value,
+        const std::string &defaultValue, const std::string &info,
+        const std::string &description) const;
+    /*! \brief
+     * Finishes writing a list of options.
+     *
+     * Prints any necessary footers for a list of options formatted with
+     * writeOptionItem().
+     */
+    void writeOptionListEnd() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        /*! \brief
-         * Constructs a context object with the given implementation class.
-         *
-         * \param[in] impl  Implementation object.
-         *
-         * Does not throw.
-         */
-        explicit HelpWriterContext(Impl *impl);
+    /*! \brief
+     * Constructs a context object with the given implementation class.
+     *
+     * \param[in] impl  Implementation object.
+     *
+     * Does not throw.
+     */
+    explicit HelpWriterContext(Impl *impl);
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 
-        GMX_DISALLOW_ASSIGN(HelpWriterContext);
+    GMX_DISALLOW_ASSIGN(HelpWriterContext);
 };
 
 } // namespace gmx

@@ -67,94 +67,94 @@ class ICommandLineOptionsModule;
  */
 class TrajectoryAnalysisCommandLineRunner
 {
-    public:
-        /*! \brief
-         * Factory method type for creating a trajectory analysis module.
-         *
-         * This method allows the module creation to be postponed to the point
-         * where the module is needed, reducing initialization costs in, e.g.,
-         * the `gmx` binary, and simplifying exception handling.
-         */
-        typedef std::function<TrajectoryAnalysisModulePointer()>
-            ModuleFactoryMethod;
+public:
+    /*! \brief
+     * Factory method type for creating a trajectory analysis module.
+     *
+     * This method allows the module creation to be postponed to the point
+     * where the module is needed, reducing initialization costs in, e.g.,
+     * the `gmx` binary, and simplifying exception handling.
+     */
+    typedef std::function<TrajectoryAnalysisModulePointer()>
+        ModuleFactoryMethod;
 
-        /*! \brief
-         * Implements a main() method that runs a given module.
-         *
-         * \tparam ModuleType  Trajectory analysis module.
-         * \param  argc        \c argc passed to main().
-         * \param  argv        \c argv passed to main().
-         *
-         * This method abstracts away all the logic required to implement a
-         * main() method in user tools, allowing that to be changed without
-         * requiring changes to the tools themselves.
-         *
-         * \p ModuleType should be default-constructible and derive from
-         * TrajectoryAnalysisModule.
-         *
-         * Does not throw.  All exceptions are caught and handled internally.
-         */
-        template <class ModuleType>
-        static int runAsMain(int argc, char *argv[])
-        {
-            return runAsMain(argc, argv, &createModule<ModuleType>);
-        }
-        /*! \brief
-         * Implements a main() method that runs a given module.
-         *
-         * \param  argc        \c argc passed to main().
-         * \param  argv        \c argv passed to main().
-         * \param  factory     Function that creates the module on demand.
-         *
-         * Implements the template runAsMain(), but can also be used
-         * independently.
-         *
-         * Does not throw.  All exceptions are caught and handled internally.
-         */
-        static int runAsMain(int argc, char *argv[],
-                             ModuleFactoryMethod factory);
-        /*! \brief
-         * Registers a command-line module that runs a given module.
-         *
-         * \param  manager     Manager to register the module to.
-         * \param  name        Name of the module to register.
-         * \param  description One-line description for the module to register.
-         * \param  factory     Function that creates the module on demand.
-         *
-         * \p name and \p descriptions must be string constants or otherwise
-         * stay valid for the duration of the program execution.
-         */
-        static void registerModule(CommandLineModuleManager *manager,
-                                   const char *name, const char *description,
-                                   ModuleFactoryMethod factory);
-        /*! \brief
-         * Create a command-line module that runs the provided analysis module.
-         *
-         * \param[in]  module     Module to run.
-         * \returns    Command-line module that runs the provided analysis
-         *      module.
-         * \throws std::bad_alloc if out of memory.
-         *
-         * This is mainly provided for testing purposes that want to bypass
-         * CommandLineModuleManager.
-         */
-        static std::unique_ptr<ICommandLineOptionsModule>
-        createModule(TrajectoryAnalysisModulePointer module);
+    /*! \brief
+     * Implements a main() method that runs a given module.
+     *
+     * \tparam ModuleType  Trajectory analysis module.
+     * \param  argc        \c argc passed to main().
+     * \param  argv        \c argv passed to main().
+     *
+     * This method abstracts away all the logic required to implement a
+     * main() method in user tools, allowing that to be changed without
+     * requiring changes to the tools themselves.
+     *
+     * \p ModuleType should be default-constructible and derive from
+     * TrajectoryAnalysisModule.
+     *
+     * Does not throw.  All exceptions are caught and handled internally.
+     */
+    template <class ModuleType>
+    static int runAsMain(int argc, char *argv[])
+    {
+        return runAsMain(argc, argv, &createModule<ModuleType>);
+    }
+    /*! \brief
+     * Implements a main() method that runs a given module.
+     *
+     * \param  argc        \c argc passed to main().
+     * \param  argv        \c argv passed to main().
+     * \param  factory     Function that creates the module on demand.
+     *
+     * Implements the template runAsMain(), but can also be used
+     * independently.
+     *
+     * Does not throw.  All exceptions are caught and handled internally.
+     */
+    static int runAsMain(int argc, char *argv[],
+                         ModuleFactoryMethod factory);
+    /*! \brief
+     * Registers a command-line module that runs a given module.
+     *
+     * \param  manager     Manager to register the module to.
+     * \param  name        Name of the module to register.
+     * \param  description One-line description for the module to register.
+     * \param  factory     Function that creates the module on demand.
+     *
+     * \p name and \p descriptions must be string constants or otherwise
+     * stay valid for the duration of the program execution.
+     */
+    static void registerModule(CommandLineModuleManager *manager,
+                               const char *name, const char *description,
+                               ModuleFactoryMethod factory);
+    /*! \brief
+     * Create a command-line module that runs the provided analysis module.
+     *
+     * \param[in]  module     Module to run.
+     * \returns    Command-line module that runs the provided analysis
+     *      module.
+     * \throws std::bad_alloc if out of memory.
+     *
+     * This is mainly provided for testing purposes that want to bypass
+     * CommandLineModuleManager.
+     */
+    static std::unique_ptr<ICommandLineOptionsModule>
+    createModule(TrajectoryAnalysisModulePointer module);
 
-    private:
-        // Prevent instantiation.
-        TrajectoryAnalysisCommandLineRunner() {}
+private:
+    // Prevent instantiation.
+    TrajectoryAnalysisCommandLineRunner() {}
 
-        /*! \brief
-         * Creates a trajectory analysis module of a given type.
-         *
-         * \tparam ModuleType  Module to create.
-         */
-        template <class ModuleType>
-        static TrajectoryAnalysisModulePointer createModule()
-        {
-            return TrajectoryAnalysisModulePointer(new ModuleType());
-        }
+    /*! \brief
+     * Creates a trajectory analysis module of a given type.
+     *
+     * \tparam ModuleType  Module to create.
+     */
+    template <class ModuleType>
+    static TrajectoryAnalysisModulePointer createModule()
+    {
+        return TrajectoryAnalysisModulePointer(new ModuleType());
+    }
 };
 
 } // namespace gmx

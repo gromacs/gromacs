@@ -70,12 +70,12 @@ namespace
  */
 class DefaultInputRedirector : public IFileInputRedirector
 {
-    public:
-        virtual bool fileExists(const char *          filename,
-                                File::NotFoundHandler onNotFound) const
-        {
-            return File::exists(filename, onNotFound);
-        }
+public:
+    virtual bool fileExists(const char *          filename,
+                            File::NotFoundHandler onNotFound) const
+    {
+        return File::exists(filename, onNotFound);
+    }
 };
 
 /*! \internal
@@ -89,15 +89,15 @@ class DefaultInputRedirector : public IFileInputRedirector
  */
 class DefaultOutputRedirector : public IFileOutputRedirector
 {
-    public:
-        virtual TextOutputStream &standardOutput()
-        {
-            return TextOutputFile::standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
+public:
+    virtual TextOutputStream &standardOutput()
+    {
+        return TextOutputFile::standardOutput();
+    }
+    virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+    {
+        return TextOutputStreamPointer(new TextOutputFile(filename));
+    }
 };
 
 }   // namespace

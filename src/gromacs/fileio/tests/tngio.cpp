@@ -56,11 +56,11 @@ namespace
 
 class TngTest : public ::testing::Test
 {
-    public:
-        TngTest()
-        {
-        }
-        gmx::test::TestFileManager fileManager_;
+public:
+    TngTest()
+    {
+    }
+    gmx::test::TestFileManager fileManager_;
 };
 
 TEST_F(TngTest, CanOpenTngFile)

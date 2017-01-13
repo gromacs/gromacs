@@ -64,88 +64,88 @@ namespace
 
 class ExpfitData
 {
-    public:
-        int               nrLines_;
-        std::vector<real> x_, y_;
-        real              startTime_, endTime_, dt_;
+public:
+    int               nrLines_;
+    std::vector<real> x_, y_;
+    real              startTime_, endTime_, dt_;
 };
 
 class ExpfitTest : public ::testing::Test
 {
 
-    protected:
-        static std::vector<ExpfitData> data_;
-        test::TestReferenceData        refData_;
-        test::TestReferenceChecker     checker_;
-        ExpfitTest( )
-            : checker_(refData_.rootChecker())
-        {
-        }
+protected:
+    static std::vector<ExpfitData> data_;
+    test::TestReferenceData        refData_;
+    test::TestReferenceChecker     checker_;
+    ExpfitTest( )
+        : checker_(refData_.rootChecker())
+    {
+    }
 
-        // Static initiation, only run once every test.
-        static void SetUpTestCase()
+    // Static initiation, only run once every test.
+    static void SetUpTestCase()
+    {
+        double **                tempValues = nullptr;
+        std::vector<std::string> fileName;
+        fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP.xvg"));
+        fileName.push_back(test::TestFileManager::getInputFilePath("testPRES.xvg"));
+        fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP79.xvg"));
+        fileName.push_back(test::TestFileManager::getInputFilePath("testERF.xvg"));
+        fileName.push_back(test::TestFileManager::getInputFilePath("testERREST.xvg"));
+        for (std::vector<std::string>::iterator i = fileName.begin(); i < fileName.end(); ++i)
         {
-            double **                tempValues = nullptr;
-            std::vector<std::string> fileName;
-            fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP.xvg"));
-            fileName.push_back(test::TestFileManager::getInputFilePath("testPRES.xvg"));
-            fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP79.xvg"));
-            fileName.push_back(test::TestFileManager::getInputFilePath("testERF.xvg"));
-            fileName.push_back(test::TestFileManager::getInputFilePath("testERREST.xvg"));
-            for (std::vector<std::string>::iterator i = fileName.begin(); i < fileName.end(); ++i)
+            const char * name = i->c_str();
+            int          nrColumns;
+            ExpfitData   ed;
+            ed.nrLines_   = read_xvg(name, &tempValues, &nrColumns);
+            ed.dt_        = tempValues[0][1] - tempValues[0][0];
+            ed.startTime_ = tempValues[0][0];
+            ed.endTime_   = tempValues[0][ed.nrLines_ - 1];
+            for (int j = 0; j  < ed.nrLines_; j++)
             {
-                const char * name = i->c_str();
-                int          nrColumns;
-                ExpfitData   ed;
-                ed.nrLines_   = read_xvg(name, &tempValues, &nrColumns);
-                ed.dt_        = tempValues[0][1] - tempValues[0][0];
-                ed.startTime_ = tempValues[0][0];
-                ed.endTime_   = tempValues[0][ed.nrLines_ - 1];
-                for (int j = 0; j  < ed.nrLines_; j++)
-                {
-                    ed.x_.push_back((real)tempValues[0][j]);
-                    ed.y_.push_back((real)tempValues[1][j]);
-                }
-                data_.push_back(ed);
-
-                // Free memory that was allocated in read_xvg
-                for (int j = 0; j < nrColumns; j++)
-                {
-                    sfree(tempValues[j]);
-                    tempValues[j] = nullptr;
-                }
-                sfree(tempValues);
-                tempValues = nullptr;
+                ed.x_.push_back((real)tempValues[0][j]);
+                ed.y_.push_back((real)tempValues[1][j]);
             }
-        }
+            data_.push_back(ed);
 
-        static void TearDownTestCase()
-        {
-        }
-
-        void test(int type, double result[], double tolerance,
-                  unsigned int testType)
-        {
-            int               nfitparm = effnNparams(type);
-            gmx_output_env_t *oenv;
-
-            if (testType >= data_.size())
+            // Free memory that was allocated in read_xvg
+            for (int j = 0; j < nrColumns; j++)
             {
-                GMX_THROW(InvalidInputError("testType out of range"));
+                sfree(tempValues[j]);
+                tempValues[j] = nullptr;
             }
-            output_env_init_default(&oenv);
-            do_lmfit(data_[testType].nrLines_,
-                     &(data_[testType].y_[0]),
-                     nullptr,
-                     data_[testType].dt_,
-                     &(data_[testType].x_[0]),
-                     data_[testType].startTime_,
-                     data_[testType].endTime_,
-                     oenv, false, type, result, 0, nullptr);
-            output_env_done(oenv);
-            checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, tolerance));
-            checker_.checkSequenceArray(nfitparm, result, "result");
+            sfree(tempValues);
+            tempValues = nullptr;
         }
+    }
+
+    static void TearDownTestCase()
+    {
+    }
+
+    void test(int type, double result[], double tolerance,
+              unsigned int testType)
+    {
+        int               nfitparm = effnNparams(type);
+        gmx_output_env_t *oenv;
+
+        if (testType >= data_.size())
+        {
+            GMX_THROW(InvalidInputError("testType out of range"));
+        }
+        output_env_init_default(&oenv);
+        do_lmfit(data_[testType].nrLines_,
+                 &(data_[testType].y_[0]),
+                 nullptr,
+                 data_[testType].dt_,
+                 &(data_[testType].x_[0]),
+                 data_[testType].startTime_,
+                 data_[testType].endTime_,
+                 oenv, false, type, result, 0, nullptr);
+        output_env_done(oenv);
+        checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, tolerance));
+        checker_.checkSequenceArray(nfitparm, result, "result");
+    }
 };
 
 

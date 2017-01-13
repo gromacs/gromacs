@@ -82,9 +82,9 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
 
 class StringTestBase::Impl
 {
-    public:
-        TestReferenceData    data_;
-        TestReferenceChecker checker_;
+public:
+    TestReferenceData    data_;
+    TestReferenceChecker checker_;
 };
 
 /********************************************************************

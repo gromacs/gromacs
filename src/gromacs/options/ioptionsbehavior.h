@@ -68,32 +68,32 @@ class Options;
  */
 class IOptionsBehavior
 {
-    public:
-        virtual ~IOptionsBehavior();
+public:
+    virtual ~IOptionsBehavior();
 
-        /*! \brief
-         * Called when the behavior is associated with an options object.
-         *
-         * This method can, e.g., use Options::addManager() to associate
-         * managers with the options object.
-         */
-        virtual void initBehavior(Options *options) = 0;
-        /*! \brief
-         * Called when all option values have been assigned.
-         *
-         * This is called just before Options::finish(), and can, e.g., do
-         * operations that still influence the option values.
-         */
-        virtual void optionsFinishing(Options *options) = 0;
-        /*! \brief
-         * Called when all option values have been processed.
-         *
-         * This is called after Options::finish() (and typically after
-         * higher-level optionsFinished() methods, such as that in
-         * ICommandLineOptionsModule).  This can add behavior that performs
-         * tasks based on the option values provided.
-         */
-        virtual void optionsFinished() = 0;
+    /*! \brief
+     * Called when the behavior is associated with an options object.
+     *
+     * This method can, e.g., use Options::addManager() to associate
+     * managers with the options object.
+     */
+    virtual void initBehavior(Options *options) = 0;
+    /*! \brief
+     * Called when all option values have been assigned.
+     *
+     * This is called just before Options::finish(), and can, e.g., do
+     * operations that still influence the option values.
+     */
+    virtual void optionsFinishing(Options *options) = 0;
+    /*! \brief
+     * Called when all option values have been processed.
+     *
+     * This is called after Options::finish() (and typically after
+     * higher-level optionsFinished() methods, such as that in
+     * ICommandLineOptionsModule).  This can add behavior that performs
+     * tasks based on the option values provided.
+     */
+    virtual void optionsFinished() = 0;
 };
 
 } // namespace

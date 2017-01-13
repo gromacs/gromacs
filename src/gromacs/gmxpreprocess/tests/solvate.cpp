@@ -58,19 +58,19 @@ using gmx::test::NoTextMatch;
 
 class SolvateTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        SolvateTest()
-        {
-            setOutputFile("-o", "out.gro", NoTextMatch());
-        }
+public:
+    SolvateTest()
+    {
+        setOutputFile("-o", "out.gro", NoTextMatch());
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
+    void runTest(const CommandLine &args)
+    {
+        CommandLine &cmdline = commandLine();
+        cmdline.merge(args);
 
-            ASSERT_EQ(0, gmx_solvate(cmdline.argc(), cmdline.argv()));
-        }
+        ASSERT_EQ(0, gmx_solvate(cmdline.argc(), cmdline.argv()));
+    }
 };
 
 TEST_F(SolvateTest, cs_box_Works)

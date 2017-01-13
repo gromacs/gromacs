@@ -89,79 +89,79 @@ namespace gmx
  */
 class PositionCalculationCollection::Impl
 {
-    public:
-        Impl();
-        ~Impl();
+public:
+    Impl();
+    ~Impl();
 
-        /*! \brief
-         * Inserts a position calculation structure into its collection.
-         *
-         * \param pc     Data structure to insert.
-         * \param before Data structure before which to insert
-         *   (NULL = insert at end).
-         *
-         * Inserts \p pc to its collection before \p before.
-         * If \p before is NULL, \p pc is appended to the list.
-         */
-        void insertCalculation(gmx_ana_poscalc_t *pc, gmx_ana_poscalc_t *before);
-        /*! \brief
-         * Removes a position calculation structure from its collection.
-         *
-         * \param pc    Data structure to remove.
-         *
-         * Removes \p pc from its collection.
-         */
-        void removeCalculation(gmx_ana_poscalc_t *pc);
+    /*! \brief
+     * Inserts a position calculation structure into its collection.
+     *
+     * \param pc     Data structure to insert.
+     * \param before Data structure before which to insert
+     *   (NULL = insert at end).
+     *
+     * Inserts \p pc to its collection before \p before.
+     * If \p before is NULL, \p pc is appended to the list.
+     */
+    void insertCalculation(gmx_ana_poscalc_t *pc, gmx_ana_poscalc_t *before);
+    /*! \brief
+     * Removes a position calculation structure from its collection.
+     *
+     * \param pc    Data structure to remove.
+     *
+     * Removes \p pc from its collection.
+     */
+    void removeCalculation(gmx_ana_poscalc_t *pc);
 
-        /*! \copydoc PositionCalculationCollection::createCalculation()
-         *
-         * This method contains the actual implementation of the similarly
-         * named method in the parent class.
-         */
-        gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
+    /*! \copydoc PositionCalculationCollection::createCalculation()
+     *
+     * This method contains the actual implementation of the similarly
+     * named method in the parent class.
+     */
+    gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
 
-        /*! \brief
-         * Maps given topology indices into frame indices.
-         *
-         * Only one position calculation at a time needs to access this (and
-         * there are also other thread-unsafe constructs here), so a temporary
-         * array is used to avoid repeated memory allocation.
-         */
-        ConstArrayRef<int> getFrameIndices(int size, int index[])
+    /*! \brief
+     * Maps given topology indices into frame indices.
+     *
+     * Only one position calculation at a time needs to access this (and
+     * there are also other thread-unsafe constructs here), so a temporary
+     * array is used to avoid repeated memory allocation.
+     */
+    ConstArrayRef<int> getFrameIndices(int size, int index[])
+    {
+        if (mapToFrameAtoms_.empty())
         {
-            if (mapToFrameAtoms_.empty())
-            {
-                return constArrayRefFromArray(index, size);
-            }
-            tmpFrameAtoms_.resize(size);
-            for (int i = 0; i < size; ++i)
-            {
-                const int ii = index[i];
-                GMX_ASSERT(ii >= 0 && ii <= static_cast<int>(mapToFrameAtoms_.size())
-                           && mapToFrameAtoms_[ii] != -1,
-                           "Invalid input atom index");
-                tmpFrameAtoms_[i] = mapToFrameAtoms_[ii];
-            }
-            return tmpFrameAtoms_;
+            return constArrayRefFromArray(index, size);
         }
+        tmpFrameAtoms_.resize(size);
+        for (int i = 0; i < size; ++i)
+        {
+            const int ii = index[i];
+            GMX_ASSERT(ii >= 0 && ii <= static_cast<int>(mapToFrameAtoms_.size())
+                       && mapToFrameAtoms_[ii] != -1,
+                       "Invalid input atom index");
+            tmpFrameAtoms_[i] = mapToFrameAtoms_[ii];
+        }
+        return tmpFrameAtoms_;
+    }
 
-        /*! \brief
-         * Topology data.
-         *
-         * Can be NULL if none of the calculations require topology data or if
-         * setTopology() has not been called.
-         */
-        const gmx_mtop_t *top_;
-        //! Pointer to the first data structure.
-        gmx_ana_poscalc_t *first_;
-        //! Pointer to the last data structure.
-        gmx_ana_poscalc_t *last_;
-        //! Whether the collection has been initialized for evaluation.
-        bool bInit_;
-        //! Mapping from topology atoms to frame atoms (one index for each topology atom).
-        std::vector<int> mapToFrameAtoms_;
-        //! Working array for updating positions.
-        std::vector<int> tmpFrameAtoms_;
+    /*! \brief
+     * Topology data.
+     *
+     * Can be NULL if none of the calculations require topology data or if
+     * setTopology() has not been called.
+     */
+    const gmx_mtop_t *top_;
+    //! Pointer to the first data structure.
+    gmx_ana_poscalc_t *first_;
+    //! Pointer to the last data structure.
+    gmx_ana_poscalc_t *last_;
+    //! Whether the collection has been initialized for evaluation.
+    bool bInit_;
+    //! Mapping from topology atoms to frame atoms (one index for each topology atom).
+    std::vector<int> mapToFrameAtoms_;
+    //! Working array for updating positions.
+    std::vector<int> tmpFrameAtoms_;
 };
 
 } // namespace gmx

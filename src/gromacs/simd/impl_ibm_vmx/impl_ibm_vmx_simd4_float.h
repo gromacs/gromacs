@@ -47,39 +47,39 @@ namespace gmx
 
 class Simd4Float
 {
-    public:
-        Simd4Float() {}
+public:
+    Simd4Float() {}
 
-        Simd4Float(float f)
-        {
-            __vector unsigned char perm;
+    Simd4Float(float f)
+    {
+        __vector unsigned char perm;
 
-            simdInternal_ = vec_lde(0, const_cast<float *>(&f));
-            perm          = vec_lvsl(0, const_cast<float *>(&f));
-            simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
-            simdInternal_ = vec_splat(simdInternal_, 0);
-        }
+        simdInternal_ = vec_lde(0, const_cast<float *>(&f));
+        perm          = vec_lvsl(0, const_cast<float *>(&f));
+        simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
+        simdInternal_ = vec_splat(simdInternal_, 0);
+    }
 
-        // Internal utility constructor to simplify return statements
-        Simd4Float(__vector float simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4Float(__vector float simd) : simdInternal_(simd) {}
 
-        __vector float simdInternal_;
+    __vector float simdInternal_;
 };
 
 class Simd4FBool
 {
-    public:
-        Simd4FBool() {}
+public:
+    Simd4FBool() {}
 
-        Simd4FBool(bool b)
-        {
-            simdInternal_ = reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0));
-        }
+    Simd4FBool(bool b)
+    {
+        simdInternal_ = reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0));
+    }
 
-        // Internal utility constructor to simplify return statements
-        Simd4FBool(__vector vmxBool int simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4FBool(__vector vmxBool int simd) : simdInternal_(simd) {}
 
-        __vector vmxBool int simdInternal_;
+    __vector vmxBool int simdInternal_;
 };
 
 static inline Simd4Float gmx_simdcall load4(const float *m)

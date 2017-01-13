@@ -131,18 +131,18 @@ MockOptionsModule::~MockOptionsModule()
 
 class CommandLineModuleManagerTestBase::Impl
 {
-    public:
-        Impl(const CommandLine &args, const char *realBinaryName)
-            : programContext_(args.argc(), args.argv()),
-              manager_(realBinaryName, &programContext_)
-        {
-            manager_.setQuiet(true);
-            manager_.setOutputRedirector(&redirector_);
-        }
+public:
+    Impl(const CommandLine &args, const char *realBinaryName)
+        : programContext_(args.argc(), args.argv()),
+          manager_(realBinaryName, &programContext_)
+    {
+        manager_.setQuiet(true);
+        manager_.setOutputRedirector(&redirector_);
+    }
 
-        TestFileOutputRedirector  redirector_;
-        CommandLineProgramContext programContext_;
-        CommandLineModuleManager  manager_;
+    TestFileOutputRedirector  redirector_;
+    CommandLineProgramContext programContext_;
+    CommandLineModuleManager  manager_;
 };
 
 CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase()

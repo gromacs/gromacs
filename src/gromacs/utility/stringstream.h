@@ -63,16 +63,16 @@ namespace gmx
  */
 class StringOutputStream : public TextOutputStream
 {
-    public:
-        //! Returns the text written to the stream so far.
-        const std::string &toString() const { return str_; }
+public:
+    //! Returns the text written to the stream so far.
+    const std::string &toString() const { return str_; }
 
-        // From TextOutputStream
-        virtual void write(const char *text);
-        virtual void close();
+    // From TextOutputStream
+    virtual void write(const char *text);
+    virtual void close();
 
-    private:
-        std::string str_;
+private:
+    std::string str_;
 };
 
 template <typename T> class ConstArrayRef;
@@ -84,38 +84,38 @@ template <typename T> class ConstArrayRef;
  */
 class StringInputStream : public TextInputStream
 {
-    public:
-        /*! \brief
-         * Constructor that stores input lines in a string.
-         *
-         * The string is internally but no processing is done.
-         *
-         * \param[in] input String to be served by the stream.
-         */
-        explicit StringInputStream(const std::string &input);
-        /*! \brief
-         * Constructor that stores input lines in a string.
-         *
-         * The vector of strings is stored as a string separated by newline.
-         *
-         * \param[in] input String to be served by the stream.
-         */
-        explicit StringInputStream(const std::vector<std::string> &input);
-        /*! \brief
-         * Constructor that stores input lines in a string.
-         *
-         * The array of char * is stored as a string separated by newline.
-         *
-         * \param[in] input Array of char * to be served by the stream.
-         */
-        explicit StringInputStream(ConstArrayRef<const char *> const &input);
+public:
+    /*! \brief
+     * Constructor that stores input lines in a string.
+     *
+     * The string is internally but no processing is done.
+     *
+     * \param[in] input String to be served by the stream.
+     */
+    explicit StringInputStream(const std::string &input);
+    /*! \brief
+     * Constructor that stores input lines in a string.
+     *
+     * The vector of strings is stored as a string separated by newline.
+     *
+     * \param[in] input String to be served by the stream.
+     */
+    explicit StringInputStream(const std::vector<std::string> &input);
+    /*! \brief
+     * Constructor that stores input lines in a string.
+     *
+     * The array of char * is stored as a string separated by newline.
+     *
+     * \param[in] input Array of char * to be served by the stream.
+     */
+    explicit StringInputStream(ConstArrayRef<const char *> const &input);
 
-        // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close() {};
-    private:
-        std::string input_;
-        size_t      pos_;
+    // From TextInputStream
+    virtual bool readLine(std::string *line);
+    virtual void close() {};
+private:
+    std::string input_;
+    size_t      pos_;
 };
 
 } // namespace gmx

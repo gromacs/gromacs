@@ -97,12 +97,12 @@ bool startThreads(std::function<void()> *testBody)
 
 class InTestGuard
 {
-    public:
-        explicit InTestGuard(bool *inTest) : inTest_(inTest) { *inTest = true; }
-        ~InTestGuard() { *inTest_ = false; }
+public:
+    explicit InTestGuard(bool *inTest) : inTest_(inTest) { *inTest = true; }
+    ~InTestGuard() { *inTest_ = false; }
 
-    private:
-        bool *inTest_;
+private:
+    bool *inTest_;
 };
 
 }       // namespace

@@ -57,22 +57,22 @@ namespace
 
 class ExactTextMatcher : public ITextBlockMatcher
 {
-    public:
-        virtual void checkStream(TextInputStream *     stream,
-                                 TestReferenceChecker *checker)
-        {
-            TextReader reader(stream);
-            checker->checkTextBlock(reader.readAll(), "Contents");
-        }
+public:
+    virtual void checkStream(TextInputStream *     stream,
+                             TestReferenceChecker *checker)
+    {
+        TextReader reader(stream);
+        checker->checkTextBlock(reader.readAll(), "Contents");
+    }
 };
 
 class NoTextMatcher : public ITextBlockMatcher
 {
-    public:
-        virtual void checkStream(TextInputStream      * /*stream*/,
-                                 TestReferenceChecker * /*checker*/)
-        {
-        }
+public:
+    virtual void checkStream(TextInputStream      * /*stream*/,
+                             TestReferenceChecker * /*checker*/)
+    {
+    }
 };
 
 }       // namespace

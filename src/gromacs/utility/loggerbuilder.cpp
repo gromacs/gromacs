@@ -49,33 +49,33 @@ namespace gmx
 
 class LogTargetCollection : public ILogTarget
 {
-    public:
-        void addTarget(ILogTarget *target)
-        {
-            targets_.push_back(target);
-        }
+public:
+    void addTarget(ILogTarget *target)
+    {
+        targets_.push_back(target);
+    }
 
-        virtual void writeEntry(const LogEntry &entry)
+    virtual void writeEntry(const LogEntry &entry)
+    {
+        for (ILogTarget *target : targets_)
         {
-            for (ILogTarget *target : targets_)
-            {
-                target->writeEntry(entry);
-            }
+            target->writeEntry(entry);
         }
+    }
 
-    private:
-        std::vector<ILogTarget *> targets_;
+private:
+    std::vector<ILogTarget *> targets_;
 };
 
 class LogTargetFormatter : public ILogTarget
 {
-    public:
-        explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
+public:
+    explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
 
-        virtual void writeEntry(const LogEntry &entry);
+    virtual void writeEntry(const LogEntry &entry);
 
-    private:
-        TextWriter writer_;
+private:
+    TextWriter writer_;
 };
 
 
@@ -98,15 +98,15 @@ void LogTargetFormatter::writeEntry(const LogEntry &entry)
 
 class LoggerOwner::Impl
 {
-    public:
-        explicit Impl(ILogTarget *loggerTargets[MDLogger::LogLevelCount])
-            : logger_(loggerTargets)
-        {
-        }
+public:
+    explicit Impl(ILogTarget *loggerTargets[MDLogger::LogLevelCount])
+        : logger_(loggerTargets)
+    {
+    }
 
-        MDLogger                                        logger_;
-        std::vector<std::unique_ptr<TextOutputStream> > streams_;
-        std::vector<std::unique_ptr<ILogTarget> >       targets_;
+    MDLogger                                        logger_;
+    std::vector<std::unique_ptr<TextOutputStream> > streams_;
+    std::vector<std::unique_ptr<ILogTarget> >       targets_;
 };
 
 /********************************************************************
@@ -140,10 +140,10 @@ LoggerOwner::~LoggerOwner()
 
 class LoggerBuilder::Impl
 {
-    public:
-        std::vector<std::unique_ptr<TextOutputStream> > streams_;
-        std::vector<std::unique_ptr<ILogTarget> >       targets_;
-        std::vector<ILogTarget *>                       loggerTargets_[MDLogger::LogLevelCount];
+public:
+    std::vector<std::unique_ptr<TextOutputStream> > streams_;
+    std::vector<std::unique_ptr<ILogTarget> >       targets_;
+    std::vector<ILogTarget *>                       loggerTargets_[MDLogger::LogLevelCount];
 };
 
 /********************************************************************

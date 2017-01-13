@@ -92,17 +92,17 @@ class EnumOptionStorage;
  */
 class BooleanOption : public OptionTemplate<bool, BooleanOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef BooleanOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef BooleanOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit BooleanOption(const char *name) : MyBase(name) {}
+    //! Initializes an option with the given name.
+    explicit BooleanOption(const char *name) : MyBase(name) {}
 
-    private:
-        //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    //! Creates a BooleanOptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 };
 
 /*! \brief
@@ -125,33 +125,33 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
  */
 class IntegerOption : public OptionTemplate<int, IntegerOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef IntegerOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef IntegerOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit IntegerOption(const char *name) : MyBase(name) {}
+    //! Initializes an option with the given name.
+    explicit IntegerOption(const char *name) : MyBase(name) {}
 
-        /*! \brief
-         * Sets the option to return a vector value.
-         *
-         * A vector value returns a fixed number of values, the default being
-         * three (can be changed with valueCount()).  However, it also accepts
-         * a single value, in which case the value is used to fill the whole
-         * vector.
-         */
-        MyClass &vector() { setVector(); return me(); }
+    /*! \brief
+     * Sets the option to return a vector value.
+     *
+     * A vector value returns a fixed number of values, the default being
+     * three (can be changed with valueCount()).  However, it also accepts
+     * a single value, in which case the value is used to fill the whole
+     * vector.
+     */
+    MyClass &vector() { setVector(); return me(); }
 
-    private:
-        //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    //! Creates an IntegerOptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 
-        /*! \brief
-         * Needed to initialize IntegerOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class IntegerOptionStorage;
+    /*! \brief
+     * Needed to initialize IntegerOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class IntegerOptionStorage;
 };
 
 /*! \brief
@@ -165,23 +165,23 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
  */
 class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef Int64OptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef Int64OptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit Int64Option(const char *name) : MyBase(name) {}
+    //! Initializes an option with the given name.
+    explicit Int64Option(const char *name) : MyBase(name) {}
 
-    private:
-        //! Creates an Int64OptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    //! Creates an Int64OptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 
-        /*! \brief
-         * Needed to initialize Int64OptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class Int64OptionStorage;
+    /*! \brief
+     * Needed to initialize Int64OptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class Int64OptionStorage;
 };
 
 /*! \brief
@@ -193,43 +193,43 @@ class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
  */
 class DoubleOption : public OptionTemplate<double, DoubleOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef DoubleOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef DoubleOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit DoubleOption(const char *name) : MyBase(name), bTime_(false)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit DoubleOption(const char *name) : MyBase(name), bTime_(false)
+    {
+    }
 
-        //! \copydoc IntegerOption::vector()
-        MyClass &vector() { setVector(); return me(); }
-        /*! \brief
-         * Marks this option as providing a time value whose unit can be changed.
-         *
-         * By itself, this option does nothing.  It marks the option as a time
-         * value such that TimeUnitManager::scaleTimeOptions() can process it.
-         * In typical cases, \Gromacs scales the time options just before
-         * Options::finish() has been called, so the option value is only
-         * available after all option values have been processed.
-         * All values in the program are in ps (including any default value);
-         * user-provided values are scaled according to the time unit set in
-         * TimeUnitManager.
-         */
-        MyClass &timeValue() { bTime_ = true; return me(); }
+    //! \copydoc IntegerOption::vector()
+    MyClass &vector() { setVector(); return me(); }
+    /*! \brief
+     * Marks this option as providing a time value whose unit can be changed.
+     *
+     * By itself, this option does nothing.  It marks the option as a time
+     * value such that TimeUnitManager::scaleTimeOptions() can process it.
+     * In typical cases, \Gromacs scales the time options just before
+     * Options::finish() has been called, so the option value is only
+     * available after all option values have been processed.
+     * All values in the program are in ps (including any default value);
+     * user-provided values are scaled according to the time unit set in
+     * TimeUnitManager.
+     */
+    MyClass &timeValue() { bTime_ = true; return me(); }
 
-    private:
-        //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    //! Creates a DoubleOptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 
-        bool bTime_;
+    bool bTime_;
 
-        /*! \brief
-         * Needed to initialize DoubleOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class DoubleOptionStorage;
+    /*! \brief
+     * Needed to initialize DoubleOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class DoubleOptionStorage;
 };
 
 /*! \brief
@@ -243,32 +243,32 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
  */
 class FloatOption : public OptionTemplate<float, FloatOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef FloatOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef FloatOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit FloatOption(const char *name) : MyBase(name), bTime_(false)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit FloatOption(const char *name) : MyBase(name), bTime_(false)
+    {
+    }
 
-        //! \copydoc IntegerOption::vector()
-        MyClass &vector() { setVector(); return me(); }
-        //! \copydoc DoubleOption::timeValue()
-        MyClass &timeValue() { bTime_ = true; return me(); }
+    //! \copydoc IntegerOption::vector()
+    MyClass &vector() { setVector(); return me(); }
+    //! \copydoc DoubleOption::timeValue()
+    MyClass &timeValue() { bTime_ = true; return me(); }
 
-    private:
-        //! Creates a FloatOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    //! Creates a FloatOptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 
-        bool bTime_;
+    bool bTime_;
 
-        /*! \brief
-         * Needed to initialize FloatOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class FloatOptionStorage;
+    /*! \brief
+     * Needed to initialize FloatOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class FloatOptionStorage;
 };
 
 /*! \brief
@@ -292,83 +292,83 @@ class FloatOption : public OptionTemplate<float, FloatOption>
  */
 class StringOption : public OptionTemplate<std::string, StringOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef StringOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef StringOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit StringOption(const char *name)
-            : MyBase(name), enumValues_(nullptr), enumValuesCount_(0),
-              defaultEnumIndex_(-1)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit StringOption(const char *name)
+        : MyBase(name), enumValues_(nullptr), enumValuesCount_(0),
+          defaultEnumIndex_(-1)
+    {
+    }
 
-        /*! \brief
-         * Sets the option to only accept one of a fixed set of strings.
-         *
-         * \param[in] values  Array of strings to accept.
-         *
-         * Also accepts prefixes of the strings; if a prefix matches more than
-         * one of the possible strings, the shortest one is used (in a tie, the
-         * first one is).
-         *
-         * The strings are copied once the option is created.
-         */
-        template <size_t count>
-        MyClass &enumValue(const char *const (&values)[count])
-        {
-            GMX_ASSERT(enumValues_ == NULL,
-                       "Multiple sets of enumerated values specified");
-            enumValues_      = values;
-            enumValuesCount_ = count;
-            return me();
-        }
-        /*! \brief
-         * Sets the option to only accept one of a fixed set of strings.
-         *
-         * \param[in] values  Array of strings to accept, with a NULL pointer
-         *      following the last string.
-         *
-         * Works otherwise as the array version, but accepts a pointer to
-         * an array of undetermined length.  The end of the array is indicated
-         * by a NULL pointer in the array.
-         *
-         * \see enumValue()
-         */
-        MyClass &enumValueFromNullTerminatedArray(const char *const *values)
-        {
-            GMX_ASSERT(enumValues_ == NULL,
-                       "Multiple sets of enumerated values specified");
-            enumValues_      = values;
-            enumValuesCount_ = -1;
-            return me();
-        }
-        /*! \brief
-         * Sets the default value using an index into the enumeration table.
-         *
-         * Cannot be specified without enumValue().
-         */
-        MyClass &defaultEnumIndex(int index)
-        {
-            GMX_ASSERT(index >= 0, "Invalid enumeration index");
-            defaultEnumIndex_ = index;
-            return me();
-        }
+    /*! \brief
+     * Sets the option to only accept one of a fixed set of strings.
+     *
+     * \param[in] values  Array of strings to accept.
+     *
+     * Also accepts prefixes of the strings; if a prefix matches more than
+     * one of the possible strings, the shortest one is used (in a tie, the
+     * first one is).
+     *
+     * The strings are copied once the option is created.
+     */
+    template <size_t count>
+    MyClass &enumValue(const char *const (&values)[count])
+    {
+        GMX_ASSERT(enumValues_ == NULL,
+                   "Multiple sets of enumerated values specified");
+        enumValues_      = values;
+        enumValuesCount_ = count;
+        return me();
+    }
+    /*! \brief
+     * Sets the option to only accept one of a fixed set of strings.
+     *
+     * \param[in] values  Array of strings to accept, with a NULL pointer
+     *      following the last string.
+     *
+     * Works otherwise as the array version, but accepts a pointer to
+     * an array of undetermined length.  The end of the array is indicated
+     * by a NULL pointer in the array.
+     *
+     * \see enumValue()
+     */
+    MyClass &enumValueFromNullTerminatedArray(const char *const *values)
+    {
+        GMX_ASSERT(enumValues_ == NULL,
+                   "Multiple sets of enumerated values specified");
+        enumValues_      = values;
+        enumValuesCount_ = -1;
+        return me();
+    }
+    /*! \brief
+     * Sets the default value using an index into the enumeration table.
+     *
+     * Cannot be specified without enumValue().
+     */
+    MyClass &defaultEnumIndex(int index)
+    {
+        GMX_ASSERT(index >= 0, "Invalid enumeration index");
+        defaultEnumIndex_ = index;
+        return me();
+    }
 
-    private:
-        //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+private:
+    //! Creates a StringOptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 
-        const char *const *enumValues_;
-        int                enumValuesCount_;
-        int                defaultEnumIndex_;
+    const char *const *enumValues_;
+    int                enumValuesCount_;
+    int                defaultEnumIndex_;
 
-        /*! \brief
-         * Needed to initialize StringOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class StringOptionStorage;
+    /*! \brief
+     * Needed to initialize StringOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class StringOptionStorage;
 };
 
 //! \}
@@ -390,62 +390,62 @@ namespace internal
 template <typename EnumType>
 class EnumIndexStore : public IOptionValueStore<int>
 {
-    public:
-        //! Initializes the storage for the given actual enum variables.
-        EnumIndexStore(EnumType *store, std::vector<EnumType> *storeVector)
-            : store_(store), storeVector_(storeVector)
+public:
+    //! Initializes the storage for the given actual enum variables.
+    EnumIndexStore(EnumType *store, std::vector<EnumType> *storeVector)
+        : store_(store), storeVector_(storeVector)
+    {
+        if (storeVector_ != nullptr)
         {
-            if (storeVector_ != nullptr)
+            for (EnumType value : *storeVector_)
             {
-                for (EnumType value : *storeVector_)
-                {
-                    intStore_.push_back(static_cast<int>(value));
-                }
-            }
-            else if (store_ != nullptr)
-            {
-                // TODO: Copy more than one value if that would make sense.
-                intStore_.push_back(static_cast<int>(store_[0]));
+                intStore_.push_back(static_cast<int>(value));
             }
         }
+        else if (store_ != nullptr)
+        {
+            // TODO: Copy more than one value if that would make sense.
+            intStore_.push_back(static_cast<int>(store_[0]));
+        }
+    }
 
-        virtual int valueCount() { return static_cast<int>(intStore_.size()); }
-        virtual ArrayRef<int> values() { return intStore_; }
-        virtual void clear()
+    virtual int valueCount() { return static_cast<int>(intStore_.size()); }
+    virtual ArrayRef<int> values() { return intStore_; }
+    virtual void clear()
+    {
+        intStore_.clear();
+        if (storeVector_ != nullptr)
         {
-            intStore_.clear();
-            if (storeVector_ != nullptr)
-            {
-                storeVector_->clear();
-            }
+            storeVector_->clear();
         }
-        virtual void reserve(size_t count)
+    }
+    virtual void reserve(size_t count)
+    {
+        intStore_.reserve(intStore_.size() + count);
+        if (storeVector_ != nullptr)
         {
-            intStore_.reserve(intStore_.size() + count);
-            if (storeVector_ != nullptr)
-            {
-                storeVector_->reserve(storeVector_->size() + count);
-            }
+            storeVector_->reserve(storeVector_->size() + count);
         }
-        virtual void append(const int &value)
+    }
+    virtual void append(const int &value)
+    {
+        const size_t count = intStore_.size();
+        intStore_.push_back(value);
+        if (store_ != nullptr)
         {
-            const size_t count = intStore_.size();
-            intStore_.push_back(value);
-            if (store_ != nullptr)
-            {
-                store_[count] = static_cast<EnumType>(value);
-            }
-            if (storeVector_ != nullptr)
-            {
-                storeVector_->push_back(static_cast<EnumType>(value));
-            }
+            store_[count] = static_cast<EnumType>(value);
         }
+        if (storeVector_ != nullptr)
+        {
+            storeVector_->push_back(static_cast<EnumType>(value));
+        }
+    }
 
-    private:
-        //! Stores the integer values for values().
-        std::vector<int>       intStore_;
-        EnumType *             store_;
-        std::vector<EnumType> *storeVector_;
+private:
+    //! Stores the integer values for values().
+    std::vector<int>       intStore_;
+    EnumType *             store_;
+    std::vector<EnumType> *storeVector_;
 };
 
 //! \cond internal
@@ -504,90 +504,90 @@ createEnumOptionStorage(const AbstractOption &option,
 template <typename EnumType>
 class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef EnumOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef EnumOptionInfo InfoType;
 
-        // This needs to be duplicated from OptionTemplate because this class
-        // is a template.
-        //! Short-hand for the base class.
-        typedef OptionTemplate<EnumType, EnumOption<EnumType> > MyBase;
+    // This needs to be duplicated from OptionTemplate because this class
+    // is a template.
+    //! Short-hand for the base class.
+    typedef OptionTemplate<EnumType, EnumOption<EnumType> > MyBase;
 
-        //! Initializes an option with the given name.
-        explicit EnumOption(const char *name)
-            : MyBase(name), enumValues_(nullptr), enumValuesCount_(0)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit EnumOption(const char *name)
+        : MyBase(name), enumValues_(nullptr), enumValuesCount_(0)
+    {
+    }
 
-        /*! \brief
-         * Sets the option to only accept one of a fixed set of strings.
-         *
-         * \param[in] values  Array of strings to accept.
-         *
-         * Also accepts prefixes of the strings; if a prefix matches more than
-         * one of the possible strings, the shortest one is used (in a tie, the
-         * first one is).
-         *
-         * The strings are copied once the option is created.
-         */
-        template <size_t count>
-        EnumOption &enumValue(const char *const (&values)[count])
-        {
-            GMX_ASSERT(enumValues_ == NULL,
-                       "Multiple sets of enumerated values specified");
-            enumValues_      = values;
-            enumValuesCount_ = count;
-            return MyBase::me();
-        }
-        /*! \brief
-         * Sets the option to only accept one of a fixed set of strings.
-         *
-         * \param[in] values  Array of strings to accept, with a NULL pointer
-         *      following the last string.
-         *
-         * Works otherwise as the array version, but accepts a pointer to
-         * an array of undetermined length.  The end of the array is indicated
-         * by a NULL pointer in the array.
-         *
-         * \see enumValue()
-         */
-        EnumOption &enumValueFromNullTerminatedArray(const char *const *values)
-        {
-            GMX_ASSERT(enumValues_ == NULL,
-                       "Multiple sets of enumerated values specified");
-            enumValues_      = values;
-            enumValuesCount_ = -1;
-            return MyBase::me();
-        }
+    /*! \brief
+     * Sets the option to only accept one of a fixed set of strings.
+     *
+     * \param[in] values  Array of strings to accept.
+     *
+     * Also accepts prefixes of the strings; if a prefix matches more than
+     * one of the possible strings, the shortest one is used (in a tie, the
+     * first one is).
+     *
+     * The strings are copied once the option is created.
+     */
+    template <size_t count>
+    EnumOption &enumValue(const char *const (&values)[count])
+    {
+        GMX_ASSERT(enumValues_ == NULL,
+                   "Multiple sets of enumerated values specified");
+        enumValues_      = values;
+        enumValuesCount_ = count;
+        return MyBase::me();
+    }
+    /*! \brief
+     * Sets the option to only accept one of a fixed set of strings.
+     *
+     * \param[in] values  Array of strings to accept, with a NULL pointer
+     *      following the last string.
+     *
+     * Works otherwise as the array version, but accepts a pointer to
+     * an array of undetermined length.  The end of the array is indicated
+     * by a NULL pointer in the array.
+     *
+     * \see enumValue()
+     */
+    EnumOption &enumValueFromNullTerminatedArray(const char *const *values)
+    {
+        GMX_ASSERT(enumValues_ == NULL,
+                   "Multiple sets of enumerated values specified");
+        enumValues_      = values;
+        enumValuesCount_ = -1;
+        return MyBase::me();
+    }
 
-    private:
-        //! Helper function to convert default values for storate initialization.
-        static int convertToInt(const EnumType *defaultValue)
-        {
-            return defaultValue != nullptr ? static_cast<int>(*defaultValue) : -1;
-        }
+private:
+    //! Helper function to convert default values for storate initialization.
+    static int convertToInt(const EnumType *defaultValue)
+    {
+        return defaultValue != nullptr ? static_cast<int>(*defaultValue) : -1;
+    }
 
-        //! Creates a EnumOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer & /*managers*/) const
-        {
-            // TODO: Implement storeCount() if necessary.
-            return internal::createEnumOptionStorage(
-                    *this, enumValues_, enumValuesCount_,
-                    convertToInt(MyBase::defaultValue()),
-                    convertToInt(MyBase::defaultValueIfSet()),
-                    new internal::EnumIndexStore<EnumType>(
-                            MyBase::store(), MyBase::storeVector()));
-        }
+    //! Creates a EnumOptionStorage object.
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer & /*managers*/) const
+    {
+        // TODO: Implement storeCount() if necessary.
+        return internal::createEnumOptionStorage(
+                *this, enumValues_, enumValuesCount_,
+                convertToInt(MyBase::defaultValue()),
+                convertToInt(MyBase::defaultValueIfSet()),
+                new internal::EnumIndexStore<EnumType>(
+                        MyBase::store(), MyBase::storeVector()));
+    }
 
-        const char *const *enumValues_;
-        int                enumValuesCount_;
+    const char *const *enumValues_;
+    int                enumValuesCount_;
 
-        /*! \brief
-         * Needed to initialize EnumOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class EnumOptionStorage;
+    /*! \brief
+     * Needed to initialize EnumOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class EnumOptionStorage;
 };
 
 //! Shorthand for an enumerated option that stores into an `int` variable.
@@ -600,15 +600,15 @@ typedef EnumOption<int> EnumIntOption;
  */
 class BooleanOptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit BooleanOptionInfo(BooleanOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit BooleanOptionInfo(BooleanOptionStorage *option);
 
-        //! Returns the default value for this option.
-        bool defaultValue() const;
+    //! Returns the default value for this option.
+    bool defaultValue() const;
 
-    private:
-        const BooleanOptionStorage &option() const;
+private:
+    const BooleanOptionStorage &option() const;
 };
 
 /*! \brief
@@ -618,9 +618,9 @@ class BooleanOptionInfo : public OptionInfo
  */
 class IntegerOptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit IntegerOptionInfo(IntegerOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit IntegerOptionInfo(IntegerOptionStorage *option);
 };
 
 /*! \brief
@@ -630,9 +630,9 @@ class IntegerOptionInfo : public OptionInfo
  */
 class Int64OptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit Int64OptionInfo(Int64OptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit Int64OptionInfo(Int64OptionStorage *option);
 };
 
 /*! \brief
@@ -642,26 +642,26 @@ class Int64OptionInfo : public OptionInfo
  */
 class DoubleOptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit DoubleOptionInfo(DoubleOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit DoubleOptionInfo(DoubleOptionStorage *option);
 
-        //! Whether the option specifies a time value.
-        bool isTime() const;
+    //! Whether the option specifies a time value.
+    bool isTime() const;
 
-        /*! \brief
-         * Sets a scale factor for user-provided values.
-         *
-         * Any user-provided value is scaled by the provided factor.
-         * Programmatically set default values are not scaled.
-         * If called multiple times, later calls override the previously set
-         * value.  In other words, the scaling is not cumulative.
-         */
-        void setScaleFactor(double factor);
+    /*! \brief
+     * Sets a scale factor for user-provided values.
+     *
+     * Any user-provided value is scaled by the provided factor.
+     * Programmatically set default values are not scaled.
+     * If called multiple times, later calls override the previously set
+     * value.  In other words, the scaling is not cumulative.
+     */
+    void setScaleFactor(double factor);
 
-    private:
-        DoubleOptionStorage &option();
-        const DoubleOptionStorage &option() const;
+private:
+    DoubleOptionStorage &option();
+    const DoubleOptionStorage &option() const;
 };
 
 /*! \brief
@@ -671,19 +671,19 @@ class DoubleOptionInfo : public OptionInfo
  */
 class FloatOptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit FloatOptionInfo(FloatOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit FloatOptionInfo(FloatOptionStorage *option);
 
-        //! Whether the option specifies a time value.
-        bool isTime() const;
+    //! Whether the option specifies a time value.
+    bool isTime() const;
 
-        //! \copydoc DoubleOptionInfo::setScaleFactor()
-        void setScaleFactor(double factor);
+    //! \copydoc DoubleOptionInfo::setScaleFactor()
+    void setScaleFactor(double factor);
 
-    private:
-        FloatOptionStorage &option();
-        const FloatOptionStorage &option() const;
+private:
+    FloatOptionStorage &option();
+    const FloatOptionStorage &option() const;
 };
 
 /*! \brief
@@ -693,26 +693,26 @@ class FloatOptionInfo : public OptionInfo
  */
 class StringOptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit StringOptionInfo(StringOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit StringOptionInfo(StringOptionStorage *option);
 
-        /*! \brief
-         * Whether this option accepts an enumerated set of values.
-         *
-         * Returns true if StringOption::enumValues() was used when creating
-         * this option.
-         */
-        bool isEnumerated() const;
-        /*! \brief
-         * Returns the set of allowed values for this option.
-         *
-         * Returns an empty vector if isEnumerated() returns false.
-         */
-        const std::vector<std::string> &allowedValues() const;
+    /*! \brief
+     * Whether this option accepts an enumerated set of values.
+     *
+     * Returns true if StringOption::enumValues() was used when creating
+     * this option.
+     */
+    bool isEnumerated() const;
+    /*! \brief
+     * Returns the set of allowed values for this option.
+     *
+     * Returns an empty vector if isEnumerated() returns false.
+     */
+    const std::vector<std::string> &allowedValues() const;
 
-    private:
-        const StringOptionStorage &option() const;
+private:
+    const StringOptionStorage &option() const;
 };
 
 /*! \brief
@@ -722,17 +722,17 @@ class StringOptionInfo : public OptionInfo
  */
 class EnumOptionInfo : public OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit EnumOptionInfo(EnumOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit EnumOptionInfo(EnumOptionStorage *option);
 
-        /*! \brief
-         * Returns the set of allowed values for this option.
-         */
-        const std::vector<std::string> &allowedValues() const;
+    /*! \brief
+     * Returns the set of allowed values for this option.
+     */
+    const std::vector<std::string> &allowedValues() const;
 
-    private:
-        const EnumOptionStorage &option() const;
+private:
+    const EnumOptionStorage &option() const;
 };
 
 /*! \typedef RealOption

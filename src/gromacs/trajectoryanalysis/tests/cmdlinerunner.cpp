@@ -63,42 +63,42 @@ namespace
 
 class MockModule : public gmx::TrajectoryAnalysisModule
 {
-    public:
-        MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer          * options,
-                                       gmx::TrajectoryAnalysisSettings * settings));
-        MOCK_METHOD2(initAnalysis, void(const gmx::TrajectoryAnalysisSettings & settings,
-                                        const gmx::TopologyInformation        & top));
+public:
+    MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer          * options,
+                                   gmx::TrajectoryAnalysisSettings * settings));
+    MOCK_METHOD2(initAnalysis, void(const gmx::TrajectoryAnalysisSettings & settings,
+                                    const gmx::TopologyInformation        & top));
 
-        MOCK_METHOD4(analyzeFrame, void(int frnr, const t_trxframe &fr, t_pbc * pbc,
-                                        gmx::TrajectoryAnalysisModuleData * pdata));
-        MOCK_METHOD1(finishAnalysis, void(int nframes));
-        MOCK_METHOD0(writeOutput, void());
+    MOCK_METHOD4(analyzeFrame, void(int frnr, const t_trxframe &fr, t_pbc * pbc,
+                                    gmx::TrajectoryAnalysisModuleData * pdata));
+    MOCK_METHOD1(finishAnalysis, void(int nframes));
+    MOCK_METHOD0(writeOutput, void());
 };
 
 using gmx::test::CommandLine;
 
 class TrajectoryAnalysisCommandLineRunnerTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        TrajectoryAnalysisCommandLineRunnerTest()
-            : mockModule_(new MockModule())
-        {
-        }
+public:
+    TrajectoryAnalysisCommandLineRunnerTest()
+        : mockModule_(new MockModule())
+    {
+    }
 
-        gmx::ICommandLineOptionsModulePointer createRunner()
-        {
-            return gmx::TrajectoryAnalysisCommandLineRunner::createModule(
-                    std::move(mockModule_));
-        }
+    gmx::ICommandLineOptionsModulePointer createRunner()
+    {
+        return gmx::TrajectoryAnalysisCommandLineRunner::createModule(
+                std::move(mockModule_));
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
-            ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
-        }
+    void runTest(const CommandLine &args)
+    {
+        CommandLine &cmdline = commandLine();
+        cmdline.merge(args);
+        ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
+    }
 
-        std::unique_ptr<MockModule> mockModule_;
+    std::unique_ptr<MockModule> mockModule_;
 };
 
 //! Initializes options for help testing.

@@ -45,34 +45,34 @@ namespace gmx
 
 class MDModules::Impl
 {
-    public:
-        Impl() : ir_(nullptr)
+public:
+    Impl() : ir_(nullptr)
+    {
+    }
+    ~Impl()
+    {
+        if (ir_ != nullptr)
         {
+            done_inputrec(ir_);
+            sfree(ir_);
         }
-        ~Impl()
-        {
-            if (ir_ != nullptr)
-            {
-                done_inputrec(ir_);
-                sfree(ir_);
-            }
-        }
+    }
 
-        void ensureInputrecInitialized()
+    void ensureInputrecInitialized()
+    {
+        if (ir_ == nullptr)
         {
-            if (ir_ == nullptr)
-            {
-                field_ = createElectricFieldModule();
-                snew(ir_, 1);
-                snew(ir_->fepvals, 1);
-                snew(ir_->expandedvals, 1);
-                snew(ir_->simtempvals, 1);
-                ir_->efield = field_.get();
-            }
+            field_ = createElectricFieldModule();
+            snew(ir_, 1);
+            snew(ir_->fepvals, 1);
+            snew(ir_->expandedvals, 1);
+            snew(ir_->simtempvals, 1);
+            ir_->efield = field_.get();
         }
+    }
 
-        std::unique_ptr<IInputRecExtension> field_;
-        t_inputrec *                        ir_;
+    std::unique_ptr<IInputRecExtension> field_;
+    t_inputrec *                        ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)

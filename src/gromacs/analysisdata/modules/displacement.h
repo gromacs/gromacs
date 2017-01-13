@@ -69,36 +69,36 @@ class AnalysisDataBinAverageModule;
 class AnalysisDataDisplacementModule : public AbstractAnalysisData,
                                        public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataDisplacementModule();
-        virtual ~AnalysisDataDisplacementModule();
+public:
+    AnalysisDataDisplacementModule();
+    virtual ~AnalysisDataDisplacementModule();
 
-        /*! \brief
-         * Sets the largest displacement time to be calculated.
-         */
-        void setMaxTime(real tmax);
-        /*! \brief
-         * Sets an histogram module that will receive a MSD histogram.
-         *
-         * If this function is not called, no histogram is calculated.
-         */
-        void setMSDHistogram(std::shared_ptr<AnalysisDataBinAverageModule> histm);
+    /*! \brief
+     * Sets the largest displacement time to be calculated.
+     */
+    void setMaxTime(real tmax);
+    /*! \brief
+     * Sets an histogram module that will receive a MSD histogram.
+     *
+     * If this function is not called, no histogram is calculated.
+     */
+    void setMSDHistogram(std::shared_ptr<AnalysisDataBinAverageModule> histm);
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-    private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+private:
+    virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+    virtual bool requestStorageInternal(int nframes);
 
-        class Impl;
+    class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+    PrivateImplPointer<Impl> _impl;
 };
 
 //! Smart pointer to manage an AnalysisDataDisplacementModule object.

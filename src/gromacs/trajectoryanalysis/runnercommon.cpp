@@ -78,61 +78,61 @@ namespace gmx
 
 class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
 {
-    public:
-        explicit Impl(TrajectoryAnalysisSettings *settings);
-        ~Impl();
+public:
+    explicit Impl(TrajectoryAnalysisSettings *settings);
+    ~Impl();
 
-        bool hasTrajectory() const { return !trjfile_.empty(); }
+    bool hasTrajectory() const { return !trjfile_.empty(); }
 
-        void initTopology(bool required);
-        void initFirstFrame();
-        void initFrameIndexGroup();
-        void finishTrajectory();
+    void initTopology(bool required);
+    void initFirstFrame();
+    void initFrameIndexGroup();
+    void finishTrajectory();
 
-        // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool required)
+    // From ITopologyProvider
+    virtual gmx_mtop_t *getTopology(bool required)
+    {
+        initTopology(required);
+        return topInfo_.mtop_;
+    }
+    virtual int getAtomCount()
+    {
+        if (!topInfo_.hasTopology())
         {
-            initTopology(required);
-            return topInfo_.mtop_;
-        }
-        virtual int getAtomCount()
-        {
-            if (!topInfo_.hasTopology())
+            if (trajectoryGroup_.isValid())
             {
-                if (trajectoryGroup_.isValid())
-                {
-                    GMX_THROW(InconsistentInputError("-fgroup is only supported when -s is also specified"));
-                }
-                // Read the first frame if we don't know the maximum number of
-                // atoms otherwise.
-                initFirstFrame();
-                return fr->natoms;
+                GMX_THROW(InconsistentInputError("-fgroup is only supported when -s is also specified"));
             }
-            return -1;
+            // Read the first frame if we don't know the maximum number of
+            // atoms otherwise.
+            initFirstFrame();
+            return fr->natoms;
         }
+        return -1;
+    }
 
-        TrajectoryAnalysisSettings &settings_;
-        TopologyInformation         topInfo_;
+    TrajectoryAnalysisSettings &settings_;
+    TopologyInformation         topInfo_;
 
-        //! Name of the trajectory file (empty if not provided).
-        std::string trjfile_;
-        //! Name of the topology file (empty if no topology provided).
-        std::string topfile_;
-        Selection   trajectoryGroup_;
-        double      startTime_;
-        double      endTime_;
-        double      deltaTime_;
-        bool        bStartTimeSet_;
-        bool        bEndTimeSet_;
-        bool        bDeltaTimeSet_;
+    //! Name of the trajectory file (empty if not provided).
+    std::string trjfile_;
+    //! Name of the topology file (empty if no topology provided).
+    std::string topfile_;
+    Selection   trajectoryGroup_;
+    double      startTime_;
+    double      endTime_;
+    double      deltaTime_;
+    bool        bStartTimeSet_;
+    bool        bEndTimeSet_;
+    bool        bDeltaTimeSet_;
 
-        bool bTrajOpen_;
-        //! The current frame, or \p NULL if no frame loaded yet.
-        t_trxframe *fr;
-        gmx_rmpbc_t gpbc_;
-        //! Used to store the status variable from read_first_frame().
-        t_trxstatus *     status_;
-        gmx_output_env_t *oenv_;
+    bool bTrajOpen_;
+    //! The current frame, or \p NULL if no frame loaded yet.
+    t_trxframe *fr;
+    gmx_rmpbc_t gpbc_;
+    //! Used to store the status variable from read_first_frame().
+    t_trxstatus *     status_;
+    gmx_output_env_t *oenv_;
 };
 
 

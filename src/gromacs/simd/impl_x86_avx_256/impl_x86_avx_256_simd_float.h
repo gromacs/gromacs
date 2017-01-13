@@ -49,41 +49,41 @@ namespace gmx
 
 class SimdFloat
 {
-    public:
-        SimdFloat() {}
+public:
+    SimdFloat() {}
 
-        SimdFloat(float f) : simdInternal_(_mm256_set1_ps(f)) {}
+    SimdFloat(float f) : simdInternal_(_mm256_set1_ps(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFloat(__m256 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFloat(__m256 simd) : simdInternal_(simd) {}
 
-        __m256 simdInternal_;
+    __m256 simdInternal_;
 };
 
 class SimdFInt32
 {
-    public:
-        SimdFInt32() {}
+public:
+    SimdFInt32() {}
 
-        SimdFInt32(std::int32_t i) : simdInternal_(_mm256_set1_epi32(i)) {}
+    SimdFInt32(std::int32_t i) : simdInternal_(_mm256_set1_epi32(i)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFInt32(__m256i simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFInt32(__m256i simd) : simdInternal_(simd) {}
 
-        __m256i simdInternal_;
+    __m256i simdInternal_;
 };
 
 class SimdFBool
 {
-    public:
-        SimdFBool() {}
+public:
+    SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_(_mm256_castsi256_ps(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
+    SimdFBool(bool b) : simdInternal_(_mm256_castsi256_ps(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFBool(__m256 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFBool(__m256 simd) : simdInternal_(simd) {}
 
-        __m256 simdInternal_;
+    __m256 simdInternal_;
 };
 
 static inline SimdFloat gmx_simdcall simdLoad(const float *m)

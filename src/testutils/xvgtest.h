@@ -98,29 +98,29 @@ void checkXvgFile(TextInputStream *       input,
  */
 class XvgMatch : public ITextBlockMatcherSettings
 {
-    public:
-        //! Sets the tolerance for matching data point values.
-        XvgMatch &tolerance(const FloatingPointTolerance &tolerance)
-        {
-            settings_.tolerance = tolerance;
-            return *this;
-        }
-        /*! \brief
-         * Sets whether the actual data is checked.
-         *
-         * If set to `false`, only the legends are checked.  Use this if the
-         * data is already tested using different means.
-         */
-        XvgMatch &testData(bool test)
-        {
-            settings_.testData = test;
-            return *this;
-        }
+public:
+    //! Sets the tolerance for matching data point values.
+    XvgMatch &tolerance(const FloatingPointTolerance &tolerance)
+    {
+        settings_.tolerance = tolerance;
+        return *this;
+    }
+    /*! \brief
+     * Sets whether the actual data is checked.
+     *
+     * If set to `false`, only the legends are checked.  Use this if the
+     * data is already tested using different means.
+     */
+    XvgMatch &testData(bool test)
+    {
+        settings_.testData = test;
+        return *this;
+    }
 
-        virtual TextBlockMatcherPointer createMatcher() const;
+    virtual TextBlockMatcherPointer createMatcher() const;
 
-    private:
-        XvgMatchSettings settings_;
+private:
+    XvgMatchSettings settings_;
 };
 
 } // namespace test

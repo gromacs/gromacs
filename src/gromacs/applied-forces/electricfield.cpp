@@ -82,74 +82,74 @@ namespace
  */
 class ElectricFieldData
 {
-    public:
-        ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0)
+public:
+    ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0)
+    {
+    }
+
+    /*! \brief
+     * Adds an option section to specify parameters for this field component.
+     */
+    void initMdpOptions(IOptionsContainerWithSections *options, const char *sectionName)
+    {
+        auto section = options->addSection(OptionSection(sectionName));
+        section.addOption(RealOption("E0").store(&a_));
+        section.addOption(RealOption("omega").store(&omega_));
+        section.addOption(RealOption("t0").store(&t0_));
+        section.addOption(RealOption("sigma").store(&sigma_));
+    }
+
+    /*! \brief Evaluates this field component at given time.
+     *
+     * \param[in] t The time to evualate at
+     * \return The electric field
+     */
+    real evaluate(real t) const
+    {
+        if (sigma_ > 0)
         {
+            return a_ * (std::cos(omega_ * (t - t0_))
+                         * std::exp(-square(t - t0_) / (2.0 * square(sigma_))));
         }
-
-        /*! \brief
-         * Adds an option section to specify parameters for this field component.
-         */
-        void initMdpOptions(IOptionsContainerWithSections *options, const char *sectionName)
+        else
         {
-            auto section = options->addSection(OptionSection(sectionName));
-            section.addOption(RealOption("E0").store(&a_));
-            section.addOption(RealOption("omega").store(&omega_));
-            section.addOption(RealOption("t0").store(&t0_));
-            section.addOption(RealOption("sigma").store(&sigma_));
+            return a_ * std::cos(omega_ * t);
         }
+    }
 
-        /*! \brief Evaluates this field component at given time.
-         *
-         * \param[in] t The time to evualate at
-         * \return The electric field
-         */
-        real evaluate(real t) const
-        {
-            if (sigma_ > 0)
-            {
-                return a_ * (std::cos(omega_ * (t - t0_))
-                             * std::exp(-square(t - t0_) / (2.0 * square(sigma_))));
-            }
-            else
-            {
-                return a_ * std::cos(omega_ * t);
-            }
-        }
+    /*! \brief Initiate the field values
+     *
+     * \param[in] a     Amplitude
+     * \param[in] omega Frequency
+     * \param[in] t0    Peak of the pulse
+     * \param[in] sigma Width of the pulse
+     */
+    void setField(real a, real omega, real t0, real sigma)
+    {
+        a_     = a;
+        omega_ = omega;
+        t0_    = t0;
+        sigma_ = sigma;
+    }
 
-        /*! \brief Initiate the field values
-         *
-         * \param[in] a     Amplitude
-         * \param[in] omega Frequency
-         * \param[in] t0    Peak of the pulse
-         * \param[in] sigma Width of the pulse
-         */
-        void setField(real a, real omega, real t0, real sigma)
-        {
-            a_     = a;
-            omega_ = omega;
-            t0_    = t0;
-            sigma_ = sigma;
-        }
+    //! Return the amplitude
+    real a()     const { return a_; }
+    //! Return the frequency
+    real omega() const { return omega_; }
+    //! Return the time for the peak of the pulse
+    real t0()    const { return t0_; }
+    //! Return the width of the pulse (0 means inifinite)
+    real sigma() const { return sigma_; }
 
-        //! Return the amplitude
-        real a()     const { return a_; }
-        //! Return the frequency
-        real omega() const { return omega_; }
-        //! Return the time for the peak of the pulse
-        real t0()    const { return t0_; }
-        //! Return the width of the pulse (0 means inifinite)
-        real sigma() const { return sigma_; }
-
-    private:
-        //! Coeffient (V / nm)
-        real a_;
-        //! Frequency (1/ps)
-        real omega_;
-        //! Central time point (ps) for pulse
-        real t0_;
-        //! Width of pulse (ps, if zero there is no pulse)
-        real sigma_;
+private:
+    //! Coeffient (V / nm)
+    real a_;
+    //! Frequency (1/ps)
+    real omega_;
+    //! Central time point (ps) for pulse
+    real t0_;
+    //! Width of pulse (ps, if zero there is no pulse)
+    real sigma_;
 };
 
 /*! \internal
@@ -161,90 +161,90 @@ class ElectricFieldData
  */
 class ElectricField : public IInputRecExtension, public IForceProvider
 {
-    public:
-        ElectricField() : fpField_(nullptr) {}
+public:
+    ElectricField() : fpField_(nullptr) {}
 
-        // From IInputRecExtension
-        virtual void doTpxIO(t_fileio *fio, bool bRead);
-        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
-        virtual void initMdpOptions(IOptionsContainerWithSections *options);
-        virtual void broadCast(const t_commrec *cr);
-        virtual void compare(FILE *                    fp,
-                             const IInputRecExtension *field2,
-                             real                      reltol,
-                             real                      abstol);
-        virtual void printParameters(FILE *fp, int indent);
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv);
-        virtual void finishOutput();
-        virtual void initForcerec(t_forcerec *fr);
+    // From IInputRecExtension
+    virtual void doTpxIO(t_fileio *fio, bool bRead);
+    virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
+    virtual void initMdpOptions(IOptionsContainerWithSections *options);
+    virtual void broadCast(const t_commrec *cr);
+    virtual void compare(FILE *                    fp,
+                         const IInputRecExtension *field2,
+                         real                      reltol,
+                         real                      abstol);
+    virtual void printParameters(FILE *fp, int indent);
+    virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                            bool bAppendFiles, const gmx_output_env_t *oenv);
+    virtual void finishOutput();
+    virtual void initForcerec(t_forcerec *fr);
 
-        //! \copydoc gmx::IForceProvider::calculateForces
-        virtual void calculateForces(const t_commrec * cr,
-                                     const t_mdatoms * atoms,
-                                     PaddedRVecVector *force,
-                                     double            t);
+    //! \copydoc gmx::IForceProvider::calculateForces
+    virtual void calculateForces(const t_commrec * cr,
+                                 const t_mdatoms * atoms,
+                                 PaddedRVecVector *force,
+                                 double            t);
 
-    private:
-        //! Return whether or not to apply a field
-        bool isActive() const;
+private:
+    //! Return whether or not to apply a field
+    bool isActive() const;
 
-        /*! \brief Add a component to the electric field
-         *
-         * The electric field has three spatial dimensions that are
-         * added to the data structure one at a time.
-         * \param[in] dim   Dimension, XX, YY, ZZ (0, 1, 2)
-         * \param[in] a     Amplitude of the field in V/nm
-         * \param[in] omega Frequency (1/ps)
-         * \param[in] t0    Time of pulse peak (ps)
-         * \param[in] sigma Width of peak (ps)
-         */
-        void setFieldTerm(int dim, real a, real omega, real t0, real sigma);
+    /*! \brief Add a component to the electric field
+     *
+     * The electric field has three spatial dimensions that are
+     * added to the data structure one at a time.
+     * \param[in] dim   Dimension, XX, YY, ZZ (0, 1, 2)
+     * \param[in] a     Amplitude of the field in V/nm
+     * \param[in] omega Frequency (1/ps)
+     * \param[in] t0    Time of pulse peak (ps)
+     * \param[in] sigma Width of peak (ps)
+     */
+    void setFieldTerm(int dim, real a, real omega, real t0, real sigma);
 
-        /*! \brief Return the field strength
-         *
-         * \param[in] dim The spatial direction
-         * \param[in] t   The time (ps)
-         * \return The field strength in V/nm units
-         */
-        real field(int dim, real t) const;
+    /*! \brief Return the field strength
+     *
+     * \param[in] dim The spatial direction
+     * \param[in] t   The time (ps)
+     * \return The field strength in V/nm units
+     */
+    real field(int dim, real t) const;
 
-        /*! \brief Return amplitude of field
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Amplitude of the field
-         */
-        real a(int dim)     const { return efield_[dim].a(); }
-        /*! \brief Return frequency of field (1/ps)
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Frequency of the field
-         */
-        real omega(int dim) const { return efield_[dim].omega(); }
-        /*! \brief Return time of pulse peak
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Time of pulse peak
-         */
-        real t0(int dim) const { return efield_[dim].t0(); }
-        /*! \brief Return width of the pulse
-         *
-         * \param[in] dim Direction of the field (XX, YY, ZZ)
-         * \return Width of the pulse
-         */
-        real sigma(int dim) const { return efield_[dim].sigma(); }
+    /*! \brief Return amplitude of field
+     *
+     * \param[in] dim Direction of the field (XX, YY, ZZ)
+     * \return Amplitude of the field
+     */
+    real a(int dim)     const { return efield_[dim].a(); }
+    /*! \brief Return frequency of field (1/ps)
+     *
+     * \param[in] dim Direction of the field (XX, YY, ZZ)
+     * \return Frequency of the field
+     */
+    real omega(int dim) const { return efield_[dim].omega(); }
+    /*! \brief Return time of pulse peak
+     *
+     * \param[in] dim Direction of the field (XX, YY, ZZ)
+     * \return Time of pulse peak
+     */
+    real t0(int dim) const { return efield_[dim].t0(); }
+    /*! \brief Return width of the pulse
+     *
+     * \param[in] dim Direction of the field (XX, YY, ZZ)
+     * \return Width of the pulse
+     */
+    real sigma(int dim) const { return efield_[dim].sigma(); }
 
-        /*! \brief Print the field components to a file
-         *
-         * \param[in] t   The time
-         * Will throw and exit with fatal error if file is not open.
-         */
-        void printComponents(double t) const;
+    /*! \brief Print the field components to a file
+     *
+     * \param[in] t   The time
+     * Will throw and exit with fatal error if file is not open.
+     */
+    void printComponents(double t) const;
 
-        //! The field strength in each dimension
-        ElectricFieldData efield_[DIM];
-        //! File pointer for electric field
-        FILE *fpField_;
+    //! The field strength in each dimension
+    ElectricFieldData efield_[DIM];
+    //! File pointer for electric field
+    FILE *fpField_;
 };
 
 void ElectricField::doTpxIO(t_fileio *fio, bool bRead)

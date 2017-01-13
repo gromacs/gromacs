@@ -65,14 +65,14 @@ using gmx::test::MockHelpTopic;
 
 class HelpTestBase : public gmx::test::StringTestBase
 {
-    public:
-        HelpTestBase();
+public:
+    HelpTestBase();
 
-        MockHelpTopic           rootTopic_;
-        gmx::StringOutputStream helpFile_;
-        gmx::TextWriter         writer_;
-        gmx::HelpWriterContext  context_;
-        gmx::HelpManager        manager_;
+    MockHelpTopic           rootTopic_;
+    gmx::StringOutputStream helpFile_;
+    gmx::TextWriter         writer_;
+    gmx::HelpWriterContext  context_;
+    gmx::HelpManager        manager_;
 };
 
 HelpTestBase::HelpTestBase()
@@ -146,8 +146,8 @@ const char *const TestHelpText::text[]  = {
 
 class HelpTopicFormattingTest : public HelpTestBase
 {
-    public:
-        void checkHelpFormatting();
+public:
+    void checkHelpFormatting();
 };
 
 void HelpTopicFormattingTest::checkHelpFormatting()

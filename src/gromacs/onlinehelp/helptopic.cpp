@@ -86,24 +86,24 @@ void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
  */
 class AbstractCompositeHelpTopic::Impl
 {
-    public:
-        //! Container for subtopics.
-        typedef std::vector<HelpTopicPointer> SubTopicList;
-        //! Container for mapping subtopic names to help topic objects.
-        typedef std::map<std::string, const IHelpTopic *> SubTopicMap;
+public:
+    //! Container for subtopics.
+    typedef std::vector<HelpTopicPointer> SubTopicList;
+    //! Container for mapping subtopic names to help topic objects.
+    typedef std::map<std::string, const IHelpTopic *> SubTopicMap;
 
-        /*! \brief
-         * Subtopics in the order they were added.
-         *
-         * Owns the contained subtopics.
-         */
-        SubTopicList subTopics_;
-        /*! \brief
-         * Maps subtopic names to help topic objects.
-         *
-         * Points to objects in the \a subTopics_ map.
-         */
-        SubTopicMap subTopicMap_;
+    /*! \brief
+     * Subtopics in the order they were added.
+     *
+     * Owns the contained subtopics.
+     */
+    SubTopicList subTopics_;
+    /*! \brief
+     * Maps subtopic names to help topic objects.
+     *
+     * Points to objects in the \a subTopics_ map.
+     */
+    SubTopicMap subTopicMap_;
 };
 
 /********************************************************************

@@ -284,113 +284,113 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
  */
 class Sasa : public TrajectoryAnalysisModule
 {
-    public:
-        Sasa();
+public:
+    Sasa();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
-            const SelectionCollection &        selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        const AnalysisDataParallelOptions &opt,
+        const SelectionCollection &        selections);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        /*! \brief
-         * Surface areas as a function of time.
-         *
-         * First column is for the calculation group, and the rest for the
-         * output groups.  This data is always produced.
-         */
-        AnalysisData area_;
-        /*! \brief
-         * Per-atom surface areas as a function of time.
-         *
-         * Contains one data set for each column in `area_`.
-         * Each column corresponds to a selection position in `surfaceSel_`.
-         * This data is only produced if atom or residue areas have been
-         * requested.
-         */
-        AnalysisData atomArea_;
-        /*! \brief
-         * Per-residue surface areas as a function of time.
-         *
-         * Contains one data set for each column in `area_`.
-         * Each column corresponds to a distinct residue `surfaceSel_`.
-         * For example, if `surfaceSel_` selects residues 2, 5, and 7, there
-         * will be three columns here.
-         * This data is only produced if atom or residue areas have been
-         * requested.
-         */
-        AnalysisData residueArea_;
-        /*! \brief
-         * Free energy estimates as a function of time.
-         *
-         * Column layout is the same as for `area_`.
-         * This data is only produced if the output is requested.
-         */
-        AnalysisData dgSolv_;
-        /*! \brief
-         * Total volume and density of the calculation group as a function of
-         * time.
-         *
-         * The first column is the volume and the second column is the density.
-         * This data is only produced if the output is requested.
-         */
-        AnalysisData volume_;
+private:
+    /*! \brief
+     * Surface areas as a function of time.
+     *
+     * First column is for the calculation group, and the rest for the
+     * output groups.  This data is always produced.
+     */
+    AnalysisData area_;
+    /*! \brief
+     * Per-atom surface areas as a function of time.
+     *
+     * Contains one data set for each column in `area_`.
+     * Each column corresponds to a selection position in `surfaceSel_`.
+     * This data is only produced if atom or residue areas have been
+     * requested.
+     */
+    AnalysisData atomArea_;
+    /*! \brief
+     * Per-residue surface areas as a function of time.
+     *
+     * Contains one data set for each column in `area_`.
+     * Each column corresponds to a distinct residue `surfaceSel_`.
+     * For example, if `surfaceSel_` selects residues 2, 5, and 7, there
+     * will be three columns here.
+     * This data is only produced if atom or residue areas have been
+     * requested.
+     */
+    AnalysisData residueArea_;
+    /*! \brief
+     * Free energy estimates as a function of time.
+     *
+     * Column layout is the same as for `area_`.
+     * This data is only produced if the output is requested.
+     */
+    AnalysisData dgSolv_;
+    /*! \brief
+     * Total volume and density of the calculation group as a function of
+     * time.
+     *
+     * The first column is the volume and the second column is the density.
+     * This data is only produced if the output is requested.
+     */
+    AnalysisData volume_;
 
-        /*! \brief
-         * The selection to calculate the surface for.
-         *
-         * Selection::originalId() and Selection::mappedId() store the mapping
-         * from the positions to the columns of `residueArea_`.
-         * The selection is computed with SelectionOption::dynamicMask(), i.e.,
-         * even in the presence of a dynamic selection, the number of returned
-         * positions is fixed, and SelectionPosition::selected() is used.
-         */
-        Selection surfaceSel_;
-        /*! \brief
-         * List of optional additional output groups.
-         *
-         * Each of these must be a subset of the `surfaceSel_`.
-         * Selection::originalId() and Selection::mappedId() store the mapping
-         * from the positions to the corresponsing positions in `surfaceSel_`.
-         */
-        SelectionList outputSel_;
+    /*! \brief
+     * The selection to calculate the surface for.
+     *
+     * Selection::originalId() and Selection::mappedId() store the mapping
+     * from the positions to the columns of `residueArea_`.
+     * The selection is computed with SelectionOption::dynamicMask(), i.e.,
+     * even in the presence of a dynamic selection, the number of returned
+     * positions is fixed, and SelectionPosition::selected() is used.
+     */
+    Selection surfaceSel_;
+    /*! \brief
+     * List of optional additional output groups.
+     *
+     * Each of these must be a subset of the `surfaceSel_`.
+     * Selection::originalId() and Selection::mappedId() store the mapping
+     * from the positions to the corresponsing positions in `surfaceSel_`.
+     */
+    SelectionList outputSel_;
 
-        std::string fnArea_;
-        std::string fnAtomArea_;
-        std::string fnResidueArea_;
-        std::string fnDGSolv_;
-        std::string fnVolume_;
-        std::string fnConnolly_;
+    std::string fnArea_;
+    std::string fnAtomArea_;
+    std::string fnResidueArea_;
+    std::string fnDGSolv_;
+    std::string fnVolume_;
+    std::string fnConnolly_;
 
-        double solsize_;
-        int    ndots_;
-        //double                  minarea_;
-        double dgsDefault_;
-        bool   bIncludeSolute_;
+    double solsize_;
+    int    ndots_;
+    //double                  minarea_;
+    double dgsDefault_;
+    bool   bIncludeSolute_;
 
-        t_topology *top_;
-        //! Combined VdW and probe radii for each atom in the calculation group.
-        std::vector<real> radii_;
-        /*! \brief
-         * Solvation free energy coefficients for each atom in the calculation
-         * group.
-         *
-         * Empty if the free energy output has not been requested.
-         */
-        std::vector<real> dgsFactor_;
-        //! Calculation algorithm.
-        SurfaceAreaCalculator calculator_;
+    t_topology *top_;
+    //! Combined VdW and probe radii for each atom in the calculation group.
+    std::vector<real> radii_;
+    /*! \brief
+     * Solvation free energy coefficients for each atom in the calculation
+     * group.
+     *
+     * Empty if the free energy output has not been requested.
+     */
+    std::vector<real> dgsFactor_;
+    //! Calculation algorithm.
+    SurfaceAreaCalculator calculator_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 Sasa::Sasa()
@@ -737,51 +737,51 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
  */
 class SasaModuleData : public TrajectoryAnalysisModuleData
 {
-    public:
-        /*! \brief
-         * Reserves memory for the frame-local data.
-         *
-         * `residueCount` will be zero if per-residue data is not being
-         * calculated.
-         */
-        SasaModuleData(TrajectoryAnalysisModule *module,
-                       const AnalysisDataParallelOptions &opt,
-                       const SelectionCollection &selections,
-                       int atomCount, int residueCount)
-            : TrajectoryAnalysisModuleData(module, opt, selections)
+public:
+    /*! \brief
+     * Reserves memory for the frame-local data.
+     *
+     * `residueCount` will be zero if per-residue data is not being
+     * calculated.
+     */
+    SasaModuleData(TrajectoryAnalysisModule *module,
+                   const AnalysisDataParallelOptions &opt,
+                   const SelectionCollection &selections,
+                   int atomCount, int residueCount)
+        : TrajectoryAnalysisModuleData(module, opt, selections)
+    {
+        index_.reserve(atomCount);
+        // If the calculation group is not dynamic, pre-calculate
+        // the index, since it is not going to change.
+        for (int i = 0; i < atomCount; ++i)
         {
-            index_.reserve(atomCount);
-            // If the calculation group is not dynamic, pre-calculate
-            // the index, since it is not going to change.
-            for (int i = 0; i < atomCount; ++i)
-            {
-                index_.push_back(i);
-            }
-            atomAreas_.resize(atomCount);
-            res_a_.resize(residueCount);
+            index_.push_back(i);
         }
+        atomAreas_.resize(atomCount);
+        res_a_.resize(residueCount);
+    }
 
-        virtual void finish() { finishDataHandles(); }
+    virtual void finish() { finishDataHandles(); }
 
-        //! Indices of the calculation selection positions selected for the frame.
-        std::vector<int> index_;
-        /*! \brief
-         * Atom areas for each calculation selection position for the frame.
-         *
-         * One entry for each position in the calculation group.
-         * Values for atoms not selected are set to zero.
-         */
-        std::vector<real> atomAreas_;
-        /*! \brief
-         * Working array to accumulate areas for each residue.
-         *
-         * One entry for each distinct residue in the calculation group;
-         * indices are not directly residue numbers or residue indices.
-         *
-         * This vector is empty if residue area calculations are not being
-         * performed.
-         */
-        std::vector<real> res_a_;
+    //! Indices of the calculation selection positions selected for the frame.
+    std::vector<int> index_;
+    /*! \brief
+     * Atom areas for each calculation selection position for the frame.
+     *
+     * One entry for each position in the calculation group.
+     * Values for atoms not selected are set to zero.
+     */
+    std::vector<real> atomAreas_;
+    /*! \brief
+     * Working array to accumulate areas for each residue.
+     *
+     * One entry for each distinct residue in the calculation group;
+     * indices are not directly residue numbers or residue indices.
+     *
+     * This vector is empty if residue area calculations are not being
+     * performed.
+     */
+    std::vector<real> res_a_;
 };
 
 TrajectoryAnalysisModuleDataPointer Sasa::startFrames(

@@ -58,33 +58,33 @@ class SelectionOptionManager;
  */
 class SelectionFileOptionStorage : public AbstractOptionStorage
 {
-    public:
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings   Storage settings.
-         * \param     manager    Manager for this object.
-         */
-        SelectionFileOptionStorage(const SelectionFileOption &settings,
-                                   SelectionOptionManager *   manager);
+public:
+    /*! \brief
+     * Initializes the storage from option settings.
+     *
+     * \param[in] settings   Storage settings.
+     * \param     manager    Manager for this object.
+     */
+    SelectionFileOptionStorage(const SelectionFileOption &settings,
+                               SelectionOptionManager *   manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "file"; }
-        virtual int valueCount() const { return 0; }
-        virtual std::vector<Variant> defaultValues() const { return {}; }
-        virtual std::vector<std::string> defaultValuesAsStrings() const { return {}; }
-        virtual std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const { return values; }
+    virtual OptionInfo &optionInfo() { return info_; }
+    virtual std::string typeString() const { return "file"; }
+    virtual int valueCount() const { return 0; }
+    virtual std::vector<Variant> defaultValues() const { return {}; }
+    virtual std::vector<std::string> defaultValuesAsStrings() const { return {}; }
+    virtual std::vector<Variant>
+    normalizeValues(const std::vector<Variant> &values) const { return values; }
 
-    private:
-        virtual void clearSet();
-        virtual void convertValue(const Variant &value);
-        virtual void processSet();
-        virtual void processAll() {}
+private:
+    virtual void clearSet();
+    virtual void convertValue(const Variant &value);
+    virtual void processSet();
+    virtual void processAll() {}
 
-        SelectionFileOptionInfo info_;
-        SelectionOptionManager &manager_;
-        bool                    bValueParsed_;
+    SelectionFileOptionInfo info_;
+    SelectionOptionManager &manager_;
+    bool                    bValueParsed_;
 };
 
 } // namespace gmx

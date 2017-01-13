@@ -74,109 +74,109 @@ class AnalysisDataPointSetRef;
  */
 class AnalysisDataFrameAverager
 {
-    public:
-        AnalysisDataFrameAverager() : bFinished_(false) {}
+public:
+    AnalysisDataFrameAverager() : bFinished_(false) {}
 
-        /*! \brief
-         * Returns the number of columns in this averager.
-         */
-        int columnCount() const { return values_.size(); }
+    /*! \brief
+     * Returns the number of columns in this averager.
+     */
+    int columnCount() const { return values_.size(); }
 
-        /*! \brief
-         * Sets the number of columns in the input data.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * Typically called from IAnalysisDataModule::dataStarted().
-         *
-         * Must be called exactly once, before setting calling any other method
-         * in the class.
-         */
-        void setColumnCount(int columnCount);
-        /*! \brief
-         * Adds a single value to the average for a given column.
-         *
-         * \param[in] index  Index of the column to add the value to.
-         * \param[in] value  Value to add to the sample.
-         */
-        void addValue(int index, real value);
-        /*! \brief
-         * Accumulates data from a given point set into the average.
-         *
-         * Typically called from IAnalysisDataModule::pointsAdded().
-         *
-         * Each call accumulates the values for those columns that are present
-         * in the point set.  Can be called multiple times for a frame, and
-         * does not need to be called for every frame.
-         */
-        void addPoints(const AnalysisDataPointSetRef &points);
-        /*! \brief
-         * Finalizes the calculation of the averages and variances.
-         *
-         * Does any computation that is not done during the accumulation in
-         * addPoints().  Currently, does nothing, but provided as a placeholder
-         * for more complex implementation.
-         *
-         * Typically called from IAnalysisDataModule::dataFinished().
-         */
-        void finish();
+    /*! \brief
+     * Sets the number of columns in the input data.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * Typically called from IAnalysisDataModule::dataStarted().
+     *
+     * Must be called exactly once, before setting calling any other method
+     * in the class.
+     */
+    void setColumnCount(int columnCount);
+    /*! \brief
+     * Adds a single value to the average for a given column.
+     *
+     * \param[in] index  Index of the column to add the value to.
+     * \param[in] value  Value to add to the sample.
+     */
+    void addValue(int index, real value);
+    /*! \brief
+     * Accumulates data from a given point set into the average.
+     *
+     * Typically called from IAnalysisDataModule::pointsAdded().
+     *
+     * Each call accumulates the values for those columns that are present
+     * in the point set.  Can be called multiple times for a frame, and
+     * does not need to be called for every frame.
+     */
+    void addPoints(const AnalysisDataPointSetRef &points);
+    /*! \brief
+     * Finalizes the calculation of the averages and variances.
+     *
+     * Does any computation that is not done during the accumulation in
+     * addPoints().  Currently, does nothing, but provided as a placeholder
+     * for more complex implementation.
+     *
+     * Typically called from IAnalysisDataModule::dataFinished().
+     */
+    void finish();
 
-        /*! \brief
-         * Returns the computed average for a given column.
-         *
-         * If called before finish(), the results are undefined.
-         */
-        real average(int index) const
-        {
-            GMX_ASSERT(index >= 0 && index < columnCount(),
-                       "Invalid column index");
-            GMX_ASSERT(bFinished_,
-                       "Values available only after finished() has been called");
-            return values_[index].average;
-        }
-        /*! \brief
-         * Returns the computed (sample) variance for a given column.
-         *
-         * If called before finish(), the results are undefined.
-         */
-        real variance(int index) const
-        {
-            GMX_ASSERT(index >= 0 && index < columnCount(),
-                       "Invalid column index");
-            GMX_ASSERT(bFinished_,
-                       "Values available only after finished() has been called");
-            const AverageItem &item = values_[index];
-            return item.samples > 1 ? item.squaredSum / (item.samples - 1) : 0.0;
-        }
-        /*! \brief
-         * Returns the number of samples for a given column.
-         *
-         * If called before finish(), the results are undefined.
-         */
-        int sampleCount(int index) const
-        {
-            GMX_ASSERT(index >= 0 && index <= static_cast<int>(values_.size()),
-                       "Invalid column index");
-            GMX_ASSERT(bFinished_,
-                       "Values available only after finished() has been called");
-            return values_[index].samples;
-        }
+    /*! \brief
+     * Returns the computed average for a given column.
+     *
+     * If called before finish(), the results are undefined.
+     */
+    real average(int index) const
+    {
+        GMX_ASSERT(index >= 0 && index < columnCount(),
+                   "Invalid column index");
+        GMX_ASSERT(bFinished_,
+                   "Values available only after finished() has been called");
+        return values_[index].average;
+    }
+    /*! \brief
+     * Returns the computed (sample) variance for a given column.
+     *
+     * If called before finish(), the results are undefined.
+     */
+    real variance(int index) const
+    {
+        GMX_ASSERT(index >= 0 && index < columnCount(),
+                   "Invalid column index");
+        GMX_ASSERT(bFinished_,
+                   "Values available only after finished() has been called");
+        const AverageItem &item = values_[index];
+        return item.samples > 1 ? item.squaredSum / (item.samples - 1) : 0.0;
+    }
+    /*! \brief
+     * Returns the number of samples for a given column.
+     *
+     * If called before finish(), the results are undefined.
+     */
+    int sampleCount(int index) const
+    {
+        GMX_ASSERT(index >= 0 && index <= static_cast<int>(values_.size()),
+                   "Invalid column index");
+        GMX_ASSERT(bFinished_,
+                   "Values available only after finished() has been called");
+        return values_[index].samples;
+    }
 
-    private:
-        struct AverageItem
-        {
-            AverageItem() : average(0.0), squaredSum(0.0), samples(0) {}
+private:
+    struct AverageItem
+    {
+        AverageItem() : average(0.0), squaredSum(0.0), samples(0) {}
 
-            //! Average of the values so far.
-            double average;
-            //! Sum of squared deviations from the average for values so far.
-            double squaredSum;
-            //! Number of values so far.
-            int samples;
-        };
+        //! Average of the values so far.
+        double average;
+        //! Sum of squared deviations from the average for values so far.
+        double squaredSum;
+        //! Number of values so far.
+        int samples;
+    };
 
-        std::vector<AverageItem> values_;
-        bool                     bFinished_;
+    std::vector<AverageItem> values_;
+    bool                     bFinished_;
 };
 
 } // namespace gmx

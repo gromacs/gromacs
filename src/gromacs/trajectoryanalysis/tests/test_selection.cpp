@@ -55,26 +55,26 @@ namespace gmx
 
 class SelectionTester : public TrajectoryAnalysisModule
 {
-    public:
-        SelectionTester();
-        virtual ~SelectionTester();
+public:
+    SelectionTester();
+    virtual ~SelectionTester();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        void printSelections();
+private:
+    void printSelections();
 
-        SelectionList selections_;
-        int           nmaxind_;
+    SelectionList selections_;
+    int           nmaxind_;
 };
 
 SelectionTester::SelectionTester()

@@ -57,84 +57,84 @@ namespace
 
 class InteractiveSession
 {
-    public:
-        explicit InteractiveSession(gmx::test::ReferenceDataMode mode)
-            : data_(mode), helper_(data_.rootChecker()), nextInputLine_(0)
-        {
-        }
+public:
+    explicit InteractiveSession(gmx::test::ReferenceDataMode mode)
+        : data_(mode), helper_(data_.rootChecker()), nextInputLine_(0)
+    {
+    }
 
-        void addOutput(const char *output)
-        {
-            events_.emplace_back(WriteOutput, output);
-        }
-        void addInputLine(const char *inputLine)
-        {
-            inputLines_.push_back(inputLine);
-        }
-        void addReadInput()
-        {
-            events_.emplace_back(ReadInput, "");
-        }
-        void addInput(const char *inputLine)
-        {
-            addInputLine(inputLine);
-            addReadInput();
-        }
-        void addInputNoNewline(const char *inputLine)
-        {
-            addInputLine(inputLine);
-            helper_.setLastNewline(false);
-            events_.emplace_back(ReadInputNoNewline, "");
-        }
+    void addOutput(const char *output)
+    {
+        events_.emplace_back(WriteOutput, output);
+    }
+    void addInputLine(const char *inputLine)
+    {
+        inputLines_.push_back(inputLine);
+    }
+    void addReadInput()
+    {
+        events_.emplace_back(ReadInput, "");
+    }
+    void addInput(const char *inputLine)
+    {
+        addInputLine(inputLine);
+        addReadInput();
+    }
+    void addInputNoNewline(const char *inputLine)
+    {
+        addInputLine(inputLine);
+        helper_.setLastNewline(false);
+        events_.emplace_back(ReadInputNoNewline, "");
+    }
 
-        void run()
+    void run()
+    {
+        gmx::TextInputStream & input  = helper_.inputStream();
+        gmx::TextOutputStream &output = helper_.outputStream();
+        helper_.setInputLines(inputLines_);
+        std::vector<Event>::const_iterator event;
+        for (event = events_.begin(); event != events_.end(); ++event)
         {
-            gmx::TextInputStream & input  = helper_.inputStream();
-            gmx::TextOutputStream &output = helper_.outputStream();
-            helper_.setInputLines(inputLines_);
-            std::vector<Event>::const_iterator event;
-            for (event = events_.begin(); event != events_.end(); ++event)
+            if (event->first == WriteOutput)
             {
-                if (event->first == WriteOutput)
-                {
-                    output.write(event->second);
-                }
-                else
-                {
-                    std::string expectedLine;
-                    const bool  bInputRemaining = (nextInputLine_ < inputLines_.size());
-                    if (bInputRemaining)
-                    {
-                        expectedLine = inputLines_[nextInputLine_];
-                        if (event->first != ReadInputNoNewline)
-                        {
-                            expectedLine.append("\n");
-                        }
-                    }
-                    ++nextInputLine_;
-                    std::string line;
-                    EXPECT_EQ(bInputRemaining, input.readLine(&line));
-                    EXPECT_EQ(expectedLine, line);
-                }
+                output.write(event->second);
             }
-            helper_.checkSession();
+            else
+            {
+                std::string expectedLine;
+                const bool  bInputRemaining = (nextInputLine_ < inputLines_.size());
+                if (bInputRemaining)
+                {
+                    expectedLine = inputLines_[nextInputLine_];
+                    if (event->first != ReadInputNoNewline)
+                    {
+                        expectedLine.append("\n");
+                    }
+                }
+                ++nextInputLine_;
+                std::string line;
+                EXPECT_EQ(bInputRemaining, input.readLine(&line));
+                EXPECT_EQ(expectedLine, line);
+            }
         }
+        helper_.checkSession();
+    }
 
-    private:
-        enum EventType
-        {
-            ReadInput,
-            ReadInputNoNewline,
-            WriteOutput
-        };
-        // The latter is the output string.
-        typedef std::pair<EventType, const char *> Event;
+private:
+    enum EventType
+    {
+        ReadInput,
+        ReadInputNoNewline,
+        WriteOutput
+    };
+    // The latter is the output string.
+    typedef std::pair<EventType, const char *> Event;
 
-        gmx::test::TestReferenceData     data_;
-        gmx::test::InteractiveTestHelper helper_;
-        std::vector<const char *>        inputLines_;
-        size_t                           nextInputLine_;
-        std::vector<Event>               events_;
+    gmx::test::TestReferenceData     data_;
+    gmx::test::InteractiveTestHelper helper_;
+    std::vector<const char *>        inputLines_;
+    size_t                           nextInputLine_;
+    std::vector<Event>               events_;
 };
 
 TEST(InteractiveTestHelperTest, ChecksSimpleSession)

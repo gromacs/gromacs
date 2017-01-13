@@ -53,50 +53,50 @@ namespace gmx
 
 class SimdDouble
 {
-    public:
-        SimdDouble() {}
+public:
+    SimdDouble() {}
 
-        SimdDouble(double d) : simdInternal_(_mm512_set1_pd(d)) {}
+    SimdDouble(double d) : simdInternal_(_mm512_set1_pd(d)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDouble(__m512d simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDouble(__m512d simd) : simdInternal_(simd) {}
 
-        __m512d simdInternal_;
+    __m512d simdInternal_;
 };
 
 class SimdDInt32
 {
-    public:
-        SimdDInt32() {}
+public:
+    SimdDInt32() {}
 
-        SimdDInt32(std::int32_t i) : simdInternal_(_mm256_set1_epi32(i)) {}
+    SimdDInt32(std::int32_t i) : simdInternal_(_mm256_set1_epi32(i)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDInt32(__m256i simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDInt32(__m256i simd) : simdInternal_(simd) {}
 
-        __m256i simdInternal_;
+    __m256i simdInternal_;
 };
 
 class SimdDBool
 {
-    public:
-        SimdDBool() {}
+public:
+    SimdDBool() {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDBool(__mmask8 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDBool(__mmask8 simd) : simdInternal_(simd) {}
 
-        __mmask8 simdInternal_;
+    __mmask8 simdInternal_;
 };
 
 class SimdDIBool
 {
-    public:
-        SimdDIBool() {}
+public:
+    SimdDIBool() {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDIBool(__mmask16 simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDIBool(__mmask16 simd) : simdInternal_(simd) {}
 
-        __mmask16 simdInternal_;
+    __mmask16 simdInternal_;
 };
 
 static inline SimdDouble gmx_simdcall simdLoad(const double *m)

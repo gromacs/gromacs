@@ -67,103 +67,103 @@ namespace gmx
  */
 class SelectionOptionManager::Impl
 {
+public:
+    /*! \brief
+     * Request for postponed parsing of selections.
+     */
+    struct SelectionRequest
+    {
+        //! Initializes a request for the given option.
+        explicit SelectionRequest(SelectionOptionStorage *storage)
+            : storage_(storage)
+        {
+        }
+
+        //! Returns name of the requested selection optin.
+        const std::string &name() const
+        {
+            return storage_->name();
+        }
+        //! Returns description for the requested selection option.
+        const std::string &description() const
+        {
+            return storage_->description();
+        }
+        /*! \brief
+         * Returns the number of selections requested in this request.
+         *
+         * -1 indicates no upper limit.
+         */
+        int count() const
+        {
+            return storage_->maxValueCount();
+        }
+
+        //! Storage object to which the selections will be added.
+        SelectionOptionStorage *storage_;
+    };
+
+    //! Collection for a list of selection requests.
+    typedef std::vector<SelectionRequest> RequestList;
+    //! Collection for list of option storage objects.
+    typedef std::vector<SelectionOptionStorage *> OptionList;
+
+    /*! \brief
+     * Helper class that clears a request list on scope exit.
+     *
+     * Methods in this class do not throw.
+     */
+    class RequestsClearer
+    {
     public:
-        /*! \brief
-         * Request for postponed parsing of selections.
-         */
-        struct SelectionRequest
+        //! Constructs an object that clears given list on scope exit.
+        explicit RequestsClearer(RequestList *requests)
+            : requests_(requests)
         {
-            //! Initializes a request for the given option.
-            explicit SelectionRequest(SelectionOptionStorage *storage)
-                : storage_(storage)
-            {
-            }
-
-            //! Returns name of the requested selection optin.
-            const std::string &name() const
-            {
-                return storage_->name();
-            }
-            //! Returns description for the requested selection option.
-            const std::string &description() const
-            {
-                return storage_->description();
-            }
-            /*! \brief
-             * Returns the number of selections requested in this request.
-             *
-             * -1 indicates no upper limit.
-             */
-            int count() const
-            {
-                return storage_->maxValueCount();
-            }
-
-            //! Storage object to which the selections will be added.
-            SelectionOptionStorage *storage_;
-        };
-
-        //! Collection for a list of selection requests.
-        typedef std::vector<SelectionRequest> RequestList;
-        //! Collection for list of option storage objects.
-        typedef std::vector<SelectionOptionStorage *> OptionList;
-
-        /*! \brief
-         * Helper class that clears a request list on scope exit.
-         *
-         * Methods in this class do not throw.
-         */
-        class RequestsClearer
+        }
+        //! Clears the request list given to the constructor.
+        ~RequestsClearer()
         {
-            public:
-                //! Constructs an object that clears given list on scope exit.
-                explicit RequestsClearer(RequestList *requests)
-                    : requests_(requests)
-                {
-                }
-                //! Clears the request list given to the constructor.
-                ~RequestsClearer()
-                {
-                    requests_->clear();
-                }
+            requests_->clear();
+        }
 
-            private:
-                RequestList *requests_;
-        };
+    private:
+        RequestList *requests_;
+    };
 
-        /*! \brief
-         * Creates a new selection collection.
-         *
-         * \throws  std::bad_alloc if out of memory.
-         */
-        explicit Impl(SelectionCollection *collection);
+    /*! \brief
+     * Creates a new selection collection.
+     *
+     * \throws  std::bad_alloc if out of memory.
+     */
+    explicit Impl(SelectionCollection *collection);
 
-        /*! \brief
-         * Assign selections from a list to pending requests.
-         *
-         * \param[in] selections  List of selections to assign.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if the assignment cannot be done
-         *      (see parseRequestedFromFile() for documented conditions).
-         *
-         * Loops through \p selections and the pending requests lists in order,
-         * and for each requests, assigns the first yet unassigned selections
-         * from the list.
-         */
-        void placeSelectionsInRequests(const SelectionList &selections);
-        /*! \brief
-         * Adds a request for each required option that is not yet set.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         */
-        void requestUnsetRequiredOptions();
+    /*! \brief
+     * Assign selections from a list to pending requests.
+     *
+     * \param[in] selections  List of selections to assign.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if the assignment cannot be done
+     *      (see parseRequestedFromFile() for documented conditions).
+     *
+     * Loops through \p selections and the pending requests lists in order,
+     * and for each requests, assigns the first yet unassigned selections
+     * from the list.
+     */
+    void placeSelectionsInRequests(const SelectionList &selections);
+    /*! \brief
+     * Adds a request for each required option that is not yet set.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     */
+    void requestUnsetRequiredOptions();
 
-        //! Selection collection to which selections are stored.
-        SelectionCollection &collection_;
-        //! List of selection options (storage objects) this manager manages.
-        OptionList options_;
-        //! List of selections requested for later parsing.
-        RequestList requests_;
+    //! Selection collection to which selections are stored.
+    SelectionCollection &collection_;
+    //! List of selection options (storage objects) this manager manages.
+    OptionList options_;
+    //! List of selections requested for later parsing.
+    RequestList requests_;
 };
 
 SelectionOptionManager::Impl::Impl(SelectionCollection *collection)

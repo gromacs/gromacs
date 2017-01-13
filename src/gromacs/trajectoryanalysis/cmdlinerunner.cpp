@@ -72,22 +72,22 @@ namespace
 
 class RunnerModule : public ICommandLineOptionsModule
 {
-    public:
-        explicit RunnerModule(TrajectoryAnalysisModulePointer module)
-            : module_(std::move(module)), common_(&settings_)
-        {
-        }
+public:
+    explicit RunnerModule(TrajectoryAnalysisModulePointer module)
+        : module_(std::move(module)), common_(&settings_)
+    {
+    }
 
-        virtual void init(CommandLineModuleSettings * /*settings*/) {}
-        virtual void initOptions(IOptionsContainer *                options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+    virtual void init(CommandLineModuleSettings * /*settings*/) {}
+    virtual void initOptions(IOptionsContainer *                options,
+                             ICommandLineOptionsModuleSettings *settings);
+    virtual void optionsFinished();
+    virtual int run();
 
-        TrajectoryAnalysisModulePointer module_;
-        TrajectoryAnalysisSettings      settings_;
-        TrajectoryAnalysisRunnerCommon  common_;
-        SelectionCollection             selections_;
+    TrajectoryAnalysisModulePointer module_;
+    TrajectoryAnalysisSettings      settings_;
+    TrajectoryAnalysisRunnerCommon  common_;
+    SelectionCollection             selections_;
 };
 
 void RunnerModule::initOptions(

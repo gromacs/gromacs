@@ -61,57 +61,57 @@ namespace
  */
 class SimdFloatingpointUtilTest : public SimdTest
 {
-    public:
-        SimdFloatingpointUtilTest()
+public:
+    SimdFloatingpointUtilTest()
+    {
+        // Resize vectors to get the amount of memory we need
+        integerMemory_.resize(GMX_SIMD_REAL_WIDTH);
+
+        // The total memory we allocate corresponds to two work arrays
+        // and 4 values each of GMX_SIMD_REAL_WIDTH.
+        realMemory_.resize(2 * s_workMemSize_ + 4 * GMX_SIMD_REAL_WIDTH);
+
+        offset_ = integerMemory_.data();
+        val0_   = realMemory_.data();
+        val1_   = val0_ + GMX_SIMD_REAL_WIDTH;
+        val2_   = val1_ + GMX_SIMD_REAL_WIDTH;
+        val3_   = val2_ + GMX_SIMD_REAL_WIDTH;
+        mem0_   = val3_ + GMX_SIMD_REAL_WIDTH;
+        mem1_   = mem0_ + s_workMemSize_;
+
+        // Set default values for offset and variables val0_ through val3_
+        // We cannot fill mem_ here since those values depend on the test.
+        for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
-            // Resize vectors to get the amount of memory we need
-            integerMemory_.resize(GMX_SIMD_REAL_WIDTH);
-
-            // The total memory we allocate corresponds to two work arrays
-            // and 4 values each of GMX_SIMD_REAL_WIDTH.
-            realMemory_.resize(2 * s_workMemSize_ + 4 * GMX_SIMD_REAL_WIDTH);
-
-            offset_ = integerMemory_.data();
-            val0_   = realMemory_.data();
-            val1_   = val0_ + GMX_SIMD_REAL_WIDTH;
-            val2_   = val1_ + GMX_SIMD_REAL_WIDTH;
-            val3_   = val2_ + GMX_SIMD_REAL_WIDTH;
-            mem0_   = val3_ + GMX_SIMD_REAL_WIDTH;
-            mem1_   = mem0_ + s_workMemSize_;
-
-            // Set default values for offset and variables val0_ through val3_
-            // We cannot fill mem_ here since those values depend on the test.
-            for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-            {
-                // Use every third point to avoid a continguous access pattern
-                offset_[i] = 3 * i;
-                val0_[i]   = i;
-                val1_[i]   = i + 0.1;
-                val2_[i]   = i + 0.2;
-                val3_[i]   = i + 0.3;
-            }
+            // Use every third point to avoid a continguous access pattern
+            offset_[i] = 3 * i;
+            val0_[i]   = i;
+            val1_[i]   = i + 0.1;
+            val2_[i]   = i + 0.2;
+            val3_[i]   = i + 0.3;
         }
+    }
 
-    protected:
-        //! \brief Size of memory work buffers
-        //
-        // To have a somewhat odd access pattern, we use every
-        // third entry, so the largest value of offset_[i] is 3*GMX_SIMD_REAL_WIDTH.
-        // Then we also allow alignments up to 16, which means the largest index in mem0_[]
-        // that we might access is 16*3*GMX_SIMD_REAL_WIDTH+3.
-        static const std::size_t s_workMemSize_ = 16 * 3 * GMX_SIMD_REAL_WIDTH + 4;
+protected:
+    //! \brief Size of memory work buffers
+    //
+    // To have a somewhat odd access pattern, we use every
+    // third entry, so the largest value of offset_[i] is 3*GMX_SIMD_REAL_WIDTH.
+    // Then we also allow alignments up to 16, which means the largest index in mem0_[]
+    // that we might access is 16*3*GMX_SIMD_REAL_WIDTH+3.
+    static const std::size_t s_workMemSize_ = 16 * 3 * GMX_SIMD_REAL_WIDTH + 4;
 
-        std::vector<int, AlignedAllocator<int> >   integerMemory_;  //!< Aligned integer memory
-        std::vector<real, AlignedAllocator<real> > realMemory_;     //!< Aligned real memory
+    std::vector<int, AlignedAllocator<int> >   integerMemory_;      //!< Aligned integer memory
+    std::vector<real, AlignedAllocator<real> > realMemory_;         //!< Aligned real memory
 
-        int *  offset_;                                             //!< Pointer to offset indices, aligned memory
-        real * val0_;                                               //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
-        real * val1_;                                               //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
-        real * val2_;                                               //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
-        real * val3_;                                               //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    int *  offset_;                                                 //!< Pointer to offset indices, aligned memory
+    real * val0_;                                                   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    real * val1_;                                                   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    real * val2_;                                                   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    real * val3_;                                                   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
 
-        real * mem0_;                                               //!< Pointer to aligned memory, s_workMemSize real values
-        real * mem1_;                                               //!< Pointer to aligned memory, s_workMemSize real values
+    real * mem0_;                                                   //!< Pointer to aligned memory, s_workMemSize real values
+    real * mem1_;                                                   //!< Pointer to aligned memory, s_workMemSize real values
 };
 
 

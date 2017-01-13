@@ -69,17 +69,17 @@ namespace
 
 class SelectionOptionTestBase : public ::testing::Test
 {
-    public:
-        SelectionOptionTestBase();
+public:
+    SelectionOptionTestBase();
 
-        void loadTopology(const char *filename);
+    void loadTopology(const char *filename);
 
-        gmx::SelectionCollection    sc_;
-        gmx::SelectionOptionManager manager_;
-        gmx::Options                options_;
+    gmx::SelectionCollection    sc_;
+    gmx::SelectionOptionManager manager_;
+    gmx::Options                options_;
 
-    private:
-        gmx::test::TopologyManager topManager_;
+private:
+    gmx::test::TopologyManager topManager_;
 };
 
 SelectionOptionTestBase::SelectionOptionTestBase()
@@ -417,8 +417,8 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
 
 class SelectionFileOptionTest : public SelectionOptionTestBase
 {
-    public:
-        SelectionFileOptionTest();
+public:
+    SelectionFileOptionTest();
 };
 
 SelectionFileOptionTest::SelectionFileOptionTest()

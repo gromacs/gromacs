@@ -99,60 +99,60 @@ namespace internal
 
 class FileStreamImpl
 {
-    public:
-        explicit FileStreamImpl(FILE *fp)
-            : fp_(fp), bClose_(false)
+public:
+    explicit FileStreamImpl(FILE *fp)
+        : fp_(fp), bClose_(false)
+    {
+    }
+    FileStreamImpl(const char *filename, const char *mode)
+        : fp_(nullptr), bClose_(true)
+    {
+        fp_ = std::fopen(filename, mode);
+        if (fp_ == nullptr)
         {
+            GMX_THROW_WITH_ERRNO(
+                    FileIOError(formatString("Could not open file '%s'", filename)),
+                    "fopen", errno);
         }
-        FileStreamImpl(const char *filename, const char *mode)
-            : fp_(nullptr), bClose_(true)
+    }
+    ~FileStreamImpl()
+    {
+        if (fp_ != nullptr && bClose_)
         {
-            fp_ = std::fopen(filename, mode);
-            if (fp_ == nullptr)
+            if (std::fclose(fp_) != 0)
             {
-                GMX_THROW_WITH_ERRNO(
-                        FileIOError(formatString("Could not open file '%s'", filename)),
-                        "fopen", errno);
+                // TODO: Log the error somewhere
             }
         }
-        ~FileStreamImpl()
-        {
-            if (fp_ != nullptr && bClose_)
-            {
-                if (std::fclose(fp_) != 0)
-                {
-                    // TODO: Log the error somewhere
-                }
-            }
-        }
+    }
 
-        FILE *handle()
-        {
-            GMX_RELEASE_ASSERT(fp_ != nullptr,
-                               "Attempted to access a file object that is not open");
-            return fp_;
-        }
+    FILE *handle()
+    {
+        GMX_RELEASE_ASSERT(fp_ != nullptr,
+                           "Attempted to access a file object that is not open");
+        return fp_;
+    }
 
-        void close()
+    void close()
+    {
+        GMX_RELEASE_ASSERT(fp_ != nullptr,
+                           "Attempted to close a file object that is not open");
+        GMX_RELEASE_ASSERT(bClose_,
+                           "Attempted to close a file object that should not be");
+        const bool bOk = (std::fclose(fp_) == 0);
+        fp_ = nullptr;
+        if (!bOk)
         {
-            GMX_RELEASE_ASSERT(fp_ != nullptr,
-                               "Attempted to close a file object that is not open");
-            GMX_RELEASE_ASSERT(bClose_,
-                               "Attempted to close a file object that should not be");
-            const bool bOk = (std::fclose(fp_) == 0);
-            fp_ = nullptr;
-            if (!bOk)
-            {
-                GMX_THROW_WITH_ERRNO(
-                        FileIOError("Error while closing file"), "fclose", errno);
-            }
+            GMX_THROW_WITH_ERRNO(
+                    FileIOError("Error while closing file"), "fclose", errno);
         }
+    }
 
-    private:
-        //! File handle for this object (NULL if the stream has been closed).
-        FILE *fp_;
-        //! Whether \p fp_ should be closed by this object.
-        bool bClose_;
+private:
+    //! File handle for this object (NULL if the stream has been closed).
+    FILE *fp_;
+    //! Whether \p fp_ should be closed by this object.
+    bool bClose_;
 };
 
 }   // namespace internal

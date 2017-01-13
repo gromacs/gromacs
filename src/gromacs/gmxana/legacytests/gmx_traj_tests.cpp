@@ -55,30 +55,30 @@ namespace
 class GmxTraj : public gmx::test::IntegrationTestFixture,
                 public ::testing::WithParamInterface<const char *>
 {
-    public:
-        GmxTraj() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
-                    xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
-        {
-        }
+public:
+    GmxTraj() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
+                xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
+    {
+    }
 
-        int runTest(const char *fileName)
-        {
-            gmx::test::CommandLine caller;
-            caller.append("traj");
+    int runTest(const char *fileName)
+    {
+        gmx::test::CommandLine caller;
+        caller.append("traj");
 
-            caller.addOption("-s",  groFileName);
-            caller.addOption("-ox", xvgFileName);
+        caller.addOption("-s",  groFileName);
+        caller.addOption("-ox", xvgFileName);
 
-            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
-            caller.addOption("-f", inputTrajectoryFileName);
+        std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
+        caller.addOption("-f", inputTrajectoryFileName);
 
-            redirectStringToStdin("0\n");
+        redirectStringToStdin("0\n");
 
-            return gmx_traj(caller.argc(), caller.argv());
-        }
+        return gmx_traj(caller.argc(), caller.argv());
+    }
 
-        std::string groFileName;
-        std::string xvgFileName;
+    std::string groFileName;
+    std::string xvgFileName;
 };
 
 /* TODO These tests are actually not very effective, because gmx-traj
@@ -97,30 +97,30 @@ TEST_P(GmxTraj, WithDifferentInputFormats)
 class TrjconvWithIndexGroupSubset : public gmx::test::IntegrationTestFixture,
                                     public ::testing::WithParamInterface<const char *>
 {
-    public:
-        int runTest(const char *fileName)
-        {
-            gmx::test::CommandLine caller;
-            caller.append("trjconv");
+public:
+    int runTest(const char *fileName)
+    {
+        gmx::test::CommandLine caller;
+        caller.append("trjconv");
 
-            caller.addOption("-s", fileManager_.getInputFilePath("spc2.gro"));
+        caller.addOption("-s", fileManager_.getInputFilePath("spc2.gro"));
 
-            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
-            caller.addOption("-f", inputTrajectoryFileName);
+        std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
+        caller.addOption("-f", inputTrajectoryFileName);
 
-            std::string ndxFileName = fileManager_.getInputFilePath("spc2.ndx");
-            caller.addOption("-n", ndxFileName);
+        std::string ndxFileName = fileManager_.getInputFilePath("spc2.ndx");
+        caller.addOption("-n", ndxFileName);
 
-            caller.addOption("-o", fileManager_.getTemporaryFilePath("spc-traj.tng"));
+        caller.addOption("-o", fileManager_.getTemporaryFilePath("spc-traj.tng"));
 
-            redirectStringToStdin("SecondWaterMolecule\n");
+        redirectStringToStdin("SecondWaterMolecule\n");
 
-            /* TODO Ideally, we would then check that the output file
-               has only 3 of the 6 atoms (which it does), but the
-               infrastructure for doing that automatically is still
-               being built. This would also fix the TODO below. */
-            return gmx_trjconv(caller.argc(), caller.argv());
-        }
+        /* TODO Ideally, we would then check that the output file
+           has only 3 of the 6 atoms (which it does), but the
+           infrastructure for doing that automatically is still
+           being built. This would also fix the TODO below. */
+        return gmx_trjconv(caller.argc(), caller.argv());
+    }
 };
 /* TODO These tests are actually not very effective, because trjconv
  * can only return 0 or exit via gmx_fatal() (which currently also

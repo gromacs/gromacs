@@ -727,15 +727,15 @@ namespace gmx
 
 class SurfaceAreaCalculator::Impl
 {
-    public:
-        Impl() : flags_(0)
-        {
-        }
+public:
+    Impl() : flags_(0)
+    {
+    }
 
-        std::vector<real>            unitSphereDots_;
-        ConstArrayRef<real>          radius_;
-        int                          flags_;
-        mutable AnalysisNeighborhood nb_;
+    std::vector<real>            unitSphereDots_;
+    ConstArrayRef<real>          radius_;
+    int                          flags_;
+    mutable AnalysisNeighborhood nb_;
 };
 
 SurfaceAreaCalculator::SurfaceAreaCalculator()

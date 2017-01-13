@@ -83,22 +83,22 @@ namespace gmx
  */
 class MDModules
 {
-    public:
-        MDModules();
-        ~MDModules();
+public:
+    MDModules();
+    ~MDModules();
 
-        /*! \brief
-         * Returns an initialized t_inputrec structure.
-         *
-         * The inputrec structure is owned by MDModules and will be destroyed
-         * with it.
-         */
-        t_inputrec *inputrec();
+    /*! \brief
+     * Returns an initialized t_inputrec structure.
+     *
+     * The inputrec structure is owned by MDModules and will be destroyed
+     * with it.
+     */
+    t_inputrec *inputrec();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

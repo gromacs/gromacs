@@ -47,15 +47,15 @@ namespace gmx
 
 class SimdFIBool
 {
-    public:
-        SimdFIBool() {}
+public:
+    SimdFIBool() {}
 
-        SimdFIBool(bool b) : simdInternal_(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
+    SimdFIBool(bool b) : simdInternal_(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFIBool(__m256i simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFIBool(__m256i simd) : simdInternal_(simd) {}
 
-        __m256i simdInternal_;
+    __m256i simdInternal_;
 };
 
 static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)

@@ -71,46 +71,46 @@ namespace
  */
 class ObsoleteToolModule : public gmx::ICommandLineModule
 {
-    public:
-        //! Creates an obsolete tool module for a tool with the given name.
-        explicit ObsoleteToolModule(const char *name)
-            : name_(name)
-        {
-        }
+public:
+    //! Creates an obsolete tool module for a tool with the given name.
+    explicit ObsoleteToolModule(const char *name)
+        : name_(name)
+    {
+    }
 
-        virtual const char *name() const
-        {
-            return name_;
-        }
-        virtual const char *shortDescription() const
-        {
-            return nullptr;
-        }
+    virtual const char *name() const
+    {
+        return name_;
+    }
+    virtual const char *shortDescription() const
+    {
+        return nullptr;
+    }
 
-        virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
-        {
-        }
-        virtual int run(int /*argc*/, char * /*argv*/[])
-        {
-            printMessage();
-            return 0;
-        }
-        virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
-        {
-            printMessage();
-        }
+    virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
+    {
+    }
+    virtual int run(int /*argc*/, char * /*argv*/[])
+    {
+        printMessage();
+        return 0;
+    }
+    virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
+    {
+        printMessage();
+    }
 
-    private:
-        void printMessage() const
-        {
-            std::fprintf(stderr,
-                         "This tool is no longer present in GROMACS. Please see\n"
-                         "  http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/user-guide/cmdline.html#command-changes\n"
-                         "for ideas how to perform the same tasks with the "
-                         "new tools.\n");
-        }
+private:
+    void printMessage() const
+    {
+        std::fprintf(stderr,
+                     "This tool is no longer present in GROMACS. Please see\n"
+                     "  http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/user-guide/cmdline.html#command-changes\n"
+                     "for ideas how to perform the same tasks with the "
+                     "new tools.\n");
+    }
 
-        const char *name_;
+    const char *name_;
 };
 
 //! Initializer for a module that defaults to nice level zero.

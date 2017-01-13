@@ -67,13 +67,13 @@ std::string TextReader::readFileToString(const std::string &filename)
 
 class TextReader::Impl
 {
-    public:
-        explicit Impl(const TextInputStreamPointer &stream)
-            : stream_(stream)
-        {
-        }
+public:
+    explicit Impl(const TextInputStreamPointer &stream)
+        : stream_(stream)
+    {
+    }
 
-        TextInputStreamPointer stream_;
+    TextInputStreamPointer stream_;
 };
 
 TextReader::TextReader(const std::string &filename)

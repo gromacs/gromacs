@@ -85,67 +85,67 @@ namespace test
  */
 class SimulationRunner
 {
-    public:
-        /*! \brief Constructor, which establishes the fixture that
-         * will own each object */
-        explicit SimulationRunner(IntegrationTestFixture *fixture_);
+public:
+    /*! \brief Constructor, which establishes the fixture that
+     * will own each object */
+    explicit SimulationRunner(IntegrationTestFixture *fixture_);
 
-        //! Use an empty .mdp file as input to grompp
-        void useEmptyMdpFile();
-        //! Use a given string as input to grompp
-        void useStringAsMdpFile(const char *mdpString);
-        //! Use a given string as input to grompp
-        void useStringAsMdpFile(const std::string &mdpString);
-        //! Use a string as -n input to grompp
-        void useStringAsNdxFile(const char *ndxString);
-        //! Use a standard .top and .gro file as input to grompp
-        void useTopGroAndNdxFromDatabase(const char *name);
-        //! Use a standard .gro file as input to grompp
-        void useGroFromDatabase(const char *name);
-        //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
-        int callGrompp(const CommandLine &callerRef);
-        //! Convenience wrapper for a default call to \c callGrompp
-        int callGrompp();
-        //! Calls grompp (on this rank, with a customized command line) to prepare for the mdrun test
-        int callGromppOnThisRank(const CommandLine &callerRef);
-        //! Convenience wrapper for a default call to \c callGromppOnThisRank
-        int callGromppOnThisRank();
-        //! Calls mdrun for testing with a customized command line
-        int callMdrun(const CommandLine &callerRef);
-        /*! \brief Convenience wrapper for calling mdrun for testing
-         * with default command line */
-        int callMdrun();
+    //! Use an empty .mdp file as input to grompp
+    void useEmptyMdpFile();
+    //! Use a given string as input to grompp
+    void useStringAsMdpFile(const char *mdpString);
+    //! Use a given string as input to grompp
+    void useStringAsMdpFile(const std::string &mdpString);
+    //! Use a string as -n input to grompp
+    void useStringAsNdxFile(const char *ndxString);
+    //! Use a standard .top and .gro file as input to grompp
+    void useTopGroAndNdxFromDatabase(const char *name);
+    //! Use a standard .gro file as input to grompp
+    void useGroFromDatabase(const char *name);
+    //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
+    int callGrompp(const CommandLine &callerRef);
+    //! Convenience wrapper for a default call to \c callGrompp
+    int callGrompp();
+    //! Calls grompp (on this rank, with a customized command line) to prepare for the mdrun test
+    int callGromppOnThisRank(const CommandLine &callerRef);
+    //! Convenience wrapper for a default call to \c callGromppOnThisRank
+    int callGromppOnThisRank();
+    //! Calls mdrun for testing with a customized command line
+    int callMdrun(const CommandLine &callerRef);
+    /*! \brief Convenience wrapper for calling mdrun for testing
+     * with default command line */
+    int callMdrun();
 
-    private:
-        //! Provides access to the test fixture, e.g. for the TestFileManager
-        IntegrationTestFixture *fixture_;
-    public:
-        //@{
-        /*! \name Names for frequently used grompp and mdrun output files
-         *
-         * These strings can be set to point to files present in the
-         * source tree, or to temporary files created for the test
-         * fixture. In the latter case,
-         * IntegrationTestFixture::fileManager_ should be used to fill
-         * these strings with paths to files, so that they are created
-         * in a temporary directory and (by default behaviour of
-         * TestFileManager) deleted when the test is complete.
-         */
-        std::string topFileName_;
-        std::string groFileName_;
-        std::string fullPrecisionTrajectoryFileName_;
-        std::string reducedPrecisionTrajectoryFileName_;
-        std::string groOutputFileName_;
-        std::string ndxFileName_;
-        std::string mdpInputFileName_;
-        std::string mdpOutputFileName_;
-        std::string tprFileName_;
-        std::string logFileName_;
-        std::string edrFileName_;
-        std::string cptFileName_;
-        std::string swapFileName_;
-        int         nsteps_;
-        //@}
+private:
+    //! Provides access to the test fixture, e.g. for the TestFileManager
+    IntegrationTestFixture *fixture_;
+public:
+    //@{
+    /*! \name Names for frequently used grompp and mdrun output files
+     *
+     * These strings can be set to point to files present in the
+     * source tree, or to temporary files created for the test
+     * fixture. In the latter case,
+     * IntegrationTestFixture::fileManager_ should be used to fill
+     * these strings with paths to files, so that they are created
+     * in a temporary directory and (by default behaviour of
+     * TestFileManager) deleted when the test is complete.
+     */
+    std::string topFileName_;
+    std::string groFileName_;
+    std::string fullPrecisionTrajectoryFileName_;
+    std::string reducedPrecisionTrajectoryFileName_;
+    std::string groOutputFileName_;
+    std::string ndxFileName_;
+    std::string mdpInputFileName_;
+    std::string mdpOutputFileName_;
+    std::string tprFileName_;
+    std::string logFileName_;
+    std::string edrFileName_;
+    std::string cptFileName_;
+    std::string swapFileName_;
+    int         nsteps_;
+    //@}
 };
 
 /*! \internal
@@ -174,9 +174,9 @@ class SimulationRunner
  */
 class MdrunTestFixtureBase : public IntegrationTestFixture
 {
-    public:
-        MdrunTestFixtureBase();
-        virtual ~MdrunTestFixtureBase();
+public:
+    MdrunTestFixtureBase();
+    virtual ~MdrunTestFixtureBase();
 };
 
 /*! \internal
@@ -189,12 +189,12 @@ class MdrunTestFixtureBase : public IntegrationTestFixture
  */
 class MdrunTestFixture : public IntegrationTestFixture
 {
-    public:
-        MdrunTestFixture();
-        virtual ~MdrunTestFixture();
+public:
+    MdrunTestFixture();
+    virtual ~MdrunTestFixture();
 
-        //! Helper object to manage the preparation for and call of mdrun
-        SimulationRunner runner_;
+    //! Helper object to manage the preparation for and call of mdrun
+    SimulationRunner runner_;
 };
 
 /*! \internal

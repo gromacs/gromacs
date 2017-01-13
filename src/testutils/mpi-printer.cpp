@@ -69,35 +69,35 @@ namespace
 
 class MPIEventForward : public ::testing::TestEventListener
 {
-    public:
-        MPIEventForward(TestEventListener* defaultPrinter, int rank, int size)
-            : defaultPrinter_(defaultPrinter), rank_(rank), size_(size)
-        {
-        }
+public:
+    MPIEventForward(TestEventListener* defaultPrinter, int rank, int size)
+        : defaultPrinter_(defaultPrinter), rank_(rank), size_(size)
+    {
+    }
 
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramStart, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationStart, ::testing::UnitTest, int);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpStart, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpEnd, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseStart, ::testing::TestCase);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestStart, ::testing::TestInfo);
-        virtual void OnTestPartResult(const ::testing::TestPartResult & /*result*/)
-        {
-            // Do nothing; all printing is done in OnTestEnd().
-        }
-        virtual void OnTestEnd(const ::testing::TestInfo &test_info);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseEnd, ::testing::TestCase);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownStart, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownEnd, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationEnd, ::testing::UnitTest, int);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramEnd, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramStart, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationStart, ::testing::UnitTest, int);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpStart, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpEnd, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseStart, ::testing::TestCase);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestStart, ::testing::TestInfo);
+    virtual void OnTestPartResult(const ::testing::TestPartResult & /*result*/)
+    {
+        // Do nothing; all printing is done in OnTestEnd().
+    }
+    virtual void OnTestEnd(const ::testing::TestInfo &test_info);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseEnd, ::testing::TestCase);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownStart, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownEnd, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationEnd, ::testing::UnitTest, int);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramEnd, ::testing::UnitTest);
 
-    private:
-        const std::unique_ptr<TestEventListener> defaultPrinter_;
-        int                                      rank_;
-        int                                      size_;
+private:
+    const std::unique_ptr<TestEventListener> defaultPrinter_;
+    int                                      rank_;
+    int                                      size_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(MPIEventForward);
+    GMX_DISALLOW_COPY_AND_ASSIGN(MPIEventForward);
 };
 
 void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)

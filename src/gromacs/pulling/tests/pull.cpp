@@ -67,94 +67,94 @@ using gmx::test::defaultRealTolerance;
 
 class PullTest : public ::testing::Test
 {
-    protected:
-        PullTest() {}
+protected:
+    PullTest() {}
 
-        void test(int epbc, matrix box)
+    void test(int epbc, matrix box)
+    {
+        t_pbc pbc;
+
+        // PBC stuff
+        set_pbc(&pbc, epbc, box);
+
+        GMX_ASSERT(pbc.ndim_ePBC >= 1, "Tests only support PBC along at least x");
+
+        real boxSizeZSquared;
+        if (pbc.ndim_ePBC > ZZ)
         {
-            t_pbc pbc;
-
-            // PBC stuff
-            set_pbc(&pbc, epbc, box);
-
-            GMX_ASSERT(pbc.ndim_ePBC >= 1, "Tests only support PBC along at least x");
-
-            real boxSizeZSquared;
-            if (pbc.ndim_ePBC > ZZ)
-            {
-                boxSizeZSquared = gmx::square(box[ZZ][ZZ]);
-            }
-            else
-            {
-                boxSizeZSquared = GMX_REAL_MAX;
-            }
-
-            {
-                pull_coord_work_t pcrd;
-                // Distance pulling in all 3 dimensions
-                pcrd.params.eGeom   = epullgDIST;
-                pcrd.params.dim[XX] = 1;
-                pcrd.params.dim[YY] = 1;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
-
-                real minBoxSize2 = GMX_REAL_MAX;
-                for (int d = 0; d < pbc.ndim_ePBC; d++)
-                {
-                    minBoxSize2 = std::min(minBoxSize2, norm2(box[d]));
-                }
-                EXPECT_REAL_EQ_TOL(0.25 * minBoxSize2,
-                                   max_pull_distance2(&pcrd, &pbc),
-                                   defaultRealTolerance());
-            }
-
-            {
-                pull_coord_work_t pcrd;
-                // Distance pulling along Z
-                pcrd.params.eGeom   = epullgDIST;
-                pcrd.params.dim[XX] = 0;
-                pcrd.params.dim[YY] = 0;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
-                EXPECT_REAL_EQ_TOL(0.25 * boxSizeZSquared,
-                                   max_pull_distance2(&pcrd, &pbc),
-                                   defaultRealTolerance());
-            }
-
-            {
-                pull_coord_work_t pcrd;
-                // Directional pulling along Z
-                pcrd.params.eGeom   = epullgDIR;
-                pcrd.params.dim[XX] = 1;
-                pcrd.params.dim[YY] = 1;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
-                pcrd.vec[ZZ] = 1;
-                EXPECT_REAL_EQ_TOL(0.25 * boxSizeZSquared,
-                                   max_pull_distance2(&pcrd, &pbc),
-                                   defaultRealTolerance());
-            }
-
-            {
-                pull_coord_work_t pcrd;
-                // Directional pulling along X
-                pcrd.params.eGeom   = epullgDIR;
-                pcrd.params.dim[XX] = 1;
-                pcrd.params.dim[YY] = 1;
-                pcrd.params.dim[ZZ] = 1;
-                clear_dvec(pcrd.vec);
-                pcrd.vec[XX] = 1;
-
-                real minDist2 = square(box[XX][XX]);
-                for (int d = XX + 1; d < DIM; d++)
-                {
-                    minDist2 -= square(box[d][XX]);
-                }
-                EXPECT_REAL_EQ_TOL(0.25 * minDist2,
-                                   max_pull_distance2(&pcrd, &pbc),
-                                   defaultRealTolerance());
-            }
+            boxSizeZSquared = gmx::square(box[ZZ][ZZ]);
         }
+        else
+        {
+            boxSizeZSquared = GMX_REAL_MAX;
+        }
+
+        {
+            pull_coord_work_t pcrd;
+            // Distance pulling in all 3 dimensions
+            pcrd.params.eGeom   = epullgDIST;
+            pcrd.params.dim[XX] = 1;
+            pcrd.params.dim[YY] = 1;
+            pcrd.params.dim[ZZ] = 1;
+            clear_dvec(pcrd.vec);
+
+            real minBoxSize2 = GMX_REAL_MAX;
+            for (int d = 0; d < pbc.ndim_ePBC; d++)
+            {
+                minBoxSize2 = std::min(minBoxSize2, norm2(box[d]));
+            }
+            EXPECT_REAL_EQ_TOL(0.25 * minBoxSize2,
+                               max_pull_distance2(&pcrd, &pbc),
+                               defaultRealTolerance());
+        }
+
+        {
+            pull_coord_work_t pcrd;
+            // Distance pulling along Z
+            pcrd.params.eGeom   = epullgDIST;
+            pcrd.params.dim[XX] = 0;
+            pcrd.params.dim[YY] = 0;
+            pcrd.params.dim[ZZ] = 1;
+            clear_dvec(pcrd.vec);
+            EXPECT_REAL_EQ_TOL(0.25 * boxSizeZSquared,
+                               max_pull_distance2(&pcrd, &pbc),
+                               defaultRealTolerance());
+        }
+
+        {
+            pull_coord_work_t pcrd;
+            // Directional pulling along Z
+            pcrd.params.eGeom   = epullgDIR;
+            pcrd.params.dim[XX] = 1;
+            pcrd.params.dim[YY] = 1;
+            pcrd.params.dim[ZZ] = 1;
+            clear_dvec(pcrd.vec);
+            pcrd.vec[ZZ] = 1;
+            EXPECT_REAL_EQ_TOL(0.25 * boxSizeZSquared,
+                               max_pull_distance2(&pcrd, &pbc),
+                               defaultRealTolerance());
+        }
+
+        {
+            pull_coord_work_t pcrd;
+            // Directional pulling along X
+            pcrd.params.eGeom   = epullgDIR;
+            pcrd.params.dim[XX] = 1;
+            pcrd.params.dim[YY] = 1;
+            pcrd.params.dim[ZZ] = 1;
+            clear_dvec(pcrd.vec);
+            pcrd.vec[XX] = 1;
+
+            real minDist2 = square(box[XX][XX]);
+            for (int d = XX + 1; d < DIM; d++)
+            {
+                minDist2 -= square(box[d][XX]);
+            }
+            EXPECT_REAL_EQ_TOL(0.25 * minDist2,
+                               max_pull_distance2(&pcrd, &pbc),
+                               defaultRealTolerance());
+        }
+    }
 };
 
 TEST_F (PullTest, MaxPullDistanceXyzScrewBox)

@@ -60,143 +60,143 @@ class KeyValueTreeObject;
 
 class KeyValueTreePath
 {
-    public:
-        KeyValueTreePath() = default;
-        KeyValueTreePath(const std::string &path);
+public:
+    KeyValueTreePath() = default;
+    KeyValueTreePath(const std::string &path);
 
-        void append(const std::string &key) { path_.push_back(key); }
-        void pop_back() { return path_.pop_back(); }
-        std::string pop_last()
-        {
-            std::string result = std::move(path_.back());
-            path_.pop_back();
-            return result;
-        }
+    void append(const std::string &key) { path_.push_back(key); }
+    void pop_back() { return path_.pop_back(); }
+    std::string pop_last()
+    {
+        std::string result = std::move(path_.back());
+        path_.pop_back();
+        return result;
+    }
 
-        bool empty() const { return path_.empty(); }
-        size_t size() const { return path_.size(); }
-        const std::string &operator[](int i) const { return path_[i]; }
-        const std::vector<std::string> &elements() const { return path_; }
+    bool empty() const { return path_.empty(); }
+    size_t size() const { return path_.size(); }
+    const std::string &operator[](int i) const { return path_[i]; }
+    const std::vector<std::string> &elements() const { return path_; }
 
-        std::string toString() const;
+    std::string toString() const;
 
-    private:
-        std::vector<std::string> path_;
+private:
+    std::vector<std::string> path_;
 };
 
 class KeyValueTreeValue
 {
-    public:
-        bool isArray() const;
-        bool isObject() const;
-        template <typename T>
-        bool isType() const { return value_.isType<T>(); }
-        std::type_index type() const { return value_.type(); }
+public:
+    bool isArray() const;
+    bool isObject() const;
+    template <typename T>
+    bool isType() const { return value_.isType<T>(); }
+    std::type_index type() const { return value_.type(); }
 
-        const KeyValueTreeArray & asArray() const;
-        const KeyValueTreeObject &asObject() const;
-        template <typename T>
-        const T &cast() const { return value_.cast<T>(); }
+    const KeyValueTreeArray & asArray() const;
+    const KeyValueTreeObject &asObject() const;
+    template <typename T>
+    const T &cast() const { return value_.cast<T>(); }
 
-        const Variant &asVariant() const { return value_; }
+    const Variant &asVariant() const { return value_; }
 
-    private:
-        explicit KeyValueTreeValue(Variant &&value) : value_(std::move(value)) {}
+private:
+    explicit KeyValueTreeValue(Variant &&value) : value_(std::move(value)) {}
 
-        KeyValueTreeArray &asArray();
-        KeyValueTreeObject &asObject();
+    KeyValueTreeArray &asArray();
+    KeyValueTreeObject &asObject();
 
-        Variant value_;
+    Variant value_;
 
-        friend class KeyValueTreeBuilder;
-        friend class KeyValueTreeObjectBuilder;
-        friend class KeyValueTreeValueBuilder;
+    friend class KeyValueTreeBuilder;
+    friend class KeyValueTreeObjectBuilder;
+    friend class KeyValueTreeValueBuilder;
 };
 
 class KeyValueTreeArray
 {
-    public:
-        bool isObjectArray() const
-        {
-            return std::all_of(values_.begin(), values_.end(),
-                               std::mem_fn(&KeyValueTreeValue::isObject));
-        }
+public:
+    bool isObjectArray() const
+    {
+        return std::all_of(values_.begin(), values_.end(),
+                           std::mem_fn(&KeyValueTreeValue::isObject));
+    }
 
-        const std::vector<KeyValueTreeValue> &values() const { return values_; }
+    const std::vector<KeyValueTreeValue> &values() const { return values_; }
 
-    private:
-        std::vector<KeyValueTreeValue> values_;
+private:
+    std::vector<KeyValueTreeValue> values_;
 
-        friend class KeyValueTreeArrayBuilderBase;
+    friend class KeyValueTreeArrayBuilderBase;
 };
 
 class KeyValueTreeProperty
 {
-    public:
-        const std::string &key() const { return value_->first; }
-        const KeyValueTreeValue &value() const { return value_->second; }
+public:
+    const std::string &key() const { return value_->first; }
+    const KeyValueTreeValue &value() const { return value_->second; }
 
-    private:
-        typedef std::map<std::string, KeyValueTreeValue>::const_iterator
-            IteratorType;
+private:
+    typedef std::map<std::string, KeyValueTreeValue>::const_iterator
+        IteratorType;
 
-        explicit KeyValueTreeProperty(IteratorType value) : value_(value) {}
+    explicit KeyValueTreeProperty(IteratorType value) : value_(value) {}
 
-        IteratorType value_;
+    IteratorType value_;
 
-        friend class KeyValueTreeObject;
+    friend class KeyValueTreeObject;
 };
 
 class KeyValueTreeObject
 {
-    public:
-        KeyValueTreeObject() = default;
-        KeyValueTreeObject(const KeyValueTreeObject &other)
+public:
+    KeyValueTreeObject() = default;
+    KeyValueTreeObject(const KeyValueTreeObject &other)
+    {
+        for (const auto &value : other.values_)
         {
-            for (const auto &value : other.values_)
-            {
-                auto iter = valueMap_.insert(std::make_pair(value.key(), value.value())).first;
-                values_.push_back(KeyValueTreeProperty(iter));
-            }
-        }
-        KeyValueTreeObject &operator=(KeyValueTreeObject &other)
-        {
-            KeyValueTreeObject tmp(other);
-            std::swap(tmp.valueMap_, valueMap_);
-            std::swap(tmp.values_, values_);
-            return *this;
-        }
-        KeyValueTreeObject(KeyValueTreeObject &&)            = default;
-        KeyValueTreeObject &operator=(KeyValueTreeObject &&) = default;
-
-        const std::vector<KeyValueTreeProperty> &properties() const { return values_; }
-
-        bool keyExists(const std::string &key) const
-        {
-            return valueMap_.find(key) != valueMap_.end();
-        }
-        const KeyValueTreeValue &operator[](const std::string &key) const
-        {
-            return valueMap_.at(key);
-        }
-
-    private:
-        KeyValueTreeValue &operator[](const std::string &key)
-        {
-            return valueMap_.at(key);
-        }
-        std::map<std::string, KeyValueTreeValue>::iterator addProperty(const std::string &key, KeyValueTreeValue &&value)
-        {
-            values_.reserve(values_.size() + 1);
-            auto iter = valueMap_.insert(std::make_pair(key, std::move(value))).first;
+            auto iter = valueMap_.insert(std::make_pair(value.key(), value.value())).first;
             values_.push_back(KeyValueTreeProperty(iter));
-            return iter;
         }
+    }
+    KeyValueTreeObject &operator=(KeyValueTreeObject &other)
+    {
+        KeyValueTreeObject tmp(other);
+        std::swap(tmp.valueMap_, valueMap_);
+        std::swap(tmp.values_, values_);
+        return *this;
+    }
+    KeyValueTreeObject(KeyValueTreeObject &&)            = default;
+    KeyValueTreeObject &operator=(KeyValueTreeObject &&) = default;
 
-        std::map<std::string, KeyValueTreeValue> valueMap_;
-        std::vector<KeyValueTreeProperty>        values_;
+    const std::vector<KeyValueTreeProperty> &properties() const { return values_; }
 
-        friend class KeyValueTreeObjectBuilder;
+    bool keyExists(const std::string &key) const
+    {
+        return valueMap_.find(key) != valueMap_.end();
+    }
+    const KeyValueTreeValue &operator[](const std::string &key) const
+    {
+        return valueMap_.at(key);
+    }
+
+private:
+    KeyValueTreeValue &operator[](const std::string &key)
+    {
+        return valueMap_.at(key);
+    }
+    std::map<std::string, KeyValueTreeValue>::iterator addProperty(const std::string &key, KeyValueTreeValue &&value)
+    {
+        values_.reserve(values_.size() + 1);
+        auto iter = valueMap_.insert(std::make_pair(key, std::move(value))).first;
+        values_.push_back(KeyValueTreeProperty(iter));
+        return iter;
+    }
+
+    std::map<std::string, KeyValueTreeValue> valueMap_;
+    std::vector<KeyValueTreeProperty>        values_;
+
+    friend class KeyValueTreeObjectBuilder;
 };
 
 /********************************************************************

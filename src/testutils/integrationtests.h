@@ -63,39 +63,39 @@ namespace test
  */
 class IntegrationTestFixture : public ::testing::Test
 {
-    protected:
-        IntegrationTestFixture();
-        virtual ~IntegrationTestFixture();
+protected:
+    IntegrationTestFixture();
+    virtual ~IntegrationTestFixture();
 
-        /*! \brief Accepts a string as input, writes it to a temporary
-         * file and then reopens stdin to read the contents of that
-         * string.
-         *
-         * \throws FileIOError  when the freopen() fails
-         */
-        void redirectStringToStdin(const char* theString);
+    /*! \brief Accepts a string as input, writes it to a temporary
+     * file and then reopens stdin to read the contents of that
+     * string.
+     *
+     * \throws FileIOError  when the freopen() fails
+     */
+    void redirectStringToStdin(const char* theString);
 
-        /*! \brief Discards stdout while running a test
-         *
-         * \todo Implement this when the output routines are
-         * sufficiently modular to permit it to work. */
-        void redirectStdoutToDevNull();
-        /*! \brief Discards stderr while running a test
-         *
-         * \todo Implement this when the output routines are
-         * sufficiently modular to permit it to work. */
-        void redirectStderrToDevNull();
+    /*! \brief Discards stdout while running a test
+     *
+     * \todo Implement this when the output routines are
+     * sufficiently modular to permit it to work. */
+    void redirectStdoutToDevNull();
+    /*! \brief Discards stderr while running a test
+     *
+     * \todo Implement this when the output routines are
+     * sufficiently modular to permit it to work. */
+    void redirectStderrToDevNull();
 
-        /* TEST_F() constructs derived classes, and those classes and
-         * their member objects might need to access implementation
-         * details, so we cannot use the private access specifer
-         * here. */
-    public:
+    /* TEST_F() constructs derived classes, and those classes and
+     * their member objects might need to access implementation
+     * details, so we cannot use the private access specifer
+     * here. */
+public:
 
-        /*! \brief Object that manages finding input files, writing
-         * temporary output files and cleaning up files.
-         */
-        ::gmx::test::TestFileManager fileManager_;
+    /*! \brief Object that manages finding input files, writing
+     * temporary output files and cleaning up files.
+     */
+    ::gmx::test::TestFileManager fileManager_;
 };
 
 } // namespace test

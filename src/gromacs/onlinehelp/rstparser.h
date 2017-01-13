@@ -66,80 +66,80 @@ class TextLineWrapperSettings;
  */
 class RstParagraphIterator
 {
-    public:
-        /*! \brief
-         * Initializes an iterator for given input text.
-         *
-         * Does not throw.
-         */
-        explicit RstParagraphIterator(const std::string &text);
+public:
+    /*! \brief
+     * Initializes an iterator for given input text.
+     *
+     * Does not throw.
+     */
+    explicit RstParagraphIterator(const std::string &text);
 
-        /*! \brief
-         * Advances the iterator to the next paragraph.
-         *
-         * \returns `false` if there were no more paragraphs.
-         *
-         * Does not throw (except std::bad_alloc if std::string::compare()
-         * throws).
-         */
-        bool nextParagraph();
+    /*! \brief
+     * Advances the iterator to the next paragraph.
+     *
+     * \returns `false` if there were no more paragraphs.
+     *
+     * Does not throw (except std::bad_alloc if std::string::compare()
+     * throws).
+     */
+    bool nextParagraph();
 
-        //! Returns the indentation for first line of this paragraph.
-        int firstLineIndent() const { return firstLineIndent_; }
-        //! Returns the indentation for subsequent lines of this paragraph.
-        int indent() const { return indent_; }
-        /*! \brief
-         * Returns the text
-         *
-         * \param[out] result  Variable to receive the paragraph text.
-         * \throws std::bad_alloc if out of memory.
-         *
-         * Indentation and internal line breaks have been stripped from the
-         * paragraph text (except for literal blocks etc.).  For literal
-         * blocks, the common indentation has been stripped and is returned in
-         * indent() instead.
-         *
-         * Leading newlines are returned to indicate necessary separation from
-         * the preceding paragraph.
-         */
-        void getParagraphText(std::string *result) const;
+    //! Returns the indentation for first line of this paragraph.
+    int firstLineIndent() const { return firstLineIndent_; }
+    //! Returns the indentation for subsequent lines of this paragraph.
+    int indent() const { return indent_; }
+    /*! \brief
+     * Returns the text
+     *
+     * \param[out] result  Variable to receive the paragraph text.
+     * \throws std::bad_alloc if out of memory.
+     *
+     * Indentation and internal line breaks have been stripped from the
+     * paragraph text (except for literal blocks etc.).  For literal
+     * blocks, the common indentation has been stripped and is returned in
+     * indent() instead.
+     *
+     * Leading newlines are returned to indicate necessary separation from
+     * the preceding paragraph.
+     */
+    void getParagraphText(std::string *result) const;
 
-    private:
-        enum ParagraphType
-        {
-            eParagraphType_Normal,
-            eParagraphType_Literal,
-            eParagraphType_Title
-        };
+private:
+    enum ParagraphType
+    {
+        eParagraphType_Normal,
+        eParagraphType_Literal,
+        eParagraphType_Title
+    };
 
-        //! The text to iterate over.
-        const std::string &text_;
+    //! The text to iterate over.
+    const std::string &text_;
 
-        //! Start of the current paragraph.
-        size_t begin_;
-        //! End of the current paragraph (C++-style iterator).
-        size_t end_;
-        //! Type of the current paragraph.
-        ParagraphType type_;
-        //! Number of newlines to print before the current paragraph.
-        int breakSize_;
-        //! Indentation of the first line of this paragraph.
-        int firstLineIndent_;
-        //! (Minimum) indentation of other lines in this paragraph.
-        int indent_;
+    //! Start of the current paragraph.
+    size_t begin_;
+    //! End of the current paragraph (C++-style iterator).
+    size_t end_;
+    //! Type of the current paragraph.
+    ParagraphType type_;
+    //! Number of newlines to print before the current paragraph.
+    int breakSize_;
+    //! Indentation of the first line of this paragraph.
+    int firstLineIndent_;
+    //! (Minimum) indentation of other lines in this paragraph.
+    int indent_;
 
-        //! Start of the next paragrah.
-        size_t nextBegin_;
-        //! Number of newlines to print after the current paragraph.
-        int nextBreakSize_;
-        /*! \brief
-         * Indentation of the preceding paragraph that contained `::`.
-         *
-         * If the next paragraph is not a literal block, the value is `-1`.
-         */
-        int literalIndent_;
+    //! Start of the next paragrah.
+    size_t nextBegin_;
+    //! Number of newlines to print after the current paragraph.
+    int nextBreakSize_;
+    /*! \brief
+     * Indentation of the preceding paragraph that contained `::`.
+     *
+     * If the next paragraph is not a literal block, the value is `-1`.
+     */
+    int literalIndent_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(RstParagraphIterator);
+    GMX_DISALLOW_COPY_AND_ASSIGN(RstParagraphIterator);
 };
 
 } // namespace gmx

@@ -55,40 +55,40 @@ namespace test
 
 class MockHelpTopic : public AbstractCompositeHelpTopic
 {
-    public:
-        static MockHelpTopic &addSubTopic(
-            gmx::AbstractCompositeHelpTopic *parent,
-            const char *name, const char *title, const char *text);
+public:
+    static MockHelpTopic &addSubTopic(
+        gmx::AbstractCompositeHelpTopic *parent,
+        const char *name, const char *title, const char *text);
 
-        MockHelpTopic(const char *name, const char *title, const char *text);
-        virtual ~MockHelpTopic();
+    MockHelpTopic(const char *name, const char *title, const char *text);
+    virtual ~MockHelpTopic();
 
-        virtual const char *name() const;
-        virtual const char *title() const;
+    virtual const char *name() const;
+    virtual const char *title() const;
 
-        MOCK_CONST_METHOD1(writeHelp, void(const HelpWriterContext &context));
+    MOCK_CONST_METHOD1(writeHelp, void(const HelpWriterContext &context));
 
-        MockHelpTopic &addSubTopic(const char *name, const char *title,
-                                   const char *text);
-        using AbstractCompositeHelpTopic::addSubTopic;
+    MockHelpTopic &addSubTopic(const char *name, const char *title,
+                               const char *text);
+    using AbstractCompositeHelpTopic::addSubTopic;
 
-        /*! \brief
-         * Calls base class writeHelp() method.
-         *
-         * This provides the possibility for the mock to do the actual help
-         * writing.
-         */
-        void writeHelpBase(const HelpWriterContext &context)
-        {
-            AbstractCompositeHelpTopic::writeHelp(context);
-        }
+    /*! \brief
+     * Calls base class writeHelp() method.
+     *
+     * This provides the possibility for the mock to do the actual help
+     * writing.
+     */
+    void writeHelpBase(const HelpWriterContext &context)
+    {
+        AbstractCompositeHelpTopic::writeHelp(context);
+    }
 
-    private:
-        virtual std::string helpText() const;
+private:
+    virtual std::string helpText() const;
 
-        const char *name_;
-        const char *title_;
-        const char *text_;
+    const char *name_;
+    const char *title_;
+    const char *text_;
 };
 
 } // namespace test

@@ -47,29 +47,29 @@ namespace gmx
 
 class Simd4Float
 {
-    public:
-        Simd4Float() {}
+public:
+    Simd4Float() {}
 
-        Simd4Float(float f) : simdInternal_(vdupq_n_f32(f)) {}
+    Simd4Float(float f) : simdInternal_(vdupq_n_f32(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        Simd4Float(float32x4_t simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4Float(float32x4_t simd) : simdInternal_(simd) {}
 
-        float32x4_t simdInternal_;
+    float32x4_t simdInternal_;
 };
 
 class Simd4FBool
 {
-    public:
-        Simd4FBool() {}
+public:
+    Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
+    //! \brief Construct from scalar bool
+    Simd4FBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
 
-        // Internal utility constructor to simplify return statements
-        Simd4FBool(uint32x4_t simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    Simd4FBool(uint32x4_t simd) : simdInternal_(simd) {}
 
-        uint32x4_t simdInternal_;
+    uint32x4_t simdInternal_;
 };
 
 static inline Simd4Float gmx_simdcall load4(const float *m)

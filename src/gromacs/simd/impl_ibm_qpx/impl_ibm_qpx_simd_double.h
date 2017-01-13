@@ -56,46 +56,46 @@ namespace gmx
 
 class SimdDouble
 {
-    public:
-        SimdDouble() {}
+public:
+    SimdDouble() {}
 
-        SimdDouble(double d) : simdInternal_(vec_splats(d)) {}
+    SimdDouble(double d) : simdInternal_(vec_splats(d)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDouble(vector4double simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDouble(vector4double simd) : simdInternal_(simd) {}
 
-        vector4double simdInternal_;
+    vector4double simdInternal_;
 };
 
 class SimdDInt32
 {
-    public:
-        SimdDInt32() {}
+public:
+    SimdDInt32() {}
 
-        SimdDInt32(std::int32_t i)
-        {
-            GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) idata[GMX_SIMD_DINT32_WIDTH];
-            idata[0]      = i;
-            simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
-        }
+    SimdDInt32(std::int32_t i)
+    {
+        GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH) idata[GMX_SIMD_DINT32_WIDTH];
+        idata[0]      = i;
+        simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
+    }
 
-        // Internal utility constructor to simplify return statements
-        SimdDInt32(vector4double simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDInt32(vector4double simd) : simdInternal_(simd) {}
 
-        vector4double simdInternal_;
+    vector4double simdInternal_;
 };
 
 class SimdDBool
 {
-    public:
-        SimdDBool() {}
+public:
+    SimdDBool() {}
 
-        SimdDBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
+    SimdDBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdDBool(vector4double simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdDBool(vector4double simd) : simdInternal_(simd) {}
 
-        vector4double simdInternal_;
+    vector4double simdInternal_;
 };
 
 static inline SimdDouble gmx_simdcall simdLoad(const double *m)

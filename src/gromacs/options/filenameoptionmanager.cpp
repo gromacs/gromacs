@@ -109,19 +109,19 @@ std::string findExistingExtension(const std::string &         prefix,
  */
 class FileNameOptionManager::Impl
 {
-    public:
-        Impl()
-            : redirector_(&defaultFileInputRedirector()),
-              bInputCheckingDisabled_(false)
-        {
-        }
+public:
+    Impl()
+        : redirector_(&defaultFileInputRedirector()),
+          bInputCheckingDisabled_(false)
+    {
+    }
 
-        //! Redirector for file existence checks.
-        const IFileInputRedirector *redirector_;
-        //! Global default file name, if set.
-        std::string defaultFileName_;
-        //! Whether input option processing has been disabled.
-        bool bInputCheckingDisabled_;
+    //! Redirector for file existence checks.
+    const IFileInputRedirector *redirector_;
+    //! Global default file name, if set.
+    std::string defaultFileName_;
+    //! Whether input option processing has been disabled.
+    bool bInputCheckingDisabled_;
 };
 
 /********************************************************************

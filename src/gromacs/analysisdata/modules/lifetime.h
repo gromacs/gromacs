@@ -78,32 +78,32 @@ namespace gmx
 class AnalysisDataLifetimeModule : public AbstractAnalysisArrayData,
                                    public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataLifetimeModule();
-        virtual ~AnalysisDataLifetimeModule();
+public:
+    AnalysisDataLifetimeModule();
+    virtual ~AnalysisDataLifetimeModule();
 
-        /*! \brief
-         * Sets a cumulative histogram mode.
-         *
-         * \param[in] bCumulative If true, all subintervals of a long
-         *   interval are also explicitly added into the histogram.
-         *
-         * Does not throw.
-         */
-        void setCumulative(bool bCumulative);
+    /*! \brief
+     * Sets a cumulative histogram mode.
+     *
+     * \param[in] bCumulative If true, all subintervals of a long
+     *   interval are also explicitly added into the histogram.
+     *
+     * Does not throw.
+     */
+    void setCumulative(bool bCumulative);
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataLifetimeModule object.

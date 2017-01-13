@@ -74,41 +74,41 @@ namespace test
  */
 class TestFileManager::Impl
 {
-    public:
-        //! Global test input data path set with setDataInputDirectory().
-        static std::string s_inputDirectory;
+public:
+    //! Global test input data path set with setDataInputDirectory().
+    static std::string s_inputDirectory;
 
-        //! Global temporary output directory for tests, set with setGlobalOutputTempDirectory().
-        static const char *s_globalOutputTempDirectory;
+    //! Global temporary output directory for tests, set with setGlobalOutputTempDirectory().
+    static const char *s_globalOutputTempDirectory;
 
-        //! Container type for names of temporary files.
-        typedef std::set<std::string> FileNameList;
+    //! Container type for names of temporary files.
+    typedef std::set<std::string> FileNameList;
 
-        /*! \brief Constructor
-         *
-         * \param path Value for the outputTempDirectory, typically
-         * set by default from s_globalOutputTempDirectory */
-        explicit Impl(const char *path)
-            : outputTempDirectory_(path)
-        {
-            GMX_RELEASE_ASSERT(Directory::exists(outputTempDirectory_),
-                               "Directory for tests' temporary files does not exist");
-        }
+    /*! \brief Constructor
+     *
+     * \param path Value for the outputTempDirectory, typically
+     * set by default from s_globalOutputTempDirectory */
+    explicit Impl(const char *path)
+        : outputTempDirectory_(path)
+    {
+        GMX_RELEASE_ASSERT(Directory::exists(outputTempDirectory_),
+                           "Directory for tests' temporary files does not exist");
+    }
 
-        /*! \brief
-         * Try to remove all temporary files.
-         *
-         * Does not throw; errors (e.g., missing files) are silently ignored.
-         */
-        void removeFiles();
+    /*! \brief
+     * Try to remove all temporary files.
+     *
+     * Does not throw; errors (e.g., missing files) are silently ignored.
+     */
+    void removeFiles();
 
-        //! List of unique paths returned by getTemporaryFilePath().
-        FileNameList files_;
+    //! List of unique paths returned by getTemporaryFilePath().
+    FileNameList files_;
 
-        /*! \brief Temporary output directory local to the current
-         * test, set by a test with setOutputTempDirectory() if the
-         * global default is inappropriate. */
-        std::string outputTempDirectory_;
+    /*! \brief Temporary output directory local to the current
+     * test, set by a test with setOutputTempDirectory() if the
+     * global default is inappropriate. */
+    std::string outputTempDirectory_;
 };
 
 std::string TestFileManager::Impl::s_inputDirectory;

@@ -76,98 +76,98 @@ class SelectionOptionStorage;
  */
 class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef SelectionOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef SelectionOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name)
-            : MyBase(name), defaultText_(""),
-              selectionFlags_(efSelection_DisallowEmpty)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit SelectionOption(const char *name)
+        : MyBase(name), defaultText_(""),
+          selectionFlags_(efSelection_DisallowEmpty)
+    {
+    }
 
-        /*! \brief
-         * Request velocity evaluation for output positions.
-         *
-         * \see Selection::setEvaluateVelocities()
-         */
-        MyClass &evaluateVelocities()
-        { selectionFlags_.set(efSelection_EvaluateVelocities); return me(); }
-        /*! \brief
-         * Request force evaluation for output positions.
-         *
-         * \see Selection::setEvaluateForces()
-         */
-        MyClass &evaluateForces()
-        { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
-        /*! \brief
-         * Only accept selections that evaluate to atom positions.
-         */
-        MyClass &onlyAtoms()
-        { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
-        /*! \brief
-         * Only accept selections that evaluate to atom positions in sorted order.
-         */
-        MyClass &onlySortedAtoms()
-        {
-            selectionFlags_.set(efSelection_OnlyAtoms);
-            selectionFlags_.set(efSelection_OnlySorted);
-            return me();
-        }
-        /*! \brief
-         * Only accept static selections for this option.
-         */
-        MyClass &onlyStatic()
-        { selectionFlags_.set(efSelection_OnlyStatic); return me(); }
-        /*! \brief
-         * Handle dynamic selections for this option with position masks.
-         *
-         * \see Selection
-         * \see SelectionPosition::selected()
-         */
-        MyClass &dynamicMask()
-        { selectionFlags_.set(efSelection_DynamicMask); return me(); }
-        /*! \brief
-         * Allow specifying an unconditionally empty selection for this option.
-         *
-         * If this option is not set, selections that are unconditionally empty
-         * (i.e., can never match any atoms) result in errors.
-         * Note that even without this option, it is still possible that a
-         * dynamic selection evaluates to zero atoms for some frames.
-         */
-        MyClass &allowEmpty()
-        { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
+    /*! \brief
+     * Request velocity evaluation for output positions.
+     *
+     * \see Selection::setEvaluateVelocities()
+     */
+    MyClass &evaluateVelocities()
+    { selectionFlags_.set(efSelection_EvaluateVelocities); return me(); }
+    /*! \brief
+     * Request force evaluation for output positions.
+     *
+     * \see Selection::setEvaluateForces()
+     */
+    MyClass &evaluateForces()
+    { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
+    /*! \brief
+     * Only accept selections that evaluate to atom positions.
+     */
+    MyClass &onlyAtoms()
+    { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
+    /*! \brief
+     * Only accept selections that evaluate to atom positions in sorted order.
+     */
+    MyClass &onlySortedAtoms()
+    {
+        selectionFlags_.set(efSelection_OnlyAtoms);
+        selectionFlags_.set(efSelection_OnlySorted);
+        return me();
+    }
+    /*! \brief
+     * Only accept static selections for this option.
+     */
+    MyClass &onlyStatic()
+    { selectionFlags_.set(efSelection_OnlyStatic); return me(); }
+    /*! \brief
+     * Handle dynamic selections for this option with position masks.
+     *
+     * \see Selection
+     * \see SelectionPosition::selected()
+     */
+    MyClass &dynamicMask()
+    { selectionFlags_.set(efSelection_DynamicMask); return me(); }
+    /*! \brief
+     * Allow specifying an unconditionally empty selection for this option.
+     *
+     * If this option is not set, selections that are unconditionally empty
+     * (i.e., can never match any atoms) result in errors.
+     * Note that even without this option, it is still possible that a
+     * dynamic selection evaluates to zero atoms for some frames.
+     */
+    MyClass &allowEmpty()
+    { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
 
-        /*! \brief
-         * Sets default selection text for the option.
-         *
-         * If the option is not set by the user, the provided text is parsed as
-         * the value of the selection.
-         */
-        MyClass &defaultSelectionText(const char *text)
-        { defaultText_ = text; return me(); }
+    /*! \brief
+     * Sets default selection text for the option.
+     *
+     * If the option is not set by the user, the provided text is parsed as
+     * the value of the selection.
+     */
+    MyClass &defaultSelectionText(const char *text)
+    { defaultText_ = text; return me(); }
 
-    private:
-        // Disable possibility to allow multiple occurrences, since it isn't
-        // implemented.
-        using MyBase::allowMultiple;
-        // Disable default value because it is impossible to provide a
-        // Selection object.
-        using MyBase::defaultValue;
-        using MyBase::defaultValueIfSet;
+private:
+    // Disable possibility to allow multiple occurrences, since it isn't
+    // implemented.
+    using MyBase::allowMultiple;
+    // Disable default value because it is impossible to provide a
+    // Selection object.
+    using MyBase::defaultValue;
+    using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const;
 
-        const char *   defaultText_;
-        SelectionFlags selectionFlags_;
+    const char *   defaultText_;
+    SelectionFlags selectionFlags_;
 
-        /*! \brief
-         * Needed to initialize SelectionOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class SelectionOptionStorage;
+    /*! \brief
+     * Needed to initialize SelectionOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class SelectionOptionStorage;
 };
 
 /*! \brief
@@ -216,82 +216,82 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
  */
 class SelectionOptionInfo : public OptionInfo
 {
-    public:
-        /*! \brief
-         * Creates option info object for given storage object.
-         *
-         * Does not throw.
-         */
-        explicit SelectionOptionInfo(SelectionOptionStorage *option);
+public:
+    /*! \brief
+     * Creates option info object for given storage object.
+     *
+     * Does not throw.
+     */
+    explicit SelectionOptionInfo(SelectionOptionStorage *option);
 
-        /*! \brief
-         * Sets the number of selections allowed for the option.
-         *
-         * \param[in] count  Number of allowed selections.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if values have already been provided
-         *      and their count does not match.
-         */
-        void setValueCount(int count);
+    /*! \brief
+     * Sets the number of selections allowed for the option.
+     *
+     * \param[in] count  Number of allowed selections.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if values have already been provided
+     *      and their count does not match.
+     */
+    void setValueCount(int count);
 
-        /*! \brief
-         * Sets whether this option evaluates velocities for positions.
-         *
-         * \param[in] bEnabled  If true, velocities are evaluated.
-         *
-         * Does not throw.
-         *
-         * \see Selection::setEvaluateVelocities()
-         */
-        void setEvaluateVelocities(bool bEnabled);
-        /*! \brief
-         * Sets whether this option evaluates forces for positions.
-         *
-         * \param[in] bEnabled  If true, forces are evaluated.
-         *
-         * Does not throw.
-         *
-         * \see Selection::setEvaluateForces()
-         */
-        void setEvaluateForces(bool bEnabled);
-        /*! \brief
-         * Sets whether this option accepts positions that come from multiple
-         * atoms.
-         *
-         * \param[in] bEnabled  If true, the option accepts only positions that
-         *      evaluate to atom positions.
-         *
-         * \see SelectionOption::onlyAtoms()
-         */
-        void setOnlyAtoms(bool bEnabled);
-        /*! \brief
-         * Sets whether this option accepts dynamic selections.
-         *
-         * \param[in] bEnabled  If true, the option accepts only static
-         *      selections.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if dynamic selections have already been
-         *      provided.
-         *
-         * Strong exception safety guarantee.
-         *
-         * \see SelectionOption::onlyStatic()
-         */
-        void setOnlyStatic(bool bEnabled);
-        /*! \brief
-         * Sets whether this option uses position masks for dynamic selections.
-         *
-         * \param[in] bEnabled  If true, the position masks are used.
-         *
-         * Does not throw.
-         *
-         * \see SelectionOption::dynamicMask()
-         */
-        void setDynamicMask(bool bEnabled);
+    /*! \brief
+     * Sets whether this option evaluates velocities for positions.
+     *
+     * \param[in] bEnabled  If true, velocities are evaluated.
+     *
+     * Does not throw.
+     *
+     * \see Selection::setEvaluateVelocities()
+     */
+    void setEvaluateVelocities(bool bEnabled);
+    /*! \brief
+     * Sets whether this option evaluates forces for positions.
+     *
+     * \param[in] bEnabled  If true, forces are evaluated.
+     *
+     * Does not throw.
+     *
+     * \see Selection::setEvaluateForces()
+     */
+    void setEvaluateForces(bool bEnabled);
+    /*! \brief
+     * Sets whether this option accepts positions that come from multiple
+     * atoms.
+     *
+     * \param[in] bEnabled  If true, the option accepts only positions that
+     *      evaluate to atom positions.
+     *
+     * \see SelectionOption::onlyAtoms()
+     */
+    void setOnlyAtoms(bool bEnabled);
+    /*! \brief
+     * Sets whether this option accepts dynamic selections.
+     *
+     * \param[in] bEnabled  If true, the option accepts only static
+     *      selections.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if dynamic selections have already been
+     *      provided.
+     *
+     * Strong exception safety guarantee.
+     *
+     * \see SelectionOption::onlyStatic()
+     */
+    void setOnlyStatic(bool bEnabled);
+    /*! \brief
+     * Sets whether this option uses position masks for dynamic selections.
+     *
+     * \param[in] bEnabled  If true, the position masks are used.
+     *
+     * Does not throw.
+     *
+     * \see SelectionOption::dynamicMask()
+     */
+    void setDynamicMask(bool bEnabled);
 
-    private:
-        SelectionOptionStorage &option();
-        const SelectionOptionStorage &option() const;
+private:
+    SelectionOptionStorage &option();
+    const SelectionOptionStorage &option() const;
 };
 
 } // namespace gmx

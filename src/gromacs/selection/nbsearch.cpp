@@ -120,273 +120,273 @@ namespace internal
 
 class AnalysisNeighborhoodSearchImpl
 {
-    public:
-        typedef AnalysisNeighborhoodPairSearch::ImplPointer
-            PairSearchImplPointer;
-        typedef std::vector<PairSearchImplPointer> PairSearchList;
-        typedef std::vector<std::vector<int> > CellList;
+public:
+    typedef AnalysisNeighborhoodPairSearch::ImplPointer
+        PairSearchImplPointer;
+    typedef std::vector<PairSearchImplPointer> PairSearchList;
+    typedef std::vector<std::vector<int> > CellList;
 
-        explicit AnalysisNeighborhoodSearchImpl(real cutoff);
-        ~AnalysisNeighborhoodSearchImpl();
+    explicit AnalysisNeighborhoodSearchImpl(real cutoff);
+    ~AnalysisNeighborhoodSearchImpl();
 
-        /*! \brief
-         * Initializes the search with a given box and reference positions.
-         *
-         * \param[in] mode            Search mode to use.
-         * \param[in] bXY             Whether to use 2D searching.
-         * \param[in] excls           Exclusions.
-         * \param[in] pbc             PBC information.
-         * \param[in] positions       Set of reference positions.
-         */
-        void init(AnalysisNeighborhood::SearchMode     mode,
-                  bool                                 bXY,
-                  const t_blocka *                     excls,
-                  const t_pbc *                        pbc,
-                  const AnalysisNeighborhoodPositions &positions);
-        PairSearchImplPointer getPairSearch();
+    /*! \brief
+     * Initializes the search with a given box and reference positions.
+     *
+     * \param[in] mode            Search mode to use.
+     * \param[in] bXY             Whether to use 2D searching.
+     * \param[in] excls           Exclusions.
+     * \param[in] pbc             PBC information.
+     * \param[in] positions       Set of reference positions.
+     */
+    void init(AnalysisNeighborhood::SearchMode     mode,
+              bool                                 bXY,
+              const t_blocka *                     excls,
+              const t_pbc *                        pbc,
+              const AnalysisNeighborhoodPositions &positions);
+    PairSearchImplPointer getPairSearch();
 
-        real cutoffSquared() const { return cutoff2_; }
-        bool usesGridSearch() const { return bGrid_; }
+    real cutoffSquared() const { return cutoff2_; }
+    bool usesGridSearch() const { return bGrid_; }
 
-    private:
-        /*! \brief
-         * Checks the efficiency and possibility of doing grid-based searching.
-         *
-         * \param[in] bForce  If `true`, grid search will be forced if possible.
-         * \returns   `false` if grid search is not suitable.
-         */
-        bool checkGridSearchEfficiency(bool bForce);
-        /*! \brief
-         * Determines a suitable grid size and sets up the cells.
-         *
-         * \param[in] box          Box vectors (should not have zero vectors).
-         * \param[in] bSingleCell  If `true`, the corresponding dimension will
-         *     be forced to use a single cell.
-         * \param[in] posCount     Number of positions that will be put on the
-         *     grid.
-         * \returns   `false` if grid search is not suitable.
-         */
-        bool initGridCells(const matrix box, bool bSingleCell[DIM],
-                           int posCount);
-        /*! \brief
-         * Sets ua a search grid for a given box.
-         *
-         * \param[in] pbc      Information about the box.
-         * \param[in] posCount Number of positions in \p x.
-         * \param[in] x        Reference positions that will be put on the grid.
-         * \param[in] bForce   If `true`, grid searching will be used if at all
-         *     possible, even if a simple search might give better performance.
-         * \returns   `false` if grid search is not suitable.
-         */
-        bool initGrid(const t_pbc &pbc, int posCount, const rvec x[], bool bForce);
-        /*! \brief
-         * Maps a point into a grid cell.
-         *
-         * \param[in]  x    Point to map.
-         * \param[out] cell Fractional cell coordinates of \p x on the grid.
-         * \param[out] xout Coordinates to use.
-         *
-         * \p xout will be within the rectangular unit cell in dimensions where
-         * the grid is periodic.  For other dimensions, both \p xout and
-         * \p cell can be outside the grid/unit cell.
-         */
-        void mapPointToGridCell(const rvec x, rvec cell, rvec xout) const;
-        /*! \brief
-         * Calculates linear index of a grid cell.
-         *
-         * \param[in]  cell Cell indices (must be within the grid).
-         * \returns    Linear index of \p cell.
-         */
-        int getGridCellIndex(const ivec cell) const;
-        /*! \brief
-         * Adds an index into a grid cell.
-         *
-         * \param[in]  cell Fractional cell coordinates into which \p i should
-         *     be added.
-         * \param[in]  i    Index to add.
-         *
-         * \p cell should satisfy the conditions that \p mapPointToGridCell()
-         * produces.
-         */
-        void addToGridCell(const rvec cell, int i);
-        /*! \brief
-         * Initializes a cell pair loop for a dimension.
-         *
-         * \param[in]     centerCell Fractional cell coordiates of the particle
-         *     for which pairs are being searched.
-         * \param[in,out] cell       Current/initial cell to loop over.
-         * \param[in,out] upperBound Last cell to loop over.
-         * \param[in]     dim        Dimension to initialize in this call.
-         *
-         * Initializes `cell[dim]` and `upperBound[dim]` for looping over
-         * neighbors of a particle at position given by \p centerCell.
-         * If 'dim != ZZ`, `cell[d]` (`d > dim`) set the plane/row of cells
-         * for which the loop is initialized.  The loop should then go from
-         * `cell[dim]` until `upperBound[dim]`, inclusive.
-         * `cell[d]` with `d < dim` or `upperBound[d]` with `d != dim` are not
-         * modified by this function.
-         *
-         * `cell` and `upperBound` may be outside the grid for periodic
-         * dimensions and need to be shifted separately: to simplify the
-         * looping, the range is always (roughly) symmetric around the value in
-         * `centerCell`.
-         */
-        void initCellRange(const rvec centerCell, ivec cell,
-                           ivec upperBound, int dim) const;
-        /*! \brief
-         * Advances cell pair loop to the next cell.
-         *
-         * \param[in]     centerCell Fractional cell coordiates of the particle
-         *     for which pairs are being searched.
-         * \param[in,out] cell       Current (in)/next (out) cell in the loop.
-         * \param[in,out] upperBound Last cell in the loop for each dimension.
-         */
-        bool nextCell(const rvec centerCell, ivec cell, ivec upperBound) const;
-        /*! \brief
-         * Calculates the index and shift of a grid cell during looping.
-         *
-         * \param[in]  cell       Unshifted cell index.
-         * \param[out] shift      Shift to apply to get the periodic distance
-         *     for distances between the cells.
-         * \returns    Grid cell index corresponding to `cell`.
-         */
-        int shiftCell(const ivec cell, rvec shift) const;
+private:
+    /*! \brief
+     * Checks the efficiency and possibility of doing grid-based searching.
+     *
+     * \param[in] bForce  If `true`, grid search will be forced if possible.
+     * \returns   `false` if grid search is not suitable.
+     */
+    bool checkGridSearchEfficiency(bool bForce);
+    /*! \brief
+     * Determines a suitable grid size and sets up the cells.
+     *
+     * \param[in] box          Box vectors (should not have zero vectors).
+     * \param[in] bSingleCell  If `true`, the corresponding dimension will
+     *     be forced to use a single cell.
+     * \param[in] posCount     Number of positions that will be put on the
+     *     grid.
+     * \returns   `false` if grid search is not suitable.
+     */
+    bool initGridCells(const matrix box, bool bSingleCell[DIM],
+                       int posCount);
+    /*! \brief
+     * Sets ua a search grid for a given box.
+     *
+     * \param[in] pbc      Information about the box.
+     * \param[in] posCount Number of positions in \p x.
+     * \param[in] x        Reference positions that will be put on the grid.
+     * \param[in] bForce   If `true`, grid searching will be used if at all
+     *     possible, even if a simple search might give better performance.
+     * \returns   `false` if grid search is not suitable.
+     */
+    bool initGrid(const t_pbc &pbc, int posCount, const rvec x[], bool bForce);
+    /*! \brief
+     * Maps a point into a grid cell.
+     *
+     * \param[in]  x    Point to map.
+     * \param[out] cell Fractional cell coordinates of \p x on the grid.
+     * \param[out] xout Coordinates to use.
+     *
+     * \p xout will be within the rectangular unit cell in dimensions where
+     * the grid is periodic.  For other dimensions, both \p xout and
+     * \p cell can be outside the grid/unit cell.
+     */
+    void mapPointToGridCell(const rvec x, rvec cell, rvec xout) const;
+    /*! \brief
+     * Calculates linear index of a grid cell.
+     *
+     * \param[in]  cell Cell indices (must be within the grid).
+     * \returns    Linear index of \p cell.
+     */
+    int getGridCellIndex(const ivec cell) const;
+    /*! \brief
+     * Adds an index into a grid cell.
+     *
+     * \param[in]  cell Fractional cell coordinates into which \p i should
+     *     be added.
+     * \param[in]  i    Index to add.
+     *
+     * \p cell should satisfy the conditions that \p mapPointToGridCell()
+     * produces.
+     */
+    void addToGridCell(const rvec cell, int i);
+    /*! \brief
+     * Initializes a cell pair loop for a dimension.
+     *
+     * \param[in]     centerCell Fractional cell coordiates of the particle
+     *     for which pairs are being searched.
+     * \param[in,out] cell       Current/initial cell to loop over.
+     * \param[in,out] upperBound Last cell to loop over.
+     * \param[in]     dim        Dimension to initialize in this call.
+     *
+     * Initializes `cell[dim]` and `upperBound[dim]` for looping over
+     * neighbors of a particle at position given by \p centerCell.
+     * If 'dim != ZZ`, `cell[d]` (`d > dim`) set the plane/row of cells
+     * for which the loop is initialized.  The loop should then go from
+     * `cell[dim]` until `upperBound[dim]`, inclusive.
+     * `cell[d]` with `d < dim` or `upperBound[d]` with `d != dim` are not
+     * modified by this function.
+     *
+     * `cell` and `upperBound` may be outside the grid for periodic
+     * dimensions and need to be shifted separately: to simplify the
+     * looping, the range is always (roughly) symmetric around the value in
+     * `centerCell`.
+     */
+    void initCellRange(const rvec centerCell, ivec cell,
+                       ivec upperBound, int dim) const;
+    /*! \brief
+     * Advances cell pair loop to the next cell.
+     *
+     * \param[in]     centerCell Fractional cell coordiates of the particle
+     *     for which pairs are being searched.
+     * \param[in,out] cell       Current (in)/next (out) cell in the loop.
+     * \param[in,out] upperBound Last cell in the loop for each dimension.
+     */
+    bool nextCell(const rvec centerCell, ivec cell, ivec upperBound) const;
+    /*! \brief
+     * Calculates the index and shift of a grid cell during looping.
+     *
+     * \param[in]  cell       Unshifted cell index.
+     * \param[out] shift      Shift to apply to get the periodic distance
+     *     for distances between the cells.
+     * \returns    Grid cell index corresponding to `cell`.
+     */
+    int shiftCell(const ivec cell, rvec shift) const;
 
-        //! Whether to try grid searching.
-        bool bTryGrid_;
-        //! The cutoff.
-        real cutoff_;
-        //! The cutoff squared.
-        real cutoff2_;
-        //! Whether to do searching in XY plane only.
-        bool bXY_;
+    //! Whether to try grid searching.
+    bool bTryGrid_;
+    //! The cutoff.
+    real cutoff_;
+    //! The cutoff squared.
+    real cutoff2_;
+    //! Whether to do searching in XY plane only.
+    bool bXY_;
 
-        //! Number of reference points for the current frame.
-        int nref_;
-        //! Reference point positions.
-        const rvec *xref_;
-        //! Reference position exclusion IDs.
-        const int *refExclusionIds_;
-        //! Reference position indices (NULL if no indices).
-        const int *refIndices_;
-        //! Exclusions.
-        const t_blocka *excls_;
-        //! PBC data.
-        t_pbc pbc_;
+    //! Number of reference points for the current frame.
+    int nref_;
+    //! Reference point positions.
+    const rvec *xref_;
+    //! Reference position exclusion IDs.
+    const int *refExclusionIds_;
+    //! Reference position indices (NULL if no indices).
+    const int *refIndices_;
+    //! Exclusions.
+    const t_blocka *excls_;
+    //! PBC data.
+    t_pbc pbc_;
 
-        //! Whether grid searching is actually used for the current positions.
-        bool bGrid_;
-        //! false if the box is rectangular.
-        bool bTric_;
-        //! Whether the grid is periodic in a dimension.
-        bool bGridPBC_[DIM];
-        //! Array for storing in-unit-cell reference positions.
-        std::vector<RVec> xrefAlloc_;
-        //! Origin of the grid (zero for periodic dimensions).
-        rvec gridOrigin_;
-        //! Size of a single grid cell.
-        rvec cellSize_;
-        //! Inverse of \p cellSize_. Zero for dimensions where grid is not used.
-        rvec invCellSize_;
-        /*! \brief
-         * Shift in cell coordinates (for triclinic boxes) in X when crossing
-         * the Z periodic boundary.
-         */
-        real cellShiftZX_;
-        /*! \brief
-         * Shift in cell coordinates (for triclinic boxes) in Y when crossing
-         * the Z periodic boundary.
-         */
-        real cellShiftZY_;
-        /*! \brief
-         * Shift in cell coordinates (for triclinic boxes) in X when crossing
-         * the Y periodic boundary.
-         */
-        real cellShiftYX_;
-        //! Number of cells along each dimension.
-        ivec ncelldim_;
-        //! Data structure to hold the grid cell contents.
-        CellList cells_;
+    //! Whether grid searching is actually used for the current positions.
+    bool bGrid_;
+    //! false if the box is rectangular.
+    bool bTric_;
+    //! Whether the grid is periodic in a dimension.
+    bool bGridPBC_[DIM];
+    //! Array for storing in-unit-cell reference positions.
+    std::vector<RVec> xrefAlloc_;
+    //! Origin of the grid (zero for periodic dimensions).
+    rvec gridOrigin_;
+    //! Size of a single grid cell.
+    rvec cellSize_;
+    //! Inverse of \p cellSize_. Zero for dimensions where grid is not used.
+    rvec invCellSize_;
+    /*! \brief
+     * Shift in cell coordinates (for triclinic boxes) in X when crossing
+     * the Z periodic boundary.
+     */
+    real cellShiftZX_;
+    /*! \brief
+     * Shift in cell coordinates (for triclinic boxes) in Y when crossing
+     * the Z periodic boundary.
+     */
+    real cellShiftZY_;
+    /*! \brief
+     * Shift in cell coordinates (for triclinic boxes) in X when crossing
+     * the Y periodic boundary.
+     */
+    real cellShiftYX_;
+    //! Number of cells along each dimension.
+    ivec ncelldim_;
+    //! Data structure to hold the grid cell contents.
+    CellList cells_;
 
-        Mutex          createPairSearchMutex_;
-        PairSearchList pairSearchList_;
+    Mutex          createPairSearchMutex_;
+    PairSearchList pairSearchList_;
 
-        friend class AnalysisNeighborhoodPairSearchImpl;
+    friend class AnalysisNeighborhoodPairSearchImpl;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisNeighborhoodSearchImpl);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisNeighborhoodSearchImpl);
 };
 
 class AnalysisNeighborhoodPairSearchImpl
 {
-    public:
-        explicit AnalysisNeighborhoodPairSearchImpl(const AnalysisNeighborhoodSearchImpl &search)
-            : search_(search)
-        {
-            testPosCount_     = 0;
-            testPositions_    = nullptr;
-            testExclusionIds_ = nullptr;
-            testIndices_      = nullptr;
-            nexcl_            = 0;
-            excl_             = nullptr;
-            clear_rvec(xtest_);
-            clear_rvec(testcell_);
-            clear_ivec(currCell_);
-            clear_ivec(cellBound_);
-            reset(-1);
-        }
+public:
+    explicit AnalysisNeighborhoodPairSearchImpl(const AnalysisNeighborhoodSearchImpl &search)
+        : search_(search)
+    {
+        testPosCount_     = 0;
+        testPositions_    = nullptr;
+        testExclusionIds_ = nullptr;
+        testIndices_      = nullptr;
+        nexcl_            = 0;
+        excl_             = nullptr;
+        clear_rvec(xtest_);
+        clear_rvec(testcell_);
+        clear_ivec(currCell_);
+        clear_ivec(cellBound_);
+        reset(-1);
+    }
 
-        //! Initializes a search to find reference positions neighboring \p x.
-        void startSearch(const AnalysisNeighborhoodPositions &positions);
-        //! Searches for the next neighbor.
-        template <class Action>
-        bool searchNext(Action action);
-        //! Initializes a pair representing the pair found by searchNext().
-        void initFoundPair(AnalysisNeighborhoodPair *pair) const;
-        //! Advances to the next test position, skipping any remaining pairs.
-        void nextTestPosition();
+    //! Initializes a search to find reference positions neighboring \p x.
+    void startSearch(const AnalysisNeighborhoodPositions &positions);
+    //! Searches for the next neighbor.
+    template <class Action>
+    bool searchNext(Action action);
+    //! Initializes a pair representing the pair found by searchNext().
+    void initFoundPair(AnalysisNeighborhoodPair *pair) const;
+    //! Advances to the next test position, skipping any remaining pairs.
+    void nextTestPosition();
 
-    private:
-        //! Clears the loop indices.
-        void reset(int testIndex);
-        //! Checks whether a reference positiong should be excluded.
-        bool isExcluded(int j);
+private:
+    //! Clears the loop indices.
+    void reset(int testIndex);
+    //! Checks whether a reference positiong should be excluded.
+    bool isExcluded(int j);
 
-        //! Parent search object.
-        const AnalysisNeighborhoodSearchImpl &search_;
-        //! Number of test positions.
-        int testPosCount_;
-        //! Reference to the test positions.
-        const rvec *testPositions_;
-        //! Reference to the test exclusion indices.
-        const int *testExclusionIds_;
-        //! Reference to the test position indices.
-        const int *testIndices_;
-        //! Number of excluded reference positions for current test particle.
-        int nexcl_;
-        //! Exclusions for current test particle.
-        const int *excl_;
-        //! Index of the currently active test position in \p testPositions_.
-        int testIndex_;
-        //! Stores test position during a pair loop.
-        rvec xtest_;
-        //! Stores the previous returned position during a pair loop.
-        int previ_;
-        //! Stores the pair distance corresponding to previ_;
-        real prevr2_;
-        //! Stores the shortest distance vector corresponding to previ_;
-        rvec prevdx_;
-        //! Stores the current exclusion index during loops.
-        int exclind_;
-        //! Stores the fractional test particle cell location during loops.
-        rvec testcell_;
-        //! Stores the current cell during pair loops.
-        ivec currCell_;
-        //! Stores the current loop upper bounds for each dimension during pair loops.
-        ivec cellBound_;
-        //! Stores the index within the current cell during pair loops.
-        int prevcai_;
+    //! Parent search object.
+    const AnalysisNeighborhoodSearchImpl &search_;
+    //! Number of test positions.
+    int testPosCount_;
+    //! Reference to the test positions.
+    const rvec *testPositions_;
+    //! Reference to the test exclusion indices.
+    const int *testExclusionIds_;
+    //! Reference to the test position indices.
+    const int *testIndices_;
+    //! Number of excluded reference positions for current test particle.
+    int nexcl_;
+    //! Exclusions for current test particle.
+    const int *excl_;
+    //! Index of the currently active test position in \p testPositions_.
+    int testIndex_;
+    //! Stores test position during a pair loop.
+    rvec xtest_;
+    //! Stores the previous returned position during a pair loop.
+    int previ_;
+    //! Stores the pair distance corresponding to previ_;
+    real prevr2_;
+    //! Stores the shortest distance vector corresponding to previ_;
+    rvec prevdx_;
+    //! Stores the current exclusion index during loops.
+    int exclind_;
+    //! Stores the fractional test particle cell location during loops.
+    rvec testcell_;
+    //! Stores the current cell during pair loops.
+    ivec currCell_;
+    //! Stores the current loop upper bounds for each dimension during pair loops.
+    ivec cellBound_;
+    //! Stores the index within the current cell during pair loops.
+    int prevcai_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisNeighborhoodPairSearchImpl);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisNeighborhoodPairSearchImpl);
 };
 
 /********************************************************************
@@ -1184,43 +1184,43 @@ bool withinAction(int /*i*/, real /*r2*/, const rvec /* dx */)
  */
 class MindistAction
 {
-    public:
-        /*! \brief
-         * Initializes the action with given output locations.
-         *
-         * \param[out] closestPoint Index of the closest reference location.
-         * \param[out] minDist2     Minimum distance squared.
-         * \param[out] dx           Shortest distance vector.
-         *
-         * The constructor call does not modify the pointed values, but only
-         * stores the pointers for later use.
-         * See the class description for additional semantics.
-         */
-        MindistAction(int *closestPoint, real *minDist2, rvec *dx)
-            : closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
+public:
+    /*! \brief
+     * Initializes the action with given output locations.
+     *
+     * \param[out] closestPoint Index of the closest reference location.
+     * \param[out] minDist2     Minimum distance squared.
+     * \param[out] dx           Shortest distance vector.
+     *
+     * The constructor call does not modify the pointed values, but only
+     * stores the pointers for later use.
+     * See the class description for additional semantics.
+     */
+    MindistAction(int *closestPoint, real *minDist2, rvec *dx)
+        : closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
+    {
+    }
+    //! Copies the action.
+    MindistAction(const MindistAction &) = default;
+
+    //! Processes a neighbor to find the nearest point.
+    bool operator()(int i, real r2, const rvec dx)
+    {
+        if (r2 < minDist2_)
         {
+            closestPoint_ = i;
+            minDist2_     = r2;
+            copy_rvec(dx, dx_);
         }
-        //! Copies the action.
-        MindistAction(const MindistAction &) = default;
+        return false;
+    }
 
-        //! Processes a neighbor to find the nearest point.
-        bool operator()(int i, real r2, const rvec dx)
-        {
-            if (r2 < minDist2_)
-            {
-                closestPoint_ = i;
-                minDist2_     = r2;
-                copy_rvec(dx, dx_);
-            }
-            return false;
-        }
+private:
+    int & closestPoint_;
+    real &minDist2_;
+    rvec &dx_;
 
-    private:
-        int & closestPoint_;
-        real &minDist2_;
-        rvec &dx_;
-
-        GMX_DISALLOW_ASSIGN(MindistAction);
+    GMX_DISALLOW_ASSIGN(MindistAction);
 };
 
 }   // namespace
@@ -1231,32 +1231,32 @@ class MindistAction
 
 class AnalysisNeighborhood::Impl
 {
-    public:
-        typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
-        typedef std::vector<SearchImplPointer> SearchList;
+public:
+    typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
+    typedef std::vector<SearchImplPointer> SearchList;
 
-        Impl()
-            : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false)
+    Impl()
+        : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false)
+    {
+    }
+    ~Impl()
+    {
+        SearchList::const_iterator i;
+        for (i = searchList_.begin(); i != searchList_.end(); ++i)
         {
+            GMX_RELEASE_ASSERT(i->unique(),
+                               "Dangling AnalysisNeighborhoodSearch reference");
         }
-        ~Impl()
-        {
-            SearchList::const_iterator i;
-            for (i = searchList_.begin(); i != searchList_.end(); ++i)
-            {
-                GMX_RELEASE_ASSERT(i->unique(),
-                                   "Dangling AnalysisNeighborhoodSearch reference");
-            }
-        }
+    }
 
-        SearchImplPointer getSearch();
+    SearchImplPointer getSearch();
 
-        Mutex           createSearchMutex_;
-        SearchList      searchList_;
-        real            cutoff_;
-        const t_blocka *excls_;
-        SearchMode      mode_;
-        bool            bXY_;
+    Mutex           createSearchMutex_;
+    SearchList      searchList_;
+    real            cutoff_;
+    const t_blocka *excls_;
+    SearchMode      mode_;
+    bool            bXY_;
 };
 
 AnalysisNeighborhood::Impl::SearchImplPointer AnalysisNeighborhood::Impl::getSearch()

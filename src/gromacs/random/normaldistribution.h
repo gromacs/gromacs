@@ -103,162 +103,162 @@ namespace gmx
 template <class RealType = real>
 class NormalDistribution
 {
-    public:
-        /*! \brief Type of values returned */
-        typedef RealType result_type;
+public:
+    /*! \brief Type of values returned */
+    typedef RealType result_type;
 
-        /*! \brief Normal distribution parameters */
-        class param_type
-        {
-            /*! \brief Mean of normal distribution */
-            result_type mean_;
-            /*! \brief Standard deviation of distribution */
-            result_type stddev_;
-
-            public:
-                /*! \brief Reference back to the distribution class */
-                typedef NormalDistribution distribution_type;
-
-                /*! \brief Construct parameter block
-                 *
-                 * \param mean     Mean of normal distribution
-                 * \param stddev   Standard deviation of normal distribution
-                 */
-                explicit param_type(result_type mean = 0.0, result_type stddev = 1.0)
-                    : mean_(mean), stddev_(stddev) {}
-
-                /*! \brief Return first parameter */
-                result_type mean() const { return mean_; }
-                /*! \brief Return second parameter */
-                result_type stddev()  const { return stddev_; }
-
-                /*! \brief True if two parameter sets will return the same normal distribution.
-                 *
-                 * \param x  Instance to compare with.
-                 */
-                bool operator==(const param_type &x) const
-                {
-                    return mean_ == x.mean_ && stddev_ == x.stddev_;
-                }
-
-                /*! \brief True if two parameter sets will return different normal distributions
-                 *
-                 * \param x  Instance to compare with.
-                 */
-                bool operator!=(const param_type &x) const { return !operator==(x); }
-        };
+    /*! \brief Normal distribution parameters */
+    class param_type
+    {
+    /*! \brief Mean of normal distribution */
+    result_type mean_;
+    /*! \brief Standard deviation of distribution */
+    result_type stddev_;
 
     public:
+        /*! \brief Reference back to the distribution class */
+        typedef NormalDistribution distribution_type;
 
-        /*! \brief Construct new distribution with given floating-point parameters.
+        /*! \brief Construct parameter block
          *
          * \param mean     Mean of normal distribution
          * \param stddev   Standard deviation of normal distribution
          */
-        explicit NormalDistribution(result_type mean = 0.0, result_type stddev = 1.0)
-            : param_(param_type(mean, stddev)), hot_(false), saved_(0) {}
+        explicit param_type(result_type mean = 0.0, result_type stddev = 1.0)
+            : mean_(mean), stddev_(stddev) {}
 
-        /*! \brief Construct new distribution from parameter class
+        /*! \brief Return first parameter */
+        result_type mean() const { return mean_; }
+        /*! \brief Return second parameter */
+        result_type stddev()  const { return stddev_; }
+
+        /*! \brief True if two parameter sets will return the same normal distribution.
          *
-         * \param param  Parameter class as defined inside gmx::NormalDistribution.
+         * \param x  Instance to compare with.
          */
-        explicit NormalDistribution(const param_type &param)
-            : param_(param), hot_(false), saved_(0) {}
-
-        /*! \brief Flush all internal saved values  */
-        void reset() { hot_ = false; }
-
-        /*! \brief Return values from normal distribution with internal parameters
-         *
-         *  \tparam Rng   Random engine class
-         *
-         *  \param  g     Random engine
-         */
-        template <class Rng>
-        result_type operator()(Rng &g) { return (*this)(g, param_); }
-
-        /*! \brief Return value from normal distribution with given parameters
-         *
-         *  \tparam Rng   Random engine class
-         *
-         *  \param  g     Random engine
-         *  \param  param Parameters to use
-         */
-        template <class Rng>
-        result_type operator()(Rng &g, const param_type &param)
+        bool operator==(const param_type &x) const
         {
-            result_type result;
-
-            if (hot_)
-            {
-                hot_   = false;
-                result = saved_;
-            }
-            else
-            {
-                UniformRealDistribution<result_type> uniformDist(-1.0, 1.0);
-                result_type                          u;
-                result_type                          v;
-                result_type                          s;
-
-                do
-                {
-                    u = uniformDist(g);
-                    v = uniformDist(g);
-                    s = u * u + v * v;
-                } while (s > 1.0 || s == 0.0);
-
-                s      = std::sqrt(-2.0 * std::log(s) / s);
-                saved_ = v * s;
-                hot_   = true;
-                result = u * s;
-            }
-            return result * param.stddev() + param.mean();
+            return mean_ == x.mean_ && stddev_ == x.stddev_;
         }
 
-        /*! \brief Return the mean of the normal distribution */
-        result_type mean() const { return param_.mean(); }
-
-        /*! \brief Return the standard deviation of the normal distribution */
-        result_type stddev() const { return param_.stddev(); }
-
-        /*! \brief Return the full parameter class of the normal distribution */
-        param_type param() const { return param_; }
-
-        /*! \brief Smallest value that can be returned from normal distribution */
-        result_type min() const { return -std::numeric_limits<result_type>::infinity(); }
-
-        /*! \brief Largest value that can be returned from normal distribution */
-        result_type max() const { return std::numeric_limits<result_type>::infinity(); }
-
-        /*! \brief True if two normal distributions will produce the same values.
+        /*! \brief True if two parameter sets will return different normal distributions
          *
-         * \param  x     Instance to compare with.
+         * \param x  Instance to compare with.
          */
-        bool operator==(const NormalDistribution &x) const
+        bool operator!=(const param_type &x) const { return !operator==(x); }
+    };
+
+public:
+
+    /*! \brief Construct new distribution with given floating-point parameters.
+     *
+     * \param mean     Mean of normal distribution
+     * \param stddev   Standard deviation of normal distribution
+     */
+    explicit NormalDistribution(result_type mean = 0.0, result_type stddev = 1.0)
+        : param_(param_type(mean, stddev)), hot_(false), saved_(0) {}
+
+    /*! \brief Construct new distribution from parameter class
+     *
+     * \param param  Parameter class as defined inside gmx::NormalDistribution.
+     */
+    explicit NormalDistribution(const param_type &param)
+        : param_(param), hot_(false), saved_(0) {}
+
+    /*! \brief Flush all internal saved values  */
+    void reset() { hot_ = false; }
+
+    /*! \brief Return values from normal distribution with internal parameters
+     *
+     *  \tparam Rng   Random engine class
+     *
+     *  \param  g     Random engine
+     */
+    template <class Rng>
+    result_type operator()(Rng &g) { return (*this)(g, param_); }
+
+    /*! \brief Return value from normal distribution with given parameters
+     *
+     *  \tparam Rng   Random engine class
+     *
+     *  \param  g     Random engine
+     *  \param  param Parameters to use
+     */
+    template <class Rng>
+    result_type operator()(Rng &g, const param_type &param)
+    {
+        result_type result;
+
+        if (hot_)
         {
-            /* Equal if: Params are identical, and saved-state is identical,
-             * and if we have something saved, it must be identical.
-             */
-            return param_ == x.param_ && hot_ == x.hot_ && (!hot_ || saved_ == x.saved_);
+            hot_   = false;
+            result = saved_;
         }
+        else
+        {
+            UniformRealDistribution<result_type> uniformDist(-1.0, 1.0);
+            result_type                          u;
+            result_type                          v;
+            result_type                          s;
 
-        /*! \brief True if two normal distributions will produce different values.
-         *
-         * \param  x     Instance to compare with.
+            do
+            {
+                u = uniformDist(g);
+                v = uniformDist(g);
+                s = u * u + v * v;
+            } while (s > 1.0 || s == 0.0);
+
+            s      = std::sqrt(-2.0 * std::log(s) / s);
+            saved_ = v * s;
+            hot_   = true;
+            result = u * s;
+        }
+        return result * param.stddev() + param.mean();
+    }
+
+    /*! \brief Return the mean of the normal distribution */
+    result_type mean() const { return param_.mean(); }
+
+    /*! \brief Return the standard deviation of the normal distribution */
+    result_type stddev() const { return param_.stddev(); }
+
+    /*! \brief Return the full parameter class of the normal distribution */
+    param_type param() const { return param_; }
+
+    /*! \brief Smallest value that can be returned from normal distribution */
+    result_type min() const { return -std::numeric_limits<result_type>::infinity(); }
+
+    /*! \brief Largest value that can be returned from normal distribution */
+    result_type max() const { return std::numeric_limits<result_type>::infinity(); }
+
+    /*! \brief True if two normal distributions will produce the same values.
+     *
+     * \param  x     Instance to compare with.
+     */
+    bool operator==(const NormalDistribution &x) const
+    {
+        /* Equal if: Params are identical, and saved-state is identical,
+         * and if we have something saved, it must be identical.
          */
-        bool operator!=(const NormalDistribution &x) const
-        { return !operator==(x); }
+        return param_ == x.param_ && hot_ == x.hot_ && (!hot_ || saved_ == x.saved_);
+    }
 
-    private:
-        /*! \brief Internal value for parameters, can be overridden at generation time. */
-        param_type param_;
-        /*! \brief True if there is a saved result to return */
-        bool hot_;
-        /*! \brief The saved result to return - only valid if hot_ is true */
-        result_type saved_;
+    /*! \brief True if two normal distributions will produce different values.
+     *
+     * \param  x     Instance to compare with.
+     */
+    bool operator!=(const NormalDistribution &x) const
+    { return !operator==(x); }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(NormalDistribution);
+private:
+    /*! \brief Internal value for parameters, can be overridden at generation time. */
+    param_type param_;
+    /*! \brief True if there is a saved result to return */
+    bool hot_;
+    /*! \brief The saved result to return - only valid if hot_ is true */
+    result_type saved_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(NormalDistribution);
 };
 
 

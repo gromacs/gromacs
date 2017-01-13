@@ -66,24 +66,24 @@ namespace gmx
  */
 class CommandLineParser::Impl
 {
-    public:
-        //! Sets the options object to parse to.
-        explicit Impl(Options *options);
+public:
+    //! Sets the options object to parse to.
+    explicit Impl(Options *options);
 
-        /*! \brief
-         * Determines whether a cmdline parameter starts an option and the name
-         * of that option.
-         *
-         * \param[in] arg  Individual argument from \c argv.
-         * \returns The beginning of the option name in \p arg, or NULL if
-         *     \p arg does not look like an option.
-         */
-        const char *toOptionName(const char *arg) const;
+    /*! \brief
+     * Determines whether a cmdline parameter starts an option and the name
+     * of that option.
+     *
+     * \param[in] arg  Individual argument from \c argv.
+     * \returns The beginning of the option name in \p arg, or NULL if
+     *     \p arg does not look like an option.
+     */
+    const char *toOptionName(const char *arg) const;
 
-        //! Helper object for assigning the options.
-        OptionsAssigner assigner_;
-        //! Whether to allow and skip unknown options.
-        bool bSkipUnknown_;
+    //! Helper object for assigning the options.
+    OptionsAssigner assigner_;
+    //! Whether to allow and skip unknown options.
+    bool bSkipUnknown_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)

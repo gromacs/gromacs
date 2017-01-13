@@ -113,93 +113,93 @@ const char *const c_SurfaceEnum[] = { "no", "mol", "res" };
  */
 class Rdf : public TrajectoryAnalysisModule
 {
-    public:
-        Rdf();
+public:
+    Rdf();
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
-        virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
-                                         const t_trxframe &                fr);
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
+    virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                                     const t_trxframe &                fr);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
-            const SelectionCollection &        selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        const AnalysisDataParallelOptions &opt,
+        const SelectionCollection &        selections);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        std::string              fnRdf_;
-        std::string              fnCumulative_;
-        SurfaceType              surface_;
-        AnalysisDataPlotSettings plotSettings_;
+private:
+    std::string              fnRdf_;
+    std::string              fnCumulative_;
+    SurfaceType              surface_;
+    AnalysisDataPlotSettings plotSettings_;
 
-        /*! \brief
-         * Reference selection to compute RDFs around.
-         *
-         * With -surf, Selection::originalIds() and Selection::mappedIds()
-         * store the index of the surface group to which that position belongs.
-         * The RDF is computed by finding the nearest position from each
-         * surface group for each position, and then binning those distances.
-         */
-        Selection refSel_;
-        /*! \brief
-         * Selections to compute RDFs for.
-         */
-        SelectionList sel_;
+    /*! \brief
+     * Reference selection to compute RDFs around.
+     *
+     * With -surf, Selection::originalIds() and Selection::mappedIds()
+     * store the index of the surface group to which that position belongs.
+     * The RDF is computed by finding the nearest position from each
+     * surface group for each position, and then binning those distances.
+     */
+    Selection refSel_;
+    /*! \brief
+     * Selections to compute RDFs for.
+     */
+    SelectionList sel_;
 
-        /*! \brief
-         * Raw pairwise distance data from which the RDF is computed.
-         *
-         * There is a data set for each selection in `sel_`, with a single
-         * column.  Each point set will contain a single pairwise distance
-         * that contributes to the RDF.
-         */
-        AnalysisData pairDist_;
-        /*! \brief
-         * Normalization factors for each frame.
-         *
-         * The first column contains the number of positions in `refSel_` for
-         * that frame (with surface RDF, the number of groups).  There are
-         * `sel_.size()` more columns, each containing the number density of
-         * positions for one selection.
-         */
-        AnalysisData normFactors_;
-        /*! \brief
-         * Histogram module that computes the actual RDF from `pairDist_`.
-         *
-         * The per-frame histograms are raw pair counts in each bin;
-         * the averager is normalized by the average number of reference
-         * positions (average of the first column of `normFactors_`).
-         */
-        AnalysisDataSimpleHistogramModulePointer pairCounts_;
-        /*! \brief
-         * Average normalization factors.
-         */
-        AnalysisDataAverageModulePointer normAve_;
-        //! Neighborhood search with `refSel_` as the reference positions.
-        AnalysisNeighborhood nb_;
+    /*! \brief
+     * Raw pairwise distance data from which the RDF is computed.
+     *
+     * There is a data set for each selection in `sel_`, with a single
+     * column.  Each point set will contain a single pairwise distance
+     * that contributes to the RDF.
+     */
+    AnalysisData pairDist_;
+    /*! \brief
+     * Normalization factors for each frame.
+     *
+     * The first column contains the number of positions in `refSel_` for
+     * that frame (with surface RDF, the number of groups).  There are
+     * `sel_.size()` more columns, each containing the number density of
+     * positions for one selection.
+     */
+    AnalysisData normFactors_;
+    /*! \brief
+     * Histogram module that computes the actual RDF from `pairDist_`.
+     *
+     * The per-frame histograms are raw pair counts in each bin;
+     * the averager is normalized by the average number of reference
+     * positions (average of the first column of `normFactors_`).
+     */
+    AnalysisDataSimpleHistogramModulePointer pairCounts_;
+    /*! \brief
+     * Average normalization factors.
+     */
+    AnalysisDataAverageModulePointer normAve_;
+    //! Neighborhood search with `refSel_` as the reference positions.
+    AnalysisNeighborhood nb_;
 
-        // User input options.
-        double        binwidth_;
-        double        cutoff_;
-        double        rmax_;
-        Normalization normalization_;
-        bool          bNormalizationSet_;
-        bool          bXY_;
-        bool          bExclusions_;
+    // User input options.
+    double        binwidth_;
+    double        cutoff_;
+    double        rmax_;
+    Normalization normalization_;
+    bool          bNormalizationSet_;
+    bool          bXY_;
+    bool          bExclusions_;
 
-        // Pre-computed values for faster access during analysis.
-        real cut2_;
-        real rmax2_;
-        int  surfaceGroupCount_;
+    // Pre-computed values for faster access during analysis.
+    real cut2_;
+    real rmax2_;
+    int  surfaceGroupCount_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 Rdf::Rdf()
@@ -418,35 +418,35 @@ void Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
  */
 class RdfModuleData : public TrajectoryAnalysisModuleData
 {
-    public:
-        /*! \brief
-         * Reserves memory for the frame-local data.
-         *
-         * `surfaceGroupCount` will be zero if -surf is not specified.
-         */
-        RdfModuleData(TrajectoryAnalysisModule *         module,
-                      const AnalysisDataParallelOptions &opt,
-                      const SelectionCollection &        selections,
-                      int                                surfaceGroupCount)
-            : TrajectoryAnalysisModuleData(module, opt, selections)
-        {
-            surfaceDist2_.resize(surfaceGroupCount);
-        }
+public:
+    /*! \brief
+     * Reserves memory for the frame-local data.
+     *
+     * `surfaceGroupCount` will be zero if -surf is not specified.
+     */
+    RdfModuleData(TrajectoryAnalysisModule *         module,
+                  const AnalysisDataParallelOptions &opt,
+                  const SelectionCollection &        selections,
+                  int                                surfaceGroupCount)
+        : TrajectoryAnalysisModuleData(module, opt, selections)
+    {
+        surfaceDist2_.resize(surfaceGroupCount);
+    }
 
-        virtual void finish() { finishDataHandles(); }
+    virtual void finish() { finishDataHandles(); }
 
-        /*! \brief
-         * Minimum distance to each surface group.
-         *
-         * One entry for each group (residue/molecule, per -surf) in the
-         * reference selection.
-         * This is needed to support neighborhood searching, which may not
-         * return the reference positions in order: for each position, we need
-         * to search through all the reference positions and update this array
-         * to find the minimum distance to each surface group, and then compute
-         * the RDF from these numbers.
-         */
-        std::vector<real> surfaceDist2_;
+    /*! \brief
+     * Minimum distance to each surface group.
+     *
+     * One entry for each group (residue/molecule, per -surf) in the
+     * reference selection.
+     * This is needed to support neighborhood searching, which may not
+     * return the reference positions in order: for each position, we need
+     * to search through all the reference positions and update this array
+     * to find the minimum distance to each surface group, and then compute
+     * the RDF from these numbers.
+     */
+    std::vector<real> surfaceDist2_;
 };
 
 TrajectoryAnalysisModuleDataPointer Rdf::startFrames(

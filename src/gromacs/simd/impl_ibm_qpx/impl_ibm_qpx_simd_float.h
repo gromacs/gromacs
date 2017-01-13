@@ -53,46 +53,46 @@ namespace gmx
 
 class SimdFloat
 {
-    public:
-        SimdFloat() {}
+public:
+    SimdFloat() {}
 
-        SimdFloat(float f) : simdInternal_(vec_splats(f)) {}
+    SimdFloat(float f) : simdInternal_(vec_splats(f)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFloat(vector4double simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFloat(vector4double simd) : simdInternal_(simd) {}
 
-        vector4double simdInternal_;
+    vector4double simdInternal_;
 };
 
 class SimdFInt32
 {
-    public:
-        SimdFInt32() {}
+public:
+    SimdFInt32() {}
 
-        SimdFInt32(std::int32_t i)
-        {
-            GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
-            idata[0]      = i;
-            simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
-        }
+    SimdFInt32(std::int32_t i)
+    {
+        GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
+        idata[0]      = i;
+        simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
+    }
 
-        // Internal utility constructor to simplify return statements
-        SimdFInt32(vector4double simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFInt32(vector4double simd) : simdInternal_(simd) {}
 
-        vector4double simdInternal_;
+    vector4double simdInternal_;
 };
 
 class SimdFBool
 {
-    public:
-        SimdFBool() {}
+public:
+    SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
+    SimdFBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
 
-        // Internal utility constructor to simplify return statements
-        SimdFBool(vector4double simd) : simdInternal_(simd) {}
+    // Internal utility constructor to simplify return statements
+    SimdFBool(vector4double simd) : simdInternal_(simd) {}
 
-        vector4double simdInternal_;
+    vector4double simdInternal_;
 };
 
 static inline SimdFloat gmx_simdcall simdLoad(const float *m)

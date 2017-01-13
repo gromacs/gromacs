@@ -214,12 +214,12 @@ namespace
  */
 class StaticAverageHistogram : public AbstractAverageHistogram
 {
-    public:
-        StaticAverageHistogram();
-        //! Creates an average histogram module with defined bin parameters.
-        explicit StaticAverageHistogram(const AnalysisHistogramSettings &settings);
+public:
+    StaticAverageHistogram();
+    //! Creates an average histogram module with defined bin parameters.
+    explicit StaticAverageHistogram(const AnalysisHistogramSettings &settings);
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 StaticAverageHistogram::StaticAverageHistogram()
@@ -422,26 +422,26 @@ namespace internal
 class BasicAverageHistogramModule : public AbstractAverageHistogram,
                                     public AnalysisDataModuleSerial
 {
-    public:
-        BasicAverageHistogramModule();
-        //! Creates an average histogram module with defined bin parameters.
-        explicit BasicAverageHistogramModule(const AnalysisHistogramSettings &settings);
+public:
+    BasicAverageHistogramModule();
+    //! Creates an average histogram module with defined bin parameters.
+    explicit BasicAverageHistogramModule(const AnalysisHistogramSettings &settings);
 
-        using AbstractAverageHistogram::init;
+    using AbstractAverageHistogram::init;
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-    private:
-        //! Averaging helper objects for each input data set.
-        std::vector<AnalysisDataFrameAverager> averagers_;
+private:
+    //! Averaging helper objects for each input data set.
+    std::vector<AnalysisDataFrameAverager> averagers_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 BasicAverageHistogramModule::BasicAverageHistogramModule()
@@ -523,28 +523,28 @@ void BasicAverageHistogramModule::dataFinished()
  */
 class BasicHistogramImpl
 {
-    public:
-        //! Smart pointer to manage an BasicAverageHistogramModule object.
-        typedef std::shared_ptr<BasicAverageHistogramModule>
-            BasicAverageHistogramModulePointer;
+public:
+    //! Smart pointer to manage an BasicAverageHistogramModule object.
+    typedef std::shared_ptr<BasicAverageHistogramModule>
+        BasicAverageHistogramModulePointer;
 
-        BasicHistogramImpl();
-        //! Creates an histogram impl with defined bin parameters.
-        explicit BasicHistogramImpl(const AnalysisHistogramSettings &settings);
-        // Virtual only for simplicity.
-        virtual ~BasicHistogramImpl();
+    BasicHistogramImpl();
+    //! Creates an histogram impl with defined bin parameters.
+    explicit BasicHistogramImpl(const AnalysisHistogramSettings &settings);
+    // Virtual only for simplicity.
+    virtual ~BasicHistogramImpl();
 
-        /*! \brief
-         * (Re)initializes the histogram from settings.
-         */
-        void init(const AnalysisHistogramSettings &settings);
+    /*! \brief
+     * (Re)initializes the histogram from settings.
+     */
+    void init(const AnalysisHistogramSettings &settings);
 
-        //! Storage implementation object.
-        AnalysisDataStorage storage_;
-        //! Settings for the histogram object.
-        AnalysisHistogramSettings settings_;
-        //! Averager module.
-        BasicAverageHistogramModulePointer averager_;
+    //! Storage implementation object.
+    AnalysisDataStorage storage_;
+    //! Settings for the histogram object.
+    AnalysisHistogramSettings settings_;
+    //! Averager module.
+    BasicAverageHistogramModulePointer averager_;
 };
 
 BasicHistogramImpl::BasicHistogramImpl()
@@ -584,19 +584,19 @@ void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
  */
 class AnalysisDataSimpleHistogramModule::Impl : public internal::BasicHistogramImpl
 {
-    public:
-        //! Shorthand for the per-frame accumulation data structure type.
-        typedef AnalysisDataFrameLocalData<gmx_int64_t> FrameLocalData;
+public:
+    //! Shorthand for the per-frame accumulation data structure type.
+    typedef AnalysisDataFrameLocalData<gmx_int64_t> FrameLocalData;
 
-        Impl() {}
-        //! Creates an histogram impl with defined bin parameters.
-        explicit Impl(const AnalysisHistogramSettings &settings)
-            : BasicHistogramImpl(settings)
-        {
-        }
+    Impl() {}
+    //! Creates an histogram impl with defined bin parameters.
+    explicit Impl(const AnalysisHistogramSettings &settings)
+        : BasicHistogramImpl(settings)
+    {
+    }
 
-        //! Accumulates the histogram within a frame.
-        FrameLocalData accumulator_;
+    //! Accumulates the histogram within a frame.
+    FrameLocalData accumulator_;
 };
 
 AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -746,19 +746,19 @@ bool AnalysisDataSimpleHistogramModule::requestStorageInternal(int nframes)
  */
 class AnalysisDataWeightedHistogramModule::Impl : public internal::BasicHistogramImpl
 {
-    public:
-        //! Shorthand for the per-frame accumulation data structure type.
-        typedef AnalysisDataFrameLocalData<double> FrameLocalData;
+public:
+    //! Shorthand for the per-frame accumulation data structure type.
+    typedef AnalysisDataFrameLocalData<double> FrameLocalData;
 
-        Impl() {}
-        //! Creates an histogram impl with defined bin parameters.
-        explicit Impl(const AnalysisHistogramSettings &settings)
-            : BasicHistogramImpl(settings)
-        {
-        }
+    Impl() {}
+    //! Creates an histogram impl with defined bin parameters.
+    explicit Impl(const AnalysisHistogramSettings &settings)
+        : BasicHistogramImpl(settings)
+    {
+    }
 
-        //! Accumulates the histogram within a frame.
-        FrameLocalData accumulator_;
+    //! Accumulates the histogram within a frame.
+    FrameLocalData accumulator_;
 };
 
 AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule()
@@ -903,17 +903,17 @@ bool AnalysisDataWeightedHistogramModule::requestStorageInternal(int nframes)
 
 class AnalysisDataBinAverageModule::Impl
 {
-    public:
-        Impl() {}
-        explicit Impl(const AnalysisHistogramSettings &settings)
-            : settings_(settings)
-        {
-        }
+public:
+    Impl() {}
+    explicit Impl(const AnalysisHistogramSettings &settings)
+        : settings_(settings)
+    {
+    }
 
-        //! Histogram settings.
-        AnalysisHistogramSettings settings_;
-        //! Averaging helper objects for each input data set.
-        std::vector<AnalysisDataFrameAverager> averagers_;
+    //! Histogram settings.
+    AnalysisHistogramSettings settings_;
+    //! Averaging helper objects for each input data set.
+    std::vector<AnalysisDataFrameAverager> averagers_;
 };
 
 AnalysisDataBinAverageModule::AnalysisDataBinAverageModule()

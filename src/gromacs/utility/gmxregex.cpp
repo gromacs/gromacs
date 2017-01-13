@@ -72,107 +72,107 @@ bool Regex::isSupported()
 #if HAVE_POSIX_REGEX
 class Regex::Impl
 {
-    public:
-        explicit Impl(const char *value)
-        {
-            compile(value);
-        }
-        explicit Impl(const std::string &value)
-        {
-            compile(value.c_str());
-        }
-        ~Impl()
-        {
-            regfree(&regex_);
-        }
+public:
+    explicit Impl(const char *value)
+    {
+        compile(value);
+    }
+    explicit Impl(const std::string &value)
+    {
+        compile(value.c_str());
+    }
+    ~Impl()
+    {
+        regfree(&regex_);
+    }
 
-        bool match(const char *value) const
+    bool match(const char *value) const
+    {
+        int rc = regexec(&regex_, value, 0, nullptr, 0);
+        if (rc != 0 && rc != REG_NOMATCH)
         {
-            int rc = regexec(&regex_, value, 0, nullptr, 0);
-            if (rc != 0 && rc != REG_NOMATCH)
-            {
-                // TODO: Handle errors.
-            }
-            return (rc == 0);
+            // TODO: Handle errors.
         }
+        return (rc == 0);
+    }
 
-    private:
-        void compile(const char *value)
+private:
+    void compile(const char *value)
+    {
+        std::string buf(formatString("^%s$", value));
+        int         rc = regcomp(&regex_, buf.c_str(), REG_EXTENDED | REG_NOSUB);
+        if (rc != 0)
         {
-            std::string buf(formatString("^%s$", value));
-            int         rc = regcomp(&regex_, buf.c_str(), REG_EXTENDED | REG_NOSUB);
-            if (rc != 0)
-            {
-                // TODO: Better error messages.
-                GMX_THROW(InvalidInputError(formatString(
-                                                    "Error in regular expression \"%s\"", value)));
-            }
+            // TODO: Better error messages.
+            GMX_THROW(InvalidInputError(formatString(
+                                                "Error in regular expression \"%s\"", value)));
         }
+    }
 
-        regex_t regex_;
+    regex_t regex_;
 };
 #elif HAVE_CXX11_REGEX
 class Regex::Impl
 {
-    public:
-        explicit Impl(const char *value)
-        try : regex_(value, std::regex::nosubs | std::regex::extended)
+public:
+    explicit Impl(const char *value)
+    try : regex_(value, std::regex::nosubs | std::regex::extended)
+    {
+    }
+    catch (const std::regex_error &)
+    {
+        // TODO: Better error messages.
+        GMX_THROW(InvalidInputError(formatString(
+                                            "Error in regular expression \"%s\"", value)));
+    }
+    explicit Impl(const std::string &value)
+    try : regex_(value, std::regex::nosubs | std::regex::extended)
+    {
+    }
+    catch (const std::regex_error &)
+    {
+        // TODO: Better error messages.
+        GMX_THROW(InvalidInputError(formatString(
+                                            "Error in regular expression \"%s\"", value)));
+    }
+
+    bool match(const char *value) const
+    {
+        try
         {
+            return std::regex_match(value, regex_);
         }
         catch (const std::regex_error &)
         {
-            // TODO: Better error messages.
-            GMX_THROW(InvalidInputError(formatString(
-                                                "Error in regular expression \"%s\"", value)));
+            // TODO: Handle errors.
+            return false;
         }
-        explicit Impl(const std::string &value)
-        try : regex_(value, std::regex::nosubs | std::regex::extended)
-        {
-        }
-        catch (const std::regex_error &)
-        {
-            // TODO: Better error messages.
-            GMX_THROW(InvalidInputError(formatString(
-                                                "Error in regular expression \"%s\"", value)));
-        }
+    }
 
-        bool match(const char *value) const
-        {
-            try
-            {
-                return std::regex_match(value, regex_);
-            }
-            catch (const std::regex_error &)
-            {
-                // TODO: Handle errors.
-                return false;
-            }
-        }
-
-    private:
-        std::regex regex_;
+private:
+    std::regex regex_;
 };
 #else
 class Regex::Impl
 {
-    public:
-        explicit Impl(const char * /*value*/)
-        {
-            GMX_THROW(NotImplementedError(
-                              "GROMACS is compiled without regular expression support"));
-        }
-        explicit Impl(const std::string & /*value*/)
-        {
-            GMX_THROW(NotImplementedError(
-                              "GROMACS is compiled without regular expression support"));
-        }
+public:
+    explicit Impl(const char * /*value*/)
+    {
+        GMX_THROW(NotImplementedError(
+                          "GROMACS is compiled without regular expression support"));
+    }
+    explicit Impl(const std::string & /*value*/)
+    {
+        GMX_THROW(NotImplementedError(
+                          "GROMACS is compiled without regular expression support"));
+    }
 
-        bool match(const char * /*value*/) const
-        {
-            // Should never be reached.
-            GMX_THROW(NotImplementedError(
-                              "GROMACS is compiled without regular expression support"));
-        }
+    bool match(const char * /*value*/) const
+    {
+        // Should never be reached.
+        GMX_THROW(NotImplementedError(
+                          "GROMACS is compiled without regular expression support"));
+    }
 };
 #endif
 

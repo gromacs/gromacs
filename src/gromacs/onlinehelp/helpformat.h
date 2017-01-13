@@ -103,132 +103,132 @@ class HelpWriterContext;
  */
 class TextTableFormatter
 {
-    public:
-        //! Constructs an empty formatter.
-        TextTableFormatter();
-        ~TextTableFormatter();
+public:
+    //! Constructs an empty formatter.
+    TextTableFormatter();
+    ~TextTableFormatter();
 
-        /*! \brief
-         * Adds a column to the table.
-         *
-         * \param[in]  title  Title string for the column (used for header).
-         * \param[in]  width  Width of the column (must be > 0).
-         * \param[in]  bWrap  Whether text that exceeds \p width is
-         *      automatically wrapped.
-         *
-         * The length of \p title must not exceed \p width.
-         */
-        void addColumn(const char *title, int width, bool bWrap);
-        /*! \brief
-         * Sets amount on indentation before the first column.
-         *
-         * \param[in]  indent  Number of spaces to use for indenting.
-         *
-         * Does not throw.
-         */
-        void setFirstColumnIndent(int indent);
-        /*! \brief
-         * Enables folding the last column to separate lines if it overflows.
-         *
-         * \param[in]  indent  Number of spaces to use for indenting the lines.
-         *
-         * If called with `indent >= 0`, the last column for each row is
-         * treated specially: if it contains more lines than the other columns,
-         * and if the text would fit more compactly as separate lines after the
-         * row, then the whole last column is written after the row with the
-         * given \p indent.  The column text then spans the whole space
-         * reserved for the table, making long text fit into a smaller amount
-         * of vertical space.
-         * If not called, the last column is not treates specially.
-         *
-         * Does not throw.
-         */
-        void setFoldLastColumnToNextLine(int indent);
+    /*! \brief
+     * Adds a column to the table.
+     *
+     * \param[in]  title  Title string for the column (used for header).
+     * \param[in]  width  Width of the column (must be > 0).
+     * \param[in]  bWrap  Whether text that exceeds \p width is
+     *      automatically wrapped.
+     *
+     * The length of \p title must not exceed \p width.
+     */
+    void addColumn(const char *title, int width, bool bWrap);
+    /*! \brief
+     * Sets amount on indentation before the first column.
+     *
+     * \param[in]  indent  Number of spaces to use for indenting.
+     *
+     * Does not throw.
+     */
+    void setFirstColumnIndent(int indent);
+    /*! \brief
+     * Enables folding the last column to separate lines if it overflows.
+     *
+     * \param[in]  indent  Number of spaces to use for indenting the lines.
+     *
+     * If called with `indent >= 0`, the last column for each row is
+     * treated specially: if it contains more lines than the other columns,
+     * and if the text would fit more compactly as separate lines after the
+     * row, then the whole last column is written after the row with the
+     * given \p indent.  The column text then spans the whole space
+     * reserved for the table, making long text fit into a smaller amount
+     * of vertical space.
+     * If not called, the last column is not treates specially.
+     *
+     * Does not throw.
+     */
+    void setFoldLastColumnToNextLine(int indent);
 
-        /*! \brief
-         * Whether formatRow() has been successfully called.
-         *
-         * This method can be used to determine after-the-fact whether anything
-         * was written in the table.
-         *
-         * Does not throw.
-         */
-        bool didOutput() const;
+    /*! \brief
+     * Whether formatRow() has been successfully called.
+     *
+     * This method can be used to determine after-the-fact whether anything
+     * was written in the table.
+     *
+     * Does not throw.
+     */
+    bool didOutput() const;
 
-        /*! \brief
-         * Removes all text from all columns and resets the line offsets.
-         *
-         * Removes all text added using addColumnLine() and resets line offsets
-         * set with setColumnFirstLineOffset() to zero.
-         * Should be called before starting to add data for a row.
-         *
-         * Does not throw.
-         */
-        void clear();
-        /*! \brief
-         * Adds text to be printed in a column.
-         *
-         * \param[in]  index     Zero-based column index.
-         * \param[in]  text      Text to add.
-         *
-         * Can be called multiple times.  Additional calls append \p text as
-         * additional lines.  Any calls with \p text empty have no effect.
-         * To add an empty line, use "\n" as \p text.
-         *
-         * If \p text contains newlines, the text is automatically splitted to
-         * multiple lines.  The same happens if automatic wrapping is on for
-         * the column and the text contains lines that are longer than what
-         * fits the column.
-         */
-        void addColumnLine(int index, const std::string &text);
-        /*! \brief
-         * Adds text containing help markup to be printed in a column.
-         *
-         * \param[in]  index     Zero-based column index.
-         * \param[in]  context   Context to use for markup processing.
-         * \param[in]  text      Text to add.
-         *
-         * Works as addColumnLine(), except that it uses
-         * HelpWriterContext::substituteMarkupAndWrapToVector() to process
-         * markup in the input text instead of just wrapping it as plain text.
-         */
-        void addColumnHelpTextBlock(int index, const HelpWriterContext &context,
-                                    const std::string &text);
-        /*! \brief
-         * Sets the first line to which text is printed for a column.
-         *
-         * \param[in]  index     Zero-based column index.
-         * \param[in]  firstLine Zero-based line index from which to start the
-         *      output.
-         *
-         * Can be called if there is no text for column \p index.
-         * Does not affect the output in this case.
-         *
-         * Does not throw.
-         */
-        void setColumnFirstLineOffset(int index, int firstLine);
-        /*! \brief
-         * Formats the lines for the current row.
-         *
-         * \returns  Current row formatted as a single string
-         *      (contains newlines).
-         *
-         * Formats the data as set after the previous clear()/formatRow() using
-         * addColumnLine() and setColumnFirstLineOffset().
-         *
-         * If this is the first line to be formatted, a header is also added to
-         * the beginning of the returned string if any column has a title.
-         *
-         * The return value always terminates with a newline.
-         *
-         * Calls clear() on successful return.
-         */
-        std::string formatRow();
+    /*! \brief
+     * Removes all text from all columns and resets the line offsets.
+     *
+     * Removes all text added using addColumnLine() and resets line offsets
+     * set with setColumnFirstLineOffset() to zero.
+     * Should be called before starting to add data for a row.
+     *
+     * Does not throw.
+     */
+    void clear();
+    /*! \brief
+     * Adds text to be printed in a column.
+     *
+     * \param[in]  index     Zero-based column index.
+     * \param[in]  text      Text to add.
+     *
+     * Can be called multiple times.  Additional calls append \p text as
+     * additional lines.  Any calls with \p text empty have no effect.
+     * To add an empty line, use "\n" as \p text.
+     *
+     * If \p text contains newlines, the text is automatically splitted to
+     * multiple lines.  The same happens if automatic wrapping is on for
+     * the column and the text contains lines that are longer than what
+     * fits the column.
+     */
+    void addColumnLine(int index, const std::string &text);
+    /*! \brief
+     * Adds text containing help markup to be printed in a column.
+     *
+     * \param[in]  index     Zero-based column index.
+     * \param[in]  context   Context to use for markup processing.
+     * \param[in]  text      Text to add.
+     *
+     * Works as addColumnLine(), except that it uses
+     * HelpWriterContext::substituteMarkupAndWrapToVector() to process
+     * markup in the input text instead of just wrapping it as plain text.
+     */
+    void addColumnHelpTextBlock(int index, const HelpWriterContext &context,
+                                const std::string &text);
+    /*! \brief
+     * Sets the first line to which text is printed for a column.
+     *
+     * \param[in]  index     Zero-based column index.
+     * \param[in]  firstLine Zero-based line index from which to start the
+     *      output.
+     *
+     * Can be called if there is no text for column \p index.
+     * Does not affect the output in this case.
+     *
+     * Does not throw.
+     */
+    void setColumnFirstLineOffset(int index, int firstLine);
+    /*! \brief
+     * Formats the lines for the current row.
+     *
+     * \returns  Current row formatted as a single string
+     *      (contains newlines).
+     *
+     * Formats the data as set after the previous clear()/formatRow() using
+     * addColumnLine() and setColumnFirstLineOffset().
+     *
+     * If this is the first line to be formatted, a header is also added to
+     * the beginning of the returned string if any column has a title.
+     *
+     * The return value always terminates with a newline.
+     *
+     * Calls clear() on successful return.
+     */
+    std::string formatRow();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

@@ -81,23 +81,23 @@ TEST(IndexGroupTest, RemovesDuplicates)
 
 class IndexBlockTest : public ::testing::Test
 {
-    public:
-        IndexBlockTest();
-        ~IndexBlockTest();
+public:
+    IndexBlockTest();
+    ~IndexBlockTest();
 
-        void setGroup(int count, const int atoms[]);
-        template <int count>
-        void setGroup(const int (&atoms)[count])
-        {
-            setGroup(count, atoms);
-        }
+    void setGroup(int count, const int atoms[]);
+    template <int count>
+    void setGroup(const int (&atoms)[count])
+    {
+        setGroup(count, atoms);
+    }
 
-        void checkBlocka();
+    void checkBlocka();
 
-        gmx::test::TestReferenceData data_;
-        gmx::test::TopologyManager   topManager_;
-        gmx_ana_index_t              g_;
-        t_blocka                     blocka_;
+    gmx::test::TestReferenceData data_;
+    gmx::test::TopologyManager   topManager_;
+    gmx_ana_index_t              g_;
+    t_blocka                     blocka_;
 };
 
 IndexBlockTest::IndexBlockTest()
@@ -367,35 +367,35 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesNegative)
 
 class IndexMapTest : public ::testing::Test
 {
-    public:
-        IndexMapTest();
-        ~IndexMapTest();
+public:
+    IndexMapTest();
+    ~IndexMapTest();
 
-        void testInit(int atomCount, const int atoms[], e_index_t type);
-        void testUpdate(int atomCount, const int atoms[], bool bMaskOnly,
-                        const char *name);
-        void testOrgIdGroup(e_index_t type, const char *name);
-        template <int count>
-        void testInit(const int (&atoms)[count], e_index_t type)
-        {
-            testInit(count, atoms, type);
-        }
-        template <int count>
-        void testUpdate(const int (&atoms)[count], bool bMaskOnly,
-                        const char *name)
-        {
-            testUpdate(count, atoms, bMaskOnly, name);
-        }
+    void testInit(int atomCount, const int atoms[], e_index_t type);
+    void testUpdate(int atomCount, const int atoms[], bool bMaskOnly,
+                    const char *name);
+    void testOrgIdGroup(e_index_t type, const char *name);
+    template <int count>
+    void testInit(const int (&atoms)[count], e_index_t type)
+    {
+        testInit(count, atoms, type);
+    }
+    template <int count>
+    void testUpdate(const int (&atoms)[count], bool bMaskOnly,
+                    const char *name)
+    {
+        testUpdate(count, atoms, bMaskOnly, name);
+    }
 
-        void checkMapping(int atomCount, const int atoms[], const char *name);
+    void checkMapping(int atomCount, const int atoms[], const char *name);
 
-        gmx::test::TestReferenceData    data_;
-        gmx::test::TestReferenceChecker checker_;
-        gmx::test::TopologyManager      topManager_;
-        gmx_ana_indexmap_t              map_;
+    gmx::test::TestReferenceData    data_;
+    gmx::test::TestReferenceChecker checker_;
+    gmx::test::TopologyManager      topManager_;
+    gmx_ana_indexmap_t              map_;
 
-    private:
-        gmx_ana_index_t initGroup_;
+private:
+    gmx_ana_index_t initGroup_;
 };
 
 IndexMapTest::IndexMapTest()

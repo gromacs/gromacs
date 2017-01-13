@@ -87,36 +87,36 @@ namespace
  */
 class FreeVolume : public TrajectoryAnalysisModule
 {
-    public:
-        FreeVolume();
-        virtual ~FreeVolume() {};
+public:
+    FreeVolume();
+    virtual ~FreeVolume() {};
 
-        virtual void initOptions(IOptionsContainer *         options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &       top);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void initOptions(IOptionsContainer *         options,
+                             TrajectoryAnalysisSettings *settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                              const TopologyInformation &       top);
+    virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                              TrajectoryAnalysisModuleData *pdata);
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        std::string                      fnFreevol_;
-        Selection                        sel_;
-        AnalysisData                     data_;
-        AnalysisDataAverageModulePointer adata_;
+private:
+    std::string                      fnFreevol_;
+    Selection                        sel_;
+    AnalysisData                     data_;
+    AnalysisDataAverageModulePointer adata_;
 
-        int                      nmol_;
-        double                   mtot_;
-        double                   cutoff_;
-        double                   probeRadius_;
-        gmx::DefaultRandomEngine rng_;
-        int                      seed_, ninsert_;
-        AnalysisNeighborhood     nb_;
-        //! The van der Waals radius per atom
-        std::vector<double> vdw_radius_;
+    int                      nmol_;
+    double                   mtot_;
+    double                   cutoff_;
+    double                   probeRadius_;
+    gmx::DefaultRandomEngine rng_;
+    int                      seed_, ninsert_;
+    AnalysisNeighborhood     nb_;
+    //! The van der Waals radius per atom
+    std::vector<double> vdw_radius_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 // Constructor. Here it is important to initialize the pointer to

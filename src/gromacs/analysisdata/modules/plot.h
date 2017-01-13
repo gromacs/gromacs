@@ -65,55 +65,55 @@ class SelectionCollection;
  */
 class AnalysisDataPlotSettings
 {
-    public:
-        //! Constructs default analysis plot settings.
-        AnalysisDataPlotSettings();
+public:
+    //! Constructs default analysis plot settings.
+    AnalysisDataPlotSettings();
 
-        //! Returns the selection collection set with setSelectionCollection().
-        const SelectionCollection *selectionCollection() const
-        {
-            return selections_;
-        }
-        //! Returns the time unit set with setTimeUnit().
-        TimeUnit timeUnit() const { return timeUnit_; }
-        /*! \brief
-         * Returns the plot format.
-         *
-         * \todo Use a proper enum.
-         */
-        int plotFormat() const { return plotFormat_; }
+    //! Returns the selection collection set with setSelectionCollection().
+    const SelectionCollection *selectionCollection() const
+    {
+        return selections_;
+    }
+    //! Returns the time unit set with setTimeUnit().
+    TimeUnit timeUnit() const { return timeUnit_; }
+    /*! \brief
+     * Returns the plot format.
+     *
+     * \todo Use a proper enum.
+     */
+    int plotFormat() const { return plotFormat_; }
 
-        /*! \brief
-         * Set selection collection to print as comments into the output.
-         *
-         * Formatted selection text from all selections in \p selections is
-         * printed as comments in the output file.
-         * If this method is not called, no selection information is written
-         * to the output.
-         */
-        void setSelectionCollection(const SelectionCollection *selections);
-        /*! \brief
-         * Sets the time unit for the plot.
-         *
-         * The value is used only if AbstractPlotModule::setXAxisIsTime() is
-         * called, in which case it is used to print the appropriate axis label
-         * and to scale the values.
-         * If not called, the default time unit is ps.
-         */
-        void setTimeUnit(TimeUnit timeUnit) { timeUnit_ = timeUnit; }
+    /*! \brief
+     * Set selection collection to print as comments into the output.
+     *
+     * Formatted selection text from all selections in \p selections is
+     * printed as comments in the output file.
+     * If this method is not called, no selection information is written
+     * to the output.
+     */
+    void setSelectionCollection(const SelectionCollection *selections);
+    /*! \brief
+     * Sets the time unit for the plot.
+     *
+     * The value is used only if AbstractPlotModule::setXAxisIsTime() is
+     * called, in which case it is used to print the appropriate axis label
+     * and to scale the values.
+     * If not called, the default time unit is ps.
+     */
+    void setTimeUnit(TimeUnit timeUnit) { timeUnit_ = timeUnit; }
 
 
-        /*! \brief
-         * Adds common options for setting plot options.
-         *
-         * \param[in,out] options Options object to which options are added.
-         */
-        void initOptions(IOptionsContainer *options);
+    /*! \brief
+     * Adds common options for setting plot options.
+     *
+     * \param[in,out] options Options object to which options are added.
+     */
+    void initOptions(IOptionsContainer *options);
 
-    private:
-        const SelectionCollection *selections_;
-        TimeUnit                   timeUnit_;
-        int                        plotFormat_;
+private:
+    const SelectionCollection *selections_;
+    TimeUnit                   timeUnit_;
+    int                        plotFormat_;
 };
 
 /*! \brief
@@ -141,122 +141,122 @@ class AnalysisDataPlotSettings
  */
 class AbstractPlotModule : public AnalysisDataModuleSerial
 {
-    public:
-        virtual ~AbstractPlotModule();
+public:
+    virtual ~AbstractPlotModule();
 
-        /*! \brief
-         * Set common settings for the plotting.
-         */
-        void setSettings(const AnalysisDataPlotSettings &settings);
-        /*! \brief
-         * Set the output file name.
-         *
-         * If no file name is set (or if \p filename is empty), no output occurs.
-         */
-        void setFileName(const std::string &filename);
-        /*! \brief
-         * Set plain output.
-         *
-         * If \p bPlain is true, no xvgr headers are written to the file.
-         * In this case, only setOmitX(), setXFormat(), and setYFormat()
-         * methods have any effect on the output.
-         */
-        void setPlainOutput(bool bPlain);
-        /*! \brief
-         * Plot errors as a separate output column after each value column.
-         */
-        void setErrorsAsSeparateColumn(bool bSeparate);
-        /*! \brief
-         * Omit the X coordinates from the output.
-         *
-         * This method only makes sense when combined with setPlainOutput().
-         */
-        void setOmitX(bool bOmitX);
-        /*! \brief
-         * Set plot title.
-         */
-        void setTitle(const char *title);
-        //! \copydoc setTitle(const char *)
-        void setTitle(const std::string &title);
-        /*! \brief
-         * Set plot subtitle.
-         */
-        void setSubtitle(const char *subtitle);
-        //! \copydoc setSubtitle(const char *)
-        void setSubtitle(const std::string &subtitle);
-        /*! \brief
-         * Set X axis label.
-         */
-        void setXLabel(const char *label);
-        /*! \brief
-         * Treat X axis as time.
-         *
-         * Sets the label for the axis accordingly and also scales output to
-         * take into account the correct time unit.
-         */
-        void setXAxisIsTime();
-        /*! \brief
-         * Set Y axis label.
-         */
-        void setYLabel(const char *label);
-        /*! \brief
-         * Add legend from an array of strings.
-         *
-         * Multiple calls to setLegend() and/or appendLegend() are added
-         * together.
-         */
-        void setLegend(int nsets, const char * const *setname);
-        /*! \brief
-         * Add a legend string for the next data set.
-         *
-         * Multiple calls to setLegend() and/or appendLegend() are added
-         * together.
-         */
-        void appendLegend(const char *setname);
-        //! \copydoc appendLegend(const char *)
-        void appendLegend(const std::string &setname);
-        /*! \brief
-         * Set field width and precision for X value output.
-         */
-        void setXFormat(int width, int precision, char format = 'f');
-        /*! \brief
-         * Set field width and precision for Y value output.
-         */
-        void setYFormat(int width, int precision, char format = 'f');
+    /*! \brief
+     * Set common settings for the plotting.
+     */
+    void setSettings(const AnalysisDataPlotSettings &settings);
+    /*! \brief
+     * Set the output file name.
+     *
+     * If no file name is set (or if \p filename is empty), no output occurs.
+     */
+    void setFileName(const std::string &filename);
+    /*! \brief
+     * Set plain output.
+     *
+     * If \p bPlain is true, no xvgr headers are written to the file.
+     * In this case, only setOmitX(), setXFormat(), and setYFormat()
+     * methods have any effect on the output.
+     */
+    void setPlainOutput(bool bPlain);
+    /*! \brief
+     * Plot errors as a separate output column after each value column.
+     */
+    void setErrorsAsSeparateColumn(bool bSeparate);
+    /*! \brief
+     * Omit the X coordinates from the output.
+     *
+     * This method only makes sense when combined with setPlainOutput().
+     */
+    void setOmitX(bool bOmitX);
+    /*! \brief
+     * Set plot title.
+     */
+    void setTitle(const char *title);
+    //! \copydoc setTitle(const char *)
+    void setTitle(const std::string &title);
+    /*! \brief
+     * Set plot subtitle.
+     */
+    void setSubtitle(const char *subtitle);
+    //! \copydoc setSubtitle(const char *)
+    void setSubtitle(const std::string &subtitle);
+    /*! \brief
+     * Set X axis label.
+     */
+    void setXLabel(const char *label);
+    /*! \brief
+     * Treat X axis as time.
+     *
+     * Sets the label for the axis accordingly and also scales output to
+     * take into account the correct time unit.
+     */
+    void setXAxisIsTime();
+    /*! \brief
+     * Set Y axis label.
+     */
+    void setYLabel(const char *label);
+    /*! \brief
+     * Add legend from an array of strings.
+     *
+     * Multiple calls to setLegend() and/or appendLegend() are added
+     * together.
+     */
+    void setLegend(int nsets, const char * const *setname);
+    /*! \brief
+     * Add a legend string for the next data set.
+     *
+     * Multiple calls to setLegend() and/or appendLegend() are added
+     * together.
+     */
+    void appendLegend(const char *setname);
+    //! \copydoc appendLegend(const char *)
+    void appendLegend(const std::string &setname);
+    /*! \brief
+     * Set field width and precision for X value output.
+     */
+    void setXFormat(int width, int precision, char format = 'f');
+    /*! \brief
+     * Set field width and precision for Y value output.
+     */
+    void setYFormat(int width, int precision, char format = 'f');
 
-        virtual int flags() const;
+    virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+    virtual void dataStarted(AbstractAnalysisData *data);
+    virtual void frameStarted(const AnalysisDataFrameHeader &header);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
+    virtual void frameFinished(const AnalysisDataFrameHeader &header);
+    virtual void dataFinished();
 
-    protected:
-        /*! \cond libapi */
-        AbstractPlotModule();
-        //! Creates AbstractPlotModule and assign common settings.
-        explicit AbstractPlotModule(const AnalysisDataPlotSettings &settings);
+protected:
+    /*! \cond libapi */
+    AbstractPlotModule();
+    //! Creates AbstractPlotModule and assign common settings.
+    explicit AbstractPlotModule(const AnalysisDataPlotSettings &settings);
 
-        //! Whether an output file has been opened.
-        bool isFileOpen() const;
-        /*! \brief
-         * Appends a single value to the current output line.
-         *
-         * \param[in] value  Value to append.
-         *
-         * Should be used from pointsAdded() implementations in derived classes
-         * to write out individual y values to the output.
-         *
-         * Must not be called if isFileOpen() returns false.
-         */
-        void writeValue(const AnalysisDataValue &value) const;
-        //! \endcond
+    //! Whether an output file has been opened.
+    bool isFileOpen() const;
+    /*! \brief
+     * Appends a single value to the current output line.
+     *
+     * \param[in] value  Value to append.
+     *
+     * Should be used from pointsAdded() implementations in derived classes
+     * to write out individual y values to the output.
+     *
+     * Must not be called if isFileOpen() returns false.
+     */
+    void writeValue(const AnalysisDataValue &value) const;
+    //! \endcond
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 
@@ -270,14 +270,14 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
  */
 class AnalysisDataPlotModule : public AbstractPlotModule
 {
-    public:
-        AnalysisDataPlotModule();
-        //! Creates AnalysisDataPlotModule and assign common settings.
-        explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
+public:
+    AnalysisDataPlotModule();
+    //! Creates AnalysisDataPlotModule and assign common settings.
+    explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
 
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 
@@ -291,38 +291,38 @@ class AnalysisDataPlotModule : public AbstractPlotModule
  */
 class AnalysisDataVectorPlotModule : public AbstractPlotModule
 {
-    public:
-        AnalysisDataVectorPlotModule();
-        //! Creates AnalysisDataVectorPlotModule and assign common settings.
-        explicit AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings &settings);
+public:
+    AnalysisDataVectorPlotModule();
+    //! Creates AnalysisDataVectorPlotModule and assign common settings.
+    explicit AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings &settings);
 
-        /*! \brief
-         * Set whether to write X component.
-         */
-        void setWriteX(bool bWrite);
-        /*! \brief
-         * Set whether to write Y component.
-         */
-        void setWriteY(bool bWrite);
-        /*! \brief
-         * Set whether to write Z component.
-         */
-        void setWriteZ(bool bWrite);
-        /*! \brief
-         * Set whether to write norm of the vector.
-         */
-        void setWriteNorm(bool bWrite);
-        /*! \brief
-         * Set mask for what to write.
-         */
-        void setWriteMask(bool bWrite[4]);
+    /*! \brief
+     * Set whether to write X component.
+     */
+    void setWriteX(bool bWrite);
+    /*! \brief
+     * Set whether to write Y component.
+     */
+    void setWriteY(bool bWrite);
+    /*! \brief
+     * Set whether to write Z component.
+     */
+    void setWriteZ(bool bWrite);
+    /*! \brief
+     * Set whether to write norm of the vector.
+     */
+    void setWriteNorm(bool bWrite);
+    /*! \brief
+     * Set mask for what to write.
+     */
+    void setWriteMask(bool bWrite[4]);
 
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+    virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
-    private:
-        bool bWrite_[4];
+private:
+    bool bWrite_[4];
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 //! Smart pointer to manage an AnalysisDataPlotModule object.

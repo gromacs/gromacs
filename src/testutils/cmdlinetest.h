@@ -96,90 +96,90 @@ class TestReferenceChecker;
  */
 class CommandLine
 {
-    public:
-        //! Initializes an empty command-line object.
-        CommandLine();
-        /*! \brief
-         * Initializes a command-line object from an array.
-         *
-         * \param[in] cmdline  Array of command-line arguments.
-         *
-         * \p cmdline should include the binary name as the first element if
-         * that is desired in the output.
-         *
-         * This constructor is not explicit to make it possible to create a
-         * CommandLine object directly from a C array.
-         */
-        CommandLine(const ConstArrayRef<const char *> &cmdline);
-        //! Creates a deep copy of a command-line object.
-        CommandLine(const CommandLine &other);
-        ~CommandLine();
+public:
+    //! Initializes an empty command-line object.
+    CommandLine();
+    /*! \brief
+     * Initializes a command-line object from an array.
+     *
+     * \param[in] cmdline  Array of command-line arguments.
+     *
+     * \p cmdline should include the binary name as the first element if
+     * that is desired in the output.
+     *
+     * This constructor is not explicit to make it possible to create a
+     * CommandLine object directly from a C array.
+     */
+    CommandLine(const ConstArrayRef<const char *> &cmdline);
+    //! Creates a deep copy of a command-line object.
+    CommandLine(const CommandLine &other);
+    ~CommandLine();
 
-        /*! \brief
-         * Initializes a command-line object in-place from an array.
-         *
-         * \param[in] cmdline  Array of command-line arguments.
-         *
-         * \p cmdline should include the binary name as the first element if
-         * that is desired in the output.
-         *
-         * This function does the same as the constructor that takes a
-         * ConstArrayRef.  Any earlier contents of the object are discarded.
-         *
-         * Strong exception safety.
-         */
-        void initFromArray(const ConstArrayRef<const char *> &cmdline);
+    /*! \brief
+     * Initializes a command-line object in-place from an array.
+     *
+     * \param[in] cmdline  Array of command-line arguments.
+     *
+     * \p cmdline should include the binary name as the first element if
+     * that is desired in the output.
+     *
+     * This function does the same as the constructor that takes a
+     * ConstArrayRef.  Any earlier contents of the object are discarded.
+     *
+     * Strong exception safety.
+     */
+    void initFromArray(const ConstArrayRef<const char *> &cmdline);
 
-        /*! \brief
-         * Appends an argument to the command line.
-         *
-         * \param[in] arg  Argument to append.
-         *
-         * Strong exception safety.
-         */
-        void append(const char *arg);
-        //! Convenience overload taking a std::string.
-        void append(const std::string &arg) { append(arg.c_str()); }
-        /*! \brief
-         * Adds an option-value pair to the command line.
-         *
-         * \param[in] name   Name of the option to append, which
-         *                   should start with "-".
-         * \param[in] value  Value of the argument to append.
-         */
-        void addOption(const char *name, const char *value);
-        //! Convenience overload taking a std::string.
-        void addOption(const char *name, const std::string &value);
-        //! Overload taking an int.
-        void addOption(const char *name, int value);
-        //! Overload taking a double.
-        void addOption(const char *name, double value);
-        /*! \brief
-         * Appends all arguments from \p args to the command line.
-         *
-         * If the first argument of \p args does not start with a `-`, it is
-         * skipped, assuming it is a gmx module name and thus useless.
-         */
-        void merge(const CommandLine &args);
+    /*! \brief
+     * Appends an argument to the command line.
+     *
+     * \param[in] arg  Argument to append.
+     *
+     * Strong exception safety.
+     */
+    void append(const char *arg);
+    //! Convenience overload taking a std::string.
+    void append(const std::string &arg) { append(arg.c_str()); }
+    /*! \brief
+     * Adds an option-value pair to the command line.
+     *
+     * \param[in] name   Name of the option to append, which
+     *                   should start with "-".
+     * \param[in] value  Value of the argument to append.
+     */
+    void addOption(const char *name, const char *value);
+    //! Convenience overload taking a std::string.
+    void addOption(const char *name, const std::string &value);
+    //! Overload taking an int.
+    void addOption(const char *name, int value);
+    //! Overload taking a double.
+    void addOption(const char *name, double value);
+    /*! \brief
+     * Appends all arguments from \p args to the command line.
+     *
+     * If the first argument of \p args does not start with a `-`, it is
+     * skipped, assuming it is a gmx module name and thus useless.
+     */
+    void merge(const CommandLine &args);
 
-        //! Returns argc for passing into C-style command-line handling.
-        int &argc();
-        //! Returns argv for passing into C-style command-line handling.
-        char **argv();
-        //! Returns argc for passing into C-style command-line handling.
-        int argc() const;
-        //! Returns argv for passing into C-style command-line handling.
-        const char *const *argv() const;
-        //! Returns a single argument.
-        const char *arg(int i) const;
+    //! Returns argc for passing into C-style command-line handling.
+    int &argc();
+    //! Returns argv for passing into C-style command-line handling.
+    char **argv();
+    //! Returns argc for passing into C-style command-line handling.
+    int argc() const;
+    //! Returns argv for passing into C-style command-line handling.
+    const char *const *argv() const;
+    //! Returns a single argument.
+    const char *arg(int i) const;
 
-        //! Returns the command line formatted as a single string.
-        std::string toString() const;
+    //! Returns the command line formatted as a single string.
+    std::string toString() const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -206,135 +206,135 @@ class CommandLine
  */
 class CommandLineTestHelper
 {
-    public:
-        /*! \brief
-         * Runs a command-line program that implements ICommandLineModule.
-         *
-         * \param[in,out] module       Module to run.
-         *     The function does not take ownership.
-         * \param[in,out] commandLine  Command line parameters to pass.
-         *     This is only modified if \p module modifies it.
-         * \returns The return value of the module.
-         * \throws  unspecified  Any exception thrown by the module.
-         */
-        static int
-        runModuleDirect(ICommandLineModule *module, CommandLine *commandLine);
-        /*! \brief
-         * Runs a command-line program that implements
-         * ICommandLineOptionsModule.
-         *
-         * \param[in,out] module       Module to run.
-         * \param[in,out] commandLine  Command line parameters to pass.
-         *     This is only modified if \p module modifies it.
-         * \returns The return value of the module.
-         * \throws  unspecified  Any exception thrown by the module.
-         */
-        static int
-        runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
-                        CommandLine *                              commandLine);
-        /*! \brief
-         * Runs a command-line program that implements
-         * ICommandLineOptionsModule.
-         *
-         * \param[in] factory          Factory method for the module to run.
-         * \param[in,out] commandLine  Command line parameters to pass.
-         *     This is only modified if the module modifies it.
-         * \returns The return value of the module.
-         * \throws  unspecified  Any exception thrown by the factory or the
-         *     module.
-         */
-        static int
-        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory,
-                         CommandLine *                                               commandLine);
+public:
+    /*! \brief
+     * Runs a command-line program that implements ICommandLineModule.
+     *
+     * \param[in,out] module       Module to run.
+     *     The function does not take ownership.
+     * \param[in,out] commandLine  Command line parameters to pass.
+     *     This is only modified if \p module modifies it.
+     * \returns The return value of the module.
+     * \throws  unspecified  Any exception thrown by the module.
+     */
+    static int
+    runModuleDirect(ICommandLineModule *module, CommandLine *commandLine);
+    /*! \brief
+     * Runs a command-line program that implements
+     * ICommandLineOptionsModule.
+     *
+     * \param[in,out] module       Module to run.
+     * \param[in,out] commandLine  Command line parameters to pass.
+     *     This is only modified if \p module modifies it.
+     * \returns The return value of the module.
+     * \throws  unspecified  Any exception thrown by the module.
+     */
+    static int
+    runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
+                    CommandLine *                              commandLine);
+    /*! \brief
+     * Runs a command-line program that implements
+     * ICommandLineOptionsModule.
+     *
+     * \param[in] factory          Factory method for the module to run.
+     * \param[in,out] commandLine  Command line parameters to pass.
+     *     This is only modified if the module modifies it.
+     * \returns The return value of the module.
+     * \throws  unspecified  Any exception thrown by the factory or the
+     *     module.
+     */
+    static int
+    runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory,
+                     CommandLine *                                               commandLine);
 
-        /*! \brief
-         * Initializes an instance.
-         *
-         * \param  fileManager  File manager to use for generating temporary
-         *     file names and to track temporary files.
-         */
-        explicit CommandLineTestHelper(TestFileManager *fileManager);
-        ~CommandLineTestHelper();
+    /*! \brief
+     * Initializes an instance.
+     *
+     * \param  fileManager  File manager to use for generating temporary
+     *     file names and to track temporary files.
+     */
+    explicit CommandLineTestHelper(TestFileManager *fileManager);
+    ~CommandLineTestHelper();
 
-        /*! \brief
-         * Generates and sets an input file.
-         *
-         * \param[in,out] args      CommandLine to which to add the option.
-         * \param[in]     option    Option to set.
-         * \param[in]     extension Extension for the file to create.
-         * \param[in]     contents  Text to write to the input file.
-         *
-         * Creates a temporary file with contents from \p contents, and adds
-         * \p option to \p args with a value that points to the generated file.
-         */
-        void setInputFileContents(CommandLine *args, const char *option,
-                                  const char *extension,
-                                  const std::string &contents);
-        /*! \brief
-         * Generates and sets an input file.
-         *
-         * \param[in,out] args      CommandLine to which to add the option.
-         * \param[in]     option    Option to set.
-         * \param[in]     extension Extension for the file to create.
-         * \param[in]     contents  Text to write to the input file.
-         *
-         * Creates a temporary file with contents from \p contents (each array
-         * entry on its own line), and adds \p option to \p args with a value
-         * that points to the generated file.
-         */
-        void setInputFileContents(CommandLine *args, const char *option,
-                                  const char *extension,
-                                  const ConstArrayRef<const char *> &contents);
-        /*! \brief
-         * Sets an output file parameter and adds it to the set of tested files.
-         *
-         * \param[in,out] args      CommandLine to which to add the option.
-         * \param[in]     option    Option to set.
-         * \param[in]     filename  Name of the output file.
-         * \param[in]     matcher   Specifies how the contents of the file are
-         *     tested.
-         *
-         * This method does the following:
-         *  - Adds \p option to \p args to point a temporary file name
-         *    constructed from \p filename.
-         *  - Makes checkOutputFiles() to check the contents of the file
-         *    against reference data, using \p matcher.
-         *  - Marks the temporary file for removal at test teardown.
-         *
-         * \p filename is given to TestTemporaryFileManager to make a unique
-         * filename for the temporary file.
-         * If \p filename starts with a dot, a unique number is prefixed (such
-         * that it is possible to create multiple files with the same extension
-         * by just specifying the extension for every call of setOutputFile()).
-         *
-         * If the output file is needed to trigger some computation, or is
-         * unconditionally produced by the code under test, but the contents
-         * are not interesting for the test, use NoTextMatch as the matcher.
-         */
-        void setOutputFile(CommandLine *args, const char *option,
-                           const char *filename,
-                           const ITextBlockMatcherSettings &matcher);
+    /*! \brief
+     * Generates and sets an input file.
+     *
+     * \param[in,out] args      CommandLine to which to add the option.
+     * \param[in]     option    Option to set.
+     * \param[in]     extension Extension for the file to create.
+     * \param[in]     contents  Text to write to the input file.
+     *
+     * Creates a temporary file with contents from \p contents, and adds
+     * \p option to \p args with a value that points to the generated file.
+     */
+    void setInputFileContents(CommandLine *args, const char *option,
+                              const char *extension,
+                              const std::string &contents);
+    /*! \brief
+     * Generates and sets an input file.
+     *
+     * \param[in,out] args      CommandLine to which to add the option.
+     * \param[in]     option    Option to set.
+     * \param[in]     extension Extension for the file to create.
+     * \param[in]     contents  Text to write to the input file.
+     *
+     * Creates a temporary file with contents from \p contents (each array
+     * entry on its own line), and adds \p option to \p args with a value
+     * that points to the generated file.
+     */
+    void setInputFileContents(CommandLine *args, const char *option,
+                              const char *extension,
+                              const ConstArrayRef<const char *> &contents);
+    /*! \brief
+     * Sets an output file parameter and adds it to the set of tested files.
+     *
+     * \param[in,out] args      CommandLine to which to add the option.
+     * \param[in]     option    Option to set.
+     * \param[in]     filename  Name of the output file.
+     * \param[in]     matcher   Specifies how the contents of the file are
+     *     tested.
+     *
+     * This method does the following:
+     *  - Adds \p option to \p args to point a temporary file name
+     *    constructed from \p filename.
+     *  - Makes checkOutputFiles() to check the contents of the file
+     *    against reference data, using \p matcher.
+     *  - Marks the temporary file for removal at test teardown.
+     *
+     * \p filename is given to TestTemporaryFileManager to make a unique
+     * filename for the temporary file.
+     * If \p filename starts with a dot, a unique number is prefixed (such
+     * that it is possible to create multiple files with the same extension
+     * by just specifying the extension for every call of setOutputFile()).
+     *
+     * If the output file is needed to trigger some computation, or is
+     * unconditionally produced by the code under test, but the contents
+     * are not interesting for the test, use NoTextMatch as the matcher.
+     */
+    void setOutputFile(CommandLine *args, const char *option,
+                       const char *filename,
+                       const ITextBlockMatcherSettings &matcher);
 
-        /*! \brief
-         * Checks output files added with setOutputFile() against reference
-         * data.
-         *
-         * \param     checker  Reference data root location where the reference
-         *     data is stored.
-         *
-         * The file contents are tested verbatim, using direct string
-         * comparison.  The text can be found verbatim in the reference data
-         * XML files for manual inspection.
-         *
-         * Generates non-fatal test failures if some output file contents do
-         * not match the reference data.
-         */
-        void checkOutputFiles(TestReferenceChecker checker) const;
+    /*! \brief
+     * Checks output files added with setOutputFile() against reference
+     * data.
+     *
+     * \param     checker  Reference data root location where the reference
+     *     data is stored.
+     *
+     * The file contents are tested verbatim, using direct string
+     * comparison.  The text can be found verbatim in the reference data
+     * XML files for manual inspection.
+     *
+     * Generates non-fatal test failures if some output file contents do
+     * not match the reference data.
+     */
+    void checkOutputFiles(TestReferenceChecker checker) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -355,88 +355,88 @@ class CommandLineTestHelper
  */
 class CommandLineTestBase : public ::testing::Test
 {
-    public:
-        CommandLineTestBase();
-        ~CommandLineTestBase();
+public:
+    CommandLineTestBase();
+    ~CommandLineTestBase();
 
-        /*! \brief
-         * Sets an input file.
-         *
-         * \param[in]     option    Option to set.
-         * \param[in]     filename  Name of the input file.
-         *
-         * \see TestFileManager::getInputFilePath()
-         */
-        void setInputFile(const char *option, const char *filename);
-        /*! \brief
-         * Generates and sets an input file.
-         *
-         * \see CommandLineTestHelper::setInputFileContents()
-         */
-        void setInputFileContents(const char *       option,
-                                  const char *       extension,
-                                  const std::string &contents);
-        /*! \brief
-         * Generates and sets an input file.
-         *
-         * \see CommandLineTestHelper::setInputFileContents()
-         */
-        void setInputFileContents(const char *                       option,
-                                  const char *                       extension,
-                                  const ConstArrayRef<const char *> &contents);
-        /*! \brief
-         * Sets an output file parameter and adds it to the set of tested files.
-         *
-         * \see CommandLineTestHelper::setOutputFile()
-         */
-        void setOutputFile(const char *option, const char *filename,
-                           const ITextBlockMatcherSettings &matcher);
+    /*! \brief
+     * Sets an input file.
+     *
+     * \param[in]     option    Option to set.
+     * \param[in]     filename  Name of the input file.
+     *
+     * \see TestFileManager::getInputFilePath()
+     */
+    void setInputFile(const char *option, const char *filename);
+    /*! \brief
+     * Generates and sets an input file.
+     *
+     * \see CommandLineTestHelper::setInputFileContents()
+     */
+    void setInputFileContents(const char *       option,
+                              const char *       extension,
+                              const std::string &contents);
+    /*! \brief
+     * Generates and sets an input file.
+     *
+     * \see CommandLineTestHelper::setInputFileContents()
+     */
+    void setInputFileContents(const char *                       option,
+                              const char *                       extension,
+                              const ConstArrayRef<const char *> &contents);
+    /*! \brief
+     * Sets an output file parameter and adds it to the set of tested files.
+     *
+     * \see CommandLineTestHelper::setOutputFile()
+     */
+    void setOutputFile(const char *option, const char *filename,
+                       const ITextBlockMatcherSettings &matcher);
 
-        /*! \brief
-         * Returns the internal CommandLine object used to construct the
-         * command line for the test.
-         *
-         * Derived test fixtures can use this to add additional options, and
-         * to access the final command line to do the actual call that is being
-         * tested.
-         *
-         * Does not throw.
-         */
-        CommandLine &commandLine();
-        /*! \brief
-         * Returns the internal TestFileManager object used to manage the
-         * files.
-         *
-         * Derived test fixtures can use this to manage files in cases the
-         * canned methods are not sufficient.
-         *
-         * Does not throw.
-         */
-        TestFileManager &fileManager();
-        /*! \brief
-         * Returns the root reference data checker.
-         *
-         * Derived test fixtures can use this to check other things than output
-         * file contents.
-         */
-        TestReferenceChecker rootChecker();
+    /*! \brief
+     * Returns the internal CommandLine object used to construct the
+     * command line for the test.
+     *
+     * Derived test fixtures can use this to add additional options, and
+     * to access the final command line to do the actual call that is being
+     * tested.
+     *
+     * Does not throw.
+     */
+    CommandLine &commandLine();
+    /*! \brief
+     * Returns the internal TestFileManager object used to manage the
+     * files.
+     *
+     * Derived test fixtures can use this to manage files in cases the
+     * canned methods are not sufficient.
+     *
+     * Does not throw.
+     */
+    TestFileManager &fileManager();
+    /*! \brief
+     * Returns the root reference data checker.
+     *
+     * Derived test fixtures can use this to check other things than output
+     * file contents.
+     */
+    TestReferenceChecker rootChecker();
 
-        /*! \brief
-         * Checks the output of writeHelp() against reference data.
-         */
-        void testWriteHelp(ICommandLineModule *module);
-        /*! \brief
-         * Checks output files added with setOutputFile() against reference
-         * data.
-         *
-         * \see CommandLineTestHelper::checkOutputFiles()
-         */
-        void checkOutputFiles();
+    /*! \brief
+     * Checks the output of writeHelp() against reference data.
+     */
+    void testWriteHelp(ICommandLineModule *module);
+    /*! \brief
+     * Checks output files added with setOutputFile() against reference
+     * data.
+     *
+     * \see CommandLineTestHelper::checkOutputFiles()
+     */
+    void checkOutputFiles();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

@@ -74,51 +74,51 @@ class TestReferenceChecker;
  */
 class InteractiveTestHelper
 {
-    public:
-        /*! \brief
-         * Initializes the helper.
-         *
-         * \param[in] checker  Parent reference checker to use.
-         *
-         * The helper creates a compound item under \p checker for the
-         * interactive session it tests.
-         */
-        explicit InteractiveTestHelper(gmx::test::TestReferenceChecker checker);
-        ~InteractiveTestHelper();
+public:
+    /*! \brief
+     * Initializes the helper.
+     *
+     * \param[in] checker  Parent reference checker to use.
+     *
+     * The helper creates a compound item under \p checker for the
+     * interactive session it tests.
+     */
+    explicit InteractiveTestHelper(gmx::test::TestReferenceChecker checker);
+    ~InteractiveTestHelper();
 
-        //! Sets whether the last input line contains a newline (by default, it does).
-        void setLastNewline(bool bInclude);
-        /*! \brief
-         * Sets the input lines for the interactive session.
-         *
-         * Calls to TextInputStream::readLine() will return strings from this
-         * array in sequence.
-         * Newlines are added at the end automatically (except for the last
-         * line if `setLastNewLine(false)` has been called).
-         * If there are more `readLine()` calls than there are input lines,
-         * the remaining calls return end-of-input.
-         */
-        void setInputLines(const ConstArrayRef<const char *> &inputLines);
+    //! Sets whether the last input line contains a newline (by default, it does).
+    void setLastNewline(bool bInclude);
+    /*! \brief
+     * Sets the input lines for the interactive session.
+     *
+     * Calls to TextInputStream::readLine() will return strings from this
+     * array in sequence.
+     * Newlines are added at the end automatically (except for the last
+     * line if `setLastNewLine(false)` has been called).
+     * If there are more `readLine()` calls than there are input lines,
+     * the remaining calls return end-of-input.
+     */
+    void setInputLines(const ConstArrayRef<const char *> &inputLines);
 
-        //! Returns the input stream for the session.
-        TextInputStream &inputStream();
-        //! Returns the output stream for the session.
-        TextOutputStream &outputStream();
+    //! Returns the input stream for the session.
+    TextInputStream &inputStream();
+    //! Returns the output stream for the session.
+    TextOutputStream &outputStream();
 
-        /*! \brief
-         * Finalizes the checking for the session.
-         *
-         * This must be called after all input and output from a session has
-         * occurred, as the helper will not otherwise know when output after
-         * the last input has finished.  This method also checks that the
-         * required number of input lines were read in the session.
-         */
-        void checkSession();
+    /*! \brief
+     * Finalizes the checking for the session.
+     *
+     * This must be called after all input and output from a session has
+     * occurred, as the helper will not otherwise know when output after
+     * the last input has finished.  This method also checks that the
+     * required number of input lines were read in the session.
+     */
+    void checkSession();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 } // namespace test
 } // namespace gmx

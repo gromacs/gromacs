@@ -68,79 +68,79 @@ class CommandLineHelpModuleImpl;
  */
 class CommandLineHelpModule : public ICommandLineModule
 {
-    public:
-        /*! \brief
-         * Creates a command-line help module.
-         *
-         * \param[in] programContext Information about the running binary.
-         * \param[in] binaryName     Name of the running binary
-         *     (without Gromacs binary suffix or .exe on Windows).
-         * \param[in] modules  List of modules for to use for module listings.
-         * \param[in] groups   List of module groups.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        CommandLineHelpModule(const IProgramContext &           programContext,
-                              const std::string &               binaryName,
-                              const CommandLineModuleMap &      modules,
-                              const CommandLineModuleGroupList &groups);
-        ~CommandLineHelpModule();
+public:
+    /*! \brief
+     * Creates a command-line help module.
+     *
+     * \param[in] programContext Information about the running binary.
+     * \param[in] binaryName     Name of the running binary
+     *     (without Gromacs binary suffix or .exe on Windows).
+     * \param[in] modules  List of modules for to use for module listings.
+     * \param[in] groups   List of module groups.
+     * \throws    std::bad_alloc if out of memory.
+     */
+    CommandLineHelpModule(const IProgramContext &           programContext,
+                          const std::string &               binaryName,
+                          const CommandLineModuleMap &      modules,
+                          const CommandLineModuleGroupList &groups);
+    ~CommandLineHelpModule();
 
-        /*! \brief
-         * Creates a help topic for a command-line module.
-         *
-         * \param[in] module  Module the create the help topic for.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * The caller should add the topic using addTopic() if that is desired.
-         * This method is provided separately to allow for strong exception
-         * safety in CommandLineModuleManager::addModule().
-         */
-        HelpTopicPointer
-        createModuleHelpTopic(const ICommandLineModule &module) const;
-        /*! \brief
-         * Adds a top-level help topic.
-         *
-         * \param[in] topic     Help topic to add.
-         * \param[in] bExported Whether this topic will be directly exported to
-         *     the user guide.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        void addTopic(HelpTopicPointer topic, bool bExported);
-        //! Sets whether hidden options will be shown in help.
-        void setShowHidden(bool bHidden);
-        /*! \brief
-         * Sets an override to show the help for the given module.
-         *
-         * If called, the help module directly prints the help for the given
-         * module when called, skipping any other processing.
-         */
-        void setModuleOverride(const ICommandLineModule &module);
+    /*! \brief
+     * Creates a help topic for a command-line module.
+     *
+     * \param[in] module  Module the create the help topic for.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * The caller should add the topic using addTopic() if that is desired.
+     * This method is provided separately to allow for strong exception
+     * safety in CommandLineModuleManager::addModule().
+     */
+    HelpTopicPointer
+    createModuleHelpTopic(const ICommandLineModule &module) const;
+    /*! \brief
+     * Adds a top-level help topic.
+     *
+     * \param[in] topic     Help topic to add.
+     * \param[in] bExported Whether this topic will be directly exported to
+     *     the user guide.
+     * \throws    std::bad_alloc if out of memory.
+     */
+    void addTopic(HelpTopicPointer topic, bool bExported);
+    //! Sets whether hidden options will be shown in help.
+    void setShowHidden(bool bHidden);
+    /*! \brief
+     * Sets an override to show the help for the given module.
+     *
+     * If called, the help module directly prints the help for the given
+     * module when called, skipping any other processing.
+     */
+    void setModuleOverride(const ICommandLineModule &module);
 
-        /*! \brief
-         * Sets a file redirector for writing help output.
-         *
-         * Used for unit testing; see
-         * CommandLineModuleManager::setOutputRedirector() for more details.
-         */
-        void setOutputRedirector(IFileOutputRedirector *output);
+    /*! \brief
+     * Sets a file redirector for writing help output.
+     *
+     * Used for unit testing; see
+     * CommandLineModuleManager::setOutputRedirector() for more details.
+     */
+    void setOutputRedirector(IFileOutputRedirector *output);
 
-        virtual const char *name() const { return "help"; }
-        virtual const char *shortDescription() const
-        {
-            return "Print help information";
-        }
+    virtual const char *name() const { return "help"; }
+    virtual const char *shortDescription() const
+    {
+        return "Print help information";
+    }
 
-        virtual void init(CommandLineModuleSettings *settings)
-        {
-            settings->setDefaultNiceLevel(0);
-        }
-        virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const CommandLineHelpContext &context) const;
+    virtual void init(CommandLineModuleSettings *settings)
+    {
+        settings->setDefaultNiceLevel(0);
+    }
+    virtual int run(int argc, char *argv[]);
+    virtual void writeHelp(const CommandLineHelpContext &context) const;
 
-    private:
-        typedef CommandLineHelpModuleImpl Impl;
+private:
+    typedef CommandLineHelpModuleImpl Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

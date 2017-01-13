@@ -74,24 +74,24 @@ namespace
 
 class SelectionCollectionTest : public ::testing::Test
 {
-    public:
-        static int s_debugLevel;
+public:
+    static int s_debugLevel;
 
-        SelectionCollectionTest();
-        ~SelectionCollectionTest();
+    SelectionCollectionTest();
+    ~SelectionCollectionTest();
 
-        void setAtomCount(int natoms)
-        {
-            ASSERT_NO_THROW_GMX(sc_.setTopology(nullptr, natoms));
-        }
-        void loadTopology(const char *filename);
-        void setTopology();
-        void loadIndexGroups(const char *filename);
+    void setAtomCount(int natoms)
+    {
+        ASSERT_NO_THROW_GMX(sc_.setTopology(nullptr, natoms));
+    }
+    void loadTopology(const char *filename);
+    void setTopology();
+    void loadIndexGroups(const char *filename);
 
-        gmx::test::TopologyManager topManager_;
-        gmx::SelectionCollection   sc_;
-        gmx::SelectionList         sel_;
-        gmx_ana_indexgrps_t *      grps_;
+    gmx::test::TopologyManager topManager_;
+    gmx::SelectionCollection   sc_;
+    gmx::SelectionList         sel_;
+    gmx_ana_indexgrps_t *      grps_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -151,17 +151,17 @@ void SelectionCollectionTest::loadIndexGroups(const char *filename)
 
 class SelectionCollectionInteractiveTest : public SelectionCollectionTest
 {
-    public:
-        SelectionCollectionInteractiveTest()
-            : helper_(data_.rootChecker())
-        {
-        }
+public:
+    SelectionCollectionInteractiveTest()
+        : helper_(data_.rootChecker())
+    {
+    }
 
-        void runTest(int count, bool bInteractive,
-                     const gmx::ConstArrayRef<const char *> &input);
+    void runTest(int count, bool bInteractive,
+                 const gmx::ConstArrayRef<const char *> &input);
 
-        gmx::test::TestReferenceData     data_;
-        gmx::test::InteractiveTestHelper helper_;
+    gmx::test::TestReferenceData     data_;
+    gmx::test::InteractiveTestHelper helper_;
 };
 
 void SelectionCollectionInteractiveTest::runTest(
@@ -184,48 +184,48 @@ void SelectionCollectionInteractiveTest::runTest(
 
 class SelectionCollectionDataTest : public SelectionCollectionTest
 {
-    public:
-        enum TestFlag
-        {
-            efTestEvaluation          = 1 << 0,
-            efTestPositionAtoms       = 1 << 1,
-            efTestPositionCoordinates = 1 << 2,
-            efTestPositionMapping     = 1 << 3,
-            efTestPositionMasses      = 1 << 4,
-            efTestPositionCharges     = 1 << 5,
-            efTestSelectionNames      = 1 << 6,
-            efDontTestCompiledAtoms   = 1 << 8
-        };
-        typedef gmx::FlagsTemplate<TestFlag> TestFlags;
+public:
+    enum TestFlag
+    {
+        efTestEvaluation          = 1 << 0,
+        efTestPositionAtoms       = 1 << 1,
+        efTestPositionCoordinates = 1 << 2,
+        efTestPositionMapping     = 1 << 3,
+        efTestPositionMasses      = 1 << 4,
+        efTestPositionCharges     = 1 << 5,
+        efTestSelectionNames      = 1 << 6,
+        efDontTestCompiledAtoms   = 1 << 8
+    };
+    typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
-        SelectionCollectionDataTest()
-            : checker_(data_.rootChecker()), count_(0), framenr_(0)
-        {
-        }
+    SelectionCollectionDataTest()
+        : checker_(data_.rootChecker()), count_(0), framenr_(0)
+    {
+    }
 
-        void setFlags(TestFlags flags) { flags_ = flags; }
+    void setFlags(TestFlags flags) { flags_ = flags; }
 
-        void runParser(const gmx::ConstArrayRef<const char *> &selections);
-        void runCompiler();
-        void runEvaluate();
-        void runEvaluateFinal();
+    void runParser(const gmx::ConstArrayRef<const char *> &selections);
+    void runCompiler();
+    void runEvaluate();
+    void runEvaluateFinal();
 
-        void runTest(int                                     natoms,
-                     const gmx::ConstArrayRef<const char *> &selections);
-        void runTest(const char *                            filename,
-                     const gmx::ConstArrayRef<const char *> &selections);
+    void runTest(int                                     natoms,
+                 const gmx::ConstArrayRef<const char *> &selections);
+    void runTest(const char *                            filename,
+                 const gmx::ConstArrayRef<const char *> &selections);
 
-    private:
-        static void checkSelection(gmx::test::TestReferenceChecker *checker,
-                                   const gmx::Selection &sel, TestFlags flags);
+private:
+    static void checkSelection(gmx::test::TestReferenceChecker *checker,
+                               const gmx::Selection &sel, TestFlags flags);
 
-        void checkCompiled();
+    void checkCompiled();
 
-        gmx::test::TestReferenceData    data_;
-        gmx::test::TestReferenceChecker checker_;
-        size_t                          count_;
-        int                             framenr_;
-        TestFlags                       flags_;
+    gmx::test::TestReferenceData    data_;
+    gmx::test::TestReferenceChecker checker_;
+    size_t                          count_;
+    int                             framenr_;
+    TestFlags                       flags_;
 };
 
 

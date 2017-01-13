@@ -103,41 +103,41 @@ const FileTypeMapping c_fileTypeMapping[] =
  */
 class FileTypeHandler
 {
-    public:
-        /*! \brief
-         * Returns a handler for a single file type.
-         *
-         * \param[in] fileType  File type (from filetypes.h) to use.
-         */
-        explicit FileTypeHandler(int fileType);
+public:
+    /*! \brief
+     * Returns a handler for a single file type.
+     *
+     * \param[in] fileType  File type (from filetypes.h) to use.
+     */
+    explicit FileTypeHandler(int fileType);
 
-        //! Returns the number of acceptable extensions for this file type.
-        int extensionCount() const;
-        //! Returns the extension with the given index.
-        const char *extension(int i) const;
+    //! Returns the number of acceptable extensions for this file type.
+    int extensionCount() const;
+    //! Returns the extension with the given index.
+    const char *extension(int i) const;
 
-        //! Returns whether \p fileType (from filetypes.h) is accepted for this type.
-        bool isValidType(int fileType) const;
+    //! Returns whether \p fileType (from filetypes.h) is accepted for this type.
+    bool isValidType(int fileType) const;
 
-    private:
-        /*! \brief
-         * File type (from filetypes.h) represented by this handler.
-         *
-         * -1 represents an unknown file type.
-         */
-        int fileType_;
-        //! Number of different extensions this type supports.
-        int extensionCount_;
-        /*! \brief
-         * List of simple file types that are included in this type.
-         *
-         * If `fileType_` represents a generic type in filetypes.h, i.e., a type
-         * that accepts multiple different types of files, then this is an
-         * array of `extensionCount_` elements, each element specifying one
-         * non-generic file type that this option accepts.
-         * `NULL` for single-extension types.
-         */
-        const int *genericTypes_;
+private:
+    /*! \brief
+     * File type (from filetypes.h) represented by this handler.
+     *
+     * -1 represents an unknown file type.
+     */
+    int fileType_;
+    //! Number of different extensions this type supports.
+    int extensionCount_;
+    /*! \brief
+     * List of simple file types that are included in this type.
+     *
+     * If `fileType_` represents a generic type in filetypes.h, i.e., a type
+     * that accepts multiple different types of files, then this is an
+     * array of `extensionCount_` elements, each element specifying one
+     * non-generic file type that this option accepts.
+     * `NULL` for single-extension types.
+     */
+    const int *genericTypes_;
 };
 
 FileTypeHandler::FileTypeHandler(int fileType)

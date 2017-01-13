@@ -93,113 +93,113 @@ class OptionSectionImpl;
  */
 class AbstractOption
 {
-    public:
-        // Virtual only for completeness, in normal use should not be needed.
-        virtual ~AbstractOption() { }
+public:
+    // Virtual only for completeness, in normal use should not be needed.
+    virtual ~AbstractOption() { }
 
-    protected:
-        /*! \cond libapi */
-        //! Initializes the name and default values for an option.
-        explicit AbstractOption(const char *name)
-            : minValueCount_(1), maxValueCount_(1),
-              name_(name), descr_(nullptr), storeIsSet_(nullptr)
-        { }
+protected:
+    /*! \cond libapi */
+    //! Initializes the name and default values for an option.
+    explicit AbstractOption(const char *name)
+        : minValueCount_(1), maxValueCount_(1),
+          name_(name), descr_(nullptr), storeIsSet_(nullptr)
+    { }
 
-        /*! \brief
-         * Creates a default storage object for the option.
-         *
-         * \param[in] managers  Manager container (unused if the option does
-         *     not use a manager).
-         * \returns   The created storage object.
-         * \throws    APIError if invalid option settings have been provided.
-         *
-         * This method is called by Options::addOption() when initializing an
-         * option from the settings.
-         *
-         * Derived classes should implement the method to create an actual
-         * storage object and populate it with correct values.
-         * They should also throw APIError if they detect problems.
-         *
-         * Should only be called by Options::addOption().
-         *
-         * The ownership of the return value is passed, but is not using a
-         * smart pointer to avoid introducing such a dependency in an installed
-         * header.  The implementation will always consist of a single `new`
-         * call and returning that value, and the caller always immediately
-         * wraps the pointer in a smart pointer, so there is not exception
-         * safety issue.
-         */
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const = 0;
+    /*! \brief
+     * Creates a default storage object for the option.
+     *
+     * \param[in] managers  Manager container (unused if the option does
+     *     not use a manager).
+     * \returns   The created storage object.
+     * \throws    APIError if invalid option settings have been provided.
+     *
+     * This method is called by Options::addOption() when initializing an
+     * option from the settings.
+     *
+     * Derived classes should implement the method to create an actual
+     * storage object and populate it with correct values.
+     * They should also throw APIError if they detect problems.
+     *
+     * Should only be called by Options::addOption().
+     *
+     * The ownership of the return value is passed, but is not using a
+     * smart pointer to avoid introducing such a dependency in an installed
+     * header.  The implementation will always consist of a single `new`
+     * call and returning that value, and the caller always immediately
+     * wraps the pointer in a smart pointer, so there is not exception
+     * safety issue.
+     */
+    virtual AbstractOptionStorage *createStorage(
+        const OptionManagerContainer &managers) const = 0;
 
-        //! Sets the description for the option.
-        void setDescription(const char *descr) { descr_ = descr; }
-        //! Sets the storage location for whether the option is set.
-        void setStoreIsSet(bool *store) { storeIsSet_ = store; }
-        //! Sets a flag for the option.
-        void setFlag(OptionFlag flag) { flags_.set(flag); }
-        //! Clears a flag for the option.
-        void clearFlag(OptionFlag flag) { flags_.clear(flag); }
-        //! Sets or clears a flag for the option.
-        void setFlag(OptionFlag flag, bool bSet) { flags_.set(flag, bSet); }
-        //! Returns true if the option is vector-valued.
-        bool isVector() const { return hasFlag(efOption_Vector); }
-        /*! \brief
-         * Sets the option to be vector-valued.
-         *
-         * This method is provided for convenience to make management of value
-         * counts easier.  In order to implement a vector-valued option, the
-         * class derived from AbstractOption should expose a method that calls
-         * this method, and the storage object derived from
-         * AbstractOptionStorage should check isVector().
-         * If only a single value is provided, the storage object should fill
-         * the whole vector with that value.
-         *
-         * The length of the vector (the value of maxValueCount_) must be
-         * fixed.  The default length is 3 elements.
-         */
-        void setVector()
+    //! Sets the description for the option.
+    void setDescription(const char *descr) { descr_ = descr; }
+    //! Sets the storage location for whether the option is set.
+    void setStoreIsSet(bool *store) { storeIsSet_ = store; }
+    //! Sets a flag for the option.
+    void setFlag(OptionFlag flag) { flags_.set(flag); }
+    //! Clears a flag for the option.
+    void clearFlag(OptionFlag flag) { flags_.clear(flag); }
+    //! Sets or clears a flag for the option.
+    void setFlag(OptionFlag flag, bool bSet) { flags_.set(flag, bSet); }
+    //! Returns true if the option is vector-valued.
+    bool isVector() const { return hasFlag(efOption_Vector); }
+    /*! \brief
+     * Sets the option to be vector-valued.
+     *
+     * This method is provided for convenience to make management of value
+     * counts easier.  In order to implement a vector-valued option, the
+     * class derived from AbstractOption should expose a method that calls
+     * this method, and the storage object derived from
+     * AbstractOptionStorage should check isVector().
+     * If only a single value is provided, the storage object should fill
+     * the whole vector with that value.
+     *
+     * The length of the vector (the value of maxValueCount_) must be
+     * fixed.  The default length is 3 elements.
+     */
+    void setVector()
+    {
+        setFlag(efOption_Vector);
+        minValueCount_ = 1;
+        if (maxValueCount_ == 1)
         {
-            setFlag(efOption_Vector);
-            minValueCount_ = 1;
-            if (maxValueCount_ == 1)
-            {
-                maxValueCount_ = 3;
-            }
+            maxValueCount_ = 3;
         }
-        //! Sets the required number of values for the option.
-        void setValueCount(int count)
+    }
+    //! Sets the required number of values for the option.
+    void setValueCount(int count)
+    {
+        if (!hasFlag(efOption_Vector))
         {
-            if (!hasFlag(efOption_Vector))
-            {
-                minValueCount_ = count;
-            }
-            maxValueCount_ = count;
+            minValueCount_ = count;
         }
+        maxValueCount_ = count;
+    }
 
-        //! Minimum number of values required for the option.
-        int minValueCount_;
-        //! Maximum number of values allowed for the option.
-        int maxValueCount_;
-        //! \endcond
+    //! Minimum number of values required for the option.
+    int minValueCount_;
+    //! Maximum number of values allowed for the option.
+    int maxValueCount_;
+    //! \endcond
 
-    private:
-        //! Returns true if a flag has been set.
-        bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
+private:
+    //! Returns true if a flag has been set.
+    bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
 
-        const char *name_;
-        //! Pointer to description of the option.
-        const char *descr_;
-        OptionFlags flags_;
-        bool *      storeIsSet_;
+    const char *name_;
+    //! Pointer to description of the option.
+    const char *descr_;
+    OptionFlags flags_;
+    bool *      storeIsSet_;
 
-        /*! \brief
-         * Needed to initialize an AbstractOptionStorage object from this class
-         * without otherwise unnecessary accessors.
-         */
-        friend class AbstractOptionStorage;
-        //! Needed to be able to call createStorage().
-        friend class internal::OptionSectionImpl;
+    /*! \brief
+     * Needed to initialize an AbstractOptionStorage object from this class
+     * without otherwise unnecessary accessors.
+     */
+    friend class AbstractOptionStorage;
+    //! Needed to be able to call createStorage().
+    friend class internal::OptionSectionImpl;
 };
 
 /*! \brief
@@ -226,178 +226,178 @@ class AbstractOption
 template <typename T, class U>
 class OptionTemplate : public AbstractOption
 {
-    public:
-        //! Type that stores a single option value.
-        typedef T ValueType;
-        //! Alias for the derived class type.
-        typedef U MyClass;
+public:
+    //! Type that stores a single option value.
+    typedef T ValueType;
+    //! Alias for the derived class type.
+    typedef U MyClass;
 
-        /*! \brief
-         * Sets a description for the option.
-         *
-         * \param[in] descr Description to set.
-         *
-         * String in \p descr is copied when the option is created.
-         */
-        MyClass &description(const char *descr)
-        { setDescription(descr); return me(); }
-        //! Hides the option from normal help output.
-        MyClass &hidden(bool bHidden = true)
-        { setFlag(efOption_Hidden, bHidden); return me(); }
-        /*! \brief
-         * Requires the option to be specified explicitly.
-         *
-         * Note that if you specify defaultValue() together with required(),
-         * the user is not required to explicitly provide the option.
-         * In this case, required() only affects possible help output.
-         */
-        MyClass &required(bool bRequired = true)
-        { setFlag(efOption_Required, bRequired); return me(); }
-        //! Allows the option to be specified multiple times.
-        MyClass &allowMultiple(bool bMulti = true)
-        { setFlag(efOption_MultipleTimes, bMulti); return me(); }
-        //! Requires exactly \p count values for the option.
-        MyClass &valueCount(int count) { setValueCount(count); return me(); }
-        //! Allows any number of values for the option.
-        MyClass &multiValue(bool bMulti = true)
-        { if (bMulti) { maxValueCount_ = -1; } return me(); }
+    /*! \brief
+     * Sets a description for the option.
+     *
+     * \param[in] descr Description to set.
+     *
+     * String in \p descr is copied when the option is created.
+     */
+    MyClass &description(const char *descr)
+    { setDescription(descr); return me(); }
+    //! Hides the option from normal help output.
+    MyClass &hidden(bool bHidden = true)
+    { setFlag(efOption_Hidden, bHidden); return me(); }
+    /*! \brief
+     * Requires the option to be specified explicitly.
+     *
+     * Note that if you specify defaultValue() together with required(),
+     * the user is not required to explicitly provide the option.
+     * In this case, required() only affects possible help output.
+     */
+    MyClass &required(bool bRequired = true)
+    { setFlag(efOption_Required, bRequired); return me(); }
+    //! Allows the option to be specified multiple times.
+    MyClass &allowMultiple(bool bMulti = true)
+    { setFlag(efOption_MultipleTimes, bMulti); return me(); }
+    //! Requires exactly \p count values for the option.
+    MyClass &valueCount(int count) { setValueCount(count); return me(); }
+    //! Allows any number of values for the option.
+    MyClass &multiValue(bool bMulti = true)
+    { if (bMulti) { maxValueCount_ = -1; } return me(); }
 
-        /*! \brief
-         * Sets a default value for the option.
-         *
-         * \param[in] defaultValue Default value.
-         *
-         * If the option is never set, the default value is copied to the
-         * assigned storage.  Note that if the option is not set and there
-         * is no default value, the storage is not altered, which can also be
-         * used to provide a default value.  The latter method has to be used
-         * if the option can take multiple values.
-         *
-         * \p defaultValue is copied when the option is created.
-         */
-        MyClass &defaultValue(const T &defaultValue)
-        { defaultValue_ = &defaultValue; return me(); }
-        /*! \brief
-         * Sets a default value for the option when it is set.
-         *
-         * \param[in] defaultValue Default value.
-         *
-         * This value is used if the option is set, but no value is provided.
-         * If the option is never set, the value set with defaultValue() is
-         * used.  Can only be used for options that accept a single value.
-         *
-         * \p defaultValue is copied when the option is created.
-         */
-        MyClass &defaultValueIfSet(const T &defaultValue)
-        { defaultValueIfSet_ = &defaultValue; return me(); }
-        /*! \brief
-         * Stores value(s) in memory pointed by \p store.
-         *
-         * \param[in] store  Storage for option value(s).
-         *
-         * The caller is responsible for allocating enough memory such that
-         * the any allowed number of values fits into the array pointed by
-         * \p store.  If there is no maximum allowed number or if the maximum
-         * is inconveniently large, storeVector() should be used.
-         *
-         * For information on when values are available in the storage, see
-         * storeVector().
-         *
-         * The pointer provided should remain valid as long as the associated
-         * Options object exists.
-         */
-        MyClass &store(T *store)
-        { store_ = store; return me(); }
-        /*! \brief
-         * Stores number of values in the value pointed by \p countptr.
-         *
-         * \param[in] countptr Storage for the number of values.
-         *
-         * For information on when values are available in the storage, see
-         * storeVector().
-         *
-         * The pointers provided should remain valid as long as the associated
-         * Options object exists.
-         */
-        MyClass &storeCount(int *countptr)
-        { countptr_ = countptr; return me(); }
-        /*! \brief
-         * Stores option values in the provided vector.
-         *
-         * \param[in] store  Vector to store option values in.
-         *
-         * Values are added to the vector after each successful set of values
-         * is parsed.  Note that for some options, the value may be changed
-         * later, and is only guaranteed to be correct after Options::finish()
-         * has been called.
-         *
-         * The pointer provided should remain valid as long as the associated
-         * Options object exists.
-         */
-        MyClass &storeVector(std::vector<T> *store)
-        { storeVector_ = store; return me(); }
-        /*! \brief
-         * Stores whether the option was explicitly set.
-         *
-         * \param[in] store  Variable to store the flag in.
-         *
-         * The value is set to `false` on creation of the option, and to `true`
-         * as soon as a value is assigned to the option.  A default value does
-         * not set the flag to `true`, but assignment that uses
-         * defaultValueIfSet() does.
-         *
-         * The pointer provided should remain valid as long as the associated
-         * Options object exists.
-         */
-        MyClass &storeIsSet(bool *store)
-        { setStoreIsSet(store); return me(); }
+    /*! \brief
+     * Sets a default value for the option.
+     *
+     * \param[in] defaultValue Default value.
+     *
+     * If the option is never set, the default value is copied to the
+     * assigned storage.  Note that if the option is not set and there
+     * is no default value, the storage is not altered, which can also be
+     * used to provide a default value.  The latter method has to be used
+     * if the option can take multiple values.
+     *
+     * \p defaultValue is copied when the option is created.
+     */
+    MyClass &defaultValue(const T &defaultValue)
+    { defaultValue_ = &defaultValue; return me(); }
+    /*! \brief
+     * Sets a default value for the option when it is set.
+     *
+     * \param[in] defaultValue Default value.
+     *
+     * This value is used if the option is set, but no value is provided.
+     * If the option is never set, the value set with defaultValue() is
+     * used.  Can only be used for options that accept a single value.
+     *
+     * \p defaultValue is copied when the option is created.
+     */
+    MyClass &defaultValueIfSet(const T &defaultValue)
+    { defaultValueIfSet_ = &defaultValue; return me(); }
+    /*! \brief
+     * Stores value(s) in memory pointed by \p store.
+     *
+     * \param[in] store  Storage for option value(s).
+     *
+     * The caller is responsible for allocating enough memory such that
+     * the any allowed number of values fits into the array pointed by
+     * \p store.  If there is no maximum allowed number or if the maximum
+     * is inconveniently large, storeVector() should be used.
+     *
+     * For information on when values are available in the storage, see
+     * storeVector().
+     *
+     * The pointer provided should remain valid as long as the associated
+     * Options object exists.
+     */
+    MyClass &store(T *store)
+    { store_ = store; return me(); }
+    /*! \brief
+     * Stores number of values in the value pointed by \p countptr.
+     *
+     * \param[in] countptr Storage for the number of values.
+     *
+     * For information on when values are available in the storage, see
+     * storeVector().
+     *
+     * The pointers provided should remain valid as long as the associated
+     * Options object exists.
+     */
+    MyClass &storeCount(int *countptr)
+    { countptr_ = countptr; return me(); }
+    /*! \brief
+     * Stores option values in the provided vector.
+     *
+     * \param[in] store  Vector to store option values in.
+     *
+     * Values are added to the vector after each successful set of values
+     * is parsed.  Note that for some options, the value may be changed
+     * later, and is only guaranteed to be correct after Options::finish()
+     * has been called.
+     *
+     * The pointer provided should remain valid as long as the associated
+     * Options object exists.
+     */
+    MyClass &storeVector(std::vector<T> *store)
+    { storeVector_ = store; return me(); }
+    /*! \brief
+     * Stores whether the option was explicitly set.
+     *
+     * \param[in] store  Variable to store the flag in.
+     *
+     * The value is set to `false` on creation of the option, and to `true`
+     * as soon as a value is assigned to the option.  A default value does
+     * not set the flag to `true`, but assignment that uses
+     * defaultValueIfSet() does.
+     *
+     * The pointer provided should remain valid as long as the associated
+     * Options object exists.
+     */
+    MyClass &storeIsSet(bool *store)
+    { setStoreIsSet(store); return me(); }
 
-    protected:
-        /*! \cond libapi */
-        //! Alias for the template class for use in base classes.
-        typedef OptionTemplate<T, U> MyBase;
+protected:
+    /*! \cond libapi */
+    //! Alias for the template class for use in base classes.
+    typedef OptionTemplate<T, U> MyBase;
 
-        //! Initializes the name and default values for an option.
-        explicit OptionTemplate(const char *name)
-            : AbstractOption(name),
-              defaultValue_(nullptr), defaultValueIfSet_(nullptr), store_(nullptr),
-              countptr_(nullptr), storeVector_(nullptr)
-        { }
+    //! Initializes the name and default values for an option.
+    explicit OptionTemplate(const char *name)
+        : AbstractOption(name),
+          defaultValue_(nullptr), defaultValueIfSet_(nullptr), store_(nullptr),
+          countptr_(nullptr), storeVector_(nullptr)
+    { }
 
-        /*! \brief
-         * Returns a pointer to user-specified default value, or NULL if there
-         * is none.
-         */
-        const T *defaultValue() const { return defaultValue_; }
-        /*! \brief
-         * Returns a pointer to user-specified default value, or NULL if there
-         * is none.
-         */
-        const T *defaultValueIfSet() const { return defaultValueIfSet_; }
-        /*! \brief
-         * Returns a pointer to the storage location, or NULL if none specified.
-         */
-        T *store() const { return store_; }
-        /*! \brief
-         * Returns a pointer to the storage vector, or NULL if none specified.
-         */
-        std::vector<T> *storeVector() const { return storeVector_; }
-        //! Returns \p *this casted into MyClass to reduce typing.
-        MyClass &me() { return static_cast<MyClass &>(*this); }
-        //! \endcond
+    /*! \brief
+     * Returns a pointer to user-specified default value, or NULL if there
+     * is none.
+     */
+    const T *defaultValue() const { return defaultValue_; }
+    /*! \brief
+     * Returns a pointer to user-specified default value, or NULL if there
+     * is none.
+     */
+    const T *defaultValueIfSet() const { return defaultValueIfSet_; }
+    /*! \brief
+     * Returns a pointer to the storage location, or NULL if none specified.
+     */
+    T *store() const { return store_; }
+    /*! \brief
+     * Returns a pointer to the storage vector, or NULL if none specified.
+     */
+    std::vector<T> *storeVector() const { return storeVector_; }
+    //! Returns \p *this casted into MyClass to reduce typing.
+    MyClass &me() { return static_cast<MyClass &>(*this); }
+    //! \endcond
 
-    private:
-        const T *       defaultValue_;
-        const T *       defaultValueIfSet_;
-        T *             store_;
-        int *           countptr_;
-        std::vector<T> *storeVector_;
+private:
+    const T *       defaultValue_;
+    const T *       defaultValueIfSet_;
+    T *             store_;
+    int *           countptr_;
+    std::vector<T> *storeVector_;
 
-        /*! \brief
-         * Needed to initialize storage from this class without otherwise
-         * unnecessary accessors.
-         */
-        friend class OptionStorageTemplate<T>;
+    /*! \brief
+     * Needed to initialize storage from this class without otherwise
+     * unnecessary accessors.
+     */
+    friend class OptionStorageTemplate<T>;
 };
 
 /*! \brief
@@ -436,109 +436,109 @@ class OptionTemplate : public AbstractOption
  */
 class OptionInfo
 {
-    public:
-        virtual ~OptionInfo();
+public:
+    virtual ~OptionInfo();
 
-        /*! \brief
-         * Test whether the option is of a particular type.
-         *
-         * \tparam InfoType  Option type to test for. Should be a class derived
-         *      from OptionInfo.
-         */
-        template <class InfoType>
-        bool isType() const
-        {
-            return toType<InfoType>() != nullptr;
-        }
-        /*! \brief
-         * Convert the info object to a particular type if the type is correct.
-         *
-         * \tparam InfoType  Option type to convert to. Should be a class
-         *      derived from OptionInfo.
-         * \retval this converted to a pointer to \p InfoType, or NULL if the
-         *      conversion is not possible.
-         */
-        template <class InfoType>
-        InfoType *toType()
-        {
-            return dynamic_cast<InfoType *>(this);
-        }
-        //! \copydoc toType()
-        template <class InfoType>
-        const InfoType *toType() const
-        {
-            return dynamic_cast<const InfoType *>(this);
-        }
+    /*! \brief
+     * Test whether the option is of a particular type.
+     *
+     * \tparam InfoType  Option type to test for. Should be a class derived
+     *      from OptionInfo.
+     */
+    template <class InfoType>
+    bool isType() const
+    {
+        return toType<InfoType>() != nullptr;
+    }
+    /*! \brief
+     * Convert the info object to a particular type if the type is correct.
+     *
+     * \tparam InfoType  Option type to convert to. Should be a class
+     *      derived from OptionInfo.
+     * \retval this converted to a pointer to \p InfoType, or NULL if the
+     *      conversion is not possible.
+     */
+    template <class InfoType>
+    InfoType *toType()
+    {
+        return dynamic_cast<InfoType *>(this);
+    }
+    //! \copydoc toType()
+    template <class InfoType>
+    const InfoType *toType() const
+    {
+        return dynamic_cast<const InfoType *>(this);
+    }
 
-        //! Returns true if the option has been set.
-        bool isSet() const;
-        //! Returns true if the option is a hidden option.
-        bool isHidden() const;
-        //! Returns true if the option is required.
-        bool isRequired() const;
-        //! Returns the minimum number of values that this option accepts.
-        int minValueCount() const;
-        //! Returns the maximum number of values that this option accepts.
-        int maxValueCount() const;
-        //! Returns the name of the option.
-        const std::string &name() const;
-        //! Returns the type of the option as a string.
-        std::string type() const;
-        //! Returns the description of the option.
-        std::string formatDescription() const;
+    //! Returns true if the option has been set.
+    bool isSet() const;
+    //! Returns true if the option is a hidden option.
+    bool isHidden() const;
+    //! Returns true if the option is required.
+    bool isRequired() const;
+    //! Returns the minimum number of values that this option accepts.
+    int minValueCount() const;
+    //! Returns the maximum number of values that this option accepts.
+    int maxValueCount() const;
+    //! Returns the name of the option.
+    const std::string &name() const;
+    //! Returns the type of the option as a string.
+    std::string type() const;
+    //! Returns the description of the option.
+    std::string formatDescription() const;
 
-        /*! \brief
-         * Returns the default value(s) of the option.
-         *
-         * The returned values should all be of the same type, but returning
-         * each as a separate variant is currently simpler.
-         *
-         * Currently, this can only be called before option values have been
-         * assigned.
-         */
-        std::vector<Variant> defaultValues() const;
-        /*! \brief
-         * Returns the default value(s) of the option as strings.
-         *
-         * If there is no default value, but defaultValueIfSet() is set, that
-         * is returned instead.
-         *
-         * Currently, this can only be called before option values have been
-         * assigned.
-         */
-        std::vector<std::string> defaultValuesAsStrings() const;
-        /*! \brief
-         * Converts given values to native representation for this option.
-         *
-         * For example, strings are parsed to the type that is actually used to
-         * store the options.
-         *
-         * The return value only depends on the option type, not on the current
-         * value of the option, and the current value in the option is not
-         * changed.
-         */
-        std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const;
+    /*! \brief
+     * Returns the default value(s) of the option.
+     *
+     * The returned values should all be of the same type, but returning
+     * each as a separate variant is currently simpler.
+     *
+     * Currently, this can only be called before option values have been
+     * assigned.
+     */
+    std::vector<Variant> defaultValues() const;
+    /*! \brief
+     * Returns the default value(s) of the option as strings.
+     *
+     * If there is no default value, but defaultValueIfSet() is set, that
+     * is returned instead.
+     *
+     * Currently, this can only be called before option values have been
+     * assigned.
+     */
+    std::vector<std::string> defaultValuesAsStrings() const;
+    /*! \brief
+     * Converts given values to native representation for this option.
+     *
+     * For example, strings are parsed to the type that is actually used to
+     * store the options.
+     *
+     * The return value only depends on the option type, not on the current
+     * value of the option, and the current value in the option is not
+     * changed.
+     */
+    std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const;
 
-    protected:
-        /*! \cond libapi */
-        /*! \brief
-         * Wraps a given option object.
-         *
-         * Does not throw.
-         */
-        explicit OptionInfo(AbstractOptionStorage *option);
+protected:
+    /*! \cond libapi */
+    /*! \brief
+     * Wraps a given option object.
+     *
+     * Does not throw.
+     */
+    explicit OptionInfo(AbstractOptionStorage *option);
 
-        //! Returns the wrapped option storage object.
-        AbstractOptionStorage &option() { return option_; }
-        //! Returns the wrapped option storage object.
-        const AbstractOptionStorage &option() const { return option_; }
-        //! \endcond
+    //! Returns the wrapped option storage object.
+    AbstractOptionStorage &option() { return option_; }
+    //! Returns the wrapped option storage object.
+    const AbstractOptionStorage &option() const { return option_; }
+    //! \endcond
 
-    private:
-        //! The wrapped option.
-        AbstractOptionStorage &option_;
+private:
+    //! The wrapped option.
+    AbstractOptionStorage &option_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
 };
 
 } // namespace gmx

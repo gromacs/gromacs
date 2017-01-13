@@ -62,8 +62,8 @@ namespace test
 
 class Simd4MathTest : public Simd4Test
 {
-    public:
-        ::testing::AssertionResult
+public:
+    ::testing::AssertionResult
                              compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
                                                       real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x));
 };

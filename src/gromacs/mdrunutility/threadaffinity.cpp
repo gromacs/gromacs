@@ -68,16 +68,16 @@ namespace
 
 class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
 {
-    public:
-        virtual bool isThreadAffinitySupported() const
-        {
-            return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
-        }
-        virtual bool setCurrentThreadAffinityToCore(int core)
-        {
-            const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
-            return ret == 0;
-        }
+public:
+    virtual bool isThreadAffinitySupported() const
+    {
+        return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
+    }
+    virtual bool setCurrentThreadAffinityToCore(int core)
+    {
+        const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+        return ret == 0;
+    }
 };
 
 //! Global instance of DefaultThreadAffinityAccess

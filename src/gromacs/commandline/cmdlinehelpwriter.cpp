@@ -82,11 +82,11 @@ namespace
  */
 class IOptionsFormatter
 {
-    public:
-        virtual ~IOptionsFormatter() {}
+public:
+    virtual ~IOptionsFormatter() {}
 
-        //! Formats a single option option.
-        virtual void formatOption(const OptionInfo &option) = 0;
+    //! Formats a single option option.
+    virtual void formatOption(const OptionInfo &option) = 0;
 };
 
 /********************************************************************
@@ -104,47 +104,47 @@ class IOptionsFormatter
  */
 class OptionsFilter : public OptionsVisitor
 {
-    public:
-        //! Specifies the type of output that formatSelected() produces.
-        enum FilterType
-        {
-            eSelectInputFileOptions,
-            eSelectInputOutputFileOptions,
-            eSelectOutputFileOptions,
-            eSelectOtherOptions
-        };
+public:
+    //! Specifies the type of output that formatSelected() produces.
+    enum FilterType
+    {
+        eSelectInputFileOptions,
+        eSelectInputOutputFileOptions,
+        eSelectOutputFileOptions,
+        eSelectOtherOptions
+    };
 
-        /*! \brief
-         * Creates a new filtering object.
-         *
-         * Does not throw.
-         */
-        OptionsFilter()
-            : formatter_(nullptr), filterType_(eSelectOtherOptions),
-              bShowHidden_(false)
-        {
-        }
+    /*! \brief
+     * Creates a new filtering object.
+     *
+     * Does not throw.
+     */
+    OptionsFilter()
+        : formatter_(nullptr), filterType_(eSelectOtherOptions),
+          bShowHidden_(false)
+    {
+    }
 
-        //! Sets whether hidden options will be shown.
-        void setShowHidden(bool bShowHidden)
-        {
-            bShowHidden_ = bShowHidden;
-        }
+    //! Sets whether hidden options will be shown.
+    void setShowHidden(bool bShowHidden)
+    {
+        bShowHidden_ = bShowHidden;
+    }
 
-        //! Formats selected options using the formatter.
-        void formatSelected(FilterType         type,
-                            IOptionsFormatter *formatter,
-                            const Options &    options);
+    //! Formats selected options using the formatter.
+    void formatSelected(FilterType         type,
+                        IOptionsFormatter *formatter,
+                        const Options &    options);
 
-        virtual void visitSection(const OptionSectionInfo &section);
-        virtual void visitOption(const OptionInfo &option);
+    virtual void visitSection(const OptionSectionInfo &section);
+    virtual void visitOption(const OptionInfo &option);
 
-    private:
-        IOptionsFormatter *formatter_;
-        FilterType         filterType_;
-        bool               bShowHidden_;
+private:
+    IOptionsFormatter *formatter_;
+    FilterType         filterType_;
+    bool               bShowHidden_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsFilter);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionsFilter);
 };
 
 void OptionsFilter::formatSelected(FilterType         type,
@@ -207,13 +207,13 @@ void OptionsFilter::visitOption(const OptionInfo &option)
 
 class CommonFormatterData
 {
-    public:
-        explicit CommonFormatterData(const char *timeUnit)
-            : timeUnit(timeUnit)
-        {
-        }
+public:
+    explicit CommonFormatterData(const char *timeUnit)
+        : timeUnit(timeUnit)
+    {
+    }
 
-        const char *timeUnit;
+    const char *timeUnit;
 };
 
 /********************************************************************
@@ -299,29 +299,29 @@ std::string descriptionWithOptionDetails(const CommonFormatterData &common,
  */
 class SynopsisFormatter : public IOptionsFormatter
 {
-    public:
-        //! Creates a helper object for formatting the synopsis.
-        explicit SynopsisFormatter(const HelpWriterContext &context)
-            : context_(context), bFormatted_(false), lineLength_(0), indent_(0),
-              currentLength_(0)
-        {
-        }
+public:
+    //! Creates a helper object for formatting the synopsis.
+    explicit SynopsisFormatter(const HelpWriterContext &context)
+        : context_(context), bFormatted_(false), lineLength_(0), indent_(0),
+          currentLength_(0)
+    {
+    }
 
-        //! Starts formatting the synopsis.
-        void start(const char *name);
-        //! Finishes formatting the synopsis.
-        void finish();
+    //! Starts formatting the synopsis.
+    void start(const char *name);
+    //! Finishes formatting the synopsis.
+    void finish();
 
-        virtual void formatOption(const OptionInfo &option);
+    virtual void formatOption(const OptionInfo &option);
 
-    private:
-        const HelpWriterContext &context_;
-        bool                     bFormatted_;
-        int                      lineLength_;
-        int                      indent_;
-        int                      currentLength_;
+private:
+    const HelpWriterContext &context_;
+    bool                     bFormatted_;
+    int                      lineLength_;
+    int                      indent_;
+    int                      currentLength_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(SynopsisFormatter);
+    GMX_DISALLOW_COPY_AND_ASSIGN(SynopsisFormatter);
 };
 
 void SynopsisFormatter::start(const char *name)
@@ -388,57 +388,57 @@ void SynopsisFormatter::formatOption(const OptionInfo &option)
  */
 class OptionsListFormatter : public IOptionsFormatter
 {
-    public:
-        //! Creates a helper object for formatting options.
-        OptionsListFormatter(const HelpWriterContext &  context,
-                             const CommonFormatterData &common,
-                             const char *               title);
+public:
+    //! Creates a helper object for formatting options.
+    OptionsListFormatter(const HelpWriterContext &  context,
+                         const CommonFormatterData &common,
+                         const char *               title);
 
-        //! Initiates a new section in the options list.
-        void startSection(const char *header)
+    //! Initiates a new section in the options list.
+    void startSection(const char *header)
+    {
+        header_     = header;
+        bDidOutput_ = false;
+    }
+    //! Finishes a section in the options list.
+    void finishSection()
+    {
+        if (bDidOutput_)
         {
-            header_     = header;
-            bDidOutput_ = false;
+            context_.writeOptionListEnd();
         }
-        //! Finishes a section in the options list.
-        void finishSection()
+    }
+
+    virtual void formatOption(const OptionInfo &option);
+
+private:
+    void writeSectionStartIfNecessary()
+    {
+        if (title_ != nullptr)
         {
-            if (bDidOutput_)
-            {
-                context_.writeOptionListEnd();
-            }
+            context_.writeTitle(title_);
+            title_ = nullptr;
         }
-
-        virtual void formatOption(const OptionInfo &option);
-
-    private:
-        void writeSectionStartIfNecessary()
+        if (!bDidOutput_)
         {
-            if (title_ != nullptr)
+            if (header_ != nullptr)
             {
-                context_.writeTitle(title_);
-                title_ = nullptr;
+                context_.paragraphBreak();
+                context_.writeTextBlock(header_);
+                context_.paragraphBreak();
             }
-            if (!bDidOutput_)
-            {
-                if (header_ != nullptr)
-                {
-                    context_.paragraphBreak();
-                    context_.writeTextBlock(header_);
-                    context_.paragraphBreak();
-                }
-                context_.writeOptionListStart();
-            }
-            bDidOutput_ = true;
+            context_.writeOptionListStart();
         }
+        bDidOutput_ = true;
+    }
 
-        const HelpWriterContext &  context_;
-        const CommonFormatterData &common_;
-        const char *               title_;
-        const char *               header_;
-        bool                       bDidOutput_;
+    const HelpWriterContext &  context_;
+    const CommonFormatterData &common_;
+    const char *               title_;
+    const char *               header_;
+    bool                       bDidOutput_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsListFormatter);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionsListFormatter);
 };
 
 OptionsListFormatter::OptionsListFormatter(
@@ -482,22 +482,22 @@ void OptionsListFormatter::formatOption(const OptionInfo &option)
  */
 class CommandLineHelpWriter::Impl
 {
-    public:
-        //! Sets the Options object to use for generating help.
-        explicit Impl(const Options &options)
-            : options_(options)
-        {
-        }
+public:
+    //! Sets the Options object to use for generating help.
+    explicit Impl(const Options &options)
+        : options_(options)
+    {
+    }
 
-        //! Format the list of known issues.
-        void formatBugs(const HelpWriterContext &context);
+    //! Format the list of known issues.
+    void formatBugs(const HelpWriterContext &context);
 
-        //! Options object to use for generating help.
-        const Options &options_;
-        //! Help text.
-        std::string helpText_;
-        //! List of bugs/knows issues.
-        ConstArrayRef<const char *> bugs_;
+    //! Options object to use for generating help.
+    const Options &options_;
+    //! Help text.
+    std::string helpText_;
+    //! List of bugs/knows issues.
+    ConstArrayRef<const char *> bugs_;
 };
 
 void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)

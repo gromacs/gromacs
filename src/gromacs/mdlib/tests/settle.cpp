@@ -131,47 +131,47 @@ typedef std::tuple<int, bool, bool, bool> SettleTestParameters;
  */
 class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
 {
-    public:
-        //! Updated water atom positions to constrain (DIM reals per atom)
-        std::vector<real> updatedPositions_;
-        //! Water atom velocities to constrain (DIM reals per atom)
-        std::vector<real> velocities_;
-        //! PBC option to test
-        t_pbc pbcNone_;
-        //! PBC option to test
-        t_pbc pbcXYZ_;
+public:
+    //! Updated water atom positions to constrain (DIM reals per atom)
+    std::vector<real> updatedPositions_;
+    //! Water atom velocities to constrain (DIM reals per atom)
+    std::vector<real> velocities_;
+    //! PBC option to test
+    t_pbc pbcNone_;
+    //! PBC option to test
+    t_pbc pbcXYZ_;
 
-        //! Constructor
-        SettleTest() :
-            updatedPositions_(std::begin(g_positions), std::end(g_positions)),
-            velocities_(updatedPositions_.size(), 0)
+    //! Constructor
+    SettleTest() :
+        updatedPositions_(std::begin(g_positions), std::end(g_positions)),
+        velocities_(updatedPositions_.size(), 0)
+    {
+        set_pbc(&pbcNone_, epbcNONE, g_box);
+        set_pbc(&pbcXYZ_, epbcXYZ, g_box);
+
+        // Perturb the atom positions, to appear like an
+        // "update," and where there is definitely constraining
+        // work to do.
+        for (size_t i = 0; i != updatedPositions_.size(); ++i)
         {
-            set_pbc(&pbcNone_, epbcNONE, g_box);
-            set_pbc(&pbcXYZ_, epbcXYZ, g_box);
-
-            // Perturb the atom positions, to appear like an
-            // "update," and where there is definitely constraining
-            // work to do.
-            for (size_t i = 0; i != updatedPositions_.size(); ++i)
+            if (i % 4 == 0)
             {
-                if (i % 4 == 0)
-                {
-                    updatedPositions_[i] += 0.01;
-                }
-                else if (i % 4 == 1)
-                {
-                    updatedPositions_[i] -= 0.01;
-                }
-                else if (i % 4 == 2)
-                {
-                    updatedPositions_[i] += 0.02;
-                }
-                else if (i % 4 == 3)
-                {
-                    updatedPositions_[i] -= 0.02;
-                }
+                updatedPositions_[i] += 0.01;
+            }
+            else if (i % 4 == 1)
+            {
+                updatedPositions_[i] -= 0.01;
+            }
+            else if (i % 4 == 2)
+            {
+                updatedPositions_[i] += 0.02;
+            }
+            else if (i % 4 == 3)
+            {
+                updatedPositions_[i] -= 0.02;
             }
         }
+    }
 };
 
 TEST_P(SettleTest, SatisfiesConstraints)

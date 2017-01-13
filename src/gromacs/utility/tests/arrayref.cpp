@@ -106,30 +106,30 @@ typedef ::testing::Types<
 template <typename TypeParam>
 class ArrayRefTest : public ::testing::Test
 {
-    public:
-        typedef TypeParam ArrayRefType;
-        typedef typename ArrayRefType::value_type ValueType;
+public:
+    typedef TypeParam ArrayRefType;
+    typedef typename ArrayRefType::value_type ValueType;
 
-        /*! \brief Run the same tests all the time
-         *
-         * Note that test cases must call this->runTests(), because
-         * that's how the derived-class templates that implement
-         * type-parameterized tests actually work. */
-        void runTests(ValueType *   a,
-                      size_t        aSize,
-                      ValueType *   aData,
-                      ArrayRefType &arrayRef)
+    /*! \brief Run the same tests all the time
+     *
+     * Note that test cases must call this->runTests(), because
+     * that's how the derived-class templates that implement
+     * type-parameterized tests actually work. */
+    void runTests(ValueType *   a,
+                  size_t        aSize,
+                  ValueType *   aData,
+                  ArrayRefType &arrayRef)
+    {
+        ASSERT_EQ(aSize, arrayRef.size());
+        ASSERT_FALSE(arrayRef.empty());
+        EXPECT_EQ(aData, arrayRef.data());
+        EXPECT_EQ(a[0], arrayRef.front());
+        EXPECT_EQ(a[aSize - 1], arrayRef.back());
+        for (size_t i = 0; i != aSize; ++i)
         {
-            ASSERT_EQ(aSize, arrayRef.size());
-            ASSERT_FALSE(arrayRef.empty());
-            EXPECT_EQ(aData, arrayRef.data());
-            EXPECT_EQ(a[0], arrayRef.front());
-            EXPECT_EQ(a[aSize - 1], arrayRef.back());
-            for (size_t i = 0; i != aSize; ++i)
-            {
-                EXPECT_EQ(a[i], arrayRef[i]);
-            }
+            EXPECT_EQ(a[i], arrayRef[i]);
         }
+    }
 };
 
 TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);

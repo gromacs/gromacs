@@ -208,79 +208,79 @@ void processExpectedException(const std::exception &ex);
  */
 class FloatingPointDifference
 {
-    public:
+public:
 
-        /*! \brief Initializes a single-precision difference.
-         *
-         *  \param ref    First term in difference
-         *  \param value  Second term in difference
-         *
-         *  For absolute and ULP differences the two parameters are equivalent,
-         *  since the difference is symmetric. For relative differences
-         *  the first term is interpreted as the reference value, from which
-         *  we extract the magnitude to compare with.
-         */
-        FloatingPointDifference(float ref, float value);
+    /*! \brief Initializes a single-precision difference.
+     *
+     *  \param ref    First term in difference
+     *  \param value  Second term in difference
+     *
+     *  For absolute and ULP differences the two parameters are equivalent,
+     *  since the difference is symmetric. For relative differences
+     *  the first term is interpreted as the reference value, from which
+     *  we extract the magnitude to compare with.
+     */
+    FloatingPointDifference(float ref, float value);
 
-        /*! \brief Initializes a double-precision difference.
-         *
-         *  \param ref    First term in difference
-         *  \param value  Second term in difference
-         *
-         *  For absolute and ULP differences the two parameters are equivalent,
-         *  since the difference is symmetric. For relative differences
-         *  the first term is interpreted as the reference value, from which
-         *  we extract the magnitude to compare with.
-         */
-        FloatingPointDifference(double ref, double value);
+    /*! \brief Initializes a double-precision difference.
+     *
+     *  \param ref    First term in difference
+     *  \param value  Second term in difference
+     *
+     *  For absolute and ULP differences the two parameters are equivalent,
+     *  since the difference is symmetric. For relative differences
+     *  the first term is interpreted as the reference value, from which
+     *  we extract the magnitude to compare with.
+     */
+    FloatingPointDifference(double ref, double value);
 
-        /*! \brief
-         * Whether one or both of the compared values were NaN.
-         *
-         * If this returns `true`, other accessors return meaningless values.
-         */
-        bool isNaN() const;
-        //! Returns the difference as an absolute number (always non-negative).
-        double asAbsolute() const { return absoluteDifference_; }
-        /*! \brief
-         * Returns the difference as ULPs (always non-negative).
-         *
-         * The ULPs are calculated for the type that corresponds to the
-         * constructor used to initialize the difference.
-         * The ULP difference between 0.0 and -0.0 is zero.
-         */
-        gmx_uint64_t asUlps() const { return ulpDifference_; }
-        /*! \brief
-         * Whether the compared values were of different sign.
-         *
-         * 0.0 and -0.0 are treated as positive and negative, respectively.
-         */
-        bool signsDiffer() const { return bSignDifference_; }
-        /*! \brief
-         * Whether the difference is between single- or double-precision
-         * numbers.
-         */
-        bool isDouble() const { return bDouble_; }
-        //! Formats the difference as a string for assertion failure messages.
-        std::string toString() const;
+    /*! \brief
+     * Whether one or both of the compared values were NaN.
+     *
+     * If this returns `true`, other accessors return meaningless values.
+     */
+    bool isNaN() const;
+    //! Returns the difference as an absolute number (always non-negative).
+    double asAbsolute() const { return absoluteDifference_; }
+    /*! \brief
+     * Returns the difference as ULPs (always non-negative).
+     *
+     * The ULPs are calculated for the type that corresponds to the
+     * constructor used to initialize the difference.
+     * The ULP difference between 0.0 and -0.0 is zero.
+     */
+    gmx_uint64_t asUlps() const { return ulpDifference_; }
+    /*! \brief
+     * Whether the compared values were of different sign.
+     *
+     * 0.0 and -0.0 are treated as positive and negative, respectively.
+     */
+    bool signsDiffer() const { return bSignDifference_; }
+    /*! \brief
+     * Whether the difference is between single- or double-precision
+     * numbers.
+     */
+    bool isDouble() const { return bDouble_; }
+    //! Formats the difference as a string for assertion failure messages.
+    std::string toString() const;
 
-        //! Returns the magnitude of the original second term of the difference.
-        double termMagnitude() const { return termMagnitude_; }
+    //! Returns the magnitude of the original second term of the difference.
+    double termMagnitude() const { return termMagnitude_; }
 
-    private:
+private:
 
-        //! Save the magnitude of the reference value for relative (i.e., not ULP) tolerance
-        double termMagnitude_;
-        //! Stores the absolute difference, or NaN if one or both values were NaN.
-        double       absoluteDifference_;
-        gmx_uint64_t ulpDifference_;
-        bool         bSignDifference_;
-        /*! \brief
-         * Whether the difference was computed for single or double precision.
-         *
-         * This sets the units for `ulpDifference_`.
-         */
-        bool bDouble_;
+    //! Save the magnitude of the reference value for relative (i.e., not ULP) tolerance
+    double termMagnitude_;
+    //! Stores the absolute difference, or NaN if one or both values were NaN.
+    double       absoluteDifference_;
+    gmx_uint64_t ulpDifference_;
+    bool         bSignDifference_;
+    /*! \brief
+     * Whether the difference was computed for single or double precision.
+     *
+     * This sets the units for `ulpDifference_`.
+     */
+    bool bDouble_;
 };
 
 /*! \libinternal \brief
@@ -333,60 +333,60 @@ class FloatingPointDifference
  */
 class FloatingPointTolerance
 {
-    public:
-        /*! \brief
-         * Creates a tolerance with the specified values.
-         *
-         * \param[in]  singleAbsoluteTolerance
-         *     Allowed absolute difference in a single-precision number.
-         * \param[in]  doubleAbsoluteTolerance
-         *     Allowed absolute difference in a double-precision number.
-         * \param[in]  singleRelativeTolerance
-         *     Allowed relative difference in a single-precision number.
-         * \param[in]  doubleRelativeTolerance
-         *     Allowed relative difference in a double-precision number.
-         * \param[in]  singleUlpTolerance
-         *     Allowed ULP difference in a single-precision number.
-         * \param[in]  doubleUlpTolerance
-         *     Allowed ULP difference in a double-precision number.
-         * \param[in]  bSignMustMatch
-         *     Whether sign mismatch fails the comparison.
-         */
-        FloatingPointTolerance(float        singleAbsoluteTolerance,
-                               double       doubleAbsoluteTolerance,
-                               float        singleRelativeTolerance,
-                               double       doubleRelativeTolerance,
-                               gmx_uint64_t singleUlpTolerance,
-                               gmx_uint64_t doubleUlpTolerance,
-                               bool         bSignMustMatch)
-            : singleAbsoluteTolerance_(singleAbsoluteTolerance),
-              doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
-              singleRelativeTolerance_(singleRelativeTolerance),
-              doubleRelativeTolerance_(doubleRelativeTolerance),
-              singleUlpTolerance_(singleUlpTolerance),
-              doubleUlpTolerance_(doubleUlpTolerance),
-              bSignMustMatch_(bSignMustMatch)
-        {
-        }
+public:
+    /*! \brief
+     * Creates a tolerance with the specified values.
+     *
+     * \param[in]  singleAbsoluteTolerance
+     *     Allowed absolute difference in a single-precision number.
+     * \param[in]  doubleAbsoluteTolerance
+     *     Allowed absolute difference in a double-precision number.
+     * \param[in]  singleRelativeTolerance
+     *     Allowed relative difference in a single-precision number.
+     * \param[in]  doubleRelativeTolerance
+     *     Allowed relative difference in a double-precision number.
+     * \param[in]  singleUlpTolerance
+     *     Allowed ULP difference in a single-precision number.
+     * \param[in]  doubleUlpTolerance
+     *     Allowed ULP difference in a double-precision number.
+     * \param[in]  bSignMustMatch
+     *     Whether sign mismatch fails the comparison.
+     */
+    FloatingPointTolerance(float        singleAbsoluteTolerance,
+                           double       doubleAbsoluteTolerance,
+                           float        singleRelativeTolerance,
+                           double       doubleRelativeTolerance,
+                           gmx_uint64_t singleUlpTolerance,
+                           gmx_uint64_t doubleUlpTolerance,
+                           bool         bSignMustMatch)
+        : singleAbsoluteTolerance_(singleAbsoluteTolerance),
+          doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
+          singleRelativeTolerance_(singleRelativeTolerance),
+          doubleRelativeTolerance_(doubleRelativeTolerance),
+          singleUlpTolerance_(singleUlpTolerance),
+          doubleUlpTolerance_(doubleUlpTolerance),
+          bSignMustMatch_(bSignMustMatch)
+    {
+    }
 
-        /*! \brief
-         * Checks whether a difference is within the specified tolerance.
-         *
-         * NaNs are always treated outside the tolerance.
-         */
-        bool isWithin(const FloatingPointDifference &difference) const;
+    /*! \brief
+     * Checks whether a difference is within the specified tolerance.
+     *
+     * NaNs are always treated outside the tolerance.
+     */
+    bool isWithin(const FloatingPointDifference &difference) const;
 
-        //! Formats the tolerance as a string for assertion failure messages.
-        std::string toString(const FloatingPointDifference &difference) const;
+    //! Formats the tolerance as a string for assertion failure messages.
+    std::string toString(const FloatingPointDifference &difference) const;
 
-    private:
-        float        singleAbsoluteTolerance_;
-        double       doubleAbsoluteTolerance_;
-        float        singleRelativeTolerance_;
-        double       doubleRelativeTolerance_;
-        gmx_uint64_t singleUlpTolerance_;
-        gmx_uint64_t doubleUlpTolerance_;
-        bool         bSignMustMatch_;
+private:
+    float        singleAbsoluteTolerance_;
+    double       doubleAbsoluteTolerance_;
+    float        singleRelativeTolerance_;
+    double       doubleRelativeTolerance_;
+    gmx_uint64_t singleUlpTolerance_;
+    gmx_uint64_t doubleUlpTolerance_;
+    bool         bSignMustMatch_;
 };
 
 /*! \brief

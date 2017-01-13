@@ -95,181 +95,181 @@ typedef std::unique_ptr<AnalysisDataStorageFrame>
  */
 class AnalysisDataStorageImpl
 {
-    public:
-        //! Smart pointer type for managing a stored frame.
-        typedef std::unique_ptr<AnalysisDataStorageFrameData> FramePointer;
+public:
+    //! Smart pointer type for managing a stored frame.
+    typedef std::unique_ptr<AnalysisDataStorageFrameData> FramePointer;
 
-        //! Shorthand for a list of data frames that are currently stored.
-        typedef std::vector<FramePointer> FrameList;
-        //! Shorthand for a list of currently unused storage frame builders.
-        typedef std::vector<AnalysisDataFrameBuilderPointer> FrameBuilderList;
+    //! Shorthand for a list of data frames that are currently stored.
+    typedef std::vector<FramePointer> FrameList;
+    //! Shorthand for a list of currently unused storage frame builders.
+    typedef std::vector<AnalysisDataFrameBuilderPointer> FrameBuilderList;
 
-        AnalysisDataStorageImpl();
+    AnalysisDataStorageImpl();
 
-        //! Returns whether the storage is set to use multipoint data.
-        bool isMultipoint() const;
-        /*! \brief
-         * Whether storage of all frames has been requested.
-         *
-         * Storage of all frames also works as expected if \a storageLimit_ is
-         * used in comparisons directly, but this method should be used to
-         * check how to manage \a frames_.
-         */
-        bool storeAll() const
-        {
-            return storageLimit_ == std::numeric_limits<int>::max();
-        }
-        //! Returns the index of the oldest frame that may be currently stored.
-        int firstStoredIndex() const;
-        //! Returns the index of the first frame that is not fully notified.
-        int firstUnnotifiedIndex() const { return firstUnnotifiedIndex_; }
-        /*! \brief
-         * Computes index into \a frames_ for accessing frame \p index.
-         *
-         * \param[in]  index  Zero-based frame index.
-         * \retval  -1 if \p index is not available in \a frames_.
-         *
-         * Does not throw.
-         */
-        int computeStorageLocation(int index) const;
+    //! Returns whether the storage is set to use multipoint data.
+    bool isMultipoint() const;
+    /*! \brief
+     * Whether storage of all frames has been requested.
+     *
+     * Storage of all frames also works as expected if \a storageLimit_ is
+     * used in comparisons directly, but this method should be used to
+     * check how to manage \a frames_.
+     */
+    bool storeAll() const
+    {
+        return storageLimit_ == std::numeric_limits<int>::max();
+    }
+    //! Returns the index of the oldest frame that may be currently stored.
+    int firstStoredIndex() const;
+    //! Returns the index of the first frame that is not fully notified.
+    int firstUnnotifiedIndex() const { return firstUnnotifiedIndex_; }
+    /*! \brief
+     * Computes index into \a frames_ for accessing frame \p index.
+     *
+     * \param[in]  index  Zero-based frame index.
+     * \retval  -1 if \p index is not available in \a frames_.
+     *
+     * Does not throw.
+     */
+    int computeStorageLocation(int index) const;
 
-        /*! \brief
-         * Computes an index into \a frames_ that is one past the last frame
-         * stored.
-         *
-         * Does not throw.
-         */
-        size_t endStorageLocation() const;
+    /*! \brief
+     * Computes an index into \a frames_ that is one past the last frame
+     * stored.
+     *
+     * Does not throw.
+     */
+    size_t endStorageLocation() const;
 
-        /*! \brief
-         * Extends \a frames_ to a new size.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        void extendBuffer(size_t newSize);
-        /*! \brief
-         * Remove oldest frame from the storage to make space for a new one.
-         *
-         * Increments \a firstFrameLocation_ and reinitializes the frame that
-         * was made unavailable by this operation.
-         *
-         * Does not throw.
-         *
-         * \see frames_
-         */
-        void rotateBuffer();
+    /*! \brief
+     * Extends \a frames_ to a new size.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    void extendBuffer(size_t newSize);
+    /*! \brief
+     * Remove oldest frame from the storage to make space for a new one.
+     *
+     * Increments \a firstFrameLocation_ and reinitializes the frame that
+     * was made unavailable by this operation.
+     *
+     * Does not throw.
+     *
+     * \see frames_
+     */
+    void rotateBuffer();
 
-        /*! \brief
-         * Returns a frame builder object for use with a new frame.
-         *
-         * \throws std::bad_alloc if out of memory.
-         */
-        AnalysisDataFrameBuilderPointer getFrameBuilder();
+    /*! \brief
+     * Returns a frame builder object for use with a new frame.
+     *
+     * \throws std::bad_alloc if out of memory.
+     */
+    AnalysisDataFrameBuilderPointer getFrameBuilder();
 
-        /*! \brief
-         * Returns whether notifications should be immediately fired.
-         *
-         * This is used to optimize multipoint handling for non-parallel cases,
-         * where it is not necessary to store even a single frame.
-         *
-         * Does not throw.
-         */
-        bool shouldNotifyImmediately() const
-        {
-            return isMultipoint() && storageLimit_ == 0 && pendingLimit_ == 1;
-        }
-        /*! \brief
-         * Returns whether data needs to be stored at all.
-         *
-         * This is used to optimize multipoint handling for parallel cases
-         * (where shouldNotifyImmediately() returns false),
-         * where it is not necessary to store even a single frame.
-         *
-         * \todo
-         * This could be extended to non-multipoint data as well.
-         *
-         * Does not throw.
-         */
-        bool needStorage() const
-        {
-            return storageLimit_ > 0 || (pendingLimit_ > 1 && modules_->hasSerialModules());
-        }
-        //! Implementation for AnalysisDataStorage::finishFrame().
-        void finishFrame(int index);
-        /*! \brief
-         * Implementation for AnalysisDataStorage::finishFrameSerial().
-         */
-        void finishFrameSerial(int index);
+    /*! \brief
+     * Returns whether notifications should be immediately fired.
+     *
+     * This is used to optimize multipoint handling for non-parallel cases,
+     * where it is not necessary to store even a single frame.
+     *
+     * Does not throw.
+     */
+    bool shouldNotifyImmediately() const
+    {
+        return isMultipoint() && storageLimit_ == 0 && pendingLimit_ == 1;
+    }
+    /*! \brief
+     * Returns whether data needs to be stored at all.
+     *
+     * This is used to optimize multipoint handling for parallel cases
+     * (where shouldNotifyImmediately() returns false),
+     * where it is not necessary to store even a single frame.
+     *
+     * \todo
+     * This could be extended to non-multipoint data as well.
+     *
+     * Does not throw.
+     */
+    bool needStorage() const
+    {
+        return storageLimit_ > 0 || (pendingLimit_ > 1 && modules_->hasSerialModules());
+    }
+    //! Implementation for AnalysisDataStorage::finishFrame().
+    void finishFrame(int index);
+    /*! \brief
+     * Implementation for AnalysisDataStorage::finishFrameSerial().
+     */
+    void finishFrameSerial(int index);
 
 
-        //! Parent data object to access data dimensionality etc.
-        const AbstractAnalysisData *data_;
-        //! Manager to use for notification calls.
-        AnalysisDataModuleManager *modules_;
-        /*! \brief
-         * Number of past frames that need to be stored.
-         *
-         * Always non-negative.  If storage of all frames has been requested,
-         * this is set to a large number.
-         */
-        int storageLimit_;
-        /*! \brief
-         * Number of future frames that may need to be started.
-         *
-         * Should always be at least one.
-         *
-         * \todo
-         * Get rid of this alltogether, as it is no longer used much.
-         *
-         * \see AnalysisDataStorage::startFrame()
-         */
-        int pendingLimit_;
-        /*! \brief
-         * Data frames that are currently stored.
-         *
-         * If storage of all frames has been requested, this is simply a vector
-         * of frames up to the latest frame that has been started.
-         * In this case, \a firstFrameLocation_ is always zero.
-         *
-         * If storage of all frames is not requested, this is a ring buffer of
-         * frames of size \c n=storageLimit_+pendingLimit_+1.  If a frame with
-         * index \c index is currently stored, its location is
-         * \c index%frames_.size().
-         * When at most \a storageLimit_ first frames have been finished,
-         * this contains storage for the first \c n-1 frames.
-         * When more than \a storageLimit_ first frames have been finished,
-         * the oldest stored frame is stored in the location
-         * \a firstFrameLocation_, and \a storageLimit_ frames starting from
-         * this location are the last finished frames.  \a pendingLimit_ frames
-         * follow, and some of these may be in progress or finished.
-         * There is always one unused frame in the buffer, which is initialized
-         * such that when \a firstFrameLocation_ is incremented, it becomes
-         * valid.  This makes it easier to rotate the buffer in concurrent
-         * access scenarions (which are not yet otherwise implemented).
-         */
-        FrameList frames_;
-        //! Location of oldest frame in \a frames_.
-        size_t firstFrameLocation_;
-        //! Index of the first frame that is not fully notified.
-        int firstUnnotifiedIndex_;
-        /*! \brief
-         * Currently unused frame builders.
-         *
-         * The builders are cached to avoid repeatedly allocating memory for
-         * them.  Typically, there are as many builders as there are concurrent
-         * users of the storage object.  Whenever a frame is started, a builder
-         * is pulled from this pool by getFrameBuilder() (a new one is created
-         * if none are available), and assigned for that frame.  When that
-         * frame is finished, the builder is returned to this pool.
-         */
-        FrameBuilderList builders_;
-        /*! \brief
-         * Index of next frame that will be added to \a frames_.
-         *
-         * If all frames are not stored, this will be the index of the unused
-         * frame (see \a frames_).
-         */
-        int nextIndex_;
+    //! Parent data object to access data dimensionality etc.
+    const AbstractAnalysisData *data_;
+    //! Manager to use for notification calls.
+    AnalysisDataModuleManager *modules_;
+    /*! \brief
+     * Number of past frames that need to be stored.
+     *
+     * Always non-negative.  If storage of all frames has been requested,
+     * this is set to a large number.
+     */
+    int storageLimit_;
+    /*! \brief
+     * Number of future frames that may need to be started.
+     *
+     * Should always be at least one.
+     *
+     * \todo
+     * Get rid of this alltogether, as it is no longer used much.
+     *
+     * \see AnalysisDataStorage::startFrame()
+     */
+    int pendingLimit_;
+    /*! \brief
+     * Data frames that are currently stored.
+     *
+     * If storage of all frames has been requested, this is simply a vector
+     * of frames up to the latest frame that has been started.
+     * In this case, \a firstFrameLocation_ is always zero.
+     *
+     * If storage of all frames is not requested, this is a ring buffer of
+     * frames of size \c n=storageLimit_+pendingLimit_+1.  If a frame with
+     * index \c index is currently stored, its location is
+     * \c index%frames_.size().
+     * When at most \a storageLimit_ first frames have been finished,
+     * this contains storage for the first \c n-1 frames.
+     * When more than \a storageLimit_ first frames have been finished,
+     * the oldest stored frame is stored in the location
+     * \a firstFrameLocation_, and \a storageLimit_ frames starting from
+     * this location are the last finished frames.  \a pendingLimit_ frames
+     * follow, and some of these may be in progress or finished.
+     * There is always one unused frame in the buffer, which is initialized
+     * such that when \a firstFrameLocation_ is incremented, it becomes
+     * valid.  This makes it easier to rotate the buffer in concurrent
+     * access scenarions (which are not yet otherwise implemented).
+     */
+    FrameList frames_;
+    //! Location of oldest frame in \a frames_.
+    size_t firstFrameLocation_;
+    //! Index of the first frame that is not fully notified.
+    int firstUnnotifiedIndex_;
+    /*! \brief
+     * Currently unused frame builders.
+     *
+     * The builders are cached to avoid repeatedly allocating memory for
+     * them.  Typically, there are as many builders as there are concurrent
+     * users of the storage object.  Whenever a frame is started, a builder
+     * is pulled from this pool by getFrameBuilder() (a new one is created
+     * if none are available), and assigned for that frame.  When that
+     * frame is finished, the builder is returned to this pool.
+     */
+    FrameBuilderList builders_;
+    /*! \brief
+     * Index of next frame that will be added to \a frames_.
+     *
+     * If all frames are not stored, this will be the index of the unused
+     * frame (see \a frames_).
+     */
+    int nextIndex_;
 };
 
 /********************************************************************
@@ -289,109 +289,109 @@ class AnalysisDataStorageImpl
  */
 class AnalysisDataStorageFrameData
 {
-    public:
-        //! Shorthand for a iterator into storage value containers.
-        typedef std::vector<AnalysisDataValue>::const_iterator ValueIterator;
+public:
+    //! Shorthand for a iterator into storage value containers.
+    typedef std::vector<AnalysisDataValue>::const_iterator ValueIterator;
 
-        //! Indicates what operations have been performed on a frame.
-        enum Status
-        {
-            eMissing,  //!< Frame has not yet been started.
-            eStarted,  //!< startFrame() has been called.
-            eFinished, //!< finishFrame() has been called.
-            eNotified  //!< Appropriate notifications have been sent.
-        };
+    //! Indicates what operations have been performed on a frame.
+    enum Status
+    {
+        eMissing,      //!< Frame has not yet been started.
+        eStarted,      //!< startFrame() has been called.
+        eFinished,     //!< finishFrame() has been called.
+        eNotified      //!< Appropriate notifications have been sent.
+    };
 
-        /*! \brief
-         * Create a new storage frame.
-         *
-         * \param     storageImpl  Storage object this frame belongs to.
-         * \param[in] index        Zero-based index for the frame.
-         */
-        AnalysisDataStorageFrameData(AnalysisDataStorageImpl *storageImpl,
-                                     int                      index);
+    /*! \brief
+     * Create a new storage frame.
+     *
+     * \param     storageImpl  Storage object this frame belongs to.
+     * \param[in] index        Zero-based index for the frame.
+     */
+    AnalysisDataStorageFrameData(AnalysisDataStorageImpl *storageImpl,
+                                 int                      index);
 
-        //! Whether the frame has been started with startFrame().
-        bool isStarted() const { return status_ >= eStarted; }
-        //! Whether the frame has been finished with finishFrame().
-        bool isFinished() const { return status_ >= eFinished; }
-        //! Whether all notifications have been sent.
-        bool isNotified() const { return status_ >= eNotified; }
-        //! Whether the frame is ready to be available outside the storage.
-        bool isAvailable() const { return status_ >= eFinished; }
+    //! Whether the frame has been started with startFrame().
+    bool isStarted() const { return status_ >= eStarted; }
+    //! Whether the frame has been finished with finishFrame().
+    bool isFinished() const { return status_ >= eFinished; }
+    //! Whether all notifications have been sent.
+    bool isNotified() const { return status_ >= eNotified; }
+    //! Whether the frame is ready to be available outside the storage.
+    bool isAvailable() const { return status_ >= eFinished; }
 
-        //! Marks the frame as notified.
-        void markNotified() { status_ = eNotified; }
+    //! Marks the frame as notified.
+    void markNotified() { status_ = eNotified; }
 
-        //! Returns the storage implementation object.
-        AnalysisDataStorageImpl &storageImpl() const { return storageImpl_; }
-        //! Returns the underlying data object (for data dimensionalities etc.).
-        const AbstractAnalysisData &baseData() const { return *storageImpl().data_; }
+    //! Returns the storage implementation object.
+    AnalysisDataStorageImpl &storageImpl() const { return storageImpl_; }
+    //! Returns the underlying data object (for data dimensionalities etc.).
+    const AbstractAnalysisData &baseData() const { return *storageImpl().data_; }
 
-        //! Returns header for the frame.
-        const AnalysisDataFrameHeader &header() const { return header_; }
-        //! Returns zero-based index of the frame.
-        int frameIndex() const { return header().index(); }
-        //! Returns the number of point sets for the frame.
-        int pointSetCount() const { return pointSets_.size(); }
+    //! Returns header for the frame.
+    const AnalysisDataFrameHeader &header() const { return header_; }
+    //! Returns zero-based index of the frame.
+    int frameIndex() const { return header().index(); }
+    //! Returns the number of point sets for the frame.
+    int pointSetCount() const { return pointSets_.size(); }
 
-        //! Clears the frame for reusing as a new frame.
-        void clearFrame(int newIndex);
-        /*! \brief
-         * Initializes the frame during AnalysisDataStorage::startFrame().
-         *
-         * \param[in] header  Header to use for the new frame.
-         * \param[in] builder Builder object to use.
-         */
-        void startFrame(const AnalysisDataFrameHeader & header,
-                        AnalysisDataFrameBuilderPointer builder);
-        //! Returns the builder for this frame.
-        AnalysisDataStorageFrame &builder() const
-        {
-            GMX_ASSERT(builder_, "Accessing builder for not-in-progress frame");
-            return *builder_;
-        }
-        /*! \brief
-         * Adds a new point set to this frame.
-         */
-        void addPointSet(int dataSetIndex, int firstColumn,
-                         ValueIterator begin, ValueIterator end);
-        /*! \brief
-         * Finalizes the frame during AnalysisDataStorage::finishFrame().
-         *
-         * \returns The builder object used by the frame, for reusing it for
-         *      other frames.
-         */
-        AnalysisDataFrameBuilderPointer finishFrame(bool bMultipoint);
+    //! Clears the frame for reusing as a new frame.
+    void clearFrame(int newIndex);
+    /*! \brief
+     * Initializes the frame during AnalysisDataStorage::startFrame().
+     *
+     * \param[in] header  Header to use for the new frame.
+     * \param[in] builder Builder object to use.
+     */
+    void startFrame(const AnalysisDataFrameHeader & header,
+                    AnalysisDataFrameBuilderPointer builder);
+    //! Returns the builder for this frame.
+    AnalysisDataStorageFrame &builder() const
+    {
+        GMX_ASSERT(builder_, "Accessing builder for not-in-progress frame");
+        return *builder_;
+    }
+    /*! \brief
+     * Adds a new point set to this frame.
+     */
+    void addPointSet(int dataSetIndex, int firstColumn,
+                     ValueIterator begin, ValueIterator end);
+    /*! \brief
+     * Finalizes the frame during AnalysisDataStorage::finishFrame().
+     *
+     * \returns The builder object used by the frame, for reusing it for
+     *      other frames.
+     */
+    AnalysisDataFrameBuilderPointer finishFrame(bool bMultipoint);
 
-        //! Returns frame reference to this frame.
-        AnalysisDataFrameRef frameReference() const
-        {
-            return AnalysisDataFrameRef(header_, values_, pointSets_);
-        }
-        //! Returns point set reference to a given point set.
-        AnalysisDataPointSetRef pointSet(int index) const;
+    //! Returns frame reference to this frame.
+    AnalysisDataFrameRef frameReference() const
+    {
+        return AnalysisDataFrameRef(header_, values_, pointSets_);
+    }
+    //! Returns point set reference to a given point set.
+    AnalysisDataPointSetRef pointSet(int index) const;
 
-    private:
-        //! Storage object that contains this frame.
-        AnalysisDataStorageImpl &storageImpl_;
-        //! Header for the frame.
-        AnalysisDataFrameHeader header_;
-        //! Values for the frame.
-        std::vector<AnalysisDataValue> values_;
-        //! Information about each point set in the frame.
-        std::vector<AnalysisDataPointSetInfo> pointSets_;
-        /*! \brief
-         * Builder object for the frame.
-         *
-         * Non-NULL when the frame is in progress, i.e., has been started but
-         * not yet finished.
-         */
-        AnalysisDataFrameBuilderPointer builder_;
-        //! In what state the frame currently is.
-        Status status_;
+private:
+    //! Storage object that contains this frame.
+    AnalysisDataStorageImpl &storageImpl_;
+    //! Header for the frame.
+    AnalysisDataFrameHeader header_;
+    //! Values for the frame.
+    std::vector<AnalysisDataValue> values_;
+    //! Information about each point set in the frame.
+    std::vector<AnalysisDataPointSetInfo> pointSets_;
+    /*! \brief
+     * Builder object for the frame.
+     *
+     * Non-NULL when the frame is in progress, i.e., has been started but
+     * not yet finished.
+     */
+    AnalysisDataFrameBuilderPointer builder_;
+    //! In what state the frame currently is.
+    Status status_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrameData);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrameData);
 };
 
 /********************************************************************

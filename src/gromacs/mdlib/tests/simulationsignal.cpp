@@ -64,15 +64,15 @@ TEST(NullSignalTest, NullSignallerWorks)
 //! Test fixture for mdrun signalling
 class SignalTest : public ::testing::Test
 {
-    public:
-        //! Constructor
-        SignalTest() : signals_ {}
-        {
-            signals_[0].sig = 1;
-            signals_[1].sig = -1;
-        }
-        //! Default object to hold signals
-        SimulationSignals signals_;
+public:
+    //! Constructor
+    SignalTest() : signals_ {}
+    {
+        signals_[0].sig = 1;
+        signals_[1].sig = -1;
+    }
+    //! Default object to hold signals
+    SimulationSignals signals_;
 };
 
 TEST_F(SignalTest, NoSignalPropagatesIfNoSignallingTakesPlace)
