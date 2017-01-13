@@ -260,7 +260,6 @@ void OPtimization::calcDeviation()
             if (nullptr != mymol.shellfc_)
             {
                 bHaveShells = true;
-                split_shell_charges(mymol.mtop_, &mymol.ltop_->idef, mymol.topology_);
                 mymol.computeForces(nullptr, _cr);
             }
             
@@ -276,9 +275,9 @@ void OPtimization::calcDeviation()
                                    &chieq,
                                    mymol.x_);
             mymol.chieq = chieq;
-                        
+            
+            double qtot = 0;            
             mymol.CalcMultipoles();
-            double qtot = 0;
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
             {
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
@@ -293,10 +292,6 @@ void OPtimization::calcDeviation()
                     {
                         _ener[ermsBOUNDS] += fabs(qq);
                     }                    
-                    if (_bQM)
-                    {
-                        _ener[ermsCHARGE] += gmx::square(qq - mymol.qESP[j]);
-                    }
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -310,7 +305,7 @@ void OPtimization::calcDeviation()
                 rvec dmu;
                 rvec_sub(mymol.mu_calc, mymol.mu_exp, dmu);
                 _ener[ermsMU]  += iprod(dmu, dmu);
-                /*for (int mm = 0; mm < DIM; mm++)
+                for (int mm = 0; mm < DIM; mm++)
                 {
                     if (bfullTensor_)
                     {
@@ -323,7 +318,7 @@ void OPtimization::calcDeviation()
                     {
                         _ener[ermsQUAD] += gmx::square(mymol.Q_calc[mm][mm] - mymol.Q_exp[mm][mm]);
                     }
-                    }*/
+                }
             }
             else
             {
@@ -697,13 +692,8 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
     FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
     double        d2 = 0;
     real          rms, sigma, aver, error, qq, chi2;
-    int           j, n, nout, mm, nn, at_global, resnr;
-    char         *resnm, *atomnm;
-    
-    gmx_mtop_atomloop_all_t   aloop;
-    const t_atom             *atom;
-
-    
+    int           j, n, nout, mm, nn;
+     
     struct AtomTypeLsq {
         std::string atomtype;
         gmx_stats_t lsq;
@@ -753,7 +743,6 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
             for (mm = 0; mm < DIM; mm++)
             {
                 gmx_stats_add_point(lsq_mu[0], mol.mu_exp[mm], mol.mu_calc[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[1], mol.mu_exp[mm], mol.mu_esp[mm], 0, 0);
                 if (0)
                 {
                     for (nn = mm; nn < DIM; nn++)
@@ -761,7 +750,6 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
                         if (mm < ZZ)
                         {
                             gmx_stats_add_point(lsq_quad[0], mol.Q_exp[mm][nn], mol.Q_calc[mm][nn], 0, 0);
-                            gmx_stats_add_point(lsq_quad[1], mol.Q_exp[mm][nn], mol.Q_esp[mm][nn], 0, 0);
                         }
                     }
                 }
@@ -769,18 +757,14 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
                 {
                     /* Ignore off-diagonal components */
                     gmx_stats_add_point(lsq_quad[0], mol.Q_exp[mm][mm], mol.Q_calc[mm][mm], 0, 0);
-                    gmx_stats_add_point(lsq_quad[1], mol.Q_exp[mm][mm], mol.Q_esp[mm][mm], 0, 0);
 
                 }
             }
 
             d2 += gmx::square(mol.dip_exp - mol.dip_calc);
             fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
-            aloop = gmx_mtop_atomloop_all_init(mol.mtop_);
-            j     = 0;
-            while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+            for (j = 0; j < mol.topology_->atoms.nr; j++)
             {
-                gmx_mtop_atomloop_all_names(aloop, &atomnm, &resnr, &resnm);
                 const char *at = *(mol.topology_->atoms.atomtype[j]);
                 auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
                                               [at](const AtomTypeLsq &atlsq)
@@ -794,19 +778,18 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
                     lsqt[lsqt.size()-1].lsq = gmx_stats_init();
                     k = lsqt.end() - 1;
                 }
-                qq = atom->q;
-                fprintf(fp, "%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
-                        atomnm,
+                
+                qq = mol.topology_->atoms.atom[j].q;
+                fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
+                        mol.topology_->atoms.atom[j].atomnumber,
                         j+1,
                         *(mol.topology_->atoms.atomtype[j]),
                         qq,mol.qESP[j],
                         mol.x_[j][XX], mol.x_[j][YY], mol.x_[j][ZZ],
                         fabs(qq - mol.qESP[j]) > q_toler ? "ZZZ" : "");
-                gmx_stats_add_point(k->lsq, mol.qESP[j], atom->q, 0, 0);
-                gmx_stats_add_point(lsq_q, mol.qESP[j], atom->q, 0, 0);
-                j++;
+                gmx_stats_add_point(k->lsq, mol.qESP[j], qq, 0, 0);
+                gmx_stats_add_point(lsq_q, mol.qESP[j], qq, 0, 0);
             }
-            GMX_RELEASE_ASSERT(j == mol.topology_->atoms.nr, "Inconsistency 1 in tune_dip.cpp.");
             fprintf(fp, "\n");
             n++;
         }
@@ -1016,7 +999,7 @@ int alex_tune_dip(int argc, char *argv[])
     static real                 temperature   = 300;
     static char                *opt_elem      = nullptr;
     static char                *const_elem    = nullptr;
-    static char                *fixchi        = nullptr;
+    static char                *fixchi        = (char *)"";
     static char                *lot           = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool             bRandom       = false;
     static gmx_bool             bOptHfac      = false;
@@ -1221,10 +1204,10 @@ int alex_tune_dip(int argc, char *argv[])
                
     if (MASTER(cr))
     {
-        //opt.print_molecules(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
-        //                    opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
-        //                    opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
-        //                    dip_toler, quad_toler, q_toler, oenv);
+        opt.print_molecules(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
+                            opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
+                            opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
+                            dip_toler, quad_toler, q_toler, oenv);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
         done_filenms(NFILE, fnm);

@@ -33,11 +33,11 @@ class QgenEem
                 ChargeDistributionModel   iChargeDistributionModel,
                 double hfac, int qtotal, bool haveShell);
 
-        void generateChargesSm(FILE            *fp,
-                               const Poldata    &pd,
-                               t_atoms         *atoms,  
-                               double          *chieq,
-                               PaddedRVecVector x);
+        int generateChargesSm(FILE            *fp,
+                              const Poldata    &pd,
+                              t_atoms         *atoms,  
+                              double          *chieq,
+                              PaddedRVecVector x);
 
         int generateCharges(FILE              *fp,
                             const std::string  molname,
@@ -56,6 +56,10 @@ class QgenEem
 
         int getRow(int atom, int z);
 
+        std::vector<std::vector<double>> q() { return q_;}
+        
+        int natom() {return natom_;}
+        
         double getQ(int atom, int z);
 
         void checkSupport(const Poldata &pd);
@@ -84,7 +88,7 @@ class QgenEem
         std::vector<int>                                   nZeta_;
         std::vector<std::vector<int> >                     row_;
         bool                                               bAllocSave_, bHaveShell_;
-        std::vector<std::vector<double> >                  q_, zeta_, qsave_, zetasave_;
+        std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_;
 
 
         double calcJ(ChargeDistributionModel iChargeDistributionModel,
@@ -108,19 +112,15 @@ class QgenEem
                      int      eem_ndx);
 
         void solveQEem(FILE *fp);
-
-        void updateJ00();
         
-        void updatePositions(PaddedRVecVector x, t_atoms *atoms);
+        void setPositions(PaddedRVecVector x, t_atoms *atoms);
 
         double calcSij(int i, int j);
 
-        void updateFromPoldata(t_atoms *atoms,
-                               const Poldata &pd);
-
-        int generateChargesBultinck(FILE *fp,
-                                    const Poldata &pd,
-                                    t_atoms *atoms);
+        int generateChargesBultinck(FILE              *fp,
+                                    const Poldata     &pd,
+                                    t_atoms           *atoms,
+                                    PaddedRVecVector   x);
         void calcRhs(t_atoms *atoms);
 };
 }
