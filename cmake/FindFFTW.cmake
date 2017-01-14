@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -152,7 +152,7 @@ if (${FFTW}_FOUND)
   endif()
 
   #Verify FFTW is compiled with fPIC (necessary for shared libraries)
-  if (CMAKE_OBJDUMP AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS AND NOT CYGWIN)
+  if (CMAKE_OBJDUMP AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS AND NOT CYGWIN AND NOT APPLE)
       execute_process(COMMAND ${CMAKE_OBJDUMP} --reloc ${${FFTW}_LIBRARY} OUTPUT_VARIABLE ${FFTW}_OBJDUMP)
       if (${${FFTW}_OBJDUMP} MATCHES "R_X86_64" #Should always be true for static libraries. Checks that objdump works properly and that the library isn't dynamic
               AND NOT ${${FFTW}_OBJDUMP} MATCHES "R_X86_64_PLT32")

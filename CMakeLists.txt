@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -267,8 +267,6 @@ gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double pr
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
-option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_LOAD_PLUGINS)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
@@ -687,32 +685,13 @@ include(gmxManageFFTLibraries)
 
 include(gmxManageLinearAlgebraLibraries)
 
-# Whether GROMACS will really try to compile support for VMD plugins
-set(GMX_USE_PLUGINS OFF)
+include(gmxManagePluginSupport)
 
-if(GMX_LOAD_PLUGINS)
-  if(NOT WIN32)
-    # Native Windows does not have, nor need dlopen
-    include(gmxTestdlopen)
-    gmx_test_dlopen(HAVE_DLOPEN)
-  endif()
-
-  # so, should we use plug-ins?
-  if(WIN32 OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
-    if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
-    endif()
+if (GMX_USE_PLUGINS)
     if(NOT GMX_VMD_PLUGIN_PATH)
-      find_package(VMD)
+        find_package(VMD)
     endif()
-    set(GMX_USE_PLUGINS ON)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
-    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
-  else()
-    set(PKG_DL_LIBS)
-  endif()
 endif()
-set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
