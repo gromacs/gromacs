@@ -251,7 +251,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     else if (nullptr != OBpd)
     {
         basis = strdup(OBpd->GetValue().c_str());
-        if (nullptr != (ptr = strstr(basis, " (5D, 7F)")))
+        if (nullptr != (ptr = strdup(strstr(basis, " (5D, 7F)"))))
         {
             *ptr = '\0';
         }
