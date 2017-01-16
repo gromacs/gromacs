@@ -265,7 +265,7 @@ static int decompose_frag(FILE                             *fplog,
 {
     std::vector<double>          x, atx, fpp;
     double                     **a, **at, **ata;
-    double                       poltot, a0, da0, ax, chi2;
+    double                       poltot = 0, a0 = 0, da0 = 0, ax = 0, chi2 = 0;
     std::vector<pType>           ptypes;
     int                          j, niter = 0;
     int                          row, nusemol;

@@ -109,9 +109,9 @@ int nmsimplex(FILE          *fp,
     double  *ve;     /* expansion - coordinates */
     double  *vc;     /* contraction - coordinates */
     double  *vm;     /* centroid - coordinates */
-    double   min;
+    double   min = 0;
 
-    double   fsum, favg, s, cent;
+    double   fsum, favg, s = 0.0, cent;
 
     /* dynamically allocate arrays */
     bConv = 0;

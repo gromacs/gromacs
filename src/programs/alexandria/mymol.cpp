@@ -1584,7 +1584,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             double chi2[2]   = {1e8, 1e8};
             real   rrms      = 0, wtot;
             int    cur       = 0;
-            double EspRms_   = 0;
+            EspRms_          = 0;
             do
             {
                 gr_.updateAtomCoords(x_);

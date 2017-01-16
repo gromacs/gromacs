@@ -37,7 +37,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-
 #include <vector>
 
 #include "gromacs/utility/exceptions.h"
