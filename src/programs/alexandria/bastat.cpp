@@ -39,8 +39,9 @@
 #include "gmxpre.h"
 
 #include <cmath>
-#include <cstdlib>
-#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/pdbio.h"
