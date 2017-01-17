@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -271,7 +271,7 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
         if (bDoSplines || coefficient[ii] != 0.0)
         {
             xptr = fractx[ii];
-            assert(order >= 4 && order <= PME_ORDER_MAX);
+            assert(order >= 3 && order <= PME_ORDER_MAX);
             switch (order)
             {
                 case 4:  CALC_SPLINE(4);     break;
