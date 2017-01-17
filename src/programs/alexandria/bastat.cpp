@@ -38,6 +38,7 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
 #include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
