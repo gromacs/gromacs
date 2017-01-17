@@ -2078,6 +2078,14 @@ int gmx_grompp(int argc, char *argv[])
         }
         calc_grid(stdout, box, ir->fourier_spacing,
                   &(ir->nkx), &(ir->nky), &(ir->nkz));
+        // The 2*(pme_order - 1) limit is actually only for DD without OpenMP
+        const int minGridSize = 2*(ir->pme_order - 1);
+        if (ir->nkx < minGridSize ||
+            ir->nky < minGridSize ||
+            ir->nkz < minGridSize)
+        {
+            warning_error(wi, "The PME grid size should be >= 2*(pme-order - 1); either manually increase the grid size or decrease pme-order");
+        }
     }
 
     /* MRS: eventually figure out better logic for initializing the fep

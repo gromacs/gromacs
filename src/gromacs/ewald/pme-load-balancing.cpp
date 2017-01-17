@@ -333,7 +333,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
          */
         gmx_pme_check_restrictions(pme_order,
                                    set->grid[XX], set->grid[YY], set->grid[ZZ],
-                                   npmeranks_x, npmeranks_y,
+                                   npmeranks_x,
                                    TRUE,
                                    FALSE,
                                    &grid_ok);
