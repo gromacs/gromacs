@@ -120,15 +120,18 @@ static void sort_bonds(t_bonds *b)
     std::sort(b->bond.begin(), b->bond.end(),
               [](const t_bond &a, const t_bond &b)
               {
-                  int d = a.a1.compare(b.a1);
-                  if (d == 0)
+                  if (a.a1.size() > 0 && b.a1.size() > 0)
                   {
-                      if ((d = a.a2.compare(b.a2)) == 0)
+                      int d = a.a1.compare(b.a1);
+                      if (d == 0)
                       {
-                          d = a.order-b.order;
+                          if ((d = a.a2.compare(b.a2)) == 0)
+                          {
+                              d = a.order-b.order;
+                          }
                       }
+                      return d;
                   }
-                  return d;
               });
     std::sort(b->angle.begin(), b->angle.end(),
               [](const t_angle &a, const t_angle &b)
