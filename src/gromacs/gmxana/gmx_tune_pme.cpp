@@ -48,6 +48,7 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
@@ -1078,7 +1079,8 @@ static void make_benchmark_tprs(
 
             /* Scale the Fourier grid spacing */
             ir->nkx = ir->nky = ir->nkz = 0;
-            calc_grid(nullptr, state.box, fourierspacing*fac, &ir->nkx, &ir->nky, &ir->nkz);
+            calcFftGrid(nullptr, state.box, fourierspacing*fac, minimalPmeGridSize(ir->pme_order),
+                        &ir->nkx, &ir->nky, &ir->nkz);
 
             /* Adjust other radii since various conditions need to be fulfilled */
             if (eelPME == ir->coulombtype)
