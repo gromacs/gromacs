@@ -42,11 +42,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-real calc_grid(FILE *fp,
-               const matrix box, real gr_sp,
+real calcFftGrid(FILE *fp,
+               const matrix box, real gridSpacing, int minGridPointsPerDim,
                int *nx, int *ny, int *nz);
 /* Sets the number of grid points for each zero n* to the first reasonable
- * number which gives a spacing equal to or smaller than gr_sp.
+ * number which gives a spacing equal to or smaller than gr_sp
+ * and is >= minGridPointsPerDim.
  * Returns the maximum grid spacing.
  */
 

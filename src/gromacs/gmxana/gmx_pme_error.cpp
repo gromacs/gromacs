@@ -41,6 +41,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
@@ -1170,7 +1171,8 @@ int gmx_pme_error(int argc, char *argv[])
         info.nkx[0] = 0;
         info.nky[0] = 0;
         info.nkz[0] = 0;
-        calc_grid(stdout, state.box, info.fourier_sp[0], &(info.nkx[0]), &(info.nky[0]), &(info.nkz[0]));
+        calcFftGrid(stdout, state.box, info.fourier_sp[0], minimalPmeGridSize(info.pme_order[0]),
+                    &(info.nkx[0]), &(info.nky[0]), &(info.nkz[0]));
         if ( (ir->nkx != info.nkx[0]) || (ir->nky != info.nky[0]) || (ir->nkz != info.nkz[0]) )
         {
             gmx_fatal(FARGS, "Wrong fourierspacing %f nm, input file grid = %d x %d x %d, computed grid = %d x %d x %d",
