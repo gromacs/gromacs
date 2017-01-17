@@ -419,10 +419,26 @@ destroy_overlap_comm(const pme_overlap_t *ol)
     sfree(ol->recvbuf);
 }
 
+int minimalPmeGridSize(int pmeOrder)
+{
+    /* The actual grid size limitations are:
+     *   serial:        >= pme_order
+     *   DD, no OpenMP: >= 2*(pme_order - 1)
+     *   DD, OpenMP:    >= pme_order + 1
+     * But we use the maximum for simplicity since in practice there is not
+     * much performance difference between pme_order and 2*(pme_order -1).
+     */
+    int minimalSize = 2*(pmeOrder - 1);
+
+    GMX_RELEASE_ASSERT(pmeOrder >= 3, "pmeOrder has to be >= 3");
+    GMX_RELEASE_ASSERT(minimalSize >= pmeOrder + 1, "The grid size should be >= pmeOrder + 1");
+
+    return minimalSize;
+}
+
 void gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
                                 int nnodes_major,
-                                int nnodes_minor,
                                 gmx_bool bUseThreads,
                                 gmx_bool bFatal,
                                 gmx_bool *bValidSettings)
@@ -438,17 +454,18 @@ void gmx_pme_check_restrictions(int pme_order,
                   pme_order, PME_ORDER_MAX);
     }
 
-    if (nkx <= pme_order*(nnodes_major > 1 ? 2 : 1) ||
-        nky <= pme_order*(nnodes_minor > 1 ? 2 : 1) ||
-        nkz <= pme_order)
+    const int minGridSize = minimalPmeGridSize(pme_order);
+    if (nkx < minGridSize ||
+        nky < minGridSize ||
+        nkz < minGridSize)
     {
         if (!bFatal)
         {
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order",
-                  pme_order);
+        gmx_fatal(FARGS, "The PME grid sizes need to be >= 2*(pme_order-1) (%d)",
+                  minGridSize);
     }
 
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
@@ -644,7 +661,6 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     gmx_pme_check_restrictions(pme->pme_order,
                                pme->nkx, pme->nky, pme->nkz,
                                pme->nnodes_major,
-                               pme->nnodes_minor,
                                pme->bUseThreads,
                                TRUE,
                                nullptr);

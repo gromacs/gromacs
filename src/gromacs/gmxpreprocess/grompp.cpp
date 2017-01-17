@@ -49,6 +49,7 @@
 #include <sys/types.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
@@ -2076,8 +2077,15 @@ int gmx_grompp(int argc, char *argv[])
             set_warning_line(wi, mdparin, -1);
             warning_error(wi, "Some of the Fourier grid sizes are set, but all of them need to be set.");
         }
-        calc_grid(stdout, box, ir->fourier_spacing,
-                  &(ir->nkx), &(ir->nky), &(ir->nkz));
+        const int minGridSize = minimalPmeGridSize(ir->pme_order);
+        calcFftGrid(stdout, box, ir->fourier_spacing, minGridSize,
+                    &(ir->nkx), &(ir->nky), &(ir->nkz));
+        if (ir->nkx < minGridSize ||
+            ir->nky < minGridSize ||
+            ir->nkz < minGridSize)
+        {
+            warning_error(wi, "The PME grid size should be >= 2*(pme-order - 1); either manually increase the grid size or decrease pme-order");
+        }
     }
 
     /* MRS: eventually figure out better logic for initializing the fep
