@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
@@ -320,11 +321,12 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
 
         fac *= 1.01;
         clear_ivec(set->grid);
-        sp = calc_grid(nullptr, pme_lb->box_start,
-                       fac*pme_lb->setup[pme_lb->cur].spacing,
-                       &set->grid[XX],
-                       &set->grid[YY],
-                       &set->grid[ZZ]);
+        sp = calcFftGrid(nullptr, pme_lb->box_start,
+                         fac*pme_lb->setup[pme_lb->cur].spacing,
+                         minimalPmeGridSize(pme_order),
+                         &set->grid[XX],
+                         &set->grid[YY],
+                         &set->grid[ZZ]);
 
         /* As here we can't easily check if one of the PME ranks
          * uses threading, we do a conservative grid check.
@@ -333,7 +335,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
          */
         gmx_pme_check_restrictions(pme_order,
                                    set->grid[XX], set->grid[YY], set->grid[ZZ],
-                                   npmeranks_x, npmeranks_y,
+                                   npmeranks_x,
                                    TRUE,
                                    FALSE,
                                    &grid_ok);
