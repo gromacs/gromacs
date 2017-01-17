@@ -275,7 +275,7 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
         if (bDoSplines || coefficient[ii] != 0.0)
         {
             xptr = fractx[ii];
-            assert(order >= 4 && order <= PME_ORDER_MAX);
+            assert(order >= 3 && order <= PME_ORDER_MAX);
             switch (order)
             {
                 case 4:  CALC_SPLINE(4);     break;

@@ -59,8 +59,9 @@ const int grid_init[g_initNR] = { 6, 8, 10, 12, 14, 16, 20, 24, 25, 28, 32, 36, 
 #define g_baseNR 14
 const int grid_base[g_baseNR] = { 45, 48, 50, 52, 54, 56, 60, 64, 70, 72, 75, 80, 81, 84 };
 
-real calc_grid(FILE *fp, const matrix box, real gr_sp,
-               int *nx, int *ny, int *nz)
+real calcFftGrid(FILE *fp,
+                 const matrix box, real gr_sp, int minGridPointsPerDim,
+                 int *nx, int *ny, int *nz)
 {
     int  d, n[DIM];
     int  i;
@@ -120,6 +121,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
         if (n[d] <= 0)
         {
             nmin = static_cast<int>(box_size[d]/gr_sp + 0.999);
+            nmin = std::max(nmin, minGridPointsPerDim);
 
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
