@@ -196,15 +196,22 @@ updateMdLeapfrogSimple(int                       start,
                        int                       nrend,
                        real                      dt,
                        real                      dtPressureCouple,
-                       const rvec * gmx_restrict invMassPerDim,
+                       const rvec * gmx_restrict rinvMassPerDim,
                        const t_grp_tcstat      * tcstat,
                        const unsigned short    * cTC,
                        const rvec                pRVScaleMatrixDiagonal,
-                       const rvec * gmx_restrict x,
-                       rvec       * gmx_restrict xprime,
-                       rvec       * gmx_restrict v,
-                       const rvec * gmx_restrict f)
+                       const rvec * gmx_restrict rx,
+                       rvec       * gmx_restrict rxprime,
+                       rvec       * gmx_restrict rv,
+                       const rvec * gmx_restrict rf)
 {
+    const float*  x             = reinterpret_cast<const float*>(rx);
+    float*        xprime        = reinterpret_cast<float*>(rxprime);
+    float*        v             = reinterpret_cast<float*>(rv);
+    const float*  f             = reinterpret_cast<const float*>(rf);
+    const float*  invMassPerDim = reinterpret_cast<const float*>(rinvMassPerDim);
+
+
     real lambdaGroup;
 
     if (numTempScaleValues == NumTempScaleValues::single)
@@ -212,30 +219,29 @@ updateMdLeapfrogSimple(int                       start,
         lambdaGroup = tcstat[0].lambda;
     }
 
-    for (int a = start; a < nrend; a++)
+    /* Using manual collapsed loop (over atoms and dimensions) to aid
+     * auto-vectorization. */
+    for (int n = start*DIM; n < nrend*DIM; n++)
     {
+        int a = n/3, d = n%3;
         if (numTempScaleValues == NumTempScaleValues::multiple)
         {
             lambdaGroup = tcstat[cTC[a]].lambda;
         }
+        /* Note that using rvec invMassPerDim results in more efficient
+         * SIMD code, but this increases the cache pressure.
+         * For large systems with PME on the CPU this slows down the
+         * (then already slow) update by 20%. If all data remains in cache,
+         * using rvec is much faster.
+         */
+        real vNew = lambdaGroup*v[n] + f[n]*invMassPerDim[n]*dt;
 
-        for (int d = 0; d < DIM; d++)
+        if (applyPRVScaling == ApplyParrinelloRahmanVScaling::diagonal)
         {
-            /* Note that using rvec invMassPerDim results in more efficient
-             * SIMD code, but this increases the cache pressure.
-             * For large systems with PME on the CPU this slows down the
-             * (then already slow) update by 20%. If all data remains in cache,
-             * using rvec is much faster.
-             */
-            real vNew = lambdaGroup*v[a][d] + f[a][d]*invMassPerDim[a][d]*dt;
-
-            if (applyPRVScaling == ApplyParrinelloRahmanVScaling::diagonal)
-            {
-                vNew -= dtPressureCouple*pRVScaleMatrixDiagonal[d]*v[a][d];
-            }
-            v[a][d]      = vNew;
-            xprime[a][d] = x[a][d] + vNew*dt;
+            vNew -= dtPressureCouple*pRVScaleMatrixDiagonal[d]*v[n];
         }
+        v[n]      = vNew;
+        xprime[n] = x[n] + vNew*dt;
     }
 }
 
