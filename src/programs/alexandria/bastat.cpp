@@ -177,7 +177,7 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
         bb.order  = order;
         bb.histo.resize(2*index+1, 0);
         bb.lsq    = gmx_stats_init();
-        bonds->bond.push_back(bb);
+        bonds->bond.push_back(std::move(bb));
         b = bonds->bond.end()-1;
     }
     if (index >= b->histo.size())
@@ -230,7 +230,7 @@ void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
         }
         aa.histo.resize((int) (180/spacing) + 1, 0);
         aa.lsq = gmx_stats_init();
-        angle.push_back(aa);
+        angle.push_back(std::move(aa));
         a = angle.end()-1;
     }
     gmx_stats_add_point(a->lsq, 0, refValue, 0, 0);
@@ -313,7 +313,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
         }
         ddd.histo.resize((int) (360/spacing) + 1, 0);
         ddd.lsq = gmx_stats_init();
-        dih.push_back(ddd);
+        dih.push_back(std::move(ddd));
         d = dih.end()-1;
     }
     gmx_stats_add_point(d->lsq, 0, angle, 0, 0);
