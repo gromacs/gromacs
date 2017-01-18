@@ -148,11 +148,11 @@ static void sort_bonds(t_bonds *b)
 }
 
 void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
-              const char *a1, const char *a2,
+              const std::string a1, const std::string a2,
               double blen, double spacing, int order)
 {
-    GMX_RELEASE_ASSERT(strlen(a1) > 0, "atom name a1 is empty");
-    GMX_RELEASE_ASSERT(strlen(a2) > 0, "atom name a2 is empty");
+    GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
+    GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
     size_t index   = std::lround(blen/spacing);
     auto   b       = std::find_if(bonds->bond.begin(), bonds->bond.end(),
                                   [a1, a2, order](t_bond b)
@@ -164,15 +164,15 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     if (b == bonds->bond.end())
     {
         t_bond bb;
-        if (strcmp(a1, a2) < 0)
+        if (a1 < a2)
         {
-            bb.a1 = a1;
-            bb.a2 = a2;
+            bb.a1.assign(a1);
+            bb.a2.assign(a2);
         }
         else
         {
-            bb.a1 = a2;
-            bb.a2 = a1;
+            bb.a1.assign(a2);
+            bb.a2.assign(a1);
         }
         bb.order  = order;
         bb.histo.resize(2*index+1, 0);
@@ -189,17 +189,17 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     if (NULL != fplog)
     {
         fprintf(fplog, "%s bond-%s-%s-%d %g\n", molname,
-                b->a1.c_str(), b->a2.c_str(), order, blen);
+                a1.c_str(), a2.c_str(), order, blen);
     }
 }
 
 void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
-                  const char *a1, const char *a2, const char *a3,
+                  const std::string a1, const std::string a2, const std::string a3,
                   double refValue, double spacing)
 {
-    GMX_RELEASE_ASSERT(strlen(a1) > 0, "atom name a1 is empty");
-    GMX_RELEASE_ASSERT(strlen(a2) > 0, "atom name a2 is empty");
-    GMX_RELEASE_ASSERT(strlen(a3) > 0, "atom name a3 is empty");
+    GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
+    GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
+    GMX_RELEASE_ASSERT(a3.size() > 0, "atom name a3 is empty");
 
     size_t index = std::lround(refValue/spacing);
     auto   a     = std::find_if(angle.begin(), angle.end(),
@@ -217,16 +217,16 @@ void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
     if (a == angle.end())
     {
         t_angle aa;
-        aa.a2 = a2;
-        if (strcmp(a1, a3) < 0)
+        aa.a2.assign(a2);
+        if (a1 < a3)
         {
-            aa.a1 = a1;
-            aa.a3 = a3;
+            aa.a1.assign(a1);
+            aa.a3.assign(a3);
         }
         else
         {
-            aa.a1 = a3;
-            aa.a3 = a1;
+            aa.a1.assign(a3);
+            aa.a3.assign(a1);
         }
         aa.histo.resize((int) (180/spacing) + 1, 0);
         aa.lsq = gmx_stats_init();
@@ -238,12 +238,12 @@ void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
     if (NULL != fplog)
     {
         fprintf(fplog, "%s angle-%s-%s-%s %g\n", molname,
-                a->a1.c_str(), a->a2.c_str(), a->a3.c_str(), refValue);
+                a1.c_str(), a2.c_str(), a3.c_str(), refValue);
     }
 }
 
 void add_angle(FILE *fplog, const char *molname, t_bonds *b,
-               const char *a1, const char *a2, const char *a3,
+               const std::string a1, const std::string a2, const std::string a3,
                double refValue, double spacing, InteractionType iType)
 {
     lo_add_angle(fplog, molname,
@@ -253,10 +253,16 @@ void add_angle(FILE *fplog, const char *molname, t_bonds *b,
 
 static void lo_add_dih(FILE *fplog, const char *molname,
                        std::vector<t_dih> &dih,
-                       const char *a1, const char *a2, const char *a3, const char *a4,
+                       const std::string a1, const std::string a2, 
+                       const std::string a3, const std::string a4,
                        double angle, double spacing, InteractionType iType)
 
 {
+    GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
+    GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
+    GMX_RELEASE_ASSERT(a3.size() > 0, "atom name a3 is empty");
+    GMX_RELEASE_ASSERT(a4.size() > 0, "atom name a3 is empty");
+    
     if (angle < 0)
     {
         angle += 360;
@@ -286,24 +292,24 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     if (dih.end() == d)
     {
         t_dih ddd;
-        if (strcmp(a1, a4) < 0)
+        if (a1 < a4)
         {
-            ddd.a1 = a1;
-            ddd.a2 = a2;
-            ddd.a3 = a3;
-            ddd.a4 = a4;
+            ddd.a1.assign(a1);
+            ddd.a2.assign(a2);
+            ddd.a3.assign(a3);
+            ddd.a4.assign(a4);
         }
         else
         {
-            ddd.a4 = a1;
-            ddd.a3 = a2;
-            ddd.a2 = a3;
-            ddd.a1 = a4;
+            ddd.a4.assign(a1);
+            ddd.a3.assign(a2);
+            ddd.a2.assign(a3);
+            ddd.a1.assign(a4);
         }
         if (NULL != debug)
         {
             fprintf(debug, "NEWDIH  %5s  %5s  %5s  %5s\n",
-                    a1, a2, a3, a4);
+                    a1.c_str(), a2.c_str(), a3.c_str(), a4.c_str());
         }
         ddd.histo.resize((int) (360/spacing) + 1, 0);
         ddd.lsq = gmx_stats_init();
@@ -320,7 +326,8 @@ static void lo_add_dih(FILE *fplog, const char *molname,
 }
 
 static void add_dih(FILE *fplog, const char *molname, t_bonds *b,
-                    const char *a1, const char *a2, const char *a3, const char *a4,
+                    const std::string a1, const std::string a2, 
+                    const std::string a3, const std::string a4,
                     double angle, double spacing, InteractionType iType)
 {
     lo_add_dih(fplog, molname,
@@ -721,7 +728,7 @@ int alex_bastat(int argc, char *argv[])
                                 if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
                                 {
                                     add_bond(fp, mmi.molProp()->getMolname().c_str(), bonds,
-                                             cai.c_str(), caj.c_str(), 1000*norm(dx),
+                                             cai, caj, 1000*norm(dx),
                                              bspacing, xb);
                                     break;
                                 }
@@ -765,8 +772,8 @@ int alex_bastat(int argc, char *argv[])
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak))
                         {
                             add_angle(fp, mmi.molProp()->getMolname().c_str(), bonds,
-                                      cai.c_str(), caj.c_str(), cak.c_str(),
-                                      refValue, aspacing, (linear) ? eitLINEAR_ANGLES : eitANGLES);
+                                      cai, caj, cak, refValue, aspacing, 
+                                      (linear) ? eitLINEAR_ANGLES : eitANGLES);
 
                             if (nullptr != debug)
                             {
@@ -804,8 +811,7 @@ int alex_bastat(int argc, char *argv[])
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[al], cal))
                         {
                             add_dih(fp, mmi.molProp()->getMolname().c_str(), bonds,
-                                    cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(),
-                                    angle, dspacing, fs->iType());
+                                    cai, caj, cak, cal, angle, dspacing, fs->iType());
                         }
                         else
                         {
