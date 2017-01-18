@@ -205,6 +205,13 @@ updateMdLeapfrogSimple(int                       start,
                        rvec       * gmx_restrict v,
                        const rvec * gmx_restrict f)
 {
+    const real* fX             = reinterpret_cast<const real*>(x);
+    real*       fXprime        = reinterpret_cast<real*>(xprime);
+    real*       fV             = reinterpret_cast<real*>(v);
+    const real* fF             = reinterpret_cast<const real*>(f);
+    const real* fInvMassPerDim = reinterpret_cast<const real*>(invMassPerDim);
+
+
     real lambdaGroup;
 
     if (numTempScaleValues == NumTempScaleValues::single)
@@ -212,30 +219,30 @@ updateMdLeapfrogSimple(int                       start,
         lambdaGroup = tcstat[0].lambda;
     }
 
-    for (int a = start; a < nrend; a++)
+    /* Using manual collapsed loop (over atoms and dimensions) to aid
+     * auto-vectorization. */
+    for (int i = start*DIM; i < nrend*DIM; i++)
     {
         if (numTempScaleValues == NumTempScaleValues::multiple)
         {
-            lambdaGroup = tcstat[cTC[a]].lambda;
+            int atom    = i/DIM;
+            lambdaGroup = tcstat[cTC[atom]].lambda;
         }
+        /* Note that using rvec invMassPerDim results in more efficient
+         * SIMD code, but this increases the cache pressure.
+         * For large systems with PME on the CPU this slows down the
+         * (then already slow) update by 20%. If all data remains in cache,
+         * using rvec is much faster.
+         */
+        real vNew = lambdaGroup*fV[i] + fF[i]*fInvMassPerDim[i]*dt;
 
-        for (int d = 0; d < DIM; d++)
+        if (applyPRVScaling == ApplyParrinelloRahmanVScaling::diagonal)
         {
-            /* Note that using rvec invMassPerDim results in more efficient
-             * SIMD code, but this increases the cache pressure.
-             * For large systems with PME on the CPU this slows down the
-             * (then already slow) update by 20%. If all data remains in cache,
-             * using rvec is much faster.
-             */
-            real vNew = lambdaGroup*v[a][d] + f[a][d]*invMassPerDim[a][d]*dt;
-
-            if (applyPRVScaling == ApplyParrinelloRahmanVScaling::diagonal)
-            {
-                vNew -= dtPressureCouple*pRVScaleMatrixDiagonal[d]*v[a][d];
-            }
-            v[a][d]      = vNew;
-            xprime[a][d] = x[a][d] + vNew*dt;
+            int d  = i % DIM;
+            vNew  -= dtPressureCouple*pRVScaleMatrixDiagonal[d]*fV[i];
         }
+        fV[i]      = vNew;
+        fXprime[i] = fX[i] + vNew*dt;
     }
 }
 
