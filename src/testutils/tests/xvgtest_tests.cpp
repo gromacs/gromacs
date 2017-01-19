@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,6 +166,124 @@ TEST(XvgTests, ReadIncorrect)
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         gmx::StringInputStream          sis(input);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "-411");
+    }
+}
+
+TEST(XvgTests, ExtraSeparatorIsAnErrorByDefault)
+{
+    {
+        // Create new data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        // Convert char array to a stream and add it to the checker
+        gmx::StringInputStream          sis(input);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
+    }
+    {
+        const char * const              input[] = {
+            "0     2905.86    -410.199",
+            "0.2     6656.67    -430.437",
+            "0.4     5262.44    -409.399",
+            "0.6     5994.69    -405.763",
+            "0.8     5941.37    -408.337",
+            "1     5869.87    -411.124",
+            "&"
+        };
+        // Now check with incorrect data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        gmx::StringInputStream          sis(input);
+        EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "Found unexpected data set separator");
+    }
+}
+
+TEST(XvgTests, ExtraSeparatorCanBeTolerated)
+{
+    {
+        // Create new data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        // Convert char array to a stream and add it to the checker
+        gmx::StringInputStream          sis(input);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
+    }
+    {
+        const char * const              input[] = {
+            "0     2905.86    -410.199",
+            "0.2     6656.67    -430.437",
+            "0.4     5262.44    -409.399",
+            "0.6     5994.69    -405.763",
+            "0.8     5941.37    -408.337",
+            "1     5869.87    -411.124",
+            "&"
+        };
+        // Now check with incorrect data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        gmx::StringInputStream          sis(input);
+        XvgMatchSettings                settings;
+        settings.checkWhetherMultipleDataSetsExist = false;
+        checkXvgFile(&sis, &checker, settings);
+    }
+}
+
+TEST(XvgTests, ExtraDataSetsAreAnErrorByDefault)
+{
+    {
+        // Create new data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        // Convert char array to a stream and add it to the checker
+        gmx::StringInputStream          sis(input);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
+    }
+    {
+        const char * const              input[] = {
+            "0     2905.86    -410.199",
+            "0.2     6656.67    -430.437",
+            "0.4     5262.44    -409.399",
+            "0.6     5994.69    -405.763",
+            "0.8     5941.37    -408.337",
+            "1     5869.87    -411.124",
+            "&"
+            "0     39392.10    -334.303",
+        };
+        // Now check with incorrect data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        gmx::StringInputStream          sis(input);
+        EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "Found unexpected data set separator");
+    }
+}
+
+TEST(XvgTests, ExtraDataSetsCanBeTolerated)
+{
+    {
+        // Create new data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        // Convert char array to a stream and add it to the checker
+        gmx::StringInputStream          sis(input);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
+    }
+    {
+        const char * const              input[] = {
+            "0     2905.86    -410.199",
+            "0.2     6656.67    -430.437",
+            "0.4     5262.44    -409.399",
+            "0.6     5994.69    -405.763",
+            "0.8     5941.37    -408.337",
+            "1     5869.87    -411.124",
+            "&"
+            "0     39392.10    -334.303",
+        };
+        // Now check with incorrect data
+        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        gmx::StringInputStream          sis(input);
+        XvgMatchSettings                settings;
+        settings.checkWhetherMultipleDataSetsExist = false;
+        checkXvgFile(&sis, &checker, settings);
     }
 }
 

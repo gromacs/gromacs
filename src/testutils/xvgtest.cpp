@@ -112,6 +112,7 @@ void checkXvgFile(TextInputStream        *input,
     std::string legendText;
     int         dataRowCount = 0;
     std::string line;
+    bool        foundDataSetSeparator = false;
     while (input->readLine(&line))
     {
         // Ignore comments, as they contain dynamic content, and very little of
@@ -119,6 +120,13 @@ void checkXvgFile(TextInputStream        *input,
         // output file).
         if (startsWith(line, "#"))
         {
+            continue;
+        }
+        if (startsWith(line, "&"))
+        {
+            // Only a single data set can be read, so we expect we
+            // may stop reading if a separator is found.
+            foundDataSetSeparator = true;
             continue;
         }
         if (startsWith(line, "@"))
@@ -134,11 +142,25 @@ void checkXvgFile(TextInputStream        *input,
         {
             break;
         }
+        if (foundDataSetSeparator)
+        {
+            if (!settings.checkWhetherMultipleDataSetsExist)
+            {
+                // Testing multiple data sets is not implemented, but
+                // the caller has declared that it isn't an error if
+                // more than one set exists.
+                break;
+            }
+        }
         const std::vector<std::string> columns = splitString(line);
         const std::string              id      = formatString("Row%d", dataRowCount);
         dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(),
                                   &checkXvgDataPoint);
         ++dataRowCount;
+    }
+    if (foundDataSetSeparator && settings.checkWhetherMultipleDataSetsExist)
+    {
+        ADD_FAILURE() << "Found unexpected data set separator";
     }
     dataChecker.checkUnusedEntries();
     legendChecker.checkTextBlock(legendText, "XvgLegend");

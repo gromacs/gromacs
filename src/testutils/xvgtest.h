@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,14 @@ class TestReferenceChecker;
 
 struct XvgMatchSettings
 {
-    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true)
+    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true),
+                         checkWhetherMultipleDataSetsExist(true)
     {
     }
 
     FloatingPointTolerance  tolerance;
     bool                    testData;
+    bool                    checkWhetherMultipleDataSetsExist;
 };
 
 /*! \brief
@@ -114,6 +116,19 @@ class XvgMatch : public ITextBlockMatcherSettings
         XvgMatch &testData(bool test)
         {
             settings_.testData = test;
+            return *this;
+        }
+        /*! \brief
+         * Sets whether the existence of multiple sets of data is an error.
+         *
+         * If set to `true` and data is being tested, it is an error
+         * for multiple data sets to exist, but it is not an error for
+         * a data-set separator to exist (ie. '&' on a line), so long
+         * as no data follows it.
+         */
+        XvgMatch &checkWhetherMultipleDataSetsExist(bool test)
+        {
+            settings_.checkWhetherMultipleDataSetsExist = test;
             return *this;
         }
 
