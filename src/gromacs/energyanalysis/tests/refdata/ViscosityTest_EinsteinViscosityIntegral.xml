@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Shear viscosity integral"
+xaxis  label "Time (ps)"
+yaxis  label "(kg m\S-1\N s\S-1\N ps)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>0.2</Real>
+          <Real>3.53916e-05</Real>
+          <Real>3.994e-05</Real>
+          <Real>4.54828e-05</Real>
+          <Real>4.02715e-05</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>0.4</Real>
+          <Real>9.95076e-05</Real>
+          <Real>0.000107201</Real>
+          <Real>0.000150138</Real>
+          <Real>0.000118949</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>0.6</Real>
+          <Real>0.000187268</Real>
+          <Real>0.000173702</Real>
+          <Real>0.000294227</Real>
+          <Real>0.000218399</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>0.8</Real>
+          <Real>0.000283204</Real>
+          <Real>0.000227104</Real>
+          <Real>0.000461096</Real>
+          <Real>0.000323801</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">5</Int>
+          <Real>1</Real>
+          <Real>0.000386827</Real>
+          <Real>0.000270524</Real>
+          <Real>0.000638843</Real>
+          <Real>0.000432065</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">5</Int>
+          <Real>1.2</Real>
+          <Real>0.000491027</Real>
+          <Real>0.00030208</Real>
+          <Real>0.000810851</Real>
+          <Real>0.000534652</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">5</Int>
+          <Real>1.4</Real>
+          <Real>0.000600214</Real>
+          <Real>0.000325355</Real>
+          <Real>0.000951438</Real>
+          <Real>0.000625669</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">5</Int>
+          <Real>1.6</Real>
+          <Real>0.000713111</Real>
+          <Real>0.000355259</Real>
+          <Real>0.00103806</Real>
+          <Real>0.000702145</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">5</Int>
+          <Real>1.8</Real>
+          <Real>0.00084181</Real>
+          <Real>0.000405959</Real>
+          <Real>0.00106653</Real>
+          <Real>0.000771431</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">5</Int>
+          <Real>2</Real>
+          <Real>0.000977894</Real>
+          <Real>0.000471442</Real>
+          <Real>0.00107524</Real>
+          <Real>0.000841526</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">5</Int>
+          <Real>2.2</Real>
+          <Real>0.00112092</Real>
+          <Real>0.00054531</Real>
+          <Real>0.00106461</Real>
+          <Real>0.000910279</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">5</Int>
+          <Real>2.4</Real>
+          <Real>0.00128459</Real>
+          <Real>0.00062522</Real>
+          <Real>0.00104767</Real>
+          <Real>0.000985826</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">5</Int>
+          <Real>2.6</Real>
+          <Real>0.00146957</Real>
+          <Real>0.000709173</Real>
+          <Real>0.00104922</Real>
+          <Real>0.00107599</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
