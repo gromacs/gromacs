@@ -99,6 +99,19 @@ typedef struct {
     gmx_bool         bHaveSums;
 } enerdata_t;
 
+static void done_enerdata_t(int nset, enerdata_t *edat)
+{
+    sfree(edat->step);
+    sfree(edat->steps);
+    sfree(edat->points);
+    for (int i = 0; i < nset; i++)
+    {
+        sfree(edat->s[i].ener);
+        sfree(edat->s[i].es);
+    }
+    sfree(edat->s);
+}
+
 static double mypow(double x, double y)
 {
     if (x > 0)
@@ -367,6 +380,7 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
 
     /* all we need is the ir to be able to write the label */
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
+    done_mtop(&mtop);
 }
 
 static void get_orires_parms(const char *topnm, t_inputrec *ir,
@@ -1130,6 +1144,7 @@ static void calc_fluctuation_props(FILE *fp,
 }
 
 static void analyse_ener(gmx_bool bCorr, const char *corrfn,
+                         const char *eviscofn, const char *eviscoifn,
                          gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct,
                          gmx_bool bVisco, const char *visfn, int nmol,
                          gmx_int64_t start_step, double start_t,
@@ -1384,7 +1399,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 eneint[2][i+1] = eneint[2][i] + 0.5*(edat->s[5].es[i].sum + edat->s[7].es[i].sum)*Dt/edat->points[i];
             }
 
-            einstein_visco("evisco.xvg", "eviscoi.xvg",
+            einstein_visco(eviscofn, eviscoifn,
                            3, edat->nframes+1, eneint, Vaver, Temp, Dt, oenv);
 
             for (i = 0; i < 3; i++)
@@ -1665,7 +1680,9 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
             }
         }
     }
-
+    // Clean up!
+    sfree(native_lambda_vec);
+    sfree(lambda_components);
     if (nblock_hist == 0 && nblock_dh == 0)
     {
         /* don't do anything */
@@ -2039,6 +2056,8 @@ int gmx_energy(int argc, char *argv[])
         { efXVG, "-oten", "oriten",  ffOPTWR },
         { efXVG, "-corr", "enecorr", ffOPTWR },
         { efXVG, "-vis",  "visco",   ffOPTWR },
+        { efXVG, "-evisco",  "evisco",  ffOPTWR },
+        { efXVG, "-eviscoi", "eviscoi", ffOPTWR },
         { efXVG, "-ravg", "runavgdf", ffOPTWR },
         { efXVG, "-odh",  "dhdl", ffOPTWR }
     };
@@ -2817,6 +2836,7 @@ int gmx_energy(int argc, char *argv[])
     {
         double dt = (frame[cur].t-start_t)/(edat.nframes-1);
         analyse_ener(opt2bSet("-corr", NFILE, fnm), opt2fn("-corr", NFILE, fnm),
+                     opt2fn("-evisco", NFILE, fnm), opt2fn("-eviscoi", NFILE, fnm),
                      bFee, bSum, bFluct,
                      bVisco, opt2fn("-vis", NFILE, fnm),
                      nmol,
@@ -2835,7 +2855,13 @@ int gmx_energy(int argc, char *argv[])
         fec(opt2fn("-f2", NFILE, fnm), opt2fn("-ravg", NFILE, fnm),
             reftemp, nset, set, leg, &edat, time, oenv);
     }
-
+    // Clean up!
+    done_enerdata_t(nset, &edat);
+    sfree(time);
+    free_enxframe(&frame[0]);
+    free_enxframe(&frame[1]);
+    sfree(frame);
+    free_enxnms(nre, enm);
     {
         const char *nxy = "-nxy";
 
