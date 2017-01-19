@@ -1130,6 +1130,7 @@ static void calc_fluctuation_props(FILE *fp,
 }
 
 static void analyse_ener(gmx_bool bCorr, const char *corrfn,
+                         const char *eviscofn, const char *eviscoifn,
                          gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct,
                          gmx_bool bVisco, const char *visfn, int nmol,
                          gmx_int64_t start_step, double start_t,
@@ -1384,7 +1385,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 eneint[2][i+1] = eneint[2][i] + 0.5*(edat->s[5].es[i].sum + edat->s[7].es[i].sum)*Dt/edat->points[i];
             }
 
-            einstein_visco("evisco.xvg", "eviscoi.xvg",
+            einstein_visco(eviscofn, eviscoifn,
                            3, edat->nframes+1, eneint, Vaver, Temp, Dt, oenv);
 
             for (i = 0; i < 3; i++)
@@ -2039,6 +2040,8 @@ int gmx_energy(int argc, char *argv[])
         { efXVG, "-oten", "oriten",  ffOPTWR },
         { efXVG, "-corr", "enecorr", ffOPTWR },
         { efXVG, "-vis",  "visco",   ffOPTWR },
+        { efXVG, "-evisco",  "evisco",  ffOPTWR },
+        { efXVG, "-eviscoi", "eviscoi", ffOPTWR },
         { efXVG, "-ravg", "runavgdf", ffOPTWR },
         { efXVG, "-odh",  "dhdl", ffOPTWR }
     };
@@ -2817,6 +2820,7 @@ int gmx_energy(int argc, char *argv[])
     {
         double dt = (frame[cur].t-start_t)/(edat.nframes-1);
         analyse_ener(opt2bSet("-corr", NFILE, fnm), opt2fn("-corr", NFILE, fnm),
+                     opt2fn("-evisco", NFILE, fnm), opt2fn("-eviscoi", NFILE, fnm),
                      bFee, bSum, bFluct,
                      bVisco, opt2fn("-vis", NFILE, fnm),
                      nmol,
