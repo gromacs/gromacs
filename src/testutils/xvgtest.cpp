@@ -121,6 +121,12 @@ void checkXvgFile(TextInputStream        *input,
         {
             continue;
         }
+        if (startsWith(line, "&"))
+        {
+            // Only a single data set can be read, so stop reading if
+            // a separator is found.
+            break;
+        }
         if (startsWith(line, "@"))
         {
             if (isRelevantXvgCommand(line))
