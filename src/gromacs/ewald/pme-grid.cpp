@@ -233,7 +233,7 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 #endif
 
 
-int copy_pmegrid_to_fftgrid(struct gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index)
+int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index)
 {
     ivec    local_fft_ndata, local_fft_offset, local_fft_size;
     ivec    local_pme_size;
@@ -374,7 +374,7 @@ int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pm
 }
 
 
-void wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
+void wrap_periodic_pmegrid(const gmx_pme_t *pme, real *pmegrid)
 {
     int     nx, ny, nz, pny, pnz, ny_x, overlap, ix, iy, iz;
 
