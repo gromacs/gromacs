@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,14 +63,14 @@ gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction);
 #endif
 
 int
-copy_pmegrid_to_fftgrid(struct gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index);
+copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index);
 
 int
 copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pmegrid, int grid_index,
                         int nthread, int thread);
 
 void
-wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid);
+wrap_periodic_pmegrid(const gmx_pme_t *pme, real *pmegrid);
 
 void
 unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid);

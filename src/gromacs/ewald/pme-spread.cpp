@@ -59,7 +59,7 @@
 
 /* TODO consider split of pme-spline from this file */
 
-static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
+static void calc_interpolation_idx(const gmx_pme_t *pme, const pme_atomcomm_t *atc,
                                    int start, int grid_index, int end, int thread)
 {
     int             i;
@@ -178,7 +178,7 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     }
 }
 
-static void make_thread_local_ind(pme_atomcomm_t *atc,
+static void make_thread_local_ind(const pme_atomcomm_t *atc,
                                   int thread, splinedata_t *spline)
 {
     int             n, t, i, start, end;
@@ -307,8 +307,8 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
     }
 
 
-static void spread_coefficients_bsplines_thread(pmegrid_t                         *pmegrid,
-                                                pme_atomcomm_t                    *atc,
+static void spread_coefficients_bsplines_thread(const pmegrid_t                   *pmegrid,
+                                                const pme_atomcomm_t              *atc,
                                                 splinedata_t                      *spline,
                                                 struct pme_spline_work gmx_unused *work)
 {
@@ -394,7 +394,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
     }
 }
 
-static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
+static void copy_local_grid(const gmx_pme_t *pme, const pmegrids_t *pmegrids,
                             int grid_index, int thread, real *fftgrid)
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
@@ -403,7 +403,6 @@ static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
     ivec nf;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  d;
-    pmegrid_t *pmegrid;
     real *grid_th;
 
     gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
@@ -413,7 +412,7 @@ static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
     fft_my = local_fft_size[YY];
     fft_mz = local_fft_size[ZZ];
 
-    pmegrid = &pmegrids->grid_th[thread];
+    const pmegrid_t *pmegrid = &pmegrids->grid_th[thread];
 
     nsy = pmegrid->s[YY];
     nsz = pmegrid->s[ZZ];
@@ -447,7 +446,7 @@ static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
 }
 
 static void
-reduce_threadgrid_overlap(struct gmx_pme_t *pme,
+reduce_threadgrid_overlap(const gmx_pme_t *pme,
                           const pmegrids_t *pmegrids, int thread,
                           real *fftgrid, real *commbuf_x, real *commbuf_y,
                           int grid_index)
@@ -697,10 +696,9 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
 }
 
 
-static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
+static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
 {
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
-    pme_overlap_t *overlap;
     int  send_index0, send_nindex;
     int  recv_nindex;
 #if GMX_MPI
@@ -726,7 +724,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
     if (pme->nnodes_minor > 1)
     {
         /* Major dimension */
-        overlap = &pme->overlap[1];
+        const pme_overlap_t *overlap = &pme->overlap[1];
 
         if (pme->nnodes_major > 1)
         {
@@ -811,7 +809,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
     if (pme->nnodes_major > 1)
     {
         /* Major dimension */
-        overlap = &pme->overlap[0];
+        const pme_overlap_t *overlap = &pme->overlap[0];
 
         ipulse = 0;
 
@@ -854,8 +852,8 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
     }
 }
 
-void spread_on_grid(struct gmx_pme_t *pme,
-                    pme_atomcomm_t *atc, pmegrids_t *grids,
+void spread_on_grid(const gmx_pme_t *pme,
+                    const pme_atomcomm_t *atc, const pmegrids_t *grids,
                     gmx_bool bCalcSplines, gmx_bool bSpread,
                     real *fftgrid, gmx_bool bDoSplines, int grid_index)
 {
@@ -907,7 +905,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
         try
         {
             splinedata_t *spline;
-            pmegrid_t *grid = nullptr;
+            const pmegrid_t *grid = ((grids == nullptr || !pme->bUseThreads)) ? &grids->grid : &grids->grid_th[thread];
 
             /* make local bsplines  */
             if (grids == nullptr || !pme->bUseThreads)
@@ -915,11 +913,6 @@ void spread_on_grid(struct gmx_pme_t *pme,
                 spline = &atc->spline[0];
 
                 spline->n = atc->n;
-
-                if (bSpread)
-                {
-                    grid = &grids->grid;
-                }
             }
             else
             {
@@ -935,8 +928,6 @@ void spread_on_grid(struct gmx_pme_t *pme,
                     /* Get the indices our thread should operate on */
                     make_thread_local_ind(atc, thread, spline);
                 }
-
-                grid = &grids->grid_th[thread];
             }
 
             if (bCalcSplines)
