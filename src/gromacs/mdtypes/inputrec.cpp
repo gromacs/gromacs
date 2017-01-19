@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -275,6 +275,18 @@ static void done_pull_params(pull_params_t *pull)
     sfree(pull->coord);
 }
 
+static void done_lambdas(t_lambda *fep)
+{
+    if (fep->n_lambda > 0)
+    {
+        for (int i = 0; i < efptNR; i++)
+        {
+            sfree(fep->all_lambda[i]);
+        }
+        sfree(fep->all_lambda);
+    }
+}
+
 void done_inputrec(t_inputrec *ir)
 {
     sfree(ir->opts.nrdf);
@@ -298,6 +310,8 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.SAsteps);
     sfree(ir->opts.bOPT);
     sfree(ir->opts.bTS);
+    sfree(ir->opts.egp_flags);
+    done_lambdas(ir->fepvals);
     sfree(ir->fepvals);
     sfree(ir->expandedvals);
     sfree(ir->simtempvals);
