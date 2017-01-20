@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -409,8 +409,10 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
         "inserted molecule is less than the sum based on the van der Waals",
         "radii of both atoms. A database ([TT]vdwradii.dat[tt]) of van der",
         "Waals radii is read by the program, and the resulting radii scaled",
-        "by [TT]-scale[tt]. If radii are not found in the database, those"
+        "by [TT]-scale[tt]. If radii are not found in the database, those",
         "atoms are assigned the (pre-scaled) distance [TT]-radius[tt].",
+        "Note that the usefulness of those radii depends on the atom names,",
+        "and thus varies widely with force field.",
         "",
         "A total of [TT]-nmol[tt] * [TT]-try[tt] insertion attempts are made",
         "before giving up. Increase [TT]-try[tt] if you have several small",
