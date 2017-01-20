@@ -966,6 +966,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                         set_writing_interval(*output, interval, 1, fallbackIds[i],
                                              fallbackNames[i], TNG_NON_PARTICLE_BLOCK_DATA,
                                              TNG_GZIP_COMPRESSION);
+                        break;
                     default:
                         continue;
                 }

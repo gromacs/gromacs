@@ -311,9 +311,9 @@ void bcast_state(const t_commrec *cr, t_state *state)
                 case estTC_INT:  nblock_abc(cr, state->ngtc, &state->therm_integral); break;
                 case estVETA:    block_bc(cr, state->veta); break;
                 case estVOL0:    block_bc(cr, state->vol0); break;
-                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms);
-                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms);
-                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms);
+                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms); break;
+                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms); break;
+                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms); break;
                 case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
                 case estDISRE_RM3TAV:
                     block_bc(cr, state->hist.ndisrepairs);

@@ -383,7 +383,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
                     copy_rvec(fr->f[ind[i]], fout[i]);
                 }
             }
-        /* no break */
+        // fallthrough
         case efXTC:
             if (fr->bX)
             {
@@ -452,7 +452,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             {
                 sfree(fout);
             }
-        /* no break */
+        // fallthrough
         case efXTC:
             sfree(xout);
             break;

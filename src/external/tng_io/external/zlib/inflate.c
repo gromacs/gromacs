@@ -91,6 +91,10 @@
 #  endif
 #endif
 
+#if defined(__GNUC__) && __GNUC__>=7
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 /* function prototypes */
 local void fixedtables OF((struct inflate_state FAR *state));
 local int updatewindow OF((z_streamp strm, const unsigned char FAR *end,
