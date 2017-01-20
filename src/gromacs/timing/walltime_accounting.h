@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,6 +101,14 @@ walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accountin
 void
 walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
                                     gmx_int64_t                 nsteps_done);
+
+//! Record that the simulation finished in a way valid for reporting walltime.
+void
+walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounting);
+
+//! Return whether the simulation finished in a way valid for reporting walltime.
+bool
+walltime_accounting_get_valid_finish(const gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Calls system timing routines (e.g. clock_gettime) to get the (fractional)
