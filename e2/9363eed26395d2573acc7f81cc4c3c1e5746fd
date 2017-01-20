@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Fri, 20 Jan 2017 20:11:05 +0100
+Reviewed-on: https://gerrit.gromacs.org/6413
+Project: gromacs
+Branch: refs/heads/master
