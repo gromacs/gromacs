@@ -1,3 +1,5 @@
+.. _command-line-reference:
+
 Command-line reference
 ======================
 
