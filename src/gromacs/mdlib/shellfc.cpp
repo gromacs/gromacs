@@ -1090,8 +1090,10 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         }
     }
 
-    /* Do a prediction of the shell positions */
-    if (shfc->bPredict && !bCont)
+    /* Do a prediction of the shell positions, when appropriate.
+     * Without velocities (EM, NM, BD) we only do initial prediction.
+     */
+    if (shfc->bPredict && !bCont && (EI_STATE_VELOCITY(inputrec->eI) || bInit))
     {
         predict_shells(fplog, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), inputrec->delta_t, nshell, shell,
                        md->massT, nullptr, bInit);
