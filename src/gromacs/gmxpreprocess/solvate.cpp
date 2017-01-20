@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -827,9 +827,11 @@ int gmx_solvate(int argc, char *argv[])
         "the solvent molecule is less than the sum of the scaled van der Waals",
         "radii of both atoms. A database ([TT]vdwradii.dat[tt]) of van der",
         "Waals radii is read by the program, and the resulting radii scaled",
-        "by [TT]-scale[tt]. If radii are not found in the database, those"
-        "atoms are assigned the (pre-scaled) distance [TT]-radius[tt].[PAR]",
-
+        "by [TT]-scale[tt]. If radii are not found in the database, those",
+        "atoms are assigned the (pre-scaled) distance [TT]-radius[tt].",
+        "Note that the usefulness of those radii depends on the atom names,",
+        "and thus varies widely with force field.",
+        "",
         "The default solvent is Simple Point Charge water (SPC), with coordinates ",
         "from [TT]$GMXLIB/spc216.gro[tt]. These coordinates can also be used",
         "for other 3-site water models, since a short equibilibration will remove",
