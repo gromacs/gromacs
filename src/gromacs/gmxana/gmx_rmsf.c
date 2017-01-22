@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -323,6 +323,7 @@ int gmx_rmsf(int argc, char *argv[])
         /* Read coordinates twice */
         read_stx_conf(opt2fn("-q", NFILE, fnm), title, pdbatoms, pdbx, NULL, NULL, pdbbox);
         read_stx_conf(opt2fn("-q", NFILE, fnm), title, refatoms, pdbx, NULL, NULL, pdbbox);
+        /* TODO Should this assert that npdbatoms == top.atoms.nr? */
     }
     else
     {
@@ -548,24 +549,26 @@ int gmx_rmsf(int argc, char *argv[])
         /* Write a .pdb file with B-factors and optionally anisou records */
         for (i = 0; i < isize; i++)
         {
-            rvec_inc(xref[index[i]], xcm);
+            rvec_inc(pdbx[index[i]], xcm);
         }
         write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx,
                                NULL, ePBC, pdbbox, isize, index);
     }
     if (opt2bSet("-ox", NFILE, fnm))
     {
-        /* Misuse xref as a temporary array */
+        rvec *bFactorX;
+        snew(bFactorX, top.atoms.nr);
         for (i = 0; i < isize; i++)
         {
             for (d = 0; d < DIM; d++)
             {
-                xref[index[i]][d] = xcm[d] + xav[i*DIM + d];
+                bFactorX[index[i]][d] = xcm[d] + xav[i*DIM + d];
             }
         }
         /* Write a .pdb file with B-factors and optionally anisou records */
-        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, xref, NULL,
+        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, bFactorX, NULL,
                                ePBC, pdbbox, isize, index);
+        sfree(bFactorX);
     }
     if (bAniso)
     {
