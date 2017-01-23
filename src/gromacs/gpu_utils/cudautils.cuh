@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,22 +87,11 @@
         } \
     } while (0)
 
-/*! Synchronize with GPU and check for any previously occurred uncaught CUDA error
-   -- aimed at use after kernel calls. */
-#define CU_LAUNCH_ERR_SYNC(msg) \
-    do { \
-        cudaError_t _CU_SYNC_LAUNCH_ERR_status = cudaThreadSynchronize(); \
-        if (_CU_SYNC_LAUNCH_ERR_status != cudaSuccess) { \
-            gmx_fatal(FARGS, "Error while launching kernel %s: %s\n", msg, cudaGetErrorString(_CU_SYNC_LAUNCH_ERR_status)); \
-        } \
-    } while (0)
-
 #else /* CHECK_CUDA_ERRORS */
 
 #define CU_RET_ERR(status, msg) do { } while (0)
 #define CU_CHECK_PREV_ERR()     do { } while (0)
 #define CU_LAUNCH_ERR(msg)      do { } while (0)
-#define CU_LAUNCH_ERR_SYNC(msg) do { } while (0)
 #define HANDLE_NVML_RET_ERR(status, msg) do { } while (0)
 
 #endif /* CHECK_CUDA_ERRORS */
