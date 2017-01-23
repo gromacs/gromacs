@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,8 +170,6 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 /*! Apply potential switch, force-only version. */
 static __forceinline__ __device__
 void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
-                                  float               c6,
-                                  float               c12,
                                   float               inv_r,
                                   float               r2,
                                   float              *F_invr,
@@ -204,8 +202,6 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
 /*! Apply potential switch, force + energy version. */
 static __forceinline__ __device__
 void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
-                                    float               c6,
-                                    float               c12,
                                     float               inv_r,
                                     float               r2,
                                     float              *F_invr,

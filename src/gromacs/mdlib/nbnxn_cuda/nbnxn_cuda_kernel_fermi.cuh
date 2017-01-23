@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -446,9 +446,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef LJ_POT_SWITCH
 #ifdef CALC_ENERGIES
-                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+                                calculate_potential_switch_F_E(nbparam, inv_r, r2, &F_invr, &E_lj_p);
 #else
-                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+                                calculate_potential_switch_F(nbparam, inv_r, r2, &F_invr, &E_lj_p);
 #endif /* CALC_ENERGIES */
 #endif /* LJ_POT_SWITCH */
 
