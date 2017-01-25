@@ -302,8 +302,8 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine(formatString("OpenCL version:     %s", OPENCL_VERSION_STRING));
 #endif
 #if GMX_GPU == GMX_GPU_CUDA
-    writer->writeLine(formatString("CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO));
-    writer->writeLine(formatString("CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS));
+    writer->writeLine(formatString("CUDA compiler:      %s\n", CUDA_COMPILER_INFO));
+    writer->writeLine(formatString("CUDA compiler flags:%s\n", CUDA_COMPILER_FLAGS));
     auto driverVersion = gmx::getCudaDriverVersion();
     writer->writeLine(formatString("CUDA driver:        %d.%d\n", driverVersion.first, driverVersion.second));
     auto runtimeVersion = gmx::getCudaRuntimeVersion();
