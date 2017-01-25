@@ -91,6 +91,24 @@ extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
+
+/*! Load directly or using __ldg() when supported. */
+#if GMX_PTX_ARCH >= 350
+template<typename T>
+__device__ __forceinline__ T LDG(const T* ptr)
+{
+    return __ldg(ptr);
+}
+#else
+/* Device does not have LDG support, fall back. */
+template<typename T>
+__device__ __forceinline__ T LDG(const T* ptr)
+{
+    return *ptr;
+}
+#endif
+
+
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__
 void convert_sigma_epsilon_to_c6_c12(const float  sigma,
@@ -230,6 +248,24 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
     *E_lj   *= sw;
 }
 
+/*! \brief Fetch C6 grid contribution coefficients and return the product of these. */
+static __forceinline__ __device__
+float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
+                                int                typei,
+                                int                typej)
+{
+#if DISABLE_CUDA_TEXTURES
+    return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
+#else
+#ifdef USE_TEXOBJ
+    return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+#else
+    return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+#endif /* USE_TEXOBJ */
+#endif /* DISABLE_CUDA_TEXTURES */
+}
+
+
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
  */
@@ -245,11 +281,7 @@ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
 
-#ifdef USE_TEXOBJ
-    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
+    c6grid = calculate_lj_ewald_c6grid(nbparam, typei, typej);
 
     /* Recalculate inv_r6 without exclusion mask */
     inv_r6_nm = inv_r2*inv_r2*inv_r2;
@@ -278,11 +310,7 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
-#ifdef USE_TEXOBJ
-    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
+    c6grid = calculate_lj_ewald_c6grid(nbparam, typei, typej);
 
     /* Recalculate inv_r6 without exclusion mask */
     inv_r6_nm = inv_r2*inv_r2*inv_r2;
@@ -319,6 +347,10 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     float sigma, sigma2, epsilon;
 
     /* sigma and epsilon are scaled to give 6*C6 */
+#if DISABLE_CUDA_TEXTURES
+    sigma   = LDG(&nbparam.nbfp_comb[2*typei    ]) + LDG(&nbparam.nbfp_comb[2*typej    ]);
+    epsilon = LDG(&nbparam.nbfp_comb[2*typei + 1]) + LDG(&nbparam.nbfp_comb[2*typej + 1]);
+#else
 #ifdef USE_TEXOBJ
     sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej    );
     epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej + 1);
@@ -326,6 +358,7 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     sigma   = tex1Dfetch(nbfp_comb_texref, 2*typei    ) + tex1Dfetch(nbfp_comb_texref, 2*typej    );
     epsilon = tex1Dfetch(nbfp_comb_texref, 2*typei + 1) * tex1Dfetch(nbfp_comb_texref, 2*typej + 1);
 #endif /* USE_TEXOBJ */
+#endif /* DISABLE_CUDA_TEXTURES */
     sigma2  = sigma*sigma;
     c6grid  = epsilon*sigma2*sigma2*sigma2;
 
@@ -348,33 +381,95 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     }
 }
 
-/*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
- *  Original idea: from the OpenMM project
+
+/*! Fetch two consecutive floats starting from the index offset.
+ *
+ *  Depending on what is supported, it uses fetches tables values either
+ *  using direct load, texture objects, or texrefs.
  */
 static __forceinline__ __device__
-float interpolate_coulomb_force_r(float r, float scale)
+float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
+                             int                index)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float2 d;
 
-    return fract1 * tex1Dfetch(coulomb_tab_texref, index)
-           + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
+#if DISABLE_CUDA_TEXTURES
+    /* Can't do 8-byte fetch because some of the addresses will be misaligned. */
+    d.x = LDG(&nbparam.coulomb_tab[index]);
+    d.y = LDG(&nbparam.coulomb_tab[index + 1]);
+#else
+    #ifdef USE_TEXOBJ
+    d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
+    d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
+    #else
+    d.x =  tex1Dfetch(coulomb_tab_texref, index);
+    d.y =  tex1Dfetch(coulomb_tab_texref, index + 1);
+    #endif // USE_TEXOBJ
+#endif     // DISABLE_CUDA_TEXTURES
+
+    return d;
 }
 
+/*! Linear interpolation using exactly two FMA operations.
+ *
+ *  Implements numeric equivalent of: (1-t)*d0 + t*d1
+ *  Note that CUDA does not have fnms, otherwise we'd use
+ *  fma(t, d1, fnms(t, d0, d0)
+ *  but input modifiers are designed for this and are fast.
+ */
+template <typename T>
+__forceinline__ __host__ __device__
+T lerp(T d0, T d1, T t)
+{
+    return fma(t, d1, fma(-t, d0, d0));
+}
+
+/*! Interpolate Ewald coulomb force correction using the F*r table.
+ */
 static __forceinline__ __device__
-float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
-                                  float r, float scale)
+float interpolate_coulomb_force_r(const cu_nbparam_t nbparam,
+                                  float              r)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float  normalized = nbparam.coulomb_tab_scale * r;
+    int    index      = (int) normalized;
+    float  fraction   = normalized - index;
 
-    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
-           fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+    float2 d01 = fetch_coulomb_force_r(nbparam, index);
+
+    return lerp(d01.x, d01.y, fraction);
 }
+
+/*! Fetch C6 and C12 from the parameter table.
+ *
+ *  Depending on what is supported, it uses fetches parameters either
+ *  using direct load, texture objects, or texrefs.
+ */
+static __forceinline__ __device__
+void fetch_c6_c12(float               &c6,
+                  float               &c12,
+                  const cu_nbparam_t   nbparam,
+                  int                  baseIndex)
+{
+#if DISABLE_CUDA_TEXTURES
+    /* Force an 8-byte fetch to save a memory instruction. */
+    float2 *nbfp = (float2 *)nbparam.nbfp;
+    float2  c6c12;
+    c6c12 = LDG(&nbfp[baseIndex]);
+    c6    = c6c12.x;
+    c12   = c6c12.y;
+#else
+    /* NOTE: as we always do 8-byte aligned loads, we could
+       fetch float2 here too just as above. */
+    #ifdef USE_TEXOBJ
+    c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex);
+    c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex + 1);
+    #else
+    c6  = tex1Dfetch(nbfp_texref, 2*baseIndex);
+    c12 = tex1Dfetch(nbfp_texref, 2*baseIndex + 1);
+    #endif
+#endif // DISABLE_CUDA_TEXTURES
+}
+
 
 /*! Calculate analytical Ewald correction term. */
 static __forceinline__ __device__
@@ -608,10 +703,10 @@ void reduce_energy_pow2(volatile float *buf,
                         float *e_lj, float *e_el,
                         unsigned int tidx)
 {
-    int     i, j;
-    float   e1, e2;
+    int          j;
+    float        e1, e2;
 
-    i = warp_size/2;
+    unsigned int i = warp_size/2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
 #pragma unroll 10
