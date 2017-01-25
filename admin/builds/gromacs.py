@@ -50,6 +50,7 @@ extra_options = {
     'thread-mpi': Option.bool,
     'gpu': Option.bool,
     'opencl': Option.bool,
+    'clang_cuda': Option.bool,
     'openmp': Option.bool,
     'nranks': Option.string,
     'npme': Option.string,
@@ -99,7 +100,10 @@ def do_build(context):
             cmake_opts['GMX_USE_OPENCL'] = 'ON'
         else:
             cmake_opts['CUDA_TOOLKIT_ROOT_DIR'] = context.env.cuda_root
-            cmake_opts['CUDA_HOST_COMPILER'] = context.env.cuda_host_compiler
+            if context.opts.clang_cuda:
+                cmake_opts['GMX_CLANG_CUDA'] = 'ON'
+            else:
+                cmake_opts['CUDA_HOST_COMPILER'] = context.env.cuda_host_compiler
     else:
         cmake_opts['GMX_GPU'] = 'OFF'
     if context.opts.thread_mpi is False:

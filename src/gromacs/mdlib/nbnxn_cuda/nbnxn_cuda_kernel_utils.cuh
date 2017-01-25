@@ -706,14 +706,13 @@ void reduce_energy_pow2(volatile float *buf,
                         float *e_lj, float *e_el,
                         unsigned int tidx)
 {
-    int     i, j;
-    float   e1, e2;
+    float        e1, e2;
 
-    i = warp_size/2;
+    unsigned int i = warp_size/2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
 #pragma unroll 10
-    for (j = warp_size_log2 - 1; j > 0; j--)
+    for (int j = warp_size_log2 - 1; j > 0; j--)
     {
         if (tidx < i)
         {

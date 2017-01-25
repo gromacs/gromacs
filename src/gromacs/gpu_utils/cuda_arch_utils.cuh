@@ -140,11 +140,13 @@ T gmx_shfl_down_sync(const unsigned int activeMask,
 
 /*! \brief Allow disabling CUDA textures using the GMX_DISABLE_CUDA_TEXTURES macro.
  *
+ *  Disable texture support-missing in clang (all versions up to <=5.0-dev as of writing).
+ *
  *  This option will not influence functionality. All features using textures ought
  *  to have fallback for texture-less reads (direct/LDG loads), all new code needs
  *  to provide fallback code.
  */
-#if defined GMX_DISABLE_CUDA_TEXTURES
+#if defined(GMX_DISABLE_CUDA_TEXTURES) || (defined(__clang__) && defined(__CUDA__))
 #define DISABLE_CUDA_TEXTURES 1
 #else
 #define DISABLE_CUDA_TEXTURES 0
