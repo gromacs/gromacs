@@ -257,6 +257,14 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_GPU
 
+.. cmake:: GMX_CLANG_CUDA
+
+   Use clang for compiling CUDA GPU code, both host and device.
+
+.. cmake:: GMX_CUDA_CLANG_FLAGS
+
+    Pass additional CUDA-only compiler flags to clang using this variable.
+
 .. cmake:: GMX_LIB_INSTALL_DIR
 
    Sets the installation directory for libraries (default is determined by

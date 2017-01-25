@@ -612,6 +612,26 @@ Linux, Mac OS X and Windows operating systems, but Linux is the
 best-tested and supported of these. Linux running on POWER 8, ARM v7 and v8
 CPUs also works well.
 
+Experimental support is available for compiling CUDA code, both for host and
+device, using clang (version 3.9 or later).
+A CUDA toolkit (>= v7.0) is still required but it is used only for GPU device code
+generation and to link against the CUDA runtime library.
+The clang CUDA support simplifies compilation and provides benefits for development
+(e.g. allows the use code sanitizers in CUDA host-code).
+Additionally, using clang for both CPU and GPU compilation can be beneficial
+to avoid compatibility issues between the GNU toolchain and the CUDA toolkit.
+clang for CUDA can be triggered using the ``GMX_CLANG_CUDA=ON`` CMake option.
+Target architectures can be selected with  ``GMX_CUDA_TARGET_SM``,
+virtual architecture code is always embedded for all requested architectures
+(hence GMX_CUDA_TARGET_COMPUTE is ignored).
+Note that this is mainly a developer-oriented feature and it is not recommended
+for production use as the performance can be significantly lower than that
+of code compiled with nvcc (and it has also received less testing).
+However, note that with clang 5.0 the performance gap is significantly narrowed
+(at the time of writing, about 20% slower GPU kernels), so this version
+could be considered in non performance-critical use-cases.
+
+
 OpenCL GPU acceleration
 ^^^^^^^^^^^^^^^^^^^^^^^
 
