@@ -44,6 +44,13 @@
 
 #include "gromacs/utility/fatalerror.h"
 
+// disable texture support-missing in clang <=4.0-dev
+#if defined(__clang__) && defined(__CUDA__)
+#define DISABLE_CUDA_TEXTURES 1
+#else
+#define DISABLE_CUDA_TEXTURES 0
+#endif
+
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
    based on where they occur in the code:
    - non performance-critical: these errors are unsafe to be ignored and must be

@@ -572,6 +572,10 @@ include(gmxManageLmfit)
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
     gmx_gpu_setup()
+    if (GMX_CLANG_CUDA)
+        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_CUDA_CLANG_LINK_LIBS})
+        link_directories("${GMX_CUDA_CLANG_LINK_DIRS}")
+    endif()
 endif()
 
 if(CYGWIN)

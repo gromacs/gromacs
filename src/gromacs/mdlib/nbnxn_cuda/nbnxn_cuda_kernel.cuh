@@ -185,9 +185,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
 #endif
-#ifdef EL_EWALD_TAB
-    float coulomb_tab_scale     = nbparam.coulomb_tab_scale;
-#endif
 #ifdef EL_EWALD_ANA
     float beta2                 = nbparam.ewald_beta*nbparam.ewald_beta;
     float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
@@ -318,7 +315,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef LJ_EWALD
+    #if DISABLE_CUDA_TEXTURES
+            E_lj += LDG(&nbparam.nbfp[atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2]);
+    #else
             E_lj += tex1Dfetch<float>(nbparam.nbfp_texobj, atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2);
+    #endif
 #endif
         }
 
@@ -427,8 +428,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifndef LJ_COMB
                                 /* LJ 6*C6 and 12*C12 */
                                 typei   = atib[i * c_clSize + tidxi];
-                                c6      = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej));
-                                c12     = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej) + 1);
+                                fetch_c6_c12_wrapper(c6, c12, nbparam, ntypes * typei + typej);
 #else
                                 ljcp_i  = ljcpib[i * c_clSize + tidxi];
 #ifdef LJ_COMB_GEOM
@@ -538,7 +538,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
 #elif defined EL_EWALD_TAB
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 -
-                                                        interpolate_coulomb_force_r(nbparam.coulomb_tab_texobj, r2 * inv_r, coulomb_tab_scale)) * inv_r;
+                                                        interpolate_coulomb_force_r(nbparam, r2 * inv_r)) * inv_r;
 #endif                          /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES

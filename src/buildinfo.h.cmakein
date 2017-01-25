@@ -91,10 +91,10 @@
 #define DATA_INSTALL_DIR        "@DATA_INSTALL_DIR@"
 
 /** CUDA nvcc compiler version information */
-#define CUDA_NVCC_COMPILER_INFO "@CUDA_NVCC_COMPILER_INFO@"
+#define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
 
 /** CUDA nvcc compiler flags */
-#define CUDA_NVCC_COMPILER_FLAGS "@CUDA_NVCC_COMPILER_FLAGS@"
+#define CUDA_COMPILER_FLAGS "@CUDA_COMPILER_FLAGS@"
 
 /** OpenCL include dir */
 #define OPENCL_INCLUDE_DIR "@OPENCL_INCLUDE_DIR@"

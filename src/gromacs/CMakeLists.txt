@@ -34,6 +34,10 @@
 
 set(LIBGROMACS_SOURCES)
 
+if (GMX_CLANG_CUDA)
+    include(gmxClangCudaUtils)
+endif()
+
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 
@@ -149,11 +153,25 @@ gmx_configure_version_file(
     REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
+# set up CUDA compilation with clang
+if (GMX_CLANG_CUDA)
+    foreach (_file ${LIBGROMACS_SOURCES})
+        get_filename_component(_ext ${_file} EXT)
+        if (${_ext} STREQUAL ".cu")
+            gmx_compile_cuda_file_with_clang(${_file})
+        endif()
+    endforeach()
+endif()
+
 if (GMX_USE_CUDA)
     # Work around FindCUDA that prevents using target_link_libraries()
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+    if (NOT GMX_CLANG_CUDA)
+        cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+    else()
+        add_library(libgromacs ${LIBGROMACS_SOURCES})
+    endif()
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,14 @@ if (NOT DEFINED GMX_GPU)
     set(GMX_GPU_AUTO TRUE CACHE INTERNAL "GPU acceleration will be selected automatically")
 endif()
 option(GMX_GPU "Enable GPU acceleration" OFF)
+
+# TODO: is this the right place for the option ad related stuff below?
+option(GMX_CLANG_CUDA "Use clang for CUDA" OFF)
+if (GMX_CLANG_CUDA)
+    # FIXME: only works with clang 3.9 and later, add a check
+    # CUDA 7.0 or later required, override req. version
+    set(REQUIRED_CUDA_VERSION 7.0)
+endif()
 
 if(GMX_GPU AND GMX_DOUBLE)
     message(FATAL_ERROR "GPU acceleration is not available in double precision!")
@@ -174,6 +182,7 @@ endif()
 #   COMPILER_FLAGS  - [output variable] flags for the compiler
 #
 macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
+    if(NOT GMX_CLANG_CUDA)
     if(CUDA_NVCC_EXECUTABLE)
 
         # Get the nvcc version string. This is multi-line, but since it is only 4 lines
@@ -199,18 +208,32 @@ macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
             SET(${COMPILER_FLAGS} "N/A")
         endif()
     endif()
+    else()
+        # CXX compiler is the CUDA compiler
+        set(${COMPILER_INFO} "${CMAKE_CXX_COMPILER}  ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+        # there are some extra flags
+        set(${COMPILER_FLAGS} "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_build_type}} ${GMX_CUDA_CLANG_FLAGS}")
+    endif()
 endmacro ()
+
+macro(enable_multiple_cuda_compilation_units)
+    message(STATUS "Enabling multiple compilation units for the CUDA non-bonded module.")
+    set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
+endmacro()
 
 include(CMakeDependentOption)
 include(gmxOptionUtilities)
 macro(gmx_gpu_setup)
     if(GMX_GPU)
-        if(NOT CUDA_NVCC_EXECUTABLE)
-            message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDA_TOOLKIT_ROOT_DIR appropriately")
+        if(NOT GMX_CLANG_CUDA)
+            if(NOT CUDA_NVCC_EXECUTABLE)
+                message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDA_TOOLKIT_ROOT_DIR appropriately")
+            endif()
+            # set up nvcc options
+            include(gmxManageNvccConfig)
+        else()
+            include(gmxManageClangCudaConfig)
         endif()
-
-        # set up nvcc options
-        include(gmxManageNvccConfig)
 
         gmx_check_if_changed(_cuda_version_changed CUDA_VERSION)
 
@@ -255,17 +278,21 @@ macro(gmx_gpu_setup)
     mark_as_advanced(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
 
     if (GMX_GPU)
-        # We need to use single compilation unit for kernels:
-        # - when compiling for CC 2.x devices where buggy kernel code is generated
-        gmx_check_if_changed(_gmx_cuda_target_changed GMX_CUDA_TARGET_SM GMX_CUDA_TARGET_COMPUTE CUDA_NVCC_FLAGS)
-        if(_gmx_cuda_target_changed OR NOT GMX_GPU_DETECTION_DONE)
-            if((NOT GMX_CUDA_TARGET_SM AND NOT GMX_CUDA_TARGET_COMPUTE) OR
-               (GMX_CUDA_TARGET_SM MATCHES "2[01]" OR GMX_CUDA_TARGET_COMPUTE MATCHES "2[01]"))
-               message(STATUS "Enabling single compilation unit for the CUDA non-bonded module. Multiple compilation units are not compatible with CC 2.x devices, to enable the feature specify only CC >=3.0 target architectures in GMX_CUDA_TARGET_SM/GMX_CUDA_TARGET_COMPUTE.")
-                set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
-            else()
-                message(STATUS "Enabling multiple compilation units for the CUDA non-bonded module.")
-                set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE OFF)
+        if (GMX_CLANG_CUDA)
+            # TODO: need to silence this after the 1st pass
+            enable_multiple_cuda_compilation_units()
+        else()
+            # We need to use single compilation unit for kernels:
+            # when compiling with nvcc for CC 2.x devices where buggy kernel code is generated
+            gmx_check_if_changed(_gmx_cuda_target_changed GMX_CUDA_TARGET_SM GMX_CUDA_TARGET_COMPUTE CUDA_NVCC_FLAGS)
+            if(_gmx_cuda_target_changed OR NOT GMX_GPU_DETECTION_DONE)
+                if((NOT GMX_CUDA_TARGET_SM AND NOT GMX_CUDA_TARGET_COMPUTE) OR
+                    (GMX_CUDA_TARGET_SM MATCHES "2[01]" OR GMX_CUDA_TARGET_COMPUTE MATCHES "2[01]"))
+                    message(STATUS "Enabling single compilation unit for the CUDA non-bonded module. Multiple compilation units are not compatible with CC 2.x devices, to enable the feature specify only CC >=3.0 target architectures in GMX_CUDA_TARGET_SM/GMX_CUDA_TARGET_COMPUTE.")
+                    set_property(CACHE GMX_CUDA_NB_SINGLE_COMPILATION_UNIT PROPERTY VALUE ON)
+                else()
+                    enable_multiple_cuda_compilation_units()
+                endif()
             endif()
         endif()
     endif()

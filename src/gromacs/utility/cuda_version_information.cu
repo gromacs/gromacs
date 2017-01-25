@@ -44,8 +44,8 @@
 void gmx_print_version_info_cuda_gpu(FILE *fp)
 {
     int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
+    fprintf(fp, "CUDA compiler:      %s\n", CUDA_COMPILER_INFO);
+    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_COMPILER_FLAGS);
     cuda_driver = 0;
     cudaDriverGetVersion(&cuda_driver);
     cuda_runtime = 0;
