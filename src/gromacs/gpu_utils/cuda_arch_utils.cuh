@@ -58,4 +58,9 @@
 static const int warp_size      = 32;
 static const int warp_size_log2 = 5;
 
+// disable texture support-missing in clang <=4.0-dev
+#if defined(__clang__) && defined(__CUDA__)
+#define DISABLE_CUDA_TEXTURES 1
+#endif
+
 #endif /* CUDA_ARCH_UTILS_CUH_ */

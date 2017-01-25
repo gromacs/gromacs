@@ -1,0 +1,6 @@
+function(gmx_compile_cuda_file_with_clang)
+    foreach(_file ${ARGN})
+        set_source_files_properties(${_file} PROPERTIES LANGUAGE CXX)
+        set_source_files_properties(${_file} PROPERTIES COMPILE_FLAGS "${GMX_CUDA_CLANG_FLAGS}")
+    endforeach()
+endfunction()
