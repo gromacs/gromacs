@@ -58,8 +58,10 @@
 static const int warp_size      = 32;
 static const int warp_size_log2 = 5;
 
-/*! Allow disabling CUDA textures using the GMX_DISABLE_CUDA_TEXTURES macro */
-#if defined GMX_DISABLE_CUDA_TEXTURES
+/*! Allow disabling CUDA textures using the GMX_DISABLE_CUDA_TEXTURES macro;
+ *  disable texture support-missing in clang <=4.0-dev.
+ */
+#if defined(GMX_DISABLE_CUDA_TEXTURES) || (defined(__clang__) && defined(__CUDA__))
 #define DISABLE_CUDA_TEXTURES 1
 #else
 #define DISABLE_CUDA_TEXTURES 0
