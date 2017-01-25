@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,5 +57,12 @@
  */
 static const int warp_size      = 32;
 static const int warp_size_log2 = 5;
+
+// disable texture support-missing in clang <=4.0-dev
+#if defined(__clang__) && defined(__CUDA__)
+#define DISABLE_CUDA_TEXTURES 1
+#else
+#define DISABLE_CUDA_TEXTURES 0
+#endif
 
 #endif /* CUDA_ARCH_UTILS_CUH_ */
