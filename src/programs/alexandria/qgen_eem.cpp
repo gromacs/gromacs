@@ -453,18 +453,21 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
 void QgenEem::calcJcc(t_atoms *atoms)
 {
     double Jcc = 0;
-    for (int i = 0; i < natom_; i++)
+    int i = 0;
+    for (int n = 0; n < atoms->nr; n++)
     {
-        if (atoms->atom[i].ptype == eptAtom)
+        if (atoms->atom[n].ptype == eptAtom)
         {
-            for (int j = 0; j < natom_; j++)
+            int j = i;
+            for (int m = n; m < atoms->nr; m++)
             {
-                if (atoms->atom[j].ptype == eptAtom)
+                if (atoms->atom[m].ptype == eptAtom)
                 {
-                    if (i != j)
+                    if (n != m)
                     {
+                        j++;
                         Jcc = calcJ(iChargeDistributionModel_,
-                                    x_[i], x_[j],
+                                    x_[n], x_[m],
                                     zeta_[i][0], zeta_[j][0],
                                     row_[i][0], row_[j][0]);
                         if (iChargeDistributionModel_ == eqdYang)
@@ -489,8 +492,9 @@ void QgenEem::calcJcc(t_atoms *atoms)
                         }
                         Jcc_[i][i] = (j0 > 0) ? j0 : 0;
                     }
-                }
+                }                
             }
+            i++;
         }
     }
 }
@@ -509,6 +513,7 @@ void QgenEem::calcJcs(t_atoms *atoms,
         {
             if (atoms->atom[l].ptype == eptShell && (l != itsShell))
             {
+                k++;
                 Jcs = calcJ(iChargeDistributionModel_,
                             x_[top_ndx], x_[l],
                             zeta_[eem_ndx][0], zeta_[k][1],
@@ -519,9 +524,9 @@ void QgenEem::calcJcs(t_atoms *atoms,
                 }
                 Jcs   *= q_[k][1];
                 Jcs_  += Jcs;
-                k++;
             }
         }
+        Jcs_ *= 0.5;
     }
 }
 
@@ -538,6 +543,7 @@ void QgenEem::calcJss(t_atoms *atoms,
         {
             if (atoms->atom[l].ptype == eptShell && (l != top_ndx))
             {
+                k++;
                 Jss = calcJ(iChargeDistributionModel_,
                             x_[top_ndx], x_[l],
                             zeta_[eem_ndx][1], zeta_[k][1],
@@ -548,9 +554,9 @@ void QgenEem::calcJss(t_atoms *atoms,
                 }
                 Jss  *= q_[k][1];
                 Jss_ += Jss;
-                k++;
             }
         }
+        Jss_ *= 0.5;
     }
 }
 
@@ -619,17 +625,27 @@ int atomicnumber2rowXX(int elem)
 
 void QgenEem::copyChargesToAtoms(t_atoms *atoms)
 {
-    int j;
-    for (int i = j = 0; i < atoms->nr; i++)
+    if (bHaveShell_)
     {
-        if (atoms->atom[i].ptype == eptAtom)
+        int j;
+        for (int i = j = 0; i < atoms->nr; i++)
         {
-            atoms->atom[i].q = atoms->atom[i].qB = q_[j][0];
-            j++;
+            if (atoms->atom[i].ptype == eptAtom)
+            {
+                atoms->atom[i].q = atoms->atom[i].qB = q_[j][0];
+            }
+            else if (atoms->atom[i].ptype == eptShell)
+            {
+                atoms->atom[i].q = atoms->atom[i].qB = q_[j][1];
+                j++;
+            }
         }
-        else if (atoms->atom[i].ptype == eptShell)
+    }
+    else
+    {
+        for (int i = 0; i < atoms->nr; i++)
         {
-            atoms->atom[i].q = atoms->atom[i].qB = q_[j][1];
+            atoms->atom[i].q = atoms->atom[i].qB = q_[i][0];
         }
     }
 }
