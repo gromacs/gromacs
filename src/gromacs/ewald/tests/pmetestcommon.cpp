@@ -49,6 +49,7 @@
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -99,6 +100,8 @@ PmeSafePointer pmeInitWithAtoms(const t_inputrec        *inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
+    const char *boxError = check_box(-1, boxTemp);
+    GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
     invertBoxMatrix(boxTemp, pmeSafe->recipbox);
 
     return pmeSafe;

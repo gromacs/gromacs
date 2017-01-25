@@ -227,8 +227,8 @@ static std::vector<Matrix3x3> const sampleBoxes
     // triclinic box
     Matrix3x3 {{
                    7.0f, 0.0f, 0.0f,
-                   0.0f, 3.1f, 0.0f,
-                   6.0f, 4.0f, 3.2f
+                   0.0f, 4.1f, 0.0f,
+                   3.5f, 2.0f, 12.2f
                }},
 };
 
