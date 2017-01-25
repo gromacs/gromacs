@@ -35,9 +35,8 @@ gcc-7 npme=1 nranks=2 no-openmp fftpack release
 
 # Test SSE4.1 SIMD
 # Test single-rank GPU
-# TODO Test clang + OpenMP + CUDA
-# TODO change to clang-4 and cuda-8.0
-gcc-4.8 openmp nranks=1 gpu cuda-7.5 simd=sse4.1
+# Test clang + OpenMP + CUDA
+clang-4 simd=sse4.1 openmp nranks=1 gpu cuda-8.0 clang_cuda
 
 # Test MPMD PME with library MPI
 # Test clang + OpenMP
