@@ -258,12 +258,12 @@ static int check_data_sufficiency(FILE                           *fp,
     dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
     for (auto &mmi : mol)
     {
-        if (mmi.eSupp != eSupportNo)
+        if (mmi.eSupp_ != eSupportNo)
         {
             aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
             k     = 0;
             while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom) &&
-                   (mmi.eSupp != eSupportNo))
+                   (mmi.eSupp_ != eSupportNo))
             {
                 if ((atom->atomnumber > 0) || !bPol)
                 {
@@ -276,12 +276,12 @@ static int check_data_sufficiency(FILE                           *fp,
                                     mmi.molProp()->getMolname().c_str(),
                                     *(mmi.topology_->atoms.atomtype[k]));
                         }
-                        mmi.eSupp = eSupportNo;
+                        mmi.eSupp_ = eSupportNo;
                     }
                 }
                 k++;
             }
-            if (mmi.eSupp != eSupportNo)
+            if (mmi.eSupp_ != eSupportNo)
             {
                 GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 1 in moldip.cpp");
                 aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
@@ -305,7 +305,7 @@ static int check_data_sufficiency(FILE                           *fp,
         nremove = 0;
         for (auto &mmi : mol)
         {
-            if (mmi.eSupp != eSupportNo)
+            if (mmi.eSupp_ != eSupportNo)
             {
                 j     = 0;
                 aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
@@ -332,7 +332,7 @@ static int check_data_sufficiency(FILE                           *fp,
                     {
                         ic->decrementName(*(mmi.topology_->atoms.atomtype[k++]));
                     }
-                    mmi.eSupp = eSupportNo;
+                    mmi.eSupp_ = eSupportNo;
                     nremove++;
                 }
             }
@@ -351,7 +351,7 @@ static int check_data_sufficiency(FILE                           *fp,
     nsupported = 0;
     for (auto &mmi : mol)
     {
-        if (mmi.eSupp == eSupportLocal)
+        if (mmi.eSupp_ == eSupportLocal)
         {
             if (nullptr != debug)
             {
@@ -557,7 +557,7 @@ void MolDip::Read(FILE            *fp,
                 {
                     if (dest > 0)
                     {
-                        mpnew.eSupp = eSupportRemote;
+                        mpnew.eSupp_ = eSupportRemote;
                         /* Send another molecule */
                         if (nullptr != debug)
                         {
@@ -587,7 +587,7 @@ void MolDip::Read(FILE            *fp,
                     }
                     else
                     {
-                        mpnew.eSupp = eSupportLocal;
+                        mpnew.eSupp_ = eSupportLocal;
                     }
                     if (immOK == imm)
                     {
@@ -673,7 +673,7 @@ void MolDip::Read(FILE            *fp,
                 imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
             }
 
-            mpnew.eSupp = eSupportLocal;
+            mpnew.eSupp_ = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
             {

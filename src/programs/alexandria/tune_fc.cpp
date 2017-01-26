@@ -988,7 +988,7 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
 
     for (auto mymol = _mymol.begin(); mymol < _mymol.end(); )
     {
-        if (mymol->eSupp != eSupportLocal)
+        if (mymol->eSupp_ != eSupportLocal)
         {
             mymol++;
             continue;
@@ -1367,7 +1367,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-        rhs.push_back(std::move(-mymol->Emol));
+        rhs.push_back(std::move(-mymol->Emol_));
     }
 
     char buf[STRLEN];
@@ -1539,8 +1539,8 @@ double Optimization::calcDeviation()
             int natoms = mymol.molProp()->NAtom();
             int nOptSP = mymol.molProp()->NOptSP();
 
-            if ((mymol.eSupp == eSupportLocal) ||
-                (_bFinal && (mymol.eSupp == eSupportRemote)))
+            if ((mymol.eSupp_ == eSupportLocal) ||
+                (_bFinal && (mymol.eSupp_ == eSupportRemote)))
             {
                 for (const auto fc : ForceConstants_)
                 {
@@ -1568,7 +1568,7 @@ double Optimization::calcDeviation()
                         ei->getHF(&spHF);
 
                         deltaEn = spHF - optHF;
-                        Emol    = mymol.Emol + deltaEn;
+                        Emol    = mymol.Emol_ + deltaEn;
 
                         mymol.f_.clear();
                         mymol.f_.resize(2*natoms);
@@ -1580,29 +1580,29 @@ double Optimization::calcDeviation()
                         mymol.computeForces(debug, _cr);
 
                         debug         = dbcopy;
-                        mymol.Force2  = 0.0; 
+                        mymol.Force2_  = 0.0; 
                         
-                        mymol.Ecalc  = mymol.enerd_->term[F_EPOT];
-                        ener         = gmx::square(mymol.Ecalc - Emol);
+                        mymol.Ecalc_  = mymol.enerd_->term[F_EPOT];
+                        ener         = gmx::square(mymol.Ecalc_ - Emol);
                         
                         for (j = 0; j < natoms; j++)
                         {
-                            mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+                            mymol.Force2_ += iprod(mymol.f_[j], mymol.f_[j]);
                         }
 
-                        mymol.Force2 /= natoms;
+                        mymol.Force2_ /= natoms;
 
                         if (jtype == JOB_OPT)
                         {
-                            mymol.OptForce2 = 0.0;                        
+                            mymol.OptForce2_ = 0.0;                        
                             for (j = 0; j < natoms; j++)
                             {
-                                mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
+                                mymol.OptForce2_ += iprod(mymol.f_[j], mymol.f_[j]);
                                 copy_rvec(mymol.f_[j], mymol.optf_[j]);
                             }
-                            mymol.OptForce2   /= natoms;
-                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2;
-                            mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
+                            mymol.OptForce2_   /= natoms;
+                            _ener[ermsForce2]  += _fc[ermsForce2]*mymol.OptForce2_;
+                            mymol.OptEcalc_     = mymol.enerd_->term[F_EPOT];
                         }
                         
                         _ener[ermsEPOT]   += _fc[ermsEPOT]*ener;
@@ -1613,12 +1613,12 @@ double Optimization::calcDeviation()
 
                             fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
                                     "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force2 %g\n",
-                                    mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc,
+                                    mymol.molProp()->getMolname().c_str(), ener, mymol.Hform_, Emol, mymol.Ecalc_,
                                     mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
                                     mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
                                     mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR], 
                                     mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM], 
-                                    mymol.enerd_->term[F_POLARIZATION], mymol.Force2);
+                                    mymol.enerd_->term[F_POLARIZATION], mymol.Force2_);
                         }
                     }
                 }
@@ -1859,19 +1859,19 @@ void Optimization::printSpecs(FILE *fp, char *title,
     
     for (auto mi = _mymol.begin(); (mi < _mymol.end()); mi++, i++)
     {
-        real DeltaE = mi->OptEcalc - mi->Emol;
+        real DeltaE = mi->OptEcalc_ - mi->Emol_;
 
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i, mi->molProp()->getMolname().c_str(),
-                mi->Hform, mi->Emol, DeltaE, sqrt(mi->OptForce2), 
+                mi->Hform_, mi->Emol_, DeltaE, sqrt(mi->OptForce2_), 
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
 
         msd += gmx::square(DeltaE);
-        gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
+        gmx_stats_add_point(gst, mi->Hform_, mi->Hform_ + DeltaE, 0, 0);
 
         if (nullptr != xvg)
         {
-            fprintf(xfp, "%10g  %10g\n", mi->Hform, mi->Hform + DeltaE);
+            fprintf(xfp, "%10g  %10g\n", mi->Hform_, mi->Hform_ + DeltaE);
         }
     }
     

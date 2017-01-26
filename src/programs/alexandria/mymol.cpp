@@ -1416,7 +1416,7 @@ void MyMol::CalcMultipoles()
 {
     real  r2, dfac, q;
 
-    clear_mat(Q_calc);   
+    clear_mat(Q_calc_);   
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
         q    = ENM2DEBYE*topology_->atoms.atom[i].q;
@@ -1424,14 +1424,14 @@ void MyMol::CalcMultipoles()
         r2   = iprod(x_[i], x_[i]);
         for (int m = 0; m < DIM; m++)
         {
-            Q_calc[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
+            Q_calc_[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
         }
-        Q_calc[XX][YY] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][YY]+coq_[YY]);
-        Q_calc[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
-        Q_calc[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
+        Q_calc_[XX][YY] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][YY]+coq_[YY]);
+        Q_calc_[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
+        Q_calc_[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
     }
-    CalcDipole(mu_calc);
-    dip_calc = norm(mu_calc);
+    CalcDipole(mu_calc_);
+    dip_calc_ = norm(mu_calc_);
 }
 
 void MyMol::CalcQPol(const Poldata &pd)
@@ -2597,13 +2597,13 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
     {       
-        dip_exp  = value;
-        dip_err  = error;
+        dip_exp_  = value;
+        dip_err_  = error;
         for (m = 0; m < DIM; m++)
         {
-            mu_exp[m] = vec[m];
+            mu_exp_[m] = vec[m];
         }
-        mu_exp2 = gmx::square(value);
+        mu_exp2_ = gmx::square(value);
         if (error <= 0)
         {
             if (debug)
@@ -2614,7 +2614,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             nwarn++;
             error = 0.1*value;
         }
-        dip_weight = gmx::square(1.0/error);
+        dip_weight_ = gmx::square(1.0/error);
     }
     else
     {
@@ -2633,7 +2633,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             for (n = 0; n < DIM; n++)
             {
-                Q_exp[m][n] = quadrupole[m][n];
+                Q_exp_[m][n] = quadrupole[m][n];
             }
         }
     }
@@ -2646,7 +2646,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             if (topology_->atoms.atom[ia].ptype != eptShell)
             {
-                qESP[ia] = q[ia];
+                qESP_[ia] = q[ia];
             }
         }
     }
@@ -2654,15 +2654,15 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
-        Hform = value;
-        Emol  = value;
+        Hform_ = value;
+        Emol_  = value;
         for (ia = 0; ia < topology_->atoms.nr; ia++)
         {
             if (topology_->atoms.atom[ia].ptype != eptShell)
             {
                 if (pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[ia], &Hatom))
                 {
-                    Emol -= Hatom;
+                    Emol_ -= Hatom;
                 }
                 else
                 {
@@ -2671,7 +2671,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                         fprintf(debug, "WARNING: NO ref enthalpy for molecule %s.\n",
                                 molProp()->getMolname().c_str());
                     }
-                    Emol = 0;
+                    Emol_ = 0;
                     break;
                 }
             }
@@ -2683,7 +2683,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             if (molProp()->getProp(MPO_ENERGY, iqmBoth, lot, "",
                                    (char *)"ZPE", &ZPE, &error, &T))
             {
-                Emol -= ZPE;
+                Emol_ -= ZPE;
             }
             else
             {

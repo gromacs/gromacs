@@ -175,12 +175,12 @@ class MyMol
          */
         //void getForceConstants(const Poldata &pd);
     public:
-        rvec                     *buf, mu_exp, mu_calc, mu_esp, qESP, coq_;
+        rvec                     *buf_, mu_exp_, mu_calc_, mu_esp_, qESP_, coq_;
         matrix                    box_;
-        real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq;
-        real                      Hform, Emol, Ecalc, OptEcalc, Force2, OptForce2;
-        tensor                    Q_exp, Q_calc, Q_esp;
-        eSupport                  eSupp;
+        real                      dip_exp_, mu_exp2_, dip_err_, dip_weight_, dip_calc_, chieq_;
+        real                      Hform_, Emol_, Ecalc_, OptEcalc_, Force2_, OptForce2_;
+        tensor                    Q_exp_, Q_calc_, Q_esp_;
+        eSupport                  eSupp_;
         t_state                  *state_;
         t_forcerec               *fr_;
         PaddedRVecVector          x_;

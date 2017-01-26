@@ -255,8 +255,8 @@ void OPtimization::calcDeviation()
     {
         GMX_RELEASE_ASSERT(mymol.mtop_->natoms == mymol.topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
         
-        if ((mymol.eSupp == eSupportLocal) ||
-            (_bFinal && (mymol.eSupp == eSupportRemote)))
+        if ((mymol.eSupp_ == eSupportLocal) ||
+            (_bFinal && (mymol.eSupp_ == eSupportRemote)))
         {
             if (nullptr != mymol.shellfc_)
             {
@@ -275,7 +275,7 @@ void OPtimization::calcDeviation()
                                    pd_, &(mymol.topology_->atoms),
                                    &chieq,
                                    mymol.x_);
-            mymol.chieq = chieq;
+            mymol.chieq_ = chieq;
             
             double qtot = 0;            
             mymol.CalcMultipoles();
@@ -304,7 +304,7 @@ void OPtimization::calcDeviation()
             if (_bQM)
             {
                 rvec dmu;
-                rvec_sub(mymol.mu_calc, mymol.mu_exp, dmu);
+                rvec_sub(mymol.mu_calc_, mymol.mu_exp_, dmu);
                 _ener[ermsMU]  += iprod(dmu, dmu);
                 for (int mm = 0; mm < DIM; mm++)
                 {
@@ -312,18 +312,18 @@ void OPtimization::calcDeviation()
                     {
                         for (int nn = 0; nn < DIM; nn++)
                         {
-                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc[mm][nn] - mymol.Q_exp[mm][nn]);
+                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_exp_[mm][nn]);
                         }
                     }
                     else
                     {
-                        _ener[ermsQUAD] += gmx::square(mymol.Q_calc[mm][mm] - mymol.Q_exp[mm][mm]);
+                        _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_exp_[mm][mm]);
                     }
                 }
             }
             else
             {
-                _ener[ermsMU]  += gmx::square(mymol.dip_calc - mymol.dip_exp);
+                _ener[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
             }
         }
     }
@@ -625,16 +625,16 @@ void OPtimization::print_quadrapole(FILE  *fp,
     real   delta;
     if (nullptr != calc_name)
     {
-        m_sub(mol->Q_exp, mol->Q_calc, dQ);
+        m_sub(mol->Q_exp_, mol->Q_calc_, dQ);
         delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
                      gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
         fprintf(fp,
                 "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                 "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
                 calc_name,
-                mol->Q_calc[XX][XX], mol->Q_calc[XX][YY], mol->Q_calc[XX][ZZ],
+                mol->Q_calc_[XX][XX], mol->Q_calc_[XX][YY], mol->Q_calc_[XX][ZZ],
                 dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                "", mol->Q_calc[YY][YY], mol->Q_calc[YY][ZZ], "", dQ[YY][YY], dQ[YY][ZZ]);
+                "", mol->Q_calc_[YY][YY], mol->Q_calc_[YY][ZZ], "", dQ[YY][YY], dQ[YY][ZZ]);
     }
     else
     {
@@ -642,8 +642,8 @@ void OPtimization::print_quadrapole(FILE  *fp,
         fprintf(fp,
                 "Exp  (%6.2f %6.2f %6.2f)\n"
                 "     (%6s %6.2f %6.2f)\n",
-                mol->Q_exp[XX][XX], mol->Q_exp[XX][YY], mol->Q_exp[XX][ZZ],
-                "", mol->Q_exp[YY][YY], mol->Q_exp[YY][ZZ]);
+                mol->Q_exp_[XX][XX], mol->Q_exp_[XX][YY], mol->Q_exp_[XX][ZZ],
+                "", mol->Q_exp_[YY][YY], mol->Q_exp_[YY][ZZ]);
     }
 }
 
@@ -658,9 +658,9 @@ void OPtimization::print_dipole(FILE  *fp,
 
     if (nullptr != calc_name)
     {
-        rvec_sub(mol->mu_exp, mol->mu_calc, dmu);
+        rvec_sub(mol->mu_exp_, mol->mu_calc_, dmu);
         ndmu = norm(dmu);
-        cosa = cos_angle(mol->mu_exp, mol->mu_calc);
+        cosa = cos_angle(mol->mu_exp_, mol->mu_calc_);
         if (ndmu > toler)
         {
             sprintf(ebuf, "XXX");
@@ -674,14 +674,14 @@ void OPtimization::print_dipole(FILE  *fp,
             ebuf[0] = '\0';
         }
         fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                calc_name, mol->mu_calc[XX], mol->mu_calc[YY], mol->mu_calc[ZZ], 
-                norm(mol->mu_calc), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+                calc_name, mol->mu_calc_[XX], mol->mu_calc_[YY], mol->mu_calc_[ZZ], 
+                norm(mol->mu_calc_), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
     }
     else
     {
         fprintf(fp, "Dipole analysis\n");
         fprintf(fp, "Exp  (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
-                mol->mu_exp[XX], mol->mu_exp[YY], mol->mu_exp[ZZ], norm(mol->mu_exp));
+                mol->mu_exp_[XX], mol->mu_exp_[YY], mol->mu_exp_[ZZ], norm(mol->mu_exp_));
     }
 }
 
@@ -722,7 +722,7 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
     
     for (auto &mol: _mymol)
     {
-        if (mol.eSupp != eSupportNo)
+        if (mol.eSupp_ != eSupportNo)
         {
             fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n", n+1,
                     mol.molProp()->getMolname().c_str(),
@@ -739,30 +739,30 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
             
             chi2 = mol.espRms();
             fprintf(fp, "ESP chi2 %g Hartree/e\n", chi2);           
-            fprintf(xvgf, "%10g  %10g\n", mol.dip_exp, mol.dip_calc);
+            fprintf(xvgf, "%10g  %10g\n", mol.dip_exp_, mol.dip_calc_);
             
             for (mm = 0; mm < DIM; mm++)
             {
-                gmx_stats_add_point(lsq_mu[0], mol.mu_exp[mm], mol.mu_calc[mm], 0, 0);
-                if (0)
+                gmx_stats_add_point(lsq_mu[0], mol.mu_exp_[mm], mol.mu_calc_[mm], 0, 0);
+                if (bfullTensor_)
                 {
                     for (nn = mm; nn < DIM; nn++)
                     {
                         if (mm < ZZ)
                         {
-                            gmx_stats_add_point(lsq_quad[0], mol.Q_exp[mm][nn], mol.Q_calc[mm][nn], 0, 0);
+                            gmx_stats_add_point(lsq_quad[0], mol.Q_exp_[mm][nn], mol.Q_calc_[mm][nn], 0, 0);
                         }
                     }
                 }
                 else
                 {
                     /* Ignore off-diagonal components */
-                    gmx_stats_add_point(lsq_quad[0], mol.Q_exp[mm][mm], mol.Q_calc[mm][mm], 0, 0);
+                    gmx_stats_add_point(lsq_quad[0], mol.Q_exp_[mm][mm], mol.Q_calc_[mm][mm], 0, 0);
 
                 }
             }
 
-            d2 += gmx::square(mol.dip_exp - mol.dip_calc);
+            d2 += gmx::square(mol.dip_exp_ - mol.dip_calc_);
             fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
             for (j = 0; j < mol.topology_->atoms.nr; j++)
             {
@@ -785,11 +785,11 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
                         mol.topology_->atoms.atom[j].atomnumber,
                         j+1,
                         *(mol.topology_->atoms.atomtype[j]),
-                        qq,mol.qESP[j],
+                        qq,mol.qESP_[j],
                         mol.x_[j][XX], mol.x_[j][YY], mol.x_[j][ZZ],
-                        fabs(qq - mol.qESP[j]) > q_toler ? "ZZZ" : "");
-                gmx_stats_add_point(k->lsq, mol.qESP[j], qq, 0, 0);
-                gmx_stats_add_point(lsq_q, mol.qESP[j], qq, 0, 0);
+                        fabs(qq - mol.qESP_[j]) > q_toler ? "ZZZ" : "");
+                gmx_stats_add_point(k->lsq, mol.qESP_[j], qq, 0, 0);
+                gmx_stats_add_point(lsq_q, mol.qESP_[j], qq, 0, 0);
             }
             fprintf(fp, "\n");
             n++;
@@ -879,15 +879,15 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
     for (auto &mol : _mymol)
     {
         rvec dmu;
-        rvec_sub(mol.mu_exp, mol.mu_calc, dmu);
-        if ((mol.eSupp != eSupportNo) &&
-            (mol.dip_exp > sigma) &&
+        rvec_sub(mol.mu_exp_, mol.mu_calc_, dmu);
+        if ((mol.eSupp_ != eSupportNo) &&
+            (mol.dip_exp_ > sigma) &&
             (norm(dmu) > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
                     mol.molProp()->getMolname().c_str(),
-                    mol.dip_calc, mol.dip_exp,
-                    mol.dip_calc - mol.dip_exp);
+                    mol.dip_calc_, mol.dip_exp_,
+                    mol.dip_calc_ - mol.dip_exp_);
             nout++;
         }
     }

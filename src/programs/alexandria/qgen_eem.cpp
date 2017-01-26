@@ -447,7 +447,7 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
         default:
             gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iChargeDistributionModel);
     }
-    return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
+    return (ONE_4PI_EPS0*eTot)/ELECTRONVOLT;
 }
 
 void QgenEem::calcJcc(t_atoms *atoms)
