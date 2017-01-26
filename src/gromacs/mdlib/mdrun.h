@@ -95,10 +95,6 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand,
 /* Allocate and initialize node-local state entries. */
 void set_state_entries(t_state *state, const t_inputrec *ir);
 
-/* Broadcast the data for a simulation, and allocate node-specific settings */
-void init_parallel(t_commrec *cr, t_inputrec *inputrec,
-                   gmx_mtop_t *mtop);
-
 void bcast_state(const t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  */

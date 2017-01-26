@@ -58,6 +58,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -143,15 +144,6 @@ static const char *constraints[eshNR+1]    = {
 static const char *couple_lam[ecouplamNR+1]    = {
     "vdw-q", "vdw", "q", "none", nullptr
 };
-
-void init_ir(t_inputrec *ir, t_gromppopts *opts)
-{
-    snew(opts->include, STRLEN);
-    snew(opts->define, STRLEN);
-    snew(ir->fepvals, 1);
-    snew(ir->expandedvals, 1);
-    snew(ir->simtempvals, 1);
-}
 
 static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lambdas)
 {
@@ -1816,7 +1808,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 } // namespace
 
 void get_ir(const char *mdparin, const char *mdparout,
-            t_inputrec *ir, t_gromppopts *opts,
+            gmx::MDModules *mdModules, t_gromppopts *opts,
             warninp_t wi)
 {
     char       *dumstr[2];
@@ -1825,6 +1817,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     const char *tmp;
     int         i, j, m, ninp;
     char        warn_buf[STRLEN];
+    t_inputrec *ir = mdModules->inputrec();
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
@@ -2248,20 +2241,21 @@ void get_ir(const char *mdparin, const char *mdparout,
         gmx::KeyValueTreeTransformer transform;
         transform.rules()->addRule()
             .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-        ir->efield->initMdpTransform(transform.rules());
+        mdModules->initMdpTransform(transform.rules());
         for (const auto &path : transform.mappedPaths())
         {
             GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
             mark_einp_set(ninp, inp, path[0].c_str());
         }
-        gmx::Options                 options;
-        ir->efield->initMdpOptions(&options);
         MdpErrorHandler              errorHandler(wi);
         auto                         result
             = transform.transform(convertedValues, &errorHandler);
+        // TODO consider whether this could be a side effect of the
+        // above call to transform(). If so, then the need to call
+        // object() and move the tree around is reduced.
         errorHandler.setBackMapping(result.backMapping());
-        gmx::assignOptionsFromKeyValueTree(&options, result.object(),
-                                           &errorHandler);
+        auto inputAndDefaultValues = result.object();
+        mdModules->assignOptionsToModules(std::move(inputAndDefaultValues), &errorHandler);
     }
 
     /* Ion/water position swapping ("computational electrophysiology") */

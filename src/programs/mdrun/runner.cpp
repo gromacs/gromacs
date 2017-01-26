@@ -73,6 +73,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
@@ -889,7 +890,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(cr, inputrec, mtop);
+        init_parallel(cr, &mdModules, mtop);
 
         /* The master rank decided on the use of GPUs,
          * broadcast this information to all ranks.
@@ -1199,7 +1200,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr          = mk_forcerec();
         fr->hwinfo  = hwinfo;
         fr->gpu_opt = &hw_opt->gpu_opt;
-        init_forcerec(fplog, mdlog, fr, fcd, inputrec, mtop, cr, box,
+        init_forcerec(fplog, mdlog, fr, fcd, &mdModules, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
@@ -1380,7 +1381,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, constr,
-                                     nstepout, inputrec, mtop,
+                                     nstepout, &mdModules, mtop,
                                      fcd, state, &energyHistory,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,

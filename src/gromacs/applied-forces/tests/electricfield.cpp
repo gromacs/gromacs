@@ -50,10 +50,7 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/treesupport.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/real.h"
@@ -85,7 +82,6 @@ class ElectricFieldTest : public ::testing::Test
             gmx::test::FloatingPointTolerance tolerance(
                     gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
             gmx::MDModules                    module;
-            t_inputrec *inputrec = module.inputrec();
 
             // Prepare MDP inputs
             const char *dimXYZ[3] = { "x", "y", "z" };
@@ -100,11 +96,10 @@ class ElectricFieldTest : public ::testing::Test
             gmx::KeyValueTreeTransformer transform;
             transform.rules()->addRule()
                 .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-            inputrec->efield->initMdpTransform(transform.rules());
-            gmx::Options                 options;
-            inputrec->efield->initMdpOptions(&options);
-            auto                         result = transform.transform(mdpValues.build(), nullptr);
-            gmx::assignOptionsFromKeyValueTree(&options, result.object(), nullptr);
+            module.initMdpTransform(transform.rules());
+            auto result = transform.transform(mdpValues.build(), nullptr);
+            auto inputAndDefaultValues = result.object();
+            module.assignOptionsToModules(std::move(inputAndDefaultValues), nullptr);
 
             t_mdatoms        md;
             PaddedRVecVector f = { { 0, 0, 0 } };
@@ -114,8 +109,8 @@ class ElectricFieldTest : public ::testing::Test
 
             t_commrec  *cr       = init_commrec();
             t_forcerec *forcerec = mk_forcerec();
-            inputrec->efield->initForcerec(forcerec);
-            forcerec->efield->calculateForces(cr, &md, &f, 0);
+            module.initForcerec(forcerec);
+            module.calculateForces(cr, &md, &f, 0);
             done_commrec(cr);
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
             sfree(forcerec);

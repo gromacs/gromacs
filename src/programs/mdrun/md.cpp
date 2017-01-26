@@ -89,6 +89,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -197,7 +198,7 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
                            int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
-                           t_inputrec *inputrec,
+                           MDModules *mdModules,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
                            t_state *state_global,
                            t_mdatoms *mdatoms,
@@ -215,7 +216,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   const gmx_output_env_t *oenv, gmx_bool bVerbose,
                   int nstglobalcomm,
                   gmx_vsite_t *vsite, gmx_constr_t constr,
-                  int stepout, t_inputrec *ir,
+                  int stepout, gmx::MDModules *mdModules,
                   gmx_mtop_t *top_global,
                   t_fcdata *fcd,
                   t_state *state_global,
@@ -253,6 +254,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     gmx_repl_ex_t     repl_ex = nullptr;
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
+    t_inputrec       *ir = mdModules->inputrec();
     t_mdebin         *mdebin   = nullptr;
     gmx_enerdata_t   *enerd;
     PaddedRVecVector  f {};
@@ -352,7 +354,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     /* Initial values */
-    init_md(fplog, cr, ir, oenv, &t, &t0, state_global->lambda,
+    init_md(fplog, cr, mdModules, oenv, &t, &t0, state_global->lambda,
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
@@ -1815,7 +1817,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
     }
 
-    done_mdoutf(outf, ir);
+    done_mdoutf(outf, mdModules);
 
     if (bPMETune)
     {

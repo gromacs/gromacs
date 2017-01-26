@@ -40,6 +40,11 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
+namespace gmx
+{
+class MDModules;
+}
+
 struct gmx_groups_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -85,9 +90,6 @@ void init_inputrec_strings();
 /*! \brief Clean up object that holds strings parsed from an .mdp file */
 void done_inputrec_strings();
 
-void init_ir(t_inputrec *ir, t_gromppopts *opts);
-/* Initiate stuff */
-
 void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi);
 /* Validate inputrec data.
@@ -112,7 +114,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
 /* Even more checks, charge group radii vs. cut-off's only. */
 
 void get_ir(const char *mdparin, const char *mdparout,
-            t_inputrec *ir, t_gromppopts *opts,
+            gmx::MDModules *mdModules, t_gromppopts *opts,
             warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next

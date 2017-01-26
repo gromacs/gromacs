@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,6 +67,7 @@ namespace gmx
 
 class IKeyValueTreeTransformRules;
 class IOptionsContainerWithSections;
+class KeyValueTreeObject;
 
 /*! \libinternal \brief
  * Inputrec extension interface for a mdrun module.
@@ -81,7 +82,7 @@ class IOptionsContainerWithSections;
  * know the interpretation of the values.
  *
  * For now, this interface also includes some unrelated methods (initOutput(),
- * finishOutput(), initForcerec()), because t_inputrec is used as a container
+ * finishOutput()), because t_inputrec is used as a container
  * to pass references to the modules around.
  * See MDModules for more information on the general approach and future
  * considerations.
@@ -90,15 +91,6 @@ class IInputRecExtension
 {
     public:
         virtual ~IInputRecExtension() {}
-
-        /*! \brief Read or write tpr file
-         *
-         * Read or write the necessary data from a tpr file. The routine is responsible
-         * for consistency, such that all data belonging to this module is read or written.
-         * \param[inout] fio Gromacs file descriptor
-         * \param[in]    bRead boolean determines whether we are reading or writing
-         */
-        virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
 
         /*! \brief
          * Initializes a transform from mdp values to sectioned options.
@@ -137,7 +129,7 @@ class IInputRecExtension
          * \param[in] fp     File pointer
          * \param[in] indent Initial indentation level for printing
          */
-        virtual void printParameters(FILE *fp, int indent)           = 0;
+        virtual void printParameters(FILE *fp, int indent) = 0;
 
         /*! \brief Initiate output parameters
          *
@@ -151,13 +143,7 @@ class IInputRecExtension
                                 bool bAppendFiles, const gmx_output_env_t *oenv) = 0;
 
         //! Finalize output
-        virtual void finishOutput()               = 0;
-
-        /*! \brief Set/initiate relevant options in the forcerec structure
-         *
-         * \param[inout] fr The forcerec structure
-         */
-        virtual void initForcerec(t_forcerec *fr) = 0;
+        virtual void finishOutput() = 0;
 };
 
 } // namespace gmx
@@ -482,15 +468,16 @@ struct t_inputrec
     real                     userreal3;
     real                     userreal4;
     t_grpopts                opts;          /* Group options				*/
-    gmx::IInputRecExtension *efield;        /* Applied electric field                       */
     gmx_bool                 bQMMM;         /* QM/MM calculation                            */
     int                      QMconstraints; /* constraints on QM bonds                      */
     int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */
     real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
-    gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
-    gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
+    gmx_bool                 bAdress;      // Whether AdResS is enabled - always false if a valid .tpr was read
+    gmx_bool                 useTwinRange; // Whether twin-range scheme is active - always false if a valid .tpr was read
+
+    gmx::KeyValueTreeObject *moduleOptionParameters;
 };
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);

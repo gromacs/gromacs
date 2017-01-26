@@ -107,6 +107,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
     if (fn2)
     {
         cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
+        mdModules[0].compare(stdout, &mdModules[1], ftol, abstol);
         /* Convert gmx_mtop_t to t_topology.
          * We should implement direct mtop comparison,
          * but it might be useful to keep t_topology comparison as an option.

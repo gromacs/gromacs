@@ -43,6 +43,11 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+class MDModules;
+} // namespace
+
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -62,7 +67,7 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          const t_filenm          fnm[],
                          int                     mdrun_flags,
                          const t_commrec        *cr,
-                         const t_inputrec       *ir,
+                         gmx::MDModules *mdModules,
                          gmx_mtop_t             *mtop,
                          const gmx_output_env_t *oenv,
                          gmx_wallcycle_t         wcycle);
@@ -84,7 +89,7 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
 void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
-void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir);
+void done_mdoutf(gmx_mdoutf_t of, gmx::MDModules *mdModules);
 
 /*! \brief Routine that writes trajectory-like frames.
  *

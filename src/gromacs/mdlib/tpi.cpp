@@ -74,6 +74,7 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -133,7 +134,7 @@ namespace gmx
                            int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
-                           t_inputrec *inputrec,
+                           MDModules *mdModules,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
                            t_state *state_global,
                            t_mdatoms *mdatoms,
@@ -152,7 +153,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               int gmx_unused nstglobalcomm,
               gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
               int gmx_unused stepout,
-              t_inputrec *inputrec,
+              MDModules *mdModules,
               gmx_mtop_t *top_global, t_fcdata *fcd,
               t_state *state_global,
               energyhistory_t gmx_unused *energyHistory,
@@ -168,6 +169,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_localtop_t  *top;
+    t_inputrec *inputrec = mdModules->inputrec();
     gmx_groups_t    *groups;
     gmx_enerdata_t  *enerd;
     PaddedRVecVector f {};

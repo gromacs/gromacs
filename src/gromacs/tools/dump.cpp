@@ -100,6 +100,7 @@ static void list_tpx(const char *fn,
     {
         gp = gmx_fio_fopen(mdpfn, "w");
         pr_inputrec(gp, 0, nullptr, ir, TRUE);
+        mdModules.printParameters(gp, 0);
         gmx_fio_fclose(gp);
     }
 
@@ -115,6 +116,7 @@ static void list_tpx(const char *fn,
             indent = 0;
             pr_title(stdout, indent, fn);
             pr_inputrec(stdout, 0, "inputrec", ir, FALSE);
+            mdModules.printParameters(stdout, 0);
 
             pr_tpxheader(stdout, indent, "header", &(tpx));
 

@@ -51,6 +51,14 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+class MDModules;
+}
+
+struct gmx_mtop_t;
+struct t_commrec;
+
 //! Convenience wrapper for gmx_bcast of a single value.
 template <typename T>
 void block_bc(const t_commrec *cr, T &data)
@@ -89,5 +97,9 @@ static void nblock_abc(const t_commrec *cr, int numElements, std::vector<T> *v)
     }
     gmx_bcast(numElements*sizeof(T), v->data(), cr);
 }
+
+//! Broadcast the data for a simulation from master to other ranks.
+void init_parallel(t_commrec *cr, gmx::MDModules *mdModules,
+                   gmx_mtop_t *mtop);
 
 #endif

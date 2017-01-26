@@ -77,6 +77,7 @@
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -2304,7 +2305,7 @@ void init_forcerec(FILE                *fp,
                    const gmx::MDLogger &mdlog,
                    t_forcerec          *fr,
                    t_fcdata            *fcd,
-                   const t_inputrec    *ir,
+                   gmx::MDModules *mdModules,
                    const gmx_mtop_t    *mtop,
                    const t_commrec     *cr,
                    matrix               box,
@@ -2324,6 +2325,7 @@ void init_forcerec(FILE                *fp,
     gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
     int           *nm_ind, egp_flags;
+    t_inputrec *ir = mdModules->inputrec();
 
     if (fr->hwinfo == nullptr)
     {
@@ -2824,7 +2826,7 @@ void init_forcerec(FILE                *fp,
     /* Initialization call after setting bF_NoVirSum,
      * since it efield->initForcerec also sets this to true.
      */
-    ir->efield->initForcerec(fr);
+    mdModules->initForcerec(fr);
 
     if (fr->bF_NoVirSum)
     {

@@ -51,6 +51,7 @@
 
 extern "C" {
 
+struct t_forcerec;
 struct t_mdatoms;
 struct t_commrec;
 
@@ -65,6 +66,12 @@ struct t_commrec;
 struct IForceProvider
 {
     public:
+        /*! \brief Set/initiate relevant options in the forcerec structure
+         *
+         * \param[inout] fr The forcerec structure
+         */
+        virtual void initForcerec(t_forcerec *fr) = 0;
+
         /*! \brief Compute forces
          *
          * \todo This is specific for electric fields and needs to be generalized.
@@ -153,43 +160,46 @@ enum {
 };
 extern const char *egrp_nm[egNR+1];
 
-typedef struct gmx_grppairener_t {
+struct gmx_grppairener_t
+{
     int   nener;      /* The number of energy group pairs     */
     real *ener[egNR]; /* Energy terms for each pair of groups */
-} gmx_grppairener_t;
+};
 
-typedef struct gmx_enerdata_t {
+struct gmx_enerdata_t
+{
     real              term[F_NRE];         /* The energies for all different interaction types */
-    gmx_grppairener_t grpp;
+    struct gmx_grppairener_t grpp;
     double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
     double            dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
     int               n_lambda;
     int               fep_state;           /*current fep state -- just for printing */
     double           *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
     real              foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
-    gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
-} gmx_enerdata_t;
+    struct gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
+};
 /* The idea is that dvdl terms with linear lambda dependence will be added
  * automatically to enerpart_lambda. Terms with non-linear lambda dependence
  * should explicitly determine the energies at foreign lambda points
  * when n_lambda > 0.
  */
 
-typedef struct {
+struct cginfo_mb_t
+{
     int  cg_start;
     int  cg_end;
     int  cg_mod;
     int *cginfo;
-} cginfo_mb_t;
+};
 
 
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;
 
-typedef struct ewald_corr_thread_t ewald_corr_thread_t;
+struct ewald_corr_thread_t;
 
-typedef struct t_forcerec {
-    interaction_const_t *ic;
+struct t_forcerec {
+    struct interaction_const_t *ic;
 
     /* Domain Decomposition */
     gmx_bool bDomDec;
@@ -305,7 +315,7 @@ typedef struct t_forcerec {
     int          nWatMol;
     gmx_bool     bGrid;
     gmx_bool     bExcl_IntraCGAll_InterCGNone;
-    cginfo_mb_t *cginfo_mb;
+    struct cginfo_mb_t *cginfo_mb;
     int         *cginfo;
     rvec        *cg_cm;
     int          cg_nalloc;
@@ -463,10 +473,10 @@ typedef struct t_forcerec {
 
     /* Ewald correction thread local virial and energy data */
     int                    nthread_ewc;
-    ewald_corr_thread_t   *ewc_t;
+    struct ewald_corr_thread_t *ewc_t;
 
     struct IForceProvider *efield;
-} t_forcerec;
+};
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have
  * been scaled by 6.0 or 12.0 to save flops in the kernels. We have corrected this everywhere

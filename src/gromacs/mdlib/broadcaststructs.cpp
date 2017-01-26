@@ -45,6 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -662,12 +663,11 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     /* The statement below is dangerous. It overwrites all structures in inputrec.
-     * If something is added to inputrec, like efield it will need to be
+     * If something is added to inputrec, like moduleOptionParameters, it will need to be
      * treated here.
      */
-    gmx::IInputRecExtension *eptr = inputrec->efield;
     block_bc(cr, *inputrec);
-    inputrec->efield = eptr;
+    inputrec->moduleOptionParameters = nullptr;
 
     bc_grpopts(cr, &(inputrec->opts));
 
@@ -705,7 +705,6 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->imd, 1);
         bc_imd(cr, inputrec->imd);
     }
-    inputrec->efield->broadCast(cr);
     if (inputrec->eSwapCoords != eswapNO)
     {
         snew_bc(cr, inputrec->swap, 1);
@@ -771,17 +770,22 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 /*! \brief Broadcasts ir and mtop from the master to all nodes in
  * cr->mpi_comm_mygroup. */
 static
-void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
+void bcast_ir_mtop(const t_commrec *cr, gmx::MDModules *mdModules, gmx_mtop_t *mtop)
 {
     int i;
     if (debug)
     {
         fprintf(debug, "in bc_data\n");
     }
-    bc_inputrec(cr, inputrec);
+    bc_inputrec(cr, mdModules->inputrec());
     if (debug)
     {
         fprintf(debug, "after bc_inputrec\n");
+    }
+    mdModules->broadCast(cr);
+    if (debug)
+    {
+        fprintf(debug, "after MDModules::broadcast\n");
     }
     bc_symtab(cr, &mtop->symtab);
     if (debug)
@@ -825,8 +829,8 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
     bc_groups(cr, &mtop->symtab, mtop->natoms, &mtop->groups);
 }
 
-void init_parallel(t_commrec *cr, t_inputrec *inputrec,
+void init_parallel(t_commrec *cr, gmx::MDModules *mdModules,
                    gmx_mtop_t *mtop)
 {
-    bcast_ir_mtop(cr, inputrec, mtop);
+    bcast_ir_mtop(cr, mdModules, mtop);
 }

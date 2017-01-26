@@ -48,6 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -81,13 +82,14 @@ struct gmx_mdoutf {
 
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          int mdrun_flags, const t_commrec *cr,
-                         const t_inputrec *ir, gmx_mtop_t *top_global,
+                         gmx::MDModules *mdModules, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
     gmx_mdoutf_t   of;
     const char    *appendMode = "a+", *writeMode = "w+", *filemode;
     gmx_bool       bAppendFiles, bCiteTng = FALSE;
     int            i;
+    const t_inputrec *ir = mdModules->inputrec();
 
     snew(of, 1);
 
@@ -193,7 +195,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             }
         }
 
-        ir->efield->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        mdModules->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -395,8 +397,9 @@ void mdoutf_tng_close(gmx_mdoutf_t of)
     }
 }
 
-void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir)
+void done_mdoutf(gmx_mdoutf_t of, gmx::MDModules *mdModules)
 {
+    mdModules->finishOutput();
     if (of->fp_ene != nullptr)
     {
         close_enx(of->fp_ene);
@@ -413,7 +416,6 @@ void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    ir->efield->finishOutput();
     if (of->f_global != nullptr)
     {
         sfree(of->f_global);

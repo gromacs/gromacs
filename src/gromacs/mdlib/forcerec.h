@@ -51,6 +51,7 @@ struct t_filenm;
 namespace gmx
 {
 class MDLogger;
+class MDModules;
 }
 
 /*! \brief Create a new forcerec structure */
@@ -99,7 +100,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  mdlog       File for printing
  * \param[out] fr          The forcerec
  * \param[in]  fcd         Force constant data
- * \param[in]  ir          Inputrec structure
+ * \param[in]  mdModules   MD modules container
  * \param[in]  mtop        Molecular topology
  * \param[in]  cr          Communication structures
  * \param[in]  box         Simulation box
@@ -114,7 +115,7 @@ void init_forcerec(FILE                   *fplog,
                    const gmx::MDLogger    &mdlog,
                    t_forcerec             *fr,
                    t_fcdata               *fcd,
-                   const t_inputrec       *ir,
+                   gmx::MDModules   *mdModules,
                    const gmx_mtop_t       *mtop,
                    const t_commrec        *cr,
                    matrix                  box,
