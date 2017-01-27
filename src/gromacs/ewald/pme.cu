@@ -61,7 +61,7 @@ int pme_gpu_get_atom_data_alignment(const pme_gpu_t *pmeGPU)
     return PME_ATOM_DATA_ALIGNMENT;
 }
 
-int pme_gpu_get_atom_spline_data_alignment(const pme_gpu_t *pmeGPU)
+int pme_gpu_get_atoms_per_warp(const pme_gpu_t *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
     GMX_ASSERT(order > 0, "Invalid PME order");
@@ -238,7 +238,7 @@ void pme_gpu_free_coefficients(const pme_gpu_t *pmeGPU)
 void pme_gpu_realloc_spline_data(const pme_gpu_t *pmeGPU)
 {
     const int    order             = pmeGPU->common->pme_order;
-    const int    alignment         = pme_gpu_get_atom_spline_data_alignment(pmeGPU);
+    const int    alignment         = pme_gpu_get_atoms_per_warp(pmeGPU);
     const size_t nAtomsPadded      = ((pmeGPU->nAtomsAlloc + alignment - 1) / alignment) * alignment;
     const int    newSplineDataSize = DIM * order * nAtomsPadded;
     GMX_ASSERT(newSplineDataSize > 0, "Bad number of atoms in PME GPU");
