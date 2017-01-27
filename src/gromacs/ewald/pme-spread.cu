@@ -620,7 +620,7 @@ void pme_gpu_spread(const pme_gpu_t *pmeGpu,
     const bool copyBackAtomData = computeSplines && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_gather(pmeGpu));
     if (copyBackAtomData)
     {
-        const int    alignment     = pme_gpu_get_atom_spline_data_alignment(pmeGpu);
+        const int    alignment     = pme_gpu_get_atoms_per_warp(pmeGpu);
         const size_t nAtomsPadded  = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
         const size_t splinesSize   = DIM * nAtomsPadded * order * sizeof(float);
         cu_copy_D2H_async(pmeGpu->staging.h_dtheta, kernelParamsPtr->atoms.d_dtheta, splinesSize, stream);
