@@ -692,8 +692,9 @@ TEST_F(SimdMathTest, atan2SingleAccuracy)
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, 0.0)), atan2SingleAccuracy(rSimd_1_2_3, setZero()));
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(0.0, -1.0)), atan2SingleAccuracy(setZero(), rSimd_m1_m2_m3));
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, 0.0)), atan2SingleAccuracy(rSimd_m1_m2_m3, setZero()));
-    // degenerate value (origin) should return 0.0
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(0.0, 0.0)), atan2SingleAccuracy(setSimdRealFrom3R(0.0, 0.0, 0.0), setZero()));
+    // degenerate value (origin) should return 0.0. At least IBM xlc 13.1.5 gets the reference
+    // value wrong (-nan) at -O3 optimization, so we compare to the correct value (0.0) instead.
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(0.0), atan2SingleAccuracy(setSimdRealFrom3R(0.0, 0.0, 0.0), setZero()));
 }
 
 TEST_F(SimdMathTest, pmeForceCorrectionSingleAccuracy)
