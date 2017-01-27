@@ -322,7 +322,7 @@ struct pme_gpu_t
      * Used only as a basic size for almost all the atom data allocations
      * (spline parameter data is also aligned by PME_SPREADGATHER_PARTICLES_PER_WARP).
      * This should be the same as (PME_GPU_USE_PADDING ? nAtomsPadded : kernelParams.atoms.nAtoms).
-     * kernelParams.atoms.nAtoms is the actual atom count to be used for data copying.
+     * kernelParams.atoms.nAtoms is the actual atom count to be used for most data copying.
      */
     int nAtomsAlloc;
 
