@@ -388,47 +388,62 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             inputRec.nkz         = gridSize[ZZ];
             inputRec.pme_order   = pmeOrder;
             inputRec.coulombtype = eelPME;
+            inputRec.epsilon_r   = 1.0;
 
             TestReferenceData                     refData;
-            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"}};
+            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"},
+                                                                 {CodePath::CUDA, "CUDA"}};
             for (const auto &mode : modesToTest)
             {
-                /* Describing the test uniquely */
-                SCOPED_TRACE(formatString("Testing force gathering with %s for PME grid size %d %d %d"
-                                          ", order %d, %zu atoms, %s",
-                                          mode.second.c_str(),
-                                          gridSize[XX], gridSize[YY], gridSize[ZZ],
-                                          pmeOrder,
-                                          atomCount,
-                                          (inputForceTreatment == PmeGatherInputHandling::ReduceWith) ? "with reduction" : "without reduction"
-                                          ));
-
-                PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, inputAtomData.coordinates, inputAtomData.charges, box);
-
-                /* Setting some more inputs */
-                pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
-
-                pmeSetGridLineIndices(pmeSafe.get(), mode.first, inputAtomData.gridLineIndices);
-
-                for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
+                const bool supportedInput = pmeSupportsInputForMode(&inputRec, mode.first);
+                if (!supportedInput)
                 {
-                    pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
-                    pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineDerivatives[dimIndex], PmeSplineDataType::Derivatives, dimIndex);
+                    /* Testing the failure for the unsupported input */
+                    EXPECT_THROW(pmeInitAtoms(&inputRec, mode.first, inputAtomData.coordinates, inputAtomData.charges, box), NotImplementedError);
                 }
+                else
+                {
+                    const auto contextsToTest = getContextsForMode(mode.first);
+                    for (const auto &context : contextsToTest)
+                    {
+                        context->activate();
+                        /* Describing the test uniquely */
+                        SCOPED_TRACE(formatString("Testing force gathering with %s %sfor PME grid size %d %d %d"
+                                                  ", order %d, %zu atoms, %s",
+                                                  mode.second.c_str(), context->getDescription().c_str(),
+                                                  gridSize[XX], gridSize[YY], gridSize[ZZ],
+                                                  pmeOrder,
+                                                  atomCount,
+                                                  (inputForceTreatment == PmeGatherInputHandling::ReduceWith) ? "with reduction" : "without reduction"
+                                                  ));
 
-                /* Explicitly copying the c_sample forces to be able to modify them */
-                auto inputForcesFull(c_sampleForcesFull);
-                GMX_RELEASE_ASSERT(inputForcesFull.size() >= atomCount, "Bad input forces size");
-                auto forces = ForcesVector::fromVector(inputForcesFull.begin(), inputForcesFull.begin() + atomCount);
+                        PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, mode.first, inputAtomData.coordinates, inputAtomData.charges, box);
 
-                /* Running the force gathering itself */
-                pmePerformGather(pmeSafe.get(), mode.first, inputForceTreatment, forces);
+                        /* Setting some more inputs */
+                        pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
+                        pmeSetGridLineIndices(pmeSafe.get(), mode.first, inputAtomData.gridLineIndices);
+                        for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
+                        {
+                            pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
+                            pmeSetSplineData(pmeSafe.get(), mode.first, inputAtomSplineData.splineDerivatives[dimIndex], PmeSplineDataType::Derivatives, dimIndex);
+                        }
 
-                /* Check the output forces correctness */
-                TestReferenceChecker forceChecker(refData.rootChecker());
-                const auto           ulpTolerance = 3 * pmeOrder;
-                forceChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
-                forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
+                        /* Explicitly copying the sample forces to be able to modify them */
+                        auto inputForcesFull(c_sampleForcesFull);
+                        GMX_RELEASE_ASSERT(inputForcesFull.size() >= atomCount, "Bad input forces size");
+                        auto forces = ForcesVector::fromVector(inputForcesFull.begin(), inputForcesFull.begin() + atomCount);
+
+                        /* Running the force gathering itself */
+                        pmePerformGather(pmeSafe.get(), mode.first, inputForceTreatment, forces);
+                        pmeFinalizeTest(pmeSafe.get(), mode.first);
+
+                        /* Check the output forces correctness */
+                        TestReferenceChecker forceChecker(refData.rootChecker());
+                        const auto           ulpTolerance = 3 * pmeOrder;
+                        forceChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
+                        forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
+                    }
+                }
             }
         }
 };
