@@ -113,7 +113,8 @@ class GpuParallel3dFft;
  */
 #define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
 
-//TODO: CUDA architecture constant(s) can be deleted from here when https://gerrit.gromacs.org/6562 gets merged in
+//TODO: CUDA architecture constant(s) can be deleted when https://gerrit.gromacs.org/6562 gets merged in
+//Don't forget to replace GMX_CUDA_MIN_BLOCKS_PER_MP_CC2X in pme-gather.cu as well!
 //! Maximum number of threads per SM
 #define GMX_CUDA_MAX_THREADS_PER_MP  ((GMX_PTX_ARCH >= 300) ? 2048 : 1536)
 
