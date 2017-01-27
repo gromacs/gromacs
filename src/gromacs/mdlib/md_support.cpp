@@ -626,11 +626,11 @@ int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
 }
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bNotLastFrame)
+                         gmx_bool *bLastStep)
 {
     rvec    *xp, *vp;
 
-    if (MASTER(cr) && !*bNotLastFrame)
+    if (MASTER(cr) && *bLastStep)
     {
         fr->natoms = -1;
     }
@@ -640,7 +640,7 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
     fr->x = xp;
     fr->v = vp;
 
-    *bNotLastFrame = (fr->natoms >= 0);
+    *bLastStep = (fr->natoms < 0);
 
 }
 

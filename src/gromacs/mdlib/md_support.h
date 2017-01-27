@@ -110,7 +110,7 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
                                 gmx_int64_t           value);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bNotLastFrame);
+                         gmx_bool *bLastStep);
 
 /* get the conserved energy associated with the ensemble type*/
 real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,
