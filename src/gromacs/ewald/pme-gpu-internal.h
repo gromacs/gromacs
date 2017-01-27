@@ -433,6 +433,22 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(computeSplines),
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
+/*! \libinternal \brief
+ * A GPU force gathering function.
+ *
+ * \param[in]     pmeGpu           The PME GPU structure.
+ * \param[in,out] h_forces         The host buffer with input and output forces.
+ * \param[in]     overwriteForces  True: h_forces are output-only.
+ *                                 False: h_forces are copied to the device and are reduced with the results of the force gathering.
+ *                                 TODO: determine efficiency/balance of host/device-side reductions.
+ * \param[in]     h_grid           The host-side grid buffer (used only in testing moe)
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                        float           *CUDA_FUNC_ARGUMENT(h_forces),
+                                        bool             CUDA_FUNC_ARGUMENT(overwriteForces),
+                                        const float     *CUDA_FUNC_ARGUMENT(h_grid)
+                                        ) CUDA_FUNC_TERM
+
 
 /* The inlined convenience PME GPU status getters */
 
@@ -557,18 +573,25 @@ void pme_gpu_finish_step(const pme_gpu_t *pmeGPU,
                          const bool       bCalcForces,
                          const bool       bCalcEnerVir);
 
+//! A binary enum for spline data layout transformation
+enum class PmeLayoutTransform
+{
+    GpuToHost,
+    HostToGpu
+};
+
 /*! \libinternal \brief
- * Rearranges the atom spline data, copied from GPU to the host after pme_gpu_sync_spline_atom_data() call,
- * to have the serial (single-threaded!) PME CPU atom data layout.
- * Only used for test purposes so far.
+ * Rearranges the atom spline data between the GPU and host layouts.
+ * Only used for test purposes so far, likely to be horribly slow.
  *
- * \param[in]  pmeGPU    The PME GPU structure.
- * \param[out] atc       The (single-threaded) PME CPU atom data structure.
- * \param[in]  type      The spilne data type (values or derivatives).
- * \param[in]  dimIndex  Dimension index.
+ * \param[in]  pmeGPU     The PME GPU structure.
+ * \param[out] atc        The (single-threaded) PME CPU atom data structure.
+ * \param[in]  type       The spline data type (values or derivatives).
+ * \param[in]  dimIndex   Dimension index.
+ * \param[in]  transform  Layout transform type
  */
-void pme_gpu_transform_spline_atom_data_for_host(const pme_gpu_t *pmeGPU, const pme_atomcomm_t *atc,
-                                                 PmeSplineDataType type, int dimIndex);
+void pme_gpu_transform_spline_atom_data(const pme_gpu_t *pmeGPU, const pme_atomcomm_t *atc,
+                                        PmeSplineDataType type, int dimIndex, PmeLayoutTransform transform);
 
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.

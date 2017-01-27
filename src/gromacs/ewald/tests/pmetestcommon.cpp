@@ -339,7 +339,10 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
     const real      scale                   = 1.0;
     const size_t    threadIndex             = 0;
     const size_t    gridIndex               = 0;
-    real           *grid                    = pme->pmegrid[gridIndex].grid.grid;
+    real           *h_grid                  = pme->pmegrid[gridIndex].grid.grid;
+
+    copy_fftgrid_to_pmegrid(pme, pme->fftgrid[gridIndex], h_grid, gridIndex, pme->nthread, threadIndex);
+
     switch (mode)
     {
         case CodePath::CPU:
@@ -349,9 +352,12 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                 // something which is normally done in serial spline computation (make_thread_local_ind())
                 atc->spline[threadIndex].n = atomCount;
             }
-            copy_fftgrid_to_pmegrid(pme, pme->fftgrid[gridIndex], grid, gridIndex, pme->nthread, threadIndex);
-            unwrap_periodic_pmegrid(pme, grid);
-            gather_f_bsplines(pme, grid, !forceReductionWithInput, atc, &atc->spline[threadIndex], scale);
+            unwrap_periodic_pmegrid(pme, h_grid);
+            gather_f_bsplines(pme, h_grid, !forceReductionWithInput, atc, &atc->spline[threadIndex], scale);
+            break;
+
+        case CodePath::CUDA:
+            pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces.begin()), !forceReductionWithInput, reinterpret_cast<float *>(h_grid));
             break;
 
         default:
@@ -393,6 +399,11 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
             std::copy(splineValues.begin(), splineValues.end(), splineBuffer);
             break;
 
+        case CodePath::CUDA:
+            std::copy(splineValues.begin(), splineValues.end(), splineBuffer);
+            pme_gpu_transform_spline_atom_data(pme->gpu, atc, type, dimIndex, PmeLayoutTransform::HostToGpu);
+            break;
+
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -419,6 +430,10 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
 
     switch (mode)
     {
+        case CodePath::CUDA:
+            memcpy(pme->gpu->staging.h_gridlineIndices, gridLineIndices.data(), atomCount * sizeof(gridLineIndices[0]));
+            break;
+
         case CodePath::CPU:
             // incompatible IVec and ivec assignment?
             //std::copy(gridLineIndices.begin(), gridLineIndices.end(), atc->idx);
@@ -462,6 +477,7 @@ static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
 
     switch (mode)
     {
+        case CodePath::CUDA: // intentional absence of break, the grid will be copied from the host buffer in testing mode
         case CodePath::CPU:
             std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(ValueType));
             for (const auto &gridValue : gridValues)
@@ -510,8 +526,8 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
     switch (mode)
     {
         case CodePath::CUDA:
-            pme_gpu_transform_spline_atom_data_for_host(pme->gpu, atc, type, dimIndex);
-        // intenional absence of break
+            pme_gpu_transform_spline_atom_data(pme->gpu, atc, type, dimIndex, PmeLayoutTransform::GpuToHost);
+        // intentional absence of break
 
         case CodePath::CPU:
             result = SplineParamsDimVector::fromArray(sourceBuffer, dimSize);
