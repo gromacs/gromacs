@@ -61,7 +61,7 @@ int pme_gpu_get_atom_data_alignment(const pme_gpu_t *pmeGPU)
     return PME_ATOM_DATA_ALIGNMENT;
 }
 
-int pme_gpu_get_atom_spline_data_alignment(const pme_gpu_t *pmeGPU)
+int pme_gpu_get_atoms_per_warp(const pme_gpu_t *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
     GMX_ASSERT(order > 0, "Invalid PME order");
@@ -238,7 +238,7 @@ void pme_gpu_free_coefficients(const pme_gpu_t *pmeGPU)
 void pme_gpu_realloc_spline_data(const pme_gpu_t *pmeGPU)
 {
     const int    order             = pmeGPU->common->pme_order;
-    const int    alignment         = pme_gpu_get_atom_spline_data_alignment(pmeGPU);
+    const int    alignment         = pme_gpu_get_atoms_per_warp(pmeGPU);
     const size_t nAtomsPadded      = ((pmeGPU->nAtomsAlloc + alignment - 1) / alignment) * alignment;
     const int    newSplineDataSize = DIM * order * nAtomsPadded;
     GMX_ASSERT(newSplineDataSize > 0, "Bad number of atoms in PME GPU");
@@ -407,7 +407,7 @@ void pme_gpu_copy_output_spread_grid(const pme_gpu_t *pmeGpu, float *h_grid)
 
 void pme_gpu_copy_output_spread_atom_data(const pme_gpu_t *pmeGpu)
 {
-    const int    alignment       = pme_gpu_get_atom_spline_data_alignment(pmeGpu);
+    const int    alignment       = pme_gpu_get_atoms_per_warp(pmeGpu);
     const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
     const size_t splinesSize     = DIM * nAtomsPadded * pmeGpu->common->pme_order * sizeof(float);
     auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
@@ -417,6 +417,30 @@ void pme_gpu_copy_output_spread_atom_data(const pme_gpu_t *pmeGpu)
                       kernelParamsPtr->atoms.nAtoms * DIM * sizeof(int), pmeGpu->archSpecific->pmeStream);
     cudaError_t stat = cudaEventRecord(pmeGpu->archSpecific->syncSplineAtomDataD2H, pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME spread atom data sync event record failure");
+}
+
+void pme_gpu_copy_input_gather_atom_data(const pme_gpu_t *pmeGpu)
+{
+    const int    alignment       = pme_gpu_get_atoms_per_warp(pmeGpu);
+    const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
+    const size_t splinesSize     = DIM * nAtomsPadded * pmeGpu->common->pme_order * sizeof(float);
+    auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
+    if (c_usePadding)
+    {
+        const size_t gridlineIndicesSizePerAtom = DIM * sizeof(int);
+        const size_t splineDataSizePerAtom      = pmeGpu->common->pme_order * DIM * sizeof(float);
+        // TODO: could clear only the padding and not the whole thing, but this is a test-exclusive code anyway
+        CU_RET_ERR(cudaMemsetAsync(kernelParamsPtr->atoms.d_gridlineIndices, 0, pmeGpu->nAtomsAlloc * gridlineIndicesSizePerAtom, pmeGpu->archSpecific->pmeStream),
+                   "PME failed to clear the gridline indices");
+        CU_RET_ERR(cudaMemsetAsync(kernelParamsPtr->atoms.d_dtheta, 0, pmeGpu->nAtomsAlloc * splineDataSizePerAtom, pmeGpu->archSpecific->pmeStream),
+                   "PME failed to clear the spline derivatives");
+        CU_RET_ERR(cudaMemsetAsync(kernelParamsPtr->atoms.d_theta, 0, pmeGpu->nAtomsAlloc * splineDataSizePerAtom, pmeGpu->archSpecific->pmeStream),
+                   "PME failed to clear the spline values");
+    }
+    cu_copy_H2D_async(kernelParamsPtr->atoms.d_dtheta, pmeGpu->staging.h_dtheta, splinesSize, pmeGpu->archSpecific->pmeStream);
+    cu_copy_H2D_async(kernelParamsPtr->atoms.d_theta, pmeGpu->staging.h_theta, splinesSize, pmeGpu->archSpecific->pmeStream);
+    cu_copy_H2D_async(kernelParamsPtr->atoms.d_gridlineIndices, pmeGpu->staging.h_gridlineIndices,
+                      kernelParamsPtr->atoms.nAtoms * DIM * sizeof(int), pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_sync_spread_grid(const pme_gpu_t *pmeGPU)
