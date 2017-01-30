@@ -381,32 +381,36 @@ void OPtimization::calcDeviation()
                 mymol.gr_.calcPot();
                 _ener[ermsESP] += convert2gmx(mymol.gr_.getRms(&wtot, &rrms), eg2cHartree_e);               
             }
-            if (bDipole_ || bQuadrupole_)
+            if (bDipole_)
             {
-                mymol.CalcMultipoles();
+                mymol.CalcDipole(mymol.mu_calc_);
                 if (_bQM)
                 {
                     rvec dmu;
                     rvec_sub(mymol.mu_calc_, mymol.mu_exp_, dmu);
                     _ener[ermsMU]  += iprod(dmu, dmu);
-                    for (int mm = 0; mm < DIM; mm++)
-                    {
-                        if (bfullTensor_)
-                        {
-                            for (int nn = 0; nn < DIM; nn++)
-                            {
-                                _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_exp_[mm][nn]);
-                            }
-                        }
-                        else
-                        {
-                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_exp_[mm][mm]);
-                        }
-                    }
                 }
                 else
                 {
                     _ener[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                }
+            } 
+            if (bQuadrupole_)
+            {
+                mymol.CalcQuadrupole();               
+                for (int mm = 0; mm < DIM; mm++)
+                {
+                    if (bfullTensor_)
+                    {
+                        for (int nn = 0; nn < DIM; nn++)
+                        {
+                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_exp_[mm][nn]);
+                        }
+                    }
+                    else
+                    {
+                        _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_exp_[mm][mm]);
+                    }
                 }
             }
         }

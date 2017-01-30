@@ -383,7 +383,7 @@ class MyMol
         /*! \brief
          * Calculate multipoles
          */
-        void CalcMultipoles();
+        void CalcQuadrupole();
 
         /*! \brief
          * Generate Charge Groups

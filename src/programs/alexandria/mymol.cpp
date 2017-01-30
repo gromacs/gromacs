@@ -1410,9 +1410,10 @@ void MyMol::CalcDipole(rvec mu)
             mu[m] += x_[i][m]*q;
         }
     }
+    dip_calc_ = norm(mu);
 }
 
-void MyMol::CalcMultipoles()
+void MyMol::CalcQuadrupole()
 {
     real  r2, dfac, q;
 
@@ -1430,8 +1431,6 @@ void MyMol::CalcMultipoles()
         Q_calc_[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
         Q_calc_[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
     }
-    CalcDipole(mu_calc_);
-    dip_calc_ = norm(mu_calc_);
 }
 
 void MyMol::CalcQPol(const Poldata &pd)
