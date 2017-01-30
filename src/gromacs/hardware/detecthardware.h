@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU);
+                                      gmx_bool             bUseGPU,
+                                      gmx_bool             bForceUseGPU);
 
 /* Check whether a GPU is shared among ranks, and return the number of shared
    gpus

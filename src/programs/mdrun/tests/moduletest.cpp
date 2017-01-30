@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -234,18 +234,6 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     {
         caller.addOption("-nsteps", nsteps_);
     }
-
-#if GMX_MPI
-#  if GMX_GPU != GMX_GPU_NONE
-#    if GMX_THREAD_MPI
-    int         numGpusNeeded = g_numThreads;
-#    else   /* Must be real MPI */
-    int         numGpusNeeded = gmx_node_num();
-#    endif
-    std::string gpuIdString(numGpusNeeded, '0');
-    caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
-#endif
 
 #if GMX_THREAD_MPI
     caller.addOption("-ntmpi", g_numThreads);

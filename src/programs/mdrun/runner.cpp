@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -674,6 +674,30 @@ static integrator_t *my_integrator(unsigned int ei)
     }
 }
 
+/*!\brief Handle GMX_GPU_ID environment variable by copying its contents to *gpu_id if present.
+ *
+ * Calling code is responsible for deallocating *gpu_id (which should
+ * be done in mdrun.cpp, and currently is not).
+ *
+ * \returns Whether either GMX_GPU_ID or -gpu_id has content (ie is set).
+ */
+// TODO This responsibility should belong to future mdrun option-parsing code.
+bool gmx_handle_gpu_id_input(const char *environmentVariableName, char **gpu_id)
+{
+    // TODO convert to nullptr when merging to master
+    const char *env = getenv(environmentVariableName);
+    GMX_RELEASE_ASSERT(gpu_id != NULL, "Must have valid gpu_id");
+    if (env != NULL && *gpu_id != NULL)
+    {
+        gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
+    }
+    if (env != NULL)
+    {
+        *gpu_id = gmx_strdup(env);
+    }
+    return *gpu_id != NULL;
+}
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -727,8 +751,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
+    bool bUserSetGpuIds = gmx_handle_gpu_id_input("GMX_GPU_ID", &hw_opt->gpu_opt.gpu_id);
+    bForceUseGPU = ((strncmp(nbpu_opt, "gpu", 3) == 0) ||
+                    ((strncmp(nbpu_opt, "auto", 4) == 0) && bUserSetGpuIds));
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    if (bUserSetGpuIds && !bTryUseGPU)
+    {
+        gmx_fatal(FARGS, "GPU ids were selected (with -gpu_id or GMX_GPU_ID), but -nb was not consistent with that.");
+    }
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
@@ -1117,7 +1147,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU, bForceUseGPU);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
