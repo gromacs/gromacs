@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -344,7 +344,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU)
+                                      gmx_bool             bUseGPU,
+                                      gmx_bool             bForceUseGPU)
 {
     int      npppn;
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
@@ -360,6 +361,28 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
     if (!(cr->duty & DUTY_PP))
     {
         return;
+    }
+
+    /* Check the consistency of command line user input related to GPU acceleration
+     * against detection results to prevent silently ignoring the "-nb" option.
+     *
+     * TODO: this check is done late to avoid intrusive changes in mdrunnner().
+     *       However, after merging forward this should be re factored and done
+     *       earlier, possibly unified with the rest of GPU acceleration checks
+     *       compatibility/consistency checks done in mdrunner().
+     */
+    if (bForceUseGPU && hwinfo->gpu_info.n_dev_compatible < 1)
+    {
+        std::string s;
+
+        s  = gmx::formatString("GPU acceleration requested");
+        if (hw_opt->gpu_opt.bUserSet)
+        {
+            s += gmx::formatString("(device IDs passed: %s)", hw_opt->gpu_opt.gpu_id);
+        }
+        s += gmx::formatString(", but no suitable devices were detected!");
+
+        gmx_fatal(FARGS, s.c_str());
     }
 
 #if GMX_THREAD_MPI
@@ -1423,6 +1446,9 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
         set_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
     }
 
+    /* TODO:  This check needs refactoring; it's useless in its current state
+     * as gmx_select_gpu_ids() is only called if compatible GPUs are found.
+     */
     /* If the user asked for a GPU, check whether we have a GPU */
     if (bForceUseGPU && gpu_info->n_dev_compatible == 0)
     {

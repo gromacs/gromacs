@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -674,6 +674,11 @@ static integrator_t *my_integrator(unsigned int ei)
     }
 }
 
+void interpretGpuCommandlineOpt(gmx_hw_opt_t *hw_opt,
+                                const char   *nbpu_opt)
+{
+}
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -727,7 +732,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
+
+    /* Parse GPU IDs, if provided. Done early to be able to assess whether
+     * we require a GPU for the run.
+     * We check consistency with the tMPI thread count later.
+     */
+    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
+
+    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0) || (strncmp(nbpu_opt, "auto", 4) == 0 && hw_opt->gpu_opt.bUserSet);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
     /* Detect hardware, gather information. This is an operation that is
@@ -1117,7 +1129,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU, bForceUseGPU);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
