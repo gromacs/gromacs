@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -326,7 +326,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU)
+                                      gmx_bool             bUseGPU,
+                                      gmx_bool             bForceUseGPU)
 {
     int      npppn;
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
@@ -334,6 +335,18 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
 
     assert(hwinfo);
     assert(cr);
+
+    /* Check the consistency of command line user input related to GPU accelaration
+     * against detection restuls to prevent silently ignoring -nb gpu or -gpu_id flags.*/
+    if (bForceUseGPU && hwinfo->gpu_info.n_dev < 1)
+    {
+        gmx_fatal(FARGS, "GPU acceleration requested, but no suitable devices were detected!");
+    }
+    if (hw_opt->gpu_opt.bUserSet && hwinfo->gpu_info.n_dev < 1)
+    {
+        gmx_fatal(FARGS, "Can't use the requested GPU device(s) (passed IDs: %s), no suitable devices were detected!",
+                  hw_opt->gpu_opt.gpu_id);
+    }
 
     /* Below we only do consistency checks for PP and GPUs,
      * this is irrelevant for PME only nodes, so in that case we return
