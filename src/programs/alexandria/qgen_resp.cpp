@@ -95,12 +95,25 @@ void QgenResp::updateAtomCoords(const PaddedRVecVector x)
     }
 }
 
+void QgenResp::updateAtomCharges(t_atoms  *atoms)
+{
+    GMX_RELEASE_ASSERT(static_cast<int>(ra_.size()) == atoms->nr, "Inconsistency between number of resp atoms and topology atoms");
+    
+    for (size_t i = 0; i < ra_.size(); i++)
+    {
+        ra_[i].setQ(atoms->atom[i].q);
+    }
+}
+
 void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
                            const PaddedRVecVector     x)
 {
     nAtom_  = 0;
     nShell_ = 0;
+    ratype_.clear();
+    ra_.clear();
+    
     // First add all the atom types
     for (int i = 0; (i < atoms->nr); i++)
     {
@@ -713,7 +726,7 @@ void QgenResp::calcPot()
                                       getEemtypeName(_iDistributionModel));
                     }
                 }
-                ep_[i].setVCalc(ep_[i].vCalc() + vv*ONE_4PI_EPS0);
+                ep_[i].setVCalc(vv*ONE_4PI_EPS0);
             }
         }
     }

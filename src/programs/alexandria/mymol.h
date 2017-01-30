@@ -106,11 +106,9 @@ class MyMol
          * Gromacs structures
          */
         int              nexcl_;
-        std::vector<int> symmetric_charges_;
         int             *cgnr_;
         t_excls         *excls_;
         GentopVsites     gvt_;
-        QgenResp         gr_;
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
@@ -186,7 +184,8 @@ class MyMol
         PaddedRVecVector          x_;
         PaddedRVecVector          f_;
         PaddedRVecVector          optf_;
-
+        std::vector<int>          symmetric_charges_;
+        QgenResp                  gr_;
         std::vector<PlistWrapper> plist_;
 
         gmx_mtop_t               *mtop_;

@@ -62,6 +62,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "moldip.h"
@@ -126,13 +127,27 @@ class OPtimization : public MolDip
     private:    
     public:
     
-        OPtimization() {};
+           OPtimization(bool  bfitESP, 
+                        bool  bfitDipole, 
+                        bool  bfitQuadrupole,
+                        real  watoms, 
+                        char *lot) 
+           :
+               bESP_(bfitESP),
+               bDipole_(bfitDipole),
+               bQuadrupole_(bfitQuadrupole),
+               watoms_(watoms),
+               lot_(lot)
+          {};
         
        ~OPtimization() {};
        
         param_type    param_, lower_, upper_, best_;
         param_type    orig_, psigma_, pmean_;
-          
+        gmx_bool      bESP_, bDipole_, bQuadrupole_; 
+        real          watoms_;
+        char         *lot_;
+    
         double harmonic (double x, 
                          double min, 
                          double max)
@@ -154,6 +169,8 @@ class OPtimization : public MolDip
                               MyMol *mol, 
                               char  *calc_name, 
                               real   toler);
+                              
+        void addEspPoint();
         
         void polData2TuneDip();
         
@@ -231,10 +248,61 @@ void OPtimization::split_shell_charges(gmx_mtop_t *mtop,
     }
 }
 
+void OPtimization::addEspPoint()
+{
+    for (auto &mymol : _mymol)
+    {
+        if (mymol.eSupp_ == eSupportLocal)
+        {
+            mymol.gr_.setChargeDistributionModel(_iChargeDistributionModel);
+            mymol.gr_.setAtomWeight(watoms_);
+            mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.x_);
+            mymol.gr_.setAtomSymmetry(mymol.symmetric_charges_);
+            mymol.gr_.setMolecularCharge(mymol.molProp()->getCharge());
+            mymol.gr_.summary(debug);
+            
+            auto ci = mymol.molProp()->getLotPropType(lot_, MPO_POTENTIAL, nullptr);
+            if (ci != mymol.molProp()->EndExperiment())
+            {
+                size_t iesp = 0;
+                for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
+                {
+                    if (mymol.gr_.myWeight(iesp) == 0)
+                    {
+                        continue;
+                    }
+                    int xu = string2unit(epi->getXYZunit().c_str());
+                    int vu = string2unit(epi->getVunit().c_str());
+                    if (-1 == xu)
+                    {
+                        gmx_fatal(FARGS, "No such length unit '%s' for potential",
+                                  epi->getXYZunit().c_str());
+                    }
+                    if (-1 == vu)
+                    {
+                        gmx_fatal(FARGS, "No such potential unit '%s' for potential",
+                                  epi->getVunit().c_str());
+                    }
+                    mymol.gr_.addEspPoint(convert2gmx(epi->getX(), xu),
+                                          convert2gmx(epi->getY(), xu),
+                                          convert2gmx(epi->getZ(), xu),
+                                          convert2gmx(epi->getV(), vu));
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Added %d ESP points to the RESP structure.\n",
+                            static_cast<int>(mymol.gr_.nEsp()));
+                }
+            }
+        }
+    }
+}
+
 void OPtimization::calcDeviation()
 {
-    int  j;
-    bool bHaveShells = false;
+    int    j;
+    bool   bHaveShells = false;
+    double qtot        = 0;
 
     if (PAR(_cr))
     {
@@ -277,8 +345,7 @@ void OPtimization::calcDeviation()
                                    mymol.x_);
             mymol.chieq_ = chieq;
             
-            double qtot = 0;            
-            mymol.CalcMultipoles();
+            qtot = 0;            
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
             {
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
@@ -301,29 +368,46 @@ void OPtimization::calcDeviation()
                         mymol.molProp()->getMolname().c_str(),
                         qtot, mymol.molProp()->getCharge());
             }
-            if (_bQM)
+            if (bESP_)
             {
-                rvec dmu;
-                rvec_sub(mymol.mu_calc_, mymol.mu_exp_, dmu);
-                _ener[ermsMU]  += iprod(dmu, dmu);
-                for (int mm = 0; mm < DIM; mm++)
+                real  rrms   = 0;
+                real  wtot   = 0;
+                
+                if (nullptr != mymol.shellfc_)
                 {
-                    if (bfullTensor_)
+                    mymol.gr_.updateAtomCoords(mymol.x_);
+                }
+                mymol.gr_.updateAtomCharges(&(mymol.topology_->atoms));
+                mymol.gr_.calcPot();
+                _ener[ermsESP] += convert2gmx(mymol.gr_.getRms(&wtot, &rrms), eg2cHartree_e);               
+            }
+            if (bDipole_ || bQuadrupole_)
+            {
+                mymol.CalcMultipoles();
+                if (_bQM)
+                {
+                    rvec dmu;
+                    rvec_sub(mymol.mu_calc_, mymol.mu_exp_, dmu);
+                    _ener[ermsMU]  += iprod(dmu, dmu);
+                    for (int mm = 0; mm < DIM; mm++)
                     {
-                        for (int nn = 0; nn < DIM; nn++)
+                        if (bfullTensor_)
                         {
-                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_exp_[mm][nn]);
+                            for (int nn = 0; nn < DIM; nn++)
+                            {
+                                _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_exp_[mm][nn]);
+                            }
+                        }
+                        else
+                        {
+                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_exp_[mm][mm]);
                         }
                     }
-                    else
-                    {
-                        _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_exp_[mm][mm]);
-                    }
                 }
-            }
-            else
-            {
-                _ener[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                else
+                {
+                    _ener[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                }
             }
         }
     }
@@ -990,7 +1074,7 @@ int alex_tune_dip(int argc, char *argv[])
     static real                 fc_bound      = 1;
     static real                 fc_quad       = 1;
     static real                 fc_charge     = 0;
-    static real                 fc_esp        = 0;
+    static real                 fc_esp        = 1;
     static real                 th_toler      = 170;
     static real                 ph_toler      = 5;
     static real                 dip_toler     = 0.5;
@@ -1010,11 +1094,14 @@ int alex_tune_dip(int argc, char *argv[])
     static gmx_bool             bZPE          = false;
     static gmx_bool             bfullTensor   = false;
     static gmx_bool             bBound        = false;
+    static gmx_bool             bQuadrupole   = false;
+    static gmx_bool             bDipole       = false;
+    static gmx_bool             bESP          = false;
+    static gmx_bool             bFitZeta      = false; 
     static gmx_bool             bZero         = true;
     static gmx_bool             bWeighted     = true;   
     static gmx_bool             bCharged      = true;
-    static gmx_bool             bGaussianBug  = true;   
-    static gmx_bool             bFitZeta      = true;   
+    static gmx_bool             bGaussianBug  = true;     
     static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", nullptr};
     static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     
@@ -1087,6 +1174,12 @@ int alex_tune_dip(int argc, char *argv[])
           "Add polarizabilities to the topology and coordinate file" },
         { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
           "Controls whether or not the Gaussian/Slater widths are optimized." },
+        { "-esp", FALSE, etBOOL, {&bESP},
+          "Calibrate EEM paramters to reproduce QM electrostatic potential." },
+        { "-dipole", FALSE, etBOOL, {&bDipole},
+          "Calibrate EEM paramters to reproduce dipole moment." },
+        { "-quadrupole", FALSE, etBOOL, {&bQuadrupole},
+          "Calibrate EEM paramters to reproduce quadrupole tensor." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
@@ -1157,7 +1250,7 @@ int alex_tune_dip(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
     
-    alexandria::OPtimization       opt;
+    alexandria::OPtimization       opt(bESP, bDipole, bQuadrupole, watoms, lot);
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
@@ -1190,10 +1283,13 @@ int alex_tune_dip(int argc, char *argv[])
     {
         fprintf(fp, "In the total data set of %zu molecules we have:\n", opt._mymol.size());
     }
-
     if (MASTER(cr))
     {
         opt.InitOpt(factor);
+    }    
+    if (bESP && iChargeGenerationAlgorithm != eqgESP)
+    {
+        opt.addEspPoint();
     }
     
     opt.optRun(MASTER(cr) ? stderr : nullptr, fp,

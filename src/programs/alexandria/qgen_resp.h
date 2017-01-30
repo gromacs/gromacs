@@ -150,6 +150,8 @@ class QgenResp
                          const PaddedRVecVector  x);
 
         void updateAtomCoords(const PaddedRVecVector x);
+        
+        void updateAtomCharges(t_atoms  *atoms);
 
         const std::string &getStoichiometry() const { return _stoichiometry; }
 

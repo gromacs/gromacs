@@ -302,6 +302,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
     int          anr_central, anr_attached, nrq;
     double       qaver, qsum;
 
+    sym_charges.clear();
     for (int i = 0; (i < atoms->nr); i++)
     {
         sym_charges.push_back(i);
