@@ -1600,7 +1600,6 @@ int gmx_grompp(int argc, char *argv[])
     int                nmi;
     t_molinfo         *mi, *intermolecular_interactions;
     gpp_atomtype_t     atype;
-    t_inputrec        *ir;
     int                nvsite, comb, mt;
     t_params          *plist;
     matrix             box;
@@ -1663,16 +1662,17 @@ int gmx_grompp(int argc, char *argv[])
 
     /* Initiate some variables */
     gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
     snew(opts, 1);
-    init_ir(ir, opts);
+    snew(opts->include, STRLEN);
+    snew(opts->define, STRLEN);
 
     wi = init_warning(TRUE, maxwarn);
 
     /* PARAMETER file processing */
     mdparin = opt2fn("-f", NFILE, fnm);
     set_warning_line(wi, mdparin, -1);
-    get_ir(mdparin, opt2fn("-po", NFILE, fnm), ir, opts, wi);
+    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, opts, wi);
+    t_inputrec *ir = mdModules.inputrec();
 
     if (bVerbose)
     {
