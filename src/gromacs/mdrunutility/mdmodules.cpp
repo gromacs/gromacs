@@ -41,6 +41,7 @@
 #include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/options/options.h"
+#include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/smalloc.h"
@@ -101,6 +102,9 @@ const t_inputrec *MDModules::inputrec() const
 
 void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
+    // TODO The transform rules for applied-forces modules should
+    // embed the necessary prefix (and similarly for other groupings
+    // of modules). For now, electric-field embeds this itself.
     impl_->field_->initMdpTransform(rules);
 }
 
@@ -108,7 +112,11 @@ void MDModules::assignOptionsToModules(const KeyValueTreeObject  &optionValues,
                                        IKeyValueTreeErrorHandler *errorHandler)
 {
     Options options;
-    impl_->field_->initMdpOptions(&options);
+    // Create a section for applied-forces modules
+    auto    appliedForcesOptions = options.addSection(OptionSection("applied-forces"));
+    impl_->field_->initMdpOptions(&appliedForcesOptions);
+    // In future, other sections would also go here.
+
     assignOptionsFromKeyValueTree(&options, optionValues, errorHandler);
 }
 
