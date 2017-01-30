@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,10 @@ struct t_inputrec;
 namespace gmx
 {
 
+class KeyValueTreeObject;
+class IKeyValueTreeErrorHandler;
+class IKeyValueTreeTransformRules;
+
 /*! \libinternal \brief
  * Factory for t_inputrec.
  *
@@ -75,8 +79,12 @@ namespace gmx
  * This (and other refactoring) would allow simplifying IInputRecExtension.
  * IForceProvider is the other interface currently used to interact with these
  * modules.  Also, all the places where these interfaces are used should become
- * loops over a container of these interfaces, instead of the current single
- * pointer.
+ * loops over a container of these interfaces, and/or groups of them (e.g.
+ * applied forces), instead of the current single pointer.
+ *
+ * The assignOptionsToModules() method of this class also takes
+ * responsibility for wiring up the options (and their defaults) for
+ * each
  *
  * \inlibraryapi
  * \ingroup module_mdrunutility
@@ -94,6 +102,29 @@ class MDModules
          * with it.
          */
         t_inputrec *inputrec();
+        //! \copydoc t_inputrec *inputrec()
+        const t_inputrec *inputrec() const;
+
+        /*! \brief Initializes a transform from mdp values to
+         * sectioned options.
+         *
+         * The transform is specified from a flat KeyValueTreeObject that
+         * contains each mdp value as a property, to a structure which is then
+         * assigned to the options defined with initMdpOptions().
+         *
+         * Once the transition from mdp to key-value input is
+         * complete, this method will probably not exist.
+         */
+        void initMdpTransform(IKeyValueTreeTransformRules *rules);
+
+        /*! \brief Use \c optionValues to set the options for each module.
+         *
+         * \param[in] optionValues Contains keys and values from user
+         *     input (and defaults) to configure modules that have
+         *     registered options with those keys.
+         * \param[out] errorHandler  Called to report errors. */
+        void assignOptionsToModules(const KeyValueTreeObject  &optionValues,
+                                    IKeyValueTreeErrorHandler *errorHandler);
 
     private:
         class Impl;

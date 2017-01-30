@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,18 +36,37 @@
 
 #include "mdmodules.h"
 
+#include <memory>
+
 #include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
 
+//! Convenience typedef.
+using IInputRecExtensionPtr = std::unique_ptr<IInputRecExtension>;
+
 class MDModules::Impl
 {
     public:
-        Impl() : ir_(nullptr)
+
+        Impl() : field_(nullptr), ir_(nullptr)
         {
+            snew(ir_, 1);
+            snew(ir_->fepvals, 1);
+            snew(ir_->expandedvals, 1);
+            snew(ir_->simtempvals, 1);
+            // TODO Eventually implement a proper IMDModule, to which
+            // create*Module() would return a pointer. It might have
+            // methods in its interface that return IInputRecExtension
+            // (renamed IMdpOptionsProvider) and IForceProvider.
+            field_      = createElectricFieldModule();
+            ir_->efield = field_.get();
         }
         ~Impl()
         {
@@ -58,21 +77,8 @@ class MDModules::Impl
             }
         }
 
-        void ensureInputrecInitialized()
-        {
-            if (ir_ == nullptr)
-            {
-                field_ = createElectricFieldModule();
-                snew(ir_, 1);
-                snew(ir_->fepvals, 1);
-                snew(ir_->expandedvals, 1);
-                snew(ir_->simtempvals, 1);
-                ir_->efield = field_.get();
-            }
-        }
-
-        std::unique_ptr<IInputRecExtension>  field_;
-        t_inputrec                          *ir_;
+        IInputRecExtensionPtr  field_;
+        t_inputrec            *ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -85,8 +91,25 @@ MDModules::~MDModules()
 
 t_inputrec *MDModules::inputrec()
 {
-    impl_->ensureInputrecInitialized();
     return impl_->ir_;
+}
+
+const t_inputrec *MDModules::inputrec() const
+{
+    return impl_->ir_;
+}
+
+void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
+{
+    impl_->field_->initMdpTransform(rules);
+}
+
+void MDModules::assignOptionsToModules(const KeyValueTreeObject  &optionValues,
+                                       IKeyValueTreeErrorHandler *errorHandler)
+{
+    Options options;
+    impl_->field_->initMdpOptions(&options);
+    assignOptionsFromKeyValueTree(&options, optionValues, errorHandler);
 }
 
 } // namespace gmx
