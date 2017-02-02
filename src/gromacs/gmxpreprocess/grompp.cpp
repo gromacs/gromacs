@@ -1419,9 +1419,11 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
         if (atoms->atom[a].ptype != eptVSite &&
             count[a] == 0)
         {
-            fprintf(stderr, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
-                    a + 1, *atoms->atomname[a], *molt->name);
-
+            if (NULL != debug)
+            {
+                fprintf(debug, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
+                        a + 1, *atoms->atomname[a], *molt->name);
+            }
             numDanglingAtoms++;
         }
     }
@@ -1429,7 +1431,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
     if (numDanglingAtoms > 0)
     {
         char buf[STRLEN];
-        sprintf(buf, "In moleculetype '%s' %d atoms are not bound by a potential or constraint to any other atom in the same moleculetype. Although technically this might not cause issues in a simulation, this often means that the user forgot to add a bond/potential/constraint or put multiple molecules in the same moleculetype definition by mistake.",
+        sprintf(buf, "In moleculetype '%s' %d atoms are not bound by a potential or constraint to any other atom in the same moleculetype. Although technically this might not cause issues in a simulation, this often means that the user forgot to add a bond/potential/constraint or put multiple molecules in the same moleculetype definition by mistake. Run with -debug 1 to get detailed information in the debug file.",
                 *molt->name, numDanglingAtoms);
         warning_note(wi, buf);
     }
