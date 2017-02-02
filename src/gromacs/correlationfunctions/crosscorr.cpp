@@ -59,21 +59,15 @@ static int zeroPaddingSize(int n)
     return 2*n;
 }
 
-struct complex
-{
-    double re;
-    double im;
-};
-
 /*! \brief
  * Compute complex conjugate. Output in the first input variable.
  *
  * \param[in] in1 first complex number
  * \param[in] in2 second complex number
  */
-static void complexConjugatMult(complex *in1, complex *in2)
+static void complexConjugatMult(t_complex *in1, t_complex *in2)
 {
-    complex res;
+    t_complex res;
     res.re  = in1->re *  in2->re + in1->im * in2->im;
     res.im  = in1->re * -in2->im + in1->im * in2->re;
     in1->re = res.re;
@@ -93,16 +87,16 @@ static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft
 {
     int             i;
     const int       size = zeroPaddingSize(n);
-    complex    *    in1, * in2;
+    t_complex *     in1, * in2;
 
     snew(in1, size);
     snew(in2, size);
 
     for (i = 0; i < n; i++)
     {
-        in1[i].re  = static_cast<double>(f[i]);
+        in1[i].re  = f[i];
         in1[i].im  = 0;
-        in2[i].re  = static_cast<double>(g[i]);
+        in2[i].re  = g[i];
         in2[i].im  = 0;
     }
     for (; i < size; i++)
@@ -124,7 +118,7 @@ static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft
 
     for (i = 0; i < n; i++)
     {
-        corr[i] = (real)(in1[i].re);
+        corr[i] = in1[i].re;
     }
 
     sfree(in1);
