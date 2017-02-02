@@ -1382,6 +1382,7 @@ static real get_max_reference_temp(const t_inputrec *ir,
  * Prints a note for each unbound atoms and a warning if any is present.
  */
 static void checkForUnboundAtoms(const gmx_moltype_t *molt,
+                                 gmx_bool             bVerbose,
                                  warninp_t            wi)
 {
     const t_atoms *atoms = &molt->atoms;
@@ -1419,9 +1420,11 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
         if (atoms->atom[a].ptype != eptVSite &&
             count[a] == 0)
         {
-            fprintf(stderr, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
-                    a + 1, *atoms->atomname[a], *molt->name);
-
+            if (bVerbose)
+            {
+                fprintf(stderr, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
+                        a + 1, *atoms->atomname[a], *molt->name);
+            }
             numDanglingAtoms++;
         }
     }
@@ -1429,7 +1432,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
     if (numDanglingAtoms > 0)
     {
         char buf[STRLEN];
-        sprintf(buf, "In moleculetype '%s' %d atoms are not bound by a potential or constraint to any other atom in the same moleculetype. Although technically this might not cause issues in a simulation, this often means that the user forgot to add a bond/potential/constraint or put multiple molecules in the same moleculetype definition by mistake.",
+        sprintf(buf, "In moleculetype '%s' %d atoms are not bound by a potential or constraint to any other atom in the same moleculetype. Although technically this might not cause issues in a simulation, this often means that the user forgot to add a bond/potential/constraint or put multiple molecules in the same moleculetype definition by mistake. Run with -v to get information for each atom.",
                 *molt->name, numDanglingAtoms);
         warning_note(wi, buf);
     }
@@ -1437,11 +1440,12 @@ static void checkForUnboundAtoms(const gmx_moltype_t *molt,
 
 /* Checks all moleculetypes for unbound atoms */
 static void checkForUnboundAtoms(const gmx_mtop_t *mtop,
+                                 gmx_bool          bVerbose,
                                  warninp_t         wi)
 {
     for (int mt = 0; mt < mtop->nmoltype; mt++)
     {
-        checkForUnboundAtoms(&mtop->moltype[mt], wi);
+        checkForUnboundAtoms(&mtop->moltype[mt], bVerbose, wi);
     }
 }
 
@@ -1902,7 +1906,7 @@ int gmx_grompp(int argc, char *argv[])
     /* check masses */
     check_mol(sys, wi);
 
-    checkForUnboundAtoms(sys, wi);
+    checkForUnboundAtoms(sys, bVerbose, wi);
 
     for (i = 0; i < sys->nmoltype; i++)
     {
