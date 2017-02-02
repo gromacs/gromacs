@@ -28,6 +28,9 @@ namespace alexandria
 class QgenEem
 {
     public:
+    
+        QgenEem(){};
+    
         QgenEem(const Poldata &pd,
                 t_atoms *atoms,
                 ChargeDistributionModel   iChargeDistributionModel,

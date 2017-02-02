@@ -250,7 +250,8 @@ void Bayes<T>::simulate()
     FILE                            *fpc = nullptr, *fpe = nullptr;
     std::random_device               rd;
     std::mt19937                     gen(rd());
-    std::uniform_real_distribution<> dis(0, 1);
+    std::uniform_real_distribution<> uniform(0, 1);
+    //std::lognormal_distribution<>    normal(0, 0.25);
 
     beta   = 1/(BOLTZ*temperature_);
     nParam = param_.size();
@@ -290,10 +291,10 @@ void Bayes<T>::simulate()
                 fprintf(fpe, "%5d  %10g\n", iter, prevEval);
             }
             storeParam = param_[j];
-            changeParam(j, dis(gen));
+            changeParam(j, uniform(gen));
             currEval        = func_(param_.data());
             deltaEval       = currEval-prevEval;
-            randProbability = dis(gen);
+            randProbability = uniform(gen);
             mcProbability   = exp(-beta*deltaEval);
             if ((deltaEval < 0) || (mcProbability > randProbability))
             {

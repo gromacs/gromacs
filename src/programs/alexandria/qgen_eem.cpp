@@ -566,9 +566,10 @@ void QgenEem::calcRhs(t_atoms *atoms)
     double   qshell    = 0;
     int      core_ndx  = 0;
     int      shell_ndx = 1;
-    
+      
     for (int i = 0; i < natom_; i++)
-    {        
+    {   
+        rhs_[i]   = 0;
         rhs_[i]  -= chi0_[i];
         if (bHaveShell_)
         {

@@ -1511,7 +1511,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  gmx_hw_info_t             *hwinfo)
 {
     immStatus imm       = immOK;
-    real      tolerance = 1e-3;
+    real      tolerance = 1e-6;
     bool      converged = false;
     int       maxiter   = 100, iter;
     std::vector<double> qq;
@@ -1634,7 +1634,14 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                                     molProp()->getMolname().c_str(),
                                                     pd, &topology_->atoms,
                                                     x_))
-                {                                        
+                {   
+                    for (int i = 0; i < mtop_->natoms; i++)
+                    {
+                        mtop_->moltype[0].atoms.atom[i].q = 
+                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
+                        
+                    }           
+                                              
                     if (nullptr != shellfc_)
                     {
                         computeForces(nullptr, cr);
@@ -1658,13 +1665,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }           
             }
             while(imm == immOK && (!converged) && (iter < maxiter));
-            
-            for (int i = 0; i < mtop_->natoms; i++)
-            {
-                mtop_->moltype[0].atoms.atom[i].q = 
-                    mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
-                
-            }
             
             if (!converged)
             {

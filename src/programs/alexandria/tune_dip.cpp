@@ -325,10 +325,18 @@ void OPtimization::calcDeviation()
         
         if ((mymol.eSupp_ == eSupportLocal) ||
             (_bFinal && (mymol.eSupp_ == eSupportRemote)))
-        {
+        {    
             if (nullptr != mymol.shellfc_)
             {
                 bHaveShells = true;
+                
+                for (int i = 0; i < mymol.mtop_->natoms; i++)
+                {
+                    mymol.mtop_->moltype[0].atoms.atom[i].q = 
+                        mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;     
+                    
+                }
+                
                 mymol.computeForces(nullptr, _cr);
             }
             
@@ -344,7 +352,7 @@ void OPtimization::calcDeviation()
                                    &chieq,
                                    mymol.x_);
             mymol.chieq_ = chieq;
-            
+                        
             qtot = 0;            
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
             {

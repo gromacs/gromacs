@@ -186,6 +186,7 @@ class MyMol
         PaddedRVecVector          optf_;
         std::vector<int>          symmetric_charges_;
         QgenResp                  gr_;
+        QgenEem                   Qge_;
         std::vector<PlistWrapper> plist_;
 
         gmx_mtop_t               *mtop_;
