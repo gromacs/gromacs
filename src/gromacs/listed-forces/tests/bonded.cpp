@@ -127,8 +127,8 @@ class BondedTest : public ::testing::Test
                        const t_iparams             iparams[],
                        int                         epbc)
         {
-            real  lambda = 0;
-            real  dvdlambda;
+            real  lambda    = 0;
+            real  dvdlambda = -GMX_REAL_MAX;
             rvec4 f[NATOMS];
             for (int i = 0; i < NATOMS; i++)
             {
