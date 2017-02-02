@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -120,7 +120,7 @@ function (gmx_register_gtest_test NAME EXENAME)
             endif()
         endif()
         add_test(NAME ${NAME}
-                 COMMAND ${_cmd} --gtest_output=xml:${_xml_path})
+                 COMMAND ${_cmd} --gtest_shuffle --gtest_output=xml:${_xml_path})
         set_tests_properties(${NAME} PROPERTIES LABELS "${_labels}")
         set_tests_properties(${NAME} PROPERTIES TIMEOUT ${_timeout})
         add_dependencies(tests ${EXENAME})
