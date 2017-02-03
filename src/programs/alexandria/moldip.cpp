@@ -277,6 +277,7 @@ static int check_data_sufficiency(FILE                           *fp,
                                     *(mmi.topology_->atoms.atomtype[k]));
                         }
                         mmi.eSupp_ = eSupportNo;
+                        mol.erase(mmi);
                     }
                 }
                 k++;
@@ -333,6 +334,7 @@ static int check_data_sufficiency(FILE                           *fp,
                         ic->decrementName(*(mmi.topology_->atoms.atomtype[k++]));
                     }
                     mmi.eSupp_ = eSupportNo;
+                    mol.erase(mmi);
                     nremove++;
                 }
             }
@@ -734,6 +736,8 @@ void MolDip::Read(FILE            *fp,
                                    minimum_data, pd_, &indexCount_,
                                    _iChargeDistributionModel, opt_elem, const_elem, _cr,
                                    _bPol, _bFitZeta);
+        auto m = _mymol.size();
+        
         if (_nmol_support == 0)
         {
             gmx_fatal(FARGS, "No support for any molecule!");

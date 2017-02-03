@@ -1613,13 +1613,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         break;
         case eqgEEM:
         {
-            QgenEem eem(pd, &topology_->atoms,
-                        iChargeDistributionModel,
-                        hfac, molProp()->getCharge(),
-                        bHaveShells_);
+            Qge_.setInfo(pd, &topology_->atoms,
+                         iChargeDistributionModel,
+                         hfac, molProp()->getCharge(),
+                         bHaveShells_);
                                        
-            auto q     = eem.q();
-            auto natom = eem.natom();
+            auto q     = Qge_.q();
+            auto natom = Qge_.natom();
             
             qq.resize(natom + 1);
             for (int i = 0; i < natom + 1; i++)
@@ -1630,10 +1630,10 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             iter = 0;
             do
             {                
-                if (eQGEN_OK == eem.generateCharges(nullptr,
-                                                    molProp()->getMolname().c_str(),
-                                                    pd, &topology_->atoms,
-                                                    x_))
+                if (eQGEN_OK == Qge_.generateCharges(nullptr,
+                                                     molProp()->getMolname().c_str(),
+                                                     pd, &topology_->atoms,
+                                                     x_))
                 {   
                     for (int i = 0; i < mtop_->natoms; i++)
                     {
@@ -1647,7 +1647,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                         computeForces(nullptr, cr);
                     }
                     
-                    q       = eem.q(); 
+                    q       = Qge_.q(); 
                     EemRms_ = 0;                  
                     for (int i = 0; i < natom + 1; i++)
                     {

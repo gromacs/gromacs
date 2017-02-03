@@ -172,6 +172,8 @@ class OPtimization : public MolDip
                               
         void addEspPoint();
         
+        void setEEM();
+        
         void polData2TuneDip();
         
         void tuneDip2PolData();
@@ -298,10 +300,29 @@ void OPtimization::addEspPoint()
     }
 }
 
+void OPtimization::setEEM()
+{
+    for (auto &mymol : _mymol)
+    {
+        if (mymol.eSupp_ != eSupportNo)
+        {
+            bool bHaveShells = false;
+            if (nullptr != mymol.shellfc_)
+            {
+                bHaveShells = true;
+            }         
+            mymol.Qge_.setInfo(pd_, &(mymol.topology_->atoms), 
+                               _iChargeDistributionModel,
+                               _hfac,
+                               mymol.molProp()->getCharge(),
+                               bHaveShells);
+        }
+    }
+}
+
 void OPtimization::calcDeviation()
 {
     int    j;
-    bool   bHaveShells = false;
     double qtot        = 0;
 
     if (PAR(_cr))
@@ -326,32 +347,24 @@ void OPtimization::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (_bFinal && (mymol.eSupp_ == eSupportRemote)))
         {    
+            
+            double chieq = 0;
+            mymol.Qge_.generateChargesSm(debug,
+                                         pd_, &(mymol.topology_->atoms),
+                                         &chieq,
+                                         mymol.x_);
+            mymol.chieq_ = chieq;
+            
             if (nullptr != mymol.shellfc_)
-            {
-                bHaveShells = true;
-                
+            {                
                 for (int i = 0; i < mymol.mtop_->natoms; i++)
                 {
                     mymol.mtop_->moltype[0].atoms.atom[i].q = 
                         mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;     
                     
-                }
-                
+                }               
                 mymol.computeForces(nullptr, _cr);
             }
-            
-            QgenEem qgen(pd_, &(mymol.topology_->atoms), 
-                         _iChargeDistributionModel,
-                         _hfac,
-                         mymol.molProp()->getCharge(),
-                         bHaveShells);
-
-            double chieq = 0;
-            qgen.generateChargesSm(debug,
-                                   pd_, &(mymol.topology_->atoms),
-                                   &chieq,
-                                   mymol.x_);
-            mymol.chieq_ = chieq;
                         
             qtot = 0;            
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
@@ -1303,6 +1316,8 @@ int alex_tune_dip(int argc, char *argv[])
     {
         opt.addEspPoint();
     }
+    
+    opt.setEEM();
     
     opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
                maxiter, nrun, step, seed,

@@ -56,12 +56,12 @@
 namespace alexandria
 {
 
-QgenEem::QgenEem(const Poldata            &pd,
-                 t_atoms                  *atoms,
-                 ChargeDistributionModel   iChargeDistributionModel,
-                 double                    hfac,
-                 int                       qtotal,
-                 bool                      haveShell)
+void QgenEem::setInfo(const Poldata            &pd,
+                      t_atoms                  *atoms,
+                      ChargeDistributionModel   iChargeDistributionModel,
+                      double                    hfac,
+                      int                       qtotal,
+                      bool                      haveShell)
 {
     bWarned_    = false;
     bAllocSave_ = false;
@@ -160,6 +160,20 @@ QgenEem::QgenEem(const Poldata            &pd,
                 }
                 j++;
             }
+        }
+    }
+}
+
+void QgenEem::updateInfo(const Poldata &pd)
+{
+    for (int i = 0; i < natom_; i++)
+    {
+        chi0_[i] = pd.getChi0(iChargeDistributionModel_, elem_[i]);
+        j00_[i]  = pd.getJ00(iChargeDistributionModel_, elem_[i]);
+        auto nz  = pd.getNzeta(iChargeDistributionModel_, elem_[i]);
+        for (int k = 0; k < nz; k++)
+        {
+            zeta_[i][k] = pd.getZeta(iChargeDistributionModel_, elem_[i], k);
         }
     }
 }
@@ -752,6 +766,7 @@ int QgenEem::generateChargesSm(FILE              *fp,
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)
     {
+        updateInfo(pd);
         setPositions(x, atoms);
         calcJcc(atoms);
         calcRhs(atoms);     

@@ -31,10 +31,12 @@ class QgenEem
     
         QgenEem(){};
     
-        QgenEem(const Poldata &pd,
-                t_atoms *atoms,
-                ChargeDistributionModel   iChargeDistributionModel,
-                double hfac, int qtotal, bool haveShell);
+        void setInfo(const Poldata &pd,
+                     t_atoms *atoms,
+                     ChargeDistributionModel   iChargeDistributionModel,
+                     double hfac, int qtotal, bool haveShell);
+                     
+        void updateInfo(const Poldata &pd);
 
         int generateChargesSm(FILE            *fp,
                               const Poldata    &pd,
@@ -46,7 +48,7 @@ class QgenEem
                             const std::string  molname,
                             const Poldata     &pd,
                             t_atoms           *atoms,
-                            PaddedRVecVector   x);
+                            PaddedRVecVector   x);     
                             
         double rms() { return rms_; }
 
