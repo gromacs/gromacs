@@ -1082,7 +1082,6 @@ int alex_tune_dip(int argc, char *argv[])
     static int                  maxiter       = 100;
     static int                  reinit        = 0;
     static int                  seed          = 0;
-    static int                  minimum_data  = 3;
     static real                 tol           = 1e-3;
     static real                 stol          = 1e-6;
     static real                 watoms        = 0;
@@ -1250,12 +1249,10 @@ int alex_tune_dip(int argc, char *argv[])
         sfree(cr);
         return 0;
     }
-
     if (MASTER(cr))
     {
         printf("There are %d threads/processes.\n", cr->nnodes);
-    }
-    
+    }    
     if (MASTER(cr))
     {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
@@ -1268,8 +1265,7 @@ int alex_tune_dip(int argc, char *argv[])
     else
     {
         fp = nullptr;
-    }
-    
+    }    
     if (MASTER(cr))
     {
         gms.read(opt2fn_null("-sel", NFILE, fnm));
@@ -1298,8 +1294,7 @@ int alex_tune_dip(int argc, char *argv[])
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             minimum_data, bZero,
-             opt_elem, const_elem,
+             bZero, opt_elem, const_elem,
              lot, gms, watoms, true,
              false, false, bPolar, bZPE,
              opt2fn_null("-table", NFILE, fnm));
@@ -1315,10 +1310,12 @@ int alex_tune_dip(int argc, char *argv[])
     if (bESP && iChargeGenerationAlgorithm != eqgESP)
     {
         opt.addEspPoint();
+    }   
+    if (iChargeGenerationAlgorithm != eqgEEM)
+    {
+        opt.setEEM();
     }
-    
-    opt.setEEM();
-    
+       
     opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
                maxiter, nrun, step, seed,
                oenv, nprint,

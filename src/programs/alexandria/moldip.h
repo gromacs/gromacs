@@ -169,7 +169,10 @@ class MolDip
         ~MolDip() {};
 
         IndexCount *indexCount() { return &indexCount_; }
-
+        
+        immStatus check_data_sufficiency(alexandria::MyMol  mymol, 
+                                         IndexCount        *ic);
+                                                 
         void Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   ChargeDistributionModel iChargeDistributionModel,
                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
@@ -183,8 +186,7 @@ class MolDip
                   gmx_hw_info_t *hwinfo, gmx_bool bfullTensor);
 
         void Read(FILE *fp, const char *fn, const char *pd_fn,
-                  int minimum_data, gmx_bool bZero,
-                  char *opt_elem, char *const_elem,
+                  gmx_bool bZero, char *opt_elem, char *const_elem,
                   char *lot, const MolSelect &gms,
                   real watoms, gmx_bool bCheckSupport,
                   bool bPairs, bool bDihedral,

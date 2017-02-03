@@ -215,24 +215,13 @@ static void update_index_count_bool(IndexCount             *ic,
     }
 }
 
-static int check_data_sufficiency(FILE                           *fp,
-                                  std::vector<alexandria::MyMol> &mol,
-                                  int                             minimum_data,
-                                  const Poldata                  &pd,
-                                  IndexCount                     *ic,
-                                  ChargeDistributionModel         iDistributionModel,
-                                  char                           *opt_elem,
-                                  char                           *const_elem,
-                                  t_commrec                      *cr,
-                                  gmx_bool                        bPol,
-                                  gmx_bool                        bFitZeta)
+static void make_index_count(IndexCount               *ic,
+                             const Poldata             &pd,
+                             char                      *opt_elem,
+                             char                      *const_elem,
+                             ChargeDistributionModel   iDistributionModel,
+                             gmx_bool                  bFitZeta)
 {
-    int                      j, nremove, nsupported;
-    gmx_mtop_atomloop_all_t  aloop;
-    const t_atom            *atom;
-    int                      k, at_global;
-
-    /* Parse opt_elem list to test which elements to optimize */
     if (nullptr != const_elem)
     {
         update_index_count_bool(ic, pd, const_elem, true, true, iDistributionModel);
@@ -254,123 +243,44 @@ static int check_data_sufficiency(FILE                           *fp,
             }
         }
     }
-    ic->sumCount(cr);
     dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
-    for (auto &mmi : mol)
-    {
-        if (mmi.eSupp_ != eSupportNo)
-        {
-            aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
-            k     = 0;
-            while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom) &&
-                   (mmi.eSupp_ != eSupportNo))
-            {
-                if ((atom->atomnumber > 0) || !bPol)
-                {
-                    auto ai = ic->findName(*mmi.topology_->atoms.atomtype[k]);
-                    if (ic->endIndex() == ai)
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                                    mmi.molProp()->getMolname().c_str(),
-                                    *(mmi.topology_->atoms.atomtype[k]));
-                        }
-                        mmi.eSupp_ = eSupportNo;
-                    }
-                }
-                k++;
-            }
-            if (mmi.eSupp_ != eSupportNo)
-            {
-                GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 1 in moldip.cpp");
-                aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
-                k     = 0;
-                while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
-                {
-                    if ((atom->atomnumber > 0) || !bPol)
-                    {
-                        ic->incrementName(*(mmi.topology_->atoms.atomtype[k]));
-                    }
-                    k++;
-                }
-                GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 2in moldip.cpp");
-            }
-        }
-    }
-    do
-    {
-        ic->sumCount(cr);
-        dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
-        nremove = 0;
-        for (auto &mmi : mol)
-        {
-            if (mmi.eSupp_ != eSupportNo)
-            {
-                j     = 0;
-                aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
-                while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
-                {
-                    auto ai = ic->findName(*mmi.topology_->atoms.atomtype[j]);
-                    if (ic->endIndex() == ai || ai->count() < minimum_data)
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "Removing %s because of no support for name %s\n",
-                                    mmi.molProp()->getMolname().c_str(),
-                                    *(mmi.topology_->atoms.atomtype[j]));
-                        }
-                        break;
-                    }
-                    j++;
-                }
-                if (j < mmi.mtop_->natoms)
-                {
-                    aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
-                    k     = 0;
-                    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
-                    {
-                        ic->decrementName(*(mmi.topology_->atoms.atomtype[k++]));
-                    }
-                    mmi.eSupp_ = eSupportNo;
-                    nremove++;
-                }
-            }
-        }
-        if (cr->nnodes > 1)
-        {
-            /* Sum nremove */
-            gmx_sumi(1, &nremove, cr);
-        }
-    }
-    while (nremove > 0);
-    nremove = ic->cleanIndex(minimum_data, debug);
-    ic->sumCount(cr);
-    dump_index_count(ic, fp, iDistributionModel, pd, bFitZeta);
+}
 
-    nsupported = 0;
-    for (auto &mmi : mol)
+immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol, 
+                                         IndexCount          *ic)
+{
+    immStatus imm = immOK;
+
+    for (int i = 0; i < mymol.topology_->atoms.nr; i++)
     {
-        if (mmi.eSupp_ == eSupportLocal)
+        if ((mymol.topology_->atoms.atom[i].atomnumber > 0) && 
+            (mymol.topology_->atoms.atom[i].ptype == eptAtom))
         {
-            if (nullptr != debug)
+            auto ai = ic->findName(*(mymol.topology_->atoms.atomtype[i]));
+            if (ic->endIndex() == ai)
             {
-                fprintf(debug, "Supported molecule %s on CPU %d\n",
-                        mmi.molProp()->getMolname().c_str(), cr->nodeid);
+                if (debug)
+                {
+                    fprintf(debug, "Removing %s because of lacking support for atom %s\n",
+                            mymol.molProp()->getMolname().c_str(),
+                            *(mymol.topology_->atoms.atomtype[i]));
+                }
+                imm = immInsufficientDATA;
             }
-            nsupported++;
+        }
+    }    
+    if (imm == immOK)
+    {
+        for (int i = 0; i < mymol.topology_->atoms.nr; i++)
+        {
+            if ((mymol.topology_->atoms.atom[i].atomnumber > 0) && 
+                (mymol.topology_->atoms.atom[i].ptype == eptAtom))
+            {
+                ic->incrementName(*(mymol.topology_->atoms.atomtype[i]));
+            }
         }
     }
-    if (cr->nnodes > 1)
-    {
-        gmx_sumi(1, &nsupported, cr);
-    }
-    if (fp)
-    {
-        fprintf(fp, "Removed %d atomtypes\n", nremove);
-        fprintf(fp, "There are %d supported molecules left.\n\n", nsupported);
-    }
-    return nsupported;
+    return imm;
 }
 
 MolDip::MolDip()
@@ -434,7 +344,6 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
 void MolDip::Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,
-                  int              minimum_data,
                   gmx_bool         bZero,
                   char            *opt_elem,
                   char            *const_elem,
@@ -506,6 +415,13 @@ void MolDip::Read(FILE            *fp,
     if (PAR(_cr))
     {
         gmx_sumi(1, &nmol_cpu, _cr);
+    }    
+    if (bCheckSupport && MASTER(_cr))
+    {                     
+        make_index_count(&indexCount_, pd_,
+                         opt_elem, const_elem, 
+                         _iChargeDistributionModel, 
+                         _bFitZeta);
     }
 
     int ntopol = 0;
@@ -526,6 +442,11 @@ void MolDip::Read(FILE            *fp,
                                              _iChargeDistributionModel,
                                              false, bPairs, bDihedral, 
                                              bPolar, tabfn);
+                                             
+                if (bCheckSupport && immOK == imm)
+                {
+                    imm = check_data_sufficiency(mpnew, &indexCount_);
+                }
 
                 if (immOK == imm)
                 {
@@ -727,22 +648,10 @@ void MolDip::Read(FILE            *fp,
             fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
         }
     }
-    if (bCheckSupport)
+    _nmol_support = _mymol.size();
+    if (_nmol_support == 0)
     {
-        _nmol_support =
-            check_data_sufficiency(MASTER(_cr) ? fp : nullptr, _mymol,
-                                   minimum_data, pd_, &indexCount_,
-                                   _iChargeDistributionModel, opt_elem, const_elem, _cr,
-                                   _bPol, _bFitZeta);
-        if (_nmol_support == 0)
-        {
-            gmx_fatal(FARGS, "No support for any molecule!");
-        }
-    }
-    else
-    {
-        _nmol_support = _mymol.size();
+        gmx_fatal(FARGS, "No support for any molecule!");
     }
 }
-
 }

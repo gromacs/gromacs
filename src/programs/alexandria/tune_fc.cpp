@@ -1954,7 +1954,6 @@ int alex_tune_fc(int argc, char *argv[])
     static int            maxiter       = 100; 
     static int            reinit        = 0;
     static int            seed          = 0;
-    static int            minimum_data  = 3;
     static int            compress      = 0;
     static int            nprint        = 10;
     static int            nmultisim     = 0;
@@ -2142,8 +2141,7 @@ int alex_tune_fc(int argc, char *argv[])
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             minimum_data, bZero,
-             opt_elem, const_elem,
+             bZero, opt_elem, const_elem,
              lot, gms, watoms, false,
              bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS],
              bPolar, bZPE, tabfn);
