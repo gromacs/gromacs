@@ -256,46 +256,46 @@ static int check_data_sufficiency(FILE                           *fp,
     }
     ic->sumCount(cr);
     dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
-    for (auto &mmi : mol)
+    for (auto mmi = mol.begin(); mmi < mol.end(); ++mmi)
     {
-        if (mmi.eSupp_ != eSupportNo)
+        if (mmi->eSupp_ != eSupportNo)
         {
-            aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
+            aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
             k     = 0;
             while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom) &&
-                   (mmi.eSupp_ != eSupportNo))
+                   (mmi->eSupp_ != eSupportNo))
             {
                 if ((atom->atomnumber > 0) || !bPol)
                 {
-                    auto ai = ic->findName(*mmi.topology_->atoms.atomtype[k]);
+                    auto ai = ic->findName(*mmi->topology_->atoms.atomtype[k]);
                     if (ic->endIndex() == ai)
                     {
                         if (debug)
                         {
                             fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                                    mmi.molProp()->getMolname().c_str(),
-                                    *(mmi.topology_->atoms.atomtype[k]));
+                                    mmi->molProp()->getMolname().c_str(),
+                                    *(mmi->topology_->atoms.atomtype[k]));
                         }
-                        mmi.eSupp_ = eSupportNo;
+                        mmi->eSupp_ = eSupportNo;
                         mol.erase(mmi);
                     }
                 }
                 k++;
             }
-            if (mmi.eSupp_ != eSupportNo)
+            if (mmi->eSupp_ != eSupportNo)
             {
-                GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 1 in moldip.cpp");
-                aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
+                GMX_RELEASE_ASSERT(k == mmi->topology_->atoms.nr, "Inconsistency 1 in moldip.cpp");
+                aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
                 k     = 0;
                 while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                 {
                     if ((atom->atomnumber > 0) || !bPol)
                     {
-                        ic->incrementName(*(mmi.topology_->atoms.atomtype[k]));
+                        ic->incrementName(*(mmi->topology_->atoms.atomtype[k]));
                     }
                     k++;
                 }
-                GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 2in moldip.cpp");
+                GMX_RELEASE_ASSERT(k == mmi->topology_->atoms.nr, "Inconsistency 2in moldip.cpp");
             }
         }
     }
