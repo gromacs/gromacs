@@ -2061,8 +2061,6 @@ int alex_tune_fc(int argc, char *argv[])
           "Force constant in the penalty function for the force term" },                
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
-        { "-min_data",  FALSE, etINT, {&minimum_data},
-          "Minimum number of data points in order to be able to optimize the parameters for a given atomtype" },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
           "Space-separated list of elements to optimize, e.g. \"H C Br\". The other available elements in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
         { "-const_elem",  FALSE, etSTR, {&const_elem},

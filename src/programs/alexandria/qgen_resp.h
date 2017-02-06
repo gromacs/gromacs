@@ -118,6 +118,8 @@ class QgenResp
         size_t nAtomType() const { return ratype_.size(); }
 
         size_t nEsp() const { return ep_.size(); }
+        
+        std::vector<EspPoint> &espPoint() {return ep_;}
 
         void statistics(int len, char buf[]);
 
