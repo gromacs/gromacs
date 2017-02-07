@@ -42,9 +42,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
+struct t_complex{
     real re, im;
-} t_complex;
+};
 
 typedef t_complex cvec[DIM];
 
