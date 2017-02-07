@@ -100,9 +100,9 @@ gatherLoadUBySimdIntTranspose(const float *  base,
     // All instructions might be latency ~4 on MIC, so we use shifts where we
     // only need a single instruction (since the shift parameter is an immediate),
     // but multiplication otherwise.
-    // For align == 2 we can merge the constant into the scale parameter,
+    // For align <= 2 we can merge the constant into the scale parameter,
     // which can take constants up to 8 in total.
-    if (align == 2)
+    if (align <= 2)
     {
         v0->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base,   align * 4);
         v1->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+1, align * 4);
@@ -384,12 +384,12 @@ expandScalarsToTriplets(SimdFloat    scalar,
                         SimdFloat *  triplets1,
                         SimdFloat *  triplets2)
 {
-    triplets0->simdInternal_ = _mm512_castsi512_ps(_mm512_permutexvar_epi32(_mm512_set_epi32(5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0),
-                                                                            _mm512_castps_si512(scalar.simdInternal_)));
-    triplets1->simdInternal_ = _mm512_castsi512_ps(_mm512_permutexvar_epi32(_mm512_set_epi32(10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5),
-                                                                            _mm512_castps_si512(scalar.simdInternal_)));
-    triplets2->simdInternal_ = _mm512_castsi512_ps(_mm512_permutexvar_epi32(_mm512_set_epi32(15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10),
-                                                                            _mm512_castps_si512(scalar.simdInternal_)));
+    triplets0->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0),
+                                                     scalar.simdInternal_);
+    triplets1->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5),
+                                                     scalar.simdInternal_);
+    triplets2->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10),
+                                                     scalar.simdInternal_);
 }
 
 
@@ -515,8 +515,7 @@ gatherLoadTransposeHsimd(const float *        base0,
                          SimdFloat *          v0,
                          SimdFloat *          v1)
 {
-    __m256i idx0, idx1;
-    __m512i idx;
+    __m256i idx;
     __m512  tmp1, tmp2;
 
     assert(std::size_t(offset) % 32 == 0);
@@ -524,18 +523,21 @@ gatherLoadTransposeHsimd(const float *        base0,
     assert(std::size_t(base1) % 8 == 0);
     assert(std::size_t(align) % 2 == 0);
 
-    idx0 = _mm256_load_si256(reinterpret_cast<const __m256i*>(offset));
+    idx = _mm256_load_si256(reinterpret_cast<const __m256i*>(offset));
 
-    idx0 = _mm256_mullo_epi32(idx0, _mm256_set1_epi32(align));
-    idx1 = _mm256_add_epi32(idx0, _mm256_set1_epi32(1));
+    if (align > 2)
+    {
+        idx = _mm256_mullo_epi32(idx, _mm256_set1_epi32(align/2));
+    }
 
-    idx = _mm512_inserti64x4(_mm512_castsi256_si512(idx0), idx1, 1);
+    tmp1 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, base0, 8));
+    tmp2 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, base1, 8));
 
-    tmp1 = _mm512_i32gather_ps(idx, base0, 4);
-    tmp2 = _mm512_i32gather_ps(idx, base1, 4);
+    v0->simdInternal_ = _mm512_mask_moveldup_ps(tmp1, 0xAAAA, tmp2);
+    v1->simdInternal_ = _mm512_mask_movehdup_ps(tmp2, 0x5555, tmp1);
 
-    v0->simdInternal_ = _mm512_shuffle_f32x4(tmp1, tmp2, 0x44 );
-    v1->simdInternal_ = _mm512_shuffle_f32x4(tmp1, tmp2, 0xEE );
+    v0->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0), v0->simdInternal_);
+    v1->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0), v1->simdInternal_);
 }
 
 static inline float gmx_simdcall
