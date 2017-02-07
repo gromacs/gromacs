@@ -106,12 +106,6 @@ enum class PmeSolveAlgorithm
     Coulomb,
     LennardJones,
 };
-//! PME grid dimension ordering (from major to minor)
-enum class GridOrdering
-{
-    YZX,
-    XYZ
-};
 //! PME solver results - reciprocal energy and virial
 typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 

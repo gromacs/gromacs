@@ -76,7 +76,7 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
             break;
 
         case CodePath::CUDA:
-            implemented = (GMX_GPU == GMX_GPU_CUDA) && (inputRec->pme_order == 4);
+            implemented = (GMX_GPU == GMX_GPU_CUDA) && (inputRec->pme_order == 4) && !EVDW_PME(inputRec->vdwtype);
             break;
 
         default:
@@ -124,8 +124,10 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
             break;
 
         case CodePath::CUDA:
+            pme_gpu_set_testing(pme->gpu, true);
             pme_gpu_update_input_box(pme->gpu, boxTemp);
             break;
+
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -168,7 +170,6 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
             break;
 
         case CodePath::CUDA:
-            pme_gpu_set_testing(pmeSafe->gpu, true);
             gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
             pme_gpu_copy_input_coordinates(pmeSafe->gpu, as_rvec_array(coordinates.data()));
             break;
@@ -315,6 +316,18 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
                 case PmeSolveAlgorithm::LennardJones:
                     solve_pme_lj_yzx(pme, &h_grid, useLorentzBerthelot,
                                      cellVolume, computeEnergyAndVirial, pme->nthread, threadIndex);
+                    break;
+
+                default:
+                    GMX_THROW(InternalError("Test not implemented for this mode"));
+            }
+            break;
+
+        case CodePath::CUDA:
+            switch (method)
+            {
+                case PmeSolveAlgorithm::Coulomb:
+                    pme_gpu_solve(pme->gpu, h_grid, computeEnergyAndVirial, gridOrdering);
                     break;
 
                 default:
@@ -631,6 +644,17 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
 
                 case PmeSolveAlgorithm::LennardJones:
                     get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy, virialTemp);
+                    break;
+
+                default:
+                    GMX_THROW(InternalError("Test not implemented for this mode"));
+            }
+            break;
+        case CodePath::CUDA:
+            switch (method)
+            {
+                case PmeSolveAlgorithm::Coulomb:
+                    pme_gpu_get_energy_virial(pme->gpu, &energy, virialTemp);
                     break;
 
                 default:
