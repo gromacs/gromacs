@@ -55,6 +55,7 @@ struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
 struct pme_atomcomm_t;
+struct t_complex;
 
 //! Type of spline data
 enum class PmeSplineDataType
@@ -62,6 +63,13 @@ enum class PmeSplineDataType
     Values,      // theta
     Derivatives, // dtheta
 };               //TODO move this into new and shiny pme.h (pme-types.h?)
+
+//! PME grid dimension ordering (from major to minor)
+enum class GridOrdering
+{
+    YZX,
+    XYZ
+};
 
 /* Some general constants for PME GPU behaviour follow. */
 
@@ -433,6 +441,19 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         real            *CUDA_FUNC_ARGUMENT(h_grid),
                                         bool             CUDA_FUNC_ARGUMENT(computeSplines),
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
+ * A GPU Fourier space solving function.
+ *
+ * \param[in]     pmeGpu                  The PME GPU structure.
+ * \param[in,out] h_grid                  The host-side input and output Fourier grid buffer (used only with testing or host-side FFT)
+ * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should also be performed.
+ * \param[in]     gridOrdering            Specifies the dimenion ordering of the complex grid. TODO: store this information?
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                       t_complex       *CUDA_FUNC_ARGUMENT(h_grid),
+                                       bool             CUDA_FUNC_ARGUMENT(computeEnergyAndVirial),
+                                       GridOrdering     CUDA_FUNC_ARGUMENT(gridOrdering)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * A GPU force gathering function.
