@@ -406,7 +406,6 @@ __device__ __forceinline__ void calculate_splines(const pme_gpu_cuda_kernel_para
  * \param[in]  sm_gridlineIndices   Atom gridline indices in the shared memory.
  * \param[in]  sm_theta             Atom spline values in the shared memory.
  */
-
 template <
     const int order, const bool wrapX, const bool wrapY>
 __device__ __forceinline__ void spread_charges(const pme_gpu_cuda_kernel_params_t     kernelParams,
