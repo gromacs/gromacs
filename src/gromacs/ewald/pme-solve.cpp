@@ -383,6 +383,17 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
         }
 
         p0 = grid + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+        auto p0_back = p0;
+
+        //YZX is 3 5 7, so XYZ is 7 3 5
+        //const int ix = 7;
+        //const bool debugPrint = (ix == 7) && (iy == 3) && (iz == 4);
+        const int  ix         = 4;
+        const bool debugPrint = (ix == 4) && (iy == 2) && (iz == 7);
+        if (debugPrint)
+        {
+            printf("%s grid value %s %g %g [%d %d %d]\n", "host", "before", p0_back[ix].re, p0_back[ix].im, ix, iy, iz);
+        }
 
         /* We should skip the k-space point (0,0,0) */
         /* Note that since here x is the minor index, local_offset[XX]=0 */
@@ -472,6 +483,10 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                 viryz   += ets2vf*mhy[kx]*mhz[kx];
                 virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
             }
+            if (debugPrint)
+            {
+                printf("%s grid value %s %g %g [%d %d %d]\n", "host", "after", p0_back[ix].re, p0_back[ix].im, ix, iy, iz);
+            }
         }
         else
         {
@@ -517,6 +532,8 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
             }
         }
     }
+
+
 
     if (bEnerVir)
     {

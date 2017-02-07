@@ -67,7 +67,6 @@ namespace
  * TODO:
  * Test bEnerVir off as well? Test Lorentz-Berthelot? Test XYZ / YZX for GPU case?
  */
-
 typedef std::tuple<Matrix3x3, IVec, SparseComplexGridValuesInput, real, real, real, PmeSolveAlgorithm> SolveInputParameters;
 
 //! Test fixture
@@ -116,61 +115,91 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
             }
 
             TestReferenceData                     refData;
-            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"}};
+            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"},
+                                                                 {CodePath::CUDA, "CUDA"}};
             for (const auto &mode : modesToTest)
             {
-                /* Describing the test*/
-                SCOPED_TRACE(formatString("Testing solving (%s) with %s for PME grid size %d %d %d, Ewald coefficients %g %g",
-                                          (method == PmeSolveAlgorithm::LennardJones) ? "Lennard-Jones" : "Normal",
-                                          mode.second.c_str(),
-                                          gridSize[XX], gridSize[YY], gridSize[ZZ],
-                                          ewaldCoeff_q, ewaldCoeff_lj
-                                          ));
-
-                /* Running the test */
-                PmeSafePointer pmeSafe = pmeInitEmpty(inputRec, mode.first, box, ewaldCoeff_q, ewaldCoeff_lj);
-                pmeSetComplexGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
-                const real     cellVolume = box[0] * box[4] * box[8];
-                //FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
-                pmePerformSolve(pmeSafe.get(), mode.first, method, cellVolume);
-
-                /* Check the outputs */
-                TestReferenceChecker checker(refData.rootChecker());
-                const auto           ulpTolerance = 40;
-                checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
-
-                SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first);
-                /* Transformed grid */
-                TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                const auto                    ulpToleranceGrid = 4;
-                gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
-                for (const auto &point : nonZeroGridValuesOutput)
+                const bool supportedInput = pmeSupportsInputForMode(inputRec, mode.first);
+                if (!supportedInput)
                 {
-                    // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
-                    // however, using GMX_REAL_MIN causes an "unused item warning" for single precision builds
-                    if (fabs(point.second.re) >= GMX_FLOAT_MIN)
-                    {
-                        gridValuesChecker.checkReal(point.second.re, (point.first + " re").c_str());
-                    }
-                    if (fabs(point.second.im) >= GMX_FLOAT_MIN)
-                    {
-                        gridValuesChecker.checkReal(point.second.im, (point.first + " im").c_str());
-                    }
+                    /* Testing the failure for the unsupported input */
+                    EXPECT_THROW(pmeInitEmpty(inputRec, mode.first, box, ewaldCoeff_q, ewaldCoeff_lj), NotImplementedError);
                 }
-
-                real       energy;
-                Matrix3x3  virial;
-                std::tie(energy, virial) = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), mode.first, method);
-                /* Energy */
-                checker.checkReal(energy, "Energy");
-                /* Virial */
-                TestReferenceChecker virialChecker(checker.checkCompound("Matrix", "Virial"));
-                for (int i = 0; i < DIM; i++)
+                else
                 {
-                    for (int j = 0; j <= i; j++)
+                    std::map<PmeSolveOptions, std::string> optionsToTest = {{PmeSolveOptions::YZXGridOrder, "YZX"}};
+                    if (mode.first == CodePath::CUDA)
                     {
-                        std::string valueId = formatString("Cell %d %d", i, j);
-                        virialChecker.checkReal(virial[i * DIM + j], valueId.c_str());
+                        optionsToTest[PmeSolveOptions::XYZGridOrder] = "XYZ";
+                    }
+
+                    const auto contextsToTest = GetContextsForMode(mode.first); //TODO Camel case
+                    for (const auto &option : optionsToTest)
+                    {
+
+                        for (const auto &context : contextsToTest)
+                        {
+                            context->activate();
+
+                            /* Describing the test*/
+                            SCOPED_TRACE(formatString("Testing solving (%s, %s) with %s %sfor PME grid size %d %d %d, Ewald coefficients %g %g",
+                                                      (method == PmeSolveAlgorithm::LennardJones) ? "Lennard-Jones" : "normal",
+                                                      option.second.c_str(), mode.second.c_str(), context->getDescription().c_str(),
+                                                      gridSize[XX], gridSize[YY], gridSize[ZZ],
+                                                      ewaldCoeff_q, ewaldCoeff_lj
+                                                      ));
+
+                            /* Running the test */
+                            PmeSafePointer pmeSafe = pmeInitEmpty(inputRec, mode.first, box, ewaldCoeff_q, ewaldCoeff_lj);
+                            pmeSetComplexGrid(pmeSafe.get(), mode.first, option.first, nonZeroGridValues);
+                            const real     cellVolume = box[0] * box[4] * box[8];
+                            //FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
+                            pmePerformSolve(pmeSafe.get(), mode.first, method, cellVolume, option.first);
+                            pmeFinalizeTest(pmeSafe.get(), mode.first);
+
+                            /* Check the outputs */
+                            TestReferenceChecker checker(refData.rootChecker());
+                            const auto           ulpTolerance = 200;
+                            checker.setDefaultTolerance(relativeToleranceAsUlp(10.0, ulpTolerance));
+
+                            SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, option.first);
+                            /* Transformed grid */
+                            TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
+                            const auto                    ulpToleranceGrid = 50;
+                            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
+                            for (const auto &point : nonZeroGridValuesOutput)
+                            {
+                                // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
+                                // however, using GMX_REAL_MIN causes an "unused item warning" for single precision builds
+                                if (fabs(point.second.re) >= GMX_FLOAT_MIN)
+                                {
+                                    gridValuesChecker.checkReal(point.second.re, (point.first + " re").c_str());
+                                }
+                                if (fabs(point.second.im) >= GMX_FLOAT_MIN)
+                                {
+                                    gridValuesChecker.checkReal(point.second.im, (point.first + " im").c_str());
+                                }
+                            }
+
+                            real       energy;
+                            Matrix3x3  virial;
+                            std::tie(energy, virial) = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), mode.first, method);
+                            /* Energy */
+                            checker.checkReal(energy, "Energy");
+                            /* Virial */
+                            TestReferenceChecker virialChecker(checker.checkCompound("Matrix", "Virial"));
+                            virialChecker.setDefaultTolerance(relativeToleranceAsUlp(1000, 30));
+                            for (int i = 0; i < DIM; i++)
+                            {
+                                for (int j = 0; j <= i; j++)
+                                {
+                                    std::string valueId = formatString("Cell %d %d", i, j);
+                                    virialChecker.checkReal(virial[i * DIM + j], valueId.c_str());
+                                }
+                            }
+
+                            //	                        context->reset(); //TODO add in all tests - or do something else?
+                        }
                     }
                 }
             }
@@ -186,7 +215,7 @@ TEST_P(PmeSolveTest, ReproducesOutputs)
 /* Valid input instances */
 
 //! A couple of valid inputs for boxes.
-static std::vector<Matrix3x3> const sampleBoxes
+static std::vector<Matrix3x3> const c_sampleBoxes
 {
     // normal box
     Matrix3x3 {{
@@ -203,7 +232,7 @@ static std::vector<Matrix3x3> const sampleBoxes
 };
 
 //! A couple of valid inputs for grid sizes
-static std::vector<IVec> const sampleGridSizes
+static std::vector<IVec> const c_sampleGridSizes
 {
     IVec {
         16, 12, 28
@@ -214,12 +243,12 @@ static std::vector<IVec> const sampleGridSizes
 };
 
 //! Moved out from instantiations for readability
-auto inputBoxes     = ::testing::ValuesIn(sampleBoxes);
+auto c_inputBoxes     = ::testing::ValuesIn(c_sampleBoxes);
 //! Moved out from instantiations for readability
-auto inputGridSizes = ::testing::ValuesIn(sampleGridSizes);
+auto c_inputGridSizes = ::testing::ValuesIn(c_sampleGridSizes);
 
 //! 2 sample complex grids - only non-zero values have to be listed
-static std::vector<SparseComplexGridValuesInput> const sampleGrids
+static std::vector<SparseComplexGridValuesInput> const c_sampleGrids
 {
     SparseComplexGridValuesInput {{
                                       IVec {
@@ -280,19 +309,19 @@ static std::vector<SparseComplexGridValuesInput> const sampleGrids
 };
 
 //! Moved out from instantiations for readability
-auto inputGrids = ::testing::ValuesIn(sampleGrids);
+auto c_inputGrids = ::testing::ValuesIn(c_sampleGrids);
 //! Moved out from instantiations for readability
-auto inputEpsilon_r = ::testing::Values(0.6, 1.0);
+auto c_inputEpsilon_r = ::testing::Values(0.6, 1.0);
 //! Moved out from instantiations for readability
-auto inputEwaldCoeff_q = ::testing::Values(0.4, 2.0);
+auto c_inputEwaldCoeff_q = ::testing::Values(0.4, 2.0);
 //! Moved out from instantiations for readability
-auto inputEwaldCoeff_lj = ::testing::Values(0.7, 1.3);
+auto c_inputEwaldCoeff_lj = ::testing::Values(0.7, 1.3);
 //! Moved out from instantiations for readability
-auto inputMethods = ::testing::Values(PmeSolveAlgorithm::Normal, PmeSolveAlgorithm::LennardJones);
+auto c_inputMethods = ::testing::Values(PmeSolveAlgorithm::Normal, PmeSolveAlgorithm::LennardJones);
 
 //! Instantiation of the PME solving test
-INSTANTIATE_TEST_CASE_P(SaneInput, PmeSolveTest, ::testing::Combine(inputBoxes, inputGridSizes, inputGrids,
-                                                                    inputEpsilon_r, inputEwaldCoeff_q, inputEwaldCoeff_lj, inputMethods));
+INSTANTIATE_TEST_CASE_P(SaneInput, PmeSolveTest, ::testing::Combine(c_inputBoxes, c_inputGridSizes, c_inputGrids,
+                                                                    c_inputEpsilon_r, c_inputEwaldCoeff_q, c_inputEwaldCoeff_lj, c_inputMethods));
 }
 }
 }

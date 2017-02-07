@@ -512,6 +512,25 @@ gmx_bool free_cuda_gpu(
     return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
 }
 
+
+void free_cuda_gpu_no_bs(int dev_id)
+{
+    // FIXME enable as debug check
+    int         tempId;
+    cudaError_t stat = cudaGetDevice(&tempId);
+    CU_RET_ERR(stat, "cudaGetDevice failed");
+    // assert(tempId == dev_id);
+    if (tempId != dev_id)
+    {
+        stat = cudaSetDevice(dev_id);
+        CU_RET_ERR(stat, "cudaSetDevice failed");
+    }
+
+    stat = cudaDeviceReset();
+    CU_RET_ERR(stat, "cudaDeviceReset failed");
+}
+
+
 /*! \brief Returns true if the gpu characterized by the device properties is
  *  supported by the native gpu acceleration.
  *

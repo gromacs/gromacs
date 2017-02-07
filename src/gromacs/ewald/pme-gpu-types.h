@@ -103,7 +103,7 @@ struct pme_gpu_grid_params_t
     /* Grid sizes */
     /*! \brief Real-space grid data dimensions. */
     int   realGridSize[DIM];
-    /*! \brief Real-space grid dimensions - floating point. */
+    /*! \brief Real-space grid dimensions, only converted to floating point. */
     float realGridSizeFP[DIM];
     /*! \brief Real-space grid dimensions (padded). The padding as compared to realGridSize includes the (order - 1) overlap. */
     int   realGridSizePadded[DIM]; /* Is major dimension of this ever used in kernels? */

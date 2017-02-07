@@ -106,6 +106,12 @@ enum class PmeSolveAlgorithm
     Normal,
     LennardJones,
 };
+//! PME solve grid ordering //TODO rename
+enum class PmeSolveOptions
+{
+    YZXGridOrder,
+    XYZGridOrder
+};
 //! PME solver results - reciprocal energy and virial
 typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 
@@ -133,7 +139,8 @@ void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode,
                                bool computeSplines, bool spreadCharges);
 //! PME solving
 void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
-                     PmeSolveAlgorithm method, real cellVolume);
+                     PmeSolveAlgorithm method, real cellVolume,
+                     PmeSolveOptions option);
 //! PME force gathering
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                       PmeGatherInputHandling inputTreatment, ForcesVector &forces);
@@ -151,7 +158,7 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
 //! Setting real grid to be used in gather
 void pmeSetRealGrid(const gmx_pme_t *pme, CodePath mode,
                     const SparseRealGridValuesInput &gridValues);
-void pmeSetComplexGrid(const gmx_pme_t *pme, CodePath mode,
+void pmeSetComplexGrid(const gmx_pme_t *pme, CodePath mode, PmeSolveOptions option,
                        const SparseComplexGridValuesInput &gridValues);
 
 // PME state getters
@@ -164,7 +171,8 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
 //! Getting the real grid (spreading output of pmePerformSplineAndSpread())
 SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode);
 //! Getting the complex grid output of pmePerformSolve()
-SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode);
+SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
+                                                PmeSolveOptions option);
 //! Getting the reciprocal energy and virial
 PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
                                                PmeSolveAlgorithm method);

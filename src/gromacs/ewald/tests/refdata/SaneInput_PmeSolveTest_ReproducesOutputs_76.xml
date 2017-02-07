@@ -2,24 +2,24 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <NonZeroGridValues Name="ComplexSpaceGrid">
-    <Real Name="Cell 3 1 2 re">0.0025953066004961059</Real>
-    <Real Name="Cell 3 1 2 im">0.034171535961190096</Real>
-    <Real Name="Cell 3 5 7 re">-4.873187194776214e-09</Real>
-    <Real Name="Cell 3 5 7 im">8.1219785380002358e-15</Real>
-    <Real Name="Cell 6 2 4 re">1.4303786454229096e-09</Real>
-    <Real Name="Cell 6 2 4 im">1.1642616960394812e-10</Real>
     <Real Name="Cell 0 0 0 re">3.5</Real>
     <Real Name="Cell 0 0 0 im">6.6999998092651367</Real>
-    <Real Name="Cell 7 0 0 re">-0.007254228236210223</Real>
-    <Real Name="Cell 7 0 0 im">-0.0020311838715480067</Real>
+    <Real Name="Cell 3 1 2 re">0.24175912604026709</Real>
+    <Real Name="Cell 3 1 2 im">3.1831617381359454</Real>
+    <Real Name="Cell 3 5 7 re">-1.1579170048558314e-05</Real>
+    <Real Name="Cell 3 5 7 im">1.9298616462560193e-11</Real>
+    <Real Name="Cell 6 2 4 re">0.16055418769496363</Real>
+    <Real Name="Cell 6 2 4 im">0.013068364203431757</Real>
+    <Real Name="Cell 7 0 0 re">-3.9714492655775868e-05</Real>
+    <Real Name="Cell 7 0 0 im">-1.1120057754243784e-05</Real>
   </NonZeroGridValues>
-  <Real Name="Energy">0.29106976401970447</Real>
+  <Real Name="Energy">30.156785724629586</Real>
   <Matrix Name="Virial">
-    <Real Name="Cell 0 0">0.018590636133193367</Real>
-    <Real Name="Cell 1 0">-0.27069876604287457</Real>
-    <Real Name="Cell 1 1">0.32866082948705566</Real>
-    <Real Name="Cell 2 0">-0.42517163278301645</Real>
-    <Real Name="Cell 2 1">0.63974560239698741</Real>
-    <Real Name="Cell 2 2">1.0923523660027425</Real>
+    <Real Name="Cell 0 0">14.047776805046341</Real>
+    <Real Name="Cell 1 0">21.922815838729992</Real>
+    <Real Name="Cell 1 1">1.4226522271661521</Real>
+    <Real Name="Cell 2 0">-39.539633032330428</Real>
+    <Real Name="Cell 2 1">-29.760812030862287</Real>
+    <Real Name="Cell 2 2">38.597861890660425</Real>
   </Matrix>
 </ReferenceData>

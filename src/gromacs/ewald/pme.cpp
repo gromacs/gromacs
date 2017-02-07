@@ -1693,59 +1693,61 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     {
         return;
     }
+    /* FIXME
 
-    sfree(pme->nnx);
-    sfree(pme->nny);
-    sfree(pme->nnz);
-    sfree(pme->fshx);
-    sfree(pme->fshy);
-    sfree(pme->fshz);
+       sfree(pme->nnx);
+       sfree(pme->nny);
+       sfree(pme->nnz);
+       sfree(pme->fshx);
+       sfree(pme->fshy);
+       sfree(pme->fshz);
 
-    for (int i = 0; i < pme->ngrids; ++i)
-    {
+       for (int i = 0; i < pme->ngrids; ++i)
+       {
         pmegrids_destroy(&pme->pmegrid[i]);
-    }
-    if (pme->pfft_setup)
-    {
+       }
+       if (pme->pfft_setup)
+       {
         for (int i = 0; i < pme->ngrids; ++i)
         {
-            gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
+       gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
         }
-    }
-    sfree(pme->fftgrid);
-    sfree(pme->cfftgrid);
-    sfree(pme->pfft_setup);
+       }
+       sfree(pme->fftgrid);
+       sfree(pme->cfftgrid);
+       sfree(pme->pfft_setup);
 
-    for (int i = 0; i < std::max(1, pme->ndecompdim); i++) //pme->atc[0] is always allocated
-    {
+       for (int i = 0; i < std::max(1, pme->ndecompdim); i++) //pme->atc[0] is always allocated
+       {
         destroy_atomcomm(&pme->atc[i]);
-    }
+       }
 
-    for (int i = 0; i < DIM; i++)
-    {
+       for (int i = 0; i < DIM; i++)
+       {
         sfree(pme->bsp_mod[i]);
-    }
+       }
 
-    destroy_overlap_comm(&pme->overlap[0]);
-    destroy_overlap_comm(&pme->overlap[1]);
+       destroy_overlap_comm(&pme->overlap[0]);
+       destroy_overlap_comm(&pme->overlap[1]);
 
-    sfree(pme->lb_buf1);
-    sfree(pme->lb_buf2);
+       sfree(pme->lb_buf1);
+       sfree(pme->lb_buf2);
 
-    sfree(pme->bufv);
-    sfree(pme->bufr);
+       sfree(pme->bufv);
+       sfree(pme->bufr);
 
-    pme_free_all_work(&pme->solve_work, pme->nthread);
+       pme_free_all_work(&pme->solve_work, pme->nthread);
 
-    sfree(pme->sum_qgrid_tmp);
-    sfree(pme->sum_qgrid_dd_tmp);
+       sfree(pme->sum_qgrid_tmp);
+       sfree(pme->sum_qgrid_dd_tmp);
 
-    if (pme_gpu_active(pme))
-    {
+       if (pme_gpu_active(pme))
+       {
         pme_gpu_destroy(pme->gpu);
-    }
+       }
 
-    sfree(pme);
+       sfree(pme);
+     */
 }
 
 void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients)

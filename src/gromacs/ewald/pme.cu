@@ -93,7 +93,7 @@ void pme_gpu_free_energy_virial(pme_gpu_t *pmeGPU)
 {
     cudaError_t stat = cudaFree(pmeGPU->kernelParams.get()->constants.d_virialAndEnergy);
     CU_RET_ERR(stat, "cudaFree failed on PME energy and virial");
-    pmeGPU->kernelParams.get()->constants.d_virialAndEnergy = NULL;
+    pmeGPU->kernelParams->constants.d_virialAndEnergy = NULL;
     pfree(pmeGPU->staging.h_virialAndEnergy);
     pmeGPU->staging.h_virialAndEnergy = NULL;
 }

@@ -55,6 +55,7 @@ struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
 struct pme_atomcomm_t;
+struct t_complex;
 
 //! Type of spline data
 enum class PmeSplineDataType
@@ -442,6 +443,21 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * A GPU Fourier space solving function.
+ *
+ * \param[in]     pmeGpu                  The PME GPU structure.
+ * \param[in,out] h_grid                  The host-side input and output Fourier grid buffer (used only with testing or host-side FFT)
+ * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should also be performed.
+ * \param[in]     yzxGridOrder            True if the solving should be performed on the complex grid with YZX dimension order;
+ *                                        False if the grid has XYZ dimension order.
+ *                                        //TODO: store this information?
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                       t_complex       *CUDA_FUNC_ARGUMENT(h_grid),
+                                       bool             CUDA_FUNC_ARGUMENT(computeEnergyAndVirial),
+                                       bool             CUDA_FUNC_ARGUMENT(yzxGridOrder)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
  * A GPU force gathering function.
  *
  * \param[in]     pmeGpu           The PME GPU structure.
@@ -548,7 +564,10 @@ gmx_inline bool pme_gpu_is_testing(const pme_gpu_t *pmeGPU)
  * \param[out] energy            The output energy.
  * \param[out] virial            The output virial matrix.
  */
-void pme_gpu_get_energy_virial(const pme_gpu_t *pmeGPU, real *energy, matrix virial);
+void pme_gpu_get_energy_virial(const pme_gpu_t *pmeGpu, real *energy, matrix virial);
+
+//FIXME
+void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box);
 
 /*! \libinternal \brief
  * Starts the PME GPU step (copies coordinates onto GPU, possibly sets the unit cell parameters).
