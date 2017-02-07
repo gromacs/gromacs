@@ -363,7 +363,7 @@ void pme_gpu_gather(const pme_gpu_t *pmeGpu,
     if (!pme_gpu_performs_FFT(pmeGpu) || pme_gpu_is_testing(pmeGpu))
     {
         /* Copying the input CPU grid */
-        cu_copy_H2D_async(kernelParamsPtr->grid.d_realGrid, const_cast<float *>(h_grid), pmeGpu->archSpecific->gridSize * sizeof(float), stream);
+        cu_copy_H2D_async(kernelParamsPtr->grid.d_realGrid, const_cast<float *>(h_grid), pmeGpu->archSpecific->realGridSize * sizeof(float), stream);
     }
 
     if (pme_gpu_is_testing(pmeGpu))

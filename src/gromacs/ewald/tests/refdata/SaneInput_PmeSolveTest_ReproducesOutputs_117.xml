@@ -2,19 +2,17 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <NonZeroGridValues Name="ComplexSpaceGrid">
-    <Real Name="Cell 0 4 0 im">-3.9195184161585778e-10</Real>
-    <Real Name="Cell 4 2 7 re">-2.0938565731263289e-13</Real>
-    <Real Name="Cell 4 2 7 im">6.0867922624925128e-13</Real>
-    <Real Name="Cell 2 5 10 re">-1.5028256308199148e-22</Real>
-    <Real Name="Cell 2 5 10 im">-4.4458591163721594e-22</Real>
+    <Real Name="Cell 0 4 0 im">-6.1533513434120241e-25</Real>
+    <Real Name="Cell 4 2 7 re">-3.3530621751303811e-08</Real>
+    <Real Name="Cell 4 2 7 im">9.7472736027791691e-08</Real>
   </NonZeroGridValues>
-  <Real Name="Energy">-1.4481387290497972e-10</Real>
+  <Real Name="Energy">-4.3602908040841583e-06</Real>
   <Matrix Name="Virial">
-    <Real Name="Cell 0 0">-4.3367413960226442e-10</Real>
-    <Real Name="Cell 1 0">1.5677471414129813e-10</Real>
-    <Real Name="Cell 1 1">-4.5860420860701656e-10</Real>
-    <Real Name="Cell 2 0">-7.2090239922439245e-10</Real>
-    <Real Name="Cell 2 1">-3.160780275674219e-10</Real>
-    <Real Name="Cell 2 2">-1.5575838099754451e-09</Real>
+    <Real Name="Cell 0 0">-2.799390991944878e-05</Real>
+    <Real Name="Cell 1 0">-3.4067482862627857e-05</Real>
+    <Real Name="Cell 1 1">-3.6283142884197446e-05</Real>
+    <Real Name="Cell 2 0">-1.6349347977877763e-05</Real>
+    <Real Name="Cell 2 1">-1.8458941833210985e-05</Real>
+    <Real Name="Cell 2 2">-6.6784974437326452e-06</Real>
   </Matrix>
 </ReferenceData>

@@ -74,6 +74,8 @@ class ITestHardwareContext
         virtual void activate() = 0;
         //! Returns a human-readable context description line
         virtual std::string getDescription() = 0;
+        //! Deactivates the context
+        virtual void reset() = 0;
 };
 
 /*! \internal \brief
@@ -86,6 +88,8 @@ class EmptyTestHardwareContext : public ITestHardwareContext
         void activate(){}
         //! Returns an empty description of an empty context
         std::string getDescription() {return std::string(""); }
+        //! Deactivates the empty context
+        void reset (){};
 };
 
 /*! \internal \brief
@@ -104,10 +108,15 @@ class GpuTestHardwareContext : public ITestHardwareContext
         void activate();
         //! Returns a GPU context description (such as device name and its compute capabilities)
         std::string getDescription() {return description_; }
+        //! Resets the GPU context
+        void reset();
 };
 
 //! A list of hardware contexts
 typedef std::list<std::shared_ptr<ITestHardwareContext> > TestHardwareContexts;
+
+typedef std::list<ITestHardwareContext *> TestHardwareContexts2;
+
 
 /*! \internal \brief
  * This class performs one-time test initialization (enumerating the hardware)
@@ -139,6 +148,18 @@ class PmeTestEnvironment : public ::testing::Environment
         const gmx_gpu_opt_t *getGpuOptions(){return gpuOptions_.get(); }
         //! Get hardware contexts for given code path
         const TestHardwareContexts &getHardwareContexts(CodePath mode){return hardwareContextsByMode_.at(mode); }
+        //! Get hardware contexts for given code path
+        TestHardwareContexts2 getHardwareContexts2(CodePath mode)
+        {
+            TestHardwareContexts2 contexts;
+            for (const auto &context : hardwareContextsByMode_.at(mode))
+            {
+                contexts.push_back(context.get());
+            }
+
+            return contexts;
+        }
+
 };
 
 /*! \brief
@@ -146,6 +167,8 @@ class PmeTestEnvironment : public ::testing::Environment
  * Currently returns single empty context for CPU, and CUDA contexts for all visible CUDA-capable GPU's.
  */
 const TestHardwareContexts       &GetContextsForMode(CodePath mode);
+
+TestHardwareContexts2       getContextsForMode(CodePath mode);
 
 //! The test environment
 extern PmeTestEnvironment * const pmeEnv;

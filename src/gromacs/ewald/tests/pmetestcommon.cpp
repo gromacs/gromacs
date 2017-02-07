@@ -75,7 +75,7 @@ bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
             break;
 
         case CodePath::CUDA:
-            implemented = (GMX_GPU == GMX_GPU_CUDA) && (inputRec->pme_order == 4);
+            implemented = (GMX_GPU == GMX_GPU_CUDA) && (inputRec->pme_order == 4) && !EVDW_PME(inputRec->vdwtype);
             break;
 
         default:
@@ -113,7 +113,21 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
-    invertBoxMatrix(boxTemp, pme->recipbox);
+
+    switch (mode)
+    {
+        case CodePath::CUDA:
+            pme_gpu_set_testing(pme->gpu, true);
+            pme_gpu_update_input_box(pme->gpu, boxTemp);
+            break;
+
+        case CodePath::CPU:
+            invertBoxMatrix(boxTemp, pme->recipbox);
+            break;
+
+        default:
+            GMX_THROW(InternalError("Test not implemented for this mode"));
+    }
 
     return pme;
 }
@@ -142,16 +156,6 @@ PmeSafePointer pmeInitWithAtoms(const t_inputrec         *inputRec,
     PmeSafePointer  pmeSafe = pmeInitInternal(inputRec, mode, atomCount, box);
     pme_atomcomm_t *atc     = nullptr;
 
-    // TODO get rid of this with proper matrix type
-    matrix boxTemp;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            boxTemp[i][j] = box[i * DIM + j];
-        }
-    }
-
     switch (mode)
     {
         case CodePath::CPU:
@@ -162,9 +166,9 @@ PmeSafePointer pmeInitWithAtoms(const t_inputrec         *inputRec,
             break;
 
         case CodePath::CUDA:
-            pme_gpu_set_testing(pmeSafe->gpu, true);
             gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
-            pme_gpu_start_step(pmeSafe->gpu, boxTemp, as_rvec_array(coordinates.data()));
+            pme_gpu_copy_input_coordinates(pmeSafe->gpu, as_rvec_array(coordinates.data()));
+            //FIXME pme_gpu_start_step(pmeSafe->gpu, boxTemp, as_rvec_array(coordinates.data()));
             break;
 
         default:
@@ -286,24 +290,30 @@ static real *pmeGetSplineDataInternal(const gmx_pme_t *pme, PmeSplineDataType ty
 
 //! PME solving
 void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
-                     PmeSolveAlgorithm method, real cellVolume)
+                     PmeSolveAlgorithm method, real cellVolume,
+                     GridOrdering gridOrdering)
 {
-    t_complex      *grid                   = pmeGetComplexGridInternal(pme);
-    const bool      computeEnergyAndVirial = true;
-    const bool      useLorentzBerthelot    = false;
-    const size_t    threadIndex            = 0;
+    t_complex      *h_grid                   = pmeGetComplexGridInternal(pme);
+    const bool      computeEnergyAndVirial   = true;
+    const bool      useLorentzBerthelot      = false;
+    const size_t    threadIndex              = 0;
+    const bool      yzxGridOrdering          = (gridOrdering == GridOrdering::YZX);
     switch (mode)
     {
         case CodePath::CPU:
+            if (gridOrdering != GridOrdering::YZX)
+            {
+                GMX_THROW(InternalError("Test not implemented for this mode"));
+            }
             switch (method)
             {
                 case PmeSolveAlgorithm::Normal:
-                    solve_pme_yzx(pme, grid, cellVolume,
+                    solve_pme_yzx(pme, h_grid, cellVolume,
                                   computeEnergyAndVirial, pme->nthread, threadIndex);
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
-                    solve_pme_lj_yzx(pme, &grid, useLorentzBerthelot,
+                    solve_pme_lj_yzx(pme, &h_grid, useLorentzBerthelot,
                                      cellVolume, computeEnergyAndVirial, pme->nthread, threadIndex);
                     break;
 
@@ -311,6 +321,19 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
                     GMX_THROW(InternalError("Test not implemented for this mode"));
             }
             break;
+
+        case CodePath::CUDA:
+            switch (method)
+            {
+                case PmeSolveAlgorithm::Normal:
+                    pme_gpu_solve(pme->gpu, h_grid, computeEnergyAndVirial, yzxGridOrdering);
+                    break;
+
+                default:
+                    GMX_THROW(InternalError("Test not implemented for this mode"));
+            }
+            break;
+
 
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));
@@ -434,9 +457,30 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
     }
 }
 
+//! Getting plain index into the complex 3d grid
+inline size_t pmeGetGridPlainIndexInternal(const IVec &index, const IVec &paddedGridSize, GridOrdering gridOrdering)
+{
+    size_t result;
+    switch (gridOrdering)
+    {
+        case GridOrdering::YZX:
+            result = (index[YY] * paddedGridSize[ZZ] + index[ZZ]) * paddedGridSize[XX] + index[XX];
+            break;
+
+        case GridOrdering::XYZ:
+            result = (index[XX] * paddedGridSize[YY] + index[YY]) * paddedGridSize[ZZ] + index[ZZ];
+            break;
+
+        default:
+            GMX_THROW(InternalError("Test not implemented for this mode"));
+    }
+    return result;
+}
+
 //! Setting real or complex grid
 template<typename ValueType>
 static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
+                               GridOrdering gridOrdering,
                                const SparseGridValuesInput<ValueType> &gridValues)
 {
     IVec       gridSize, paddedGridSize;
@@ -454,7 +498,7 @@ static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
                 {
                     GMX_RELEASE_ASSERT((0 <= gridValue.first[i]) && (gridValue.first[i] < gridSize[i]), "Invalid grid value index");
                 }
-                const size_t gridValueIndex = (gridValue.first[XX] * paddedGridSize[YY] + gridValue.first[YY]) * paddedGridSize[ZZ] + gridValue.first[ZZ];
+                const size_t gridValueIndex = pmeGetGridPlainIndexInternal(gridValue.first, paddedGridSize, gridOrdering);
                 grid[gridValueIndex] = gridValue.second;
             }
             break;
@@ -468,14 +512,15 @@ static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
 void pmeSetRealGrid(const gmx_pme_t *pme, CodePath mode,
                     const SparseRealGridValuesInput &gridValues)
 {
-    pmeSetGridInternal<real>(pme, mode, gridValues);
+    pmeSetGridInternal<real>(pme, mode, GridOrdering::XYZ, gridValues);
 }
 
 //! Setting complex grid to be used in solve
 void pmeSetComplexGrid(const gmx_pme_t *pme, CodePath mode,
+                       GridOrdering gridOrdering,
                        const SparseComplexGridValuesInput &gridValues)
 {
-    pmeSetGridInternal<t_complex>(pme, mode, gridValues);
+    pmeSetGridInternal<t_complex>(pme, mode, gridOrdering, gridValues);
 }
 
 //! Getting the single dimension's spline values or derivatives
@@ -532,7 +577,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
 
 //! Getting real or complex grid - only non zero values
 template<typename ValueType>
-static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme, CodePath mode)
+static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme, CodePath mode, GridOrdering gridOrdering)
 {
     IVec       gridSize, paddedGridSize;
     ValueType *grid;
@@ -549,7 +594,8 @@ static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme
                 {
                     for (int iz = 0; iz < gridSize[ZZ]; iz++)
                     {
-                        const size_t    gridValueIndex = (ix * paddedGridSize[YY] + iy) * paddedGridSize[ZZ] + iz;
+                        IVec            temp(ix, iy, iz);
+                        const size_t    gridValueIndex = pmeGetGridPlainIndexInternal(temp, paddedGridSize, gridOrdering);
                         const ValueType value          = grid[gridValueIndex];
                         if (value != ValueType {})
                         {
@@ -570,13 +616,14 @@ static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme
 //! Getting the real grid (spreading output of pmePerformSplineAndSpread())
 SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode)
 {
-    return pmeGetGridInternal<real>(pme, mode);
+    return pmeGetGridInternal<real>(pme, mode, GridOrdering::XYZ);
 }
 
 //! Getting the complex grid output of pmePerformSolve()
-SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode)
+SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
+                                                GridOrdering gridOrdering)
 {
-    return pmeGetGridInternal<t_complex>(pme, mode);
+    return pmeGetGridInternal<t_complex>(pme, mode, gridOrdering);
 }
 
 //! Getting the reciprocal energy and virial
@@ -603,6 +650,18 @@ PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mo
                     GMX_THROW(InternalError("Test not implemented for this mode"));
             }
             break;
+        case CodePath::CUDA:
+            switch (method)
+            {
+                case PmeSolveAlgorithm::Normal:
+                    pme_gpu_get_energy_virial(pme->gpu, &energy, virialTemp);
+                    break;
+
+                default:
+                    GMX_THROW(InternalError("Test not implemented for this mode"));
+            }
+            break;
+
 
         default:
             GMX_THROW(InternalError("Test not implemented for this mode"));

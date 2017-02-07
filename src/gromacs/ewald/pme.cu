@@ -293,46 +293,53 @@ void pme_gpu_free_grid_indices(const pme_gpu_t *pmeGPU)
     pfree(pmeGPU->staging.h_gridlineIndices);
 }
 
-void pme_gpu_realloc_grids(pme_gpu_t *pmeGPU)
+void pme_gpu_realloc_grids(pme_gpu_t *pmeGpu)
 {
-    // TODO: make tests to be assured this grid size is always sufficient for copying the CPU grids
-    // TODO: put the gridsize in the structure maybe?
-    pme_gpu_cuda_kernel_params_t *kernelParamsPtr = pmeGPU->kernelParams.get();
-    const int                     newGridSize     = kernelParamsPtr->grid.realGridSizePadded[XX] *
+    pme_gpu_cuda_kernel_params_t *kernelParamsPtr = pmeGpu->kernelParams.get();
+    const int                     newRealGridSize = kernelParamsPtr->grid.realGridSizePadded[XX] *
         kernelParamsPtr->grid.realGridSizePadded[YY] *
         kernelParamsPtr->grid.realGridSizePadded[ZZ];
-
-    if (pmeGPU->archSpecific->performOutOfPlaceFFT)
+    const int newComplexGridSize = kernelParamsPtr->grid.complexGridSizePadded[XX] *
+        kernelParamsPtr->grid.complexGridSizePadded[YY] *
+        kernelParamsPtr->grid.complexGridSizePadded[ZZ] * 2;
+    // Multiplied by 2 because we count complex grid size for complex numbers, but all allocations/pointers are float *
+    if (pmeGpu->archSpecific->performOutOfPlaceFFT)
     {
-        /* Allocate a separate complex grid */
-        int tempGridSize      = pmeGPU->archSpecific->gridSize;
-        int tempGridSizeAlloc = pmeGPU->archSpecific->gridSizeAlloc;
-        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_fourierGrid, NULL, sizeof(float),
-                            &tempGridSize, &tempGridSizeAlloc, newGridSize, pmeGPU->archSpecific->pmeStream, true);
+        /* 2 separate grids */
+        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_fourierGrid, nullptr, sizeof(float),
+                            &pmeGpu->archSpecific->complexGridSize, &pmeGpu->archSpecific->complexGridSizeAlloc,
+                            newComplexGridSize, pmeGpu->archSpecific->pmeStream, true);
+        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_realGrid, nullptr, sizeof(float),
+                            &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc,
+                            newRealGridSize, pmeGpu->archSpecific->pmeStream, true);
     }
-    cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_realGrid, NULL, sizeof(float),
-                        &pmeGPU->archSpecific->gridSize, &pmeGPU->archSpecific->gridSizeAlloc, newGridSize, pmeGPU->archSpecific->pmeStream, true);
-    if (!pmeGPU->archSpecific->performOutOfPlaceFFT)
+    else
     {
-        /* Using the same grid */
-        kernelParamsPtr->grid.d_fourierGrid = kernelParamsPtr->grid.d_realGrid;
+        /* A single buffer so that any grid will fit */
+        const int newGridsSize = std::max(newRealGridSize, newComplexGridSize);
+        cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_realGrid, nullptr, sizeof(float),
+                            &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc,
+                            newGridsSize, pmeGpu->archSpecific->pmeStream, true);
+        kernelParamsPtr->grid.d_fourierGrid   = kernelParamsPtr->grid.d_realGrid;
+        pmeGpu->archSpecific->complexGridSize = pmeGpu->archSpecific->realGridSize;
+        // the size might get use this later for copying the grid
     }
 }
 
-void pme_gpu_free_grids(const pme_gpu_t *pmeGPU)
+void pme_gpu_free_grids(const pme_gpu_t *pmeGpu)
 {
-    if (pmeGPU->archSpecific->performOutOfPlaceFFT)
+    if (pmeGpu->archSpecific->performOutOfPlaceFFT)
     {
-        /* Free a separate complex grid of the same size */
-        cu_free_buffered(pmeGPU->kernelParams.get()->grid.d_fourierGrid);
+        cu_free_buffered(pmeGpu->kernelParams->grid.d_fourierGrid);
     }
-    cu_free_buffered(pmeGPU->kernelParams.get()->grid.d_realGrid, &pmeGPU->archSpecific->gridSize, &pmeGPU->archSpecific->gridSizeAlloc);
+    cu_free_buffered(pmeGpu->kernelParams->grid.d_realGrid,
+                     &pmeGpu->archSpecific->realGridSize, &pmeGpu->archSpecific->realGridSizeAlloc);
 }
 
 void pme_gpu_clear_grids(const pme_gpu_t *pmeGPU)
 {
     cudaError_t stat = cudaMemsetAsync(pmeGPU->kernelParams.get()->grid.d_realGrid, 0,
-                                       pmeGPU->archSpecific->gridSize * sizeof(float), pmeGPU->archSpecific->pmeStream);
+                                       pmeGPU->archSpecific->realGridSize * sizeof(float), pmeGPU->archSpecific->pmeStream);
     /* Should the complex grid be cleared in some weird case? */
     CU_RET_ERR(stat, "cudaMemsetAsync on the PME grid error");
 }

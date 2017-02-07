@@ -67,6 +67,15 @@ void GpuTestHardwareContext::activate()
     set_current_cuda_gpu_device_id(id_);
 }
 
+void GpuTestHardwareContext::reset()
+{
+    printf("FIXME\n");
+#if GMX_GPU != GMX_GPU_CUDA
+    GMX_THROW(NotImplementedError("Not implemented"));
+#endif
+    free_cuda_gpu_no_bs(id_);
+}
+
 //! Simple hardware initialization
 void PmeTestEnvironment::hardwareInit()
 {
@@ -118,6 +127,11 @@ void PmeTestEnvironment::SetUp()
 const TestHardwareContexts &GetContextsForMode(CodePath mode)
 {
     return pmeEnv->getHardwareContexts(mode);
+}
+
+TestHardwareContexts2 getContextsForMode(CodePath mode)
+{
+    return pmeEnv->getHardwareContexts2(mode);
 }
 
 }

@@ -153,6 +153,10 @@ gmx_bool free_cuda_gpu(int CUDA_FUNC_ARGUMENT(mygpu),
                        const gmx_gpu_info_t *CUDA_FUNC_ARGUMENT(gpu_info),
                        const gmx_gpu_opt_t *CUDA_FUNC_ARGUMENT(gpu_opt)) CUDA_FUNC_TERM_WITH_RETURN(TRUE)
 
+//FIXME
+CUDA_FUNC_QUALIFIER
+void free_cuda_gpu_no_bs(int CUDA_FUNC_ARGUMENT(dev_id)) CUDA_FUNC_TERM
+
 /*! \brief Sets the CUDA GPU with the device ID \p dev_id to be used.
  */
 CUDA_FUNC_QUALIFIER

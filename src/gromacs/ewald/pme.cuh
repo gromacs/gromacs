@@ -205,7 +205,7 @@ struct pme_gpu_cuda_t
      * These are paired: the actual element count + the maximum element count that can fit in the current allocated memory.
      * These integer pairs are mostly meaningful for the cu_realloc/free_buffered calls.
      * As such, if cu_realloc/free_buffered is refactored, they can be freely changed, too.
-     * The only exception is gridSize which is also used for grid clearing/copying.
+     * The only exception are realGridSize adn complexGridSize which are also used for grid clearing/copying.
      */
     /*! \brief The kernelParams.atoms.coordinates float element count (actual)*/
     int coordinatesSize;
@@ -235,10 +235,14 @@ struct pme_gpu_cuda_t
     int fractShiftsSize;
     /*! \brief Both the kernelParams.grid.fshArray and kernelParams.grid.nnArray float element count (reserved) */
     int fractShiftsSizeAlloc;
-    /*! \brief Both the kernelParams.grid.realGrid (and possibly kernelParams.grid.fourierGrid) float element count (actual) */
-    int gridSize;
-    /*! \brief Both the kernelParams.grid.realGrid (and possibly kernelParams.grid.fourierGrid) float element count (reserved) */
-    int gridSizeAlloc;
+    /*! \brief The kernelParams.grid.realGrid float element count (actual) */
+    int realGridSize;
+    /*! \brief The kernelParams.grid.realGrid float element count (reserved) */
+    int realGridSizeAlloc;
+    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (actual) */
+    int complexGridSize;
+    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
+    int complexGridSizeAlloc;
 };
 
 

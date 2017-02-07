@@ -618,7 +618,7 @@ void pme_gpu_spread(const pme_gpu_t *pmeGpu,
     const bool copyBackGrid     = spreadCharges && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu));
     if (copyBackGrid)
     {
-        const size_t gridSize = pmeGpu->archSpecific->gridSize * sizeof(float);
+        const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
         cu_copy_D2H_async(h_grid, kernelParamsPtr->grid.d_realGrid, gridSize, stream);
         cudaError_t  stat = cudaEventRecord(pmeGpu->archSpecific->syncSpreadGridD2H, stream);
         CU_RET_ERR(stat, "PME spread grid sync event record failure");

@@ -75,27 +75,25 @@ pme_gpu_kernel_params_base_t *pme_gpu_get_kernel_params_base_ptr(const pme_gpu_t
     return kernelParamsPtr;
 }
 
-void pme_gpu_get_energy_virial(const pme_gpu_t *pmeGPU, real *energy, matrix virial)
+void pme_gpu_get_energy_virial(const pme_gpu_t *pmeGpu, real *energy, matrix virial)
 {
     GMX_ASSERT(energy, "Bad (NULL) energy output in PME GPU");
     size_t j = 0;
-    virial[XX][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[YY][YY] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[ZZ][ZZ] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[XX][YY] = virial[YY][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[XX][ZZ] = virial[ZZ][XX] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    virial[YY][ZZ] = virial[ZZ][YY] = 0.25f * pmeGPU->staging.h_virialAndEnergy[j++];
-    *energy        = 0.5f * pmeGPU->staging.h_virialAndEnergy[j++];
+    virial[XX][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[YY][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[ZZ][ZZ] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[XX][YY] = virial[YY][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[XX][ZZ] = virial[ZZ][XX] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    virial[YY][ZZ] = virial[ZZ][YY] = 0.25f * pmeGpu->staging.h_virialAndEnergy[j++];
+    *energy        = 0.5f * pmeGpu->staging.h_virialAndEnergy[j++];
 }
 
-void pme_gpu_start_step(pme_gpu_t *pmeGPU, const matrix box, const rvec *h_coordinates)
+//FIXME move this to the main PME CUDA patch, or kill start_step at all
+void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box)
 {
-    pme_gpu_copy_input_coordinates(pmeGPU, h_coordinates);
-
-    pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
-
-    const size_t                  boxMemorySize        = sizeof(matrix);
-    const bool                    haveToUpdateUnitCell = memcmp(pmeGPU->previousBox, box, boxMemorySize);
+    auto        *kernelParamsPtr      = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    const size_t boxMemorySize        = sizeof(matrix);
+    const bool   haveToUpdateUnitCell = memcmp(pmeGPU->previousBox, box, boxMemorySize);
     /* There could be a pressure coupling check here, but this is more straightforward.
      * This is an exact comparison of float values though.
      */
@@ -124,6 +122,13 @@ void pme_gpu_start_step(pme_gpu_t *pmeGPU, const matrix box, const rvec *h_coord
         memcpy(kernelParamsPtr->step.recipBox, newRecipBox, boxMemorySize);
 #endif
     }
+
+}
+
+void pme_gpu_start_step(pme_gpu_t *pmeGPU, const matrix box, const rvec *h_coordinates)
+{
+    pme_gpu_copy_input_coordinates(pmeGPU, h_coordinates);
+    pme_gpu_update_input_box(pmeGPU, box);
 }
 
 /*! \brief \libinternal
@@ -169,16 +174,18 @@ void pme_gpu_reinit_grids(pme_gpu_t *pmeGPU)
     {
         kernelParamsPtr->grid.realGridSize[i]       = pmeGPU->common->nk[i];
         kernelParamsPtr->grid.realGridSizeFP[i]     = (float)kernelParamsPtr->grid.realGridSize[i];
-        kernelParamsPtr->grid.realGridSizePadded[i] = pmeGPU->common->pmegrid_n[i];
+        kernelParamsPtr->grid.realGridSizePadded[i] = pmeGPU->common->pmegrid_n[i]; //TODO is this optimal?
 
+        // The complex grid currently uses no padding;
+        // if it starts to do so, then another test should be added for that
         kernelParamsPtr->grid.complexGridSize[i]       = kernelParamsPtr->grid.realGridSize[i];
-        kernelParamsPtr->grid.complexGridSizePadded[i] = kernelParamsPtr->grid.realGridSizePadded[i];
+        kernelParamsPtr->grid.complexGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
     }
     /* FFT: n real elements correspond to (n / 2 + 1) complex elements in minor dimension */
     kernelParamsPtr->grid.complexGridSize[ZZ] /= 2;
     kernelParamsPtr->grid.complexGridSize[ZZ]++;
     kernelParamsPtr->grid.complexGridSizePadded[ZZ] = kernelParamsPtr->grid.complexGridSize[ZZ];
-    //TODO: should this take the X dimension for CPU FFT?
+    //FIXME  shouldn't this take the X dimension for YZX ordering?!
 
     pme_gpu_realloc_and_copy_fract_shifts(pmeGPU);
     pme_gpu_realloc_and_copy_bspline_values(pmeGPU);

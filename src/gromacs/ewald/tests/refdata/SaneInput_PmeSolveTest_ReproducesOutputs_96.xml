@@ -4,14 +4,18 @@
   <NonZeroGridValues Name="ComplexSpaceGrid">
     <Real Name="Cell 0 0 0 re">3.5</Real>
     <Real Name="Cell 0 0 0 im">6.6999998092651367</Real>
+    <Real Name="Cell 3 1 2 re">9.8397346974540802e-17</Real>
+    <Real Name="Cell 3 1 2 im">1.2955650326568287e-15</Real>
+    <Real Name="Cell 7 0 0 re">-1.8277878550793339e-09</Real>
+    <Real Name="Cell 7 0 0 im">-5.1178059070664179e-10</Real>
   </NonZeroGridValues>
-  <Real Name="Energy">9.5159193738815713e-81</Real>
+  <Real Name="Energy">2.4638683165483338e-09</Real>
   <Matrix Name="Virial">
-    <Real Name="Cell 0 0">1.0362948167814697e-79</Real>
-    <Real Name="Cell 1 0">-1.6316388401799695e-79</Real>
-    <Real Name="Cell 1 1">2.4086511175660238e-79</Real>
-    <Real Name="Cell 2 0">3.9589095330794384e-79</Real>
-    <Real Name="Cell 2 1">-5.9596486363507762e-79</Real>
-    <Real Name="Cell 2 2">1.4412550223605673e-78</Real>
+    <Real Name="Cell 0 0">1.1720602708415319e-08</Real>
+    <Real Name="Cell 1 0">9.0058639154484444e-14</Real>
+    <Real Name="Cell 1 1">-1.2318663721995998e-09</Real>
+    <Real Name="Cell 2 0">-2.4285944347844957e-08</Real>
+    <Real Name="Cell 2 1">-1.2225702436828809e-13</Real>
+    <Real Name="Cell 2 2">4.4304126763697966e-08</Real>
   </Matrix>
 </ReferenceData>
