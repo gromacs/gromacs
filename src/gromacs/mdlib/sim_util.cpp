@@ -54,6 +54,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
@@ -2480,6 +2481,13 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
             elapsed_time_over_all_ranks,
             elapsed_time_over_all_threads,
             elapsed_time_over_all_threads_over_all_ranks;
+
+    if (!walltime_accounting_get_valid_finish(walltime_accounting))
+    {
+        md_print_warn(cr, fplog,
+                      "Simulation ended prematurely, no performance report will be written.");
+        return;
+    }
 
     if (cr->nnodes > 1)
     {
