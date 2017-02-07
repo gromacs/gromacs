@@ -56,6 +56,7 @@ struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct t_commrec;
 struct gmx_wallclock_gpu_pme_t;
 struct pme_atomcomm_t;
+struct t_complex;
 
 namespace gmx
 {
@@ -68,6 +69,13 @@ enum class PmeSplineDataType
     Values,      // theta
     Derivatives, // dtheta
 };               //TODO move this into new and shiny pme.h (pme-types.h?)
+
+//! PME grid dimension ordering (from major to minor)
+enum class GridOrdering
+{
+    YZX,
+    XYZ
+};
 
 /* Some general constants for PME GPU behaviour follow. */
 
@@ -458,6 +466,19 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * A GPU Fourier space solving function.
+ *
+ * \param[in]     pmeGpu                  The PME GPU structure.
+ * \param[in,out] h_grid                  The host-side input and output Fourier grid buffer (used only with testing or host-side FFT)
+ * \param[in]     gridOrdering            Specifies the dimenion ordering of the complex grid. TODO: store this information?
+ * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should also be performed.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                       t_complex       *CUDA_FUNC_ARGUMENT(h_grid),
+                                       GridOrdering     CUDA_FUNC_ARGUMENT(gridOrdering),
+                                       bool             CUDA_FUNC_ARGUMENT(computeEnergyAndVirial)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
  * A GPU force gathering function.
  *
  * \param[in]     pmeGpu           The PME GPU structure.
@@ -607,7 +628,7 @@ enum class PmeLayoutTransform
  * Only used for test purposes so far, likely to be horribly slow.
  *
  * \param[in]  pmeGPU     The PME GPU structure.
- * \param[out] atc        he PME CPU atom data structure (with a single-threaded layout).
+ * \param[out] atc        The PME CPU atom data structure (with a single-threaded layout).
  * \param[in]  type       The spline data type (values or derivatives).
  * \param[in]  dimIndex   Dimension index.
  * \param[in]  transform  Layout transform type
