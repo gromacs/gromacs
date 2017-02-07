@@ -115,7 +115,7 @@ void PmeTestEnvironment::SetUp()
 #endif
 }
 
-const TestHardwareContexts &GetContextsForMode(CodePath mode)
+const TestHardwareContexts &getContextsForMode(CodePath mode)
 {
     return pmeEnv->getHardwareContexts(mode);
 }

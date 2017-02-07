@@ -145,7 +145,7 @@ class PmeTestEnvironment : public ::testing::Environment
  * Returns all available contexts for given code path.
  * Currently returns single empty context for CPU, and CUDA contexts for all visible CUDA-capable GPU's.
  */
-const TestHardwareContexts       &GetContextsForMode(CodePath mode);
+const TestHardwareContexts       &getContextsForMode(CodePath mode);
 
 //! The test environment
 extern PmeTestEnvironment * const pmeEnv;

@@ -128,7 +128,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
                 }
                 else
                 {
-                    const auto contextsToTest = GetContextsForMode(mode.first);
+                    const auto contextsToTest = getContextsForMode(mode.first);
                     for (const auto &context : contextsToTest)
                     {
                         context->activate(); // Now the test does this, so that PmeInit cannot
