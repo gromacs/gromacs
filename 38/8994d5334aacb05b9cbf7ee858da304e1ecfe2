@@ -1,0 +1,9 @@
+Code-Review+1: David van der Spoel <davidvanderspoel@gmail.com>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+2: Erik Lindahl <erik.lindahl@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Wed, 08 Feb 2017 16:53:58 +0100
+Reviewed-on: https://gerrit.gromacs.org/6441
+Project: gromacs
+Branch: refs/heads/master
