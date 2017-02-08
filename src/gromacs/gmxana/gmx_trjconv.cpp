@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -665,10 +665,6 @@ int gmx_trjconv(int argc, char *argv[])
         "   results if you in fact have a cluster. Luckily that can be checked",
         "   afterwards using a trajectory viewer. Note also that if your molecules",
         "   are broken this will not work either.",
-        "",
-        "   The separate option [TT]-clustercenter[tt] can be used to specify an",
-        "   approximate center for the cluster. This is useful e.g. if you have",
-        "   two big vesicles, and you want to maintain their relative positions.",
         " * [TT]whole[tt] only makes broken molecules whole.",
         "",
 
