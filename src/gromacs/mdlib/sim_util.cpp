@@ -106,6 +106,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
@@ -2480,6 +2481,12 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
             elapsed_time_over_all_ranks,
             elapsed_time_over_all_threads,
             elapsed_time_over_all_threads_over_all_ranks;
+
+    if (!walltime_accounting_get_valid_finish(walltime_accounting))
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText("Simulation ended prematurely, no performance report will be written.");
+        return;
+    }
 
     if (cr->nnodes > 1)
     {

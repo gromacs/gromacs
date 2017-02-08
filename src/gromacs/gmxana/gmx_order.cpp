@@ -637,16 +637,13 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
                     z1    = x1[a[index[i-1]+j]][axis];
                     z2    = x1[a[index[i+1]+j]][axis];
                     z_ave = 0.5 * (z1 + z2);
-                    if (z_ave < 0)
+                    slice = (int)((nslices*z_ave)/box[axis][axis]);
+                    while (slice < 0)
                     {
-                        z_ave += box[axis][axis];
+                        slice += nslices;
                     }
-                    if (z_ave > box[axis][axis])
-                    {
-                        z_ave -= box[axis][axis];
-                    }
+                    slice =  slice % nslices;
 
-                    slice  = static_cast<int>((0.5 + (z_ave / (*slWidth))) - 1);
                     slCount[slice]++;     /* determine slice, increase count */
 
                     slFrameorder[slice] += 0.5 * (3 * cossum[axis] - 1);

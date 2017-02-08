@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,8 @@ typedef struct gmx_walltime_accounting {
     int             numOpenMPThreads;
     //! Set by integrators to report the amount of work they did
     gmx_int64_t     nsteps_done;
+    //! Whether the simulation has finished in a way valid for walltime reporting.
+    bool            isValidFinish;
 } t_gmx_walltime_accounting;
 
 /*! \brief Calls system timing routines (e.g. clock_gettime) to get
@@ -116,6 +118,7 @@ walltime_accounting_init(int numOpenMPThreads)
     walltime_accounting->elapsed_time                = 0;
     walltime_accounting->nsteps_done                 = 0;
     walltime_accounting->numOpenMPThreads            = numOpenMPThreads;
+    walltime_accounting->isValidFinish               = false;
 
     return walltime_accounting;
 }
@@ -227,6 +230,19 @@ gmx_gettime()
 
     return seconds;
 #endif
+}
+
+void
+walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounting)
+{
+    walltime_accounting->isValidFinish = true;
+}
+
+//! Return whether the simulation finished in a way valid for reporting walltime.
+bool
+walltime_accounting_get_valid_finish(const gmx_walltime_accounting_t walltime_accounting)
+{
+    return walltime_accounting->isValidFinish;
 }
 
 static double

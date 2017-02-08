@@ -1839,6 +1839,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     IMD_finalize(ir->bIMD, ir->imd);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
+    if (step_rel >= wcycle_get_reset_counters(wcycle) &&
+        signals[eglsRESETCOUNTERS].set == 0 &&
+        !bResetCountersHalfMaxH)
+    {
+        walltime_accounting_set_valid_finish(walltime_accounting);
+    }
 
     return 0;
 }

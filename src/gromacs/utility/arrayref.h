@@ -267,13 +267,13 @@ class ArrayRef
         //! Returns an iterator to the end of the container.
         const_iterator end() const { return end_; }
         //! Returns an iterator to the reverse beginning of the container.
-        iterator rbegin() { return reverse_iterator(end()); }
+        reverse_iterator rbegin() { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse beginning of the container.
-        const_iterator rbegin() const { return reverse_iterator(end()); }
+        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the container.
-        iterator rend() { return reverse_iterator(begin()); }
+        reverse_iterator rend() { return reverse_iterator(begin()); }
         //! Returns an iterator to the reverse end of the container.
-        const_iterator rend() const { return reverse_iterator(begin()); }
+        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
 
         //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }
@@ -508,9 +508,9 @@ class ConstArrayRef
         //! Returns an iterator to the end of the container.
         const_iterator end() const { return end_; }
         //! Returns an iterator to the reverse beginning of the container.
-        const_iterator rbegin() const { return reverse_iterator(end()); }
+        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the container.
-        const_iterator rend() const { return reverse_iterator(begin()); }
+        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
 
         //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }

@@ -102,7 +102,7 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
                                 gmx_int64_t           value);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bNotLastFrame);
+                         gmx_bool *bLastStep);
 
 /* set the lambda values at each step of mdrun when they change */
 void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
