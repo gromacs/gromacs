@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -548,15 +548,14 @@ static void removeSoluteOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
     gmx::AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
-        if (remover.isMarked(pair.testIndex()))
-        {
-            pairSearch.skipRemainingPairsForTestPosition();
-            continue;
-        }
         const real r1      = r_solute[pair.refIndex()];
         const real r2      = r[pair.testIndex()];
         const bool bRemove = (pair.distance2() < sqr(r1 + r2));
         remover.markResidue(*atoms, pair.testIndex(), bRemove);
+        if (remover.isMarked(pair.testIndex()))
+        {
+            pairSearch.skipRemainingPairsForTestPosition();
+        }
     }
 
     remover.removeMarkedVectors(x);
