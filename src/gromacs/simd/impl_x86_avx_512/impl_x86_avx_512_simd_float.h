@@ -43,6 +43,8 @@
 
 #include <immintrin.h>
 
+#include "gromacs/utility/real.h"
+
 #include "impl_x86_avx_512_general.h"
 
 namespace gmx
