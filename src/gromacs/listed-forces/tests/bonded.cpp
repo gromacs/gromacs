@@ -182,7 +182,7 @@ TEST_F (BondedTest, DihedralAnglePbcXy)
     testDihedralAngle(epbcXY);
 }
 
-TEST_F (BondedTest, DihedarlAnglePbcXyz)
+TEST_F (BondedTest, DihedralAnglePbcXyz)
 {
     testDihedralAngle(epbcXYZ);
 }
