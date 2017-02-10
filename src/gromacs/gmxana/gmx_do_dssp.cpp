@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -423,8 +423,8 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    /* now print percentages */
-    fprintf(fp, "%-8s %5.2f", "# SS %", total_count / static_cast<real>(mat->nx * mat->ny));
+    /* now print probabilities */
+    fprintf(fp, "%-8s %5.2f", "# SS pr.", total_count / static_cast<real>(mat->nx * mat->ny));
     for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         fprintf(fp, " %5.2f", total[s] / static_cast<real>(mat->nx * mat->ny));
