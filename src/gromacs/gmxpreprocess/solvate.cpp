@@ -511,12 +511,14 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
                                 const std::vector<real> &r_solute,
                                 real rshell)
 {
-    const real                          maxRadius1
+    const real                    maxRadius1
         = *std::max_element(r->begin(), r->end());
-    const real                          maxRadius2
+    const real                    maxRadius2
         = *std::max_element(r_solute.begin(), r_solute.end());
 
-    gmx::AtomsRemover                   remover(*atoms);
+    gmx::AnalysisNeighborhood     nb;
+    gmx::AnalysisNeighborhoodPair pair;
+    gmx::AtomsRemover             remover(*atoms);
     // If rshell is >0, the neighborhood search looks at all pairs
     // within rshell, and unmarks those that are within the cutoff.
     // This line marks everything, so that solvent outside rshell remains
@@ -525,16 +527,28 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
     // solvent atoms, and all others are left alone.
     if (rshell > 0.0)
     {
-        remover.markAll();
-    }
+        nb.setCutoff(rshell);
+        gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
+        gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
+        gmx::AnalysisNeighborhoodPositions  pos(*x);
+        gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+        gmx::AnalysisNeighborhoodPair       pair;
 
-    gmx::AnalysisNeighborhood           nb;
-    nb.setCutoff(std::max(maxRadius1 + maxRadius2, rshell));
+        // Remove everything
+        remover.markAll();
+        // Now put back those within the shell without checking for overlap
+        while (pairSearch.findNextPair(&pair))
+        {
+            remover.markResidue(*atoms, pair.testIndex(), false);
+            pairSearch.skipRemainingPairsForTestPosition();
+        }
+    }
+    // Now check for overlap.
+    nb.setCutoff(maxRadius1 + maxRadius2);
     gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
     gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
     gmx::AnalysisNeighborhoodPositions  pos(*x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
-    gmx::AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
         if (remover.isMarked(pair.testIndex()))
