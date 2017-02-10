@@ -491,53 +491,76 @@ static void removeSolventBoxOverlap(t_atoms *atoms, std::vector<RVec> *x,
 }
 
 /*! \brief
+ * Remove all solvent molecules outside a give radius.
+ *
+ * \param[in,out] remover   Structure to manage removing atoms.
+ * \param[in,out] atoms     Solvent atoms.
+ * \param[in,out] x_solvent Solvent positions.
+ * \param[in]     pbc       PBC information.
+ * \param[in]     x_solute  Solute positions.
+ * \param[in]     rshell    The radius outside the solute molecule.
+ */
+static void createShell(gmx::AtomsRemover       *remover,
+                        t_atoms                 *atoms,
+                        std::vector<RVec>       *x_solvent,
+                        const t_pbc             &pbc,
+                        const std::vector<RVec> &x_solute,
+                        real                     rshell)
+{
+    gmx::AnalysisNeighborhood           nb;
+    nb.setCutoff(rshell);
+    gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
+    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
+    gmx::AnalysisNeighborhoodPositions  pos(*x_solvent);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    gmx::AnalysisNeighborhoodPair       pair;
+
+    // Remove everything
+    remover->markAll();
+    // Now put back those within the shell without checking for overlap
+    while (pairSearch.findNextPair(&pair))
+    {
+        remover->markResidue(*atoms, pair.testIndex(), false);
+        pairSearch.skipRemainingPairsForTestPosition();
+    }
+}
+
+/*! \brief
  * Removes solvent molecules that overlap with the solute, and optionally also
  * those that are outside a given shell radius from the solute.
  *
- * \param[in,out] atoms      Solvent atoms.
- * \param[in,out] x          Solvent positions.
- * \param[in,out] v          Solvent velocities (can be empty).
- * \param[in,out] r          Solvent exclusion radii.
- * \param[in]     pbc        PBC information.
- * \param[in]     x_solute   Solute positions.
- * \param[in]     r_solute   Solute exclusion radii.
- * \param[in]     rshell     If >0, only keep solvent atoms within a shell of
- *     this size from the solute.
+ * \param[in,out] remover  Structure to manage removing atoms.
+ * \param[in,out] atoms    Solvent atoms.
+ * \param[in,out] x        Solvent positions.
+ * \param[in,out] v        Solvent velocities (can be empty).
+ * \param[in,out] r        Solvent exclusion radii.
+ * \param[in]     pbc      PBC information.
+ * \param[in]     x_solute Solute positions.
+ * \param[in]     r_solute Solute exclusion radii.
  */
-static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
+static void removeSoluteOverlap(gmx::AtomsRemover *remover,
+                                t_atoms *atoms, std::vector<RVec> *x,
                                 std::vector<RVec> *v, std::vector<real> *r,
                                 const t_pbc &pbc,
                                 const std::vector<RVec> &x_solute,
-                                const std::vector<real> &r_solute,
-                                real rshell)
+                                const std::vector<real> &r_solute)
 {
-    const real                          maxRadius1
+    const real                    maxRadius1
         = *std::max_element(r->begin(), r->end());
-    const real                          maxRadius2
+    const real                    maxRadius2
         = *std::max_element(r_solute.begin(), r_solute.end());
 
-    gmx::AtomsRemover                   remover(*atoms);
-    // If rshell is >0, the neighborhood search looks at all pairs
-    // within rshell, and unmarks those that are within the cutoff.
-    // This line marks everything, so that solvent outside rshell remains
-    // marked after the loop.
-    // Without rshell, the neighborhood search only marks the overlapping
-    // solvent atoms, and all others are left alone.
-    if (rshell > 0.0)
-    {
-        remover.markAll();
-    }
-
+    // Now check for overlap.
     gmx::AnalysisNeighborhood           nb;
-    nb.setCutoff(std::max(maxRadius1 + maxRadius2, rshell));
+    gmx::AnalysisNeighborhoodPair       pair;
+    nb.setCutoff(maxRadius1 + maxRadius2);
     gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
     gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
     gmx::AnalysisNeighborhoodPositions  pos(*x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
-    gmx::AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
-        if (remover.isMarked(pair.testIndex()))
+        if (remover->isMarked(pair.testIndex()))
         {
             pairSearch.skipRemainingPairsForTestPosition();
             continue;
@@ -545,17 +568,17 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
         const real r1      = r_solute[pair.refIndex()];
         const real r2      = (*r)[pair.testIndex()];
         const bool bRemove = (pair.distance2() < gmx::square(r1 + r2));
-        remover.markResidue(*atoms, pair.testIndex(), bRemove);
+        remover->markResidue(*atoms, pair.testIndex(), bRemove);
     }
 
-    remover.removeMarkedElements(x);
+    remover->removeMarkedElements(x);
     if (!v->empty())
     {
-        remover.removeMarkedElements(v);
+        remover->removeMarkedElements(v);
     }
-    remover.removeMarkedElements(r);
+    remover->removeMarkedElements(r);
     const int originalAtomCount = atoms->nr;
-    remover.removeMarkedAtoms(atoms);
+    remover->removeMarkedAtoms(atoms);
     fprintf(stderr, "Removed %d solvent atoms due to solute-solvent overlap\n",
             originalAtomCount - atoms->nr);
 }
@@ -647,8 +670,19 @@ static void add_solv(const char *fn, t_topology *top,
     }
     if (top->atoms.nr > 0)
     {
-        removeSoluteOverlap(atoms_solvt, &x_solvt, &v_solvt, &exclusionDistances_solvt, pbc,
-                            *x, exclusionDistances, rshell);
+        gmx::AtomsRemover remover(*atoms_solvt);
+        // If rshell is >0, the neighborhood search looks at all pairs
+        // within rshell, and unmarks those that are within the cutoff.
+        // This line marks everything, so that solvent outside rshell remains
+        // marked after the loop.
+        // Without rshell, the neighborhood search only marks the overlapping
+        // solvent atoms, and all others are left alone.
+        if (rshell > 0.0)
+        {
+            createShell(&remover, atoms_solvt, &x_solvt, pbc, *x, rshell);
+        }
+        removeSoluteOverlap(&remover, atoms_solvt, &x_solvt, &v_solvt,
+                            &exclusionDistances_solvt, pbc, *x, exclusionDistances);
     }
 
     if (max_sol > 0 && atoms_solvt->nres > max_sol)
