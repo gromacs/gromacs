@@ -516,6 +516,14 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
     const real                          maxRadius2
         = *std::max_element(r_solute.begin(), r_solute.end());
 
+    gmx::AnalysisNeighborhood           nb;
+    nb.setCutoff(std::max(maxRadius1 + maxRadius2, rshell));
+    gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
+    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
+    gmx::AnalysisNeighborhoodPositions  pos(*x);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    gmx::AnalysisNeighborhoodPair       pair;
+
     gmx::AtomsRemover                   remover(*atoms);
     // If rshell is >0, the neighborhood search looks at all pairs
     // within rshell, and unmarks those that are within the cutoff.
@@ -525,16 +533,15 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
     // solvent atoms, and all others are left alone.
     if (rshell > 0.0)
     {
+        // Remove everything
         remover.markAll();
+        // Now put back those within the shell without checking for overlap
+        while (pairSearch.findNextPair(&pair))
+        {
+            remover.markResidue(*atoms, pair.testIndex(), false);
+        }
     }
-
-    gmx::AnalysisNeighborhood           nb;
-    nb.setCutoff(std::max(maxRadius1 + maxRadius2, rshell));
-    gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
-    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
-    gmx::AnalysisNeighborhoodPositions  pos(*x);
-    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
-    gmx::AnalysisNeighborhoodPair       pair;
+    // Now check for overlap.
     while (pairSearch.findNextPair(&pair))
     {
         if (remover.isMarked(pair.testIndex()))
