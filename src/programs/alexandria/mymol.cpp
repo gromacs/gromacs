@@ -2435,11 +2435,9 @@ void MyMol::addShells(const Poldata          &pd,
                 newa->atom[j].m          = 0;
                 newa->atom[j].mB         = 0;
                 newa->atom[j].atomnumber = 0;
-                sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type,
-                                                       atype_));
+                sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type, atype_));
                 newname[j] = strdup(buf);
-                shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p,
-                                          0, 0, 0, 0, 0, 0, 0);
+                shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
                 newa->atom[j].type          = shell;
                 newa->atom[j].typeB         = shell;
                 newa->atomtype[j]           =
@@ -2458,7 +2456,7 @@ void MyMol::addShells(const Poldata          &pd,
         /* Copy newa to atoms */
         copy_atoms(newa, &topology_->atoms);
         /* Copy coordinates and smnames */
-        for (i = 0; (i < newa->nr); i++)
+        for (i = 0; i < newa->nr; i++)
         {
             copy_rvec(newx[i], x_[i]);
             topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
@@ -2586,11 +2584,18 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     double       value, Hatom, ZPE;
     double       T = -1, error; 
     double       vec[DIM];
-    double       q[topology_->atoms.nr];
     tensor       quadrupole;
     std::string  myref, mylot;
-    int          ia;
-
+    int          ia, natom = 0;
+    
+    for (int i = 0; i < topology_->atoms.nr; i++)
+    {
+        if (topology_->atoms.atom[i].ptype == eptAtom)
+        {
+            natom++;
+        }
+    }
+    
     if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
                               lot, "", (char *)"electronic",
                               &value, &error, &T, myref, mylot,
@@ -2638,50 +2643,37 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         }
     }
     
+    double q[natom];
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", (char *)"ESP", &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
-        int i;
-        for (i = 0; i < topology_->atoms.nr; i++)
+        int   i, j;
+        real  r2, dfac, Q;
+        
+        snew(qESP_, natom);
+        clear_rvec(mu_esp_);
+        clear_mat(Q_esp_); 
+        for (i = j = 0; i < topology_->atoms.nr; i++)
         {
             if (topology_->atoms.atom[i].ptype == eptAtom)
             {
-                qESP_[i] = q[i];
+                qESP_[j] = q[j];
+                Q        = ENM2DEBYE*qESP_[j];
+                dfac     = Q*0.5*10;
+                r2       = iprod(x_[i], x_[i]);
+                for (int m = 0; m < DIM; m++)
+                {
+                    mu_esp_[m]   += x_[i][m]*Q;
+                    Q_esp_[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
+                }
+                Q_esp_[XX][YY] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][YY]+coq_[YY]);
+                Q_esp_[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
+                Q_esp_[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
+                j++;
             }
-            else if (topology_->atoms.atom[i].ptype == eptShell)
-            {
-                qESP_[i] = topology_->atoms.atom[i].q;
-            }
-        }
-        
-        clear_rvec(mu_esp_);
-        for (i = 0; i < topology_->atoms.nr; i++)
-        {
-            auto Q = ENM2DEBYE*qESP_[i];
-        
-            for (int m = 0; m < DIM; m++)
-            {
-                mu_esp_[m] += x_[i][m]*Q;
-            }
-        }
-        dip_esp_ = norm(mu_esp_);
-        
-        real  r2, dfac, Q;
-        clear_mat(Q_esp_);   
-        for (i = 0; i < topology_->atoms.nr; i++)
-        {
-            Q    = ENM2DEBYE*qESP_[i];
-            dfac = Q*0.5*10;
-            r2   = iprod(x_[i], x_[i]);
-            for (int m = 0; m < DIM; m++)
-            {
-                Q_esp_[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
-            }
-            Q_esp_[XX][YY] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][YY]+coq_[YY]);
-            Q_esp_[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
-            Q_esp_[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
         }       
+        dip_esp_ = norm(mu_esp_);      
     }
     
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),

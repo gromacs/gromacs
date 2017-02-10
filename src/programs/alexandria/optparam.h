@@ -77,6 +77,7 @@ class OptParam
         real                    seed_;
         real                    step_;
         real                    temperature_;
+        real                    beta_;
 
         OptParam();
 
@@ -114,6 +115,8 @@ class OptParam
          * \param[in] temperature
          */
         void setTemperature(real temperature);
+        
+        void setBeta(real temp);
 };
 
 template <class T> class Bayes : public OptParam
@@ -238,23 +241,19 @@ void Bayes<T>::simulate()
 {
 
     parm_t                           sum, sum_of_sq;
-    int                              iter, j, nsum = 0, nParam = 0;
+    int                              iter, j, nsum = 0, nParam = 0, ncycle;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
     double                           deltaEval;
     double                           randProbability;
     double                           mcProbability;
-    double                           beta;
+    double                           T_half, Tnew;
 
     FILE                            *fpc = nullptr, *fpe = nullptr;
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> uniform(0, 1);
-    //std::lognormal_distribution<>    normal(0, 0.25);
-
-    beta   = 1/(BOLTZ*temperature_);
-    nParam = param_.size();
     
     if (nullptr != xvgconv_)
     {
@@ -265,6 +264,7 @@ void Bayes<T>::simulate()
         fpe = xvgropen(xvgepot_, "Parameter energy", "iteration", "kT", oenv_);
     }
 
+    nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
@@ -272,7 +272,9 @@ void Bayes<T>::simulate()
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
-      
+    T_half    = (0.5*temperature_);
+    ncycle    = (maxiter_/2000);
+    setBeta(temperature_);  
     for (iter = 0; iter < maxiter_; iter++)
     {
         for (j = 0; j < nParam; j++)
@@ -295,13 +297,13 @@ void Bayes<T>::simulate()
             currEval        = func_(param_.data());
             deltaEval       = currEval-prevEval;
             randProbability = uniform(gen);
-            mcProbability   = exp(-beta*deltaEval);
+            mcProbability   = exp(-beta_*deltaEval);
             if ((deltaEval < 0) || (mcProbability > randProbability))
             {
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
-                            j, storeParam, param_[j], beta*deltaEval);
+                            j, storeParam, param_[j], beta_*deltaEval);
                 }
                 if (currEval < *minEval_)
                 {
@@ -324,6 +326,8 @@ void Bayes<T>::simulate()
             }
             nsum++;
         }
+        Tnew = T_half * ((exp(-iter/(0.2*(maxiter_+1)))) * (1.1 + cos((ncycle*M_PI*iter)/(maxiter_+1))));
+        setBeta(Tnew);
     }
     if (nsum > 0)
     {

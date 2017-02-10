@@ -155,10 +155,15 @@ class OPtimization : public MolDip
            return (x < min) ? (gmx::square(x-min)) : ((x > max) ? (gmx::square(x-max)) : 0);
        }
      
-        void print_molecules(FILE *fp, const char *xvgfn, const char *qhisto,
-                             const char *cdiff, const char *mudiff, const char *Qdiff,
-                             const char *espdiff, real dip_toler, real quad_toler, 
-                             real q_toler, const gmx_output_env_t * oenv);
+        void print_results(FILE *fp, 
+                           const char             *qhisto,
+                           const char             *dipcorr,
+                           const char             *mucorr, 
+                           const char             *Qcorr,
+                           const char             *espcorr, 
+                           real                    dip_toler, 
+                           real                    quad_toler, 
+                           const gmx_output_env_t *oenv);
         
         void print_dipole(FILE  *fp, 
                           MyMol *mol, 
@@ -835,13 +840,18 @@ void OPtimization::print_dipole(FILE  *fp,
     }
 }
 
-void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhisto,
-                                   const char *cdiff, const char *mudiff, const char *Qdiff,
-                                   const char *espdiff, real dip_toler, real quad_toler, 
-                                   real q_toler, const gmx_output_env_t * oenv)
+void OPtimization::print_results(FILE                   *fp, 
+                                 const char             *qhisto,
+                                 const char             *DipCorr,
+                                 const char             *MuCorr, 
+                                 const char             *Qcorr,
+                                 const char             *EspCorr, 
+                                 real                    dip_toler, 
+                                 real                    quad_toler, 
+                                 const gmx_output_env_t *oenv)
 {
-    FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
     double        d2 = 0;
+    FILE         *dipc, *muc, *Qc, *hh, *espc;
     real          rms, sigma, aver, error, qq;
     int           j, n, nout, mm, nn;
      
@@ -854,16 +864,14 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
         eprEEM, eprESP, eprNR
     };
     
-    gmx_stats_t               lsq_q, lsq_mu[eprNR], lsq_quad[eprNR], lsq_esp;
-    std::vector<AtomTypeLsq>  lsqt;
+    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp;
     const char               *eprnm[eprNR] = { "EEM", "ESP" };
+    std::vector<AtomTypeLsq>  lsqt;
     
-
-    xvgf  = xvgropen(xvgfn, "Correlation between dipoles", "Electronic", "Predicted", oenv);
-    xvgr_symbolize(xvgf, 2, eprnm, oenv);
-    lsq_q       = gmx_stats_init();
     lsq_quad[0] = gmx_stats_init();
     lsq_quad[1] = gmx_stats_init();
+    lsq_dip[0]  = gmx_stats_init();
+    lsq_dip[1]  = gmx_stats_init();
     lsq_mu[0]   = gmx_stats_init();
     lsq_mu[1]   = gmx_stats_init();
     lsq_esp     = gmx_stats_init();
@@ -888,8 +896,7 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
             
             rms = mol.espRms();
             fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);           
-            fprintf(xvgf, "Dipole Moment. QM: %10g  EEM: %10g\n", mol.dip_elec_, mol.dip_calc_);
-            
+                        
             auto nEsp     = mol.gr_.nEsp();
             auto EspPoint = mol.gr_.espPoint();
             for (size_t i = 0; i < nEsp; i++)
@@ -897,11 +904,12 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
                 gmx_stats_add_point(lsq_esp, EspPoint[i].v(), EspPoint[i].vCalc(), 0, 0);
             }
             
+            gmx_stats_add_point(lsq_dip[0], mol.dip_elec_, mol.dip_calc_, 0, 0);
+            gmx_stats_add_point(lsq_dip[1], mol.dip_elec_, mol.dip_esp_, 0, 0);
             for (mm = 0; mm < DIM; mm++)
             {
                 gmx_stats_add_point(lsq_mu[0], mol.mu_elec_[mm], mol.mu_calc_[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[1], mol.mu_elec_[mm], mol.mu_esp_[mm], 0, 0);
-                
+                gmx_stats_add_point(lsq_mu[1], mol.mu_elec_[mm], mol.mu_esp_[mm], 0, 0);                
                 if (bfullTensor_)
                 {
                     for (nn = 0; nn < DIM; nn++)
@@ -938,22 +946,18 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
                 }
                 
                 qq = mol.topology_->atoms.atom[j].q;
-                fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
+                fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                         mol.topology_->atoms.atom[j].atomnumber,
                         j+1,
                         *(mol.topology_->atoms.atomtype[j]),
-                        qq,mol.qESP_[j],
-                        mol.x_[j][XX], mol.x_[j][YY], mol.x_[j][ZZ],
-                        fabs(qq - mol.qESP_[j]) > q_toler ? "ZZZ" : "");
+                        qq, mol.qESP_[j],
+                        mol.x_[j][XX], mol.x_[j][YY], mol.x_[j][ZZ]);
                 gmx_stats_add_point(k->lsq, mol.qESP_[j], qq, 0, 0);
-                gmx_stats_add_point(lsq_q, mol.qESP_[j], qq, 0, 0);
             }
             fprintf(fp, "\n");
             n++;
         }
     }
-    fclose(xvgf);
-
 
     fprintf(fp, "Dipoles are %s in EEM Parametrization.\n",     (bDipole_ ? "used" : "not used"));
     fprintf(fp, "Quadrupoles are %s in EEM Parametrization.\n", (bQuadrupole_ ? "used" : "not used"));
@@ -961,6 +965,7 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
     fprintf(fp, "\n");
     
     print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
     print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
     if (bESP_ || (!bESP_ && _iChargeGenerationAlgorithm == eqgEEM))
     {
@@ -973,6 +978,7 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
     fprintf(fp, "\n");
 
     print_stats(fp, (char *)"Dipoles", lsq_mu[1], true, (char *)"QM", (char *)"ESP");
+    print_stats(fp, (char *)"Dipole Moment", lsq_dip[1], false, (char *)"QM", (char *)"ESP");
     print_stats(fp, (char *)"Quadrupoles", lsq_quad[1], false, (char *)"QM", (char *)"ESP");
     if (!bESP_ && _iChargeGenerationAlgorithm == eqgESP)
     {
@@ -983,16 +989,13 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
         fprintf(fp, "Electrostatic Potential is not fitted by ESP\n");
     }    
     fprintf(fp, "\n");
-    
-    qdiff = xvgropen(cdiff, "Partial Charges", "ESP", "EEM", oenv);   
+      
     std::vector<const char *> atypes;
     for (const auto &k : lsqt)
     {
         atypes.push_back(k.atomtype.c_str());
     }
     
-    xvgr_legend(qdiff, atypes.size(), atypes.data(), oenv);
-    xvgr_symbolize(qdiff, atypes.size(), atypes.data(), oenv);
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
     xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
     fprintf(fp, "\nDeviations of the charges separated per atomtype:\n");
@@ -1002,8 +1005,6 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
         int   N;
         real *x, *y;
 
-        print_stats(fp, k->atomtype.c_str(), k->lsq, (k == lsqt.begin()), (char *)"ESP", (char *)"EEM");
-        print_lsq_set(qdiff, k->lsq);
         if (gmx_stats_get_npoints(k->lsq, &N) == estatsOK)
         {
             N = N/4;
@@ -1020,40 +1021,43 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
             }
         }
     }
-    fclose(qdiff);
     fclose(hh);
     fprintf(fp, "\n");
     
-    mud = xvgropen(mudiff, "Dipoles (Debye)", "QM", "Empirical", oenv);
-    xvgr_symbolize(mud, 2, eprnm, oenv);
-    print_lsq_set(mud, lsq_mu[0]);
-    print_lsq_set(mud, lsq_mu[1]);
-    fclose(mud);
+    dipc = xvgropen(DipCorr, "Dipole Moment (Debye)", "QM", "Empirical", oenv);
+    xvgr_symbolize(dipc, 2, eprnm, oenv);
+    print_lsq_set(dipc, lsq_dip[0]);
+    print_lsq_set(dipc, lsq_dip[1]);
+    fclose(dipc);
+    
+    muc = xvgropen(MuCorr, "Dipoles (Debye)", "QM", "Empirical", oenv);
+    xvgr_symbolize(muc, 2, eprnm, oenv);
+    print_lsq_set(muc, lsq_mu[0]);
+    print_lsq_set(muc, lsq_mu[1]);
+    fclose(muc);
 
-    tdiff = xvgropen(Qdiff, "Quadrupoles", "QM", "Empirical", oenv);
-    xvgr_symbolize(tdiff, 2, eprnm, oenv);
-    print_lsq_set(tdiff, lsq_quad[0]);
-    print_lsq_set(tdiff, lsq_quad[1]);
-    fclose(tdiff);
+    Qc = xvgropen(Qcorr, "Quadrupoles (Buckingham)", "QM", "Empirical", oenv);
+    xvgr_symbolize(Qc, 2, eprnm, oenv);
+    print_lsq_set(Qc, lsq_quad[0]);
+    print_lsq_set(Qc, lsq_quad[1]);
+    fclose(Qc);
     
     if (bESP_)
     {
-        espd = xvgropen(espdiff, "Electrostatic Potential (Hartree/e)", "QM", "EEM", oenv);
-        xvgr_symbolize(espd, 1, eprnm, oenv);
-        print_lsq_set(espd, lsq_esp);
-        fclose(espd);
+        espc = xvgropen(EspCorr, "Electrostatic Potential (Hartree/e)", "QM", "EEM", oenv);
+        xvgr_symbolize(espc, 1, eprnm, oenv);
+        print_lsq_set(espc, lsq_esp);
+        fclose(espc);
     }
 
-    rms = sqrt(d2/n);
-    fprintf(fp, "RMSD of Dipole Moment for %d molecules = %.3f (Debye) \n", n, rms);
     fprintf(fp, "hfac = %g\n", _hfac);
     gmx_stats_get_ase(lsq_mu[0], &aver, &sigma, &error);
-    sigma = rms;
+    sigma = sqrt(d2/n);
     nout  = 0;
     fprintf(fp, "Overview of outliers (> %.3f off)\n", 2*sigma);
     fprintf(fp, "----------------------------------\n");
     fprintf(fp, "%-20s  %12s  %12s  %12s\n",
-            "Name", "Predicted", "Experimental", "Mu-Deviation");
+            "Name", "EEM", "QM", "Mu-Deviation (Debye)");
             
     for (auto &mol : _mymol)
     {
@@ -1080,13 +1084,13 @@ void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhis
         printf("No outliers! Well done.\n");
     }
     
-    do_view(oenv, xvgfn, nullptr);
-    gmx_stats_free(lsq_q);
     gmx_stats_free(lsq_esp);
     gmx_stats_free(lsq_quad[0]);
     gmx_stats_free(lsq_quad[1]);
     gmx_stats_free(lsq_mu[0]);
     gmx_stats_free(lsq_mu[1]);
+    gmx_stats_free(lsq_dip[0]);
+    gmx_stats_free(lsq_dip[1]);
 }
 
 int alex_tune_dip(int argc, char *argv[])
@@ -1136,12 +1140,11 @@ int alex_tune_dip(int argc, char *argv[])
         { efDAT, "-sel",       "molselect",   ffREAD  },
         { efXVG, "-table",     "table",       ffOPTRD },
         { efLOG, "-g",         "charges",     ffWRITE },
-        { efXVG, "-x",         "dipcorr",     ffWRITE },
         { efXVG, "-qhisto",    "q_histo",     ffWRITE },
-        { efXVG, "-qdiff",     "q_diff",      ffWRITE },
-        { efXVG, "-mudiff",    "mu_diff",     ffWRITE },
-        { efXVG, "-thetadiff", "theta_diff",  ffWRITE },
-        { efXVG, "-espdiff",   "esp_diff",    ffWRITE },
+        { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
+        { efXVG, "-mucorr",    "mu_corr",     ffWRITE },
+        { efXVG, "-thetacorr", "theta_corr",  ffWRITE },
+        { efXVG, "-espcorr",   "esp_corr",    ffWRITE },
         { efXVG, "-conv",      "param-conv",  ffWRITE },
         { efXVG, "-epot",      "param-epot",  ffWRITE }
     };
@@ -1174,7 +1177,6 @@ int alex_tune_dip(int argc, char *argv[])
     static real                 ph_toler      = 5;
     static real                 dip_toler     = 0.5;
     static real                 quad_toler    = 5;
-    static real                 q_toler       = 0.25;
     static real                 factor        = 0.8;
     static real                 temperature   = 300;
     static char                *opt_elem      = nullptr;
@@ -1394,10 +1396,15 @@ int alex_tune_dip(int argc, char *argv[])
                
     if (MASTER(cr))
     {
-        opt.print_molecules(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
-                            opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
-                            opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
-                            dip_toler, quad_toler, q_toler, oenv);
+        opt.print_results(fp,  
+                          opt2fn("-qhisto",    NFILE, fnm),
+                          opt2fn("-dipcorr",   NFILE, fnm),
+                          opt2fn("-mucorr",    NFILE, fnm),
+                          opt2fn("-thetacorr", NFILE, fnm), 
+                          opt2fn("-espcorr",   NFILE, fnm),
+                          dip_toler, 
+                          quad_toler, 
+                          oenv);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
         done_filenms(NFILE, fnm);
