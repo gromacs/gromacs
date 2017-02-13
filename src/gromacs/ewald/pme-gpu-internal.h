@@ -46,6 +46,7 @@
 #ifndef GMX_EWALD_PME_GPU_INTERNAL_H
 #define GMX_EWALD_PME_GPU_INTERNAL_H
 
+#include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing pme_gpu_t members
@@ -441,6 +442,12 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(computeSplines),
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
+//FIXME document this A GPU counterpart to gmx_parallel_3dfft_execute
+CUDA_FUNC_QUALIFIER void pme_gpu_3dfft(const pme_gpu_t       *CUDA_FUNC_ARGUMENT(pmeGPU),
+                                       enum gmx_fft_direction CUDA_FUNC_ARGUMENT(dir),
+                                       const int              CUDA_FUNC_ARGUMENT(gridIndex)) CUDA_FUNC_TERM
+
+
 /*! \libinternal \brief
  * A GPU Fourier space solving function.
  *
@@ -462,7 +469,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGp
  * \param[in]     overwriteForces  True: h_forces are output-only.
  *                                 False: h_forces are copied to the device and are reduced with the results of the force gathering.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
- * \param[in]     h_grid           The host-side grid buffer (used only in testing moe)
+ * \param[in]     h_grid           The host-sde grid buffer (used only in testing moe)
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
                                         float           *CUDA_FUNC_ARGUMENT(h_forces),

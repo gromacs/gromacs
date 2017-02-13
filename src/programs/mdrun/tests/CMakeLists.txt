@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@ gmx_add_gtest_executable(
     tabulated_bonded_interactions.cpp
     energyreader.cpp
     grompp.cpp
+    pmegputest.cpp
     rerun.cpp
     trajectory_writing.cpp
     trajectoryreader.cpp
