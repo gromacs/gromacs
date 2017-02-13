@@ -38,6 +38,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
@@ -139,4 +140,11 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
     }
 
     setup_bonded_threading(fr, &top->idef);
+
+    gmx_pme_reinit_atoms(fr->pmedata, numHomeAtoms, mdatoms->chargeA);
+    /* This handles the PP+PME rank case where fr->pmedata is valid.
+     * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
+     * TODO: this only handles the GPU logic so far, should handle CPU as well.
+     * TODO: this also does not account for TPI.
+     */
 }
