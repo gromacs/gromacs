@@ -259,7 +259,7 @@ bool pme_gpu_check_restrictions(const gmx_pme_t *pme,
     }
     if (pme->doLJ)
     {
-        error.append("PME LJ is not implemented on GPU. ");
+        error.append("Lennard-Jones PME is not implemented on GPU. ");
     }
 #if GMX_DOUBLE
     {

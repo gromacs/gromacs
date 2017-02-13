@@ -315,7 +315,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
      */
     if (!(cr->duty & DUTY_PP))
     {
-        return;
+        return; //FIXME
     }
 
 #if GMX_THREAD_MPI
