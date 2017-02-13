@@ -149,7 +149,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
-                t_inputrec *ir)
+                t_inputrec *ir, bool useGpu)
 {
     int                npmedata;
     struct gmx_pme_t **pmedata;
@@ -242,12 +242,22 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         clear_mat(vir_q);
         clear_mat(vir_lj);
 
-        gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
-                   chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
-                   cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                   vir_q, vir_lj,
-                   &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
-                   GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+        const int pmeFlags = GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0);
+        if (useGpu)
+        {
+            pme_gpu_launch_everything_but_gather(pme, natoms, x_pp, chargeA, box, wcycle, pmeFlags);
+            pme_gpu_launch_gather(pme, wcycle, f_pp, true);
+            pme_gpu_get_results(pme, wcycle, vir_q, &energy_q, pmeFlags);
+        }
+        else
+        {
+            gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
+                       chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
+                       cr, maxshift_x, maxshift_y, mynrnb, wcycle,
+                       vir_q, vir_lj,
+                       &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
+                       pmeFlags);
+        }
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
