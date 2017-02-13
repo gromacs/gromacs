@@ -185,13 +185,19 @@ void GpuTaskAssignmentManager::assignRankGpuIds()
 
 void GpuTaskAssignmentManager::registerGpuTask(GpuTask task)
 {
+    /* Bail if binary is not compiled with GPU acceleration */
+    if (GMX_GPU == GMX_GPU_NONE)
+    {
+        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
+                  gmx::getProgramContext().displayName());
+    }
+
     tasksToAssign_.insert(task);
 }
 
-void GpuTaskAssignmentManager::selectRankGpuIds(const gmx::MDLogger  &mdlog,
-                                                bool                  forceUseGPU)
+void GpuTaskAssignmentManager::selectRankGpuIds(const gmx::MDLogger &mdlog)
 {
-    /* Thsi should be called after all the registerGpuTask() calls,
+    /* This should be called after all the registerGpuTask() calls,
      * so we know how many GPUs this process can use at most.
      * The actual used GPU count at any point can potentially be smaller.
      */
@@ -206,14 +212,6 @@ void GpuTaskAssignmentManager::selectRankGpuIds(const gmx::MDLogger  &mdlog,
 
     int              i;
     char             sbuf[STRLEN], stmp[STRLEN];
-
-    /* Bail if binary is not compiled with GPU acceleration, but this is either
-     * explicitly (-nb gpu) or implicitly (gpu ID passed) requested. */
-    if (forceUseGPU && (GMX_GPU == GMX_GPU_NONE))
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
-                  gmx::getProgramContext().displayName());
-    }
 
     if (gpuOpt_->bUserSet)
     {
@@ -255,12 +253,6 @@ void GpuTaskAssignmentManager::selectRankGpuIds(const gmx::MDLogger  &mdlog,
         /* Assign GPUs to ranks automatically. Intra-rank GPU to task assignment happens in selectTasksGpuIds. */
         assignRankGpuIds();
     }
-
-    /* If the user asked for a GPU, check whether we have a GPU */
-    if (forceUseGPU && gpuInfo_->n_dev_compatible == 0)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but no compatible GPUs were detected.");
-    }
 }
 
 void GpuTaskAssignmentManager::selectTasksGpuIds()
@@ -274,7 +266,12 @@ void GpuTaskAssignmentManager::selectTasksGpuIds()
     if (tasksToAssign_.count(GpuTask::NB) > 0)
     {
         gpuOpt_->gpuTasks->setGpuIndex(GpuTask::NB, gpuIndex);
-        gpuIndex++;
+        //gpuIndex++;
+    }
+    if (tasksToAssign_.count(GpuTask::PME) > 0)                 //FIXME multiple GPU contexts -  added else for now
+    {
+        gpuOpt_->gpuTasks->setGpuIndex(GpuTask::PME, gpuIndex); // using same GPU for now
+        //        gpuIndex++;
     }
 }
 

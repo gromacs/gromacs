@@ -235,7 +235,7 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
             output += gmx::formatString("On host %s ", host);
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
-                                    "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
+                                    "Mapping of GPU ID%s to the GPU ranks (%d PP rank%s are unrelated) in this node: %s\n", //FIXME report PME as well
                                     numGpusInUse, bPluralGpus ? "s" : "",
                                     gpu_opt->bUserSet ? "user-" : "auto-",
                                     bPluralGpus ? "s" : "",
@@ -315,7 +315,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
      */
     if (!(cr->duty & DUTY_PP))
     {
-        return;
+        return; //FIXME
     }
 
 #if GMX_THREAD_MPI

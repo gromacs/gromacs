@@ -67,6 +67,8 @@
 #include "pme-grid.h"
 #include "pme-internal.h"
 
+int g_gpuId; //TODO remove
+
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
  *
@@ -160,6 +162,8 @@ void pme_gpu_finish_step(const pme_gpu_t *pmeGPU, const bool bCalcF, const bool 
     }
     pme_gpu_update_timings(pmeGPU);
     pme_gpu_reinit_step(pmeGPU);
+
+    GMX_RELEASE_ASSERT(g_gpuId == get_current_cuda_gpu_device_id(), "kill me");
 }
 
 /*! \brief \libinternal
@@ -259,7 +263,7 @@ bool pme_gpu_check_restrictions(const gmx_pme_t *pme,
     }
     if (pme->doLJ)
     {
-        error.append("PME LJ is not implemented on GPU. ");
+        error.append("Lennard-Jones PME is not implemented on GPU. ");
     }
 #if GMX_DOUBLE
     {
@@ -315,6 +319,7 @@ void pme_gpu_init(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt
     GMX_RELEASE_ASSERT(gpu_opt->dev_use, "No GPU information");
     // TODO: possibly add the external GMX_PME_GPU_ID env. variable for debug
     const int           gpuId = gpu_opt->gpuTasks->gpuId(GpuTask::PME);
+    g_gpuId = gpuId;
     const gmx::MDLogger dummy; //TODO pass an actual logger here
     if (!init_gpu(dummy, gpuId, errorString, &hwinfo->gpu_info))
     {

@@ -108,7 +108,7 @@ class GpuTaskAssignmentManager
         /*! \brief
          * Assigns GPUs to this rank (or checks the manually selected GPU IDs); fills in gpu_opt->dev_use array.
          */
-        void selectRankGpuIds(const gmx::MDLogger &mdlog, bool forceUseGPU);
+        void selectRankGpuIds(const gmx::MDLogger &mdlog);
 
         /*! \brief
          * Assigns GPUs of this rank to the tasks. Should be called after gmx_select_rank_gpu_ids.
