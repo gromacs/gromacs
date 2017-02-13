@@ -270,13 +270,15 @@ void GpuTaskAssignmentManager::registerGpuTask(GpuTask task)
 
 void GpuTaskAssignmentManager::selectRankGpuIds(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
-    /* Thsi should be called after all the registerGpuTask() calls,
+    /* This should be called after all the registerGpuTask() calls,
      * so we know how many GPUs this process can use at most.
      * The actual used GPU count at any point can potentially be smaller.
      */
-    discoverGpuTasksCountsNode(cr, tasksToAssign_.size(), &devUseIndex_, &devUseCountNode_);
+    const size_t gpuTasksForRank = tasksToAssign_.size();
 
-    if (tasksToAssign_.empty())
+    discoverGpuTasksCountsNode(cr, gpuTasksForRank, &devUseIndex_, &devUseCountNode_);
+
+    if (devUseCountNode_ == 0)
     {
         /* Ignore (potentially) manually selected GPUs */
         gpuOpt_->n_dev_use = 0;
@@ -318,6 +320,10 @@ void GpuTaskAssignmentManager::selectTasksGpuIds()
     {
         gpuTasks_->setGpuIndex(GpuTask::NB, gpuIndex);
     }
+    if (tasksToAssign_.count(GpuTask::PME) > 0)
+    {
+        gpuTasks_->setGpuIndex(GpuTask::PME, gpuIndex);  // using same GPU for now
+    }
 }
 
 gmx_device_info_t *GpuTaskManager::gpuInfo(GpuTask task) const
@@ -356,4 +362,9 @@ void GpuTaskManager::setGpuIndex(GpuTask task, int gpuIndex)
     const int gpuId    = get_gpu_device_id(gpuInfo_, gpuOpt_, gpuIndex);
     gpuIdsByTasks_[task] = gpuId;
 
+}
+
+bool GpuTaskManager::rankHasGpuTasks() const
+{
+    return !gpuIdsByTasks_.empty();
 }

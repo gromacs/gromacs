@@ -164,7 +164,7 @@ void pme_gpu_finish_step(const pme_gpu_t *pmeGPU, const bool bCalcF, const bool 
  */
 void pme_gpu_reinit_grids(pme_gpu_t *pmeGPU)
 {
-    pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
     kernelParamsPtr->grid.ewaldFactor = (M_PI * M_PI) / (pmeGPU->common->ewaldcoeff_q * pmeGPU->common->ewaldcoeff_q);
 
     /* The grid size variants */
@@ -264,7 +264,7 @@ bool pme_gpu_check_restrictions(const gmx_pme_t *pme,
 #endif
 #if GMX_GPU != GMX_GPU_CUDA
     {
-        errorReasons.push_back("OpenCL");
+        errorReasons.push_back("non-CUDA build of Gromacs");
     }
 #endif
 
@@ -283,8 +283,9 @@ bool pme_gpu_check_restrictions(const gmx_pme_t *pme,
  *
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
+ * \param[in]     mdlog     The logger.
  */
-void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog)
 {
     std::string errorString;
     pme->useGPU = pme_gpu_check_restrictions(pme, &errorString);
@@ -306,18 +307,13 @@ void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     pmeGPU->settings.performGPUSolve = true;
     /* FIXME: CPU gather with GPU spread has got to be broken as well due to different theta/dtheta layout. */
     pmeGPU->settings.performGPUGather = true;
-    /* This is for the delayed atom data init hack and will get flipped back to false at first step */
-    pmeGPU->settings.needToUpdateAtoms = true;
 
     pme_gpu_set_testing(pmeGPU, false);
 
     // GPU initialization
-    // TODO: possibly add the external GMX_PME_GPU_ID env. variable for debug
-    const gmx::MDLogger dummyLog; //TODO pass an actual logger here
-    if (!init_gpu(dummyLog, gpuInfo, &errorString))
+    if (!init_gpu(mdlog, gpuInfo, &errorString))
     {
-        errorString = "PME error: " + errorString;
-        GMX_THROW(gmx::InternalError(errorString)); //TODO a better type?
+        GMX_THROW(gmx::InternalError(errorString));
     }
     pmeGPU->deviceInfo = gpuInfo;
 
@@ -330,7 +326,7 @@ void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
     GMX_ASSERT(pmeGPU->common->epsilon_r != 0.0f, "PME GPU: bad electrostatic coefficient");
 
-    pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
     kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGPU->common->epsilon_r;
 }
 
@@ -392,7 +388,7 @@ void pme_gpu_transform_spline_atom_data(const pme_gpu_t *pmeGPU, const pme_atomc
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog)
 {
     if (!pme_gpu_active(pme))
     {
@@ -402,7 +398,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo);
+        pme_gpu_init(pme, gpuInfo, mdlog);
     }
     else
     {
@@ -416,8 +412,6 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
 void pme_gpu_destroy(pme_gpu_t *pmeGPU)
 {
-    stopGpuProfiler();
-
     /* Free lots of data */
     pme_gpu_free_energy_virial(pmeGPU);
     pme_gpu_free_bspline_values(pmeGPU);
@@ -441,12 +435,12 @@ void pme_gpu_destroy(pme_gpu_t *pmeGPU)
 
 void pme_gpu_reinit_atoms(pme_gpu_t *pmeGPU, const int nAtoms, const real *coefficients)
 {
-    pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    auto      *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
-    const int                     alignment = pme_gpu_get_atom_data_alignment(pmeGPU);
+    const int  alignment = pme_gpu_get_atom_data_alignment(pmeGPU);
     pmeGPU->nAtomsPadded = ((nAtoms + alignment - 1) / alignment) * alignment;
-    int                           nAtomsAlloc   = c_usePadding ? pmeGPU->nAtomsPadded : nAtoms;
-    const bool                    haveToRealloc = (pmeGPU->nAtomsAlloc < nAtomsAlloc); /* This check might be redundant, but is logical */
+    int        nAtomsAlloc   = c_usePadding ? pmeGPU->nAtomsPadded : nAtoms;
+    const bool haveToRealloc = (pmeGPU->nAtomsAlloc < nAtomsAlloc); /* This check might be redundant, but is logical */
     pmeGPU->nAtomsAlloc = nAtomsAlloc;
 
 #if GMX_DOUBLE

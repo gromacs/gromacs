@@ -146,6 +146,8 @@ class GpuTaskManager
         gmx_device_info_t *gpuInfo(GpuTask task) const;
         //! Sets the GPU index into gpu_opt->dev_use for the given GPU task.
         void setGpuIndex(GpuTask task, int gpuIndex);
+        //! Tells if this rank uses any GPUs
+        bool rankHasGpuTasks() const;
 };
 
 #endif
