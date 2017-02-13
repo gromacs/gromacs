@@ -1844,7 +1844,7 @@ int gmx_grompp(int argc, char *argv[])
     set_warning_line(wi, mdparin, -1);
     t_inputrec  irInstance;
     t_inputrec *ir = &irInstance;
-    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, wi);
+    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, WriteMdpHeader::yes, wi);
 
     if (bVerbose)
     {
