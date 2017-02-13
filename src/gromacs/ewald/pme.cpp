@@ -1175,7 +1175,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         wallcycle_start(wcycle, ewcPME_FFT);
                     }
-                    gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
+                    gmx_parallel_3dfft_execute(pfft_setup, gmx_fft_direction::REAL_TO_COMPLEX,
                                                thread, wcycle);
                     if (thread == 0)
                     {
@@ -1221,7 +1221,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         where();
                         wallcycle_start(wcycle, ewcPME_FFT);
                     }
-                    gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
+                    gmx_parallel_3dfft_execute(pfft_setup, gmx_fft_direction::COMPLEX_TO_REAL,
                                                thread, wcycle);
                     if (thread == 0)
                     {
@@ -1442,7 +1442,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                                 wallcycle_start(wcycle, ewcPME_FFT);
                             }
 
-                            gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
+                            gmx_parallel_3dfft_execute(pfft_setup, gmx_fft_direction::REAL_TO_COMPLEX,
                                                        thread, wcycle);
                             if (thread == 0)
                             {
@@ -1518,7 +1518,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                                 wallcycle_start(wcycle, ewcPME_FFT);
                             }
 
-                            gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
+                            gmx_parallel_3dfft_execute(pfft_setup, gmx_fft_direction::COMPLEX_TO_REAL,
                                                        thread, wcycle);
                             if (thread == 0)
                             {

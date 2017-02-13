@@ -140,7 +140,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
     {
         gmx_fatal(FARGS, "Invalid fft return status %d", status);
     }
-    if ((status = gmx_fft_1d_real(fft, GMX_FFT_REAL_TO_COMPLEX, data, data)) != 0)
+    if ((status = gmx_fft_1d_real(fft, gmx_fft_direction::REAL_TO_COMPLEX, data, data)) != 0)
     {
         gmx_fatal(FARGS, "Invalid fft return status %d", status);
     }

@@ -186,7 +186,7 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
     {
         gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
     }
-    if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_COMPLEX_TO_REAL,
+    if ((fftcode = gmx_fft_1d_real(fft, gmx_fft_direction::COMPLEX_TO_REAL,
                                    (void *)tmp, (void *)tmp)) != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);

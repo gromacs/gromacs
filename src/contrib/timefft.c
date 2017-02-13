@@ -119,8 +119,8 @@ int main(int argc,char *argv[])
     else
       start_time();
     for(j=0; (j<nit); j++) {
-      gmxfft3D(g,GMX_FFT_REAL_TO_COMPLEX,cr);
-      gmxfft3D(g,GMX_FFT_COMPLEX_TO_REAL,cr);
+      gmxfft3D(g,gmx_fft_direction::REAL_TO_COMPLEX,cr);
+      gmxfft3D(g,gmx_fft_direction::COMPLEX_TO_REAL,cr);
     }
     if (PAR(cr)) 
       rt[i] = time(NULL)-start;

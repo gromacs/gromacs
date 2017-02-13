@@ -444,11 +444,11 @@ gmx_fft_1d               (gmx_fft_t                  fft,
 {
     int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
     int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_FORWARD);
+    int           isforward = (dir == gmx_fft_direction::FORWARD);
 
     /* Some checks */
     if ( (fft->real_transform == 1) || (fft->ndim != 1) ||
-         ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
+         ((dir != gmx_fft_direction::FORWARD) && (dir != gmx_fft_direction::BACKWARD)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
@@ -478,11 +478,11 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
 {
     int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
     int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
+    int           isforward = (dir == gmx_fft_direction::REAL_TO_COMPLEX);
 
     /* Some checks */
     if ( (fft->real_transform != 1) || (fft->ndim != 1) ||
-         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+         ((dir != gmx_fft_direction::REAL_TO_COMPLEX) && (dir != gmx_fft_direction::COMPLEX_TO_REAL)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
@@ -519,11 +519,11 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
 {
     int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf) == 0);
     int           inplace   = (in_data == out_data);
-    int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
+    int           isforward = (dir == gmx_fft_direction::REAL_TO_COMPLEX);
 
     /* Some checks */
     if ( (fft->real_transform != 1) || (fft->ndim != 2) ||
-         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+         ((dir != gmx_fft_direction::REAL_TO_COMPLEX) && (dir != gmx_fft_direction::COMPLEX_TO_REAL)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;

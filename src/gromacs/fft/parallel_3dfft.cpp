@@ -168,11 +168,11 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
                            int                     thread,
                            gmx_wallcycle_t         wcycle)
 {
-    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
+    if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir == gmx_fft_direction::FORWARD || dir == gmx_fft_direction::BACKWARD))
     {
         gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex");
     }
-    if (dir == GMX_FFT_FORWARD || dir == GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == gmx_fft_direction::FORWARD || dir == gmx_fft_direction::REAL_TO_COMPLEX)
     {
         fft5d_execute(pfft_setup->p1, thread, wcycle);
     }

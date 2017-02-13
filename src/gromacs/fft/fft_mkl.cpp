@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -458,13 +458,13 @@ gmx_fft_1d(gmx_fft_t                  fft,
     int status  = 0;
 
     if ( (fft->real_fft == 1) || (fft->ndim != 1) ||
-         ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
+         ((dir != gmx_fft_direction::FORWARD) && (dir != gmx_fft_direction::BACKWARD)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
-    if (dir == GMX_FFT_FORWARD)
+    if (dir == gmx_fft_direction::FORWARD)
     {
         if (inplace)
         {
@@ -508,13 +508,13 @@ gmx_fft_1d_real(gmx_fft_t                  fft,
     int status  = 0;
 
     if ( (fft->real_fft != 1) || (fft->ndim != 1) ||
-         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+         ((dir != gmx_fft_direction::REAL_TO_COMPLEX) && (dir != gmx_fft_direction::COMPLEX_TO_REAL)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
-    if (dir == GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == gmx_fft_direction::REAL_TO_COMPLEX)
     {
         if (inplace)
         {
@@ -557,13 +557,13 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
     int status  = 0;
 
     if ( (fft->real_fft != 1) || (fft->ndim != 2) ||
-         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+         ((dir != gmx_fft_direction::REAL_TO_COMPLEX) && (dir != gmx_fft_direction::COMPLEX_TO_REAL)) )
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
-    if (dir == GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == gmx_fft_direction::REAL_TO_COMPLEX)
     {
         if (inplace)
         {

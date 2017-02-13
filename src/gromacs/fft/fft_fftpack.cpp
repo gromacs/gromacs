@@ -238,11 +238,11 @@ gmx_fft_1d               (gmx_fft_t                  fft,
      * Elements 2*n .. 4*n-1 are internal FFTPACK work space.
      */
 
-    if (dir == GMX_FFT_FORWARD)
+    if (dir == gmx_fft_direction::FORWARD)
     {
         fftpack_cfftf1(n, (real *)out_data, fft->work+2*n, fft->work, fft->ifac, -1);
     }
-    else if (dir == GMX_FFT_BACKWARD)
+    else if (dir == gmx_fft_direction::BACKWARD)
     {
         fftpack_cfftf1(n, (real *)out_data, fft->work+2*n, fft->work, fft->ifac, 1);
     }
@@ -274,13 +274,13 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
         p1    = (real *)in_data;
         p2    = (real *)out_data;
         p2[0] = p1[0];
-        if (dir == GMX_FFT_REAL_TO_COMPLEX)
+        if (dir == gmx_fft_direction::REAL_TO_COMPLEX)
         {
             p2[1] = 0.0;
         }
     }
 
-    if (dir == GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == gmx_fft_direction::REAL_TO_COMPLEX)
     {
         /* FFTPACK only does in-place transforms, so emulate out-of-place
          * by copying data to the output array first. This works fine, since
@@ -322,7 +322,7 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
         }
 
     }
-    else if (dir == GMX_FFT_COMPLEX_TO_REAL)
+    else if (dir == gmx_fft_direction::COMPLEX_TO_REAL)
     {
         /* FFTPACK only does in-place transforms, and we cannot just copy
          * input to output first here since our real array is smaller than
@@ -369,7 +369,7 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
 
     work = fft->work+4*nx;
 
-    if (dir == GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == gmx_fft_direction::REAL_TO_COMPLEX)
     {
         /* If we are doing an in-place transform the 2D array is already
          * properly padded by the user, and we are all set.
@@ -396,7 +396,7 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
         /* y real-to-complex FFTs */
         for (i = 0; i < nx; i++)
         {
-            gmx_fft_1d_real(fft->next, GMX_FFT_REAL_TO_COMPLEX, data+i*nyc, data+i*nyc);
+            gmx_fft_1d_real(fft->next, gmx_fft_direction::REAL_TO_COMPLEX, data+i*nyc, data+i*nyc);
         }
 
         /* Transform to get X data in place */
@@ -405,14 +405,14 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
         /* Complex-to-complex X FFTs */
         for (i = 0; i < nyc; i++)
         {
-            gmx_fft_1d(fft, GMX_FFT_FORWARD, data+i*nx, data+i*nx);
+            gmx_fft_1d(fft, gmx_fft_direction::FORWARD, data+i*nx, data+i*nx);
         }
 
         /* Transpose back */
         gmx_fft_transpose_2d(data, data, nyc, nx);
 
     }
-    else if (dir == GMX_FFT_COMPLEX_TO_REAL)
+    else if (dir == gmx_fft_direction::COMPLEX_TO_REAL)
     {
         /* An in-place complex-to-real transform is straightforward,
          * since the output array must be large enough for the padding to fit.
@@ -439,7 +439,7 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
         /* Do X iFFTs */
         for (i = 0; i < nyc; i++)
         {
-            gmx_fft_1d(fft, GMX_FFT_BACKWARD, data+i*nx, data+i*nx);
+            gmx_fft_1d(fft, gmx_fft_direction::BACKWARD, data+i*nx, data+i*nx);
         }
 
         /* Transpose to get Y arrays */
@@ -448,7 +448,7 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
         /* Do Y iFFTs */
         for (i = 0; i < nx; i++)
         {
-            gmx_fft_1d_real(fft->next, GMX_FFT_COMPLEX_TO_REAL, data+i*nyc, data+i*nyc);
+            gmx_fft_1d_real(fft->next, gmx_fft_direction::COMPLEX_TO_REAL, data+i*nyc, data+i*nyc);
         }
 
         if (in_data != out_data)

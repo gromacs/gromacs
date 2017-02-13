@@ -1062,11 +1062,11 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
         tstart = (thread*pM[s]*pK[s]/plan->nthreads)*C[s];
         if ((plan->flags&FFT5D_REALCOMPLEX) && !(plan->flags&FFT5D_BACKWARD) && s == 0)
         {
-            gmx_fft_many_1d_real(p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? GMX_FFT_COMPLEX_TO_REAL : GMX_FFT_REAL_TO_COMPLEX, lin+tstart, fftout+tstart);
+            gmx_fft_many_1d_real(p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? gmx_fft_direction::COMPLEX_TO_REAL : gmx_fft_direction::REAL_TO_COMPLEX, lin+tstart, fftout+tstart);
         }
         else
         {
-            gmx_fft_many_1d(     p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? GMX_FFT_BACKWARD : GMX_FFT_FORWARD,               lin+tstart, fftout+tstart);
+            gmx_fft_many_1d(     p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? gmx_fft_direction::BACKWARD : gmx_fft_direction::FORWARD,               lin+tstart, fftout+tstart);
 
         }
 
@@ -1221,11 +1221,11 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     tstart = (thread*pM[s]*pK[s]/plan->nthreads)*C[s];
     if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD))
     {
-        gmx_fft_many_1d_real(p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? GMX_FFT_COMPLEX_TO_REAL : GMX_FFT_REAL_TO_COMPLEX, lin+tstart, lout+tstart);
+        gmx_fft_many_1d_real(p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? gmx_fft_direction::COMPLEX_TO_REAL : gmx_fft_direction::REAL_TO_COMPLEX, lin+tstart, lout+tstart);
     }
     else
     {
-        gmx_fft_many_1d(     p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? GMX_FFT_BACKWARD : GMX_FFT_FORWARD,               lin+tstart, lout+tstart);
+        gmx_fft_many_1d(     p1d[s][thread], (plan->flags&FFT5D_BACKWARD) ? gmx_fft_direction::BACKWARD : gmx_fft_direction::FORWARD,               lin+tstart, lout+tstart);
     }
     /* ------------ END FFT ---------*/
 

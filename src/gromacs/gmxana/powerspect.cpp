@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,8 +87,8 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
 
     for (n = 0; n < tsteps; n++)
     {
-        gmx_fft_2d_real(fftp, GMX_FFT_REAL_TO_COMPLEX, intftab[0][n], ftspect1);
-        gmx_fft_2d_real(fftp, GMX_FFT_REAL_TO_COMPLEX, intftab[1][n], ftspect2);
+        gmx_fft_2d_real(fftp, gmx_fft_direction::REAL_TO_COMPLEX, intftab[0][n], ftspect1);
+        gmx_fft_2d_real(fftp, gmx_fft_direction::REAL_TO_COMPLEX, intftab[1][n], ftspect2);
 
         /*Add to average for interface 1 here*/
         addtoavgenergy(ftspect1, pspectavg1, rfl, tsteps);

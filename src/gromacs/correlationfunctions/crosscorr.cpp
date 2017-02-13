@@ -106,15 +106,15 @@ static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft
         in2[i].re  = 0;
         in2[i].im  = 0;
     }
-    gmx_fft_1d(fft, GMX_FFT_FORWARD, in1, in1);
-    gmx_fft_1d(fft, GMX_FFT_FORWARD, in2, in2);
+    gmx_fft_1d(fft, gmx_fft_direction::FORWARD, in1, in1);
+    gmx_fft_1d(fft, gmx_fft_direction::FORWARD, in2, in2);
 
     for (i = 0; i < size; i++)
     {
         complexConjugatMult(&in1[i], &in2[i]);
         in1[i].re /= size;
     }
-    gmx_fft_1d(fft, GMX_FFT_BACKWARD, in1, in1);
+    gmx_fft_1d(fft, gmx_fft_direction::BACKWARD, in1, in1);
 
     for (i = 0; i < n; i++)
     {

@@ -185,9 +185,9 @@ TEST_P(FFTTest1D, Complex)
 
     gmx_fft_init_1d(&fft_, nx, flags_);
 
-    gmx_fft_1d(fft_, GMX_FFT_FORWARD, in, out);
+    gmx_fft_1d(fft_, gmx_fft_direction::FORWARD, in, out);
     checker_.checkSequenceArray(nx*2, out, "forward");
-    gmx_fft_1d(fft_, GMX_FFT_BACKWARD, in, out);
+    gmx_fft_1d(fft_, gmx_fft_direction::BACKWARD, in, out);
     checker_.checkSequenceArray(nx*2, out, "backward");
 }
 
@@ -205,9 +205,9 @@ TEST_P(FFTTest1D, Real)
 
     gmx_fft_init_1d_real(&fft_, rx, flags_);
 
-    gmx_fft_1d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
+    gmx_fft_1d_real(fft_, gmx_fft_direction::REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx*2, out, "forward");
-    gmx_fft_1d_real(fft_, GMX_FFT_COMPLEX_TO_REAL, in, out);
+    gmx_fft_1d_real(fft_, gmx_fft_direction::COMPLEX_TO_REAL, in, out);
     checker_.checkSequenceArray(rx, out, "backward");
 }
 
@@ -228,9 +228,9 @@ TEST_F(ManyFFTTest, Complex1DLength48Multi5Test)
 
     gmx_fft_init_many_1d(&fft_, nx, N, flags_);
 
-    gmx_fft_many_1d(fft_, GMX_FFT_FORWARD, in, out);
+    gmx_fft_many_1d(fft_, gmx_fft_direction::FORWARD, in, out);
     checker_.checkSequenceArray(nx*2*N, out, "forward");
-    gmx_fft_many_1d(fft_, GMX_FFT_BACKWARD, in, out);
+    gmx_fft_many_1d(fft_, gmx_fft_direction::BACKWARD, in, out);
     checker_.checkSequenceArray(nx*2*N, out, "backward");
 }
 
@@ -248,9 +248,9 @@ TEST_F(ManyFFTTest, Real1DLength48Multi5Test)
 
     gmx_fft_init_many_1d_real(&fft_, rx, N, flags_);
 
-    gmx_fft_many_1d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
+    gmx_fft_many_1d_real(fft_, gmx_fft_direction::REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx*2*N, out, "forward");
-    gmx_fft_many_1d_real(fft_, GMX_FFT_COMPLEX_TO_REAL, in, out);
+    gmx_fft_many_1d_real(fft_, gmx_fft_direction::COMPLEX_TO_REAL, in, out);
     checker_.checkSequenceArray(rx*N, out, "backward");
 }
 
@@ -268,10 +268,10 @@ TEST_F(FFTTest, Real2DLength18_15Test)
 
     gmx_fft_init_2d_real(&fft_, rx, ny, flags_);
 
-    gmx_fft_2d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
+    gmx_fft_2d_real(fft_, gmx_fft_direction::REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx*2*ny, out, "forward");
 //    known to be wrong for gmx_fft_mkl. And not used.
-//    gmx_fft_2d_real(_fft,GMX_FFT_COMPLEX_TO_REAL,in,out);
+//    gmx_fft_2d_real(_fft,gmx_fft_direction::COMPLEX_TO_REAL,in,out);
 //    _checker.checkSequenceArray(rx*ny, out, "backward");
 }
 
@@ -301,7 +301,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     std::copy(inputdata, inputdata+sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(rdata, in_.data(), sizeInBytes);
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);
+    gmx_parallel_3dfft_execute(fft_, gmx_fft_direction::REAL_TO_COMPLEX, 0, nullptr);
     //TODO use std::complex and add checkComplex for it
     checker_.checkSequenceArray(size*2,
                                 reinterpret_cast<real*>(cdata), "forward");
@@ -310,7 +310,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     std::copy(inputdata, inputdata+sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(cdata, in_.data(), sizeInBytes);
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, nullptr);
+    gmx_parallel_3dfft_execute(fft_, gmx_fft_direction::COMPLEX_TO_REAL, 0, nullptr);
     for (int i = 0; i < ndata[0]*ndata[1]; i++) //check sequence but skip unused data
     {
         checker_.checkSequenceArray(ndata[2], rdata+i*rsize[2],

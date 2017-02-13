@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,13 +104,13 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
                     in[2*j+0] = (*c)[i][j];
                     in[2*j+1] = 0;
                 }
-                gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in.data(), (void *)out.data());
+                gmx_fft_1d(fft1, gmx_fft_direction::BACKWARD, (void *)in.data(), (void *)out.data());
                 for (size_t j = 0; j < nfft; j++)
                 {
                     in[2*j+0] = (out[2*j+0]*out[2*j+0] + out[2*j+1]*out[2*j+1])/nfft;
                     in[2*j+1] = 0;
                 }
-                gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in.data(), (void *)out.data());
+                gmx_fft_1d(fft1, gmx_fft_direction::FORWARD, (void *)in.data(), (void *)out.data());
                 for (size_t j = 0; (j < nfft); j++)
                 {
                     (*c)[i][j] = out[2*j+0];
