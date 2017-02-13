@@ -298,6 +298,9 @@ int gmx_mdrun(int argc, char *argv[])
     { nullptr, "auto", "on", "off", nullptr };
     const char       *nbpu_opt[] =
     { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
+    const char       *pme_opt[] =
+    { nullptr, "auto", "cpu", "gpu", nullptr };
+
     real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
     char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
     real              cpt_period            = 15.0, max_hours = -1;
@@ -372,6 +375,8 @@ int gmx_mdrun(int argc, char *argv[])
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
           "Optimize PME load between PP/PME ranks or GPU/CPU" },
+        { "-pme",      FALSE, etENUM, {&pme_opt},
+          "Perform PME calculations on" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-pforce",  FALSE, etREAL, {&pforce},
@@ -545,7 +550,7 @@ int gmx_mdrun(int argc, char *argv[])
     rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
                        nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                       nbpu_opt[0], nstlist,
+                       nbpu_opt[0], pme_opt[0], nstlist,
                        nsteps, nstepout, resetstep,
                        nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                        pforce, cpt_period, max_hours, imdport, Flags);

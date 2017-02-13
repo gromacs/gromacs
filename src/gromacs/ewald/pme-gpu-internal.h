@@ -46,6 +46,7 @@
 #ifndef GMX_EWALD_PME_GPU_INTERNAL_H
 #define GMX_EWALD_PME_GPU_INTERNAL_H
 
+#include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing pme_gpu_t members
@@ -56,6 +57,11 @@ struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
 struct pme_atomcomm_t;
 struct t_complex;
+
+namespace gmx
+{
+class MDLogger;
+}
 
 //! Type of spline data
 enum class PmeSplineDataType
@@ -442,6 +448,17 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * 3D FFT R2C/C2R routine.
+ *
+ * \param[in]  pmeGpu          The PME GPU structure.
+ * \param[in]  direction       Transform direction (real-to-complex or complex-to-real)
+ * \param[in]  gridIndex       Index of the PME grid - unused, assumed to be 0.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_3dfft(const pme_gpu_t       *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                       enum gmx_fft_direction CUDA_FUNC_ARGUMENT(direction),
+                                       const int              CUDA_FUNC_ARGUMENT(gridIndex)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
  * A GPU Fourier space solving function.
  *
  * \param[in]     pmeGpu                  The PME GPU structure.
@@ -462,7 +479,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGp
  * \param[in]     overwriteForces  True: h_forces are output-only.
  *                                 False: h_forces are copied to the device and are reduced with the results of the force gathering.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
- * \param[in]     h_grid           The host-side grid buffer (used only in testing moe)
+ * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
                                         float           *CUDA_FUNC_ARGUMENT(h_forces),
@@ -619,9 +636,10 @@ void pme_gpu_transform_spline_atom_data(const pme_gpu_t *pmeGPU, const pme_atomc
  *
  * \param[in,out] pme       The PME structure.
  * \param[in,out] gpuInfo   The GPU information structure.
+ * \param[in]     mdlog     The logger.
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo);
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog);
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.

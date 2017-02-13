@@ -368,6 +368,7 @@ inline bool pme_gpu_active(const gmx_pme_t *pme)
  * bUseThreads tells if any MPI rank doing PME uses more than 1 threads.
  * If at calling you bUseThreads is unknown, pass TRUE for conservative
  * checking.
+ * TODO: the GPU restrictions are checked separately during pme_gpu_init().
  */
 void gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,

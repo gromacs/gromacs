@@ -235,15 +235,12 @@ struct pme_gpu_settings_t
     bool performGPUFFT;
     /*! \brief A convenience boolean which tells if PME decomposition is used. */
     bool useDecomposition;
-    /*! \brief A boolean which tells the PME GPU to call pme_gpu_reinit_atoms() at the beginning of the run.
-     * Set to true initially, then to false after the first MD step.
-     * The pme_reinit_atoms() after the DD gets called directly in gmx_pmeonly.
-     */
-    bool needToUpdateAtoms;
     /*! \brief A boolean which tells if any PME GPU stage should copy all of its outputs to the host.
      * Only intended to be used by the test framework.
      */
     bool copyAllOutputs;
+    /*! \brief Various computation flags for the curent step, corresponding to the GMX_PME_ flags in pme.h. */
+    int  stepFlags;
 };
 
 /*! \internal \brief
