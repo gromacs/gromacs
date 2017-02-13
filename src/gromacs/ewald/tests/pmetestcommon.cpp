@@ -59,6 +59,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -100,8 +101,9 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
     gmx_pme_t           *pmeDataRaw   = nullptr;
     const bool           useGpu       = (mode == CodePath::CPU) ? false : true;
 
+    const MDLogger       dummyLogger;
     gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec, atomCount, false, false, true,
-                 ewaldCoeff_q, ewaldCoeff_lj, 1, useGpu, nullptr, gpuInfo);
+                 ewaldCoeff_q, ewaldCoeff_lj, 1, useGpu, nullptr, gpuInfo, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type

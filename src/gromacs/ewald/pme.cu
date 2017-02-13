@@ -235,7 +235,7 @@ void pme_gpu_copy_input_coordinates(const pme_gpu_t *pmeGPU, const rvec *h_coord
 {
     GMX_ASSERT(h_coordinates, "Bad host-side coordinate buffer in PME GPU");
 #if GMX_DOUBLE
-    GMX_RELEASE_ASSERT(false, "Only single precision supported");
+    GMX_RELEASE_ASSERT(false, "Only single precision is supported");
     GMX_UNUSED_VALUE(h_coordinates);
 #else
     pme_gpu_make_sure_memory_is_pinned((void *)h_coordinates, pmeGPU->kernelParams->atoms.nAtoms * sizeof(rvec));
@@ -336,7 +336,7 @@ void pme_gpu_realloc_grids(pme_gpu_t *pmeGPU)
     const int newComplexGridSize = kernelParamsPtr->grid.complexGridSizePadded[XX] *
         kernelParamsPtr->grid.complexGridSizePadded[YY] *
         kernelParamsPtr->grid.complexGridSizePadded[ZZ] * 2;
-    // Multiplied by 2 because we count complex grid size for complex numbers, but all allocations/pointers are float *
+    // Multiplied by 2 because we count complex grid size for complex numbers, but all allocations/pointers are float
     if (pmeGPU->archSpecific->performOutOfPlaceFFT)
     {
         /* 2 separate grids */

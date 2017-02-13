@@ -103,6 +103,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -512,21 +513,22 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-int gmx_pme_init(struct gmx_pme_t **pmedata,
-                 t_commrec         *cr,
-                 int                nnodes_major,
-                 int                nnodes_minor,
-                 const t_inputrec  *ir,
-                 int                homenr,
-                 gmx_bool           bFreeEnergy_q,
-                 gmx_bool           bFreeEnergy_lj,
-                 gmx_bool           bReproducible,
-                 real               ewaldcoeff_q,
-                 real               ewaldcoeff_lj,
-                 int                nthread,
-                 bool               bPMEGPU,
-                 pme_gpu_t         *pmeGPU,
-                 gmx_device_info_t *gpuInfo)
+int gmx_pme_init(struct gmx_pme_t   **pmedata,
+                 t_commrec           *cr,
+                 int                  nnodes_major,
+                 int                  nnodes_minor,
+                 const t_inputrec    *ir,
+                 int                  homenr,
+                 gmx_bool             bFreeEnergy_q,
+                 gmx_bool             bFreeEnergy_lj,
+                 gmx_bool             bReproducible,
+                 real                 ewaldcoeff_q,
+                 real                 ewaldcoeff_lj,
+                 int                  nthread,
+                 bool                 bPMEGPU,
+                 pme_gpu_t           *pmeGPU,
+                 gmx_device_info_t   *gpuInfo,
+                 const gmx::MDLogger &mdlog)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -856,7 +858,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
 
-    pme_gpu_reinit(pme.get(), gpuInfo);
+    pme_gpu_reinit(pme.get(), gpuInfo, mdlog);
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
@@ -903,9 +905,14 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
 
     try
     {
+        const gmx::MDLogger dummyLogger;
+        // This is reinit which is currently only changing grid size/coefficients,
+        // so we don't expect the actual logging.
+        // TODO: when PME is an object, it should take reference to mdlog on construction and save it.
         ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
                            &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
-                           pme_src->nthread, pme_gpu_active(pme_src), pme_src->gpu, nullptr);
+                           pme_src->nthread, pme_gpu_active(pme_src), pme_src->gpu, nullptr, dummyLogger);
+        //TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -1743,7 +1750,10 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     sfree(pme->bufv);
     sfree(pme->bufr);
 
-    pme_free_all_work(&pme->solve_work, pme->nthread);
+    if (pme->solve_work)
+    {
+        pme_free_all_work(&pme->solve_work, pme->nthread);
+    }
 
     sfree(pme->sum_qgrid_tmp);
     sfree(pme->sum_qgrid_dd_tmp);
@@ -1763,5 +1773,5 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *co
         pme_gpu_reinit_atoms(pme->gpu, nAtoms, coefficients);
     }
     // TODO: handle the CPU case here
-    // TODO: call this during the initial MD setup
+    // TODO: handle free energy (pass the whole t_mdatoms?)
 }
