@@ -46,6 +46,7 @@
 #ifndef GMX_EWALD_PME_GPU_INTERNAL_H
 #define GMX_EWALD_PME_GPU_INTERNAL_H
 
+#include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing pme_gpu_t members
@@ -442,6 +443,17 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * R2C/C2R 3D FFT routine.
+ *
+ * \param[in]  pmeGpu          The PME GPU structure.
+ * ]param[in]  direction       Transform direction (real-to-complex or complex-to-real)
+ * \param[in]  gridIndex       Index of the PME grid - unused, assumed to be 0.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_3dfft(const pme_gpu_t       *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                       enum gmx_fft_direction CUDA_FUNC_ARGUMENT(direction),
+                                       const int              CUDA_FUNC_ARGUMENT(gridIndex)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
  * A GPU Fourier space solving function.
  *
  * \param[in]     pmeGpu                  The PME GPU structure.
@@ -462,7 +474,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGp
  * \param[in]     overwriteForces  True: h_forces are output-only.
  *                                 False: h_forces are copied to the device and are reduced with the results of the force gathering.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
- * \param[in]     h_grid           The host-side grid buffer (used only in testing moe)
+ * \param[in]     h_grid           The host-sde grid buffer (used only in testing moe)
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
                                         float           *CUDA_FUNC_ARGUMENT(h_forces),

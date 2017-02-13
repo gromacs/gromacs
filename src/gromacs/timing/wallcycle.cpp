@@ -139,11 +139,9 @@ static const char *PMEStageNames[] =
     "Spline",
     "Spread",
     "Spline/spread",
-    "Wrap",
     "FFT r2c",
     "Solve",
     "FFT c2r",
-    "Unwrap",
     "Gather",
 };
 
