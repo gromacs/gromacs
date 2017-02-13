@@ -217,6 +217,7 @@ static void sort_inp(int ninp, t_inpfile inp[])
 }
 
 void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUnknown,
+                   bool writeHeader,
                    warninp_t wi)
 {
     FILE *out;
@@ -225,16 +226,18 @@ void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUn
 
     sort_inp(ninp, inp);
     out = gmx_fio_fopen(fn, "w");
-    nice_header(out, fn);
-    try
+    if (writeHeader)
     {
-        gmx::BinaryInformationSettings settings;
-        settings.generatedByHeader(true);
-        settings.linePrefix(";\t");
-        gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
+        nice_header(out, fn);
+        try
+        {
+            gmx::BinaryInformationSettings settings;
+            settings.generatedByHeader(true);
+            settings.linePrefix(";\t");
+            gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
     for (i = 0; (i < ninp); i++)
     {
         if (inp[i].bSet)
@@ -333,6 +336,10 @@ static int get_einp(int *ninp, t_inpfile **inp, const char *name)
         srenew(*inp, (*ninp));
         (*inp)[i].name = gmx_strdup(name);
         (*inp)[i].bSet = TRUE;
+        if (i == 0)
+        {
+            (*inp)[i].inp_count = 1;
+        }
     }
     (*inp)[i].count = (*inp)[0].inp_count++;
     (*inp)[i].bSet  = TRUE;

@@ -176,7 +176,7 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpout != nullptr)
     {
-        write_inpfile(mpout, ninp, inp, TRUE, wi);
+        write_inpfile(mpout, ninp, inp, TRUE, true, wi);
     }
 
     done_warning(wi, FARGS);
