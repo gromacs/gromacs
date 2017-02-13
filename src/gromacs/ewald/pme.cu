@@ -294,7 +294,7 @@ void pme_gpu_realloc_grids(pme_gpu_t *pmeGPU)
     const int newComplexGridSize = kernelParamsPtr->grid.complexGridSizePadded[XX] *
         kernelParamsPtr->grid.complexGridSizePadded[YY] *
         kernelParamsPtr->grid.complexGridSizePadded[ZZ] * 2;
-    // Multiplied by 2 because we count complex grid size for complex numbers, but all allocations/pointers are float *
+    // Multiplied by 2 because we count complex grid size for complex numbers, but all allocations/pointers are float
     if (pmeGPU->archSpecific->performOutOfPlaceFFT)
     {
         /* 2 separate grids */
