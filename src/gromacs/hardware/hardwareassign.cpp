@@ -268,11 +268,12 @@ void GpuTaskAssignmentManager::registerGpuTask(GpuTask task)
 
 void GpuTaskAssignmentManager::selectRankGpuIds(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
-    /* Thsi should be called after all the registerGpuTask() calls,
+    /* This should be called after all the registerGpuTask() calls,
      * so we know how many GPUs this process can use at most.
      * The actual used GPU count at any point can potentially be smaller.
      */
-    discoverGpuTasksCountsNode(cr, tasksToAssign_.size(), devUseIndex_, devUseCountNode_);
+    const size_t gpusPerRank = std::min(tasksToAssign_.size(), (size_t)1); //FIXME move thsi into the previosu patch?
+    discoverGpuTasksCountsNode(cr, gpusPerRank, devUseIndex_, devUseCountNode_);
 
     if (tasksToAssign_.empty())
     {
@@ -316,6 +317,12 @@ void GpuTaskAssignmentManager::selectTasksGpuIds()
     if (tasksToAssign_.count(GpuTask::NB) > 0)
     {
         gpuOpt_->gpuTasks->setGpuIndex(GpuTask::NB, gpuIndex);
+        //gpuIndex++;
+    }
+    if (tasksToAssign_.count(GpuTask::PME) > 0)                 //FIXME multiple GPU contexts -  added else for now
+    {
+        gpuOpt_->gpuTasks->setGpuIndex(GpuTask::PME, gpuIndex); // using same GPU for now
+        //        gpuIndex++;
     }
 }
 
