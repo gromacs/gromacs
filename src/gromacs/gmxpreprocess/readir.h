@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
 namespace gmx
@@ -115,7 +116,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
 void get_ir(const char *mdparin, const char *mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
-            warninp_t wi);
+            WriteMdpHeader writeMdpHeader, warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
  * function is called. Also prints the input file back to mdparout.
