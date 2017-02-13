@@ -131,8 +131,10 @@ class PmeTestEnvironment : public ::testing::Environment
     public:
         //! Default
         ~PmeTestEnvironment() = default; // TODO: should the hardware contexts be destroyed cleanly?
-        //! Is called once to query the hardware
+        //! This is called once to query the hardware
         void SetUp();
+        //! This is called once in the end to print HW diagnostics
+        void TearDown();
         //! Get hardware information
         const gmx_hw_info_t *getHardwareInfo(){return hardwareInfo_.get(); }
         //! Get GPU information

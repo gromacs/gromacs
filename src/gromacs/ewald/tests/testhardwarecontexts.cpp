@@ -52,6 +52,26 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/loggerbuilder.h"
 
+//! A hackery to reach internal GTest colored printfs
+namespace testing
+{
+namespace internal
+{
+enum GTestColor {
+    COLOR_DEFAULT,
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_YELLOW
+};
+
+extern void ColoredPrintf(GTestColor color, const char* fmt, ...);
+}
+}
+#define GTEST_WARNING_PRINTF(...)  do { \
+        ::testing::internal::ColoredPrintf(::testing::internal::COLOR_GREEN, "[          ] "); \
+        ::testing::internal::ColoredPrintf(::testing::internal::COLOR_YELLOW, __VA_ARGS__); \
+} while (0)
+
 namespace gmx
 {
 namespace test
@@ -112,6 +132,27 @@ void PmeTestEnvironment::SetUp()
     }
 #if GMX_GPU == GMX_GPU_CUDA
     hardwareContextsByMode_[CodePath::CUDA] = gpuContexts;
+#endif
+}
+
+void PmeTestEnvironment::TearDown()
+{
+    // Printing warnings about CUDA code path not being tested
+#if GMX_GPU == GMX_GPU_CUDA
+    try
+    {
+        const auto &gpuContexts = hardwareContextsByMode_.at(CodePath::CUDA);
+        if (gpuContexts.empty())
+        {
+            throw;
+        }
+    }
+    catch (...)
+    {
+        GTEST_WARNING_PRINTF("No compatible CUDA devices detected, so the CUDA code path was not tested.\n");
+    }
+#else
+    GTEST_WARNING_PRINTF("This is not a CUDA build, so the CUDA code path was not tested.\n");
 #endif
 }
 
