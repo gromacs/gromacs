@@ -64,6 +64,10 @@ struct t_inputrec;
 struct pme_gpu_t;
 struct gmx_wallclock_gpu_pme_t;
 struct gmx_device_info_t;
+namespace gmx
+{
+class MDLogger;
+}
 
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
@@ -86,7 +90,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nthread,
                  bool bPMEGPU,
                  pme_gpu_t *pmeGPU,
-                 gmx_device_info_t *gpuInfo);
+                 gmx_device_info_t *gpuInfo,
+                 const gmx::MDLogger &mdlog);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t *pme);
@@ -134,7 +139,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
-                t_inputrec *ir);
+                t_inputrec *ir, bool useGpu);
 
 /*! \brief Calculate the PME grid energy V for n charges.
  *
@@ -217,24 +222,50 @@ void pme_gpu_get_timings(const gmx_pme_t         *pme,
 
 /* The main PME GPU functions */
 
-/*! \libinternal \brief
- * Gets the output forces and virial/energy if corresponding flags are (were?) passed in.
+/*! \brief
+ * Launches most of the PME GPU stages, except for gathering.
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[in]  x              The array of local atoms' coordinates.
+ * \param[in]  box            The unit cell box.
+ * \param[in]  wcycle         The wallclock counter.
+ * \param[in]  flags          The combination of flags to affect the PME computation.
+ *                            The flags are the GMX_PME_ flags from pme.h.
+ */
+void pme_gpu_launch_everything_but_gather(gmx_pme_t               *pme,
+                                          const rvec              *x,
+                                          const matrix             box,
+                                          gmx_wallcycle_t          wcycle,
+                                          int                      flags);
+
+/*! \brief
+ * Launches the PME GPU gathering and its force manipulations.
+ *
+ * \param[in]  pme               The PME data structure.
+ * \param[in]  wcycle            The wallclock counter.
+ * \param[in,out] forces         The array of local atoms' resulting forces.
+ * \param[in]  overwriteForces   The boolean which tells whether the gathering kernel overwrites
+ *                               the host array with the output reciprocal forces (true),
+ *                               or copies its contents to the GPU and reduces the reciprocal forces into that
+ *                               (false). The reduction is non-atomic.
+ */
+void pme_gpu_launch_gather(const gmx_pme_t      *pme,
+                           gmx_wallcycle_t       wcycle,
+                           rvec                 *forces,
+                           bool                  overwriteForces);
+
+/*! \brief
+ * Gets the output forces and virial/energy if corresponding flags were passed in.
  *
  * \param[in]  pme            The PME data structure.
  * \param[in]  wcycle         The wallclock counter.
  * \param[out] vir_q          The output virial matrix.
  * \param[out] energy_q       The output energy.
- * \param[in]  flags          The combination of flags to affect the output.
- *                            Pass GMX_PME_CALC_ENER_VIR to get the virial and energy.
- *                            GMX_PME_CALC_F should be affecting the force output,
- *                            but likely will not as the force copy has already been scheduled before.
- *                            TODO: rethink the flag handling.
  */
 void pme_gpu_get_results(const gmx_pme_t *pme,
                          gmx_wallcycle_t  wcycle,
                          matrix           vir_q,
-                         real            *energy_q,
-                         int              flags);
+                         real            *energy_q);
 
 
 #endif
