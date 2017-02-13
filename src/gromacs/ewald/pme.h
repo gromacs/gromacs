@@ -134,7 +134,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
-                t_inputrec *ir);
+                t_inputrec *ir, bool useGpu);
 
 /*! \brief Calculate the PME grid energy V for n charges.
  *
@@ -217,7 +217,46 @@ void pme_gpu_get_timings(const gmx_pme_t         *pme,
 
 /* The main PME GPU functions */
 
-/*! \libinternal \brief
+/*! \brief
+ * Launches most of the PME GPU stages, except for gathering and its force manipulations.
+ * The FFT can be launched on CPU instead of GPU.
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[in]  nAtoms         The number of local atoms.
+ *                            Only needed for the first MD step (late initialization).
+ * \param[in]  x              The array of local atoms' coordinates.
+ * \param[in]  charges        The array of local atoms' charges.
+ *                            Only needed for the first MD step (late initialization).
+ * \param[in]  box            The unit cell box.
+ * \param[in]  wcycle         The wallclock counter.
+ * \param[in]  flags          The combination of flags to affect the PME computation.
+ *                            TODO: document, rethink the flag handling.
+ */
+void pme_gpu_launch_everything_but_gather(gmx_pme_t               *pme,
+                                          int                      nAtoms,
+                                          const rvec              *x,
+                                          const  real             *charges,
+                                          const matrix             box,
+                                          gmx_wallcycle_t          wcycle,
+                                          int                      flags);
+
+/*! \brief
+ * Launches the PME GPU gathering and its force manipulations. TODO: rethink the whole separate gathering launch.
+ *
+ * \param[in]  pme               The PME data structure.
+ * \param[in]  wcycle            The wallclock counter.
+ * \param[in,out] forces         The array of local atoms' resulting forces.
+ * \param[in]  overwriteForces   The boolean which tells whether the gathering kernel overwrites
+ *                               the host array with the output reciprocal forces (true),
+ *                               or copies its contents to the GPU and reduces the reciprocal forces into that
+ *                               (false). The reduction is non-atomic.
+ */
+void pme_gpu_launch_gather(const gmx_pme_t      *pme,
+                           gmx_wallcycle_t       wcycle,
+                           rvec                 *forces,
+                           bool                  overwriteForces);
+
+/*! \brief
  * Gets the output forces and virial/energy if corresponding flags are (were?) passed in.
  *
  * \param[in]  pme            The PME data structure.

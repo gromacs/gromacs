@@ -424,7 +424,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     {
         if (ngpu >= 1)
         {
-            min_atoms_per_mpi_rank = min_atoms_per_gpu;
+            min_atoms_per_mpi_rank = min_atoms_per_gpu;  //FIXME
         }
         else
         {

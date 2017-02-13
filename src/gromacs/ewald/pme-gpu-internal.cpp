@@ -313,7 +313,7 @@ void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo)
 
     // GPU initialization
     // TODO: possibly add the external GMX_PME_GPU_ID env. variable for debug
-    const gmx::MDLogger dummyLog; //TODO pass an actual logger here
+    const gmx::MDLogger dummyLog; //FIXME pass an actual logger here
     if (!init_gpu(dummyLog, gpuInfo, &errorString))
     {
         errorString = "PME error: " + errorString;
