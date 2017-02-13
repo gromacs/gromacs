@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -139,9 +140,16 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 #define HOSTNAMELEN 80
 
-/* FW decl. */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
-                                       const gmx_gpu_opt_t  *gpu_opt);
+/*! \brief Count and return the number of unique items in the container. */
+template<typename T> inline size_t countUniqueItems(const std::vector<T> &store)
+{
+    std::set<T> uniqueStore;
+    for (const auto &i : store)
+    {
+        uniqueStore.insert(i);
+    }
+    return uniqueStore.size();
+}
 
 gmx_bool gmx_multiple_gpu_per_node_supported()
 {
@@ -170,15 +178,17 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
  *
  * \param[in] gpu_info       Pointer to per-node GPU info struct
  * \param[in] gpu_opt        Pointer to per-node GPU options struct
- * \param[in] numPpRanks     Number of PP ranks per node
  * \param[in] bPrintHostName Print the hostname in the usage information
+ * \param[in] gpuTasks       GPU mapping information manager
+ * \param[in] cr             The communication structure
  * \return                   String to write to the log file
  * \throws                   std::bad_alloc if out of memory */
 static std::string
 makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
                    const gmx_gpu_opt_t  *gpu_opt,
-                   size_t                numPpRanks,
-                   bool                  bPrintHostName)
+                   bool                  bPrintHostName,
+                   const GpuTaskManager &gpuTasks,
+                   const t_commrec      *cr)
 {
     int  ngpu_use  = gpu_opt->n_dev_use;
     int  ngpu_comp = gpu_info->n_dev_compatible;
@@ -219,29 +229,80 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
                                     gpuIdsString.c_str());
     }
 
+    std::vector<int> gpuIdsInUse;
+    for (int i = 0; i < ngpu_use; i++)
     {
-        std::vector<int> gpuIdsInUse;
-        for (int i = 0; i < ngpu_use; i++)
-        {
-            gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
-        }
-        std::string gpuIdsString =
-            formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
-        size_t      numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
-        bool        bPluralGpus  = numGpusInUse > 1;
+        gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
+    }
+    const size_t numGpusInUse = countUniqueItems<int>(gpuIdsInUse);
+    const bool   pluralGpus   = numGpusInUse > 1;
 
-        if (bPrintHostName)
+    if (bPrintHostName)
+    {
+        output += gmx::formatString("On host %s ", host);
+    }
+    output += gmx::formatString("%zu GPU%s %sselected for this run.\n", // FIXME this shows 2 instead of 1 on a single rank
+                                numGpusInUse, pluralGpus ? "s" : "", gpu_opt->bUserSet ? "user-" : "auto-");
+
+    const bool useMpi  = PAR(cr) || MULTISIM(cr);
+    MPI_Comm   physicalnode_comm; /* TODO store and reuse the physical node communicator? */
+    if (useMpi)
+    {
+#if GMX_MPI
+        MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->rank_intranode, &physicalnode_comm);
+#endif
+    }
+
+    // Reporting assignment of GPUs to each type of the GPU task on the separate line
+    const std::map<GpuTask, std::string> gpuTasksToReport = {{GpuTask::NB, "PP"}, {GpuTask::PME, "PME"}};
+    for (auto it : gpuTasksToReport)
+    {
+        const int invalidGpuId = -1;
+        int       gpuId        = invalidGpuId;
+        try
         {
-            output += gmx::formatString("On host %s ", host);
+            gpuId = gpuTasks.gpuId(it.first);
         }
-        output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
-                                    "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
-                                    numGpusInUse, bPluralGpus ? "s" : "",
-                                    gpu_opt->bUserSet ? "user-" : "auto-",
-                                    bPluralGpus ? "s" : "",
-                                    numPpRanks,
-                                    (numPpRanks > 1) ? "s" : "",
-                                    gpuIdsString.c_str());
+        catch (...)
+        {
+        }
+
+        std::vector<int> nodeGpuIds(cr->nrank_intranode, gpuId);
+        if (useMpi)
+        {
+#if GMX_MPI
+            // This gathers nodeGpuIds from individual gpuIds on the master of the node
+            MPI_Gather(&gpuId, 1, MPI_INT, nodeGpuIds.data(), 1, MPI_INT, MASTERRANK(cr), physicalnode_comm);
+#endif
+        }
+        else
+        {
+            GMX_ASSERT(nodeGpuIds.size() == 1, "This should be a serial case");
+            nodeGpuIds[0] = gpuId;
+        }
+        // Throwing out all the entries for ranks which don't run this GPU task
+        nodeGpuIds.erase(remove(nodeGpuIds.begin(), nodeGpuIds.end(), invalidGpuId), nodeGpuIds.end());
+
+        if (!nodeGpuIds.empty())
+        {
+            const std::string nodeGpuIdsString = formatAndJoin(nodeGpuIds, ",", gmx::StringFormatter("%d"));
+            const bool        pluralTaskGpuIds = countUniqueItems<int>(nodeGpuIds) > 1;
+            const size_t      taskRanksCount   = nodeGpuIds.size();
+
+            output += gmx::formatString("Mapping of GPU ID%s to the %zu %s rank%s in this node: %s\n",
+                                        pluralTaskGpuIds ? "s" : "",
+                                        taskRanksCount,
+                                        it.second.c_str(),
+                                        (taskRanksCount > 1) ? "s" : "",
+                                        nodeGpuIdsString.c_str());
+        }
+    }
+
+    if (useMpi)
+    {
+#if GMX_MPI
+        MPI_Comm_free(&physicalnode_comm);
+#endif
     }
 
     return output;
@@ -296,27 +357,18 @@ check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
     }
 }
 
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU)
+void gmx_check_hw_runconf_consistency(const gmx::MDLogger  &mdlog,
+                                      const gmx_hw_info_t  *hwinfo,
+                                      const t_commrec      *cr,
+                                      const gmx_hw_opt_t   *hw_opt,
+                                      gmx_bool              bUseGPU,
+                                      const GpuTaskManager &gpuTasks)
 {
-    int      npppn;
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
     gmx_bool btMPI, bMPI, bNthreadsAuto, bEmulateGPU;
 
     GMX_RELEASE_ASSERT(hwinfo, "hwinfo must be a non-NULL pointer");
     GMX_RELEASE_ASSERT(cr, "cr must be a non-NULL pointer");
-
-    /* Below we only do consistency checks for PP and GPUs,
-     * this is irrelevant for PME only nodes, so in that case we return
-     * here.
-     */
-    if (!(cr->duty & DUTY_PP))
-    {
-        return;
-    }
 
 #if GMX_THREAD_MPI
     bMPI          = FALSE;
@@ -343,8 +395,9 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         {
             gpuUsageReport = makeGpuUsageReport(&hwinfo->gpu_info,
                                                 &hw_opt->gpu_opt,
-                                                cr->nrank_pp_intranode,
-                                                bMPI && cr->nnodes > 1);
+                                                bMPI && cr->nnodes > 1, //TODO thsi can go away
+                                                gpuTasks,
+                                                cr);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -353,18 +406,35 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
     }
 
     /* Need to ensure that we have enough GPUs:
-     * - need one GPU per PP node
+     * - need one GPU per any GPU-using rank
      * - no GPU oversubscription with tMPI
-     * */
-    /* number of PP processes per node */
-    npppn = cr->nrank_pp_intranode;
+     */
+
+    const bool useMpi           = PAR(cr) || MULTISIM(cr);
+    int        gpuRankIndicator = gpuTasks.rankHasGpuTasks() ? 1 : 0;
+    int        gpuRankCount     = gpuRankIndicator; // already valid for serial case
+    if (useMpi)
+    {
+#if GMX_MPI
+        MPI_Comm   physicalnode_comm;    // TODO store and reuse the physical node communicator?
+        MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->rank_intranode, &physicalnode_comm);
+        // This sums up gpuRankIndicator into gpuRankCount on all the ranks of the node
+        MPI_Allreduce(&gpuRankIndicator, &gpuRankCount, 1, MPI_INT, MPI_SUM, physicalnode_comm);
+        MPI_Comm_free(&physicalnode_comm);
+#endif
+    }
+
+    if (!gpuRankIndicator)
+    {
+        return;
+    }
 
     pernode[0]           = '\0';
     th_or_proc_plural[0] = '\0';
     if (btMPI)
     {
         sprintf(th_or_proc, "thread-MPI thread");
-        if (npppn > 1)
+        if (gpuRankCount > 1)
         {
             sprintf(th_or_proc_plural, "s");
         }
@@ -372,7 +442,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
     else if (bMPI)
     {
         sprintf(th_or_proc, "MPI process");
-        if (npppn > 1)
+        if (gpuRankCount > 1)
         {
             sprintf(th_or_proc_plural, "es");
         }
@@ -384,6 +454,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         sprintf(th_or_proc, "process");
     }
 
+#if 0 //FIXME these checks need to be updated
     if (bUseGPU && hwinfo->gpu_info.n_dev_compatible > 0 &&
         !bEmulateGPU)
     {
@@ -401,19 +472,19 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         /* number of tMPI threads auto-adjusted */
         if (btMPI && bNthreadsAuto)
         {
-            if (hw_opt->gpu_opt.bUserSet && npppn < ngpu_use)
+            if (hw_opt->gpu_opt.bUserSet && gpuRankCount < ngpu_use)  //0 vs 2,
             {
                 /* The user manually provided more GPUs than threads we
                    could automatically start. */
                 gmx_fatal(FARGS,
-                          "%d GPU%s provided, but only %d PP thread-MPI thread%s coud be started.\n"
-                          "%s requires one PP tread-MPI thread per GPU; use fewer GPUs.",
+                          "%d GPU%s provided, but only %d PP thread-MPI thread%s could be started.\n"
+                          "%s requires one PP thread-MPI thread per GPU; use fewer GPUs.",
                           ngpu_use, gpu_use_plural,
-                          npppn, th_or_proc_plural,
+                          gpuRankCount, th_or_proc_plural,
                           programName);
             }
 
-            if (!hw_opt->gpu_opt.bUserSet && npppn < ngpu_comp)
+            if (!hw_opt->gpu_opt.bUserSet && gpuRankCount < ngpu_comp)
             {
                 /* There are more GPUs than tMPI threads; we have
                    limited the number GPUs used. */
@@ -421,21 +492,21 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                         "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
                         "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.",
                         ngpu_comp, gpu_comp_plural,
-                        npppn, th_or_proc_plural,
-                        programName, npppn,
-                        npppn > 1 ? "s" : "");
+                        gpuRankCount, th_or_proc_plural,
+                        programName, gpuRankCount,
+                        gpuRankCount > 1 ? "s" : "");
             }
         }
 
         if (hw_opt->gpu_opt.bUserSet)
         {
-            if (ngpu_use != npppn)
+            if (ngpu_use != gpuRankCount)
             {
                 gmx_fatal(FARGS,
                           "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
                           "%s was started with %d PP %s%s%s, but you provided %d GPU%s.",
                           th_or_proc, btMPI ? "s" : "es", pernode,
-                          programName, npppn, th_or_proc,
+                          programName, gpuRankCount, th_or_proc,
                           th_or_proc_plural, pernode,
                           ngpu_use, gpu_use_plural);
             }
@@ -443,7 +514,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         else
         {
             /* TODO Should we have a gpu_opt->n_dev_supported field? */
-            if (ngpu_comp > npppn && gmx_multiple_gpu_per_node_supported())
+            if (ngpu_comp > gpuRankCount && gmx_multiple_gpu_per_node_supported())
             {
                 GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                         "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
@@ -451,10 +522,10 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                         "      Each PP %s can use only one GPU, %d GPU%s%s will be used.",
                         programName, th_or_proc,
                         th_or_proc_plural, pernode, gpu_comp_plural,
-                        th_or_proc, npppn, gpu_use_plural, pernode);
+                        th_or_proc, gpuRankCount, gpu_use_plural, pernode);
             }
 
-            if (ngpu_use != npppn)
+            if (ngpu_use != gpuRankCount)
             {
                 /* Avoid duplicate error messages.
                  * Unfortunately we can only do this at the physical node
@@ -477,10 +548,10 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                         reasonForLimit = "was detected";
                     }
                     gmx_fatal(FARGS,
-                              "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
+                              "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n" //FIXME mmessages and strings
                               "%s was started with %d PP %s%s%s, but only %d GPU%s %s.",
                               th_or_proc, btMPI ? "s" : "es", pernode,
-                              programName, npppn, th_or_proc,
+                              programName, gpuRankCount, th_or_proc,
                               th_or_proc_plural, pernode,
                               ngpu_use, gpu_use_plural, reasonForLimit.c_str());
                 }
@@ -500,6 +571,11 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
             }
         }
     }
+#else
+    GMX_UNUSED_VALUE(bNthreadsAuto);
+    GMX_UNUSED_VALUE(bEmulateGPU);
+    GMX_UNUSED_VALUE(bUseGPU);
+#endif
 
 #if GMX_MPI
     if (PAR(cr))
@@ -509,7 +585,6 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         MPI_Barrier(cr->mpi_comm_mygroup);
     }
 #endif
-
 }
 
 /* Return 0 if none of the GPU (per node) are shared among PP ranks.
@@ -521,6 +596,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
  */
 int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
 {
+    // FIXME for multiple GPU tasks per rank
     int      same_count    = 0;
     int      ngpu          = gpu_opt->n_dev_use;
 
@@ -539,27 +615,6 @@ int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
     }
 
     return same_count;
-}
-
-/* Count and return the number of unique GPUs (per node) selected.
- *
- * As sharing GPUs among multiple PP ranks is possible when the user passes
- * GPU IDs, the number of GPUs user (per node) can be different from the
- * number of GPU IDs selected.
- */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
-                                       const gmx_gpu_opt_t  *gpu_opt)
-{
-    GMX_RELEASE_ASSERT(gpu_info, "gpu_info must be a non-NULL pointer");
-    GMX_RELEASE_ASSERT(gpu_opt, "gpu_opt must be a non-NULL pointer");
-
-    std::set<int> uniqIds;
-    for (int i = 0; i < gpu_opt->n_dev_use; i++)
-    {
-        int deviceId = get_gpu_device_id(gpu_info, gpu_opt, i);
-        uniqIds.insert(deviceId);
-    }
-    return uniqIds.size();
 }
 
 static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
