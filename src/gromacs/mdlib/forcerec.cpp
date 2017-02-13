@@ -3243,25 +3243,28 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
  */
 void free_gpu_resources(const t_forcerec     *fr,
                         const t_commrec      *cr,
-                        const GpuTaskManager *gpuTasks)
+                        const GpuTaskManager &gpuTasks)
 {
     const bool bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
     if (bIsPPrankUsingGPU)
     {
         /* Free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+    }
+
+    if (gpuTasks.rankHasGpuTasks())
+    {
         /* Stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
-         * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
+         * destroying the CUDA context in free_cuda_gpu() as some tMPI ranks may be sharing
          * GPU and context.
          *
          * This is not a concern in OpenCL where we use one context per rank which
-         * is freed in nbnxn_gpu_free().
+         * is freed in nbnxn_gpu_free(). TODO: refactor this for PME OpenCL
          *
-         * Note: as only PP ranks need to free GPU resources, so it is safe to
-         * not call the barrier on PME ranks.
+         * Note: it is safe to not call the barrier on the non-GPU using ranks.
          */
 #if GMX_THREAD_MPI
         if (PAR(cr))
@@ -3270,7 +3273,11 @@ void free_gpu_resources(const t_forcerec     *fr,
         }
 #endif  /* GMX_THREAD_MPI */
 
-        const auto *gpuInfo = gpuTasks->gpuInfo(GpuTask::NB);
+        // FIXME this requires context to be active
+        const auto *gpuInfo1 = gpuTasks.gpuInfo(GpuTask::NB);
+        const auto *gpuInfo2 = gpuTasks.gpuInfo(GpuTask::PME);
+        const auto *gpuInfo  = gpuInfo1 ? gpuInfo1 : gpuInfo2;
+
         /* Uninitialize the active GPU (by destroying the context) */
         std::string gpu_err_str;
         if (!free_cuda_gpu(gpuInfo, &gpu_err_str))
