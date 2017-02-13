@@ -1809,7 +1809,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 
 void get_ir(const char *mdparin, const char *mdparout,
             gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
-            warninp_t wi)
+            WriteMdpHeader writeMdpHeader, warninp_t wi)
 {
     char       *dumstr[2];
     double      dumdub[2][6];
@@ -2351,7 +2351,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     RTYPE ("userreal4",   ir->userreal4,  0);
 #undef CTYPE
 
-    write_inpfile(mdparout, ninp, inp, FALSE, wi);
+    write_inpfile(mdparout, ninp, inp, FALSE, writeMdpHeader, wi);
     for (i = 0; (i < ninp); i++)
     {
         sfree(inp[i].name);
