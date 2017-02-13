@@ -452,7 +452,7 @@ void pme_gpu_reinit_atoms(pme_gpu_t *pmeGPU, const int nAtoms, const real *coeff
     pmeGPU->nAtomsAlloc = nAtomsAlloc;
 
 #if GMX_DOUBLE
-    GMX_RELEASE_ASSERT(false, "Only single precision supported");
+    static_assert(false, "Only single precision supported");
     GMX_UNUSED_VALUE(coefficients);
 #else
     pme_gpu_realloc_and_copy_input_coefficients(pmeGPU, reinterpret_cast<const float *>(coefficients));
