@@ -465,6 +465,7 @@ void gmx_pme_check_restrictions(int pme_order,
                     "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
                     pme_order, PME_ORDER_MAX);
         GMX_THROW(InconsistentInputError(message));
+        //TODO? plug GPU restrictions here?
     }
 
     const int minGridSize = minimalPmeGridSize(pme_order);
