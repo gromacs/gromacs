@@ -158,6 +158,7 @@ struct mdrunner_arglist
     const char             *ddcsy;
     const char             *ddcsz;
     const char             *nbpu_opt;
+    const char             *pme_opt;
     int                     nstlist_cmdline;
     gmx_int64_t             nsteps_cmdline;
     int                     nstepout;
@@ -204,7 +205,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.ddxyz, mc.dd_rank_order, mc.npme, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                      mc.nbpu_opt, mc.nstlist_cmdline,
+                      mc.nbpu_opt, mc.pme_opt, mc.nstlist_cmdline,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
                       mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
                       mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
@@ -225,7 +226,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                         const char *nbpu_opt, int nstlist_cmdline,
+                                         const char *nbpu_opt, const char *pme_opt, int nstlist_cmdline,
                                          gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
@@ -270,6 +271,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->ddcsy           = ddcsy;
     mda->ddcsz           = ddcsz;
     mda->nbpu_opt        = nbpu_opt;
+    mda->pme_opt         = pme_opt;
     mda->nstlist_cmdline = nstlist_cmdline;
     mda->nsteps_cmdline  = nsteps_cmdline;
     mda->nstepout        = nstepout;
@@ -700,7 +702,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
+             const char *nbpu_opt, const char *pme_opt, int nstlist_cmdline,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
@@ -746,8 +748,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0) || (strncmp(pme_opt, "gpu", 3) == 0); //FIXME
+    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || (strncmp(pme_opt, "auto", 4) == 0) || bForceUseGPU;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -800,6 +802,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                     gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
                 }
                 bUseGPU = FALSE;
+                //TODO PME GPU check
             }
 
             prepare_verlet_scheme(fplog, cr,
@@ -833,6 +836,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
         }
     }
+
+    //FIXME:  This is a temporary boolean which represents a decision from a task scheduler.
+    const bool useGpuPme = strncmp(pme_opt, "cpu", 3);
+
 
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(hw_opt, cr, npme);
@@ -870,7 +877,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         oenv, bVerbose, nstglobalcomm,
                                         ddxyz, dd_rank_order, npme, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                        nbpu_opt, nstlist_cmdline,
+                                        nbpu_opt, pme_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
                                         cpt_period, max_hours,
@@ -1323,7 +1330,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme,
-                                      false, NULL, hwinfo, &hw_opt->gpu_opt);
+                                      useGpuPme, nullptr, hwinfo, &hw_opt->gpu_opt);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
@@ -1408,7 +1415,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec, useGpuPme);
     }
 
     wallcycle_stop(wcycle, ewcRUN);

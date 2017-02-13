@@ -65,11 +65,9 @@ enum
     gtPME_SPLINE = 0,
     gtPME_SPREAD,
     gtPME_SPLINEANDSPREAD,
-    gtPME_WRAP,
     gtPME_FFT_R2C,
     gtPME_SOLVE,
     gtPME_FFT_C2R,
-    gtPME_UNWRAP,
     gtPME_GATHER,
     gtPME_EVENT_COUNT /* not a stage ID but a static array size */
 };

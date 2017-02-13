@@ -216,7 +216,8 @@ void do_force_lowlevel(t_forcerec   *fr,
                        t_blocka     *excl,
                        rvec         mu_tot[2],
                        int          flags,
-                       float        *cycles_pme);
+                       float        *cycles_pme,
+                       bool useGpuPme);
 /* Call all the force routines */
 
 void free_gpu_resources(const t_forcerec            *fr,
