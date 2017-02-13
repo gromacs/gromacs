@@ -293,7 +293,8 @@ void GpuTaskAssignmentManager::selectRankGpus(const gmx::MDLogger &mdlog, const 
      * so we know how many GPUs this process can use at most.
      * The actual used GPU count at any point can potentially be smaller.
      */
-    discoverGpuTasksCountsNode(cr, tasksToAssign_.size(), &devUseIndex_, &devUseCountNode_);
+    const size_t gpuTasksForRank = tasksToAssign_.size();
+    discoverGpuTasksCountsNode(cr, gpuTasksForRank, &devUseIndex_, &devUseCountNode_);
 
     if (devUseCountNode_ == 0)
     {
@@ -352,6 +353,10 @@ GpuContextsMap GpuTaskAssignmentManager::selectTasksGpus()
     {
         gpuContextsByTask[GpuTask::NB] = getGpuContext(gpuIndex);
     }
+    if (tasksToAssign_.count(GpuTask::PME) > 0)
+    {
+        gpuContextsByTask[GpuTask::PME] = getGpuContext(gpuIndex); // always single GPU per rank (possibly for both tasks) for now!
+    }
     return gpuContextsByTask;
 }
 
@@ -380,12 +385,16 @@ size_t GpuTaskManager::rankGpuTasksCount() const
 
 GpuTaskManager createGpuAssignment(const gmx::MDLogger &mdlog, const t_commrec *cr,
                                    const gmx_gpu_info_t &gpuInfo, gmx_gpu_opt_t &gpuOpt,
-                                   bool useGpuNB)
+                                   bool useGpuNB, bool useGpuPME)
 {
     GpuTaskAssignmentManager assigner(&gpuInfo, &gpuOpt);
     if (useGpuNB && (cr->duty & DUTY_PP))
     {
         assigner.registerGpuTask(GpuTask::NB);
+    }
+    if (useGpuPME && (cr->duty & DUTY_PME))
+    {
+        assigner.registerGpuTask(GpuTask::PME);
     }
     /* This chooses node-local GPU IDs */
     assigner.selectRankGpus(mdlog, cr);

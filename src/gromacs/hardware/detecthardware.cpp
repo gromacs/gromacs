@@ -181,7 +181,7 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
  * \param[in] gpuTasks               GPU mapping information manager
  * \param[in] cr                     The communication structure
  * \param[out] gpusSharedAmongRanks  The boolean which tells if some ranks of the node use the same GPU
- * \return                   String to write to the log file (on the master rank)
+ * \return                           String to write to the log file (on the master rank)
  * \throws                   std::bad_alloc if out of memory */
 static std::string
 makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
@@ -213,7 +213,7 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     /* First, collecting information about GPU task assignment */
     /* Preliminary reporting of GPU assignment (for each type of task - on the separate line) */
     std::string                          taskOutput;
-    const std::map<GpuTask, std::string> gpuTasksToReport = {{GpuTask::NB, "PP"}};
+    const std::map<GpuTask, std::string> gpuTasksToReport = {{GpuTask::NB, "PP"}, {GpuTask::PME, "PME"}};
     /* All the GPU IDs in use on the node will be in this container */
     std::vector<int>                     nodeGpuIds;
     /* This is a local GPU ID container for checking whether GPUs are being shared among ranks */
@@ -312,6 +312,7 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
         {
             output += gmx::formatString("On host %s ", host);
         }
+
         output += gmx::formatString("%zu GPU task%s %sselected for this run, with %zu GPU%s.\n",
                                     nodeGpuIds.size(), (nodeGpuIds.size() > 1) ? "s" : "", gpu_opt->bUserSet ? "user-" : "auto-",
                                     gpusInUseNode, (gpusInUseNode > 1) ? "s" : "");

@@ -53,6 +53,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <list>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -112,6 +113,7 @@
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "deform.h"
 #include "md.h"
@@ -158,6 +160,7 @@ struct mdrunner_arglist
     const char             *ddcsy;
     const char             *ddcsz;
     const char             *nbpu_opt;
+    const char             *pme_opt;
     int                     nstlist_cmdline;
     gmx_int64_t             nsteps_cmdline;
     int                     nstepout;
@@ -204,7 +207,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.ddxyz, mc.dd_rank_order, mc.npme, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                      mc.nbpu_opt, mc.nstlist_cmdline,
+                      mc.nbpu_opt, mc.pme_opt, mc.nstlist_cmdline,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
                       mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
                       mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
@@ -225,7 +228,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                         const char *nbpu_opt, int nstlist_cmdline,
+                                         const char *nbpu_opt, const char *pme_opt, int nstlist_cmdline,
                                          gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
@@ -270,6 +273,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->ddcsy           = ddcsy;
     mda->ddcsz           = ddcsz;
     mda->nbpu_opt        = nbpu_opt;
+    mda->pme_opt         = pme_opt;
     mda->nstlist_cmdline = nstlist_cmdline;
     mda->nsteps_cmdline  = nsteps_cmdline;
     mda->nstepout        = nstepout;
@@ -693,6 +697,70 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
+/*! \brief Checks if input system and parameters allow to run PME on GPU.
+ * TODO: this mostly duplicates an internal PME assert function
+ * pme_gpu_check_restrictions(), except that works with a
+ * formed gmx_pme_t structure. Should that one go away/work with inputrec?
+ *
+ * \param[in]  ir     Input system.
+ * \param[out] error  The error message if the input is not supported on GPU.
+ * \param[in]  npme   Number of separate PME ranks.
+ *
+ * \returns true if PME is runnable on GPU, false otherwise.
+ */
+bool pmeGpuSupportsInput(const t_inputrec *ir, std::string *error, int npme)
+{
+    std::list<std::string> errorReasons;
+    if (npme > 1)
+    {
+        errorReasons.push_back("PME decomposition (separate ranks)");
+        // Additional npme checks/adjustments are done in runner() when the total number of ranks is known
+    }
+    if (!EEL_PME(ir->coulombtype))
+    {
+        errorReasons.push_back("the systems which do not use PME for electrostatics");
+    }
+    if (ir->pme_order != 4)
+    {
+        errorReasons.push_back("interpolation orders other than 4");
+    }
+    if (ir->efep != efepNO)
+    {
+        errorReasons.push_back("free energy calculations (multiple grids)");
+    }
+    if (EVDW_PME(ir->vdwtype))
+    {
+        errorReasons.push_back("Lennard-Jones PME");
+    }
+#if GMX_DOUBLE
+    {
+        errorReasons.push_back("double precision");
+    }
+#endif
+#if GMX_GPU != GMX_GPU_CUDA
+    {
+        errorReasons.push_back("non-CUDA build of Gromacs");
+    }
+#endif
+    if (ir->cutoff_scheme == ecutsGROUP)
+    {
+        errorReasons.push_back("group cutoff scheme");
+    }
+    if (EI_TPI(ir->eI))
+    {
+        errorReasons.push_back("test particle insertion");
+    }
+
+    bool inputSupported = errorReasons.empty();
+    if (!inputSupported && error)
+    {
+        std::string regressionTestMarker = "PME GPU does not support";
+        // this prefix is tested for in the regression tests script gmxtest.pl
+        *error = regressionTestMarker + ": " + gmx::joinStrings(errorReasons, "; ") + ".";
+    }
+    return inputSupported;
+}
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -700,13 +768,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
+             const char *nbpu_opt, const char *pme_opt, int nstlist_cmdline,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags)
 {
-    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
+    gmx_bool                  bRerunMD;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
@@ -729,8 +797,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
-    /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU            = FALSE;
+    /* The master rank decides early on GPU use and broadcasts this later */
+    bool useGpuPME        = false;
+    bool useGpuNB         = false;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -744,10 +813,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fplog = nullptr;
     }
 
-    bool doMembed = opt2bSet("-membed", nfile, fnm);
+    bool       doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    // TODO variables below would be nicer as enums parsed from the command line
+    const bool forceUseGpuNB  = (strncmp(nbpu_opt, "gpu", 3) == 0);
+    const bool forceUseGpuPME = (strncmp(pme_opt, "gpu", 3) == 0);
+    const bool tryUseGpuNB    = (strncmp(nbpu_opt, "auto", 4) == 0) || forceUseGpuNB;
+    const bool tryUseGpuPME   = (strncmp(pme_opt, "auto", 4) == 0) || forceUseGpuPME;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -756,7 +828,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
-    hwinfo = gmx_detect_hardware(mdlog, cr, bTryUseGPU);
+    const bool detectGpus = tryUseGpuNB || tryUseGpuPME;
+    hwinfo = gmx_detect_hardware(mdlog, cr, detectGpus);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
@@ -780,31 +853,57 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
 
+        /* Here the master rank decides if GPU can be used for PME at all.
+         * The reason for doing it here and not together with the NB inside the ecutsVERLET conditional
+         * is that we want to leave the uniform log warning message about incompatibility
+         * for all the inputs, including the group scheme ones (e.g. rotation tests).
+         * The log message about incompatibility is what the regression test script gmxtest.pl relies on for managing additional re-runs.
+         * TODO: change gmxtest.pl to check for the PME GPU assignment message instead to properly understand whether PME ran on GPU.
+         */
+        const bool  areGpusAvailable = (hwinfo->gpu_info.n_dev_compatible > 0 || getenv("GMX_EMULATE_GPU") != nullptr);
+        useGpuPME = tryUseGpuPME && areGpusAvailable;
+        std::string pmeGpuError;
+        const bool  canUseGpuPME = pmeGpuSupportsInput(inputrec, &pmeGpuError, npme);
+        if (tryUseGpuPME && !canUseGpuPME)
+        {
+            // We should be checking areGpusAvailable as well; however, for the reasons mentioned above
+            // the tests with no GPUs detected will not get the warning then.
+            GMX_LOG(mdlog.warning).asParagraph().appendText(pmeGpuError);
+            useGpuPME = false;
+            if (forceUseGpuPME)
+            {
+                gmx_fatal(FARGS, "GPU acceleration for PME computation was requested, but not supported with the given input settings");
+            }
+        }
+        /* With current code, default behaviour for PME is to use GPU if available.
+         * TODO: Add a reasonable threshold for choosing PME on GPU over CPU in auto mode, e.g. number of threads available for PME on CPU.
+         * TODO: Alternatively, perform an initial PME CPU vs GPU tuning.
+         */
+
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
-                       getenv("GMX_EMULATE_GPU") != nullptr);
+            /* Here the master rank decides if all ranks will use GPUs for NBs */
+            useGpuNB  = tryUseGpuNB && areGpusAvailable;
 
             /* TODO add GPU kernels for this and replace this check by:
-             * (bUseGPU && (ir->vdwtype == evdwPME &&
+             * (useGpuNB && (ir->vdwtype == evdwPME &&
              *               ir->ljpme_combination_rule == eljpmeLB))
              * update the message text and the content of nbnxn_acceleration_supported.
              */
-            if (bUseGPU &&
+            if (useGpuNB &&
                 !nbnxn_gpu_acceleration_supported(mdlog, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
-                if (bForceUseGPU)
+                if (forceUseGpuNB)
                 {
-                    gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
+                    gmx_fatal(FARGS, "GPU acceleration for non-bonded computation was requested, but not supported with the given input settings");
                 }
-                bUseGPU = FALSE;
+                useGpuNB = false;
             }
 
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
-                                  bUseGPU, *hwinfo->cpuInfo);
+                                  useGpuNB, *hwinfo->cpuInfo);
         }
         else
         {
@@ -820,7 +919,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
             }
 
-            if (bForceUseGPU)
+            if (forceUseGpuNB || forceUseGpuPME)
             {
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
@@ -859,7 +958,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 mdlog, bUseGPU,
+                                                 mdlog, useGpuNB || useGpuPME,
                                                  doMembed);
 
         if (hw_opt->nthreads_tmpi > 1)
@@ -870,7 +969,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         oenv, bVerbose, nstglobalcomm,
                                         ddxyz, dd_rank_order, npme, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                        nbpu_opt, nstlist_cmdline,
+                                        nbpu_opt, pme_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
                                         cpt_period, max_hours,
@@ -886,6 +985,28 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
     /* END OF CAUTION: cr is now reliable */
 
+    // This adjusts number of PME GPU ranks, based on finalized cr
+    if (useGpuPME)
+    {
+        assert(npme <= 1); // that should have cause an error before
+        switch (npme)
+        {
+            case 1:
+                break; // supported
+
+            case 0:
+                if (PAR(cr))
+                {
+                    gmx_fatal(FARGS, "PME GPU does not support: PME decomposition");
+                }
+                break;
+
+            default: // auto
+                npme = PAR(cr) ? 1 : 0;
+                break;
+        }
+    }
+
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
@@ -894,7 +1015,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* The master rank decided on the use of GPUs,
          * broadcast this information to all ranks.
          */
-        gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
+        gmx_bcast_sim(sizeof(useGpuNB), &useGpuNB, cr);
+        gmx_bcast_sim(sizeof(useGpuPME), &useGpuPME, cr);
     }
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
@@ -950,11 +1072,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         npme = 0;
     }
 
-    if (bUseGPU && npme < 0)
+    if (useGpuNB && !useGpuPME && (npme < 0))
     {
-        /* With GPUs we don't automatically use PME-only ranks. PME ranks can
-         * improve performance with many threads per GPU, since our OpenMP
-         * scaling is bad, but it's difficult to automate the setup.
+        /* With NB on GPUs we don't automatically use PME-only CPU ranks.
+         * PME ranks can improve performance with many threads per GPU,
+         * since our OpenMP scaling is bad, but it's difficult to automate the setup.
+         * TODO: reevaluate this for PME on GPU.
          */
         npme = 0;
     }
@@ -1071,7 +1194,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
     else
     {
-        /* PME, if used, is done on all nodes with 1D decomposition */
+        /* PME on CPU, if used, is done on all nodes with 1D decomposition;
+         * PME on GPU is already made to use a single separate rank in a multi-rank simulation.
+         */
         cr->npmenodes = 0;
         cr->duty      = (DUTY_PP | DUTY_PME);
         npme_major    = 1;
@@ -1136,13 +1261,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    GpuTaskManager gpuTasks = createGpuAssignment(mdlog, cr, hwinfo->gpu_info, hw_opt->gpu_opt, bUseGPU);
+    GpuTaskManager gpuTasks = createGpuAssignment(mdlog, cr, hwinfo->gpu_info, hw_opt->gpu_opt, useGpuNB, useGpuPME);
 
     /* Check consistency across ranks of things like SIMD
      * support and number of GPUs selected
      * TODO: move this into createGpuAssignment()?
      */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, bUseGPU, gpuTasks);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, useGpuNB || useGpuPME, gpuTasks);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
@@ -1318,7 +1443,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme,
-                                      false, NULL, gpuTasks.gpuInfo(GpuTask::PME));
+                                      useGpuPME, nullptr, gpuTasks.gpuInfo(GpuTask::PME), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
@@ -1404,7 +1529,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec, useGpuPME);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1426,7 +1551,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, &gpuTasks);
+    free_gpu_resources(fr, cr, gpuTasks);
 
     if (doMembed)
     {
