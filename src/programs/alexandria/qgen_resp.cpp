@@ -664,74 +664,6 @@ void QgenResp::calcRho()
     }
 }
 
-void QgenResp::calcPot()
-{
-    for (auto &ep : ep_)
-    {
-        ep.setVCalc(0);
-    }
-    int nthreads = gmx_omp_get_max_threads();
-    for (auto &ra : ra_)
-    {
-        int                  atype = ra.atype();
-        RespAtomTypeIterator rat   = findRAT(atype);
-        gmx::RVec            rax   = ra.x();
-#pragma omp parallel
-        {
-            int thread_id = gmx_omp_get_thread_num();
-            int i0        = thread_id*nEsp()/nthreads;
-            int i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
-            for (int i = i0; (i < i1); i++)
-            {
-                double r2 = 0;
-                for (int m = 0; m < DIM; m++)
-                {
-                    r2 += gmx::square(ep_[i].esp()[m] - rax[m]);
-                }
-                double r  = std::sqrt(r2);
-                double vv = 0;
-                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
-                {
-                    real q = k->q();
-                    // TODO check
-                    if (q == 0)
-                    {
-                        q = ra.q();
-                    }
-                    switch (_iDistributionModel)
-                    {
-                        case eqdBultinck:
-                        case eqdAXp:
-                            if (r > 0.01)
-                            {
-                                vv += q/r;
-                            }
-                            break;
-                        case eqdAXs:
-                            vv += q*Nuclear_SS(r,
-                                               k->row(),
-                                               k->zeta());
-                            break;
-                        case eqdYang:
-                        case eqdRappe:
-                            vv += q*Nuclear_SS(r,
-                                               rat->beginRZ()->row(),
-                                               rat->beginRZ()->zeta());
-                            break;
-                        case eqdAXg:
-                            vv += q*Nuclear_GG(r, k->zeta());
-                            break;
-                        default:
-                            gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-                                      getEemtypeName(_iDistributionModel));
-                    }
-                }
-                ep_[i].setVCalc(vv*ONE_4PI_EPS0);
-            }
-        }
-    }
-}
-
 void QgenResp::warning(const std::string fn, int line)
 {
     fprintf(stderr, "WARNING: It seems like you have two sets of ESP data in your file\n         %s\n", fn.c_str());
@@ -775,11 +707,10 @@ void QgenResp::calcRms()
     for (size_t i = 0; (i < nEsp()); i++)
     {
         double diff = ep_[i].v() - ep_[i].vCalc();
-        if ((NULL != debug) && (i < 4*nAtom()))
+        if (debug && (i < 4*nAtom()))
         {
-            fprintf(debug, "ESP %d QM: %g FIT: %g DIFF: %g\n",
-                    static_cast<int>(i), ep_[i].v(), ep_[i].vCalc(),
-                    diff);
+            fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
+                    i, ep_[i].v(), ep_[i].vCalc(), diff);
         }
         s2    = gmx::square(diff);
         if ((s2 > 0) && (_bEntropy))
@@ -905,6 +836,87 @@ void QgenResp::regularizeCharges()
     printf("Please implement symmetrizing charges\n");
 }
 
+void QgenResp::calcPot()
+{
+    for (auto &ep : ep_)
+    {
+        ep.setVCalc(0);
+    }
+    
+    if (debug)
+    {
+        int i = 0;
+        fprintf(debug, "Fitted Charges used in calcPot \n");
+        for (auto &ra : ra_)
+        {
+            fprintf(debug, "q[%d] = %0.3f\n", i, ra.q());
+            i++;
+        }
+    }
+    
+    int nthreads = gmx_omp_get_max_threads();
+    
+#pragma omp parallel
+    {
+        int thread_id = gmx_omp_get_thread_num();
+        int i0        = thread_id*nEsp()/nthreads;
+        int i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
+        for (int i = i0; (i < i1); i++)
+        {
+            double vv = 0;
+            for (auto &ra : ra_)
+            {
+                int                  atype = ra.atype();
+                RespAtomTypeIterator rat   = findRAT(atype);
+                gmx::RVec            rax   = ra.x();
+                double r2 = 0;
+                for (int m = 0; m < DIM; m++)
+                {
+                    r2 += gmx::square(ep_[i].esp()[m] - rax[m]);
+                }
+                double r  = std::sqrt(r2);
+                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+                {
+                    real q = k->q();
+                    if (q == 0)
+                    {
+                        q = ra.q();
+                    }
+                    switch (_iDistributionModel)
+                    {
+                      case eqdBultinck:
+                      case eqdAXp:
+                            if (r > 0.01)
+                            {
+                                vv += q/r;
+                            }
+                            break;
+                        case eqdAXs:
+                            vv += q*Nuclear_SS(r,
+                                               k->row(),
+                                               k->zeta());
+                            break;
+                        case eqdYang:
+                        case eqdRappe:
+                            vv += q*Nuclear_SS(r,
+                                               rat->beginRZ()->row(),
+                                               rat->beginRZ()->zeta());
+                            break;
+                        case eqdAXg:
+                            vv += q*Nuclear_GG(r, k->zeta());
+                            break;
+                        default:
+                            gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
+                                      getEemtypeName(_iDistributionModel));
+                    }
+                }
+            }
+            vv *= ONE_4PI_EPS0;
+            ep_[i].setVCalc(vv);
+        }
+    }
+}
+
 void QgenResp::optimizeCharges()
 {
     // Increase number of rows for the symmetric atoms. E.g.
@@ -918,34 +930,26 @@ void QgenResp::optimizeCharges()
 
     if (nEsp() < nAtom())
     {
-        printf("WARNING: Only %d ESP points for %d atoms. Can not generate charges.\n",
-               static_cast<int>(nEsp()), static_cast<int>(nAtom()));
+        printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
         return;
     }
     for (size_t j = 0; j < nEsp(); j++)
     {
         rhs.push_back(ep_[j].v());
     }
-    if (debug)
-    {
-        for (size_t j = 0; j < nAtom(); j++)
-        {
-            fprintf(debug, "rhs[%2d] = %10.3f\n", static_cast<int>(j), rhs[j]);
-        }
-    }
     int i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
         int                  atype = ra_[ii].atype();
         RespAtomTypeIterator rat   = findRAT(atype);
-        gmx::RVec            rx    = ra_[ii].x();
+        gmx::RVec            rax   = ra_[ii].x();
 
         for (size_t j = 0; j < nEsp(); j++)
         {
             rvec dx;
             for (int m = 0; m < DIM; m++)
             {
-                dx[m] = ep_[j].esp()[m] - rx[m];
+                dx[m] = ep_[j].esp()[m] - rax[m];
             }
             double r   = norm(dx);
             double r_1 = 0;
@@ -983,8 +987,8 @@ void QgenResp::optimizeCharges()
             }
             if (i == 0 && j < 4*nAtom() && debug)
             {
-                fprintf(debug, "j = %d r = %g AJI = %g dx = %g %g %g\n",
-                        static_cast<int>(j), r, a[i][j], dx[XX], dx[YY], dx[ZZ]);
+                fprintf(debug, "ESP[%zu] x = %g y = %g z = %g potential = %g (gmx unit)\n", 
+                        j, ep_[j].esp()[XX], ep_[j].esp()[YY], ep_[j].esp()[ZZ], ep_[j].v());
             }
         }
         if (!ra_[ii].fixedQ())
@@ -992,6 +996,7 @@ void QgenResp::optimizeCharges()
             i++;
         }
     }
+    
     // Add the equations to ascertain symmetric charges
     int    j1     = nEsp();
     int    i1     = 0;
@@ -1010,10 +1015,10 @@ void QgenResp::optimizeCharges()
             i1++;
         }
     }
-    GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()),
-                       "Inconsistency adding equations for symmetric charges");
-    GMX_RELEASE_ASSERT(j1 == nrow-1,
-                       "Something fishy adding equations for symmetric charges");
+    
+    GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
+    GMX_RELEASE_ASSERT(j1 == nrow-1, "Something fishy adding equations for symmetric charges");
+    
     // Use the last row for the total charge
     double qtot = 0;
     i           = 0;
@@ -1032,12 +1037,18 @@ void QgenResp::optimizeCharges()
             i++;
         }
     }
+    
     rhs.push_back(factor * (_qtot - qtot));
+    
     if (debug)
     {
-        for (int i = 0; i < nrow; i++)
+        fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
+    }
+    if (debug)
+    {
+        for (size_t i = 0; i < 4*nAtom(); i++)
         {
-            fprintf(debug, "ROW");
+            fprintf(debug, "ROW: %zu", i);
             for (int j = 0; j < ncolumn; j++)
             {
                 fprintf(debug, "  %8g", a[j][i]);
@@ -1045,27 +1056,24 @@ void QgenResp::optimizeCharges()
             fprintf(debug, "  %8g\n", rhs[i]);
         }
     }
+
+    std::vector<double> q;
+    q.resize(ncolumn);
+    multi_regression2(nrow, rhs.data(), ncolumn, a, q.data());
+    i = 0;
     if (debug)
     {
-        fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
+        fprintf(debug, "Fitted Charges from optimizeCharges\n");
     }
-    std::vector<double> x;
-    x.resize(ncolumn);
-    multi_regression2(nrow, rhs.data(), ncolumn, a, x.data());
-    i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
         if (!ra_[ii].fixedQ())
         {
+            q[i] += ra_[ii].qRef();
+            ra_[ii].setQ(q[i]);
             if (debug)
             {
-                fprintf(debug, "x[%2d] = %10.3f\n", i, x[i]);
-            }
-            x[i] += ra_[ii].qRef();
-            ra_[ii].setQ(x[i]);
-            if (debug)
-            {
-                fprintf(debug, "Q[%d] = %g\n", static_cast<int>(i), x[i]);
+                fprintf(debug, "q[%d] = %0.3f\n", i, ra_[ii].q());
             }
             i++;
         }
