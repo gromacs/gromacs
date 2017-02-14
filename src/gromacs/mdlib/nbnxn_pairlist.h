@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,13 +38,13 @@
 
 #include <cstddef>
 
-#include "thread_mpi/atomic.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
+
+struct tMPI_Atomic;
 
 /* With GPU kernels the i and j cluster size is 8 atoms */
 static const int c_nbnxnGpuClusterSize = 8;
@@ -282,7 +282,7 @@ typedef struct nbnxn_atomdata_t {
     gmx_bool                 bUseBufferFlags;         /* Use the flags or operate on all atoms     */
     nbnxn_buffer_flags_t     buffer_flags;            /* Flags for buffer zeroing+reduc.  */
     gmx_bool                 bUseTreeReduce;          /* Use tree for force reduction */
-    tMPI_Atomic_t           *syncStep;                /* Synchronization step for tree reduce */
+    tMPI_Atomic             *syncStep;                /* Synchronization step for tree reduce */
 } nbnxn_atomdata_t;
 
 #endif
