@@ -71,22 +71,6 @@
    ...
    fun:gmx_fio_fopen
 }
-{
-   bTimeSet/tMPI_Thread_mutex_init_once
-   Memcheck:Leak
-   ...
-   fun:tMPI_Thread_mutex_init_once
-   fun:tMPI_Thread_mutex_lock
-   fun:bTimeSet
-}
-{
-   gmx_ffclose/tMPI_Thread_mutex_init_once
-   Memcheck:Leak
-   ...
-   fun:tMPI_Thread_mutex_init_once
-   fun:tMPI_Thread_mutex_lock
-   fun:gmx_ffclose
-}
 
 {
    mdrun

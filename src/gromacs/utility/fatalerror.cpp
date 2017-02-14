@@ -47,13 +47,12 @@
 
 #include <exception>
 
-#include "thread_mpi/threads.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/programcontext.h"
 
 #if GMX_MPI
@@ -63,14 +62,16 @@
 
 #include "errorformat.h"
 
-static bool                bDebug         = false;
-static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+static bool       bDebug         = false;
+static gmx::Mutex where_mutex;
 
-FILE                      *debug          = nullptr;
-gmx_bool                   gmx_debug_at   = FALSE;
+FILE             *debug          = nullptr;
+gmx_bool          gmx_debug_at   = FALSE;
 
-static FILE               *log_file       = nullptr;
-static tMPI_Thread_mutex_t error_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
+static FILE      *log_file       = nullptr;
+static gmx::Mutex error_mutex;
+
+using Lock = gmx::lock_guard<gmx::Mutex>;
 
 void gmx_init_debug(const int dbglevel, const char *dbgfile)
 {
@@ -101,7 +102,7 @@ void _where(const char *file, int line)
 
     if (bFirst)
     {
-        tMPI_Thread_mutex_lock(&where_mutex);
+        Lock lock(where_mutex);
         if (bFirst) /* we repeat the check in the locked section because things
                        might have changed */
         {
@@ -111,9 +112,11 @@ void _where(const char *file, int line)
             }
             bFirst = FALSE;
         }
-        tMPI_Thread_mutex_unlock(&where_mutex);
     }
 
+    // TODO None of this is thread safe, and presumably it was only
+    // meant to run when debugging. But it runs many times every MD
+    // step. Nice. See Redmine #2122.
     if (nskip >= 0)
     {
         /* Skip the first n occasions, this allows to see where it goes wrong */
@@ -156,9 +159,8 @@ static gmx_error_handler_t gmx_error_handler = default_error_handler;
 
 void gmx_set_error_handler(gmx_error_handler_t func)
 {
-    tMPI_Thread_mutex_lock(&error_mutex);
+    Lock lock(error_mutex);
     gmx_error_handler = func;
-    tMPI_Thread_mutex_unlock(&error_mutex);
 }
 
 static const char *gmx_strerror(const char *key)
@@ -200,9 +202,8 @@ static void call_error_handler(const char *key, const char *file, int line, cons
     {
         msg = "Empty gmx_fatal message (bug).";
     }
-    tMPI_Thread_mutex_lock(&error_mutex);
+    Lock lock(error_mutex);
     gmx_error_handler(gmx_strerror(key), msg, file, line);
-    tMPI_Thread_mutex_unlock(&error_mutex);
 }
 
 void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
