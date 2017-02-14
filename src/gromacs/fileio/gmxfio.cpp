@@ -57,6 +57,7 @@
 #include "gromacs/fileio/md5.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmxfio-impl.h"
@@ -79,7 +80,9 @@ static t_fileio *open_files = nullptr;
    opening and closing of files, or during global operations like
    iterating along all open files. All these cases should be rare
    during the simulation. */
-static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+static gmx::Mutex open_file_mutex;
+
+using Lock = gmx::lock_guard<gmx::Mutex>;
 
 /******************************************************************
  *
@@ -142,10 +145,7 @@ static void gmx_fio_make_dummy(void)
 static void gmx_fio_insert(t_fileio *fio)
 {
     t_fileio *prev;
-    /* first lock the big open_files mutex. */
-    tMPI_Thread_mutex_lock(&open_file_mutex);
-    /* now check whether the dummy element has been allocated,
-       and allocate it if it hasn't */
+    Lock      openFilesLock(open_file_mutex);
     gmx_fio_make_dummy();
 
     /* and lock the fio we got and the list's head **/
@@ -171,9 +171,6 @@ static void gmx_fio_insert(t_fileio *fio)
     }
     gmx_fio_unlock(open_files);
     gmx_fio_unlock(fio);
-
-    /* now unlock the big open_files mutex.  */
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
 }
 
 /* remove a t_fileio into the list. We assume the fio is locked, and we leave
@@ -199,14 +196,11 @@ static void gmx_fio_remove(t_fileio *fio)
 
 
 /* get the first open file, or NULL if there is none.
-   Returns a locked fio. */
+   Returns a locked fio. Assumes open_files_mutex is locked. */
 static t_fileio *gmx_fio_get_first(void)
 {
     t_fileio *ret;
-    /* first lock the big open_files mutex and the dummy's mutex */
 
-    /* first lock the big open_files mutex. */
-    tMPI_Thread_mutex_lock(&open_file_mutex);
     gmx_fio_make_dummy();
 
     gmx_fio_lock(open_files);
@@ -230,7 +224,8 @@ static t_fileio *gmx_fio_get_first(void)
 }
 
 /* get the next open file, or NULL if there is none.
-   Unlocks the previous fio and locks the next one. */
+   Unlocks the previous fio and locks the next one.
+   Assumes open_file_mutex is locked. */
 static t_fileio *gmx_fio_get_next(t_fileio *fio)
 {
     t_fileio *ret;
@@ -240,7 +235,6 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     if (fio->next == open_files)
     {
         ret = nullptr;
-        tMPI_Thread_mutex_unlock(&open_file_mutex);
     }
     else
     {
@@ -251,11 +245,10 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     return ret;
 }
 
-/* Stop looping through the open_files.  Unlocks the global lock. */
+/* Stop looping through the open_files. Assumes open_file_mutex is locked. */
 static void gmx_fio_stop_getting_next(t_fileio *fio)
 {
     gmx_fio_unlock(fio);
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
 }
 
 
@@ -382,11 +375,9 @@ static int gmx_fio_close_locked(t_fileio *fio)
 
 int gmx_fio_close(t_fileio *fio)
 {
-    int rc = 0;
+    int  rc = 0;
 
-    /* first lock the big open_files mutex. */
-    /* We don't want two processes operating on the list at the same time */
-    tMPI_Thread_mutex_lock(&open_file_mutex);
+    Lock openFilesLock(open_file_mutex);
 
     gmx_fio_lock(fio);
     /* first remove it from the list */
@@ -396,8 +387,6 @@ int gmx_fio_close(t_fileio *fio)
 
     sfree(fio->fn);
     sfree(fio);
-
-    tMPI_Thread_mutex_unlock(&open_file_mutex);
 
     return rc;
 }
@@ -435,6 +424,7 @@ int gmx_fio_fclose(FILE *fp)
     t_fileio *cur;
     int       rc    = -1;
 
+    Lock      openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
     while (cur)
     {
@@ -597,6 +587,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     nalloc = 100;
     snew(outputfiles, nalloc);
 
+    Lock openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
     while (cur)
     {
@@ -715,6 +706,7 @@ t_fileio *gmx_fio_all_output_fsync(void)
     t_fileio *ret = nullptr;
     t_fileio *cur;
 
+    Lock      openFilesLock(open_file_mutex);
     cur = gmx_fio_get_first();
     while (cur)
     {

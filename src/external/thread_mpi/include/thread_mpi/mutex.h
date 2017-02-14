@@ -137,8 +137,10 @@ class TMPI_EXPORT mutex
 
         /*! \brief The try_lock function.
 
-           Throws a tMPI::system_error exception upon failure.
-           \return true if the lock was locked successfully, false if not*/
+           \return true if the lock was locked successfully, false if
+           another thread owned it, and implementation-specific if
+           already held by this thread. Do not rely on the return code
+           if the calling thread could already hold this lock. */
         bool try_lock()
         {
             if (tMPI_Thread_mutex_trylock(&handle_))

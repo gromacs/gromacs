@@ -451,8 +451,10 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
 /** Try to lock a mutex, return if busy
  *
  *  This routine always return directly. If the mutex was available and
- *  we successfully locked it we return 0, otherwise a non-zero
- *  return code (usually meaning the mutex was already locked).
+ *  we successfully locked it we return 0. If the mutex was unavailable
+ *  because it was locked by another thread, we return non-zero. If
+ *  the mutex was already held by this thread, the return value is
+ *  implementation-defined.
  *
  *  \param mtx  Pointer to the mutex to try and lock
  *  \return 0 if locked, non-zero if not locked or an error occurred.
