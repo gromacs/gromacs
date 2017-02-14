@@ -498,6 +498,10 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
     }
 
     ret = pthread_mutex_trylock(&(mtx->mutex->mtx));
+    /* ret is zero when the lock was available and is now held, and
+       non-zero when any thread (including this one) held the lock
+       already. This is because the default pthreads mutex is not
+       re-entrant. */
     return ret;
 }
 
