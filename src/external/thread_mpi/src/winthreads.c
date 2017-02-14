@@ -1044,8 +1044,11 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 
     /* The mutex is now guaranteed to be valid. */
     ret = TryEnterCriticalSection( &(mtx->mutex->cs) );
-
-    return (ret != 0);
+    /* ret is zero if another thread owns the critical section, and
+       non-zero when the critical section was available and is now
+       held OR the critical section was already owned by this
+       thread. By default Windows critical sections are re-entrant. */
+    return (ret == 0);
 }
 
 
