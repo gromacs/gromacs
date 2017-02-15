@@ -53,12 +53,11 @@
 #include <unistd.h>
 #endif
 
-#include "thread_mpi/threads.h"
-
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/md5.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmutex.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -66,12 +65,62 @@
 
 /* This is the new improved and thread safe version of gmxfio. */
 
-
+//! List wrapper to make both RAII and lazy initialization work.
+class ListGuard
+{
+    public:
+        //! Constructor.
+        ListGuard() : fio_(nullptr)
+        {
+        }
+        //! Destroy the list head (assuming it is all that remains).
+        ~ListGuard()
+        {
+            if (!fio_)
+            {
+                return;
+            }
+            // TODO At least in debug mode, we should check if something
+            // forgot to close a file. How should we issue an error? If we
+            // throw APIError, then this can't be triggered by a
+            // destructor. Should we just silently close them?
+            GMX_ASSERT(fio_->next == fio_, "List of file handles is inconsistent");
+            GMX_ASSERT(fio_->prev == fio_, "List of file handles is inconsistent");
+            tMPI_Lock_destroy(&fio_->mtx);
+            sfree(fio_->fn);
+            sfree(fio_->fp);
+            sfree(fio_);
+        }
+        /*! \brief Return the head of the list.
+         *
+         * Thread-safety of the list is the responsibility
+         * of the caller, e.g. using open_file_mutex. */
+        t_fileio *get()
+        {
+            if (!fio_)
+            {
+                init();
+            }
+            return fio_;
+        }
+    private:
+        //! Implements lazy initialization.
+        void init()
+        {
+            snew(fio_, 1);
+            fio_->fp   = nullptr;
+            fio_->fn   = nullptr;
+            fio_->next = fio_;
+            fio_->prev = fio_;
+            tMPI_Lock_init(&(fio_->mtx));
+        }
+        //! The actual head of the list.
+        t_fileio *fio_;
+};
 
 /* the list of open files is a linked list, with a dummy element at its head;
        it is initialized when the first file is opened. */
-static t_fileio *open_files = nullptr;
-
+static ListGuard open_files;
 
 /* this mutex locks the open_files structure so that no two threads can
    modify it.
@@ -116,24 +165,6 @@ void gmx_fio_unlock(t_fileio *fio)
     tMPI_Lock_unlock(&(fio->mtx));
 }
 
-/* make a dummy head element, assuming we locked everything. */
-static void gmx_fio_make_dummy(void)
-{
-    if (!open_files)
-    {
-        snew(open_files, 1);
-        open_files->fp   = nullptr;
-        open_files->fn   = nullptr;
-        open_files->next = open_files;
-        open_files->prev = open_files;
-        tMPI_Lock_init(&(open_files->mtx));
-    }
-}
-
-
-
-
-
 
 
 /***********************************************************************
@@ -148,30 +179,30 @@ static void gmx_fio_insert(t_fileio *fio)
 {
     t_fileio *prev;
     Lock      openFilesLock(open_file_mutex);
-    gmx_fio_make_dummy();
+    t_fileio *head = open_files.get();
 
     /* and lock the fio we got and the list's head **/
     gmx_fio_lock(fio);
-    gmx_fio_lock(open_files);
-    prev = open_files->prev;
+    gmx_fio_lock(head);
+    prev = head->prev;
     /* lock the element after the current one */
-    if (prev != open_files)
+    if (prev != head)
     {
         gmx_fio_lock(prev);
     }
 
     /* now do the actual insertion: */
-    fio->next        = open_files;
-    open_files->prev = fio;
-    prev->next       = fio;
-    fio->prev        = prev;
+    fio->next  = head;
+    head->prev = fio;
+    prev->next = fio;
+    fio->prev  = prev;
 
     /* now unlock all our locks */
-    if (prev != open_files)
+    if (prev != head)
     {
         gmx_fio_unlock(prev);
     }
-    gmx_fio_unlock(open_files);
+    gmx_fio_unlock(head);
     gmx_fio_unlock(fio);
 }
 
@@ -203,23 +234,24 @@ static t_fileio *gmx_fio_get_first(void)
 {
     t_fileio *ret;
 
-    gmx_fio_make_dummy();
+    t_fileio *head = open_files.get();
 
-    gmx_fio_lock(open_files);
-    ret = open_files->next;
+    /* first lock the head's mutex */
+    gmx_fio_lock(head);
+    ret = head->next;
 
 
     /* check whether there were any to begin with */
-    if (ret == open_files)
+    if (ret == head)
     {
         /* after this, the open_file pointer should never change */
         ret = nullptr;
     }
     else
     {
-        gmx_fio_lock(open_files->next);
+        gmx_fio_lock(head->next);
     }
-    gmx_fio_unlock(open_files);
+    gmx_fio_unlock(head);
 
 
     return ret;
@@ -230,11 +262,11 @@ static t_fileio *gmx_fio_get_first(void)
    Assumes open_file_mutex is locked. */
 static t_fileio *gmx_fio_get_next(t_fileio *fio)
 {
-    t_fileio *ret;
+    t_fileio *ret  = fio->next;
+    t_fileio *head = open_files.get();
 
-    ret = fio->next;
     /* check if that was the last one */
-    if (fio->next == open_files)
+    if (fio->next == head)
     {
         ret = nullptr;
     }

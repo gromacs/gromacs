@@ -63,6 +63,10 @@ void tMPI_Lock_init(tMPI_Lock_t *lock)
     TMPI_YIELD_WAIT_DATA_INIT(lock);
 }
 
+void tMPI_Lock_destroy(tMPI_Lock_t *lock)
+{
+    tMPI_Spinlock_destroy(&(lock->lock));
+}
 
 void tMPI_Lock_lock(tMPI_Lock_t *lock)
 {

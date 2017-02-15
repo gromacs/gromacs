@@ -66,13 +66,6 @@
 }
 
 {
-   gmx_fio_fopen
-   Memcheck:Leak
-   ...
-   fun:gmx_fio_fopen
-}
-
-{
    mdrun
    Memcheck:Leak
    ...

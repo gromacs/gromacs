@@ -129,6 +129,9 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
     tMPI_Atomic_set(&(x->a), 0);
 }
 
+static inline void tMPI_Spinlock_destroy(tMPI_Spinlock_t *x)
+{
+}
 
 TMPI_EXPORT
 static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)

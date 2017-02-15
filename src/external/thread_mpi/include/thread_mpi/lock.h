@@ -75,6 +75,11 @@ struct tMPI_Lock
 TMPI_EXPORT
 void tMPI_Lock_init(tMPI_Lock_t *lock);
 
+/** Clean up lock
+ *
+ *  \param lock     Pointer to a valid unlocked lock to clean up (ie. deallocate).
+ */
+void tMPI_Lock_destroy(tMPI_Lock_t *lock);
 
 /** Perform yielding, busy-waiting locking
  *

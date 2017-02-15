@@ -107,6 +107,10 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
     x->lock = 0;
 }
 
+static inline void tMPI_Spinlock_destroy(tMPI_Spinlock_t *x)
+{
+}
+
 # define tMPI_Spinlock_lock(x)   \
     while ((InterlockedCompareExchange((LONG volatile *)(x), 1, 0)) != 0)
 

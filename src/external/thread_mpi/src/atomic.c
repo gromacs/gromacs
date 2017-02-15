@@ -177,6 +177,15 @@ static void tMPI_Spinlock_init_once(tMPI_Spinlock_t *x)
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
 }
 
+void tMPI_Spinlock_destroy( tMPI_Spinlock_t *x)
+{
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
+    tMPI_Thread_mutex_destroy((*x)->lock);
+    free((*x)->lock);
+    free(*x);
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
+}
+
 
 void tMPI_Spinlock_lock( tMPI_Spinlock_t *x)
 {
