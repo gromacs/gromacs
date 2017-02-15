@@ -93,11 +93,8 @@ class RespAtomType
         std::vector<RowZetaQ> rz_;
 };
 
-//! Iterator over RespAtomType vector
-typedef std::vector<RespAtomType>::iterator RespAtomTypeIterator;
-
-//! Const Iterator over RespAtomType vector
-typedef std::vector<RespAtomType>::const_iterator RespAtomTypeConstIterator;
+using RespAtomTypeIterator      = typename std::vector<RespAtomType>::iterator;
+using RespAtomTypeConstIterator = typename std::vector<RespAtomType>::const_iterator;
 
 class RespAtom
 {
@@ -164,11 +161,9 @@ class RespAtom
         //! Tells us whether this charge is fixed
         bool      fixedQ_;
 };
-//! Let's loop over RespAtoms, shall we?
-typedef std::vector<RespAtom>::iterator RespAtomIterator;
 
-//! Let's loop over RespAtoms, shall we?
-typedef std::vector<RespAtom>::const_iterator RespAtomConstIterator;
+using RespAtomIterator      = typename std::vector<RespAtom>::iterator;
+using RespAtomConstIterator = typename std::vector<RespAtom>::const_iterator;
 
 } // namespace
 

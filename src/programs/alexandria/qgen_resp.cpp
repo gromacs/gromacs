@@ -67,24 +67,24 @@ namespace alexandria
 
 QgenResp::QgenResp()
 {
-    _bAXpRESP           = false;
-    _qfac               = 1e-3;
-    _bHyper             = 0.1;
-    _wtot               = 0;
-    _pfac               = 1;
-    _bEntropy           = false;
-    _rDecrZeta          = true;
-    _bFitZeta           = false;
-    _zmin               = 5;
-    _zmax               = 100;
-    _deltaZ             = 1;
-    _bRandZeta          = false;
-    _rDecrZeta          = false;
+    bAXpRESP_           = false;
+    qfac_               = 1e-3;
+    bHyper_             = 0.1;
+    wtot_               = 0;
+    pfac_               = 1;
+    bEntropy_           = false;
+    rDecrZeta_          = true;
+    bFitZeta_           = false;
+    zmin_               = 5;
+    zmax_               = 100;
+    deltaZ_             = 1;
+    bRandZeta_          = false;
+    rDecrZeta_          = false;
     uniqueQ_            = 0;
     fitQ_               = 0;
-    _qmin               = -3;
-    _qmax               = 3; /* e */
-    _bRandQ             = false;
+    qmin_               = -3;
+    qmax_               = 3; /* e */
+    bRandQ_             = false;
 }
 
 void QgenResp::updateAtomCoords(const PaddedRVecVector x)
@@ -140,7 +140,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                                            atoms->atom[i].ptype,
                                            hasShell,
                                            *(atoms->atomtype[i]), pd,
-                                           _iDistributionModel, _dzatoms));
+                                           iDistributionModel_, dzatoms_));
         }
     }
     // Then add all the atoms
@@ -315,15 +315,15 @@ void QgenResp::writeDiffCube(QgenResp               &src,
         fprintf(fp, "POTENTIAL\n");
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n",
                 static_cast<int>(nAtom()),
-                gmx2convert(_origin[XX], eg2cBohr),
-                gmx2convert(_origin[YY], eg2cBohr),
-                gmx2convert(_origin[ZZ], eg2cBohr));
-        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", _nxyz[XX],
-                gmx2convert(_space[XX], eg2cBohr), 0.0, 0.0);
-        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", _nxyz[YY],
-                0.0, gmx2convert(_space[YY], eg2cBohr), 0.0);
-        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", _nxyz[ZZ],
-                0.0, 0.0, gmx2convert(_space[ZZ], eg2cBohr));
+                gmx2convert(origin_[XX], eg2cBohr),
+                gmx2convert(origin_[YY], eg2cBohr),
+                gmx2convert(origin_[ZZ], eg2cBohr));
+        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[XX],
+                gmx2convert(space_[XX], eg2cBohr), 0.0, 0.0);
+        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[YY],
+                0.0, gmx2convert(space_[YY], eg2cBohr), 0.0);
+        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", nxyz_[ZZ],
+                0.0, 0.0, gmx2convert(space_[ZZ], eg2cBohr));
 
         for (size_t m = 0; (m < nAtom()); m++)
         {
@@ -335,11 +335,11 @@ void QgenResp::writeDiffCube(QgenResp               &src,
                     gmx2convert(ra_[m].x()[ZZ], eg2cBohr));
         }
 
-        for (ix = m = 0; ix < _nxyz[XX]; ix++)
+        for (ix = m = 0; ix < nxyz_[XX]; ix++)
         {
-            for (iy = 0; iy < _nxyz[YY]; iy++)
+            for (iy = 0; iy < nxyz_[YY]; iy++)
             {
-                for (iz = 0; iz < _nxyz[ZZ]; iz++, m++)
+                for (iz = 0; iz < nxyz_[ZZ]; iz++, m++)
                 {
                     if (src.nEsp() > 0)
                     {
@@ -367,7 +367,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
                     {
                         fprintf(fp, "\n");
                     }
-                    if (NULL != gst)
+                    if (nullptr != gst)
                     {
                         rmin = 1000;
                         /* Add point to histogram! */
@@ -462,9 +462,9 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
                                &natom, &origin[XX], &origin[YY], &origin[ZZ]));
             if (bOK && !bESPonly)
             {
-                _origin[XX] = origin[XX];
-                _origin[YY] = origin[YY];
-                _origin[ZZ] = origin[ZZ];
+                origin_[XX] = origin[XX];
+                origin_[YY] = origin[YY];
+                origin_[ZZ] = origin[ZZ];
             }
         }
         else if (3 == line)
@@ -485,13 +485,13 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
             {
                 for (int m = 0; (m < DIM); m++)
                 {
-                    _nxyz[m]  = nxyz[m];
-                    _space[m] = space[m];
+                    nxyz_[m]  = nxyz[m];
+                    space_[m] = space[m];
                 }
                 for (int m = 0; (m < DIM); m++)
                 {
-                    _origin[m] = convert2gmx(_origin[m], eg2cBohr);
-                    _space[m]  = convert2gmx(_space[m], eg2cBohr);
+                    origin_[m] = convert2gmx(origin_[m], eg2cBohr);
+                    space_[m]  = convert2gmx(space_[m], eg2cBohr);
                 }
             }
             pot.clear();
@@ -531,16 +531,16 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     {
         ep_.clear();
         int m = 0;
-        for (int ix = 0; ix < _nxyz[XX]; ix++)
+        for (int ix = 0; ix < nxyz_[XX]; ix++)
         {
-            for (int iy = 0; iy < _nxyz[YY]; iy++)
+            for (int iy = 0; iy < nxyz_[YY]; iy++)
             {
-                for (int iz = 0; iz < _nxyz[ZZ]; iz++, m++)
+                for (int iz = 0; iz < nxyz_[ZZ]; iz++, m++)
                 {
                     gmx::RVec e;
-                    e[XX] = _origin[XX] + ix*_space[XX];
-                    e[YY] = _origin[YY] + iy*_space[YY];
-                    e[ZZ] = _origin[ZZ] + iz*_space[ZZ];
+                    e[XX] = origin_[XX] + ix*space_[XX];
+                    e[YY] = origin_[YY] + iy*space_[YY];
+                    e[ZZ] = origin_[ZZ] + iz*space_[ZZ];
 
                     ep_.push_back(EspPoint(e, pot[m]));
                 }
@@ -561,9 +561,9 @@ void QgenResp::copyGrid(QgenResp &src)
 
     for (m = 0; (m < DIM); m++)
     {
-        _origin[m] = src._origin[m];
-        _space[m]  = src._space[m];
-        _nxyz[m]   = src._nxyz[m];
+        origin_[m] = src.origin_[m];
+        space_[m]  = src.space_[m];
+        nxyz_[m]   = src.nxyz_[m];
     }
     int nesp = src.nEsp();
     ep_.clear();
@@ -590,20 +590,20 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
     }
     for (int m = 0; (m < DIM); m++)
     {
-        _nxyz[m]  = 1+(int) (box[m][m]/spacing);
-        _space[m] = box[m][m]/_nxyz[m];
+        nxyz_[m]  = 1+(int) (box[m][m]/spacing);
+        space_[m] = box[m][m]/nxyz_[m];
     }
     ep_.clear();
-    for (int i = 0; (i < _nxyz[XX]); i++)
+    for (int i = 0; (i < nxyz_[XX]); i++)
     {
         gmx::RVec xyz;
-        xyz[XX] = (i-0.5*_nxyz[XX])*_space[XX];
-        for (int j = 0; (j < _nxyz[YY]); j++)
+        xyz[XX] = (i-0.5*nxyz_[XX])*space_[XX];
+        for (int j = 0; (j < nxyz_[YY]); j++)
         {
-            xyz[YY] = (j-0.5*_nxyz[YY])*_space[YY];
-            for (int k = 0; (k < _nxyz[ZZ]); k++)
+            xyz[YY] = (j-0.5*nxyz_[YY])*space_[YY];
+            for (int k = 0; (k < nxyz_[ZZ]); k++)
             {
-                xyz[ZZ] = (k-0.5*_nxyz[ZZ])*_space[ZZ];
+                xyz[ZZ] = (k-0.5*nxyz_[ZZ])*space_[ZZ];
                 ep_.push_back(EspPoint(xyz, 0));
             }
         }
@@ -625,7 +625,7 @@ void QgenResp::calcRho()
             int                  atype = ra.atype();
             RespAtomTypeIterator rat   = findRAT(atype);
             GMX_RELEASE_ASSERT(rat == endRAT(), "Can not find atomtype");
-            switch (_iDistributionModel)
+            switch (iDistributionModel_)
             {
                 case eqdYang:
                 case eqdRappe:
@@ -633,6 +633,7 @@ void QgenResp::calcRho()
                                            rat->beginRZ()->row(),
                                            rat->beginRZ()->zeta());
                     break;
+                case eqdAXpg:
                 case eqdAXg:
                     vv = 0;
                     for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
@@ -655,8 +656,7 @@ void QgenResp::calcRho()
                 case eqdAXp:
                 case eqdAXs:
                 default:
-                    gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %d!",
-                              _iDistributionModel);
+                    gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %d!", iDistributionModel_);
             }
             V  += vv;
         }
@@ -681,7 +681,7 @@ real QgenResp::myWeight(int iatom) const
 {
     if (iatom < nAtom_)
     {
-        return _watoms;
+        return watoms_;
     }
     else
     {
@@ -713,39 +713,39 @@ void QgenResp::calcRms()
                     i, ep_[i].v(), ep_[i].vCalc(), diff);
         }
         s2    = gmx::square(diff);
-        if ((s2 > 0) && (_bEntropy))
+        if ((s2 > 0) && (bEntropy_))
         {
             entropy += s2*log(s2);
         }
         sum2 += s2;
         pot2 += gmx::square(ep_[i].v());
     }
-    _wtot = nEsp();
-    if (_wtot > 0)
+    wtot_ = nEsp();
+    if (wtot_ > 0)
     {
-        _rms     = gmx2convert(sqrt(sum2/_wtot), eg2cHartree_e);
-        _entropy = gmx2convert(entropy/_wtot, eg2cHartree_e);
+        rms_     = gmx2convert(sqrt(sum2/wtot_), eg2cHartree_e);
+        entropy_ = gmx2convert(entropy/wtot_, eg2cHartree_e);
     }
     else
     {
-        _rms     = 0;
-        _entropy = 0;
+        rms_     = 0;
+        entropy_ = 0;
     }
-    _rrms = sqrt(sum2/pot2);
+    rrms_ = sqrt(sum2/pot2);
 }
 
 real QgenResp::getRms(real *wtot, real *rrms)
 {
     calcRms();
-    *wtot = _wtot;
-    *rrms = _rrms;
-    if (_bEntropy)
+    *wtot = wtot_;
+    *rrms = rrms_;
+    if (bEntropy_)
     {
-        return _entropy;
+        return entropy_;
     }
     else
     {
-        return _rms;
+        return rms_;
     }
 }
 
@@ -764,32 +764,32 @@ double QgenResp::calcPenalty()
         {
             qi += z->q();
         }
-        if (qi < _qmin)
+        if (qi < qmin_)
         {
-            p += gmx::square(_qmin-qi);
+            p += gmx::square(qmin_ - qi);
         }
-        else if (qi > _qmax)
+        else if (qi > qmax_)
         {
-            p += gmx::square(_qmax-qi);
+            p += gmx::square(qmax_ - qi);
         }
         else if ((qi < -0.02) && (ra.atomnumber() == 1))
         {
             p += qi*qi;
         }
     }
-    p *= _pfac;
-    if (_bAXpRESP && (_iDistributionModel == eqdAXp))
+    p *= pfac_;
+    if (bAXpRESP_ && (iDistributionModel_ == eqdAXp))
     {
-        b2 = gmx::square(_bHyper);
+        b2 = gmx::square(bHyper_);
         for (size_t i = 0; (i < nAtom()); i++)
         {
-            p += sqrt(gmx::square(ra_[i].q()) + b2) - _bHyper;
+            p += sqrt(gmx::square(ra_[i].q()) + b2) - bHyper_;
         }
-        p = (_qfac * p);
+        p = (qfac_ * p);
     }
-    _penalty = p;
+    penalty_ = p;
 
-    return _penalty;
+    return penalty_;
 }
 
 void QgenResp::statistics(int len, char buf[])
@@ -797,7 +797,7 @@ void QgenResp::statistics(int len, char buf[])
     if (len >= 100)
     {
         sprintf(buf, "RMS: %10e [Hartree/e] RRMS: %10e Entropy: %10e Penalty: %10e",
-                _rms, _rrms, _entropy, _penalty);
+                rms_, rrms_, entropy_, penalty_);
     }
     else
     {
@@ -824,8 +824,7 @@ void QgenResp::regularizeCharges()
             qtot -= ra_[ii].qRef();
         }
     }
-    //printf("qtot = %g _qtot = %d nAtom = %d nfixed = %d\n", qtot, _qtot, static_cast<int>(nAtom()), nfixed);
-    double dq = (_qtot - qtot)/(nAtom()-nfixed);
+    double dq = (qtot_ - qtot)/(nAtom()-nfixed);
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
         if (!ra_[ii].fixedQ())
@@ -836,24 +835,55 @@ void QgenResp::regularizeCharges()
     printf("Please implement symmetrizing charges\n");
 }
 
+double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
+                       rvec                    esp_x, 
+                       rvec                    atom_x,
+                       double                  zeta,
+                       int                     row)
+{
+    rvec   dx;
+    double r    = 0;
+    double eTot = 0;
+
+    rvec_sub(esp_x, atom_x, dx);
+    r = norm(dx);
+    if (r == 0)
+    {
+        gmx_fatal(FARGS, "Zero distance between atoms!\n");
+    }
+    if (zeta <= 0)
+    {
+        iChargeDistributionModel = eqdAXp;
+    }
+    switch (iChargeDistributionModel)
+    {
+        case eqdAXp:
+        case eqdAXpp:
+            eTot = (1.0/r);
+            break;
+        case eqdAXs:
+        case eqdAXps:
+        case eqdRappe:
+        case eqdYang:        
+            eTot = Nuclear_SS(r, row, zeta);
+            break;
+        case eqdAXg:
+        case eqdAXpg:
+            eTot = Nuclear_GG(r, zeta);
+            break;
+        default:
+            gmx_fatal(FARGS, "Unsupported charge model %d", iChargeDistributionModel);
+    }
+    return (ONE_4PI_EPS0*eTot);
+}
+
 void QgenResp::calcPot()
 {
     for (auto &ep : ep_)
     {
         ep.setVCalc(0);
     }
-    
-    if (debug)
-    {
-        int i = 0;
-        fprintf(debug, "Fitted Charges used in calcPot \n");
-        for (auto &ra : ra_)
-        {
-            fprintf(debug, "q[%d] = %0.3f\n", i, ra.q());
-            i++;
-        }
-    }
-    
+     
     int nthreads = gmx_omp_get_max_threads();
     
 #pragma omp parallel
@@ -869,49 +899,18 @@ void QgenResp::calcPot()
                 int                  atype = ra.atype();
                 RespAtomTypeIterator rat   = findRAT(atype);
                 gmx::RVec            rax   = ra.x();
-                double r2 = 0;
-                for (int m = 0; m < DIM; m++)
-                {
-                    r2 += gmx::square(ep_[i].esp()[m] - rax[m]);
-                }
-                double r  = std::sqrt(r2);
+                gmx::RVec            espx  = ep_[i].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    real q = k->q();
+                    auto q = k->q();
                     if (q == 0)
                     {
                         q = ra.q();
                     }
-                    switch (_iDistributionModel)
-                    {
-                      case eqdBultinck:
-                      case eqdAXp:
-                            if (r > 0.01)
-                            {
-                                vv += q/r;
-                            }
-                            break;
-                        case eqdAXs:
-                            vv += q*Nuclear_SS(r,
-                                               k->row(),
-                                               k->zeta());
-                            break;
-                        case eqdYang:
-                        case eqdRappe:
-                            vv += q*Nuclear_SS(r,
-                                               rat->beginRZ()->row(),
-                                               rat->beginRZ()->zeta());
-                            break;
-                        case eqdAXg:
-                            vv += q*Nuclear_GG(r, k->zeta());
-                            break;
-                        default:
-                            gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-                                      getEemtypeName(_iDistributionModel));
-                    }
+                    auto epot = calcJ(iDistributionModel_, espx, rax, k->row(), k->zeta());
+                    vv += (q*epot);
                 }
             }
-            vv *= ONE_4PI_EPS0;
             ep_[i].setVCalc(vv);
         }
     }
@@ -933,10 +932,12 @@ void QgenResp::optimizeCharges()
         printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
         return;
     }
+    
     for (size_t j = 0; j < nEsp(); j++)
     {
         rhs.push_back(ep_[j].v());
     }
+    
     int i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
@@ -946,35 +947,10 @@ void QgenResp::optimizeCharges()
 
         for (size_t j = 0; j < nEsp(); j++)
         {
-            rvec dx;
-            for (int m = 0; m < DIM; m++)
-            {
-                dx[m] = ep_[j].esp()[m] - rax[m];
-            }
-            double r   = norm(dx);
-            double r_1 = 0;
-            if (r > 0)
-            {
-                r_1 = 1.0/r;
-            }
+            gmx::RVec        espx  = ep_[j].esp();
             for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
             {
-                double pot = 0;
-                switch (_iDistributionModel)
-                {
-                    case eqdAXp:
-                        pot = r_1;
-                        break;
-                    case eqdAXg:
-                        pot = Nuclear_GG(r, k->zeta());
-                        break;
-                    case eqdAXs:
-                        pot = Nuclear_SS(r, k->row(), k->zeta());
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Go to jail. Don't go through start.");
-                }
-                pot = pot*ONE_4PI_EPS0;
+                auto pot = calcJ(iDistributionModel_, espx, rax, k->row(), k->zeta());
                 if (k->fixedQ())
                 {
                     rhs[j] -= k->q()*pot;
@@ -985,10 +961,10 @@ void QgenResp::optimizeCharges()
                     a[i][j] += pot;
                 }
             }
-            if (i == 0 && j < 4*nAtom() && debug)
+            if (debug && i == 0 && j < 4*nAtom())
             {
-                fprintf(debug, "ESP[%zu] x = %g y = %g z = %g potential = %g (gmx unit)\n", 
-                        j, ep_[j].esp()[XX], ep_[j].esp()[YY], ep_[j].esp()[ZZ], ep_[j].v());
+                fprintf(debug, "ESP[%zu] x = %g y = %g z = %g pot= %g\n", 
+                        j, espx[XX], espx[YY], espx[ZZ], ep_[j].v());
             }
         }
         if (!ra_[ii].fixedQ())
@@ -1038,7 +1014,7 @@ void QgenResp::optimizeCharges()
         }
     }
     
-    rhs.push_back(factor * (_qtot - qtot));
+    rhs.push_back(factor * (qtot_ - qtot));
     
     if (debug)
     {

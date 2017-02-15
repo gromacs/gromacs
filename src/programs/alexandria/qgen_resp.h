@@ -97,21 +97,21 @@ class QgenResp
         QgenResp();
 
         ChargeDistributionModel chargeDistributionModel()
-        { return _iDistributionModel; }
+        { return iDistributionModel_; }
 
         /*! \brief Set options for ESP charge generation
          *
          * \param[in] c          Charge distribution model eqdAXp, eqdAXg or eqdAXs
          * \param[in] watoms     Weighting factor for atoms in ESP fit
          */
-        void setChargeDistributionModel(ChargeDistributionModel c)
-        { _iDistributionModel = c; }
+        void setChargeDistributionModel(ChargeDistributionModel qd)
+        { iDistributionModel_ = qd; }
 
-        void setAtomWeight(real watoms) { _watoms = watoms; }
+        void setAtomWeight(real watoms) { watoms_ = watoms; }
 
-        real getMolecularCharge() const { return _qtot; }
+        real getMolecularCharge() const { return qtot_; }
 
-        void setMolecularCharge(int qtot) { _qtot = qtot; }
+        void setMolecularCharge(int qtot) { qtot_ = qtot; }
 
         size_t nAtom() const { return ra_.size(); }
 
@@ -155,7 +155,7 @@ class QgenResp
         
         void updateAtomCharges(t_atoms  *atoms);
 
-        const std::string &getStoichiometry() const { return _stoichiometry; }
+        const std::string &getStoichiometry() const { return stoichiometry_; }
 
         void setAtomSymmetry(const std::vector<int> &symmetricAtoms);
 
@@ -175,6 +175,12 @@ class QgenResp
         real getRms(real *wtot, real *rrms);
 
         void potLsq(gmx_stats_t lsq);
+        
+        double calcJ(ChargeDistributionModel iChargeDistributionModel,
+                     rvec                    esp_x, 
+                     rvec                    atom_x,
+                     double                  zeta,
+                     int                     row);
 
         void calcRho();
 
@@ -231,16 +237,16 @@ class QgenResp
 
         void setZeta(int atom, int zz, double zeta);
 
-        ChargeDistributionModel   _iDistributionModel;
-        double                    _watoms;
-        int                       _qtot;
-        double                    _rms, _rrms, _penalty, _pfac, _entropy, _wtot;
-        dvec                      _origin, _space;
-        bool                      _bFitZeta, _bEntropy;
-        bool                      _bRandZeta, _bRandQ;
-        bool                      _bAXpRESP;
-        ivec                      _nxyz;
-        real                      _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
+        ChargeDistributionModel   iDistributionModel_;
+        double                    watoms_;
+        int                       qtot_;
+        double                    rms_, rrms_, penalty_, pfac_, entropy_, wtot_;
+        dvec                      origin_, space_;
+        bool                      bFitZeta_, bEntropy_;
+        bool                      bRandZeta_, bRandQ_;
+        bool                      bAXpRESP_;
+        ivec                      nxyz_;
+        real                      qfac_, bHyper_, zmin_, zmax_, deltaZ_, qmin_, qmax_, rDecrZeta_;
         int                       uniqueQ_;
         int                       fitQ_;
         int                       nAtom_;
@@ -249,8 +255,8 @@ class QgenResp
         //! Total number of parameters
         std::vector<RespAtom>     ra_;
         std::vector<RespAtomType> ratype_;
-        std::vector<std::string>  _dzatoms;
-        std::string               _stoichiometry;
+        std::vector<std::string>  dzatoms_;
+        std::string               stoichiometry_;
         std::vector<EspPoint>     ep_;
         std::vector<int>          symmetricAtoms_;
 
