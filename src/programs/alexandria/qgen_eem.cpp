@@ -448,14 +448,17 @@ double QgenEem::calcJ(ChargeDistributionModel iChargeDistributionModel,
     switch (iChargeDistributionModel)
     {
         case eqdAXp:
+        case eqdAXpp:
             eTot = CoulombNN(r);
             break;
         case eqdAXs:
+        case eqdAXps:
         case eqdRappe:
         case eqdYang:        
             eTot = Coulomb_SS(r, rowI, rowJ, zetaI, zetaJ);
             break;
         case eqdAXg:
+        case eqdAXpg:
             eTot = Coulomb_GG(r, zetaI, zetaJ);
             break;
         default:

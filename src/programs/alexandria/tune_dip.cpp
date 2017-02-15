@@ -1199,7 +1199,7 @@ int alex_tune_dip(int argc, char *argv[])
     static gmx_bool             bWeighted     = true;   
     static gmx_bool             bCharged      = true;
     static gmx_bool             bGaussianBug  = true;     
-    static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", nullptr};
+    static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXps", "AXpg", nullptr};
     static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     
     t_pargs                     pa[]         = {
@@ -1265,8 +1265,6 @@ int alex_tune_dip(int argc, char *argv[])
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended (the default)." },
-        { "-polar",    FALSE, etBOOL, {&bPolar},
-          "Add polarizabilities to the topology and coordinate file" },
         { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
           "Controls whether or not the Gaussian/Slater widths are optimized." },
         { "-esp", FALSE, etBOOL, {&bESP},
@@ -1347,10 +1345,17 @@ int alex_tune_dip(int argc, char *argv[])
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
 
-    if (iChargeDistributionModel == eqdAXs && nullptr == tabfn)
+    if (iChargeDistributionModel == eqdAXps  &&  nullptr == tabfn)
     {
         gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
                   "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+    }
+    
+    if (iChargeDistributionModel == eqdAXpp  || 
+        iChargeDistributionModel == eqdAXpg  || 
+        iChargeDistributionModel == eqdAXps)
+    {
+        bPolar = true;
     }
     
     opt.Init(cr, bQM, bGaussianBug,

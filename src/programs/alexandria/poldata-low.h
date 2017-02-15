@@ -62,7 +62,7 @@ namespace alexandria
  * \ingroup module_alexandria
  */
 enum ChargeDistributionModel {
-    eqdAXp, eqdAXg, eqdAXs, eqdYang, eqdBultinck, eqdRappe, eqdNR
+    eqdAXp, eqdAXg, eqdAXs, eqdAXpp, eqdAXpg, eqdAXps, eqdYang, eqdBultinck, eqdRappe, eqdNR
 };
 
 const char *eqd2string(ChargeDistributionModel eqd);

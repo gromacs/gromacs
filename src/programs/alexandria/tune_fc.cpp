@@ -1984,7 +1984,7 @@ int alex_tune_fc(int argc, char *argv[])
     static real           temperature   = 300;
     static char          *opt_elem      = nullptr;
     static char          *const_elem    = nullptr;
-    static char          *fixchi        = (char *)"H";
+    static char          *fixchi        = (char *)"hc";
     static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";    
     static gmx_bool       bBound        = false;
     static gmx_bool       bWeighted     = false;
@@ -1996,7 +1996,7 @@ int alex_tune_fc(int argc, char *argv[])
     static gmx_bool       bfullTensor   = false;
     static gmx_bool       bGaussianBug  = true;
     static gmx_bool       bZero         = true;  
-    static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs","Yang", "Bultinck", "Rappe", nullptr};
+    static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char    *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     static bool           bOpt[eitNR]   = {true, false, false, false, false, false, false, false, false, false};
       
@@ -2037,8 +2037,6 @@ int alex_tune_fc(int argc, char *argv[])
           "Optimize improper dihedral parameters" },
         { "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
           "Optimize 1-4 interaction parameters" },
-        { "-polar",  FALSE, etBOOL, {&bPolar},
-          "Use polarizability for optimization" },
         { "-beta0", FALSE, etREAL, {&beta0},
           "Reset the initial beta for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
         { "-D0", FALSE, etREAL, {&D0},
@@ -2121,13 +2119,22 @@ int alex_tune_fc(int argc, char *argv[])
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
-
-    if (iChargeDistributionModel == eqdAXs && nullptr == tabfn)
+    
+    if ((iChargeDistributionModel == eqdAXs    || 
+         iChargeDistributionModel == eqdAXps ) && 
+        nullptr == tabfn)
     {
         gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
                   "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
     }
 
+    if (iChargeDistributionModel == eqdAXpp  || 
+        iChargeDistributionModel == eqdAXpg  || 
+        iChargeDistributionModel == eqdAXps)
+    {
+        bPolar = true;
+    }
+    
     opt.Init(cr, bQM, bGaussianBug, iChargeDistributionModel,
              iChargeGenerationAlgorithm, rDecrZeta,
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,

@@ -64,8 +64,8 @@ static const char * eit_names[eitNR] = {
 };
 
 static const char * eqd_names[eqdNR] = {
-     "eqdAXp", "eqdAXg", "eqdAXs", "eqdYang", 
-     "eqdBultinck", "eqdRappe"
+     "eqdAXp", "eqdAXg", "eqdAXs", "eqdAXpp", "eqdAXpg", "eqdAXps", 
+     "eqdYang", "eqdBultinck", "eqdRappe"
 };
 
 const char *eqd2string(ChargeDistributionModel eqd)

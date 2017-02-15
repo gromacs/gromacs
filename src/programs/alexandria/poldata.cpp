@@ -1002,12 +1002,15 @@ typedef struct {
 } t_eemtype_props;
 
 t_eemtype_props eemtype_props[eqdNR] = {
-    { eqdAXp,      "AXp",      "Maaren2016a",   FALSE },
-    { eqdAXg,      "AXg",      "Maaren2016a",   TRUE },
-    { eqdAXs,      "AXs",      "Maaren2016a",   TRUE },
-    { eqdYang,     "Yang",     "Yang2006b",     TRUE },
-    { eqdBultinck, "Bultinck", "Bultinck2002a", FALSE },
-    { eqdRappe,    "Rappe",    "Rappe1991a",    TRUE }
+    { eqdAXp,      "AXp",      "Ghahremanpour2017a",   false },
+    { eqdAXg,      "AXg",      "Ghahremanpour2017a",   true },
+    { eqdAXs,      "AXs",      "Ghahremanpour2017a",   false },
+    { eqdAXpp,     "AXpp",     "Ghahremanpour2017a",   false },
+    { eqdAXpg,     "AXpg",     "Ghahremanpour2017a",   true },
+    { eqdAXps,     "AXps",     "Ghahremanpour2017a",   true },
+    { eqdYang,     "Yang",     "Yang2006b",            true },
+    { eqdBultinck, "Bultinck", "Bultinck2002a",        false },
+    { eqdRappe,    "Rappe",    "Rappe1991a",           true }
 };
 
 ChargeDistributionModel name2eemtype(const std::string name)

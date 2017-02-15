@@ -410,6 +410,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES]) &&
                 NN(xbuf[exmlROW]))
             {
+                auto c = name2eemtype(xbuf[exmlMODEL]);
                 Eemprops eep(name2eemtype(xbuf[exmlMODEL]),
                              xbuf[exmlNAME],
                              xbuf[exmlROW],

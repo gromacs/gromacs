@@ -303,11 +303,7 @@ static int decompose_frag(FILE                             *fplog,
             double T        = -1;
             double pol      = 0;
             double sig_pol  = 0;
-            if (mpi->getIupac().compare("1-amino-2-propanol") == 0)
-            {
-                printf("Hey ho, let's go!\n");
-            }
-            bool       bPol = mpi->getProp(MPO_POLARIZABILITY,
+            bool   bPol     = mpi->getProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
                                            lot, "", exp_type, &pol, &sig_pol, &T);
             alexandria::MolecularCompositionIterator mci =
