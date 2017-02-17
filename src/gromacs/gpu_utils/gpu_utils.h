@@ -47,6 +47,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -91,43 +93,39 @@ int getGpuCompatibilityStatus(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
 GPU_FUNC_QUALIFIER
 void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM
 
-/*! \brief Initializes the GPU with the given index.
+/*! \brief Initializes the GPU with the given ID.
  *
- * The varible \p mygpu is the index of the GPU to initialize in the
+ * The variable \p gpuId is also the index of the GPU to initialize in the
  * gpu_info.gpu_dev array.
  *
  * \param      mdlog        log file to write to
- * \param[in]  mygpu        index of the GPU to initialize
+ * \param[in]  gpuId        ID of the GPU to initialize
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
  * \param[in] gpu_info      GPU info of all detected devices in the system.
- * \param[in] gpu_opt       options for using the GPUs in gpu_info
  * \returns                 true if no error occurs during initialization.
  */
 GPU_FUNC_QUALIFIER
-gmx_bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
-                  int GPU_FUNC_ARGUMENT(mygpu),
-                  char *GPU_FUNC_ARGUMENT(result_str),
-                  const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
-                  const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM_WITH_RETURN(-1)
+bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
+              int GPU_FUNC_ARGUMENT(gpuId),
+              std::string &GPU_FUNC_ARGUMENT(result_str),
+              const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU_FUNC_TERM_WITH_RETURN(false)
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
  * The context is explicitly destroyed and therefore all data uploaded to the GPU
  * is lost. This should only be called when none of this data is required anymore.
  *
- * \param[in]  mygpu        index of the GPU clean up for
+ * \param[in]  gpuId        ID of the GPU to clean up for
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
  * \param[in] gpu_info      GPU info of all detected devices in the system.
- * \param[in] gpu_opt       options for using the GPUs in gpu_info
  * \returns                 true if no error occurs during the freeing.
  */
 CUDA_FUNC_QUALIFIER
-gmx_bool free_cuda_gpu(int CUDA_FUNC_ARGUMENT(mygpu),
-                       char *CUDA_FUNC_ARGUMENT(result_str),
-                       const gmx_gpu_info_t *CUDA_FUNC_ARGUMENT(gpu_info),
-                       const gmx_gpu_opt_t *CUDA_FUNC_ARGUMENT(gpu_opt)) CUDA_FUNC_TERM_WITH_RETURN(TRUE)
+bool free_cuda_gpu(int CUDA_FUNC_ARGUMENT(gpuId),
+                   std::string &CUDA_FUNC_ARGUMENT(result_str),
+                   const gmx_gpu_info_t *CUDA_FUNC_ARGUMENT(gpu_info)) CUDA_FUNC_TERM_WITH_RETURN(true)
 
 /*! \brief Returns the device ID of the CUDA GPU currently in use.
  *

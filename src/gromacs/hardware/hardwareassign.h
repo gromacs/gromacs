@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,12 @@
 #ifndef GMX_HARDWARE_HARDWAREASSIGN_H
 #define GMX_HARDWARE_HARDWAREASSIGN_H
 
+#include <map>
+#include <set>
+
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_device_info_t;
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 struct t_commrec;
@@ -46,9 +50,84 @@ namespace gmx
 class MDLogger;
 }
 
-void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                             const gmx_gpu_info_t *gpu_info,
-                             gmx_bool bForceUseGPU,
-                             gmx_gpu_opt_t *gpu_opt);
+//! Tasks that can be run on a GPU
+enum class GpuTask
+{
+    NB
+};
+
+/*! \libinternal \brief
+ * Handles setup-time assignment of GPUs to tasks
+ */
+class GpuTaskAssignmentManager
+{
+    //! A starting index into gpu_opt->dev_use GPU ID array for this rank
+    int                   devUseIndex_;
+    //! Number of GPU tasks on the physical node.
+    int                   devUseCountNode_;
+    //! GPU information
+    const gmx_gpu_info_t *gpuInfo_;
+    //! GPU assignment information that is modified by this object
+    gmx_gpu_opt_t        *gpuOpt_;
+    //! Tasks to assign during selectRank/TasksGpuIds
+    std::set<GpuTask>     tasksToAssign_;
+
+    /*! \brief
+     * This function is responsible for default mapping of the GPUs to the processes on a single node
+     * (filling the gpu_opt->dev_use array).
+     *
+     * This selects the GPUs we will use. This is an operation local to each physical node.
+     * If we have less MPI ranks than GPUs, we will waste some GPUs.
+     */
+    void assignRankGpuIds();
+
+    public:
+        //! Default constructor is disallowed as the GPU and communication structures are required
+        GpuTaskAssignmentManager() = delete;
+        //! Constructs the assignment manager
+        GpuTaskAssignmentManager(const gmx_gpu_info_t *gpuInfo, gmx_gpu_opt_t *gpuOpt) :
+            devUseIndex_(0), devUseCountNode_(0), gpuInfo_(gpuInfo), gpuOpt_(gpuOpt){}
+
+        /*! \brief
+         * Registers the intent of the task to be run on the GPU
+         */
+        void registerGpuTask(GpuTask task);
+
+        /*! \brief
+         * Assigns GPUs to this rank (or checks the manually selected GPU IDs); fills in gpu_opt->dev_use array.
+         * Uses cr to communicate the GPU taks counts intra-node.
+         */
+        void selectRankGpuIds(const gmx::MDLogger &mdlog, const t_commrec *cr);
+
+        /*! \brief
+         * Assigns GPUs of this rank to the tasks. Should be called after selectRankGpuIds.
+         */
+        void selectTasksGpuIds();
+};
+
+/*! \libinternal \brief
+ *  Storage of a rank-local information on GPUs assignment to tasks.
+ */
+class GpuTaskManager
+{
+    private:
+        //! Storing max 1 GPU ID per task type on any rank. */
+        std::map<GpuTask, int> gpuIdsByTasks_;
+        //! GPU information
+        const gmx_gpu_info_t  *gpuInfo_;
+        //! GPU assignment information
+        const gmx_gpu_opt_t   *gpuOpt_;
+    public:
+        //! Default constructor is disallowed as the GPU info is required
+        GpuTaskManager() = delete;
+        //! Constructs the empty mapping
+        GpuTaskManager(const gmx_gpu_info_t *gpuInfo, const gmx_gpu_opt_t *gpuOpt) : gpuInfo_(gpuInfo), gpuOpt_(gpuOpt){}
+        //! Returns the GPU ID for the given GPU task
+        int gpuId(GpuTask task);
+        //! Returns the pointer to the platform-dependent GPU info for the given GPU task
+        gmx_device_info_t *gpuInfo(GpuTask task);
+        //! Sets the GPU index into gpu_opt->dev_use for the given GPU task.
+        void setGpuIndex(GpuTask task, int gpuIndex);
+};
 
 #endif

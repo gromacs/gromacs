@@ -57,6 +57,7 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -1791,7 +1792,6 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
     gmx_bool bEmulateGPUEnvVarSet;
-    char     gpu_err_str[STRLEN];
 
     *bUseGPU = FALSE;
 
@@ -1815,10 +1815,9 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
      */
     if (gpu_opt->n_dev_use > 0 && !(*bEmulateGPU))
     {
-        /* Each PP node will use the intra-node id-th device from the
-         * list of detected/selected GPUs. */
-        if (!init_gpu(mdlog, cr->rank_pp_intranode, gpu_err_str,
-                      &hwinfo->gpu_info, gpu_opt))
+        std::string gpu_err_str;
+        const int   gpuId = gpu_opt->gpuTasks->gpuId(GpuTask::NB);
+        if (!init_gpu(mdlog, gpuId, gpu_err_str, &hwinfo->gpu_info))
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
@@ -1827,9 +1826,8 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                the MPI rank makes sense. */
             gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                        cr->rank_pp_intranode),
-                      gpu_err_str);
+                      gpuId,
+                      gpu_err_str.c_str());
         }
 
         /* Here we actually turn on hardware GPU acceleration */
@@ -2237,12 +2235,11 @@ static void init_nb_verlet(FILE                *fp,
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
+        const auto *device = fr->gpu_opt->gpuTasks->gpuInfo(GpuTask::NB);
         nbnxn_gpu_init(&nbv->gpu_nbv,
-                       &fr->hwinfo->gpu_info,
-                       fr->gpu_opt,
+                       device,
                        fr->ic,
                        nbv->grp,
-                       cr->rank_pp_intranode,
                        cr->nodeid,
                        (nbv->ngrp > 1) && !bHybridGPURun);
 
@@ -3253,16 +3250,12 @@ void free_gpu_resources(const t_forcerec     *fr,
                         const gmx_gpu_info_t *gpu_info,
                         const gmx_gpu_opt_t  *gpu_opt)
 {
-    gmx_bool bIsPPrankUsingGPU;
-    char     gpu_err_str[STRLEN];
-
-    bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
-
+    const bool bIsPPrankUsingGPU = (cr->duty & DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
     if (bIsPPrankUsingGPU)
     {
-        /* free nbnxn data in GPU memory */
+        /* Free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
-        /* stop the GPU profiler (only CUDA) */
+        /* Stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
@@ -3282,11 +3275,13 @@ void free_gpu_resources(const t_forcerec     *fr,
         }
 #endif  /* GMX_THREAD_MPI */
 
-        /* uninitialize GPU (by destroying the context) */
-        if (!free_cuda_gpu(cr->rank_pp_intranode, gpu_err_str, gpu_info, gpu_opt))
+        const int   gpuId = gpu_opt->gpuTasks->gpuId(GpuTask::NB);
+        /* Uninitialize the active GPU (by destroying the context) */
+        std::string gpu_err_str;
+        if (!free_cuda_gpu(gpuId, gpu_err_str, gpu_info))
         {
             gmx_warning("On rank %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);
+                        cr->nodeid, gpuId, gpu_err_str.c_str());
         }
     }
 }

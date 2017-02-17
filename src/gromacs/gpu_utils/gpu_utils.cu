@@ -444,71 +444,54 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
 #endif /* HAVE_NVML_APPLICATION_CLOCKS */
 }
 
-gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
-                  const struct gmx_gpu_info_t *gpu_info,
-                  const struct gmx_gpu_opt_t *gpu_opt)
+bool init_gpu(const gmx::MDLogger &mdlog, int gpuId, std::string &result_str,
+              const struct gmx_gpu_info_t *gpu_info)
 {
-    cudaError_t stat;
-    char        sbuf[STRLEN];
-    int         gpuid;
-
     assert(gpu_info);
-    assert(result_str);
-
-    if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
-    {
-        sprintf(sbuf, "Trying to initialize an non-existent GPU: "
-                "there are %d %s-selected GPU(s), but #%d was requested.",
-                gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
-        gmx_incons(sbuf);
-    }
-
-    gpuid = gpu_info->gpu_dev[gpu_opt->dev_use[mygpu]].id;
-
-    stat = cudaSetDevice(gpuid);
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    cudaError_t stat = cudaSetDevice(gpuId);
+    result_str = std::string(cudaGetErrorString(stat));
 
     if (debug)
     {
-        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->gpu_dev[gpuid].prop.name);
+        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuId, gpu_info->gpu_dev[gpuId].prop.name);
     }
 
     //Ignoring return value as NVML errors should be treated not critical.
     if (stat == cudaSuccess)
     {
-        init_gpu_application_clocks(mdlog, gpuid, gpu_info);
+        init_gpu_application_clocks(mdlog, gpuId, gpu_info);
     }
     return (stat == cudaSuccess);
 }
 
-gmx_bool free_cuda_gpu(
-        int gmx_unused mygpu, char *result_str,
-        const gmx_gpu_info_t gmx_unused *gpu_info,
-        const gmx_gpu_opt_t gmx_unused *gpu_opt
+bool free_cuda_gpu(
+        int gpuId, std::string &result_str,
+        const gmx_gpu_info_t gmx_unused *gpu_info
         )
 {
     cudaError_t  stat;
-    gmx_bool     reset_gpu_application_clocks_status = true;
-    int          gpuid;
+    bool         reset_gpu_application_clocks_status = true;
 
-    assert(result_str);
+#ifndef NDEBUG
+    // checking if the context passed in is active
+    int actualGpuId;
+    stat = cudaGetDevice(&actualGpuId);
+    CU_RET_ERR(stat, "free_cuda_gpu failure");
+    assert(actualGpuId == gpuId);
+#endif
 
     if (debug)
     {
-        int gpuid;
-        stat = cudaGetDevice(&gpuid);
-        CU_RET_ERR(stat, "cudaGetDevice failed");
-        fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
+        fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuId);
     }
 
-    gpuid = gpu_opt ? gpu_opt->dev_use[mygpu] : -1;
-    if (gpuid != -1)
+    if (gpuId != -1)
     {
-        reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->gpu_dev[gpuid]) );
+        reset_gpu_application_clocks_status = reset_gpu_application_clocks(&(gpu_info->gpu_dev[gpuId]));
     }
 
-    stat = cudaDeviceReset();
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    stat       = cudaDeviceReset();
+    result_str = std::string(cudaGetErrorString(stat));
     return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
 }
 
