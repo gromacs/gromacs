@@ -1136,19 +1136,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU)
-    {
-        /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
-                                &hw_opt->gpu_opt);
-    }
-    else
-    {
-        /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
-    }
+    GpuTaskManager gpuTasks = createGpuAssignment(mdlog, cr, hwinfo->gpu_info, hw_opt->gpu_opt, bUseGPU);
 
-    /* check consistency across ranks of things like SIMD
+    /* Check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, bUseGPU);
 
@@ -1159,7 +1149,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (DOMAINDECOMP(cr))
     {
         /* When we share GPUs over ranks, we need to know this for the DLB */
-        dd_setup_dlb_resource_sharing(cr, hwinfo, hw_opt);
+        dd_setup_dlb_resource_sharing(cr, &gpuTasks);
     }
 
     /* getting number of PP/PME threads
@@ -1208,7 +1198,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       getFilenm("-tableb", nfile, fnm),
                       nbpu_opt,
                       FALSE,
-                      pforce);
+                      pforce,
+                      gpuTasks.gpuInfo(GpuTask::NB));
 
         /* Initialize QM-MM */
         if (fr->bQMMM)
@@ -1431,7 +1422,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : nullptr);
+    free_gpu_resources(fr, cr, &gpuTasks);
 
     if (doMembed)
     {
