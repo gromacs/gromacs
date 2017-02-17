@@ -57,6 +57,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -5350,17 +5351,18 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
 }
 #endif
 
-void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
-                                   const gmx_hw_info_t gmx_unused *hwinfo,
-                                   const gmx_hw_opt_t  gmx_unused *hw_opt)
+void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused  *cr,
+                                   const GpuTaskManager gmx_unused *gpuTasks)
 {
 #if GMX_MPI
-    int           physicalnode_id_hash;
-    int           gpu_id;
+    int           physicalnode_id_hash, gpuId;
     gmx_domdec_t *dd;
     MPI_Comm      mpi_comm_pp_physicalnode;
-
-    if (!(cr->duty & DUTY_PP) || hw_opt->gpu_opt.n_dev_use == 0)
+    try
+    {
+        gpuId = gpuTasks->gpuId(GpuTask::NB);
+    }
+    catch (...)
     {
         /* Only PP nodes (currently) use GPUs.
          * If we don't have GPUs, there are no resources to share.
@@ -5370,15 +5372,13 @@ void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
 
     physicalnode_id_hash = gmx_physicalnode_id_hash();
 
-    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->rank_pp_intranode);
-
     dd = cr->dd;
 
     if (debug)
     {
         fprintf(debug, "dd_setup_dd_dlb_gpu_sharing:\n");
         fprintf(debug, "DD PP rank %d physical node hash %d gpu_id %d\n",
-                dd->rank, physicalnode_id_hash, gpu_id);
+                dd->rank, physicalnode_id_hash, gpuId);
     }
     /* Split the PP communicator over the physical nodes */
     /* TODO: See if we should store this (before), as it's also used for
@@ -5386,7 +5386,7 @@ void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
      */
     MPI_Comm_split(dd->mpi_comm_all, physicalnode_id_hash, dd->rank,
                    &mpi_comm_pp_physicalnode);
-    MPI_Comm_split(mpi_comm_pp_physicalnode, gpu_id, dd->rank,
+    MPI_Comm_split(mpi_comm_pp_physicalnode, gpuId, dd->rank,
                    &dd->comm->mpi_comm_gpu_shared);
     MPI_Comm_free(&mpi_comm_pp_physicalnode);
     MPI_Comm_size(dd->comm->mpi_comm_gpu_shared, &dd->comm->nrank_gpu_shared);

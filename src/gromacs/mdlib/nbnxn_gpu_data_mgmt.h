@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,17 +55,14 @@ struct nonbonded_verlet_group_t;
 struct nbnxn_pairlist_t;
 struct nbnxn_atomdata_t;
 struct gmx_wallclock_gpu_t;
-struct gmx_gpu_info_t;
-struct gmx_gpu_opt_t;
+struct gmx_device_info_t;
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
-                    const struct gmx_gpu_info_t gmx_unused *gpu_info,
-                    const struct gmx_gpu_opt_t gmx_unused  *gpu_opt,
+                    const gmx_device_info_t gmx_unused     *device,
                     const interaction_const_t gmx_unused   *ic,
                     nonbonded_verlet_group_t gmx_unused    *nbv_grp,
-                    int gmx_unused                          my_gpu_index,
                     int gmx_unused                          rank,
                     /* true if both local and non-local are done on GPU */
                     gmx_bool gmx_unused                     bLocalAndNonlocal) GPU_FUNC_TERM
