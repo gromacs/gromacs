@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -688,11 +689,9 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
 
 //! This function is documented in the header file
 void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
-                    const gmx_gpu_info_t      *gpu_info,
-                    const gmx_gpu_opt_t       *gpu_opt,
+                    const gmx_device_info_t   *device,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
-                    int                        my_gpu_index,
                     int                        rank,
                     gmx_bool                   bLocalAndNonlocal)
 {
@@ -700,8 +699,6 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
 
-    assert(gpu_info);
-    assert(gpu_opt);
     assert(ic);
 
     if (p_nb == NULL)
@@ -723,8 +720,9 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     snew(nb->timers, 1);
     snew(nb->timings, 1);
 
-    /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = gpu_info->gpu_dev + gpu_opt->dev_use[my_gpu_index];
+    assert(device);
+    nb->dev_info = const_cast<gmx_device_info_t *>(device);
+
     snew(nb->dev_rundata, 1);
 
     /* init to NULL the debug buffer */

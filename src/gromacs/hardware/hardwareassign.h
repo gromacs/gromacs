@@ -35,8 +35,12 @@
 #ifndef GMX_HARDWARE_HARDWAREASSIGN_H
 #define GMX_HARDWARE_HARDWAREASSIGN_H
 
+#include <map>
+#include <set>
+
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_device_info_t;
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 struct t_commrec;
@@ -46,9 +50,114 @@ namespace gmx
 class MDLogger;
 }
 
-void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                             const gmx_gpu_info_t *gpu_info,
-                             bool userSetGpuIds,
-                             gmx_gpu_opt_t *gpu_opt);
+//! Tasks that can be run on a GPU
+enum class GpuTask
+{
+    NB
+};
+
+/*! \libinternal \brief
+ * A handle/description of a GPU context.
+ * \todo Move routines such as get_gpu_device_info_string() into this.
+ */
+struct GpuContext
+{
+    //! A platform-dependent device information pointer
+    gmx_device_info_t *gpuInfo_;
+    //! A numerical identificator of the GPU - expected to be used for human-readable output mostly
+    int                gpuId_;
+};
+
+//! Assignment of GPUs to tasks on the rank. Assumption is max 1 GPU context per task type.
+typedef std::map<GpuTask, GpuContext> GpuContextsMap;
+
+/*! \libinternal \brief
+ * Handles setup-time assignment of GPUs to tasks.
+ * To use this class one has to call registerGpuTask() for each type of task desired;
+ * then selectRankGpus() and finally selectTasksGpus()
+ * (the last call returns the mapping of GPU context handles to task types).
+ * This is all done in the convenience wrapper createGpuAssignment(), which is declared below.
+ */
+class GpuTaskAssignmentManager
+{
+    //! A starting index into gpu_opt->dev_use GPU ID array for this rank
+    int                   devUseIndex_;
+    //! Number of GPU tasks on the physical node.
+    int                   devUseCountNode_;
+    //! GPU information
+    const gmx_gpu_info_t *gpuInfo_;
+    //! Intermediate GPU assignment information that is partially modified by this object
+    gmx_gpu_opt_t        *gpuOpt_;
+    //! Tasks to assign during selectRank/TasksGpuIds
+    std::set<GpuTask>     tasksToAssign_;
+
+    /*! \brief
+     * This function is responsible for default mapping of the GPUs to the processes on a single node
+     * (filling the gpu_opt->dev_use array).
+     *
+     * This selects the GPUs we will use. This is an operation local to each physical node.
+     * If we have less MPI ranks than GPUs, we will waste some GPUs.
+     */
+    void assignRankGpuIds();
+
+    /*! \brief
+     * Creates and returns the GPU context description, based on index into gpu_opt->dev_use.
+     * Will terminate the program if \p gpuIndex is out of bounds.
+     */
+    GpuContext getGpuContext(int gpuIndex);
+
+    public:
+        //! Default constructor is disallowed as the GPU and communication structures are required
+        GpuTaskAssignmentManager() = delete;
+        //! Constructs the assignment manager
+        GpuTaskAssignmentManager(const gmx_gpu_info_t *gpuInfo, gmx_gpu_opt_t *gpuOpt) :
+            devUseIndex_(0), devUseCountNode_(0), gpuInfo_(gpuInfo), gpuOpt_(gpuOpt){}
+        /*! \brief
+         * Registers the intent of the task to be run on the GPU.
+         * Will terminate the program on the non-GPU build.
+         */
+        void registerGpuTask(GpuTask task);
+        /*! \brief
+         * Assigns GPUs to this rank (or checks the manually selected GPU IDs); fills in gpu_opt->dev_use array.
+         * Uses cr to communicate the GPU taks counts intra-node.
+         */
+        void selectRankGpus(const gmx::MDLogger &mdlog, const t_commrec *cr, bool userSetGpuIds);
+        /*! \brief
+         * Assigns GPUs of this rank to the tasks and returns the resulting mapping. Should be called after selectRankGpus().
+         */
+        GpuContextsMap selectTasksGpus();
+};
+
+/*! \libinternal \brief
+ * Storage of a rank-local information on GPUs assignment to tasks.
+ * Provides a convenience wrapper over GpuContextsMap.
+ */
+class GpuTaskManager
+{
+    private:
+        //! Underlying storage.
+        GpuContextsMap gpuContextsByTasks_;
+    public:
+        //! Default constructor is disallowed
+        GpuTaskManager() = delete;
+        //! Constructs the object from the underlying map
+        GpuTaskManager(const GpuContextsMap &gpuContextsByTasks) : gpuContextsByTasks_(gpuContextsByTasks){}
+        //! Returns the GPU ID for the given GPU task
+        //! \throws std::out_of_range if there is no such GPU task assigned on this rank
+        //! \returns GPU ID of the task if it was assigned
+        int gpuId(GpuTask task) const;
+        //! Returns the pointer to the platform-dependent GPU info for the given GPU task
+        //! \returns The pointer to the GPU info; nullptr if such GpuTask was not registered on this rank.
+        gmx_device_info_t *gpuInfo(GpuTask task) const;
+        //! Returns the number of GPU tasks on this rank
+        size_t rankGpuTasksCount() const;
+        //! Returns all the GPU tasks assignments on this rank
+        GpuContextsMap rankGpuContexts() const;
+};
+
+//! A wrapper function which assigns GPUs to tasks using the classes above
+GpuTaskManager createGpuAssignment(const gmx::MDLogger &mdlog, const t_commrec *cr,
+                                   const gmx_gpu_info_t &gpuInfo, gmx_gpu_opt_t &gpuOpt,
+                                   bool useGpuNB, bool userSetGpuIds);
 
 #endif

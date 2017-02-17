@@ -57,6 +57,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #if HAVE_NVML
 #include <nvml.h>
@@ -277,9 +278,9 @@ static bool getApplicationClocks(const gmx_device_info_t *cuda_dev,
 }
 #endif /* HAVE_NVML_APPLICATION_CLOCKS */
 
-/*! \brief Tries to set application clocks for the GPU with the given index.
+/*! \brief Tries to set application clocks for the given GPU.
  *
- * The variable \gpuid is the index of the GPU in the gpu_info.cuda_dev array
+ * The variable \gpuInfo is the pointer to the information of the GPU
  * to handle the application clocks for. Application clocks are set to the
  * max supported value to increase performance if application clock permissions
  * allow this. For future GPU architectures a more sophisticated scheme might be
@@ -288,16 +289,14 @@ static bool getApplicationClocks(const gmx_device_info_t *cuda_dev,
  * \todo Refactor this into a detection phase and a work phase. Also
  * refactor to remove compile-time dependence on logging header.
  *
- * \param     mdlog         log file to write to
- * \param[in] gpuid         index of the GPU to set application clocks for
- * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \param     mdlog         Log file to write to
+ * \param[in,out] gpuInfo   Information of the GPU to set application clocks for.
  * \returns                 true if no error occurs during application clocks handling.
  */
-static gmx_bool init_gpu_application_clocks(
-        const gmx::MDLogger &mdlog, int gmx_unused gpuid,
-        const gmx_gpu_info_t gmx_unused *gpu_info)
+static gmx_bool init_gpu_application_clocks(const gmx::MDLogger &mdlog, gmx_device_info_t *gpuInfo)
 {
-    const cudaDeviceProp *prop                        = &gpu_info->gpu_dev[gpuid].prop;
+    assert(gpuInfo);
+    const cudaDeviceProp *prop                        = &gpuInfo->prop;
     int                   cuda_compute_capability     = prop->major * 10 + prop->minor;
     gmx_bool              bGpuCanUseApplicationClocks =
         ((0 == gmx_wcmatch("*Tesla*", prop->name) && cuda_compute_capability >= 35 ) ||
@@ -343,7 +342,7 @@ static gmx_bool init_gpu_application_clocks(
         return false;
     }
 
-    gmx_device_info_t *cuda_dev = &(gpu_info->gpu_dev[gpuid]);
+    gmx_device_info_t *cuda_dev = gpuInfo;
 
     if (!addNVMLDeviceId(cuda_dev))
     {
@@ -452,71 +451,54 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
 #endif /* HAVE_NVML_APPLICATION_CLOCKS */
 }
 
-gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
-                  const struct gmx_gpu_info_t *gpu_info,
-                  const struct gmx_gpu_opt_t *gpu_opt)
+bool init_gpu(const gmx::MDLogger &mdlog, gmx_device_info_t *gpuInfo, std::string *result_str)
 {
-    cudaError_t stat;
-    char        sbuf[STRLEN];
-    int         gpuid;
-
-    assert(gpu_info);
-    assert(result_str);
-
-    if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
+    assert(gpuInfo);
+    cudaError_t stat = cudaSetDevice(gpuInfo->id);
+    if (result_str)
     {
-        sprintf(sbuf, "Trying to initialize an non-existent GPU: "
-                "there are %d selected GPU(s), but #%d was requested.",
-                gpu_opt->n_dev_use, mygpu);
-        gmx_incons(sbuf);
+        *result_str = gmx::formatString("failed to initialize GPU #%d: %s", gpuInfo->id, cudaGetErrorString(stat));
     }
-
-    gpuid = gpu_info->gpu_dev[gpu_opt->dev_use[mygpu]].id;
-
-    stat = cudaSetDevice(gpuid);
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
 
     if (debug)
     {
-        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->gpu_dev[gpuid].prop.name);
+        fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuInfo->id, gpuInfo->prop.name);
     }
 
     //Ignoring return value as NVML errors should be treated not critical.
     if (stat == cudaSuccess)
     {
-        init_gpu_application_clocks(mdlog, gpuid, gpu_info);
+        init_gpu_application_clocks(mdlog, gpuInfo);
     }
     return (stat == cudaSuccess);
 }
 
-gmx_bool free_cuda_gpu(
-        int gmx_unused mygpu, char *result_str,
-        const gmx_gpu_info_t gmx_unused *gpu_info,
-        const gmx_gpu_opt_t gmx_unused *gpu_opt
-        )
+bool free_cuda_gpu(const gmx_device_info_t *gpuInfo, std::string *result_str)
 {
     cudaError_t  stat;
-    gmx_bool     reset_gpu_application_clocks_status = true;
-    int          gpuid;
+    bool         reset_gpu_application_clocks_status = true;
+    assert(gpuInfo);
 
-    assert(result_str);
+#ifndef NDEBUG
+    // Checking if the context passed in is active
+    int actualGpuId;
+    stat = cudaGetDevice(&actualGpuId);
+    CU_RET_ERR(stat, "free_cuda_gpu failure");
+    assert(actualGpuId == gpuInfo->id);
+#endif
 
     if (debug)
     {
-        int gpuid;
-        stat = cudaGetDevice(&gpuid);
-        CU_RET_ERR(stat, "cudaGetDevice failed");
-        fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
+        fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuInfo->id);
     }
 
-    gpuid = gpu_opt ? gpu_opt->dev_use[mygpu] : -1;
-    if (gpuid != -1)
-    {
-        reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->gpu_dev[gpuid]) );
-    }
+    reset_gpu_application_clocks_status = reset_gpu_application_clocks(gpuInfo);
 
     stat = cudaDeviceReset();
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    if (result_str)
+    {
+        *result_str = gmx::formatString("failed to free GPU #%d: %s", gpuInfo->id, cudaGetErrorString(stat));
+    }
     return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
 }
 

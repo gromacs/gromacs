@@ -46,6 +46,7 @@ struct gmx_gpu_opt_t;
 struct gmx_hw_info_t;
 struct gmx_hw_opt_t;
 struct t_commrec;
+class GpuTaskManager;
 
 namespace gmx
 {
@@ -101,19 +102,12 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      bool                 userSetGpuIds,
-                                      bool                 willUsePhysicalGpu);
-
-/* Check whether a GPU is shared among ranks, and return the number of shared
-   gpus
-
-   gpu_opt       = the gpu options struct
-
-   returns: The number of GPUs shared among ranks, or 0 */
-int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGpuIds);
+void gmx_check_hw_runconf_consistency(const gmx::MDLogger  &mdlog,
+                                      const gmx_hw_info_t  *hwinfo,
+                                      const t_commrec      *cr,
+                                      const gmx_hw_opt_t   *hw_opt,
+                                      bool                  userSetGpuIds,
+                                      bool                  willUsePhysicalGpu,
+                                      const GpuTaskManager &gpuTasks);
 
 #endif
