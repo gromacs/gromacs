@@ -166,13 +166,13 @@ class ThreadAffinityTestHelper
             {
                 setLogicalProcessorCount(1);
             }
-            gmx_set_thread_affinity(logHelper_.logger(), cr_, hwOpt_, *hwTop_,
+            gmx_set_thread_affinity(logHelper_.logger(), cr_, hwOpt_.get(), *hwTop_,
                                     nthread_local, &affinityAccess_);
         }
 
     private:
         t_commrec                         *cr_;
-        gmx_hw_opt_t                      *hwOpt_;
+        std::unique_ptr<gmx_hw_opt_t>      hwOpt_;
         std::unique_ptr<HardwareTopology>  hwTop_;
         MockThreadAffinityAccess           affinityAccess_;
         LoggerTestHelper                   logHelper_;

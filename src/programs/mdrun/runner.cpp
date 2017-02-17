@@ -244,7 +244,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     }
 
     /* a few small, one-time, almost unavoidable memory leaks: */
-    snew(mda, 1);
+    mda = new mdrunner_arglist {};
     fnmn = dup_tfn(nfile, fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
@@ -1136,19 +1136,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU)
     {
-        /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
-                                &hw_opt->gpu_opt);
-    }
-    else
-    {
-        /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
+        GpuTaskAssignmentManager assigner(&hwinfo->gpu_info, &hw_opt->gpu_opt);
+        if (bUseGPU && (cr->duty & DUTY_PP))
+        {
+            assigner.registerGpuTask(GpuTask::NB);
+        }
+        /* This chooses node-local GPU ids */
+        assigner.selectRankGpuIds(mdlog, cr);
+        /* This sorts out the rank-local GPU to task assignment */
+        assigner.selectTasksGpuIds();
     }
 
-    /* check consistency across ranks of things like SIMD
+    /* Check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, bUseGPU);
 
