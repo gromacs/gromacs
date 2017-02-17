@@ -48,6 +48,7 @@ struct IForceProvider;
 struct t_commrec;
 struct t_fcdata;
 struct t_filenm;
+struct gmx_device_info_t;
 
 namespace gmx
 {
@@ -96,37 +97,39 @@ void init_interaction_const_tables(FILE                   *fp,
 /*! \brief Initialize forcerec structure.
  *
  * The Force rec struct must be created with mk_forcerec.
- * \param[in]  fplog       File for printing
- * \param[in]  mdlog       File for printing
- * \param[out] fr          The forcerec
- * \param[in]  fcd         Force constant data
- * \param[in]  forceProviders  Handle to modules providing forces
- * \param[in]  ir          Inputrec structure
- * \param[in]  mtop        Molecular topology
- * \param[in]  cr          Communication structures
- * \param[in]  box         Simulation box
- * \param[in]  tabfn       Table potential file for non-bonded interactions
- * \param[in]  tabpfn      Table potential file for pair interactions
- * \param[in]  tabbfnm     Table potential files for bonded interactions
- * \param[in]  nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
- * \param[in]  bNoSolvOpt  Do not use solvent optimization
- * \param[in]  print_force Print forces for atoms with force >= print_force
+ * \param[in]     fplog       File for printing
+ * \param[in]     mdlog       File for printing
+ * \param[out]    fr          The forcerec
+ * \param[in]     fcd         Force constant data
+ * \param[in]     forceProviders  Handle to modules providing forces
+ * \param[in]     ir          Inputrec structure
+ * \param[in]     mtop        Molecular topology
+ * \param[in]     cr          Communication structures
+ * \param[in]     box         Simulation box
+ * \param[in]     tabfn       Table potential file for non-bonded interactions
+ * \param[in]     tabpfn      Table potential file for pair interactions
+ * \param[in]     tabbfnm     Table potential files for bonded interactions
+ * \param[in]     nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
+ * \param[in]     bNoSolvOpt  Do not use solvent optimization
+ * \param[in]     print_force Print forces for atoms with force >= print_force
+ * \param[in,out] gpuInfo     GPU information for the NB initialization
  */
-void init_forcerec(FILE                   *fplog,
-                   const gmx::MDLogger    &mdlog,
-                   t_forcerec             *fr,
-                   t_fcdata               *fcd,
-                   IForceProvider         *forceProviders,
-                   const t_inputrec       *ir,
-                   const gmx_mtop_t       *mtop,
-                   const t_commrec        *cr,
-                   matrix                  box,
-                   const char             *tabfn,
-                   const char             *tabpfn,
-                   const t_filenm         *tabbfnm,
-                   const char             *nbpu_opt,
-                   gmx_bool                bNoSolvOpt,
-                   real                    print_force);
+void init_forcerec(FILE                           *fplog,
+                   const gmx::MDLogger            &mdlog,
+                   t_forcerec                     *fr,
+                   t_fcdata                       *fcd,
+                   IForceProvider                 *forceProviders,
+                   const t_inputrec               *ir,
+                   const gmx_mtop_t               *mtop,
+                   const t_commrec                *cr,
+                   matrix                          box,
+                   const char                     *tabfn,
+                   const char                     *tabpfn,
+                   const t_filenm                 *tabbfnm,
+                   const char                     *nbpu_opt,
+                   gmx_bool                        bNoSolvOpt,
+                   real                            print_force,
+                   gmx_device_info_t              *gpuInfo);
 
 /*! \brief Divide exclusions over threads
  *

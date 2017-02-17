@@ -60,6 +60,7 @@ struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
+class GpuTaskManager;
 
 namespace gmx
 {
@@ -221,7 +222,6 @@ void do_force_lowlevel(t_forcerec   *fr,
 
 void free_gpu_resources(const t_forcerec            *fr,
                         const t_commrec             *cr,
-                        const gmx_gpu_info_t        *gpu_info,
-                        const gmx_gpu_opt_t         *gpu_opt);
+                        const GpuTaskManager        *gpuTasks);
 
 #endif
