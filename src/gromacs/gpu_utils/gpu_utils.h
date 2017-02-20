@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,39 +74,15 @@ class MDLogger;
 GPU_FUNC_QUALIFIER
 int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FUNC_ARGUMENT(err_str)) GPU_FUNC_TERM_WITH_RETURN(-1)
 
-/*! \brief Select the compatible GPUs
+/*! \brief Return compatibility status of GPU with given \c index.
  *
- * This function selects the compatible gpus and initializes
- * gpu_info->dev_use and gpu_info->n_dev_use.
- *
- * Given the list of GPUs available in the system check each device in
- * gpu_info->gpu_dev and place the indices of the compatible GPUs into
- * dev_use with this marking the respective GPUs as "available for use."
- * Note that \p detect_gpus must have been called before.
- *
- * \param[in]     gpu_info    pointer to structure holding GPU information
- * \param[in,out] gpu_opt     pointer to structure holding GPU options
- */
-GPU_FUNC_QUALIFIER
-void pick_compatible_gpus(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
-                          gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM
-
-/*! \brief Check the existence/compatibility of a set of GPUs specified by their device IDs.
- *
- * Given the a list of gpu_opt->n_dev_use GPU device IDs stored in
- * gpu_opt->dev_use check the existence and compatibility
- * of the respective GPUs. Also provide the caller with an array containing
- * the result of checks in \p checkres.
- *
- * \param[out]  checkres    check result for each ID passed in requested_devs
  * \param[in]   gpu_info    pointer to structure holding GPU information
- * \param[out]  gpu_opt     pointer to structure holding GPU options
- * \returns                 TRUE if every the requested GPUs are compatible
+ * \param[in]   index       index of GPU to ask about
+ * \returns                 A e_gpu_detect_res_t value describing the status
  */
 GPU_FUNC_QUALIFIER
-gmx_bool check_selected_gpus(int *GPU_FUNC_ARGUMENT(checkres),
-                             const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
-                             gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM_WITH_RETURN(-1)
+int getGpuCompatibilityStatus(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+                              int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN(-1)
 
 /*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
  *
