@@ -49,7 +49,6 @@
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -165,14 +164,81 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     }
 }
 
+/*! \brief Return whether all selected GPUs are compatible.
+ *
+ * Given the list of selected GPU device IDs in \c gpu_opt and
+ * detected GPUs in \c gpu_info, return whether all selected GPUs are
+ * compatible. If not, place a suitable string in \c errorMessage.
+ *
+ * \param[in]   gpu_info      pointer to structure holding GPU information
+ * \param[in]   gpu_opt       pointer to structure holding GPU options
+ * \param[out]  errorMessage  pointer to string to hold a possible error message (is not updated when returning true)
+ * \returns                   true if every requested GPU is compatible
+ */
+static bool checkGpuSelection(const gmx_gpu_info_t *gpu_info,
+                              const gmx_gpu_opt_t  *gpu_opt,
+                              std::string          *errorMessage)
+{
+    GMX_ASSERT(gpu_info, "Invalid gpu_opt");
+
+    bool        allOK   = true;
+    std::string message = "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n";
+    for (int i = 0; i < gpu_opt->n_dev_use; i++)
+    {
+        GMX_ASSERT(gpu_opt, "Invalid gpu_opt");
+        GMX_ASSERT(gpu_opt->dev_use, "Invalid gpu_opt->dev_use");
+
+        int id     = gpu_opt->dev_use[i];
+        int status = getGpuCompatibilityStatus(gpu_info, id);
+        if (status != egpuCompatible)
+        {
+            allOK    = false;
+            message += gmx::formatString("    GPU #%d: %s\n",
+                                         id,
+                                         gpu_detect_res_str[status]);
+        }
+    }
+    if (!allOK && errorMessage)
+    {
+        *errorMessage = message;
+    }
+    return allOK;
+}
+
+/*! \brief Select the compatible GPUs
+ *
+ * This function filters gpu_info->gpu_dev for compatible gpus based
+ * on the previously run compatibility tests. Sets
+ * gpu_info->dev_compatible and gpu_info->n_dev_compatible.
+ *
+ * \param[in]     gpu_info    pointer to structure holding GPU information
+ * \param[out]    gpu_opt     pointer to structure holding GPU options
+ */
+static void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
+                               gmx_gpu_opt_t        *gpu_opt)
+{
+    GMX_ASSERT(gpu_info, "Invalid gpu_info");
+    GMX_ASSERT(gpu_opt, "Invalid gpu_opt");
+
+    // Possible minor over-allocation here, but not important for anything
+    gpu_opt->n_dev_compatible = 0;
+    snew(gpu_opt->dev_compatible, gpu_info->n_dev);
+    for (int i = 0; i < gpu_info->n_dev; i++)
+    {
+        GMX_ASSERT(gpu_info->gpu_dev, "Invalid gpu_info->gpu_dev");
+        if (getGpuCompatibilityStatus(gpu_info, i) == egpuCompatible)
+        {
+            gpu_opt->dev_compatible[gpu_opt->n_dev_compatible] = i;
+            gpu_opt->n_dev_compatible++;
+        }
+    }
+}
+
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
                              gmx_bool bForceUseGPU,
                              gmx_gpu_opt_t *gpu_opt)
 {
-    int              i;
-    char             sbuf[STRLEN], stmp[STRLEN];
-
     /* Bail if binary is not compiled with GPU acceleration, but this is either
      * explicitly (-nb gpu) or implicitly (gpu ID passed) requested. */
     if (bForceUseGPU && (GMX_GPU == GMX_GPU_NONE))
@@ -192,40 +258,20 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
         /* Check the GPU IDs passed by the user.
          * (GPU IDs have been parsed by gmx_parse_gpu_ids before)
          */
-        int *checkres;
-        int  res;
-
-        snew(checkres, gpu_opt->n_dev_use);
-
-        res = check_selected_gpus(checkres, gpu_info, gpu_opt);
-
-        if (!res)
+        std::string errorMessage;
+        if (!checkGpuSelection(gpu_info, gpu_opt, &errorMessage))
         {
             const bool canHaveHeterogeneousNodes = GMX_LIB_MPI && PAR(cr);
             if (canHaveHeterogeneousNodes)
             {
                 print_gpu_detection_stats(mdlog, gpu_info);
             }
-
-            sprintf(sbuf, "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n");
-            for (i = 0; i < gpu_opt->n_dev_use; i++)
-            {
-                if (checkres[i] != egpuCompatible)
-                {
-                    sprintf(stmp, "    GPU #%d: %s\n",
-                            gpu_opt->dev_use[i],
-                            gpu_detect_res_str[checkres[i]]);
-                    strcat(sbuf, stmp);
-                }
-            }
-            gmx_fatal(FARGS, "%s", sbuf);
+            gmx_fatal(FARGS, errorMessage.c_str());
         }
-
-        sfree(checkres);
     }
     else if (getenv("GMX_EMULATE_GPU") == nullptr)
     {
-        pick_compatible_gpus(gpu_info, gpu_opt);
+        pickCompatibleGpus(gpu_info, gpu_opt);
         assign_rank_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
     }
 
