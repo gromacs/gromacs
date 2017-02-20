@@ -303,7 +303,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
     double       qaver, qsum;
 
     sym_charges.clear();
-    for (int i = 0; (i < atoms->nr); i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
         sym_charges.push_back(i);
     }
@@ -334,18 +334,17 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                 anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());
                 int              hsmin = -1;
                 std::vector<int> hs;
-                for (int i = 0; (i < atoms->nr); i++)
+                for (int i = 0; i < atoms->nr; i++)
                 {
                     if (atoms->atom[i].atomnumber == anr_central)
                     {
-                        for (auto j = bonds->beginParam();
-                             (j < bonds->endParam()); ++j)
+                        for (auto j = bonds->beginParam(); j < bonds->endParam(); ++j)
                         {
                             ai   = j->a[0];
                             aj   = j->a[1];
                             anri = atoms->atom[ai].atomnumber;
                             anrj = atoms->atom[aj].atomnumber;
-
+                            
                             if ((ai == i) && (anrj == anr_attached))
                             {
                                 hs.push_back(aj);
@@ -362,7 +361,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         if ((static_cast<int>(hs.size()) == symcharges->getNumattach()) &&
                             (hsmin != -1))
                         {
-                            for (int j = 0; (j < symcharges->getNumattach()); j++)
+                            for (int j = 0; j < symcharges->getNumattach(); j++)
                             {
                                 sym_charges[hs[j]] = hsmin;
                             }

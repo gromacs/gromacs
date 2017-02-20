@@ -69,6 +69,8 @@ class RespAtomType
         bool hasShell() const { return bHasShell_; }
         
         int getAtype() const { return atype_; }
+        
+        int ptype() const { return ptype_; }
 
         void setAtype(int i) { atype_ = i; }
 
@@ -83,6 +85,8 @@ class RespAtomType
     private:
         //! Atom type index
         int                   atype_;
+        //! particleType
+        int                   ptype_;
         //! Signify whether this charge should be restrained during fitting
         bool                  bRestrained_;
         //! Signify whether this particle has a shell

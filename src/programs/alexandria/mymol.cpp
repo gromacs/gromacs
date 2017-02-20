@@ -1097,7 +1097,8 @@ immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
         auto zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);
-        if (zeta == 0 && eqdModel != eqdAXp)
+
+        if (zeta == 0 && (eqdModel != eqdAXp && eqdModel != eqdAXpp))
         {
             printf("Zeta is zero for %s atom\n", *topology_->atoms.atomtype[i]);
             return immZeroZeta;
@@ -1228,7 +1229,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                 coq_[n] /= total_atn;
             }
         }
-    }    
+    }   
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
@@ -1511,7 +1512,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  gmx_hw_info_t             *hwinfo)
 {
     immStatus imm       = immOK;
-    real      tolerance = 1e-6;
+    real      tolerance = 1e-8;
     bool      converged = false;
     int       maxiter   = 100, iter;
     std::vector<double> qq;
@@ -1521,14 +1522,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     GenerateGromacs(mdlog, cr, tabfn, hwinfo);
     if (bSymmetricCharges)
     {
-        auto pw = SearchPlist(plist_, eitBONDS);
-        if (plist_.end() != pw)
+        auto bonds = SearchPlist(plist_, eitBONDS);
+        if (plist_.end() != bonds)
         {
-            symmetrize_charges(bSymmetricCharges, &topology_->atoms, pw,
+            symmetrize_charges(bSymmetricCharges, &topology_->atoms, bonds,
                                pd, ap, symm_string, symmetric_charges_);
         }
-    }
-
+    } 
     switch (iChargeGenerationAlgorithm)
     {
         case eqgNONE:
@@ -1542,7 +1542,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         {
             gr_.setChargeDistributionModel(iChargeDistributionModel);
             gr_.setAtomWeight(watoms);
-            gr_.setAtomInfo(&topology_->atoms, pd, x_);
+            gr_.setAtomInfo(&topology_->atoms, pd, x_, molProp()->getCharge());
             gr_.setAtomSymmetry(symmetric_charges_);
             gr_.setMolecularCharge(molProp()->getCharge());
             gr_.summary(debug);
@@ -2537,7 +2537,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 
         if (nullptr != difffn)
         {
-            grref.setAtomInfo(&topology_->atoms, pd, x_);
+            grref.setAtomInfo(&topology_->atoms, pd, x_, molProp()->getCharge());
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
             gr_ = grref;

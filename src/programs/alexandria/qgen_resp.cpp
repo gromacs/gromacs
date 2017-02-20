@@ -107,10 +107,13 @@ void QgenResp::updateAtomCharges(t_atoms  *atoms)
 
 void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
-                           const PaddedRVecVector     x)
+                           const PaddedRVecVector     x,
+                           const int                  qtotal)
 {
     nAtom_  = 0;
     nShell_ = 0;
+    qtot_   = qtotal;
+    qshell_ = 0;
     ratype_.clear();
     ra_.clear();
     
@@ -160,7 +163,8 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
             // The reference charge is the charge of the shell times -1
             auto ratp = findRAT(atoms->atom[i+1].type);
             GMX_RELEASE_ASSERT(ratp != endRAT(), "Inconsistency setting atom info");
-            qref -= ratp->beginRZ()->q();
+            qref    -= ratp->beginRZ()->q();
+            qshell_ += ratp->beginRZ()->q();
         }
         else
         {
@@ -184,7 +188,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
 
 void QgenResp::summary(FILE *fp)
 {
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "There are %d atoms, %d atomtypes for (R)ESP fitting.\n",
                 static_cast<int>(nAtom()),
@@ -202,12 +206,12 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
-                       symmetricAtoms.size() == nAtom(),
+                       symmetricAtoms.size() == static_cast<size_t>(nAtom_),
                        "Please pass me a correct symmetric atoms vector");
 
     if (symmetricAtoms.size() == 0)
     {
-        for (size_t i = 0; i < nAtom(); i++)
+        for (int i = 0; i < nAtom_; i++)
         {
             symmetricAtoms_.push_back(i);
         }
@@ -218,16 +222,18 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     }
     uniqueQ_        = 0;
     fitQ_           = 0;
+    int  j = 0;
     for (size_t i = 0; (i < nAtom()); i++)
     {
         if (!ra_[i].fixedQ())
         {
             fitQ_ += 1;
 
-            if (symmetricAtoms_[i] == static_cast<int>(i))
+            if (symmetricAtoms_[j] == j)
             {
                 uniqueQ_ += 1;
             }
+            j++;
         }
     }
     if (debug)
@@ -392,10 +398,10 @@ void QgenResp::writeDiffCube(QgenResp               &src,
         }
         fclose(fp);
     }
-    if (NULL != gst)
+    if (nullptr != gst)
     {
         int   nb = 0;
-        real *x  = NULL, *y = NULL;
+        real *x  = nullptr, *y = nullptr;
 
         fp = xvgropen(histFn.c_str(), "Absolute deviation from QM", "Distance (nm)",
                       "Potential", oenv);
@@ -422,13 +428,13 @@ void QgenResp::writeDiffCube(QgenResp               &src,
 void QgenResp::writeCube(const std::string &fn, const std::string &title)
 {
     QgenResp dummy;
-    writeDiffCube(dummy,  fn, NULL, title, NULL, 0);
+    writeDiffCube(dummy,  fn, nullptr, title, nullptr, 0);
 }
 
 void QgenResp::writeRho(const std::string &fn, const std::string &title)
 {
     QgenResp dummy;
-    writeDiffCube(dummy,  fn, NULL, title, NULL, 1);
+    writeDiffCube(dummy,  fn, nullptr, title, nullptr, 1);
 }
 
 void QgenResp::readCube(const std::string &fn, bool bESPonly)
@@ -699,56 +705,6 @@ void QgenResp::potLsq(gmx_stats_t lsq)
     }
 }
 
-void QgenResp::calcRms()
-{
-    double pot2, s2, sum2, entropy;
-
-    pot2 = sum2 = entropy = 0;
-    for (size_t i = 0; (i < nEsp()); i++)
-    {
-        double diff = ep_[i].v() - ep_[i].vCalc();
-        if (debug && (i < 4*nAtom()))
-        {
-            fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
-                    i, ep_[i].v(), ep_[i].vCalc(), diff);
-        }
-        s2    = gmx::square(diff);
-        if ((s2 > 0) && (bEntropy_))
-        {
-            entropy += s2*log(s2);
-        }
-        sum2 += s2;
-        pot2 += gmx::square(ep_[i].v());
-    }
-    wtot_ = nEsp();
-    if (wtot_ > 0)
-    {
-        rms_     = gmx2convert(sqrt(sum2/wtot_), eg2cHartree_e);
-        entropy_ = gmx2convert(entropy/wtot_, eg2cHartree_e);
-    }
-    else
-    {
-        rms_     = 0;
-        entropy_ = 0;
-    }
-    rrms_ = sqrt(sum2/pot2);
-}
-
-real QgenResp::getRms(real *wtot, real *rrms)
-{
-    calcRms();
-    *wtot = wtot_;
-    *rrms = rrms_;
-    if (bEntropy_)
-    {
-        return entropy_;
-    }
-    else
-    {
-        return rms_;
-    }
-}
-
 double QgenResp::calcPenalty()
 {
     double p, b2;
@@ -835,9 +791,60 @@ void QgenResp::regularizeCharges()
     printf("Please implement symmetrizing charges\n");
 }
 
+void QgenResp::calcRms()
+{
+    double pot2, s2, sum2, entropy;
+
+    pot2 = sum2 = entropy = 0;
+    for (size_t i = 0; (i < nEsp()); i++)
+    {
+        double diff = ep_[i].v() - ep_[i].vCalc();
+        if (debug && (i < 4*nAtom()))
+        {
+            fprintf(debug, "ESP %zu QM: %g FIT: %g DIFF: %g\n",
+                    i, ep_[i].v(), ep_[i].vCalc(), diff);
+        }
+        s2    = gmx::square(diff);
+        if ((s2 > 0) && (bEntropy_))
+        {
+            entropy += s2*log(s2);
+        }
+        sum2 += s2;
+        pot2 += gmx::square(ep_[i].v());
+    }
+    wtot_ = nEsp();
+    if (wtot_ > 0)
+    {
+        rms_     = gmx2convert(sqrt(sum2/wtot_), eg2cHartree_e);
+        entropy_ = gmx2convert(entropy/wtot_, eg2cHartree_e);
+    }
+    else
+    {
+        rms_     = 0;
+        entropy_ = 0;
+    }
+    rrms_ = sqrt(sum2/pot2);
+}
+
+real QgenResp::getRms(real *wtot, real *rrms)
+{
+    calcRms();
+    *wtot = wtot_;
+    *rrms = rrms_;
+    if (bEntropy_)
+    {
+        return entropy_;
+    }
+    else
+    {
+        return rms_;
+    }
+}
+
+
 double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
-                       rvec                    esp_x, 
-                       rvec                    atom_x,
+                       rvec                    espx, 
+                       rvec                    rax,
                        double                  zeta,
                        int                     row)
 {
@@ -845,7 +852,7 @@ double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
     double r    = 0;
     double eTot = 0;
 
-    rvec_sub(esp_x, atom_x, dx);
+    rvec_sub(espx, rax, dx);
     r = norm(dx);
     if (r == 0)
     {
@@ -907,7 +914,7 @@ void QgenResp::calcPot()
                     {
                         q = ra.q();
                     }
-                    auto epot = calcJ(iDistributionModel_, espx, rax, k->row(), k->zeta());
+                    auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
                     vv += (q*epot);
                 }
             }
@@ -923,16 +930,15 @@ void QgenResp::optimizeCharges()
     // add two equation q2 - q3 = 0 and q2 - q4 = 0.
     // An extra row is needed to fix the total charge.
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
+    int                   factor   = nEsp();
     int                   ncolumn  = fitQ_;
-    double              **a        = alloc_matrix(ncolumn, nrow);
+    double              **lhs      = alloc_matrix(ncolumn, nrow);
     std::vector<double>   rhs;
 
     if (nEsp() < nAtom())
     {
-        printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
-        return;
-    }
-    
+        gmx_fatal(FARGS,"WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
+    }     
     for (size_t j = 0; j < nEsp(); j++)
     {
         rhs.push_back(ep_[j].v());
@@ -943,104 +949,89 @@ void QgenResp::optimizeCharges()
     {
         int                  atype = ra_[ii].atype();
         RespAtomTypeIterator rat   = findRAT(atype);
-        gmx::RVec            rax   = ra_[ii].x();
-
-        for (size_t j = 0; j < nEsp(); j++)
+        if (rat->ptype() == eptAtom)
         {
-            gmx::RVec        espx  = ep_[j].esp();
-            for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+            auto rax = ra_[ii].x();
+            for (size_t j = 0; j < nEsp(); j++)
             {
-                auto pot = calcJ(iDistributionModel_, espx, rax, k->row(), k->zeta());
-                if (k->fixedQ())
+                auto espx  = ep_[j].esp();
+                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    rhs[j] -= k->q()*pot;
+                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
+                    lhs[i][j] += pot;
                 }
-                else
+                if (debug && i == 0 && j < 4*nAtom())
                 {
-                    rhs[j]  -= ra_[ii].qRef()*pot;
-                    a[i][j] += pot;
+                    fprintf(debug, "ESP[%zu] x = %g y = %g z = %g pot= %g\n", 
+                            j, espx[XX], espx[YY], espx[ZZ], ep_[j].v());
                 }
             }
-            if (debug && i == 0 && j < 4*nAtom())
-            {
-                fprintf(debug, "ESP[%zu] x = %g y = %g z = %g pot= %g\n", 
-                        j, espx[XX], espx[YY], espx[ZZ], ep_[j].v());
-            }
-        }
-        if (!ra_[ii].fixedQ())
-        {
+            lhs[i][factor] = factor;
             i++;
         }
+        else if (rat->ptype() == eptShell)
+        {
+            auto rax = ra_[ii].x();
+            for (size_t j = 0; j < nEsp(); j++)
+            {
+                auto espx  = ep_[j].esp();
+                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+                {
+                    auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
+                    auto q   = k->q();
+                    rhs[j]  += (q*pot);
+                }
+            }
+        }
     }
+        
+    rhs.push_back(factor * (qtot_ - qshell_));
     
     // Add the equations to ascertain symmetric charges
-    int    j1     = nEsp();
+    int    j1     = factor+1;
     int    i1     = 0;
-    double factor = nEsp();
     for (int i = 0; i < static_cast<int>(nAtom()); i++)
-    {
+         {
         if (symmetricAtoms_[i] < i)
         {
-            a[i1][j1]                  =  factor;
-            a[symmetricAtoms_[i1]][j1] = -factor;
+            lhs[i1][j1]                  =  factor;
+            lhs[symmetricAtoms_[i1]][j1] = -factor;
             rhs.push_back(0);
             j1++;
         }
-        if (!ra_[i1].fixedQ())
+        if (!ra_[i].fixedQ())
         {
             i1++;
         }
-    }
-    
+    }    
     GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
-    GMX_RELEASE_ASSERT(j1 == nrow-1, "Something fishy adding equations for symmetric charges");
-    
-    // Use the last row for the total charge
-    double qtot = 0;
-    i           = 0;
-    for (size_t ii = 0; ii < nAtom(); ii++)
-    {
-        qtot += ra_[ii].qRef();
-        int                  atype = ra_[ii].atype();
-        RespAtomTypeIterator rat   = findRAT(atype);
-        for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
-        {
-            qtot += k->q();
-        }
-        if (!ra_[ii].fixedQ())
-        {
-            a[i][nrow-1] = factor;
-            i++;
-        }
-    }
-    
-    rhs.push_back(factor * (qtot_ - qtot));
+    GMX_RELEASE_ASSERT(j1 == nrow, "Something fishy adding equations for symmetric charges");
     
     if (debug)
     {
-        fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
-    }
-    if (debug)
-    {
-        for (size_t i = 0; i < 4*nAtom(); i++)
+        fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %d nUnique = %d\n", ncolumn, nrow, nEsp(), fitQ_, uniqueQ_);
+        for (int i = 0; i < nrow; i++)
         {
-            fprintf(debug, "ROW: %zu", i);
+            fprintf(debug, "ROW: %d", i);
             for (int j = 0; j < ncolumn; j++)
             {
-                fprintf(debug, "  %8g", a[j][i]);
+                fprintf(debug, "  %8g", lhs[j][i]);
             }
             fprintf(debug, "  %8g\n", rhs[i]);
         }
+        fprintf(debug, "QCore in the r.h.s:%2g\n", rhs[nrow-1]);
+        fprintf(debug, "Qtot:%2d\n",   qtot_);
+        fprintf(debug, "QShell:%2d\n", qshell_);
     }
 
     std::vector<double> q;
     q.resize(ncolumn);
-    multi_regression2(nrow, rhs.data(), ncolumn, a, q.data());
-    i = 0;
+    multi_regression2(nrow, rhs.data(), ncolumn, lhs, q.data());
     if (debug)
     {
         fprintf(debug, "Fitted Charges from optimizeCharges\n");
     }
+    i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
         if (!ra_[ii].fixedQ())
@@ -1054,8 +1045,7 @@ void QgenResp::optimizeCharges()
             i++;
         }
     }
-
-    free_matrix(a);
+    free_matrix(lhs);
     regularizeCharges();
 }
 

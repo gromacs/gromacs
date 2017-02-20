@@ -66,11 +66,12 @@ RespAtomType::RespAtomType(int                             atype,
         }
     }
     atype_       = atype;
+    ptype_       = particleType;
     atomtype_    = atomtype;
     bRestrained_ = bRestr;
     bHasShell_   = hasShell;
     int nZeta    = std::max(1, pd.getNzeta(iDistributionModel, atomtype_));
-    if (particleType == eptShell)
+    if (ptype_ == eptShell)
     {
         int         shell        = nZeta-1;
         size_t      shell_name   = atomtype_.find("_s");

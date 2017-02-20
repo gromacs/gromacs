@@ -63,8 +63,8 @@ class EspPoint
     public:
         EspPoint(gmx::RVec esp, double v) : esp_(esp), v_(v)
         {
-            vCalc_ = 0;
-            rho_   = 0;
+            vCalc_  = 0;
+            rho_    = 0;
         }
         const gmx::RVec &esp() const { return esp_; }
 
@@ -73,9 +73,9 @@ class EspPoint
         void setV(double v) { v_ = v; }
 
         double vCalc() const { return vCalc_; }
-
+        
         void setVCalc(double vcalc) { vCalc_ = vcalc; }
-
+        
         double rho() const { return rho_; }
 
         void setRho(double rho) { rho_ = rho; }
@@ -149,7 +149,8 @@ class QgenResp
 
         void setAtomInfo(t_atoms                *atoms,
                          const Poldata          &pd,
-                         const PaddedRVecVector  x);
+                         const PaddedRVecVector  x,
+                         const int               qtotal);
 
         void updateAtomCoords(const PaddedRVecVector x);
         
@@ -185,6 +186,8 @@ class QgenResp
         void calcRho();
 
         void calcPot();
+        
+        void calcVShell();
 
         void readCube(const std::string &fn,
                       bool               bESPonly);
@@ -239,7 +242,7 @@ class QgenResp
 
         ChargeDistributionModel   iDistributionModel_;
         double                    watoms_;
-        int                       qtot_;
+        int                       qtot_, qshell_;
         double                    rms_, rrms_, penalty_, pfac_, entropy_, wtot_;
         dvec                      origin_, space_;
         bool                      bFitZeta_, bEntropy_;

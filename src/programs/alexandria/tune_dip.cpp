@@ -263,7 +263,7 @@ void OPtimization::addEspPoint()
         {
             mymol.gr_.setChargeDistributionModel(_iChargeDistributionModel);
             mymol.gr_.setAtomWeight(watoms_);
-            mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.x_);
+            mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.x_, mymol.molProp()->getCharge());
             mymol.gr_.setAtomSymmetry(mymol.symmetric_charges_);
             mymol.gr_.setMolecularCharge(mymol.molProp()->getCharge());
             mymol.gr_.summary(debug);
