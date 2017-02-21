@@ -332,12 +332,12 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
                 anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());
-                int              hsmin = -1;
-                std::vector<int> hs;
                 for (int i = 0; i < atoms->nr; i++)
                 {
                     if (atoms->atom[i].atomnumber == anr_central)
                     {
+                        int              hsmin = -1;
+                        std::vector<int> hs;
                         for (auto j = bonds->beginParam(); j < bonds->endParam(); ++j)
                         {
                             ai   = j->a[0];

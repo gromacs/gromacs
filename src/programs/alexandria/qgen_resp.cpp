@@ -206,7 +206,7 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
-                       symmetricAtoms.size() == static_cast<size_t>(nAtom_),
+                       symmetricAtoms.size() == static_cast<size_t>(nAtom()),
                        "Please pass me a correct symmetric atoms vector");
 
     if (symmetricAtoms.size() == 0)
@@ -222,18 +222,16 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     }
     uniqueQ_        = 0;
     fitQ_           = 0;
-    int  j = 0;
     for (size_t i = 0; (i < nAtom()); i++)
     {
         if (!ra_[i].fixedQ())
         {
             fitQ_ += 1;
 
-            if (symmetricAtoms_[j] == j)
+            if (symmetricAtoms_[i] == static_cast<int>(i))
             {
                 uniqueQ_ += 1;
             }
-            j++;
         }
     }
     if (debug)
@@ -788,7 +786,6 @@ void QgenResp::regularizeCharges()
             ra_[ii].setQ(ra_[ii].q() + dq);
         }
     }
-    printf("Please implement symmetrizing charges\n");
 }
 
 void QgenResp::calcRms()
@@ -979,7 +976,7 @@ void QgenResp::optimizeCharges()
                 {
                     auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
                     auto q   = k->q();
-                    rhs[j]  += (q*pot);
+                    rhs[j]  -= (q*pot);
                 }
             }
         }
@@ -990,26 +987,34 @@ void QgenResp::optimizeCharges()
     // Add the equations to ascertain symmetric charges
     int    j1     = factor+1;
     int    i1     = 0;
+    std::vector<int> ii1;
+    
     for (int i = 0; i < static_cast<int>(nAtom()); i++)
-         {
-        if (symmetricAtoms_[i] < i)
-        {
-            lhs[i1][j1]                  =  factor;
-            lhs[symmetricAtoms_[i1]][j1] = -factor;
-            rhs.push_back(0);
-            j1++;
-        }
+    {
+        ii1.push_back(i1);
         if (!ra_[i].fixedQ())
         {
             i1++;
         }
+    }    
+    for (int i = 0; i < static_cast<int>(nAtom()); i++)
+    {
+        if (symmetricAtoms_[i] < i)
+        {
+            lhs[ii1[i]][j1]                   =  factor;
+            lhs[ii1[symmetricAtoms_[i]]][j1]  = -factor;
+            rhs.push_back(0);
+            j1++;            
+        }
+        
     }    
     GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
     GMX_RELEASE_ASSERT(j1 == nrow, "Something fishy adding equations for symmetric charges");
     
     if (debug)
     {
-        fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %d nUnique = %d\n", ncolumn, nrow, nEsp(), fitQ_, uniqueQ_);
+        fprintf(debug, "ncolumn = %d nrow = %d point = %zu nfixed = %d nUnique = %d\n", 
+                ncolumn, nrow, nEsp(), fitQ_, uniqueQ_);
         for (int i = 0; i < nrow; i++)
         {
             fprintf(debug, "ROW: %d", i);
@@ -1036,7 +1041,6 @@ void QgenResp::optimizeCharges()
     {
         if (!ra_[ii].fixedQ())
         {
-            q[i] += ra_[ii].qRef();
             ra_[ii].setQ(q[i]);
             if (debug)
             {
