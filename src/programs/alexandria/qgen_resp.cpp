@@ -117,7 +117,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     ratype_.clear();
     ra_.clear();
     
-    // First add all the atom types
+    // First add all the resp atom types
     for (int i = 0; (i < atoms->nr); i++)
     {
         // THIS is a hack
@@ -981,14 +981,15 @@ void QgenResp::optimizeCharges()
             }
         }
     }
-        
+    
+    // Add the total charge    
     rhs.push_back(factor * (qtot_ - qshell_));
     
     // Add the equations to ascertain symmetric charges
-    int    j1     = factor+1;
-    int    i1     = 0;
+    // We store the index of the cores in ii1. 
     std::vector<int> ii1;
-    
+    int    j1     = factor+1;
+    int    i1     = 0;  
     for (int i = 0; i < static_cast<int>(nAtom()); i++)
     {
         ii1.push_back(i1);
@@ -1029,6 +1030,7 @@ void QgenResp::optimizeCharges()
         fprintf(debug, "QShell:%2d\n", qshell_);
     }
 
+    // Fit the charge
     std::vector<double> q;
     q.resize(ncolumn);
     multi_regression2(nrow, rhs.data(), ncolumn, lhs, q.data());

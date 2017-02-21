@@ -604,43 +604,6 @@ void QgenEem::calcRhs(t_atoms *atoms)
     rhs_[natom_] = qcore;
 }
 
-int atomicnumber2rowXX(int elem)
-{
-    int row;
-
-    /* Compute which row in the periodic table is this element */
-    if (elem <= 2)
-    {
-        row = 1;
-    }
-    else if (elem <= 10)
-    {
-        row = 2;
-    }
-    else if (elem <= 18)
-    {
-        row = 3;
-    }
-    else if (elem <= 36)
-    {
-        row = 4;
-    }
-    else if (elem <= 54)
-    {
-        row = 5;
-    }
-    else if (elem <= 86)
-    {
-        row = 6;
-    }
-    else
-    {
-        row = 7;
-    }
-
-    return row;
-}
-
 void QgenEem::copyChargesToAtoms(t_atoms *atoms)
 {
     if (bHaveShell_)
