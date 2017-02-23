@@ -1,0 +1,54 @@
+This directory contains source code for Google C++ Testing and Mocking
+Frameworks.
+
+The code has been copied nearly verbatim from the GoogleTest 1.8.0
+tarball by copying the following files/directories recursively:
+
+README.md
+googletest
+googlemock
+
+However, the following files/subdirectories were excluded because they
+are unneeded for GROMACS:
+
+*.pump
+travis.h
+appveyor.yml
+build-aux
+cmake
+codegear
+configure.ac
+Makefile.am
+msvc
+m4
+xcode
+test
+scripts
+googletest/docs/V*md
+googletest/samples
+googlemock/docs/v*/*md
+
+The file CMakeLists.txt in this directory is part of the GROMACS build
+system and has been written from scratch.
+
+This README.Gromacs file is new, of course.
+
+In the default version, googletest-1.8.0 assumes wcscasecmp() to be
+present on Linux.  This is not the case on all platforms, so in
+gtest/src/gtest.cc we have added a define to only use this if
+GTEST_HAS_WCSCASECMP is set. Since we never set this define, we fall
+back on the alternative internal implementation which should be
+perfectly fine for now.
+
+googletest-1.8.0 also assumes that streaming results to a socket is
+something you can always do on Linux, but the implementation uses
+getaddrinfo(), about which the Cray linker warns because its use would
+require shared libraries at run time. Since GROMACS testing doesn't
+use this feature, we'd just want to turn it off, but there's no
+interface for that. So, GTEST_CAN_STREAM_RESULTS is added in
+googletest/include/gtest/internal/gtest-port.h to allow the default
+behaviour to be applied only if the user hasn't gotten involved.
+
+Two helper functions for implementing INSTANTIATE_TEST_CASE_P in
+gtest-param-test.h have had the static specifer added to their
+declarations, which silences -Wmissing-prototype warnings.
