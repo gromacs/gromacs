@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -607,7 +607,7 @@ do_pairs_simple(int nbonds,
         pbc_dx_aiuc(pbc, xi, xj, dr);
 
         T rsq   = dr[XX]*dr[XX] + dr[YY]*dr[YY] + dr[ZZ]*dr[ZZ];
-        T rinv  = invsqrt(rsq);
+        T rinv  = gmx::invsqrt(rsq);
         T rinv2 = rinv*rinv;
         T rinv6 = rinv2*rinv2*rinv2;
 
