@@ -607,7 +607,7 @@ do_pairs_simple(int nbonds,
         pbc_dx_aiuc(pbc, xi, xj, dr);
 
         T rsq   = dr[XX]*dr[XX] + dr[YY]*dr[YY] + dr[ZZ]*dr[ZZ];
-        T rinv  = invsqrt(rsq);
+        T rinv  = gmx::invsqrt(rsq);
         T rinv2 = rinv*rinv;
         T rinv6 = rinv2*rinv2*rinv2;
 
