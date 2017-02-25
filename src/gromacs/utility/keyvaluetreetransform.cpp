@@ -336,9 +336,9 @@ void KeyValueTreeTransformerImpl::Transformer::applyTransformedValue(
     {
         if (objBuilder.keyExists(key))
         {
-            GMX_RELEASE_ASSERT(objBuilder.getValue(key).isObject(),
+            GMX_RELEASE_ASSERT(objBuilder[key].isObject(),
                                "Inconsistent transform (different items map to same path)");
-            objBuilder = objBuilder.getObject(key);
+            objBuilder = objBuilder.getObjectBuilder(key);
         }
         else
         {
@@ -352,12 +352,12 @@ void KeyValueTreeTransformerImpl::Transformer::applyTransformedValue(
     {
         GMX_RELEASE_ASSERT(value.isObject(),
                            "Inconsistent transform (different items map to same path)");
-        GMX_RELEASE_ASSERT(objBuilder.getValue(rule->targetKey_).isObject(),
+        GMX_RELEASE_ASSERT(objBuilder[rule->targetKey_].isObject(),
                            "Inconsistent transform (different items map to same path)");
-        objBuilder = objBuilder.getObject(rule->targetKey_);
+        objBuilder = objBuilder.getObjectBuilder(rule->targetKey_);
         GMX_RELEASE_ASSERT(objBuilder.objectHasDistinctProperties(value.asObject()),
                            "Inconsistent transform (different items map to same path)");
-        objBuilder.mergeObject(std::move(value));
+        objBuilder.mergeObject(std::move(value.asObject()));
     }
     else
     {
