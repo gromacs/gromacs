@@ -36,6 +36,27 @@
  * \brief
  * Declares a data structure for JSON-like structured key-value mapping.
  *
+ * A tree is composed of nodes that can have different types:
+ *  - _Value_ (gmx::KeyValueTreeValue) is a generic node that can
+ *    represent either a scalar value of arbitrary type, or an object or
+ *    an array.
+ *  - _Array_ (gmx::KeyValueTreeArray) is a collection of any number of values
+ *    (including zero).  The values can be of any type and different types
+ *    can be mixed in the same array.
+ *  - _Object_ (gmx::KeyValueTreeObject) is a collection of properties.
+ *    Each property must have a unique key.  Order of properties is preserved,
+ *    i.e., they can be iterated in the order they were added.
+ *  - _Property_ (gmx::KeyValueTreeProperty) is an arbitrary type of value
+ *    associated with a string key.
+ * The root object of a tree is typically an object, but could also be an
+ * array.  The data structure itself does not enforce any other constraints,
+ * but the context in which it is used can limit the allowed scalar types or,
+ * e.g., require arrays to have values of uniform type.  Also, several
+ * operations defined for the structure (string output, comparison,
+ * serialization, etc.) only work on a limited set of scalar types, or have
+ * limitations with the types of trees they work on (in particular, arrays are
+ * currently poorly supported).
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
@@ -121,10 +142,14 @@ class KeyValueTreePath
 class KeyValueTreeValue
 {
     public:
+        //! Returns whether the value is an array (KeyValueTreeArray).
         bool isArray() const;
+        //! Returns whether the value is an object (KeyValueTreeObject).
         bool isObject() const;
+        //! Returns whether the value is of a given type.
         template <typename T>
         bool isType() const { return value_.isType<T>(); }
+        //! Returns the type of the value.
         std::type_index type() const { return value_.type(); }
 
         KeyValueTreeArray &asArray();
@@ -134,6 +159,7 @@ class KeyValueTreeValue
         template <typename T>
         const T                  &cast() const { return value_.cast<T>(); }
 
+        //! Returns the raw Variant value (always possible).
         const Variant            &asVariant() const { return value_; }
 
     private:
@@ -149,12 +175,14 @@ class KeyValueTreeValue
 class KeyValueTreeArray
 {
     public:
+        //! Whether all elements of the array are objects.
         bool isObjectArray() const
         {
             return std::all_of(values_.begin(), values_.end(),
                                std::mem_fn(&KeyValueTreeValue::isObject));
         }
 
+        //! Returns the values in the array.
         const std::vector<KeyValueTreeValue> &values() const { return values_; }
 
     private:
@@ -178,12 +206,14 @@ class KeyValueTreeProperty
         IteratorType value_;
 
         friend class KeyValueTreeObject;
+        friend class KeyValueTreeObjectBuilder;
 };
 
 class KeyValueTreeObject
 {
     public:
         KeyValueTreeObject() = default;
+        //! Creates a deep copy of an object.
         KeyValueTreeObject(const KeyValueTreeObject &other)
         {
             for (const auto &value : other.values_)
@@ -192,6 +222,7 @@ class KeyValueTreeObject
                 values_.push_back(KeyValueTreeProperty(iter));
             }
         }
+        //! Assigns a deep copy of an object.
         KeyValueTreeObject &operator=(KeyValueTreeObject &other)
         {
             KeyValueTreeObject tmp(other);
@@ -199,39 +230,48 @@ class KeyValueTreeObject
             std::swap(tmp.values_, values_);
             return *this;
         }
+        //! Default move constructor.
         KeyValueTreeObject(KeyValueTreeObject &&)            = default;
+        //! Default move assignment.
         KeyValueTreeObject &operator=(KeyValueTreeObject &&) = default;
 
+        /*! \brief
+         * Returns all properties in the object.
+         *
+         * The properties are in the order they were added to the object.
+         */
         const std::vector<KeyValueTreeProperty> &properties() const { return values_; }
 
+        //! Whether a property with given key exists.
         bool keyExists(const std::string &key) const
         {
             return valueMap_.find(key) != valueMap_.end();
         }
+        //! Returns value for a given key.
         const KeyValueTreeValue &operator[](const std::string &key) const
         {
+            GMX_ASSERT(keyExists(key), "Accessing non-existent value");
             return valueMap_.at(key);
         }
 
+        /*! \brief
+         * Returns whether the given object shares any keys with `this`.
+         */
         bool hasDistinctProperties(const KeyValueTreeObject &obj) const;
+
+        /*! \brief
+         * Writes a string representation of the object with given writer.
+         *
+         * The output format is designed to be readable by humans; if some
+         * particular machine-readable format is needed, that should be
+         * implemented outside the generic key-value tree code.
+         */
         void writeUsing(TextWriter *writer) const;
 
     private:
-        KeyValueTreeValue &operator[](const std::string &key)
-        {
-            return valueMap_.at(key);
-        }
-        std::map<std::string, KeyValueTreeValue>::iterator
-        addProperty(const std::string &key, KeyValueTreeValue &&value)
-        {
-            GMX_RELEASE_ASSERT(!keyExists(key), "Duplicate key value");
-            values_.reserve(values_.size() + 1);
-            auto iter = valueMap_.insert(std::make_pair(key, std::move(value))).first;
-            values_.push_back(KeyValueTreeProperty(iter));
-            return iter;
-        }
-
+        //! Keeps the properties by key.
         std::map<std::string, KeyValueTreeValue> valueMap_;
+        //! Keeps the insertion order of properties.
         std::vector<KeyValueTreeProperty>        values_;
 
         friend class KeyValueTreeObjectBuilder;
