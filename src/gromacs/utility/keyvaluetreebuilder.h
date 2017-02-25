@@ -36,6 +36,14 @@
  * \brief
  * Declares classes for building the data structures in keyvaluetree.h.
  *
+ * These are separate from the data structures to enforce clear separation of
+ * the APIs, and to make the data structure immutable after construction.
+ *
+ * For the main use case described in \ref page_mdmodules, they are mainly
+ * used internally, but currently gmx::KeyValueTreeObjectBuilder (and
+ * everything it references) is exposed for more complex transforms through
+ * gmx::IKeyValueTreeTransformRules.
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
@@ -57,19 +65,38 @@ namespace gmx
 class KeyValueTreeArrayBuilder;
 class KeyValueTreeObjectBuilder;
 
+/*! \libinternal \brief
+ * Root builder for creating trees that have an object at the root.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 class KeyValueTreeBuilder
 {
     public:
+        //! Returns a builder for the root object.
         KeyValueTreeObjectBuilder rootObject();
 
+        /*! \brief
+         * Builds the final object.
+         *
+         * The builder should not be accessed after this call.
+         */
         KeyValueTreeObject build() { return std::move(root_); }
 
     private:
+        /*! \brief
+         * Helper function for other builders to create values of certain type.
+         */
         template <typename T>
         static KeyValueTreeValue createValue(const T &value)
         {
             return KeyValueTreeValue(Variant::create<T>(value));
         }
+        /*! \brief
+         * Helper function for other builders to create default-constructed
+         * values.
+         */
         template <typename T>
         static KeyValueTreeValue createValue()
         {
@@ -78,27 +105,58 @@ class KeyValueTreeBuilder
 
         KeyValueTreeObject root_;
 
+        //! For access to createValue() methods.
         friend class KeyValueTreeObjectArrayBuilder;
+        //! For access to createValue() methods.
         friend class KeyValueTreeObjectBuilder;
+        //! For access to createValue() methods.
         template <typename T>
         friend class KeyValueTreeUniformArrayBuilder;
 };
 
+/*! \libinternal \brief
+ * Builder for KeyValueTreeValue objects.
+ *
+ * This builder can be constructed directly and can create self-standing
+ * KeyValueTreeValue objects.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 class KeyValueTreeValueBuilder
 {
     public:
+        //! Assigns a scalar value of certain type.
         template <typename T>
         void setValue(const T &value)
         {
             value_ = Variant::create<T>(value);
         }
+        //! Assigns a Variant value to the built value.
         void setVariantValue(Variant &&value)
         {
             value_ = std::move(value);
         }
+        /*! \brief
+         * Returns an object builder for building an object into this value.
+         *
+         * Any method call in this value builder invalidates the returned
+         * builder.
+         */
         KeyValueTreeObjectBuilder createObject();
+        /*! \brief
+         * Returns an array builder for building an array into this value.
+         *
+         * Any method call in this value builder invalidates the returned
+         * builder.
+         */
         KeyValueTreeArrayBuilder createArray();
 
+        /*! \brief
+         * Builds the final value.
+         *
+         * The builder should not be accessed after this call.
+         */
         KeyValueTreeValue build() { return KeyValueTreeValue(std::move(value_)); }
 
     private:
@@ -108,11 +166,13 @@ class KeyValueTreeValueBuilder
 class KeyValueTreeArrayBuilderBase
 {
     protected:
+        //! Creates an array builder for populating given array object.
         explicit KeyValueTreeArrayBuilderBase(KeyValueTreeArray *array)
             : array_(array)
         {
         }
 
+        //! Appends a raw Variant value to the array.
         KeyValueTreeValue &addRawValue(Variant &&value)
         {
             KeyValueTreeValueBuilder builder;
@@ -120,6 +180,7 @@ class KeyValueTreeArrayBuilderBase
             array_->values_.push_back(builder.build());
             return array_->values_.back();
         }
+        //! Appends a raw KeyValueTreeValue to the array.
         KeyValueTreeValue &addRawValue(KeyValueTreeValue &&value)
         {
             array_->values_.push_back(std::move(value));
@@ -145,10 +206,21 @@ class KeyValueTreeArrayBuilder : public KeyValueTreeArrayBuilderBase
         friend class KeyValueTreeValueBuilder;
 };
 
+/*! \libinternal \brief
+ * Builder for KeyValueTreeArray objects where all elements are of type `T`.
+ *
+ * The builder does not own the array being constructed, but instead holds a
+ * reference to an object within a tree rooted in KeyValueTreeBuilder or
+ * KeyValueTreeValueBuilder.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 template <typename T>
 class KeyValueTreeUniformArrayBuilder : public KeyValueTreeArrayBuilderBase
 {
     public:
+        //! Appends a value to the array.
         void addValue(const T &value)
         {
             addRawValue(KeyValueTreeBuilder::createValue<T>(value));
@@ -163,9 +235,26 @@ class KeyValueTreeUniformArrayBuilder : public KeyValueTreeArrayBuilderBase
         friend class KeyValueTreeObjectBuilder;
 };
 
+/*! \libinternal \brief
+ * Builder for KeyValueTreeArray objects where all elements are
+ * KeyValueTreeObject objects.
+ *
+ * The builder does not own the array being constructed, but instead holds a
+ * reference to an object within a tree rooted in KeyValueTreeBuilder or
+ * KeyValueTreeValueBuilder.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 class KeyValueTreeObjectArrayBuilder : public KeyValueTreeArrayBuilderBase
 {
     public:
+        /*! \brief
+         * Appends an object to the array.
+         *
+         * The object is created empty and can be built using the returned
+         * builder.
+         */
         KeyValueTreeObjectBuilder addObject();
 
     private:
@@ -177,69 +266,121 @@ class KeyValueTreeObjectArrayBuilder : public KeyValueTreeArrayBuilderBase
         friend class KeyValueTreeObjectBuilder;
 };
 
+/*! \libinternal \brief
+ * Builder for KeyValueTreeObject objects.
+ *
+ * The builder does not own the object being constructed, but instead holds a
+ * reference to an object within a tree rooted in KeyValueTreeBuilder or
+ * KeyValueTreeValueBuilder.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 class KeyValueTreeObjectBuilder
 {
     public:
+        //! Adds a property with given key from a KeyValueTreeValue.
         void addRawValue(const std::string &key, KeyValueTreeValue &&value)
         {
-            object_->addProperty(key, std::move(value));
+            addProperty(key, std::move(value));
         }
+        //! Adds a property with given key from a Variant value.
         void addRawValue(const std::string &key, Variant &&value)
         {
-            object_->addProperty(key, KeyValueTreeValue(std::move(value)));
+            addProperty(key, KeyValueTreeValue(std::move(value)));
         }
+        //! Adds a scalar property with given key, type, and value.
         template <typename T>
         void addValue(const std::string &key, const T &value)
         {
             addRawValue(key, KeyValueTreeBuilder::createValue<T>(value));
         }
+        /*! \brief
+         * Adds an object-valued property with given key.
+         *
+         * The object is created empty and can be built using the returned
+         * builder.
+         */
         KeyValueTreeObjectBuilder addObject(const std::string &key)
         {
-            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeObject>());
+            auto iter = addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeObject>());
             return KeyValueTreeObjectBuilder(&iter->second);
         }
+        /*! \brief
+         * Adds a generic array-valued property with given key.
+         *
+         * The array is created empty and can be built using the returned
+         * builder.
+         */
         KeyValueTreeArrayBuilder addArray(const std::string &key)
         {
-            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
+            auto iter = addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
             return KeyValueTreeArrayBuilder(&iter->second.asArray());
         }
+        /*! \brief
+         * Adds an array-valued property with uniform value types with given
+         * key.
+         *
+         * \tparam T  Type for all values in the array.
+         *
+         * The array is created empty and can be built using the returned
+         * builder.
+         */
         template <typename T>
         KeyValueTreeUniformArrayBuilder<T> addUniformArray(const std::string &key)
         {
-            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
+            auto iter = addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
             return KeyValueTreeUniformArrayBuilder<T>(&iter->second.asArray());
         }
+        /*! \brief
+         * Adds an array-valued property with objects in the array with given
+         * key.
+         *
+         * The array is created empty and can be built using the returned
+         * builder.
+         */
         KeyValueTreeObjectArrayBuilder addObjectArray(const std::string &key)
         {
-            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
+            auto iter = addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
             return KeyValueTreeObjectArrayBuilder(&iter->second.asArray());
         }
 
+        //! Whether a property with given key exists.
+        bool keyExists(const std::string &key) const { return object_->keyExists(key); }
+        //! Returns value for a given key.
+        const KeyValueTreeValue &operator[](const std::string &key) const
+        {
+            return (*object_)[key];
+        }
+        //! Returns an object builder for an existing object.
+        KeyValueTreeObjectBuilder getObjectBuilder(const std::string &key)
+        {
+            GMX_ASSERT(keyExists(key), "Requested non-existent value");
+            GMX_ASSERT((*this)[key].isObject(), "Accessing non-object value as object");
+            return KeyValueTreeObjectBuilder(&object_->valueMap_.at(key).asObject());
+        }
+
+        /*! \brief
+         * Returns whether the given object shares any keys with \p this.
+         */
         bool objectHasDistinctProperties(const KeyValueTreeObject &obj) const
         {
             return object_->hasDistinctProperties(obj);
         }
-        void mergeObject(KeyValueTreeValue &&value)
-        {
-            mergeObject(std::move(value.asObject()));
-        }
+        /*! \brief
+         * Merges properties from a given object to `this`.
+         *
+         * The objects should not share any keys, i.e.,
+         * objectHasDistinctProperties() should return `true`.
+         */
         void mergeObject(KeyValueTreeObject &&obj)
         {
+            GMX_ASSERT(objectHasDistinctProperties(obj),
+                       "Trying to merge overlapping object");
             for (auto &prop : obj.valueMap_)
             {
                 addRawValue(prop.first, std::move(prop.second));
             }
-        }
-
-        bool keyExists(const std::string &key) const { return object_->keyExists(key); }
-        const KeyValueTreeValue &getValue(const std::string &key) const
-        {
-            GMX_ASSERT(keyExists(key), "Requested non-existent value");
-            return (*object_)[key];
-        }
-        KeyValueTreeObjectBuilder getObject(const std::string &key)
-        {
-            return KeyValueTreeObjectBuilder(&(*object_)[key].asObject());
         }
 
     private:
@@ -250,6 +391,16 @@ class KeyValueTreeObjectBuilder
         explicit KeyValueTreeObjectBuilder(KeyValueTreeValue *value)
             : object_(&value->asObject())
         {
+        }
+
+        std::map<std::string, KeyValueTreeValue>::iterator
+        addProperty(const std::string &key, KeyValueTreeValue &&value)
+        {
+            GMX_RELEASE_ASSERT(!keyExists(key), "Duplicate key value");
+            object_->values_.reserve(object_->values_.size() + 1);
+            auto iter = object_->valueMap_.insert(std::make_pair(key, std::move(value))).first;
+            object_->values_.push_back(KeyValueTreeProperty(iter));
+            return iter;
         }
 
         KeyValueTreeObject *object_;
