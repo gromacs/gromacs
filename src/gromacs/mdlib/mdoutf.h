@@ -50,6 +50,11 @@ struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 
+namespace gmx
+{
+class MDModules;
+}
+
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
 /*! \brief Allocate and initialize object to manager trajectory writing output
@@ -62,6 +67,7 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          const t_filenm          fnm[],
                          int                     mdrun_flags,
                          const t_commrec        *cr,
+                         gmx::MDModules         *mdModules,
                          const t_inputrec       *ir,
                          gmx_mtop_t             *mtop,
                          const gmx_output_env_t *oenv,
@@ -84,7 +90,7 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
 void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
-void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir);
+void done_mdoutf(gmx_mdoutf_t of);
 
 /*! \brief Routine that writes trajectory-like frames.
  *

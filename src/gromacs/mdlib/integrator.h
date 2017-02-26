@@ -66,6 +66,7 @@ namespace gmx
 {
 
 class MDLogger;
+class MDModules;
 
 /*! \brief Integrator algorithm implementation.
  *
@@ -80,6 +81,7 @@ class MDLogger;
  * \param[in] vsite               Virtual site information
  * \param[in] constr              Constraint information
  * \param[in] stepout             How often we writen to the console
+ * \param[in] mdModules           Module information
  * \param[in] inputrec            Input record with mdp options
  * \param[in] top_global          Molecular topology for the whole system
  * \param[in] fcd                 Force and constraint data
@@ -106,6 +108,7 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &md
                              int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              int stepout,
+                             gmx::MDModules *mdmodules,
                              t_inputrec *inputrec,
                              gmx_mtop_t *top_global, t_fcdata *fcd,
                              t_state *state_global,

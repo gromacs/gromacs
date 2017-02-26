@@ -302,9 +302,6 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-// TODO gmx::IInputRecExtension pointers (e.g. efield) will eventually
-// be removed from this struct. In at least some cases, those will be
-// handled by MDModules.
 struct t_inputrec
 {
     int             eI;                      /* Integration method                 */
@@ -447,7 +444,6 @@ struct t_inputrec
     real                     userreal3;
     real                     userreal4;
     t_grpopts                opts;          /* Group options				*/
-    gmx::IInputRecExtension *efield;        /* Applied electric field                       */
     gmx_bool                 bQMMM;         /* QM/MM calculation                            */
     int                      QMconstraints; /* constraints on QM bonds                      */
     int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */

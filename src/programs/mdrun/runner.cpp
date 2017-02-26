@@ -1200,7 +1200,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr          = mk_forcerec();
         fr->hwinfo  = hwinfo;
         fr->gpu_opt = &hw_opt->gpu_opt;
-        init_forcerec(fplog, mdlog, fr, fcd, inputrec, mtop, cr, box,
+        init_forcerec(fplog, mdlog, fr, fcd, &mdModules, inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
@@ -1381,7 +1381,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, constr,
-                                     nstepout, inputrec, mtop,
+                                     nstepout, &mdModules, inputrec, mtop,
                                      fcd, state, &energyHistory,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,

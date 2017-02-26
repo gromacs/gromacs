@@ -197,6 +197,7 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
                            int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
+                           gmx::MDModules *mdModules,
                            t_inputrec *inputrec,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
                            t_state *state_global,
@@ -215,7 +216,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   const gmx_output_env_t *oenv, gmx_bool bVerbose,
                   int nstglobalcomm,
                   gmx_vsite_t *vsite, gmx_constr_t constr,
-                  int stepout, t_inputrec *ir,
+                  int stepout, gmx::MDModules *mdModules, t_inputrec *ir,
                   gmx_mtop_t *top_global,
                   t_fcdata *fcd,
                   t_state *state_global,
@@ -352,7 +353,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     /* Initial values */
-    init_md(fplog, cr, ir, oenv, &t, &t0, state_global->lambda,
+    init_md(fplog, cr, mdModules, ir, oenv, &t, &t0, state_global->lambda,
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
@@ -1816,7 +1817,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
     }
 
-    done_mdoutf(outf, ir);
+    done_mdoutf(outf);
 
     if (bPMETune)
     {

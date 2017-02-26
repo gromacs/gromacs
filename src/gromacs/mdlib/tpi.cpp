@@ -133,6 +133,7 @@ namespace gmx
                            int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
+                           gmx::MDModules *mdModules,
                            t_inputrec *inputrec,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
                            t_state *state_global,
@@ -152,6 +153,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               int gmx_unused nstglobalcomm,
               gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
               int gmx_unused stepout,
+              gmx::MDModules *mdModules,
               t_inputrec *inputrec,
               gmx_mtop_t *top_global, t_fcdata *fcd,
               t_state *state_global,
@@ -196,6 +198,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     real             prescorr, enercorr, dvdlcorr;
     gmx_bool         bEnergyOutOfBounds;
     const char      *tpid_leg[2] = {"direct", "reweighted"};
+
+    GMX_UNUSED_VALUE(mdModules);
 
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.

@@ -667,13 +667,9 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
-    /* The statement below is dangerous. It overwrites all structures in inputrec.
-     * If something is added to inputrec, like efield it will need to be
-     * treated here.
-     */
-    gmx::IInputRecExtension *eptr = inputrec->efield;
+    // Note that this overwrites pointers in inputrec, so all pointer fields
+    // Must be initialized separately below.
     block_bc(cr, *inputrec);
-    inputrec->efield = eptr;
     if (SIMMASTER(cr))
     {
         gmx::InMemorySerializer serializer;

@@ -67,7 +67,6 @@ class MDModules::Impl
             // methods in its interface that return IInputRecExtension
             // (renamed IMdpOptionsProvider) and IForceProvider.
             field_      = createElectricFieldModule();
-            ir_->efield = field_.get();
         }
         ~Impl()
         {
@@ -153,6 +152,22 @@ void MDModules::adjustInputrecBasedOnModules()
     impl_->ir_->params = nullptr;
     impl_->ir_->params = new KeyValueTreeObject(
                 gmx::adjustKeyValueTreeFromOptions(*params, options));
+}
+
+void MDModules::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                           bool bAppendFiles, const gmx_output_env_t *oenv)
+{
+    impl_->field_->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+}
+
+void MDModules::finishOutput()
+{
+    impl_->field_->finishOutput();
+}
+
+void MDModules::initForcerec(t_forcerec *fr)
+{
+    impl_->field_->initForcerec(fr);
 }
 
 } // namespace gmx

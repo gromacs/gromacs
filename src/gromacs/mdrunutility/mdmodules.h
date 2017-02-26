@@ -45,6 +45,9 @@
 
 #include "gromacs/utility/classhelpers.h"
 
+struct gmx_output_env_t;
+struct t_filenm;
+struct t_forcerec;
 struct t_inputrec;
 
 namespace gmx
@@ -55,28 +58,24 @@ class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
 
 /*! \libinternal \brief
- * Factory for t_inputrec.
+ * Manages the collection of all modules used for mdrun.
  *
- * This class acts as a central place for constructing t_inputrec (and possibly
- * other mdrun structures in the future) and wiring up dependencies between
- * modules that are referenced from these structures.  This class owns all such
- * modules, and needs to remain in existence as long as the returned data
- * structures are in use.  Ideally, it is also the only place that creates
- * instances of these modules (outside test code).
+ * This class acts as a central place for constructing modules for mdrun
+ * and wiring up dependencies between them.  This class should be the only
+ * place that contains the full list of modules, although in the future, some
+ * code (e.g., in tools) may benefit from the ability to only create one or a
+ * few modules and use them.
  *
  * The general idea is that each module takes care of its own data rather than
  * mdrun having to know about all the details of each type of force calculation.
  * Initially this is applied for simple things like electric field calculations
  * but later more complex forces will be supported too.
  *
- * The current approach uses t_inputrec and IInputRecExtension to pass
- * references to the modules to other code to avoid changing many function
- * signatures.  Also, the current usage means that nearly every use of
- * t_inputrec (in particular, reading it from mdp or tpr files) needs to be
- * initialized through MDModules for correct functionality.  For the future, a
- * better approach would be to pass around a reference to MDModules instead and
- * call it directly for cases that are not related to t_inputrec functionality.
- * This (and other refactoring) would allow simplifying IInputRecExtension.
+ * Currently, MDModules is passed around into quite a few functions within
+ * mdlib where the modules need to be accessed, but this coupling should be
+ * reduced to make only mdrun and selected other tools (grompp, gmx dump, and
+ * gmx check) dependant on the full set of modules.
+ *
  * IForceProvider is the other interface currently used to interact with these
  * modules.  Also, all the places where these interfaces are used should become
  * loops over a container of these interfaces, and/or groups of them (e.g.
@@ -144,6 +143,14 @@ class MDModules
          * adds any missing defaults.
          */
         void adjustInputrecBasedOnModules();
+
+        //! Initializes output files.
+        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                        bool bAppendFiles, const gmx_output_env_t *oenv);
+        //! Finalizes output files.
+        void finishOutput();
+        //! Initializes parameters in forcerec.
+        void initForcerec(t_forcerec *fr);
 
     private:
         class Impl;

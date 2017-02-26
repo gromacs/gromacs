@@ -48,6 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -76,11 +77,13 @@ struct gmx_mdoutf {
     gmx_groups_t     *groups; /* for compressed position writing */
     gmx_wallcycle_t   wcycle;
     rvec             *f_global;
+    gmx::MDModules   *mdModules;
 };
 
 
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          int mdrun_flags, const t_commrec *cr,
+                         gmx::MDModules *mdModules,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
@@ -105,6 +108,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
     of->wcycle                  = wcycle;
     of->f_global                = nullptr;
+    of->mdModules               = mdModules;
 
     if (MASTER(cr))
     {
@@ -193,7 +197,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             }
         }
 
-        ir->efield->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        mdModules->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -395,7 +399,7 @@ void mdoutf_tng_close(gmx_mdoutf_t of)
     }
 }
 
-void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir)
+void done_mdoutf(gmx_mdoutf_t of)
 {
     if (of->fp_ene != nullptr)
     {
@@ -413,7 +417,7 @@ void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    ir->efield->finishOutput();
+    of->mdModules->finishOutput();
     if (of->f_global != nullptr)
     {
         sfree(of->f_global);
