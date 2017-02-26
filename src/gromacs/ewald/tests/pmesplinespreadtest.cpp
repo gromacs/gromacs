@@ -102,12 +102,12 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
             const size_t atomCount = coordinates.size();
 
             /* Storing the input where it's needed */
-            t_inputrec *inputRec  = mdModules_.inputrec();
-            inputRec->nkx         = gridSize[XX];
-            inputRec->nky         = gridSize[YY];
-            inputRec->nkz         = gridSize[ZZ];
-            inputRec->pme_order   = pmeOrder;
-            inputRec->coulombtype = eelPME;
+            t_inputrec inputRec;
+            inputRec.nkx         = gridSize[XX];
+            inputRec.nky         = gridSize[YY];
+            inputRec.nkz         = gridSize[ZZ];
+            inputRec.pme_order   = pmeOrder;
+            inputRec.coulombtype = eelPME;
 
             TestReferenceData                                      refData;
 
@@ -130,7 +130,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
                     /* Running the test */
 
-                    PmeSafePointer pmeSafe = pmeInitWithAtoms(inputRec, coordinates, charges, box);
+                    PmeSafePointer pmeSafe = pmeInitWithAtoms(&inputRec, coordinates, charges, box);
 
                     const bool     computeSplines = (option.first == PmeSplineAndSpreadOptions::SplineOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
                     const bool     spreadCharges  = (option.first == PmeSplineAndSpreadOptions::SpreadOnly) || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);

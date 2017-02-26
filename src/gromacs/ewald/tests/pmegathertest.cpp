@@ -386,12 +386,12 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             auto inputAtomSplineData = inputAtomData.splineDataByPmeOrder[pmeOrder];
 
             /* Storing the input where it's needed, running the test */
-            t_inputrec *inputRec  = mdModules_.inputrec();
-            inputRec->nkx         = gridSize[XX];
-            inputRec->nky         = gridSize[YY];
-            inputRec->nkz         = gridSize[ZZ];
-            inputRec->pme_order   = pmeOrder;
-            inputRec->coulombtype = eelPME;
+            t_inputrec inputRec;
+            inputRec.nkx         = gridSize[XX];
+            inputRec.nky         = gridSize[YY];
+            inputRec.nkz         = gridSize[ZZ];
+            inputRec.pme_order   = pmeOrder;
+            inputRec.coulombtype = eelPME;
 
             TestReferenceData                     refData;
             const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"}};
@@ -407,7 +407,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                           (inputForceTreatment == PmeGatherInputHandling::ReduceWith) ? "with reduction" : "without reduction"
                                           ));
 
-                PmeSafePointer pmeSafe = pmeInitWithAtoms(inputRec, inputAtomData.coordinates, inputAtomData.charges, box);
+                PmeSafePointer pmeSafe = pmeInitWithAtoms(&inputRec, inputAtomData.coordinates, inputAtomData.charges, box);
 
                 /* Setting some more inputs */
                 pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);

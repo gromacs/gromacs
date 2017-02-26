@@ -39,6 +39,7 @@
 #include "inputrec.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
@@ -67,6 +68,19 @@
 const int nstmin_berendsen_tcouple =  5;
 const int nstmin_berendsen_pcouple = 10;
 const int nstmin_harmonic          = 20;
+
+t_inputrec::t_inputrec()
+{
+    std::memset(this, 0, sizeof(*this));
+    snew(fepvals, 1);
+    snew(expandedvals, 1);
+    snew(simtempvals, 1);
+}
+
+t_inputrec::~t_inputrec()
+{
+    done_inputrec(this);
+}
 
 static int nst_wanted(const t_inputrec *ir)
 {

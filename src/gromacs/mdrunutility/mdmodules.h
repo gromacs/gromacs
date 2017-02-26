@@ -81,11 +81,9 @@ class IKeyValueTreeTransformRules;
  * loops over a container of these interfaces, and/or groups of them (e.g.
  * applied forces), instead of the current single pointer.
  *
- * The assignOptionsToModules() and
- * assignOptionsToModulesFromInputrec() methods of this class also
- * take responsibility for wiring up the options (and their defaults)
- * for each module, respectively for mdp- and tpr-style input of those
- * options.
+ * The assignOptionsToModules() and adjustInputrecBasedOnModules() methods of
+ * this class also take responsibility for wiring up the options (and their
+ * defaults) for each module.
  *
  * \inlibraryapi
  * \ingroup module_mdrunutility
@@ -95,16 +93,6 @@ class MDModules
     public:
         MDModules();
         ~MDModules();
-
-        /*! \brief
-         * Returns an initialized t_inputrec structure.
-         *
-         * The inputrec structure is owned by MDModules and will be destroyed
-         * with it.
-         */
-        t_inputrec *inputrec();
-        //! \copydoc t_inputrec *inputrec()
-        const t_inputrec *inputrec() const;
 
         /*! \brief Initializes a transform from mdp values to
          * sectioned options.
@@ -118,23 +106,15 @@ class MDModules
          */
         void initMdpTransform(IKeyValueTreeTransformRules *rules);
 
-        /*! \brief Use \c mdpOptionValues to set the options (e.g.read
-         * from mdp input) for each module.
+        /*! \brief
+         * Sets input parameters from `params` for each module.
          *
-         * \param[in] mdpOptionValues Contains keys and values from user
+         * \param[in]  params  Contains keys and values from user
          *     input (and defaults) to configure modules that have
          *     registered options with those keys.
          * \param[out] errorHandler  Called to report errors. */
-        void assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
-                                           IKeyValueTreeErrorHandler *errorHandler);
-
-        /*! \brief
-         * Initializes modules based on inputrec values read from tpr file.
-         *
-         * This needs to be called after read_tpx_state() if the modules need
-         * to be accessed.
-         */
-        void assignOptionsToModulesFromTpr();
+        void assignOptionsToModules(const KeyValueTreeObject  &params,
+                                    IKeyValueTreeErrorHandler *errorHandler);
 
         /*! \brief
          * Normalizes inputrec parameters to match current code version.
@@ -142,7 +122,7 @@ class MDModules
          * This orders the parameters in inputrec to match the current code and
          * adds any missing defaults.
          */
-        void adjustInputrecBasedOnModules();
+        void adjustInputrecBasedOnModules(t_inputrec *ir);
 
         //! Initializes output files.
         void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],

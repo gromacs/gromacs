@@ -304,6 +304,11 @@ typedef struct t_swapcoords {
 
 struct t_inputrec
 {
+    t_inputrec();
+    explicit t_inputrec(const t_inputrec &) = delete;
+    t_inputrec &operator=(const t_inputrec &) = delete;
+    ~t_inputrec();
+
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */

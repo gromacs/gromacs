@@ -60,7 +60,6 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -748,8 +747,8 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
 
     read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
     snew(xtop, header.natoms);

@@ -99,7 +99,7 @@ class ElectricFieldTest : public ::testing::Test
                 .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
             module.initMdpTransform(transform.rules());
             auto result = transform.transform(mdpValues.build(), nullptr);
-            module.assignOptionsToModulesFromMdp(result.object(), nullptr);
+            module.assignOptionsToModules(result.object(), nullptr);
 
             t_mdatoms        md;
             PaddedRVecVector f = { { 0, 0, 0 } };

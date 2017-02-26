@@ -52,7 +52,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -1149,11 +1148,9 @@ int gmx_pme_error(int argc, char *argv[])
     create_info(&info);
     info.fourier_sp[0] = fs;
 
-    gmx::MDModules mdModules;
-
     if (MASTER(cr))
     {
-        ir = mdModules.inputrec();
+        ir = new t_inputrec();
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
         /* Open logfile for reading */
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");

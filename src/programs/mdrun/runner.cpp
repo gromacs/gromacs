@@ -707,7 +707,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int imdport, unsigned long Flags)
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
-    t_inputrec               *inputrec;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
@@ -736,7 +735,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
     gmx::MDModules mdModules;
-    inputrec = mdModules.inputrec();
+    t_inputrec     inputrecInstance;
+    t_inputrec    *inputrec = &inputrecInstance;
     snew(mtop, 1);
 
     if (Flags & MD_APPENDFILES)
@@ -896,7 +896,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          */
         gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
     }
-    mdModules.assignOptionsToModulesFromTpr();
+    // TODO: Error handling
+    mdModules.assignOptionsToModules(*inputrec->params, nullptr);
 
     if (fplog != nullptr)
     {
