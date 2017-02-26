@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,38 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_APPLIED_FORCES_ELECTRICFIELD_H
-#define GMX_APPLIED_FORCES_ELECTRICFIELD_H
+/*! \libinternal \file
+ * \brief
+ * Declares gmx::IMDModule.
+ *
+ * See \ref page_mdmodules for an overview of this and associated interfaces.
+ *
+ * \inlibraryapi
+ * \ingroup module_mdtypes
+ */
+#ifndef GMX_MDTYPES_IMDMODULE_H
+#define GMX_MDTYPES_IMDMODULE_H
 
-#include <memory>
+struct IForceProvider;
 
 namespace gmx
 {
 
-class IMDModule;
+class IMDOutputProvider;
+class IMdpOptionProvider;
 
-/*! \brief
- * Creates a module for an external electric field.
+/*! \libinternal \brief
+ * Extension module for \Gromacs simulations.
  *
- * The returned class describes the time dependent electric field that can
- * be applied to all charges in a simulation. The field is described
- * by the following:
- *     E(t) = A cos(omega*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(sigma)));
- * If sigma = 0 there is no pulse and we have instead
- *     E(t) = A cos(omega*t)
+ * The methods that return other interfaces can in the future return null for
+ * those interfaces that the module does not need to implement, but currently
+ * the callers are not prepared to generically handle various cases.
  *
- * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
- *
- * WARNING:
- * There can be problems with the virial.
- * Since the field is not self-consistent this is unavoidable.
- * For neutral molecules the virial is correct within this approximation.
- * For neutral systems with many charged molecules the error is small.
- * But for systems with a net charge or a few charged molecules
- * the error can be significant when the field is high.
- * Solution: implement a self-consistent electric field into PME.
+ * \inlibraryapi
+ * \ingroup module_mdtypes
  */
-std::unique_ptr<IMDModule> createElectricFieldModule();
+class IMDModule
+{
+    public:
+        virtual ~IMDModule() {}
+
+        //! Returns an interface for handling mdp input (and tpr I/O).
+        virtual IMdpOptionProvider *mdpOptionProvider() = 0;
+        //! Returns an interface for handling output files during simulation.
+        virtual IMDOutputProvider *outputProvider()     = 0;
+        //! Returns an interface for computing forces during simulation.
+        virtual IForceProvider *forceProvider()         = 0;
+};
 
 } // namespace gmx
 

@@ -47,42 +47,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-
-extern "C" {
-
-struct t_forcerec;
-struct t_mdatoms;
-struct t_commrec;
-
-/*! \libinternal \brief
- * Interface for a component that provides forces during MD.
- *
- * This is typically part of a larger structure/class managing its own
- * data, such that it has the information on what to do stored locally.
- * \todo Implement returning of energy and dH/dlambda.
- * \inlibraryapi
- */
-struct IForceProvider
-{
-    public:
-        /*! \brief Compute forces
-         *
-         * \todo This is specific for electric fields and needs to be generalized.
-         * \param[in]    cr      Communication record for parallel operations
-         * \param[in]    mdatoms Atom information
-         * \param[inout] force   The forces
-         * \param[in]    t       The actual time in the simulation (ps)
-         */
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *mdatoms,
-                                     PaddedRVecVector *force,
-                                     double            t) = 0;
-
-    protected:
-        ~IForceProvider() {}
-};
-#endif
+struct IForceProvider;
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_genborn_t;
@@ -96,6 +61,10 @@ struct t_nblists;
 struct t_QMMMrec;
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* macros for the cginfo data in forcerec
  *
@@ -485,4 +454,5 @@ struct t_forcerec {
 #ifdef __cplusplus
 }
 #endif
+
 #endif
