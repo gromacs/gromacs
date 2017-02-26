@@ -1808,7 +1808,7 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 } // namespace
 
 void get_ir(const char *mdparin, const char *mdparout,
-            gmx::MDModules *mdModules, t_gromppopts *opts,
+            gmx::MDModules *mdModules, t_inputrec *ir, t_gromppopts *opts,
             warninp_t wi)
 {
     char       *dumstr[2];
@@ -1817,7 +1817,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     const char *tmp;
     int         i, j, m, ninp;
     char        warn_buf[STRLEN];
-    t_inputrec *ir     = mdModules->inputrec();
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
@@ -2249,9 +2248,11 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
         MdpErrorHandler              errorHandler(wi);
         auto                         result
-            = transform.transform(convertedValues, &errorHandler);
+                   = transform.transform(convertedValues, &errorHandler);
+        ir->params = new gmx::KeyValueTreeObject(result.object());
+        mdModules->adjustInputrecBasedOnModules(ir);
         errorHandler.setBackMapping(result.backMapping());
-        mdModules->assignOptionsToModulesFromMdp(result.object(), &errorHandler);
+        mdModules->assignOptionsToModules(*ir->params, &errorHandler);
     }
 
     /* Ion/water position swapping ("computational electrophysiology") */

@@ -48,7 +48,6 @@
 
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -76,10 +75,6 @@ typedef std::tuple<IVec, int, ModuliType> BSplineModuliInputParameters;
 /*! \brief Test fixture for testing PME B-spline moduli creation */
 class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputParameters>
 {
-    private:
-        //! Environment for getting the t_inputrec structure easily
-        MDModules mdModules_;
-
     public:
         //! Default constructor
         PmeBSplineModuliTest() = default;
@@ -100,15 +95,15 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
                                       gridSize[XX], gridSize[YY], gridSize[ZZ]));
 
             /* Storing the input where it's needed */
-            t_inputrec *inputRec = mdModules_.inputrec();
-            inputRec->nkx         = gridSize[XX];
-            inputRec->nky         = gridSize[YY];
-            inputRec->nkz         = gridSize[ZZ];
-            inputRec->coulombtype = (moduliType == ModuliType::P3M) ? eelP3M_AD : eelPME;
-            inputRec->pme_order   = pmeOrder;
+            t_inputrec inputRec;
+            inputRec.nkx         = gridSize[XX];
+            inputRec.nky         = gridSize[YY];
+            inputRec.nkz         = gridSize[ZZ];
+            inputRec.coulombtype = (moduliType == ModuliType::P3M) ? eelP3M_AD : eelPME;
+            inputRec.pme_order   = pmeOrder;
 
             /* PME initialization call which checks the inputs and computes the B-spline moduli according to the grid sizes. */
-            PmeSafePointer pme = pmeInitEmpty(inputRec);
+            PmeSafePointer pme = pmeInitEmpty(&inputRec);
 
             /* Setting up the checker */
             TestReferenceData    refData;

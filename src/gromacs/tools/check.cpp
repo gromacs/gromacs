@@ -91,8 +91,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
                      gmx_bool bRMSD, real ftol, real abstol)
 {
     const char    *ff[2];
-    gmx::MDModules mdModules[2];
-    t_inputrec    *ir[2] = { mdModules[0].inputrec(), mdModules[1].inputrec() };
+    t_inputrec    *ir[2];
     t_state        state[2];
     gmx_mtop_t     mtop[2];
     t_topology     top[2];
@@ -102,8 +101,9 @@ static void comp_tpx(const char *fn1, const char *fn2,
     ff[1] = fn2;
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
+        ir[i] = new t_inputrec();
         read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
-        mdModules[i].adjustInputrecBasedOnModules();
+        gmx::MDModules().adjustInputrecBasedOnModules(ir[i]);
     }
     if (fn2)
     {
@@ -247,17 +247,15 @@ static void tpx2params(FILE *fp, const t_inputrec *ir)
 static void tpx2methods(const char *tpx, const char *tex)
 {
     FILE          *fp;
-    t_inputrec    *ir;
     t_state        state;
     gmx_mtop_t     mtop;
 
-    gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
-    read_tpx_state(tpx, ir, &state, &mtop);
+    t_inputrec     ir;
+    read_tpx_state(tpx, &ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
     tpx2system(fp, &mtop);
-    tpx2params(fp, ir);
+    tpx2params(fp, &ir);
     gmx_fio_fclose(fp);
 }
 
@@ -390,14 +388,12 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     gmx_mtop_t       mtop;
     gmx_localtop_t  *top = nullptr;
     t_state          state;
-    t_inputrec      *ir;
+    t_inputrec       ir;
 
-    gmx::MDModules   mdModules;
-    ir = mdModules.inputrec();
     if (tpr)
     {
-        read_tpx_state(tpr, ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
+        read_tpx_state(tpr, &ir, &state, &mtop);
+        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -464,7 +460,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top->idef, ir->ePBC, fr.x, fr.box, tol);
+            chk_bonds(&top->idef, ir.ePBC, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {

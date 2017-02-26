@@ -56,7 +56,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdebin.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
@@ -2092,8 +2091,8 @@ int gmx_energy(int argc, char *argv[])
 
     bVisco = opt2bSet("-vis", NFILE, fnm);
 
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
 
     if ((!bDisRe) && (!bDHDL))
     {

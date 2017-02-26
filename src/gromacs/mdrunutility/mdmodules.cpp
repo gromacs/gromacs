@@ -56,25 +56,13 @@ class MDModules::Impl
 {
     public:
 
-        Impl() : field_(nullptr), ir_(nullptr)
+        Impl()
+            : field_(createElectricFieldModule())
         {
-            snew(ir_, 1);
-            snew(ir_->fepvals, 1);
-            snew(ir_->expandedvals, 1);
-            snew(ir_->simtempvals, 1);
             // TODO Eventually implement a proper IMDModule, to which
             // create*Module() would return a pointer. It might have
             // methods in its interface that return IInputRecExtension
             // (renamed IMdpOptionsProvider) and IForceProvider.
-            field_      = createElectricFieldModule();
-        }
-        ~Impl()
-        {
-            if (ir_ != nullptr)
-            {
-                done_inputrec(ir_);
-                sfree(ir_);
-            }
         }
 
         void makeModuleOptions(Options *options)
@@ -86,7 +74,6 @@ class MDModules::Impl
         }
 
         IInputRecExtensionPtr  field_;
-        t_inputrec            *ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -97,16 +84,6 @@ MDModules::~MDModules()
 {
 }
 
-t_inputrec *MDModules::inputrec()
-{
-    return impl_->ir_;
-}
-
-const t_inputrec *MDModules::inputrec() const
-{
-    return impl_->ir_;
-}
-
 void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
     // TODO The transform rules for applied-forces modules should
@@ -115,43 +92,26 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     impl_->field_->initMdpTransform(rules);
 }
 
-void MDModules::assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
-                                              IKeyValueTreeErrorHandler *errorHandler)
+void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
+                                       IKeyValueTreeErrorHandler *errorHandler)
+{
+    Options moduleOptions;
+    impl_->makeModuleOptions(&moduleOptions);
+    // The actual output is in the data fields of the modules that
+    // were set up in the module options.
+    assignOptionsFromKeyValueTree(&moduleOptions, params, errorHandler);
+}
+
+void MDModules::adjustInputrecBasedOnModules(t_inputrec *ir)
 {
     Options moduleOptions;
     impl_->makeModuleOptions(&moduleOptions);
 
-    KeyValueTreeObject keyValueParameters(mdpOptionValues);
-    impl_->ir_->params = new KeyValueTreeObject(adjustKeyValueTreeFromOptions(keyValueParameters, moduleOptions));
-    // The actual output is in the data fields of the modules that
-    // were set up in the module options.
-    assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, errorHandler);
-}
-
-void MDModules::assignOptionsToModulesFromTpr()
-{
-    Options moduleOptions;
-    impl_->makeModuleOptions(&moduleOptions);
-
-    // Note that impl_->ir_->params was set up during tpr reading, so
-    // all we need to do here is integrate that with the module
-    // options, which e.g. might have changed between versions.
-    // The actual output is in the data fields of the modules that
-    // were set up in the module options.
-    //
-    // TODO error handling
-    assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, nullptr);
-}
-
-void MDModules::adjustInputrecBasedOnModules()
-{
-    gmx::Options                        options;
-    impl_->field_->initMdpOptions(&options);
-    std::unique_ptr<KeyValueTreeObject> params(impl_->ir_->params);
-    // Avoid double freeing if the next operation throws.
-    impl_->ir_->params = nullptr;
-    impl_->ir_->params = new KeyValueTreeObject(
-                gmx::adjustKeyValueTreeFromOptions(*params, options));
+    std::unique_ptr<KeyValueTreeObject> params(
+            new KeyValueTreeObject(
+                    gmx::adjustKeyValueTreeFromOptions(*ir->params, moduleOptions)));
+    delete ir->params;
+    ir->params = params.release();
 }
 
 void MDModules::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],

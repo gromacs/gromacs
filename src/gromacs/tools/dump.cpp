@@ -80,31 +80,27 @@ static void list_tpx(const char *fn,
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
     t_state       state;
-    t_inputrec   *ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     gmx_groups_t *groups;
     t_topology    top;
 
     read_tpxheader(fn, &tpx, TRUE);
-    gmx::MDModules mdModules;
-    if (tpx.bIr)
-    {
-        ir = mdModules.inputrec();
-    }
+    t_inputrec     ir;
     read_tpx_state(fn,
-                   ir,
+                   tpx.bIr ? &ir : nullptr,
                    &state,
                    tpx.bTop ? &mtop : nullptr);
     if (tpx.bIr && !bOriginalInputrec)
     {
-        mdModules.adjustInputrecBasedOnModules();
+        gmx::MDModules mdModules;
+        mdModules.adjustInputrecBasedOnModules(&ir);
     }
 
     if (mdpfn && tpx.bIr)
     {
         gp = gmx_fio_fopen(mdpfn, "w");
-        pr_inputrec(gp, 0, nullptr, ir, TRUE);
+        pr_inputrec(gp, 0, nullptr, &ir, TRUE);
         gmx_fio_fclose(gp);
     }
 
@@ -119,7 +115,7 @@ static void list_tpx(const char *fn,
         {
             indent = 0;
             pr_title(stdout, indent, fn);
-            pr_inputrec(stdout, 0, "inputrec", ir, FALSE);
+            pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &ir : nullptr, FALSE);
 
             pr_tpxheader(stdout, indent, "header", &(tpx));
 
