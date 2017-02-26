@@ -94,15 +94,12 @@ class MDModules
         MDModules();
         ~MDModules();
 
-        /*! \brief Initializes a transform from mdp values to
-         * sectioned options.
+        /*! \brief
+         * Initializes a transform from mdp values to sectioned options.
          *
-         * The transform is specified from a flat KeyValueTreeObject that
-         * contains each mdp value as a property, to a structure which is then
-         * assigned to the options defined with initMdpOptions().
+         * \see IMdpOptionProvider::initMdpTransform()
          *
-         * Once the transition from mdp to key-value input is
-         * complete, this method will probably not exist.
+         * Initializes the combined transform from all modules.
          */
         void initMdpTransform(IKeyValueTreeTransformRules *rules);
 
@@ -112,15 +109,16 @@ class MDModules
          * \param[in]  params  Contains keys and values from user
          *     input (and defaults) to configure modules that have
          *     registered options with those keys.
-         * \param[out] errorHandler  Called to report errors. */
+         * \param[out] errorHandler  Called to report errors.
+         */
         void assignOptionsToModules(const KeyValueTreeObject  &params,
                                     IKeyValueTreeErrorHandler *errorHandler);
 
         /*! \brief
          * Normalizes inputrec parameters to match current code version.
          *
-         * This orders the parameters in inputrec to match the current code and
-         * adds any missing defaults.
+         * This orders the parameters in `ir->param` to match the current code
+         * and adds any missing defaults.
          */
         void adjustInputrecBasedOnModules(t_inputrec *ir);
 

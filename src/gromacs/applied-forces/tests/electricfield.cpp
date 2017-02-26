@@ -50,6 +50,7 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
