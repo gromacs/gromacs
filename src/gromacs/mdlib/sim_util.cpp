@@ -2641,8 +2641,8 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
 
 
 void init_md(FILE *fplog,
-             t_commrec *cr, gmx::MDModules *mdModules, t_inputrec *ir,
-             const gmx_output_env_t *oenv,
+             t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+             t_inputrec *ir, const gmx_output_env_t *oenv,
              double *t, double *t0,
              gmx::ArrayRef<real> lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
@@ -2705,7 +2705,7 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, mdModules, ir, mtop, oenv, wcycle);
+        *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, outputProvider, ir, mtop, oenv, wcycle);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));

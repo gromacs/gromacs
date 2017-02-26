@@ -44,6 +44,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct IForceProvider;
 struct t_commrec;
 struct t_fcdata;
 struct t_filenm;
@@ -51,7 +52,6 @@ struct t_filenm;
 namespace gmx
 {
 class MDLogger;
-class MDModules;
 }
 
 /*! \brief Create a new forcerec structure */
@@ -100,7 +100,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  mdlog       File for printing
  * \param[out] fr          The forcerec
  * \param[in]  fcd         Force constant data
- * \param[in]  mdModules   Module information
+ * \param[in]  forceProviders  Handle to modules providing forces
  * \param[in]  ir          Inputrec structure
  * \param[in]  mtop        Molecular topology
  * \param[in]  cr          Communication structures
@@ -116,7 +116,7 @@ void init_forcerec(FILE                   *fplog,
                    const gmx::MDLogger    &mdlog,
                    t_forcerec             *fr,
                    t_fcdata               *fcd,
-                   gmx::MDModules         *mdModules,
+                   IForceProvider         *forceProviders,
                    const t_inputrec       *ir,
                    const gmx_mtop_t       *mtop,
                    const t_commrec        *cr,

@@ -52,7 +52,7 @@ struct t_inputrec;
 
 namespace gmx
 {
-class MDModules;
+class IMDOutputProvider;
 }
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
@@ -67,7 +67,7 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          const t_filenm          fnm[],
                          int                     mdrun_flags,
                          const t_commrec        *cr,
-                         gmx::MDModules         *mdModules,
+                         gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec       *ir,
                          gmx_mtop_t             *mtop,
                          const gmx_output_env_t *oenv,

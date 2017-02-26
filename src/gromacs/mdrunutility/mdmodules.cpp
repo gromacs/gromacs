@@ -53,7 +53,7 @@
 namespace gmx
 {
 
-class MDModules::Impl
+class MDModules::Impl : public IMDOutputProvider, public IForceProvider
 {
     public:
 
@@ -68,6 +68,30 @@ class MDModules::Impl
             auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
             field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
             // In future, other sections would also go here.
+        }
+
+        // From IMDOutputProvider
+        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                                bool bAppendFiles, const gmx_output_env_t *oenv)
+        {
+            field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        }
+        virtual void finishOutput()
+        {
+            field_->outputProvider()->finishOutput();
+        }
+
+        // From IForceProvider
+        virtual void initForcerec(t_forcerec *fr)
+        {
+            field_->forceProvider()->initForcerec(fr);
+        }
+        virtual void calculateForces(const t_commrec  * /*cr*/,
+                                     const t_mdatoms  * /*mdatoms*/,
+                                     PaddedRVecVector * /*force*/,
+                                     double             /*t*/)
+        {
+            // not called currently
         }
 
         std::unique_ptr<IMDModule> field_;
@@ -111,20 +135,14 @@ void MDModules::adjustInputrecBasedOnModules(t_inputrec *ir)
     ir->params = params.release();
 }
 
-void MDModules::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                           bool bAppendFiles, const gmx_output_env_t *oenv)
+IMDOutputProvider *MDModules::outputProvider()
 {
-    impl_->field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+    return impl_.get();
 }
 
-void MDModules::finishOutput()
+IForceProvider *MDModules::forceProvider()
 {
-    impl_->field_->outputProvider()->finishOutput();
-}
-
-void MDModules::initForcerec(t_forcerec *fr)
-{
-    impl_->field_->forceProvider()->initForcerec(fr);
+    return impl_.get();
 }
 
 } // namespace gmx

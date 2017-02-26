@@ -45,17 +45,16 @@
 
 #include "gromacs/utility/classhelpers.h"
 
-struct gmx_output_env_t;
-struct t_filenm;
-struct t_forcerec;
+struct IForceProvider;
 struct t_inputrec;
 
 namespace gmx
 {
 
-class KeyValueTreeObject;
 class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
+class IMDOutputProvider;
+class KeyValueTreeObject;
 
 /*! \libinternal \brief
  * Manages the collection of all modules used for mdrun.
@@ -71,15 +70,17 @@ class IKeyValueTreeTransformRules;
  * Initially this is applied for simple things like electric field calculations
  * but later more complex forces will be supported too.
  *
- * Currently, MDModules is passed around into quite a few functions within
- * mdlib where the modules need to be accessed, but this coupling should be
- * reduced to make only mdrun and selected other tools (grompp, gmx dump, and
- * gmx check) dependant on the full set of modules.
- *
- * IForceProvider is the other interface currently used to interact with these
- * modules.  Also, all the places where these interfaces are used should become
- * loops over a container of these interfaces, and/or groups of them (e.g.
- * applied forces), instead of the current single pointer.
+ * Currently, where the set of modules needs to be accessed, either a pointer
+ * to MDModules is passed around, or an instance of IMDOutputProvider or
+ * IForceProvider returned from MDModules.  The implementation of these
+ * interfaces in MDModules calls the corresponding methods in the relevant
+ * modules.  In the future, some additional logic may need to be introduced at
+ * the call sites that can also influence the signature of the methods.  In
+ * this case, a separate object may need to be introduced (e.g.,
+ * ForceProvidersManager or similar) that can be passed around without
+ * knowledge of the full MDModules.  t_forcerec also currently directly calls
+ * individual modules through pointers to their interfaces, which should be
+ * generalized in the future.
  *
  * The assignOptionsToModules() and adjustInputrecBasedOnModules() methods of
  * this class also take responsibility for wiring up the options (and their
@@ -122,13 +123,14 @@ class MDModules
          */
         void adjustInputrecBasedOnModules(t_inputrec *ir);
 
-        //! Initializes output files.
-        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                        bool bAppendFiles, const gmx_output_env_t *oenv);
-        //! Finalizes output files.
-        void finishOutput();
-        //! Initializes parameters in forcerec.
-        void initForcerec(t_forcerec *fr);
+        /*! \brief
+         * Returns an interface for initializing and finalizing output for modules.
+         */
+        IMDOutputProvider *outputProvider();
+        /*! \brief
+         * Returns an interface for initializing modules providing forces.
+         */
+        IForceProvider *forceProvider();
 
     private:
         class Impl;
