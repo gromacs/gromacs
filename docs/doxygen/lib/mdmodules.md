@@ -18,11 +18,23 @@ more code to be converted to modules to have clearer requirements on what the
 mechanism needs to support and what is the best way to express that in a
 generally usable form.
 
+Structure of a module
+---------------------
+
+Each module implements a factory that returns an instance of gmx::IMDModule.
+This interface has methods that in turn return instances of other interfaces:
+gmx::IMdpOptionProvider, gmx::IMDOutputProvider, and IForceProvider.
+The module also implements these interfaces (or a subset of them), and code
+outside the module only calls methods in these interfaces.
+
+See documentation of the individual interfaces for details of what they
+support.
+
 Handling mdp input
 ------------------
 
-To accept parameters from an mdp file, a module needs to implement two methods
-in gmx::IInputRecExtension.
+To accept parameters from an mdp file, a module needs to implement
+gmx::IMdpOptionProvider.
 
 initMdpOptions() should declare the required input parameters using the options
 module.  In most cases, the parameters should be declared as nested sections

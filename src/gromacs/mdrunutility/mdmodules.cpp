@@ -39,6 +39,10 @@
 #include <memory>
 
 #include "gromacs/applied-forces/electricfield.h"
+#include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/mdtypes/imdoutputprovider.h"
+#include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
@@ -49,9 +53,6 @@
 namespace gmx
 {
 
-//! Convenience typedef.
-using IInputRecExtensionPtr = std::unique_ptr<IInputRecExtension>;
-
 class MDModules::Impl
 {
     public:
@@ -59,21 +60,17 @@ class MDModules::Impl
         Impl()
             : field_(createElectricFieldModule())
         {
-            // TODO Eventually implement a proper IMDModule, to which
-            // create*Module() would return a pointer. It might have
-            // methods in its interface that return IInputRecExtension
-            // (renamed IMdpOptionsProvider) and IForceProvider.
         }
 
         void makeModuleOptions(Options *options)
         {
             // Create a section for applied-forces modules
             auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
-            field_->initMdpOptions(&appliedForcesOptions);
+            field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
             // In future, other sections would also go here.
         }
 
-        IInputRecExtensionPtr  field_;
+        std::unique_ptr<IMDModule> field_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -89,7 +86,7 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     // TODO The transform rules for applied-forces modules should
     // embed the necessary prefix (and similarly for other groupings
     // of modules). For now, electric-field embeds this itself.
-    impl_->field_->initMdpTransform(rules);
+    impl_->field_->mdpOptionProvider()->initMdpTransform(rules);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
@@ -117,17 +114,17 @@ void MDModules::adjustInputrecBasedOnModules(t_inputrec *ir)
 void MDModules::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                            bool bAppendFiles, const gmx_output_env_t *oenv)
 {
-    impl_->field_->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+    impl_->field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 }
 
 void MDModules::finishOutput()
 {
-    impl_->field_->finishOutput();
+    impl_->field_->outputProvider()->finishOutput();
 }
 
 void MDModules::initForcerec(t_forcerec *fr)
 {
-    impl_->field_->initForcerec(fr);
+    impl_->field_->forceProvider()->initForcerec(fr);
 }
 
 } // namespace gmx
