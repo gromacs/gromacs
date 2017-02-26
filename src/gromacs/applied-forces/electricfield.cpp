@@ -52,7 +52,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/mdtypes/imdoutputprovider.h"
+#include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
@@ -152,21 +155,29 @@ class ElectricFieldData
  * The electric field can be pulsed and oscillating, simply
  * oscillating, or static, in each of X,Y,Z directions.
  */
-class ElectricField : public IInputRecExtension, public IForceProvider
+class ElectricField : public IMDModule,
+                      public IMdpOptionProvider, public IMDOutputProvider,
+                      public IForceProvider
 {
     public:
         ElectricField() : fpField_(nullptr) {}
 
-        // From IInputRecExtension
+        // From IMDModule
+        virtual IMdpOptionProvider *mdpOptionProvider() { return this; }
+        virtual IMDOutputProvider *outputProvider() { return this; }
+        virtual IForceProvider *forceProvider() { return this; }
+
+        // From IMdpOptionProvider
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
 
+        // From IMDOutputProvider
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                 bool bAppendFiles, const gmx_output_env_t *oenv);
         virtual void finishOutput();
-        virtual void initForcerec(t_forcerec *fr);
 
-        //! \copydoc gmx::IForceProvider::calculateForces
+        // From IForceProvider
+        virtual void initForcerec(t_forcerec *fr);
         virtual void calculateForces(const t_commrec  *cr,
                                      const t_mdatoms  *atoms,
                                      PaddedRVecVector *force,
@@ -404,9 +415,9 @@ void ElectricField::calculateForces(const t_commrec  *cr,
 
 }   // namespace
 
-std::unique_ptr<IInputRecExtension> createElectricFieldModule()
+std::unique_ptr<IMDModule> createElectricFieldModule()
 {
-    return std::unique_ptr<IInputRecExtension>(new ElectricField());
+    return std::unique_ptr<IMDModule>(new ElectricField());
 }
 
 } // namespace gmx
