@@ -90,7 +90,7 @@ static void list_tpx(const char *fn,
     gmx::MDModules mdModules;
     if (tpx.bIr)
     {
-        ir = mdModules.inputrec();
+        ir = new t_inputrec();
     }
     read_tpx_state(fn,
                    ir,
@@ -98,7 +98,7 @@ static void list_tpx(const char *fn,
                    tpx.bTop ? &mtop : nullptr);
     if (tpx.bIr && !bOriginalInputrec)
     {
-        mdModules.adjustInputrecBasedOnModules();
+        mdModules.adjustInputrecBasedOnModules(ir);
     }
 
     if (mdpfn && tpx.bIr)

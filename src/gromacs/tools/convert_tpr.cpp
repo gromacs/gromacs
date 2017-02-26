@@ -44,7 +44,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -350,7 +349,6 @@ int gmx_convert_tpr(int argc, char *argv[])
     gmx_bool          bNsteps, bExtend, bUntil;
     gmx_mtop_t        mtop;
     t_atoms           atoms;
-    t_inputrec       *ir;
     t_state           state;
     int               gnx;
     char             *grpname;
@@ -395,8 +393,8 @@ int gmx_convert_tpr(int argc, char *argv[])
     top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
-    gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
     run_t    = ir->init_step*ir->delta_t + ir->init_t;

@@ -866,14 +866,23 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    real               ewaldcoeff_q,
                    real               ewaldcoeff_lj)
 {
-    t_inputrec irc;
     int        homenr;
     int        ret;
 
-    irc     = *ir;
-    irc.nkx = grid_size[XX];
-    irc.nky = grid_size[YY];
-    irc.nkz = grid_size[ZZ];
+    // Create a copy of t_inputrec fields that are used in gmx_pme_init().
+    // TODO: This would be better as just copying a sub-structure that contains
+    // all the PME parameters and nothing else.
+    t_inputrec irc;
+    irc.ePBC                   = ir->ePBC;
+    irc.coulombtype            = ir->coulombtype;
+    irc.vdwtype                = ir->vdwtype;
+    irc.efep                   = ir->efep;
+    irc.pme_order              = ir->pme_order;
+    irc.epsilon_r              = ir->epsilon_r;
+    irc.ljpme_combination_rule = ir->ljpme_combination_rule;
+    irc.nkx                    = grid_size[XX];
+    irc.nky                    = grid_size[YY];
+    irc.nkz                    = grid_size[ZZ];
 
     if (pme_src->nnodes == 1)
     {

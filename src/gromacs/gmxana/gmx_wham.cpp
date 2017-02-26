@@ -61,7 +61,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -2052,8 +2051,8 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 //! Read pull groups from a tpr file (including position, force const, geometry, number of groups)
 void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt, t_coordselection *coordsel)
 {
-    gmx::MDModules  mdModules;
-    t_inputrec     *ir = mdModules.inputrec();
+    t_inputrec      irInstance;
+    t_inputrec     *ir = &irInstance;
     t_state         state;
     static int      first = 1;
 

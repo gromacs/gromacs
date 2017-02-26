@@ -1842,8 +1842,9 @@ int gmx_grompp(int argc, char *argv[])
     /* PARAMETER file processing */
     mdparin = opt2fn("-f", NFILE, fnm);
     set_warning_line(wi, mdparin, -1);
-    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, opts, wi);
-    t_inputrec *ir = mdModules.inputrec();
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
+    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, wi);
 
     if (bVerbose)
     {

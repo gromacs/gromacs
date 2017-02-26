@@ -48,7 +48,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -152,7 +151,6 @@ void spol_atom2molindex(int *n, int *index, const t_block *mols)
 int gmx_spol(int argc, char *argv[])
 {
     t_topology  *top;
-    t_inputrec  *ir;
     t_atom      *atom;
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
@@ -224,8 +222,8 @@ int gmx_spol(int argc, char *argv[])
 
     snew(top, 1);
     // TODO: Only ePBC is used, not the full inputrec.
-    gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
+    t_inputrec  irInstance;
+    t_inputrec *ir = &irInstance;
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                  ir, box, &natoms, nullptr, nullptr, top);
 
