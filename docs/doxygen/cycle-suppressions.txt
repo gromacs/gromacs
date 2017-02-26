@@ -17,5 +17,3 @@ gpu_utils -> hardware
 topology -> listed-forces
 pbcutil -> mdtypes
 listed-forces -> mdlib
-# Temporary cycle; uses of MDModules will be removed from mdlib later
-mdlib -> mdrunutility

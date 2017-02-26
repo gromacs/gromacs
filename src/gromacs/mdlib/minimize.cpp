@@ -322,7 +322,8 @@ static void get_state_f_norm_max(t_commrec *cr,
 
 //! Initialize the energy minimization
 static void init_em(FILE *fplog, const char *title,
-                    t_commrec *cr, gmx::MDModules *mdModules, t_inputrec *ir,
+                    t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
+                    t_inputrec *ir,
                     t_state *state_global, gmx_mtop_t *top_global,
                     em_state_t *ems, gmx_localtop_t **top,
                     t_nrnb *nrnb, rvec mu_tot,
@@ -453,7 +454,7 @@ static void init_em(FILE *fplog, const char *title,
         *gstat = nullptr;
     }
 
-    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, mdModules, ir, top_global, nullptr, wcycle);
+    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, outputProvider, ir, top_global, nullptr, wcycle);
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
@@ -960,7 +961,7 @@ namespace gmx
                            int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
-                           gmx::MDModules *mdModules,
+                           gmx::IMDOutputProvider *outputProvider,
                            t_inputrec *inputrec,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
                            t_state *state_global,
@@ -981,7 +982,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
              int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int gmx_unused stepout,
-             gmx::MDModules *mdModules,
+             gmx::IMDOutputProvider *outputProvider,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
              t_state *state_global,
@@ -1030,7 +1031,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     em_state_t *s_c   = &s3;
 
     /* Init em and store the local state in s_min */
-    init_em(fplog, CG, cr, mdModules, inputrec,
+    init_em(fplog, CG, cr, outputProvider, inputrec,
             state_global, top_global, s_min, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
             vsite, constr, nullptr,
@@ -1613,7 +1614,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                           int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
-                          gmx::MDModules *mdModules,
+                          gmx::IMDOutputProvider *outputProvider,
                           t_inputrec *inputrec,
                           gmx_mtop_t *top_global, t_fcdata *fcd,
                           t_state *state_global,
@@ -1634,7 +1635,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                 int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_constr_t constr,
                 int gmx_unused stepout,
-                gmx::MDModules *mdModules,
+                gmx::IMDOutputProvider *outputProvider,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
                 t_state *state_global,
@@ -1707,7 +1708,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     neval = 0;
 
     /* Init em */
-    init_em(fplog, LBFGS, cr, mdModules, inputrec,
+    init_em(fplog, LBFGS, cr, outputProvider, inputrec,
             state_global, top_global, &ems, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
             vsite, constr, nullptr,
@@ -2387,7 +2388,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                           int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
-                          gmx::MDModules *mdModules,
+                          gmx::IMDOutputProvider *outputProvider,
                           t_inputrec *inputrec,
                           gmx_mtop_t *top_global, t_fcdata *fcd,
                           t_state *state_global,
@@ -2407,7 +2408,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                 int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_constr_t constr,
                 int gmx_unused stepout,
-                gmx::MDModules *mdModules,
+                gmx::IMDOutputProvider *outputProvider,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
                 t_state *state_global,
@@ -2445,7 +2446,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     em_state_t *s_try = &s1;
 
     /* Init em and store the local state in s_try */
-    init_em(fplog, SD, cr, mdModules, inputrec,
+    init_em(fplog, SD, cr, outputProvider, inputrec,
             state_global, top_global, s_try, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
             vsite, constr, nullptr,
@@ -2658,7 +2659,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                           int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
-                          gmx::MDModules *mdModules,
+                          gmx::IMDOutputProvider *outputProvider,
                           t_inputrec *inputrec,
                           gmx_mtop_t *top_global, t_fcdata *fcd,
                           t_state *state_global,
@@ -2678,7 +2679,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int gmx_unused stepout,
-             gmx::MDModules *mdModules,
+             gmx::IMDOutputProvider *outputProvider,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
              t_state *state_global,
@@ -2725,7 +2726,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     em_state_t     state_work {};
 
     /* Init em and store the local state in state_minimum */
-    init_em(fplog, NM, cr, mdModules, inputrec,
+    init_em(fplog, NM, cr, outputProvider, inputrec,
             state_global, top_global, &state_work, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
             vsite, constr, &shellfc,

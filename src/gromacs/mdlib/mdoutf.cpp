@@ -48,8 +48,8 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -59,31 +59,31 @@
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_mdoutf {
-    t_fileio         *fp_trn;
-    t_fileio         *fp_xtc;
-    tng_trajectory_t  tng;
-    tng_trajectory_t  tng_low_prec;
-    int               x_compression_precision; /* only used by XTC output */
-    ener_file_t       fp_ene;
-    const char       *fn_cpt;
-    gmx_bool          bKeepAndNumCPT;
-    int               eIntegrator;
-    gmx_bool          bExpanded;
-    int               elamstats;
-    int               simulation_part;
-    FILE             *fp_dhdl;
-    int               natoms_global;
-    int               natoms_x_compressed;
-    gmx_groups_t     *groups; /* for compressed position writing */
-    gmx_wallcycle_t   wcycle;
-    rvec             *f_global;
-    gmx::MDModules   *mdModules;
+    t_fileio               *fp_trn;
+    t_fileio               *fp_xtc;
+    tng_trajectory_t        tng;
+    tng_trajectory_t        tng_low_prec;
+    int                     x_compression_precision; /* only used by XTC output */
+    ener_file_t             fp_ene;
+    const char             *fn_cpt;
+    gmx_bool                bKeepAndNumCPT;
+    int                     eIntegrator;
+    gmx_bool                bExpanded;
+    int                     elamstats;
+    int                     simulation_part;
+    FILE                   *fp_dhdl;
+    int                     natoms_global;
+    int                     natoms_x_compressed;
+    gmx_groups_t           *groups; /* for compressed position writing */
+    gmx_wallcycle_t         wcycle;
+    rvec                   *f_global;
+    gmx::IMDOutputProvider *outputProvider;
 };
 
 
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          int mdrun_flags, const t_commrec *cr,
-                         gmx::MDModules *mdModules,
+                         gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
@@ -108,7 +108,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
     of->wcycle                  = wcycle;
     of->f_global                = nullptr;
-    of->mdModules               = mdModules;
+    of->outputProvider          = outputProvider;
 
     if (MASTER(cr))
     {
@@ -197,7 +197,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             }
         }
 
-        mdModules->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        outputProvider->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -417,7 +417,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    of->mdModules->finishOutput();
+    of->outputProvider->finishOutput();
     if (of->f_global != nullptr)
     {
         sfree(of->f_global);
