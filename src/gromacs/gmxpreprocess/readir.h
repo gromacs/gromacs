@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"

@@ -153,6 +153,8 @@ class EemTest : public gmx::test::CommandLineTestBase
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d",
                      static_cast<int>(ChargeGenerationAlgorithm()));
+            checker_.checkInteger(static_cast<int>(qtotValues.size()),
+                                  "qtotSize");
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }

@@ -40,9 +40,8 @@
 #include "mymol.h"
 
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
 namespace alexandria
@@ -415,7 +415,7 @@ static void updatePlist(const Poldata             &pd,
                         ptr       = gmx::splitString(params);
                         for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
-                            b->c[n++] = atof(pi->c_str());
+                            b->c[n++] = gmx::doubleFromString(pi->c_str());
                         }
                     }
                 }
@@ -445,7 +445,7 @@ static void updatePlist(const Poldata             &pd,
                         ptr       = gmx::splitString(params);
                         for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
-                            b->c[n++] = atof(pi->c_str());
+                            b->c[n++] = gmx::doubleFromString(pi->c_str());
                             if (n == 2)
                             {
                                 b->c[n++] = r13;
@@ -481,7 +481,7 @@ static void updatePlist(const Poldata             &pd,
                         {
                             if (n == 0)
                             {
-                                b->c[n++] = atof(pi->c_str());
+                                b->c[n++] = gmx::doubleFromString(pi->c_str());
                             }
                             else
                             {
@@ -508,7 +508,7 @@ static std::vector<double> getDoubles(const std::string &s)
 
     for (auto &ss : gmx::splitString(s))
     {
-        d.push_back(atof(ss.c_str()));
+        d.push_back(gmx::doubleFromString(ss.c_str()));
     }
     return d;
 }
@@ -1315,7 +1315,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
                  box_, &x_, nullptr,
                  &f_, force_vir, mdatoms_,
                  enerd_, fcd_,
-                 &(state_->lambda), nullptr,
+                 state_->lambda, nullptr,
                  fr_, nullptr, nullptr, t,
                  nullptr, false,
                  flags);
@@ -1711,7 +1711,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     fr_->hwinfo = hwinfo;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
+    //    init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
     
@@ -2789,18 +2789,18 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 if (n == 0)
                                 {
                                     mtop_->ffparams.iparams[tp].morse.cbA     =
-                                        mtop_->ffparams.iparams[tp].morse.cbB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].morse.cbB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].morse.cbA     =
-                                        ltop_->idef.iparams[tp].morse.cbB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].morse.cbB = gmx::doubleFromString(pi->c_str());
                                 }
                                 else
                                 {
                                     mtop_->ffparams.iparams[tp].morse.betaA     =
-                                        mtop_->ffparams.iparams[tp].morse.betaB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].morse.betaB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].morse.betaA     =
-                                        ltop_->idef.iparams[tp].morse.betaB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].morse.betaB = gmx::doubleFromString(pi->c_str());
                                 }
                                 n++;
                             }
@@ -2856,18 +2856,18 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 if (n == 0)
                                 {
                                     mtop_->ffparams.iparams[tp].u_b.kthetaA     =
-                                        mtop_->ffparams.iparams[tp].u_b.kthetaB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].u_b.kthetaB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].u_b.kthetaA     =
-                                        ltop_->idef.iparams[tp].u_b.kthetaA = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].u_b.kthetaA = gmx::doubleFromString(pi->c_str());
                                 }
                                 else
                                 {
                                     mtop_->ffparams.iparams[tp].u_b.kUBA     =
-                                        mtop_->ffparams.iparams[tp].u_b.kUBB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].u_b.kUBB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].u_b.kUBA     =
-                                        ltop_->idef.iparams[tp].u_b.kUBB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].u_b.kUBB = gmx::doubleFromString(pi->c_str());
                                 }
                                 n++;
                             }
@@ -2924,18 +2924,18 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 if (n == 0)
                                 {
                                     mtop_->ffparams.iparams[tp].linangle.klinA     =
-                                        mtop_->ffparams.iparams[tp].linangle.klinB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].linangle.klinB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].linangle.klinA     =
-                                        ltop_->idef.iparams[tp].linangle.klinB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].linangle.klinB = gmx::doubleFromString(pi->c_str());
                                 }
                                 else
                                 {
                                     mtop_->ffparams.iparams[tp].linangle.kUBA     =
-                                        mtop_->ffparams.iparams[tp].linangle.kUBB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].linangle.kUBB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].linangle.kUBA     =
-                                        ltop_->idef.iparams[tp].linangle.kUBB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].linangle.kUBB = gmx::doubleFromString(pi->c_str());
                                 }
                                 n++;
                             }
@@ -2984,10 +2984,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 if (n == 0)
                                 {
                                     mtop_->ffparams.iparams[tp].pdihs.cpA     =
-                                        mtop_->ffparams.iparams[tp].pdihs.cpB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].pdihs.cpB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].pdihs.cpA     =
-                                        ltop_->idef.iparams[tp].pdihs.cpB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].pdihs.cpB = gmx::doubleFromString(pi->c_str());
                                 }
                                 else
                                 {
@@ -3044,10 +3044,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 if (n == 0)
                                 {
                                     mtop_->ffparams.iparams[tp].harmonic.krA     =
-                                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                                        mtop_->ffparams.iparams[tp].harmonic.krB = gmx::doubleFromString(pi->c_str());
 
                                     ltop_->idef.iparams[tp].harmonic.krA     =
-                                        ltop_->idef.iparams[tp].harmonic.krB = atof(pi->c_str());
+                                        ltop_->idef.iparams[tp].harmonic.krB = gmx::doubleFromString(pi->c_str());
                                 }
                                 n++;
                             }
