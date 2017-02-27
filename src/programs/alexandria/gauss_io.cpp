@@ -191,8 +191,9 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     std::vector<alexandria::ElectrostaticPotential> espv;
 
-    const char              *reference = "Ghahremanpour2016a", *unknown = "unknown", *basis;
-    char                    *program, *method, *charge_model, *ptr, *g98ptr;
+    const char              *reference = "Ghahremanpour2016a", *unknown = "unknown";
+    std::string              basis;
+    char                    *program, *method, *charge_model, *g98ptr;
     int                      bondid;
 
     OpenBabel::OBConversion *conv = read_babel(g98, &mol);
@@ -246,20 +247,17 @@ static void gmx_molprop_read_babel(const char          *g98,
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
     if ((nullptr != basisset) && (strlen(basisset) > 0))
     {
-        basis = basisset;
+        basis.assign(basisset);
     }
     else if (nullptr != OBpd)
     {
-        basis = strdup(OBpd->GetValue().c_str());
-        ptr   = strstr(basis, " (5D, 7F)");
-        if (nullptr != ptr)
-        {
-            *ptr = '\0';
-        }
+        basis = OBpd->GetValue();
+        size_t p = basis.find(" (5D, 7F)");
+        basis.erase(p, basis.npos);
     }
     else
     {
-        basis = strdup(unknown);
+        basis.assign(unknown);
     }
 
     OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
