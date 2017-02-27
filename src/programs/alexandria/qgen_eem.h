@@ -90,7 +90,7 @@ class QgenEem
         /* Jab is a matrix over atom pairs */
         std::vector<std::vector<double>>                   Jcc_;
         /* For each atom i there are nZeta[i] row, q and zeta entries */
-        std::vector<int>                                   nZeta_;
+        std::vector<int>                                   nZeta_, coreIndex_, shellIndex_;
         std::vector<std::vector<int> >                     row_;
         bool                                               bAllocSave_, bHaveShell_;
         std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_;

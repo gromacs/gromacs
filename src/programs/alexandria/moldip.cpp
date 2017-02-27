@@ -456,7 +456,7 @@ void MolDip::Read(FILE            *fp,
                                                 _iChargeGenerationAlgorithm,
                                                 watoms, _hfac, lot, true,
                                                 nullptr, _cr, tabfn, hwinfo_);
-                    rms = mpnew.espRms();
+                    (void) mpnew.espRms();
                 }
                 if (immOK == imm)
                 {
@@ -465,13 +465,6 @@ void MolDip::Read(FILE            *fp,
                 if (immOK == imm)
                 {
                     imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
-                }
-
-                if (nullptr != debug)
-                {
-
-                    mpnew.PrintTopology(debug, _iChargeDistributionModel, false,
-                                        pd_, _atomprop, true, nullptr, 0, lot);
                 }
 
                 if (immOK == imm)

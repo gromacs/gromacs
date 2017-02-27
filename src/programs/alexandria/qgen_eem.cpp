@@ -85,7 +85,12 @@ void QgenEem::setInfo(const Poldata            &pd,
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
+            coreIndex_.push_back(i);
             natom_++;
+        }
+        else if (atoms->atom[i].ptype == eptShell)
+        {
+            shellIndex_.push_back(i);
         }
     }
 
@@ -150,7 +155,7 @@ void QgenEem::setInfo(const Poldata            &pd,
                     {
                         if (debug)
                         {
-                            fprintf(debug, "Can not handle higher slaters than %d for atom %s %s\n",
+                            fprintf(debug, "Cannot handle higher slaters than %d for atom %s %s\n",
                                     SLATER_MAX,
                                     *(atoms->resinfo[i].name),
                                     *(atoms->atomname[j]));
@@ -170,8 +175,7 @@ void QgenEem::updateInfo(const Poldata &pd)
     {
         chi0_[i] = pd.getChi0(iChargeDistributionModel_, elem_[i]);
         j00_[i]  = pd.getJ00(iChargeDistributionModel_, elem_[i]);
-        auto nz  = pd.getNzeta(iChargeDistributionModel_, elem_[i]);
-        for (int k = 0; k < nz; k++)
+        for (int k = 0; k < nZeta_[i]; k++)
         {
             zeta_[i][k] = pd.getZeta(iChargeDistributionModel_, elem_[i], k);
         }
@@ -223,81 +227,6 @@ double CoulombNN(double r)
     return 1/r;
 }
 
-void QgenEem::solveQEem(FILE *fp)
-{
-    double **a, qtot, q;
-    int      i, j, n;
-
-    n = natom_ + 1;
-    a = alloc_matrix(n, n);
-    for (i = 0; i < natom_; i++)
-    {
-        for (j = 0; j < natom_; j++)
-        {
-            a[i][j] = Jcc_[i][j];
-        }
-        a[i][i] = hardnessFactor_*Jcc_[i][i];
-    }
-    for (j = 0; j < natom_; j++)
-    {
-        a[natom_][j] = 1;
-    }
-    for (i = 0; i < natom_; i++)
-    {
-        a[i][natom_] = -1;
-    }    
-    a[natom_][natom_] = 0;
-    if (matrix_invert(fp, n, a) == 0)
-    {
-        for (i = 0; i < n; i++)
-        {
-            q = 0;
-            for (j = 0; j < n; j++)
-            {
-                q += a[i][j]*rhs_[j];
-            }
-            q_[i][0] = q;
-            if (fp)
-            {
-                fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, rhs_[i], q);
-            }
-        }
-    }
-    else
-    {
-        for (i = 0; i < n; i++)
-        {
-            q_[i][0] = 1;
-        }
-    }
-    chieq_      = q_[natom_][0];
-    
-    qtot        = 0;
-    if (bHaveShell_)
-    {
-        for (i = 0; i < natom_; i++)
-        {
-            for (j = 0; j < nZeta_[i]; j++)
-            {
-                qtot += q_[i][j];
-            }
-        }
-    }
-    else
-    {
-        for (i = 0; i < natom_; i++)
-        {
-            qtot += q_[i][0];
-        }
-    }
-
-    if (fp && (fabs(qtot - qtotal_) > 1e-2))
-    {
-        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
-    }
-    free_matrix(a);
-}
-
 void QgenEem::debugFun(FILE *fp)
 {
     int i, j;
@@ -308,7 +237,7 @@ void QgenEem::debugFun(FILE *fp)
                 i+1, chi0_[i], Jcc_[i][i]);
         for (j = 0; (j < nZeta_[i]); j++)
         {
-            fprintf(fp, " %8g", q_[i][j]);
+            fprintf(fp, "Charge: %8g  Zeta: %8g", q_[i][j], zeta_[i][j]);
         }
         fprintf(fp, "\n");
     }
@@ -581,8 +510,6 @@ void QgenEem::calcRhs(t_atoms *atoms)
 {
     double   qcore     = 0;
     double   qshell    = 0;
-    int      core_ndx  = 0;
-    int      shell_ndx = 1;
       
     for (int i = 0; i < natom_; i++)
     {   
@@ -590,14 +517,12 @@ void QgenEem::calcRhs(t_atoms *atoms)
         rhs_[i]  -= chi0_[i];
         if (bHaveShell_)
         {
-            calcJcs(atoms, core_ndx, i);
-            calcJss(atoms, shell_ndx, i);
+            calcJcs(atoms, coreIndex_[i], i);
+            calcJss(atoms, shellIndex_[i], i);
             rhs_[i]   -= j00_[i]*hardnessFactor_*q_[i][1];
             rhs_[i]   -= Jcs_;
             rhs_[i]   -= Jss_;
             qshell    += q_[i][1];
-            core_ndx  += 2;
-            shell_ndx += 2;
         }       
     }    
     qcore = qtotal_ - qshell;
@@ -653,18 +578,18 @@ void QgenEem::print(FILE *fp, t_atoms *atoms)
         }
         for (i = j = 0; i < atoms->nr; i++)
         {
+            for (int m = 0; (m < DIM); m++)
+            {
+                mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
+            }
             if (atoms->atom[i].ptype == eptAtom)
             {
-                for (int m = 0; (m < DIM); m++)
-                {
-                    mu[m] += atoms->atom[i].q * x_[i][m] * ENM2DEBYE;
-                }
                 if (fp)
                 {
                     fprintf(fp, "%4s %4s%5d %8g %8g",
                             *(atoms->resinfo[atoms->atom[i].resind].name),
                             *(atoms->atomname[i]), i+1, j00_[j], chi0_[j]);
-                    for (int k = 0; (k < nZeta_[j]); k++)
+                    for (int k = 0; k < nZeta_[j]; k++)
                     {
                         fprintf(fp, " %3d %8.5f %8.4f", row_[j][k], q_[j][k],
                                 zeta_[j][k]);
@@ -721,6 +646,81 @@ void QgenEem::checkSupport(const Poldata &pd)
     {
         eQGEN_ = eQGEN_NOSUPPORT;
     }
+}
+
+void QgenEem::solveQEem(FILE *fp)
+{
+    double **lhs, qtot, q;
+    int      i, j, n;
+
+    n = natom_ + 1;
+    lhs = alloc_matrix(n, n);
+    for (i = 0; i < natom_; i++)
+    {
+        for (j = 0; j < natom_; j++)
+        {
+            lhs[i][j] = Jcc_[i][j];
+        }
+        lhs[i][i] = hardnessFactor_*Jcc_[i][i];
+    }
+    for (j = 0; j < natom_; j++)
+    {
+        lhs[natom_][j] = 1;
+    }
+    for (i = 0; i < natom_; i++)
+    {
+        lhs[i][natom_] = -1;
+    }    
+    lhs[natom_][natom_] = 0;
+    if (matrix_invert(fp, n, lhs) == 0)
+    {
+        for (i = 0; i < n; i++)
+        {
+            q = 0;
+            for (j = 0; j < n; j++)
+            {
+                q += lhs[i][j]*rhs_[j];
+            }
+            q_[i][0] = q;
+            if (fp)
+            {
+                fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, rhs_[i], q);
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < n; i++)
+        {
+            q_[i][0] = 1;
+        }
+    }
+    chieq_      = q_[natom_][0];
+    
+    qtot        = 0;
+    if (bHaveShell_)
+    {
+        for (i = 0; i < natom_; i++)
+        {
+            for (j = 0; j < nZeta_[i]; j++)
+            {
+                qtot += q_[i][j];
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < natom_; i++)
+        {
+            qtot += q_[i][0];
+        }
+    }
+
+    if (fp && (fabs(qtot - qtotal_) > 1e-2))
+    {
+        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal_);
+    }
+    free_matrix(lhs);
 }
 
 int QgenEem::generateChargesSm(FILE              *fp,

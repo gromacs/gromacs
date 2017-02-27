@@ -720,6 +720,7 @@ static void do_init_mtop(const Poldata            &pd,
     mtop_->molblock[0].natoms_mol  = atoms->nr;
     mtop_->natoms                  = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, false);
+    
 
     /*Count the number of atom types in the molecule*/
     int ntype      = 0;
@@ -771,7 +772,7 @@ static void do_init_mtop(const Poldata            &pd,
         {
             for (int m = k; m < ntype; m++)
             {
-                ir->opts.egp_flags[GID(k, m, ntype)] |= EGP_TABLE;
+                ir->opts.egp_flags[k*ntype+m] |= EGP_TABLE;
             }
         }
     }
@@ -1092,12 +1093,20 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
 immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
                             const Poldata          &pd)
 { 
+    double zeta;
     /*Here, we add zeta for the core. addShell will 
       take care of the zeta for the shells later*/
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        auto zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);
-
+        zeta = 0;
+        if (topology_->atoms.atom[i].ptype == eptAtom) 
+        {
+            zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);
+        }
+        else if (topology_->atoms.atom[i].ptype == eptShell)
+        {
+            zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 1);
+        }
         if (zeta == 0 && (eqdModel != eqdAXp && eqdModel != eqdAXpp))
         {
             printf("Zeta is zero for %s atom\n", *topology_->atoms.atomtype[i]);
@@ -2607,6 +2616,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             mu_elec_[m] = vec[m];
         }
+        //printf("MUUUUUUUUUUU: %8f %8f %8f\n", mu_elec_[0], mu_elec_[1], mu_elec_[2]);
         dip_elec_ = norm(mu_elec_);
         mu_elec2_ = gmx::square(value);
         if (error <= 0)
@@ -2639,6 +2649,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             for (n = 0; n < DIM; n++)
             {
                 Q_elec_[m][n] = quadrupole[m][n];
+                //printf("QUAAAAAAAAAD: %8f\n", Q_elec_[m][n]);
             }
         }
     }

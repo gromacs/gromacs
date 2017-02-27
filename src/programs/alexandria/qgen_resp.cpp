@@ -934,7 +934,8 @@ void QgenResp::optimizeCharges()
 
     if (nEsp() < nAtom())
     {
-        gmx_fatal(FARGS,"WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
+        printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
+        return;
     }     
     for (size_t j = 0; j < nEsp(); j++)
     {

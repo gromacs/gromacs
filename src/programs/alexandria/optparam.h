@@ -295,6 +295,7 @@ void Bayes<T>::simulate()
             storeParam = param_[j];
             changeParam(j, uniform(gen));
             currEval        = func_(param_.data());
+            //printf("OptParam: %g\n", currEval);
             deltaEval       = currEval-prevEval;
             randProbability = uniform(gen);
             mcProbability   = exp(-beta_*deltaEval);

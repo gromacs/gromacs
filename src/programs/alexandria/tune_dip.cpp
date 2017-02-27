@@ -127,11 +127,11 @@ class OPtimization : public MolDip
     private:    
     public:
     
-           OPtimization(bool  bfitESP, 
-                        bool  bfitDipole, 
-                        bool  bfitQuadrupole,
-                        real  watoms, 
-                        char *lot) 
+        OPtimization(bool  bfitESP, 
+                     bool  bfitDipole, 
+                     bool  bfitQuadrupole,
+                     real  watoms, 
+                     char *lot) 
            :
                bESP_(bfitESP),
                bDipole_(bfitDipole),
@@ -412,7 +412,7 @@ void OPtimization::calcDeviation()
                 mymol.CalcDipole(mymol.mu_calc_);
                 if (_bQM)
                 {
-                    rvec dmu;
+                    rvec dmu;                    
                     rvec_sub(mymol.mu_calc_, mymol.mu_elec_, dmu);
                     _ener[ermsMU]  += iprod(dmu, dmu);
                 }
@@ -629,6 +629,8 @@ double OPtimization::objFunction(const double v[])
     _ener[ermsBOUNDS] += bounds;
     _ener[ermsTOT]    += bounds;
 
+    //printf("TUNEDIP: Tot %g Quad %g Mu %g\n", _ener[ermsTOT], _ener[ermsQUAD], _ener[ermsMU]);
+    
     return _ener[ermsTOT];
 }
 
@@ -1199,7 +1201,7 @@ int alex_tune_dip(int argc, char *argv[])
     static gmx_bool             bWeighted     = true;   
     static gmx_bool             bCharged      = true;
     static gmx_bool             bGaussianBug  = true;     
-    static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXps", "AXpg", nullptr};
+    static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
     static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     
     t_pargs                     pa[]         = {
@@ -1383,10 +1385,10 @@ int alex_tune_dip(int argc, char *argv[])
     {
         opt.InitOpt(factor);
     }    
-    if (bESP && iChargeGenerationAlgorithm != eqgESP)
+    /*if (bESP && iChargeGenerationAlgorithm != eqgESP)
     {
         opt.addEspPoint();
-    }   
+        }*/   
     if (iChargeGenerationAlgorithm != eqgEEM)
     {
         opt.setEEM();
