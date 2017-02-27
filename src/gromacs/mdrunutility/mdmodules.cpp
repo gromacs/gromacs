@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,18 +36,38 @@
 
 #include "mdmodules.h"
 
+#include <memory>
+
 #include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/optionsection.h"
+#include "gromacs/options/treesupport.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
 
+//! Convenience typedef.
+using IInputRecExtensionPtr = std::unique_ptr<IInputRecExtension>;
+
 class MDModules::Impl
 {
     public:
-        Impl() : ir_(nullptr)
+
+        Impl() : field_(nullptr), ir_(nullptr)
         {
+            snew(ir_, 1);
+            snew(ir_->fepvals, 1);
+            snew(ir_->expandedvals, 1);
+            snew(ir_->simtempvals, 1);
+            // TODO Eventually implement a proper IMDModule, to which
+            // create*Module() would return a pointer. It might have
+            // methods in its interface that return IInputRecExtension
+            // (renamed IMdpOptionsProvider) and IForceProvider.
+            field_      = createElectricFieldModule();
+            ir_->efield = field_.get();
         }
         ~Impl()
         {
@@ -58,21 +78,16 @@ class MDModules::Impl
             }
         }
 
-        void ensureInputrecInitialized()
+        void makeModuleOptions(Options *options)
         {
-            if (ir_ == nullptr)
-            {
-                field_ = createElectricFieldModule();
-                snew(ir_, 1);
-                snew(ir_->fepvals, 1);
-                snew(ir_->expandedvals, 1);
-                snew(ir_->simtempvals, 1);
-                ir_->efield = field_.get();
-            }
+            // Create a section for applied-forces modules
+            auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
+            field_->initMdpOptions(&appliedForcesOptions);
+            // In future, other sections would also go here.
         }
 
-        std::unique_ptr<IInputRecExtension>  field_;
-        t_inputrec                          *ir_;
+        IInputRecExtensionPtr  field_;
+        t_inputrec            *ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -85,8 +100,59 @@ MDModules::~MDModules()
 
 t_inputrec *MDModules::inputrec()
 {
-    impl_->ensureInputrecInitialized();
     return impl_->ir_;
+}
+
+const t_inputrec *MDModules::inputrec() const
+{
+    return impl_->ir_;
+}
+
+void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
+{
+    // TODO The transform rules for applied-forces modules should
+    // embed the necessary prefix (and similarly for other groupings
+    // of modules). For now, electric-field embeds this itself.
+    impl_->field_->initMdpTransform(rules);
+}
+
+void MDModules::assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
+                                              IKeyValueTreeErrorHandler *errorHandler)
+{
+    Options moduleOptions;
+    impl_->makeModuleOptions(&moduleOptions);
+
+    KeyValueTreeObject keyValueParameters(mdpOptionValues);
+    impl_->ir_->params = new KeyValueTreeObject(adjustKeyValueTreeFromOptions(keyValueParameters, moduleOptions));
+    // The actual output is in the data fields of the modules that
+    // were set up in the module options.
+    assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, errorHandler);
+}
+
+void MDModules::assignOptionsToModulesFromTpr()
+{
+    Options moduleOptions;
+    impl_->makeModuleOptions(&moduleOptions);
+
+    // Note that impl_->ir_->params was set up during tpr reading, so
+    // all we need to do here is integrate that with the module
+    // options, which e.g. might have changed between versions.
+    // The actual output is in the data fields of the modules that
+    // were set up in the module options.
+    //
+    // TODO error handling
+    assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, nullptr);
+}
+
+void MDModules::adjustInputrecBasedOnModules()
+{
+    gmx::Options                        options;
+    impl_->field_->initMdpOptions(&options);
+    std::unique_ptr<KeyValueTreeObject> params(impl_->ir_->params);
+    // Avoid double freeing if the next operation throws.
+    impl_->ir_->params = nullptr;
+    impl_->ir_->params = new KeyValueTreeObject(
+                gmx::adjustKeyValueTreeFromOptions(*params, options));
 }
 
 } // namespace gmx

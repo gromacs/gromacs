@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,11 +47,12 @@ extern "C" {
  * potential = r^-p + c2/3*rsw^3 + c3/4*rsw^4 + cpot
  * With a constant potential shift c2 and c3 are both 0.
  */
-typedef struct {
+struct shift_consts_t
+{
     real c2;
     real c3;
     real cpot;
-} shift_consts_t;
+};
 
 /* Used with potential switching:
  * rsw        = max(r - r_switch, 0)
@@ -60,23 +61,25 @@ typedef struct {
  * force      = force*dsw - potential*sw
  * potential *= sw
  */
-typedef struct {
+struct switch_consts_t
+{
     real c3;
     real c4;
     real c5;
-} switch_consts_t;
+};
 
-typedef struct {
+struct interaction_const_t
+{
     int             cutoff_scheme;
 
     /* VdW */
-    int             vdwtype;
-    int             vdw_modifier;
-    real            rvdw;
-    real            rvdw_switch;
-    shift_consts_t  dispersion_shift;
-    shift_consts_t  repulsion_shift;
-    switch_consts_t vdw_switch;
+    int                    vdwtype;
+    int                    vdw_modifier;
+    real                   rvdw;
+    real                   rvdw_switch;
+    struct shift_consts_t  dispersion_shift;
+    struct shift_consts_t  repulsion_shift;
+    struct switch_consts_t vdw_switch;
     /* TODO: remove this variable, used for not modyfing the group kernels,
      * it is equal to -dispersion_shift->cpot
      */
@@ -128,8 +131,7 @@ typedef struct {
        quadruplets are: F[i], F[i+1]-F[i], V[i], 0, this is used with
        single precision x86 SIMD for aligned loads */
     real *tabq_vdw_FDV0;
-
-} interaction_const_t;
+};
 
 #ifdef __cplusplus
 }

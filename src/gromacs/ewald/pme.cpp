@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,8 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "calculate-spline-moduli.h"
 #include "pme-gather.h"
@@ -229,8 +231,6 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             snew(atc->thread_plist[thread].n, atc->nthread+2*gmxCacheLineSize);
             atc->thread_plist[thread].n += gmxCacheLineSize;
         }
-        snew(atc->spline[thread].thread_one, pme->nthread);
-        atc->spline[thread].thread_one[thread] = 1;
     }
 }
 
@@ -266,8 +266,14 @@ static void destroy_atomcomm(pme_atomcomm_t *atc)
             sfree(n_ptr);
             sfree(atc->thread_plist[i].i);
         }
-        sfree(atc->spline[i].thread_one);
         sfree(atc->spline[i].ind);
+        for (int d = 0; d < ZZ; d++)
+        {
+            sfree(atc->spline[i].theta[d]);
+            sfree(atc->spline[i].dtheta[d]);
+        }
+        sfree_aligned(atc->spline[i].ptr_dtheta_z);
+        sfree_aligned(atc->spline[i].ptr_theta_z);
     }
     if (atc->nthread > 1)
     {
@@ -422,10 +428,26 @@ destroy_overlap_comm(const pme_overlap_t *ol)
     sfree(ol->recvbuf);
 }
 
+int minimalPmeGridSize(int pmeOrder)
+{
+    /* The actual grid size limitations are:
+     *   serial:        >= pme_order
+     *   DD, no OpenMP: >= 2*(pme_order - 1)
+     *   DD, OpenMP:    >= pme_order + 1
+     * But we use the maximum for simplicity since in practice there is not
+     * much performance difference between pme_order and 2*(pme_order -1).
+     */
+    int minimalSize = 2*(pmeOrder - 1);
+
+    GMX_RELEASE_ASSERT(pmeOrder >= 3, "pmeOrder has to be >= 3");
+    GMX_RELEASE_ASSERT(minimalSize >= pmeOrder + 1, "The grid size should be >= pmeOrder + 1");
+
+    return minimalSize;
+}
+
 void gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
                                 int nnodes_major,
-                                int nnodes_minor,
                                 gmx_bool bUseThreads,
                                 gmx_bool bFatal,
                                 gmx_bool *bValidSettings)
@@ -437,21 +459,27 @@ void gmx_pme_check_restrictions(int pme_order,
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
-                  pme_order, PME_ORDER_MAX);
+
+        std::string message = gmx::formatString(
+                    "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
+                    pme_order, PME_ORDER_MAX);
+        GMX_THROW(InconsistentInputError(message));
     }
 
-    if (nkx <= pme_order*(nnodes_major > 1 ? 2 : 1) ||
-        nky <= pme_order*(nnodes_minor > 1 ? 2 : 1) ||
-        nkz <= pme_order)
+    const int minGridSize = minimalPmeGridSize(pme_order);
+    if (nkx < minGridSize ||
+        nky < minGridSize ||
+        nkz < minGridSize)
     {
         if (!bFatal)
         {
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order",
-                  pme_order);
+        std::string message = gmx::formatString(
+                    "The PME grid sizes need to be >= 2*(pme_order-1) (%d)",
+                    minGridSize);
+        GMX_THROW(InconsistentInputError(message));
     }
 
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
@@ -469,7 +497,7 @@ void gmx_pme_check_restrictions(int pme_order,
                   nkx/(double)nnodes_major, pme_order);
     }
 
-    if (bValidSettings != NULL)
+    if (bValidSettings != nullptr)
     {
         *bValidSettings = TRUE;
     }
@@ -487,7 +515,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                  t_commrec *        cr,
                  int                nnodes_major,
                  int                nnodes_minor,
-                 t_inputrec *       ir,
+                 const t_inputrec * ir,
                  int                homenr,
                  gmx_bool           bFreeEnergy_q,
                  gmx_bool           bFreeEnergy_lj,
@@ -496,8 +524,6 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                  real               ewaldcoeff_lj,
                  int                nthread)
 {
-    struct gmx_pme_t *pme = NULL;
-
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
 
@@ -505,10 +531,14 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     {
         fprintf(debug, "Creating PME data structures.\n");
     }
-    snew(pme, 1);
 
-    pme->sum_qgrid_tmp       = NULL;
-    pme->sum_qgrid_dd_tmp    = NULL;
+    gmx_pme_t *pmeRaw = nullptr;
+    snew(pmeRaw, 1);
+    unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(pmeRaw);
+
+    pme->sum_qgrid_tmp       = nullptr;
+    pme->sum_qgrid_dd_tmp    = nullptr;
+
     pme->buf_nalloc          = 0;
 
     pme->nnodes              = 1;
@@ -632,7 +662,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->nkx           = ir->nkx;
     pme->nky           = ir->nky;
     pme->nkz           = ir->nkz;
-    pme->bP3M          = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
+    pme->bP3M          = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != nullptr);
     pme->pme_order     = ir->pme_order;
     pme->ewaldcoeff_q  = ewaldcoeff_q;
     pme->ewaldcoeff_lj = ewaldcoeff_lj;
@@ -647,10 +677,9 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     gmx_pme_check_restrictions(pme->pme_order,
                                pme->nkx, pme->nky, pme->nkz,
                                pme->nnodes_major,
-                               pme->nnodes_minor,
                                pme->bUseThreads,
                                TRUE,
-                               NULL);
+                               nullptr);
 
     if (pme->nnodes > 1)
     {
@@ -667,7 +696,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
          * (unless the coefficient distribution is inhomogeneous).
          */
 
-        imbal = estimate_pme_load_imbalance(pme);
+        imbal = estimate_pme_load_imbalance(pme.get());
         if (imbal >= 1.2 && pme->nodeid_major == 0 && pme->nodeid_minor == 0)
         {
             fprintf(stderr,
@@ -805,10 +834,10 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     }
 
     /* Use atc[0] for spreading */
-    init_atomcomm(pme, &pme->atc[0], nnodes_major > 1 ? 0 : 1, TRUE);
+    init_atomcomm(pme.get(), &pme->atc[0], nnodes_major > 1 ? 0 : 1, TRUE);
     if (pme->ndecompdim >= 2)
     {
-        init_atomcomm(pme, &pme->atc[1], 1, FALSE);
+        init_atomcomm(pme.get(), &pme->atc[1], 1, FALSE);
     }
 
     if (pme->nnodes == 1)
@@ -817,13 +846,14 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
 
-    pme->lb_buf1       = NULL;
-    pme->lb_buf2       = NULL;
+    pme->lb_buf1       = nullptr;
+    pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
-    *pmedata = pme;
+    // no exception was thrown during the init, so we hand over the PME structure handle
+    *pmedata = pme.release();
 
     return 0;
 }
@@ -854,8 +884,12 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
         homenr = -1;
     }
 
-    ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                       &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+    try
+    {
+        ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
+                           &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (ret == 0)
     {
@@ -883,7 +917,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
 
     atc            = &pme->atc_energy;
     atc->nthread   = 1;
-    if (atc->spline == NULL)
+    if (atc->spline == nullptr)
     {
         snew(atc->spline, atc->nthread);
     }
@@ -899,7 +933,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     grid = &pme->pmegrid[PME_GRID_QA];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
+    spread_on_grid(pme, atc, nullptr, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
@@ -948,11 +982,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 {
     int                  d, i, j, npme, grid_index, max_grid_index;
     int                  n_d;
-    pme_atomcomm_t      *atc        = NULL;
-    pmegrids_t          *pmegrid    = NULL;
-    real                *grid       = NULL;
+    pme_atomcomm_t      *atc        = nullptr;
+    pmegrids_t          *pmegrid    = nullptr;
+    real                *grid       = nullptr;
     rvec                *f_d;
-    real                *coefficient = NULL;
+    real                *coefficient = nullptr;
     real                 energy_AB[4];
     matrix               vir_AB[4];
     real                 scale, lambda;
@@ -1057,7 +1091,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             fprintf(debug, "PME: number of ranks = %d, rank = %d\n",
                     cr->nnodes, cr->nodeid);
             fprintf(debug, "Grid = %p\n", (void*)grid);
-            if (grid == NULL)
+            if (grid == nullptr)
             {
                 gmx_fatal(FARGS, "No grid!");
             }
@@ -1288,10 +1322,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         /* Loop over A- and B-state if we are doing FEP */
         for (fep_state = 0; fep_state < fep_states_lj; ++fep_state)
         {
-            real *local_c6 = NULL, *local_sigma = NULL, *RedistC6 = NULL, *RedistSigma = NULL;
+            real *local_c6 = nullptr, *local_sigma = nullptr, *RedistC6 = nullptr, *RedistSigma = nullptr;
             if (pme->nnodes == 1)
             {
-                if (pme->lb_buf1 == NULL)
+                if (pme->lb_buf1 == nullptr)
                 {
                     pme->lb_buf_nalloc = pme->atc[0].n;
                     snew(pme->lb_buf1, pme->lb_buf_nalloc);
@@ -1641,9 +1675,12 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     return 0;
 }
 
-int gmx_pme_destroy(struct gmx_pme_t **pmedata)
+void gmx_pme_destroy(gmx_pme_t *pme)
 {
-    struct gmx_pme_t *pme = *pmedata;
+    if (!pme)
+    {
+        return;
+    }
 
     sfree(pme->nnx);
     sfree(pme->nny);
@@ -1655,12 +1692,26 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata)
     for (int i = 0; i < pme->ngrids; ++i)
     {
         pmegrids_destroy(&pme->pmegrid[i]);
-        gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
     }
+    if (pme->pfft_setup)
+    {
+        for (int i = 0; i < pme->ngrids; ++i)
+        {
+            gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
+        }
+    }
+    sfree(pme->fftgrid);
+    sfree(pme->cfftgrid);
+    sfree(pme->pfft_setup);
 
-    for (int i = 0; i < pme->ndecompdim; i++)
+    for (int i = 0; i < std::max(1, pme->ndecompdim); i++) //pme->atc[0] is always allocated
     {
         destroy_atomcomm(&pme->atc[i]);
+    }
+
+    for (int i = 0; i < DIM; i++)
+    {
+        sfree(pme->bsp_mod[i]);
     }
 
     destroy_overlap_comm(&pme->overlap[0]);
@@ -1677,8 +1728,5 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata)
     sfree(pme->sum_qgrid_tmp);
     sfree(pme->sum_qgrid_dd_tmp);
 
-    sfree(*pmedata);
-    *pmedata = NULL;
-
-    return 0;
+    sfree(pme);
 }

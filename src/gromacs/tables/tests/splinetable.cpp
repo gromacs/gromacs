@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -715,28 +715,45 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
 #if GMX_SIMD_HAVE_REAL && !defined NDEBUG
 TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
 {
-    std::pair<real, real>  range(0.2, 1.0);
-    TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
-    SimdReal               x, func, der;
+    std::pair<real, real>                   range(0.2, 1.0);
+    TypeParam                               table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+    SimdReal                                x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    AlignedArray<real, GMX_SIMD_REAL_WIDTH> alignedMem;
 
+    alignedMem.fill(range.first);
     // Make position 1 incorrect if width>=2, otherwise position 0
+    // range.first-GMX_REAL_EPS is not invalid. See comment in table.
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
     x = load(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        alignedMem[i] = range.second*(1.0-GMX_REAL_EPS);
-    }
     // Make position 1 incorrect if width>=2, otherwise position 0
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
     x = load(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 }
+
+TYPED_TEST(SplineTableTest, AcceptsInRangeValuesSimd)
+{
+    std::pair<real, real>  range(0.2, 1.0);
+    TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+    SimdReal               x, func, der;
+
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+
+    // Test all values between 0 and range.second
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        alignedMem[i] = range.second*(1.0-GMX_REAL_EPS)*i/(GMX_SIMD_REAL_WIDTH-1);
+    }
+    x = load(alignedMem);
+
+    EXPECT_NO_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der));
+}
+
 #endif
 
 } // namespace

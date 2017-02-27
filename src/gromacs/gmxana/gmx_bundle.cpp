@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,10 +157,10 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
                       t_bundle *bun)
 {
     t_trxframe   frout;
-    static rvec *xout = NULL;
+    static rvec *xout = nullptr;
     int          i;
 
-    if (xout == NULL)
+    if (xout == nullptr)
     {
         snew(xout, outat->nr);
     }
@@ -186,7 +186,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
     frout.natoms = outat->nr;
     frout.atoms  = outat;
     frout.x      = xout;
-    write_trxframe(status, &frout, NULL);
+    write_trxframe(status, &frout, nullptr);
 }
 
 int gmx_bundle(int argc, char *argv[])
@@ -223,7 +223,7 @@ int gmx_bundle(int argc, char *argv[])
           "Use the [IT]z[it]-axis as reference instead of the average axis" }
     };
     FILE             *flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
-    FILE             *fkink = NULL, *fkinkr = NULL, *fkinkl = NULL;
+    FILE             *fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
     t_trxstatus      *status;
     t_trxstatus      *fpdb;
     t_topology        top;
@@ -242,13 +242,13 @@ int gmx_bundle(int argc, char *argv[])
     gmx_bool          bKink;
     rvec              va, vb, vc, vr, vl;
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
 #define NLEG asize(leg)
     t_filenm fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPS, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efXVG, "-ol", "bun_len", ffWRITE },
         { efXVG, "-od", "bun_dist", ffWRITE },
         { efXVG, "-oz", "bun_z", ffWRITE },
@@ -263,12 +263,12 @@ int gmx_bundle(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
 
     bKink = opt2bSet("-ok", NFILE, fnm) || opt2bSet("-okr", NFILE, fnm)
         || opt2bSet("-okl", NFILE, fnm);
@@ -349,7 +349,7 @@ int gmx_bundle(int argc, char *argv[])
     }
     else
     {
-        fpdb = NULL;
+        fpdb = nullptr;
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, TRX_NEED_X);

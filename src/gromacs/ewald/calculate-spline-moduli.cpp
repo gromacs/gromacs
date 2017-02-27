@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,92 +44,85 @@
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
 
-static void make_dft_mod(real *mod, real *data, int ndata)
+static void make_dft_mod(real *mod,
+                         const double *data, int splineOrder, int ndata)
 {
-    int  i, j;
-    real sc, ss, arg;
-
-    for (i = 0; i < ndata; i++)
+    for (int i = 0; i < ndata; i++)
     {
-        sc = ss = 0;
-        for (j = 0; j < ndata; j++)
+        /* We use double precision, since this is only called once per grid.
+         * But for single precision bsp_mod, single precision also seems
+         * to give full accuracy.
+         */
+        double sc = 0;
+        double ss = 0;
+        for (int j = 0; j < splineOrder; j++)
         {
-            arg = (2.0*M_PI*i*j)/ndata;
-            sc += data[j]*cos(arg);
-            ss += data[j]*sin(arg);
+            double arg  = (2.0*M_PI*i*(j + 1))/ndata;
+            sc         += data[j]*cos(arg);
+            ss         += data[j]*sin(arg);
         }
-        mod[i] = sc*sc+ss*ss;
+        mod[i] = sc*sc + ss*ss;
     }
-    for (i = 0; i < ndata; i++)
+    if (splineOrder % 2 == 0 && ndata % 2 == 0)
     {
-        if (mod[i] < 1e-7)
-        {
-            mod[i] = (mod[i-1]+mod[i+1])*0.5;
-        }
+        /* Note that pme_order = splineOrder + 1 */
+        GMX_RELEASE_ASSERT(mod[ndata/2] < GMX_DOUBLE_EPS, "With even spline order and even grid size (ndata), dft_mod[ndata/2] should first come out as zero");
+        /* This factor causes a division by zero. But since this occurs in
+         * the tail of the distribution, the term with this factor can
+         * be ignored (see Essmann et al. JCP 103, 8577).
+         * Using the average of the neighbors probably originates from
+         * Tom Darden's original PME code. It seems to give slighlty better
+         * accuracy than using a large value.
+         */
+        mod[ndata/2] = (mod[ndata/2 - 1] + mod[ndata/2 + 1])*0.5;
     }
 }
 
 void make_bspline_moduli(splinevec bsp_mod,
-                         int nx, int ny, int nz, int order)
+                         int nx, int ny, int nz, int pme_order)
 {
-    int   nmax = std::max(nx, std::max(ny, nz));
-    real *data, *ddata, *bsp_data;
-    int   i, k, l;
-    real  div;
+    /* We use double precision, since this is only called once per grid.
+     * But for single precision bsp_mod, single precision also seems
+     * to give full accuracy.
+     */
+    double *data;
 
-    snew(data, order);
-    snew(ddata, order);
-    snew(bsp_data, nmax);
+    /* In GROMACS we, confusingly, defined pme-order as the order
+     * of the cardinal B-spline + 1. This probably happened because
+     * the smooth PME paper only talks about "n" which is the number
+     * of points we spread to and that was chosen to be pme-order.
+     */
+    const int splineOrder = pme_order - 1;
 
-    data[order-1] = 0;
-    data[1]       = 0;
-    data[0]       = 1;
+    snew(data, splineOrder);
 
-    for (k = 3; k < order; k++)
+    data[0]     = 1;
+    for (int k = 1; k < splineOrder; k++)
     {
-        div       = 1.0/(k-1.0);
-        data[k-1] = 0;
-        for (l = 1; l < (k-1); l++)
+        data[k] = 0;
+    }
+
+    for (int k = 2; k <= splineOrder; k++)
+    {
+        double div  = 1.0/k;
+        for (int m = k - 1; m > 0; m--)
         {
-            data[k-l-1] = div*(l*data[k-l-2]+(k-l)*data[k-l-1]);
+            data[m] = div*((k - m)*data[m - 1] + (m + 1)*data[m]);
         }
-        data[0] = div*data[0];
-    }
-    /* differentiate */
-    ddata[0] = -data[0];
-    for (k = 1; k < order; k++)
-    {
-        ddata[k] = data[k-1]-data[k];
-    }
-    div           = 1.0/(order-1);
-    data[order-1] = 0;
-    for (l = 1; l < (order-1); l++)
-    {
-        data[order-l-1] = div*(l*data[order-l-2]+(order-l)*data[order-l-1]);
-    }
-    data[0] = div*data[0];
-
-    for (i = 0; i < nmax; i++)
-    {
-        bsp_data[i] = 0;
-    }
-    for (i = 1; i <= order; i++)
-    {
-        bsp_data[i] = data[i-1];
+        data[0]     = div*data[0];
     }
 
-    make_dft_mod(bsp_mod[XX], bsp_data, nx);
-    make_dft_mod(bsp_mod[YY], bsp_data, ny);
-    make_dft_mod(bsp_mod[ZZ], bsp_data, nz);
+    make_dft_mod(bsp_mod[XX], data, splineOrder, nx);
+    make_dft_mod(bsp_mod[YY], data, splineOrder, ny);
+    make_dft_mod(bsp_mod[ZZ], data, splineOrder, nz);
 
     sfree(data);
-    sfree(ddata);
-    sfree(bsp_data);
 }
 
 /* Return the P3M optimal influence function */
@@ -172,7 +165,7 @@ static void make_p3m_bspline_moduli_dim(real *bsp_mod, int n, int order)
 
     if (order > 8)
     {
-        gmx_fatal(FARGS, "The current P3M code only supports orders up to 8");
+        GMX_THROW(gmx::InconsistentInputError("The current P3M code only supports orders up to 8"));
     }
 
     zarg = M_PI/n;

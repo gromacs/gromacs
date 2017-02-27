@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -776,7 +776,7 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
     }
     if (cpuInfo.count("CPU architecture"))
     {
-        *family = std::strtol(cpuInfo.at("CPU architecture").c_str(), NULL, 10);
+        *family = std::strtol(cpuInfo.at("CPU architecture").c_str(), nullptr, 10);
         // For some 64-bit CPUs it appears to say 'AArch64' instead
         if (*family == 0 && cpuInfo.at("CPU architecture").find("AArch64") != std::string::npos)
         {
@@ -785,11 +785,11 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
     }
     if (cpuInfo.count("CPU variant"))
     {
-        *model    = std::strtol(cpuInfo.at("CPU variant").c_str(), NULL, 16);
+        *model    = std::strtol(cpuInfo.at("CPU variant").c_str(), nullptr, 16);
     }
     if (cpuInfo.count("CPU revision"))
     {
-        *stepping = std::strtol(cpuInfo.at("CPU revision").c_str(), NULL, 10);
+        *stepping = std::strtol(cpuInfo.at("CPU revision").c_str(), nullptr, 10);
     }
 
     if (cpuInfo.count("Features"))

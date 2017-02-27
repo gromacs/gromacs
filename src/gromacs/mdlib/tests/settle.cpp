@@ -46,9 +46,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/testasserts.h"
 
@@ -196,18 +196,18 @@ TEST_P(SettleTest, SatisfiesConstraints)
 
     // Set up the topology. We still have to make some raw pointers,
     // but they are put into scope guards for automatic cleanup.
-    gmx_mtop_t             *mtop;
+    gmx_mtop_t                   *mtop;
     snew(mtop, 1);
-    scoped_cptr<gmx_mtop_t> mtopGuard(mtop);
+    const unique_cptr<gmx_mtop_t> mtopGuard(mtop);
     mtop->mols.nr  = 1;
     mtop->nmoltype = 1;
     snew(mtop->moltype, mtop->nmoltype);
-    scoped_cptr<gmx_moltype_t> moltypeGuard(mtop->moltype);
+    const unique_cptr<gmx_moltype_t> moltypeGuard(mtop->moltype);
     mtop->nmolblock = 1;
     snew(mtop->molblock, mtop->nmolblock);
-    scoped_cptr<gmx_molblock_t> molblockGuard(mtop->molblock);
+    const unique_cptr<gmx_molblock_t> molblockGuard(mtop->molblock);
     mtop->molblock[0].type = 0;
-    std::vector<int>            iatoms;
+    std::vector<int>                  iatoms;
     for (int i = 0; i < numSettles; ++i)
     {
         iatoms.push_back(settleType);
@@ -221,9 +221,9 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // Set up the SETTLE parameters.
     mtop->ffparams.ntypes = 1;
     snew(mtop->ffparams.iparams, mtop->ffparams.ntypes);
-    scoped_cptr<t_iparams> iparamsGuard(mtop->ffparams.iparams);
-    const real             dOH = 0.09572;
-    const real             dHH = 0.15139;
+    const unique_cptr<t_iparams> iparamsGuard(mtop->ffparams.iparams);
+    const real                   dOH = 0.09572;
+    const real                   dHH = 0.15139;
     mtop->ffparams.iparams[settleType].settle.doh = dOH;
     mtop->ffparams.iparams[settleType].settle.dhh = dHH;
 

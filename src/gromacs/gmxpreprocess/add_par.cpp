@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ void add_param(t_params *ps, int ai, int aj, real *c, char *s)
     ps->param[ps->nr].ai() = ai;
     ps->param[ps->nr].aj() = aj;
     clear_atom_list(2, ps->param[ps->nr].a);
-    if (c == NULL)
+    if (c == nullptr)
     {
         clear_force_param(0, ps->param[ps->nr].c);
     }

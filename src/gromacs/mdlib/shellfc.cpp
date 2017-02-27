@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -297,7 +298,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 {
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
-    int                      *shell_index = NULL, *at2cg;
+    int                      *shell_index = nullptr, *at2cg;
     const t_atom             *atom;
 
     int                       ns, nshell, nsi;
@@ -319,7 +320,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     if (nshell == 0 && nflexcon == 0)
     {
         /* We're not doing shells or flexible constraints */
-        return NULL;
+        return nullptr;
     }
 
     snew(shfc, 1);
@@ -552,7 +553,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     shfc->shell_gl       = shell;
     shfc->shell_index_gl = shell_index;
 
-    shfc->bPredict     = (getenv("GMX_NOPREDICT") == NULL);
+    shfc->bPredict     = (getenv("GMX_NOPREDICT") == nullptr);
     shfc->bRequireInit = FALSE;
     if (!shfc->bPredict)
     {
@@ -563,7 +564,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     }
     else
     {
-        shfc->bRequireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != NULL);
+        shfc->bRequireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != nullptr);
         if (shfc->bRequireInit && fplog)
         {
             fprintf(fplog, "\nWill always initiate shell positions\n");
@@ -596,7 +597,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
 {
     t_shell      *shell;
     int           a0, a1, *ind, nshell, i;
-    gmx_domdec_t *dd = NULL;
+    gmx_domdec_t *dd = nullptr;
 
     if (DOMAINDECOMP(cr))
     {
@@ -899,7 +900,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
                       gmx_bool bMolPBC, matrix box,
-                      const std::vector<real> *lambda, real *dvdlambda,
+                      gmx::ConstArrayRef<real> lambda, real *dvdlambda,
                       t_nrnb *nrnb)
 {
     rvec           *xnold, *xnew;
@@ -948,13 +949,13 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
         }
     }
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
-              x, xnold, NULL, bMolPBC, box,
-              (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              x, xnold, nullptr, bMolPBC, box,
+              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+              nullptr, nullptr, nrnb, econqCoord);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
-              x, xnew, NULL, bMolPBC, box,
-              (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              x, xnew, nullptr, bMolPBC, box,
+              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+              nullptr, nullptr, nrnb, econqCoord);
 
     for (n = 0; n < end; n++)
     {
@@ -970,8 +971,8 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     /* Project the acceleration on the old bond directions */
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
-              (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqDeriv_FlexCon);
+              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+              nullptr, nullptr, nrnb, econqDeriv_FlexCon);
 }
 
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
@@ -995,7 +996,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     int        nshell;
     t_shell   *shell;
     t_idef    *idef;
-    rvec      *acc_dir = NULL, *x_old = NULL;
+    rvec      *acc_dir = nullptr, *x_old = nullptr;
     real       Epot[2], df[2];
     real       sf_dir, invdt;
     real       ftol, dum = 0;
@@ -1095,11 +1096,13 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         }
     }
 
-    /* Do a prediction of the shell positions */
-    if (shfc->bPredict && !bCont)
+    /* Do a prediction of the shell positions, when appropriate.
+     * Without velocities (EM, NM, BD) we only do initial prediction.
+     */
+    if (shfc->bPredict && !bCont && (EI_STATE_VELOCITY(inputrec->eI) || bInit))
     {
         predict_shells(fplog, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), inputrec->delta_t, nshell, shell,
-                       md->massT, NULL, bInit);
+                       md->massT, nullptr, bInit);
     }
 
     /* do_force expected the charge groups to be in the box */
@@ -1116,8 +1119,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, &state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
-             &state->lambda, graph,
-             fr, vsite, mu_tot, t, NULL, bBornRadii,
+             state->lambda, graph,
+             fr, vsite, mu_tot, t, nullptr, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
     sf_dir = 0;
@@ -1127,7 +1130,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                   constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                   shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min]->data()),
                   shfc->acc_dir,
-                  fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                  fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
         for (i = 0; i < end; i++)
         {
@@ -1195,7 +1198,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min]->data()), as_rvec_array(force[Min]->data()), acc_dir,
-                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
         }
@@ -1218,8 +1221,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
-                 md, enerd, fcd, &state->lambda, graph,
-                 fr, vsite, mu_tot, t, NULL, bBornRadii,
+                 md, enerd, fcd, state->lambda, graph,
+                 fr, vsite, mu_tot, t, nullptr, bBornRadii,
                  force_flags);
 
         if (gmx_debug_at)
@@ -1233,7 +1236,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try]->data()), as_rvec_array(force[Try]->data()), acc_dir,
-                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
             for (i = 0; i < end; i++)
             {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -554,7 +554,7 @@ int gmx_confrms(int argc, char *argv[])
 
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -673,13 +673,13 @@ int gmx_confrms(int argc, char *argv[])
 
         sfree(fit_x);
         sfree(w_rls);
-        w_rls = NULL;
+        w_rls = nullptr;
     }
     else
     {
         clear_rvec(xcm1);
         clear_rvec(xcm2);
-        w_rls = NULL;
+        w_rls = nullptr;
     }
 
     /* calculate the rms deviation */
@@ -801,9 +801,9 @@ int gmx_confrms(int argc, char *argv[])
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_pdbfile(fp, *top1->name, atoms1, x1, ePBC1, box1, ' ', 1, NULL, TRUE);
+                write_pdbfile(fp, *top1->name, atoms1, x1, ePBC1, box1, ' ', 1, nullptr, TRUE);
             }
-            write_pdbfile(fp, *top2->name, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, NULL, TRUE);
+            write_pdbfile(fp, *top2->name, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, nullptr, TRUE);
             gmx_ffclose(fp);
             break;
         case efGRO:

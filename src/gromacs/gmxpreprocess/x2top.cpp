@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,11 @@
 #include "x2top.h"
 
 #include <cmath>
+#include <cstring>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
@@ -298,7 +298,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPB
         ai = ang->param[i].ai();
         aj = ang->param[i].aj();
         ak = ang->param[i].ak();
-        th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : NULL,
+        th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
                                 r_ij, r_kj, &costh, &t1, &t2);
         if (debug)
         {
@@ -313,7 +313,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPB
         aj = dih->param[i].aj();
         ak = dih->param[i].ak();
         al = dih->param[i].al();
-        ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : NULL,
+        ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
                                r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
         if (debug)
         {
@@ -379,7 +379,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
     for (i = 0; (i < atoms->nr); i++)
     {
         tp = atoms->atom[i].type;
-        if ((tpnm = get_atomtype_name(tp, atype)) == NULL)
+        if ((tpnm = get_atomtype_name(tp, atype)) == nullptr)
         {
             gmx_fatal(FARGS, "tp = %d, i = %d in print_rtp", tp, i);
         }
@@ -515,7 +515,7 @@ int gmx_x2top(int argc, char *argv[])
     }
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
+    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
               forcefield, sizeof(forcefield),
               ffdir, sizeof(ffdir));
 
@@ -531,10 +531,10 @@ int gmx_x2top(int argc, char *argv[])
     /* Read coordinates */
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, NULL, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
     t_atoms  *atoms = &top->atoms;
     natoms = atoms->nr;
-    if (atoms->pdbinfo == NULL)
+    if (atoms->pdbinfo == nullptr)
     {
         snew(atoms->pdbinfo, natoms);
     }
@@ -567,7 +567,7 @@ int gmx_x2top(int argc, char *argv[])
     init_nnb(&nnb, atoms->nr, 4);
     gen_nnb(&nnb, plist);
     print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, NULL, TRUE);
+    gen_pad(&nnb, atoms, &rtp_header_settings, plist, excls, nullptr, TRUE);
     done_nnb(&nnb);
 
     if (!bPairs)
@@ -600,9 +600,9 @@ int gmx_x2top(int argc, char *argv[])
         print_top_header(fp, ftp2fn(efTOP, NFILE, fnm),
                          TRUE, ffdir, 1.0, "");
 
-        write_top(fp, NULL, mymol.name, atoms, FALSE, bts, plist, excls, atype,
+        write_top(fp, nullptr, mymol.name, atoms, FALSE, bts, plist, excls, atype,
                   cgnr, rtp_header_settings.nrexcl);
-        print_top_mols(fp, mymol.name, ffdir, NULL, 0, NULL, 1, &mymol);
+        print_top_mols(fp, mymol.name, ffdir, nullptr, 0, nullptr, 1, &mymol);
 
         gmx_ffclose(fp);
     }

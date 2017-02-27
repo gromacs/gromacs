@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,7 @@ int gmx_morph(int argc, char *argv[])
           "Do a least squares fit of the second to the first structure before interpolating" }
     };
     const char       *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
-    FILE             *fp    = NULL;
+    FILE             *fp    = nullptr;
     int               i, isize, is_lsq, nat1, nat2;
     t_trxstatus      *status;
     int              *index, *index_lsq, *index_all, *dummy;
@@ -125,16 +125,16 @@ int gmx_morph(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }
 
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f1", NFILE, fnm), top, NULL, &x1, NULL, box, FALSE);
+    read_tps_conf(opt2fn("-f1", NFILE, fnm), top, nullptr, &x1, nullptr, box, FALSE);
     nat1 = top->atoms.nr;
-    read_tps_conf(opt2fn("-f2", NFILE, fnm), top, NULL, &x2, NULL, box, FALSE);
+    read_tps_conf(opt2fn("-f2", NFILE, fnm), top, nullptr, &x2, nullptr, box, FALSE);
     nat2 = top->atoms.nr;
     if (nat1 != nat2)
     {
@@ -183,7 +183,7 @@ int gmx_morph(int argc, char *argv[])
     for (i = 0; (i < ninterm); i++)
     {
         fac = dointerp(nat1, x1, x2, xx, i, ninterm, first, last);
-        write_trx(status, nat1, dummy, &atoms, i, fac, box, xx, NULL, NULL);
+        write_trx(status, nat1, dummy, &atoms, i, fac, box, xx, nullptr, nullptr);
         if (bRMS)
         {
             rms1 = rmsdev_ind(isize, index, mass, x1, xx);

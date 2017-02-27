@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
 {
     bool shouldSetAffinity = true;
 
-    *message = NULL;
+    *message = nullptr;
 #if GMX_OPENMP
     /* We assume that the affinity setting is available on all platforms
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
@@ -112,7 +112,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     const char *const gomp_env            = getenv("GOMP_CPU_AFFINITY");
-    const bool        bGompCpuAffinitySet = (gomp_env != NULL);
+    const bool        bGompCpuAffinitySet = (gomp_env != nullptr);
 
     /* turn off internal pinning if GOMP_CPU_AFFINITY is set & non-empty */
     if (bGompCpuAffinitySet && *gomp_env != '\0')

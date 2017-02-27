@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,48 +32,80 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \libinternal \file
+ *
+ *
+ * \brief
+ * This file contains datatypes for energy statistics history.
+ *
+ * \author Berk Hess
+ *
+ * \inlibraryapi
+ * \ingroup module_mdtypes
+ */
+
 #ifndef GMX_MDLIB_ENERGYHISTORY_H
 #define GMX_MDLIB_ENERGYHISTORY_H
+
+#include <memory>
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-/* energy history for delta_h histograms */
-typedef struct delta_h_history_t
+//! \cond INTERNAL
+
+//! \brief Energy history for delta_h histograms in between energy file frames
+class delta_h_history_t
 {
-    int      nndh;             /* the number of energy difference lists */
-    int     *ndh;              /* the number in each energy difference list */
-    real   **dh;               /* the energy difference lists */
+    public:
+        //! Vector (size number of intermediate data points) of vector of Hamiltonian differences for each foreign lambda
+        std::vector<std::vector<real> > dh;
+        //! The start time of these energy diff blocks
+        double                          start_time;
+        //! Lambda at start time
+        double                          start_lambda;
+        //! Whether the lambda value is set. Here for backward-compatibility.
+        gmx_bool                        start_lambda_set;
 
-    double   start_time;       /* the start time of these energy diff blocks */
-    double   start_lambda;     /* lambda at start time */
+        //! Constructor
+        delta_h_history_t() : dh(),
+                              start_time(0),
+                              start_lambda(0),
+                              start_lambda_set(false)
+        {
+        }
+};
 
-    gmx_bool start_lambda_set; /* whether the lambda value is set. Here
-                                  For backward-compatibility. */
-} delta_h_history_t;
 
-
-typedef struct energyhistory_t
+//! \brief Energy statistics history, only used for output and reporting
+class energyhistory_t
 {
-    gmx_int64_t        nsteps;       /* The number of steps in the history            */
-    gmx_int64_t        nsum;         /* The nr. of steps in the ener_ave and ener_sum */
-    double         *   ener_ave;     /* Energy term history sum to get fluctuations   */
-    double         *   ener_sum;     /* Energy term history sum to get fluctuations   */
-    int                nener;        /* Number of energy terms in two previous arrays */
-    gmx_int64_t        nsteps_sim;   /* The number of steps in ener_sum_sim      */
-    gmx_int64_t        nsum_sim;     /* The number of frames in ener_sum_sim     */
-    double         *   ener_sum_sim; /* Energy term history sum of the whole sim      */
+    public:
+        gmx_int64_t         nsteps;       //! The number of steps in the history
+        gmx_int64_t         nsum;         //! Nr. of steps in the ener_ave and ener_sum
+        std::vector<double> ener_ave;     //! Energy terms difference^2 sum to get fluctuations
+        std::vector<double> ener_sum;     //! Energy terms sum
+        gmx_int64_t         nsteps_sim;   //! The number of steps in ener_sum_sim
+        gmx_int64_t         nsum_sim;     //! The number of frames in ener_sum_sim
+        std::vector<double> ener_sum_sim; //! Energy term history sum of the whole sim
 
-    delta_h_history_t *dht;          /* The BAR energy differences */
-}
-energyhistory_t;
+        //! History for energy difference for foreign lambdas (useful for BAR)
+        std::unique_ptr<delta_h_history_t> deltaHForeignLambdas;
 
-/* \brief Initialize an energy history structure
- */
-void init_energyhistory(energyhistory_t * enerhist);
+        //! Constructor
+        energyhistory_t() : nsteps(0),
+                            nsum(0),
+                            ener_ave(),
+                            ener_sum(),
+                            nsteps_sim(0),
+                            nsum_sim(0),
+                            ener_sum_sim(0)
+        {
+        }
+};
 
-/* \brief Destroy an energy history structure
- */
-void done_energyhistory(energyhistory_t * enerhist);
+//! \endcond
 
 #endif

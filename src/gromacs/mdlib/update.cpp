@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -471,7 +472,7 @@ static void do_update_md(int                         start,
                 <NumTempScaleValues::single,
                  ApplyParrinelloRahmanVScaling::no>
                     (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, NULL, x, xprime, v, f);
+                    invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
             }
             else
             {
@@ -479,7 +480,7 @@ static void do_update_md(int                         start,
                 <NumTempScaleValues::multiple,
                  ApplyParrinelloRahmanVScaling::no>
                     (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, NULL, x, xprime, v, f);
+                    invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
             }
         }
     }
@@ -1413,21 +1414,21 @@ void update_constraints(FILE             *fplog,
         wallcycle_start(wcycle, ewcCONSTR);
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
-            constrain(NULL, bLog, bEner, constr, idef,
+            constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
                       as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
+                      nullptr, bCalcVir ? &vir_con : nullptr, nrnb, econqVeloc);
         }
         else
         {
-            constrain(NULL, bLog, bEner, constr, idef,
+            constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
-                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
+                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr, nrnb, econqCoord);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1473,7 +1474,7 @@ void update_constraints(FILE             *fplog,
                               as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), as_rvec_array(state->v.data()), as_rvec_array(force->data()),
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
-                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                              DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1485,12 +1486,12 @@ void update_constraints(FILE             *fplog,
             /* Constrain the coordinates upd->xp for half a time step */
             wallcycle_start(wcycle, ewcCONSTR);
 
-            constrain(NULL, bLog, bEner, constr, idef,
+            constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 0.5, md,
-                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
+                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), nullptr, nrnb, econqCoord);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }
@@ -1508,7 +1509,7 @@ void update_constraints(FILE             *fplog,
          */
         wallcycle_start_nocount(wcycle, ewcUPDATE);
 
-        if (md->cFREEZE != NULL && constr != NULL)
+        if (md->cFREEZE != nullptr && constr != nullptr)
         {
             /* If we have atoms that are frozen along some, but not all
              * dimensions, the constraints will have moved them also along
@@ -1673,7 +1674,7 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     }
     where();
     dump_it_all(fplog, "After update",
-                state->natoms, &state->x, &upd->xp, &state->v, NULL);
+                state->natoms, &state->x, &upd->xp, &state->v, nullptr);
 }
 
 void update_coords(FILE             *fplog,
@@ -1690,7 +1691,7 @@ void update_coords(FILE             *fplog,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr_t      constr)
 {
-    gmx_bool bDoConstr = (NULL != constr);
+    gmx_bool bDoConstr = (nullptr != constr);
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1755,7 +1756,7 @@ void update_coords(FILE             *fplog,
                                   md->cFREEZE, md->cACC, md->cTC,
                                   x_rvec, xp_rvec, v_rvec, f_rvec,
                                   bDoConstr, TRUE,
-                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
                     break;
                 case (eiBD):
                     do_update_bd(start_th, end_th, dt,
@@ -1764,7 +1765,7 @@ void update_coords(FILE             *fplog,
                                  x_rvec, xp_rvec, v_rvec, f_rvec,
                                  inputrec->bd_fric,
                                  upd->sd->bd_rf,
-                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
                     break;
                 case (eiVV):
                 case (eiVVAK):
@@ -1867,7 +1868,7 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
 
-    if (ir->etc == etcANDERSEN && constr != NULL)
+    if (ir->etc == etcANDERSEN && constr != nullptr)
     {
         /* Currently, Andersen thermostat does not support constrained
            systems. Functionality exists in the andersen_tcoupl

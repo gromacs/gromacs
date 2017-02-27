@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,9 +111,9 @@ evaluate_plus(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for the merging selection modifiers. */
 static gmx_ana_selparam_t smparams_merge[] = {
-    {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
-    {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
-    {"stride",   {INT_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
+    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    {"stride",   {INT_VALUE,  1, {nullptr}}, nullptr, SPAR_OPTIONAL},
 };
 
 //! Help title for the merging selection modifiers.
@@ -149,12 +149,12 @@ gmx_ana_selmethod_t sm_merge = {
     "merge", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_merge), smparams_merge,
     &init_data_merge,
-    NULL,
+    nullptr,
     &init_merge,
     &init_output_merge,
     &free_data_merge,
-    NULL,
-    NULL,
+    nullptr,
+    nullptr,
     &evaluate_merge,
     {"merge POSEXPR", helptitle_merge, asize(help_merge), help_merge},
 };
@@ -164,12 +164,12 @@ gmx_ana_selmethod_t sm_plus = {
     "plus", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_merge)-1, smparams_merge,
     &init_data_merge,
-    NULL,
+    nullptr,
     &init_merge,
     &init_output_plus,
     &free_data_merge,
-    NULL,
-    NULL,
+    nullptr,
+    nullptr,
     &evaluate_plus,
     {"plus POSEXPR", helptitle_merge, asize(help_merge), help_merge},
 };
@@ -240,7 +240,7 @@ init_output_common(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
     }
     gmx_ana_pos_reserve_for_append(out->u.p, d->p1.count() + d->p2.count(),
                                    d->p1.m.b.nra + d->p2.m.b.nra,
-                                   d->p1.v != NULL, d->p1.f != NULL);
+                                   d->p1.v != nullptr, d->p1.f != nullptr);
     gmx_ana_pos_empty_init(out->u.p);
 }
 

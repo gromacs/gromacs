@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
     else
     {
         numAtomIndex = -1;
-        atomIndex    = NULL;
+        atomIndex    = nullptr;
         numHomeAtoms = top_global->natoms;
     }
     atoms2md(top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdatoms);
@@ -123,11 +123,11 @@ void mdAlgorithmsSetupAtomData(t_commrec         *cr,
     {
         GMX_ASSERT(graph != NULL, "We use a graph with PBC (no periodic mols) and without DD");
 
-        *graph = mk_graph(NULL, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
+        *graph = mk_graph(nullptr, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
     }
-    else if (graph != NULL)
+    else if (graph != nullptr)
     {
-        *graph = NULL;
+        *graph = nullptr;
     }
 
     /* Note that with DD only flexible constraints, not shells, are supported

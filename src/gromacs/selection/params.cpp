@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,9 +50,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "parsetree.h"
 #include "scanner.h"
@@ -78,18 +78,18 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
 
     if (nparam == 0)
     {
-        return NULL;
+        return nullptr;
     }
     /* Find the first non-null parameter */
     i = 0;
-    while (i < nparam && param[i].name == NULL)
+    while (i < nparam && param[i].name == nullptr)
     {
         ++i;
     }
     /* Process the special case of a NULL parameter */
-    if (name == NULL)
+    if (name == nullptr)
     {
-        return (i == 0) ? NULL : &param[i-1];
+        return (i == 0) ? nullptr : &param[i-1];
     }
     for (; i < nparam; ++i)
     {
@@ -105,7 +105,7 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
             return &param[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 /*! \brief
@@ -133,7 +133,7 @@ convert_value(SelectionParserValue *value, e_selvalue_t type,
             try
             {
                 SelectionTreeElementPointer expr =
-                    _gmx_sel_init_position(value->expr, NULL, scanner);
+                    _gmx_sel_init_position(value->expr, nullptr, scanner);
                 *value = SelectionParserValue::createExpr(expr);
             }
             catch (UserInputError &ex)
@@ -309,9 +309,9 @@ parse_values_range(const SelectionParserValueList &values,
     param->flags &= ~SPAR_DYNAMIC;
     GMX_RELEASE_ASSERT(param->val.type == INT_VALUE || param->val.type == REAL_VALUE,
                        "Invalid range parameter type");
-    int                *idata = NULL;
-    real               *rdata = NULL;
-    scoped_guard_sfree  dataGuard;
+    int                *idata = nullptr;
+    real               *rdata = nullptr;
+    sfree_guard         dataGuard;
     if (param->val.type == INT_VALUE)
     {
         snew(idata, values.size()*2);
@@ -451,7 +451,7 @@ parse_values_range(const SelectionParserValueList &values,
     {
         *param->nvalptr = param->val.nr;
     }
-    param->nvalptr = NULL;
+    param->nvalptr = nullptr;
 }
 
 /*! \brief
@@ -499,7 +499,7 @@ parse_values_varnum(const SelectionParserValueList    &values,
     if (param->val.type == POS_VALUE)
     {
         gmx_ana_pos_reserve(param->val.u.p, valueCount, 0);
-        gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
+        gmx_ana_indexmap_init(&param->val.u.p->m, nullptr, nullptr, INDEX_UNKNOWN);
         gmx_ana_pos_set_nr(param->val.u.p, valueCount);
     }
     else
@@ -586,7 +586,7 @@ parse_values_varnum(const SelectionParserValueList    &values,
     {
         *param->nvalptr = param->val.nr;
     }
-    param->nvalptr = NULL;
+    param->nvalptr = nullptr;
 }
 
 /*! \brief
@@ -685,7 +685,7 @@ parse_values_varnum_expr(const SelectionParserValueList    &values,
         {
             *param->nvalptr = param->val.nr;
         }
-        param->nvalptr = NULL;
+        param->nvalptr = nullptr;
         return;
     }
 
@@ -795,7 +795,7 @@ parse_values_std(const SelectionParserValueList &values,
             {
                 *param->nvalptr = 1;
             }
-            param->nvalptr = NULL;
+            param->nvalptr = nullptr;
             if (param->val.type == INT_VALUE || param->val.type == REAL_VALUE
                 || param->val.type == STR_VALUE)
             {
@@ -914,7 +914,7 @@ parse_values_std(const SelectionParserValueList &values,
     {
         *param->nvalptr = param->val.nr;
     }
-    param->nvalptr = NULL;
+    param->nvalptr = nullptr;
 }
 
 /*! \brief
@@ -998,7 +998,7 @@ parse_values_enum(const SelectionParserValueList &values,
     const std::string &svalue = value.stringValue();
     int                i      = 1;
     int                match  = 0;
-    while (param->val.u.s[i] != NULL)
+    while (param->val.u.s[i] != nullptr)
     {
         if (startsWith(param->val.u.s[i], svalue))
         {
@@ -1088,19 +1088,19 @@ _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
         if (params[i].val.type != POS_VALUE
             && (params[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
-            GMX_RELEASE_ASSERT(params[i].val.u.ptr == NULL,
+            GMX_RELEASE_ASSERT(params[i].val.u.ptr == nullptr,
                                "value pointer is not NULL "
                                "although it should be for SPAR_VARNUM "
                                "and SPAR_ATOMVAL parameters");
             GMX_RELEASE_ASSERT(!((params[i].flags & SPAR_VARNUM)
                                  && (params[i].flags & SPAR_DYNAMIC))
-                               || params[i].nvalptr != NULL,
+                               || params[i].nvalptr != nullptr,
                                "nvalptr is NULL but both "
                                "SPAR_VARNUM and SPAR_DYNAMIC are specified");
         }
         else
         {
-            GMX_RELEASE_ASSERT(params[i].val.u.ptr != NULL,
+            GMX_RELEASE_ASSERT(params[i].val.u.ptr != nullptr,
                                "value pointer is NULL");
         }
     }
@@ -1112,19 +1112,19 @@ _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
         try
         {
             // Always assigned afterwards, but cppcheck does not see that.
-            gmx_ana_selparam_t *oparam = NULL;
+            gmx_ana_selparam_t *oparam = nullptr;
             /* Find the parameter and make some checks */
             if (!pparam->name().empty())
             {
                 nullParamIndex = -1;
                 oparam
                     = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
-                GMX_RELEASE_ASSERT(oparam != NULL, "Inconsistent selection parameter");
+                GMX_RELEASE_ASSERT(oparam != nullptr, "Inconsistent selection parameter");
             }
             else if (nullParamIndex >= 0)
             {
                 oparam = &params[nullParamIndex];
-                if (oparam->name != NULL)
+                if (oparam->name != nullptr)
                 {
                     std::string text(_gmx_sel_lexer_get_text(scanner, pparam->location()));
                     std::string message
@@ -1210,7 +1210,7 @@ _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
         if (!(params[i].flags & SPAR_OPTIONAL) && !(params[i].flags & SPAR_SET))
         {
             std::string message;
-            if (params[i].name == NULL)
+            if (params[i].name == nullptr)
             {
                 message = formatString("'%s' should be followed by a value/expression",
                                        root->name().c_str());

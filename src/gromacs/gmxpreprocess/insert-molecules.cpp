@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,7 +125,7 @@ static void generate_trial_conf(const std::vector<RVec> &xin,
     }
     if (enum_rot == en_rotXYZ || enum_rot == en_rotZ)
     {
-        rotate_conf(xout->size(), as_rvec_array(xout->data()), NULL, alfa, beta, gamma);
+        rotate_conf(xout->size(), as_rvec_array(xout->data()), nullptr, alfa, beta, gamma);
     }
     for (size_t i = 0; i < xout->size(); ++i)
     {
@@ -208,7 +208,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     set_pbc(&pbc, ePBC, box);
 
     /* With -ip, take nmol_insrt from file posfn */
-    double     **rpos              = NULL;
+    double     **rpos              = nullptr;
     const bool   insertAtPositions = !posfn.empty();
     if (insertAtPositions)
     {
@@ -307,7 +307,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                 originalAtomCount - atoms->nr);
     }
 
-    if (rpos != NULL)
+    if (rpos != nullptr)
     {
         for (int i = 0; i < DIM; ++i)
         {
@@ -329,7 +329,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         InsertMolecules()
             : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
               defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
-              top_(NULL), ePBC_(-1)
+              top_(nullptr), ePBC_(-1)
         {
             clear_rvec(newBox_);
             clear_rvec(deltaR_);
@@ -337,7 +337,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         }
         virtual ~InsertMolecules()
         {
-            if (top_ != NULL)
+            if (top_ != nullptr)
             {
                 done_mtop(top_);
                 sfree(top_);
@@ -410,8 +410,10 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
         "inserted molecule is less than the sum based on the van der Waals",
         "radii of both atoms. A database ([TT]vdwradii.dat[tt]) of van der",
         "Waals radii is read by the program, and the resulting radii scaled",
-        "by [TT]-scale[tt]. If radii are not found in the database, those"
+        "by [TT]-scale[tt]. If radii are not found in the database, those",
         "atoms are assigned the (pre-scaled) distance [TT]-radius[tt].",
+        "Note that the usefulness of those radii depends on the atom names,",
+        "and thus varies widely with force field.",
         "",
         "A total of [TT]-nmol[tt] * [TT]-try[tt] insertion attempts are made",
         "before giving up. Increase [TT]-try[tt] if you have several small",
@@ -509,7 +511,7 @@ void InsertMolecules::optionsFinished()
     snew(top_, 1);
     if (!inputConfFile_.empty())
     {
-        readConformation(inputConfFile_.c_str(), top_, &x_, NULL,
+        readConformation(inputConfFile_.c_str(), top_, &x_, nullptr,
                          &ePBC_, box_, "solute");
         if (top_->natoms == 0)
         {
@@ -560,13 +562,13 @@ int InsertMolecules::run()
         int         ePBC_dummy;
         matrix      box_dummy;
         readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
-                         NULL, &ePBC_dummy, box_dummy, "molecule");
+                         nullptr, &ePBC_dummy, box_dummy, "molecule");
         if (top_insrt->atoms.nr == 0)
         {
             gmx_fatal(FARGS, "No molecule in %s, please check your input",
                       insertConfFile_.c_str());
         }
-        if (top_->name == NULL)
+        if (top_->name == nullptr)
         {
             top_->name = top_insrt->name;
         }
@@ -589,7 +591,7 @@ int InsertMolecules::run()
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
     write_sto_conf(outputConfFile_.c_str(), *top_->name, &atoms,
-                   as_rvec_array(x_.data()), NULL, ePBC_, box_);
+                   as_rvec_array(x_.data()), nullptr, ePBC_, box_);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",

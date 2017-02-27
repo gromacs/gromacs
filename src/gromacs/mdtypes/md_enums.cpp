@@ -247,10 +247,6 @@ const char *eQMMMscheme_names[eQMMMschemeNR+1] = {
     "normal", "ONIOM", nullptr
 };
 
-const char *eMultentOpt_names[eMultentOptNR+1] = {
-    "multiple_entries", "no", "use_last", nullptr
-};
-
 const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1] = {
     "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle", "Water4-Water4", "CG-CG", nullptr
 };

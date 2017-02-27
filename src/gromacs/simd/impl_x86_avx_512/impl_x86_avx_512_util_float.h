@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,152 +51,78 @@
 namespace gmx
 {
 
-// On MIC it is better to use scatter operations, so we define the load routines
-// that use a SIMD offset variable first.
-
-template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const float *  base,
-                             SimdFInt32     simdoffset,
-                             SimdFloat *    v0,
-                             SimdFloat *    v1,
-                             SimdFloat *    v2,
-                             SimdFloat *    v3)
-{
-    assert(std::size_t(base) % 16 == 0);
-    assert(align % 4 == 0);
-
-    // All instructions might be latency ~4 on MIC, so we use shifts where we
-    // only need a single instruction (since the shift parameter is an immediate),
-    // but multiplication otherwise.
-    if (align == 4)
-    {
-        simdoffset = simdoffset << 2;
-    }
-    else if (align == 8)
-    {
-        simdoffset = simdoffset << 3;
-    }
-    else
-    {
-        simdoffset = simdoffset * SimdFInt32(align);
-    }
-
-    // The 4 corresponds to sizeof(float), but it must be an immediate, and with debug builds
-    // gcc will not evaluate the sizeof() function at compile time.
-    v0->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base,   4);
-    v1->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+1, 4);
-    v2->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+2, 4);
-    v3->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+3, 4);
-}
-
-template <int align>
-static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const float *  base,
-                              SimdFInt32     simdoffset,
-                              SimdFloat *    v0,
-                              SimdFloat *    v1)
-{
-    // All instructions might be latency ~4 on MIC, so we use shifts where we
-    // only need a single instruction (since the shift parameter is an immediate),
-    // but multiplication otherwise.
-    // For align == 2 we can merge the constant into the scale parameter,
-    // which can take constants up to 8 in total.
-    if (align == 2)
-    {
-        v0->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base,   align * 4);
-        v1->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+1, align * 4);
-    }
-    else
-    {
-        if (align == 4)
-        {
-            simdoffset = simdoffset << 2;
-        }
-        else if (align == 8)
-        {
-            simdoffset = simdoffset << 3;
-        }
-        else
-        {
-            simdoffset = simdoffset * SimdFInt32(align);
-        }
-        v0->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base,   4);
-        v1->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+1, 4);
-    }
-}
-
-template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const float *   base,
-                             SimdFInt32      simdoffset,
-                             SimdFloat *     v0,
-                             SimdFloat *     v1)
-{
-    assert(std::size_t(base) % 8 == 0);
-    assert(align % 2 == 0);
-    gatherLoadUBySimdIntTranspose<align>(base, simdoffset.simdInternal_, v0, v1);
-}
-
-template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const float *        base,
-                    const std::int32_t   offset[],
-                    SimdFloat *          v0,
-                    SimdFloat *          v1,
-                    SimdFloat *          v2,
-                    SimdFloat *          v3)
-{
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadFI(offset), v0, v1, v2, v3);
-}
-
-template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const float *        base,
-                    const std::int32_t   offset[],
-                    SimdFloat *          v0,
-                    SimdFloat *          v1)
-{
-    gatherLoadBySimdIntTranspose<align>(base, simdLoadFI(offset), v0, v1);
-}
-
 static const int c_simdBestPairAlignmentFloat = 2;
 
-template <int align>
-static inline void gmx_simdcall
-gatherLoadUTranspose(const float *        base,
-                     const std::int32_t   offset[],
-                     SimdFloat *          v0,
-                     SimdFloat *          v1,
-                     SimdFloat *          v2)
+namespace
 {
-    SimdFInt32 simdoffset;
-
-    assert(std::size_t(offset) % 64 == 0);
-
-    simdoffset = simdLoadFI(offset);
-
-    // All instructions might be latency ~4 on MIC, so we use shifts where we
-    // only need a single instruction (since the shift parameter is an immediate),
-    // but multiplication otherwise.
-    if (align == 4)
+// Multiply function optimized for powers of 2, for which it is done by
+// shifting. Currently up to 8 is accelerated. Could be accelerated for any
+// number with a constexpr log2 function.
+template<int n>
+SimdFInt32 fastMultiply(SimdFInt32 x)
+{
+    if (n == 2)
     {
-        simdoffset = simdoffset << 2;
+        return x << 1;
     }
-    else if (align == 8)
+    else if (n == 4)
     {
-        simdoffset = simdoffset << 3;
+        return x << 2;
+    }
+    else if (n == 8)
+    {
+        return x << 3;
     }
     else
     {
-        simdoffset = simdoffset * SimdFInt32(align);
+        return x * n;
     }
-
-    v0->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base,   4);
-    v1->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+1, 4);
-    v2->simdInternal_ = _mm512_i32gather_ps(simdoffset.simdInternal_, base+2, 4);
 }
 
+template<int align>
+static inline void gmx_simdcall
+gatherLoadBySimdIntTranspose(const float *, SimdFInt32)
+{
+    //Nothing to do. Termination of recursion.
+}
+}
+
+template <int align, typename ... Targs>
+static inline void gmx_simdcall
+gatherLoadBySimdIntTranspose(const float *base, SimdFInt32 offset, SimdFloat *v, Targs... Fargs)
+{
+    // For align 1 or 2: No multiplication of offset is needed
+    if (align > 2)
+    {
+        offset = fastMultiply<align>(offset);
+    }
+    // For align 2: Scale of 2*sizeof(float) is used (maximum supported scale)
+    constexpr int align_ = (align > 2) ? 1 : align;
+    v->simdInternal_ = _mm512_i32gather_ps(offset.simdInternal_, base, sizeof(float)*align_);
+    // Gather remaining elements. Avoid extra multiplication (new align is 1 or 2).
+    gatherLoadBySimdIntTranspose<align_>(base+1, offset, Fargs ...);
+}
+
+template <int align, typename ... Targs>
+static inline void gmx_simdcall
+gatherLoadUBySimdIntTranspose(const float *base, SimdFInt32 offset, Targs... Fargs)
+{
+    gatherLoadBySimdIntTranspose<align>(base, offset, Fargs ...);
+}
+
+template <int align, typename ... Targs>
+static inline void gmx_simdcall
+gatherLoadTranspose(const float *base, const std::int32_t offset[], Targs... Fargs)
+{
+    gatherLoadBySimdIntTranspose<align>(base, simdLoadFI(offset), Fargs ...);
+}
+
+template <int align, typename ... Targs>
+static inline void gmx_simdcall
+gatherLoadUTranspose(const float *base, const std::int32_t offset[], Targs... Fargs)
+{
+    gatherLoadTranspose<align>(base, offset, Fargs ...);
+}
 
 template <int align>
 static inline void gmx_simdcall
@@ -206,31 +132,15 @@ transposeScatterStoreU(float *              base,
                        SimdFloat            v1,
                        SimdFloat            v2)
 {
-    SimdFInt32 simdoffset;
-
-    assert(std::size_t(offset) % 64 == 0);
-
-    simdoffset = simdLoadFI(offset);
-
-    // All instructions might be latency ~4 on MIC, so we use shifts where we
-    // only need a single instruction (since the shift parameter is an immediate),
-    // but multiplication otherwise.
-    if (align == 4)
+    SimdFInt32 simdoffset = simdLoadFI(offset);
+    if (align > 2)
     {
-        simdoffset = simdoffset << 2;
+        simdoffset = fastMultiply<align>(simdoffset);
     }
-    else if (align == 8)
-    {
-        simdoffset = simdoffset << 3;
-    }
-    else
-    {
-        simdoffset = simdoffset * SimdFInt32(align);
-    }
-
-    _mm512_i32scatter_ps(base,   simdoffset.simdInternal_, v0.simdInternal_, 4);
-    _mm512_i32scatter_ps(base+1, simdoffset.simdInternal_, v1.simdInternal_, 4);
-    _mm512_i32scatter_ps(base+2, simdoffset.simdInternal_, v2.simdInternal_, 4);
+    constexpr int align_ = (align > 2) ? 1 : align;
+    _mm512_i32scatter_ps(base,   simdoffset.simdInternal_, v0.simdInternal_, sizeof(float)*align_);
+    _mm512_i32scatter_ps(base+1, simdoffset.simdInternal_, v1.simdInternal_, sizeof(float)*align_);
+    _mm512_i32scatter_ps(base+2, simdoffset.simdInternal_, v2.simdInternal_, sizeof(float)*align_);
 }
 
 
@@ -244,8 +154,8 @@ transposeScatterIncrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 8)    o[16];
-    _mm512_store_epi32(o, _mm512_mullo_epi32(_mm512_load_epi32(offset), _mm512_set1_epi32(align)));
+    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    store(o, fastMultiply<align>(simdLoadFI(offset)));
     if (align < 4)
     {
         t5   = _mm512_unpacklo_ps(v0.simdInternal_, v1.simdInternal_);
@@ -316,8 +226,8 @@ transposeScatterDecrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 8)    o[16];
-    _mm512_store_epi32(o, _mm512_mullo_epi32(_mm512_load_epi32(offset), _mm512_set1_epi32(align)));
+    GMX_ALIGNED(std::int32_t, 16)    o[16];
+    store(o, fastMultiply<align>(simdLoadFI(offset)));
     if (align < 4)
     {
         t5   = _mm512_unpacklo_ps(v0.simdInternal_, v1.simdInternal_);
@@ -384,12 +294,12 @@ expandScalarsToTriplets(SimdFloat    scalar,
                         SimdFloat *  triplets1,
                         SimdFloat *  triplets2)
 {
-    triplets0->simdInternal_ = _mm512_castsi512_ps(_mm512_permutexvar_epi32(_mm512_set_epi32(5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0),
-                                                                            _mm512_castps_si512(scalar.simdInternal_)));
-    triplets1->simdInternal_ = _mm512_castsi512_ps(_mm512_permutexvar_epi32(_mm512_set_epi32(10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5),
-                                                                            _mm512_castps_si512(scalar.simdInternal_)));
-    triplets2->simdInternal_ = _mm512_castsi512_ps(_mm512_permutexvar_epi32(_mm512_set_epi32(15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10),
-                                                                            _mm512_castps_si512(scalar.simdInternal_)));
+    triplets0->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0),
+                                                     scalar.simdInternal_);
+    triplets1->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5),
+                                                     scalar.simdInternal_);
+    triplets2->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10),
+                                                     scalar.simdInternal_);
 }
 
 
@@ -453,8 +363,8 @@ static inline SimdFloat gmx_simdcall
 load1DualHsimd(const float * m)
 {
     return {
-               _mm512_shuffle_f32x4(_mm512_broadcastss_ps(_mm_loadu_ps(m)),
-                                    _mm512_broadcastss_ps(_mm_loadu_ps(m+1)), 0x44)
+               _mm512_shuffle_f32x4(_mm512_broadcastss_ps(_mm_load_ss(m)),
+                                    _mm512_broadcastss_ps(_mm_load_ss(m+1)), 0x44)
     };
 }
 
@@ -515,27 +425,29 @@ gatherLoadTransposeHsimd(const float *        base0,
                          SimdFloat *          v0,
                          SimdFloat *          v1)
 {
-    __m256i idx0, idx1;
-    __m512i idx;
+    __m256i idx;
     __m512  tmp1, tmp2;
 
     assert(std::size_t(offset) % 32 == 0);
     assert(std::size_t(base0) % 8 == 0);
     assert(std::size_t(base1) % 8 == 0);
-    assert(std::size_t(align) % 2 == 0);
 
-    idx0 = _mm256_load_si256(reinterpret_cast<const __m256i*>(offset));
+    idx = _mm256_load_si256(reinterpret_cast<const __m256i*>(offset));
 
-    idx0 = _mm256_mullo_epi32(idx0, _mm256_set1_epi32(align));
-    idx1 = _mm256_add_epi32(idx0, _mm256_set1_epi32(1));
+    static_assert(align == 2 || align == 4, "If more are needed use fastMultiply");
+    if (align == 4)
+    {
+        idx = _mm256_slli_epi32(idx, 1);
+    }
 
-    idx = _mm512_inserti64x4(_mm512_castsi256_si512(idx0), idx1, 1);
+    tmp1 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, base0, sizeof(double)));
+    tmp2 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, base1, sizeof(double)));
 
-    tmp1 = _mm512_i32gather_ps(idx, base0, 4);
-    tmp2 = _mm512_i32gather_ps(idx, base1, 4);
+    v0->simdInternal_ = _mm512_mask_moveldup_ps(tmp1, 0xAAAA, tmp2);
+    v1->simdInternal_ = _mm512_mask_movehdup_ps(tmp2, 0x5555, tmp1);
 
-    v0->simdInternal_ = _mm512_shuffle_f32x4(tmp1, tmp2, 0x44 );
-    v1->simdInternal_ = _mm512_shuffle_f32x4(tmp1, tmp2, 0xEE );
+    v0->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0), v0->simdInternal_);
+    v1->simdInternal_ = _mm512_permutexvar_ps(_mm512_set_epi32(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0), v1->simdInternal_);
 }
 
 static inline float gmx_simdcall

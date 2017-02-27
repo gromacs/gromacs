@@ -20,6 +20,7 @@ For background on algorithms and implementations, see the
    :maxdepth: 2
 
    getting-started
+   system-preparation
    cutoff-schemes
    mdrun-features
    mdrun-performance

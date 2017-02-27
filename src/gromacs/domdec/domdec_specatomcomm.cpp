@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 
                 spas = &spac->spas[d][dir];
                 /* Sum the buffer into the required forces */
-                if (!bPBC || (!bScrew && fshift == NULL))
+                if (!bPBC || (!bScrew && fshift == nullptr))
                 {
                     for (i = 0; i < spas->nsend; i++)
                     {
@@ -182,7 +182,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     rvec              shift = {0, 0, 0};
 
     nvec = 1;
-    if (x1 != NULL)
+    if (x1 != nullptr)
     {
         nvec++;
     }

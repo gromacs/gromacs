@@ -39,8 +39,10 @@
 
 #include <cstring>
 
-#include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/basedefinitions.h"
+
+struct warninp;
+typedef warninp *warninp_t;
 
 namespace gmx
 {

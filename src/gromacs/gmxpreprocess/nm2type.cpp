@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
@@ -68,10 +67,10 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
     char          buf[1024], elem[16], type[16], nbbuf[16], **newbuf;
     int           i, nb, nnnm, line = 1;
     double        qq, mm;
-    t_nm2type    *nm2t = NULL;
+    t_nm2type    *nm2t = nullptr;
 
     fp = fflib_open(fn);
-    if (NULL == fp)
+    if (nullptr == fp)
     {
         gmx_fatal(FARGS, "Can not find %s in library directory", fn);
     }
@@ -81,7 +80,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
     do
     {
         /* Read a line from the file */
-        bCont = (fgets2(buf, 1023, fp) != NULL);
+        bCont = (fgets2(buf, 1023, fp) != nullptr);
 
         if (bCont)
         {
@@ -111,7 +110,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
                 }
                 else
                 {
-                    newbuf = NULL;
+                    newbuf = nullptr;
                 }
                 nm2t[nnnm].elem   = gmx_strdup(elem);
                 nm2t[nnnm].type   = gmx_strdup(type);
@@ -139,7 +138,7 @@ t_nm2type *rd_nm2type(const char *ffdir, int *nnm)
 
     nff  = fflib_search_file_end(ffdir, ".n2t", FALSE, &ff);
     *nnm = 0;
-    nm   = NULL;
+    nm   = nullptr;
     for (f = 0; f < nff; f++)
     {
         rd_nm2type_file(ff[f], nnm, &nm);

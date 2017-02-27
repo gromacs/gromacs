@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
     : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan),
       bParallel_(false)
 {
-    GMX_RELEASE_ASSERT(data != NULL, "Source data must not be NULL");
+    GMX_RELEASE_ASSERT(data != nullptr, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
     setMultipoint(source_.isMultipoint());
 }

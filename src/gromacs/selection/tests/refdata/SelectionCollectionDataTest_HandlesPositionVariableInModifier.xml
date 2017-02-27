@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedVariable Name="Variable1">
+      <String Name="Input">foo = cog of resnr 1</String>
+    </ParsedVariable>
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">cog of resnr 2 plus foo</String>
+      <String Name="Text">cog of resnr 2 plus foo</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">cog of resnr 3 plus foo</String>
+      <String Name="Text">cog of resnr 3 plus foo</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+  <EvaluatedSelections Name="Frame1">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">2</Int>
+        <Position>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.6666666666666665</Real>
+            <Real Name="Y">2.333333333333333</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Vector Name="Coordinates">
+            <Real Name="X">1</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">2</Int>
+        <Position>
+          <Vector Name="Coordinates">
+            <Real Name="X">2.333333333333333</Real>
+            <Real Name="Y">2.6666666666666665</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Vector Name="Coordinates">
+            <Real Name="X">1</Real>
+            <Real Name="Y">2</Real>
+            <Real Name="Z">0</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+  </EvaluatedSelections>
+</ReferenceData>

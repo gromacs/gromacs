@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,8 @@
 
 #include <cstring>
 
+#include <string>
+
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -62,18 +64,23 @@ warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning)
 
     wi->bAllowWarnings = bAllowWarnings;
     wi->maxwarn        = maxwarning;
-    wi->nwarn_note     = 0;
-    wi->nwarn_warn     = 0;
-    wi->nwarn_error    = 0;
+    warning_reset(wi);
     strcpy(wi->filenm, "unknown");
     wi->lineno         = 0;
 
     return wi;
 }
 
+void warning_reset(warninp_t wi)
+{
+    wi->nwarn_note     = 0;
+    wi->nwarn_warn     = 0;
+    wi->nwarn_error    = 0;
+}
+
 void set_warning_line(warninp_t wi, const char *s, int line)
 {
-    if (s != NULL)
+    if (s != nullptr)
     {
         std::strcpy(wi->filenm, s);
     }
@@ -96,7 +103,7 @@ static void low_warning(warninp_t wi, const char *wtype, int n, const char *s)
     char *temp, *temp2;
     int   i;
 
-    if (s == NULL)
+    if (s == nullptr)
     {
         s = "Empty error message.";
     }
@@ -142,16 +149,31 @@ void warning(warninp_t wi, const char *s)
     }
 }
 
+void warning(warninp_t wi, const std::string &s)
+{
+    warning(wi, s.c_str());
+}
+
 void warning_note(warninp_t wi, const char *s)
 {
     wi->nwarn_note++;
     low_warning(wi, "NOTE", wi->nwarn_note, s);
 }
 
+void warning_note(warninp_t wi, const std::string &s)
+{
+    warning_note(wi, s.c_str());
+}
+
 void warning_error(warninp_t wi, const char *s)
 {
     wi->nwarn_error++;
     low_warning(wi, "ERROR", wi->nwarn_error, s);
+}
+
+void warning_error(warninp_t wi, const std::string &s)
+{
+    warning_error(wi, s.c_str());
 }
 
 static void print_warn_count(const char *type, int n)

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,14 +70,14 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
                      gmx_fft_flag       flags)
 {
     gmx_many_fft_t fft;
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == NULL)
+    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -97,14 +97,14 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
                           gmx_fft_flag       flags)
 {
     gmx_many_fft_t fft;
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == NULL)
+    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -164,9 +164,9 @@ void
 gmx_many_fft_destroy(gmx_fft_t    fft)
 {
     gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
-    if (mfft != NULL)
+    if (mfft != nullptr)
     {
-        if (mfft->fft != NULL)
+        if (mfft->fft != nullptr)
         {
             gmx_fft_destroy(mfft->fft);
         }

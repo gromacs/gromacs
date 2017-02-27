@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,7 +179,7 @@ nma_full_hessian(real                      *hess,
     eigensolver(hess, ndim, begin-1, end-1, eigenvalues, eigenvectors);
 
     /* And scale the output eigenvectors */
-    if (bM && eigenvectors != NULL)
+    if (bM && eigenvectors != nullptr)
     {
         for (int i = 0; i < (end-begin+1); i++)
         {
@@ -218,7 +218,7 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
     /* Cannot check symmetry since we only store half matrix */
     /* divide elements hess[i][j] by sqrt(mas[i])*sqrt(mas[j]) when required */
 
-    GMX_RELEASE_ASSERT(sparse_hessian != NULL, "NULL matrix pointer provided to nma_sparse_hessian");
+    GMX_RELEASE_ASSERT(sparse_hessian != nullptr, "NULL matrix pointer provided to nma_sparse_hessian");
 
     if (bM)
     {
@@ -245,7 +245,7 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
     sparse_eigensolver(sparse_hessian, neig, eigenvalues, eigenvectors, 10000000);
 
     /* Scale output eigenvectors */
-    if (bM && eigenvectors != NULL)
+    if (bM && eigenvectors != nullptr)
     {
         for (i = 0; i < neig; i++)
         {
@@ -302,7 +302,8 @@ int gmx_nmeig(int argc, char *argv[])
         "which can be calculated with [gmx-mdrun].",
         "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
         "The structure is written first with t=0. The eigenvectors",
-        "are written as frames with the eigenvector number as timestamp.",
+        "are written as frames with the eigenvector number and eigenvalue",
+        "written as step number and timestamp, respectively.",
         "The eigenvectors can be analyzed with [gmx-anaeig].",
         "An ensemble of structures can be generated from the eigenvectors with",
         "[gmx-nmens]. When mass weighting is used, the generated eigenvectors",
@@ -361,19 +362,19 @@ int gmx_nmeig(int argc, char *argv[])
     real                   value, omega, nu;
     real                   factor_gmx_to_omega2;
     real                   factor_omega_to_wavenumber;
-    real                  *spectrum = NULL;
+    real                  *spectrum = nullptr;
     real                   wfac;
     gmx_output_env_t      *oenv;
     const char            *qcleg[] = {
         "Heat Capacity cV (J/mol K)",
         "Enthalpy H (kJ/mol)"
     };
-    real *                 full_hessian   = NULL;
-    gmx_sparsematrix_t *   sparse_hessian = NULL;
+    real *                 full_hessian   = nullptr;
+    gmx_sparsematrix_t *   sparse_hessian = nullptr;
 
     t_filenm               fnm[] = {
         { efMTX, "-f", "hessian",    ffREAD  },
-        { efTPR, NULL, NULL,         ffREAD  },
+        { efTPR, nullptr, nullptr,         ffREAD  },
         { efXVG, "-of", "eigenfreq", ffWRITE },
         { efXVG, "-ol", "eigenval",  ffWRITE },
         { efXVG, "-os", "spectrum",  ffOPTWR },
@@ -383,7 +384,7 @@ int gmx_nmeig(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -393,8 +394,8 @@ int gmx_nmeig(int argc, char *argv[])
     snew(top_x, tpx.natoms);
 
     int natoms_tpx;
-    read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms_tpx,
-             top_x, NULL, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms_tpx,
+             top_x, nullptr, &mtop);
     int nharm = 0;
     if (bCons)
     {
@@ -430,7 +431,7 @@ int gmx_nmeig(int argc, char *argv[])
      * If this is not valid we convert to full matrix storage,
      * but warn the user that we might run out of memory...
      */
-    if ((sparse_hessian != NULL) && (end == ndim))
+    if ((sparse_hessian != nullptr) && (end == ndim))
     {
         fprintf(stderr, "Cannot use sparse Hessian to calculate all eigenvectors.\n");
 
@@ -463,13 +464,13 @@ int gmx_nmeig(int argc, char *argv[])
             }
         }
         gmx_sparsematrix_destroy(sparse_hessian);
-        sparse_hessian = NULL;
+        sparse_hessian = nullptr;
         fprintf(stderr, "Converted sparse to full matrix storage.\n");
     }
 
     snew(eigenvalues, nrow);
 
-    if (full_hessian != NULL)
+    if (full_hessian != nullptr)
     {
         /* Using full matrix storage */
         eigenvectors = allocateEigenvectors(nrow, begin, end, false);
@@ -534,7 +535,7 @@ int gmx_nmeig(int argc, char *argv[])
     }
     else
     {
-        qc = NULL;
+        qc = nullptr;
     }
     printf("Writing eigenfrequencies - negative eigenvalues will be set to zero.\n");
 
@@ -553,7 +554,7 @@ int gmx_nmeig(int argc, char *argv[])
         }
     }
     /* Spectrum ? */
-    spec = NULL;
+    spec = nullptr;
     if (opt2bSet("-os", NFILE, fnm) && (maxspec > 0))
     {
         snew(spectrum, maxspec);
@@ -590,7 +591,7 @@ int gmx_nmeig(int argc, char *argv[])
         nu    = 1e-12*omega/(2*M_PI);
         value = omega*factor_omega_to_wavenumber;
         fprintf (out, "%6d %15g\n", i, value);
-        if (NULL != spec)
+        if (nullptr != spec)
         {
             wfac = eigenvalues[i-begin]/(width*std::sqrt(2*M_PI));
             for (j = 0; (j < maxspec); j++)
@@ -598,7 +599,7 @@ int gmx_nmeig(int argc, char *argv[])
                 spectrum[j] += wfac*std::exp(-gmx::square(j-value)/(2*gmx::square(width)));
             }
         }
-        if (NULL != qc)
+        if (nullptr != qc)
         {
             qcv = cv_corr(nu, T);
             qu  = u_corr(nu, T);
@@ -613,7 +614,7 @@ int gmx_nmeig(int argc, char *argv[])
         }
     }
     xvgrclose(out);
-    if (NULL != spec)
+    if (nullptr != spec)
     {
         for (j = 0; (j < maxspec); j++)
         {
@@ -621,7 +622,7 @@ int gmx_nmeig(int argc, char *argv[])
         }
         xvgrclose(spec);
     }
-    if (NULL != qc)
+    if (nullptr != qc)
     {
         printf("Quantum corrections for harmonic degrees of freedom\n");
         printf("Use appropriate -first and -last options to get reliable results.\n");
@@ -637,7 +638,7 @@ int gmx_nmeig(int argc, char *argv[])
      * will not be strictly orthogonal in plain cartesian scalar products.
      */
     const real *eigenvectorPtr;
-    if (full_hessian != NULL)
+    if (full_hessian != nullptr)
     {
         eigenvectorPtr = eigenvectors;
     }
@@ -647,7 +648,7 @@ int gmx_nmeig(int argc, char *argv[])
         eigenvectorPtr = eigenvectors + (begin - 1)*atom_index.size();
     }
     write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin, end,
-                       eWXR_NO, NULL, FALSE, top_x, bM, eigenvalues);
+                       eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);
 
     return 0;
 }

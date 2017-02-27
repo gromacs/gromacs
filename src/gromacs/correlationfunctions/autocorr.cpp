@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -536,7 +536,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
                      int eFitFn)
 {
-    FILE       *fp, *gp = NULL;
+    FILE       *fp, *gp = nullptr;
     int         i;
     real       *csum;
     real       *ctmp, *fit;
@@ -621,8 +621,8 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
     }
     else
     {
-        fit = NULL;
-        fp  = NULL;
+        fit = nullptr;
+        fp  = nullptr;
     }
     if (bAver)
     {
@@ -638,12 +638,12 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
 
         if (eFitFn != effnNONE)
         {
-            fit_acf(nout, eFitFn, oenv, fn != NULL, tbeginfit, tendfit, dt, c1[0], fit);
+            fit_acf(nout, eFitFn, oenv, fn != nullptr, tbeginfit, tendfit, dt, c1[0], fit);
             sum = print_and_integrate(fp, nout, dt, c1[0], fit, 1);
         }
         else
         {
-            sum = print_and_integrate(fp, nout, dt, c1[0], NULL, 1);
+            sum = print_and_integrate(fp, nout, dt, c1[0], nullptr, 1);
         }
         if (bVerbose)
         {
@@ -666,12 +666,12 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
             }
             if (eFitFn != effnNONE)
             {
-                fit_acf(nout, eFitFn, oenv, fn != NULL, tbeginfit, tendfit, dt, c1[i], fit);
+                fit_acf(nout, eFitFn, oenv, fn != nullptr, tbeginfit, tendfit, dt, c1[i], fit);
                 sum = print_and_integrate(fp, nout, dt, c1[i], fit, 1);
             }
             else
             {
-                sum = print_and_integrate(fp, nout, dt, c1[i], NULL, 1);
+                sum = print_and_integrate(fp, nout, dt, c1[i], nullptr, 1);
                 if (debug)
                 {
                     fprintf(debug,
@@ -707,7 +707,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
 }
 
 /*! \brief Legend for selecting Legendre polynomials. */
-static const char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
+static const char *Leg[]   = { nullptr, "0", "1", "2", "3", nullptr };
 
 t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
 {

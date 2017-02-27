@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,15 +119,15 @@ void init_plist(t_params plist[])
     {
         plist[i].nr    = 0;
         plist[i].maxnr = 0;
-        plist[i].param = NULL;
+        plist[i].param = nullptr;
 
         /* CMAP */
         plist[i].ncmap        = 0;
-        plist[i].cmap         = NULL;
+        plist[i].cmap         = nullptr;
         plist[i].grid_spacing = 0;
         plist[i].nc           = 0;
         plist[i].nct          = 0;
-        plist[i].cmap_types   = NULL;
+        plist[i].cmap_types   = nullptr;
     }
 }
 
@@ -459,7 +459,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
         {
             ri = at->atom[i].resind;
             if ((i == 0 || ri != at->atom[i-1].resind) &&
-                at->resinfo[ri].rtp != NULL)
+                at->resinfo[ri].rtp != nullptr)
             {
                 qres = get_residue_charge(at, i);
                 fprintf(out, "; residue %3d %-3s rtp %-4s q ",
@@ -477,7 +477,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                 fprintf(out, "\n");
             }
             tpA = at->atom[i].type;
-            if ((tpnmA = get_atomtype_name(tpA, atype)) == NULL)
+            if ((tpnmA = get_atomtype_name(tpA, atype)) == nullptr)
             {
                 gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
             }
@@ -496,7 +496,7 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
             if (PERTURBED(at->atom[i]))
             {
                 tpB = at->atom[i].typeB;
-                if ((tpnmB = get_atomtype_name(tpB, atype)) == NULL)
+                if ((tpnmB = get_atomtype_name(tpB, atype)) == nullptr)
                 {
                     gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
                 }

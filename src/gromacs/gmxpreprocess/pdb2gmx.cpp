@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
@@ -277,7 +276,7 @@ static char *search_resrename(int nrr, rtprename_t *rr,
     char *nn;
     int   i;
 
-    nn = NULL;
+    nn = nullptr;
 
     i = 0;
     while (i < nrr && ((!bCompareFFRTPname && strcmp(name, rr[i].gmx)  != 0) ||
@@ -327,7 +326,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, int *r_start, int *r_end
     char    *nn;
     gmx_bool bFFRTPTERRNM;
 
-    bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == NULL);
+    bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
 
     for (r = 0; r < pdba->nres; r++)
     {
@@ -350,7 +349,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, int *r_start, int *r_end
 
         nn = search_resrename(nrr, rr, *pdba->resinfo[r].rtp, bStart, bEnd, FALSE);
 
-        if (bFFRTPTERRNM && nn == NULL && (bStart || bEnd))
+        if (bFFRTPTERRNM && nn == nullptr && (bStart || bEnd))
         {
             /* This is a terminal residue, but the residue name,
              * currently stored in .rtp, is not a standard residue name,
@@ -361,7 +360,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, int *r_start, int *r_end
                                   *pdba->resinfo[r].rtp, bStart, bEnd, TRUE);
         }
 
-        if (nn != NULL && strcmp(*pdba->resinfo[r].rtp, nn) != 0)
+        if (nn != nullptr && strcmp(*pdba->resinfo[r].rtp, nn) != 0)
         {
             if (bVerbose)
             {
@@ -379,7 +378,7 @@ static void pdbres_to_gmxrtp(t_atoms *pdba)
 
     for (i = 0; (i < pdba->nres); i++)
     {
-        if (pdba->resinfo[i].rtp == NULL)
+        if (pdba->resinfo[i].rtp == nullptr)
         {
             pdba->resinfo[i].rtp = pdba->resinfo[i].name;
         }
@@ -396,7 +395,7 @@ static void rename_pdbres(t_atoms *pdba, const char *oldnm, const char *newnm,
     {
         resnm = *pdba->resinfo[i].name;
         if ((bFullCompare && (gmx_strcasecmp(resnm, oldnm) == 0)) ||
-            (!bFullCompare && strstr(resnm, oldnm) != NULL))
+            (!bFullCompare && strstr(resnm, oldnm) != nullptr))
         {
             /* Rename the residue name (not the rtp name) */
             pdba->resinfo[i].name = put_symtab(symtab, newnm);
@@ -415,7 +414,7 @@ static void rename_bb(t_atoms *pdba, const char *oldnm, const char *newnm,
         /* We have not set the rtp name yes, use the residue name */
         bbnm = *pdba->resinfo[i].name;
         if ((bFullCompare && (gmx_strcasecmp(bbnm, oldnm) == 0)) ||
-            (!bFullCompare && strstr(bbnm, oldnm) != NULL))
+            (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
         {
             /* Change the rtp builing block name */
             pdba->resinfo[i].rtp = put_symtab(symtab, newnm);
@@ -438,7 +437,7 @@ static void rename_bbint(t_atoms *pdba, const char *oldnm,
         /* We have not set the rtp name yes, use the residue name */
         bbnm = *pdba->resinfo[i].name;
         if ((bFullCompare && (strcmp(bbnm, oldnm) == 0)) ||
-            (!bFullCompare && strstr(bbnm, oldnm) != NULL))
+            (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
         {
             ptr                  = gettp(i, nrr, rr);
             pdba->resinfo[i].rtp = put_symtab(symtab, ptr);
@@ -539,13 +538,13 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     printf("Reading %s...\n", inf);
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(inf, top, ePBC, x, NULL, box, FALSE);
+    read_tps_conf(inf, top, ePBC, x, nullptr, box, FALSE);
     strncpy(title, *top->name, STRLEN);
     title[STRLEN-1] = '\0';
     *atoms          = top->atoms;
     sfree(top);
     natom = atoms->nr;
-    if (atoms->pdbinfo == NULL)
+    if (atoms->pdbinfo == nullptr)
     {
         snew(atoms->pdbinfo, atoms->nr);
     }
@@ -583,8 +582,8 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     rename_pdbres(atoms, "SOL", watres, FALSE, symtab);
     rename_pdbres(atoms, "WAT", watres, FALSE, symtab);
 
-    rename_atoms("xlateat.dat", NULL,
-                 atoms, symtab, NULL, TRUE, rt, TRUE, bVerbose);
+    rename_atoms("xlateat.dat", nullptr,
+                 atoms, symtab, nullptr, TRUE, rt, TRUE, bVerbose);
 
     if (natom == 0)
     {
@@ -593,7 +592,7 @@ static int read_pdball(const char *inf, const char *outf, char *title,
 
     if (outf)
     {
-        write_sto_conf(outf, title, atoms, *x, NULL, *ePBC, box);
+        write_sto_conf(outf, title, atoms, *x, nullptr, *ePBC, box);
     }
 
     return natom;
@@ -717,7 +716,7 @@ static void sort_pdbatoms(t_restp restp[],
 
     pdba   = *pdbaptr;
     natoms = pdba->nr;
-    pdbnew = NULL;
+    pdbnew = nullptr;
     snew(xnew, 1);
     snew(pdbi, natoms);
 
@@ -1010,9 +1009,9 @@ modify_chain_numbers(t_atoms *       pdba,
     old_prev_chainnum = -1;
     new_chainnum      = -1;
 
-    this_atomname       = NULL;
+    this_atomname       = nullptr;
     this_atomnum        = -1;
-    this_resname        = NULL;
+    this_resname        = nullptr;
     this_resnum         = -1;
     this_chainid        = '?';
 
@@ -1029,7 +1028,7 @@ modify_chain_numbers(t_atoms *       pdba,
         prev_chainid       = this_chainid;
 
         this_atomname      = *(pdba->atomname[i]);
-        this_atomnum       = (pdba->pdbinfo != NULL) ? pdba->pdbinfo[i].atomnr : i+1;
+        this_atomnum       = (pdba->pdbinfo != nullptr) ? pdba->pdbinfo[i].atomnr : i+1;
         this_resname       = *ri->name;
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
@@ -1073,7 +1072,7 @@ modify_chain_numbers(t_atoms *       pdba,
                                prev_resname, prev_resnum, prev_chainid, prev_atomnum, prev_atomname,
                                this_resname, this_resnum, this_chainid, this_atomnum, this_atomname);
 
-                        if (NULL == fgets(select, STRLEN-1, stdin))
+                        if (nullptr == fgets(select, STRLEN-1, stdin))
                         {
                             gmx_fatal(FARGS, "Error reading from stdin");
                         }
@@ -1234,7 +1233,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     };
 
 
-    FILE             *fp, *top_file, *top_file2, *itp_file = NULL;
+    FILE             *fp, *top_file, *top_file2, *itp_file = nullptr;
     int               natom, nres;
     t_atoms           pdba_all, *pdba;
     t_atoms          *atoms;
@@ -1270,7 +1269,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     int               nrrn;
     char            **rrn;
     int               nrtprename;
-    rtprename_t      *rtprename = NULL;
+    rtprename_t      *rtprename = nullptr;
     int               nah, nNtdb, nCtdb, ntdblist;
     t_hackblock      *ntdb, *ctdb, **tdblist;
     int               nssbonds;
@@ -1306,7 +1305,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     t_filenm          fnm[] = {
         { efSTX, "-f", "eiwit.pdb", ffREAD  },
         { efSTO, "-o", "conf",      ffWRITE },
-        { efTOP, NULL, NULL,        ffWRITE },
+        { efTOP, nullptr, nullptr,        ffWRITE },
         { efITP, "-i", "posre",     ffWRITE },
         { efNDX, "-n", "clean",     ffOPTWR },
         { efSTO, "-q", "clean.pdb", ffOPTWR }
@@ -1325,10 +1324,10 @@ int gmx_pdb2gmx(int argc, char *argv[])
     static gmx_bool    bRenumRes      = FALSE, bRTPresname = FALSE;
     static real        angle          = 135.0, distance = 0.3, posre_fc = 1000;
     static real        long_bond_dist = 0.25, short_bond_dist = 0.05;
-    static const char *vsitestr[]     = { NULL, "none", "hydrogens", "aromatics", NULL };
-    static const char *watstr[]       = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
-    static const char *chainsep[]     = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive", NULL };
-    static const char *merge[]        = {NULL, "no", "all", "interactive", NULL };
+    static const char *vsitestr[]     = { nullptr, "none", "hydrogens", "aromatics", nullptr };
+    static const char *watstr[]       = { nullptr, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", nullptr };
+    static const char *chainsep[]     = { nullptr, "id_or_ter", "id_and_ter", "ter", "id", "interactive", nullptr };
+    static const char *merge[]        = {nullptr, "no", "all", "interactive", nullptr };
     static const char *ff             = "select";
 
     t_pargs            pa[] = {
@@ -1399,13 +1398,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
 #define NPARGS asize(pa)
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
+    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
               forcefield, sizeof(forcefield),
               ffdir, sizeof(ffdir));
 
@@ -1482,7 +1481,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     nrrn = fflib_search_file_end(ffdir, ".r2b", FALSE, &rrn);
 
     nrtprename = 0;
-    rtprename  = NULL;
+    rtprename  = nullptr;
     for (i = 0; i < nrrn; i++)
     {
         fp = fflib_open(rrn[i]);
@@ -1508,13 +1507,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
     }
 
     clear_mat(box);
-    if (watermodel != NULL && (strstr(watermodel, "4p") ||
-                               strstr(watermodel, "4P")))
+    if (watermodel != nullptr && (strstr(watermodel, "4p") ||
+                                  strstr(watermodel, "4P")))
     {
         watres = "HO4";
     }
-    else if (watermodel != NULL && (strstr(watermodel, "5p") ||
-                                    strstr(watermodel, "5P")))
+    else if (watermodel != nullptr && (strstr(watermodel, "5p") ||
+                                       strstr(watermodel, "5P")))
     {
         watres = "HO5";
     }
@@ -1540,9 +1539,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     nchainmerges        = 0;
 
-    this_atomname       = NULL;
+    this_atomname       = nullptr;
     this_atomnum        = -1;
-    this_resname        = NULL;
+    this_resname        = nullptr;
     this_resnum         = -1;
     this_chainid        = '?';
     this_chainnumber    = -1;
@@ -1573,7 +1572,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
 
         this_atomname      = *pdba_all.atomname[i];
-        this_atomnum       = (pdba_all.pdbinfo != NULL) ? pdba_all.pdbinfo[i].atomnr : i+1;
+        this_atomnum       = (pdba_all.pdbinfo != nullptr) ? pdba_all.pdbinfo[i].atomnr : i+1;
         this_resname       = *ri->name;
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
@@ -1594,7 +1593,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                            prev_resname, prev_resnum, prev_chainid, prev_atomnum, prev_atomname,
                            this_resname, this_resnum, this_chainid, this_atomnum, this_atomname);
 
-                    if (NULL == fgets(select, STRLEN-1, stdin))
+                    if (nullptr == fgets(select, STRLEN-1, stdin))
                     {
                         gmx_fatal(FARGS, "Error reading from stdin");
                     }
@@ -1764,7 +1763,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     printf("Reading residue database... (%s)\n", forcefield);
     nrtpf = fflib_search_file_end(ffdir, ".rtp", TRUE, &rtpf);
     nrtp  = 0;
-    restp = NULL;
+    restp = nullptr;
     for (i = 0; i < nrtpf; i++)
     {
         read_resall(rtpf[i], &nrtp, &restp, atype, &symtab, FALSE);
@@ -1793,8 +1792,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     nincl = 0;
     nmol  = 0;
-    incls = NULL;
-    mols  = NULL;
+    incls = nullptr;
+    mols  = nullptr;
     for (chain = 0; (chain < nch); chain++)
     {
         cc = &(chains[chain]);
@@ -1859,7 +1858,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             {
                 sprintf(fn, "chain_%c%d.pdb", cc->chainid, cc->chainnum);
             }
-            write_sto_conf(fn, title, pdba, x, NULL, ePBC, box);
+            write_sto_conf(fn, title, pdba, x, nullptr, ePBC, box);
         }
 
 
@@ -1882,7 +1881,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 {
                     printf("No suitable end (N or 5') terminus found in database - assuming this residue\n"
                            "is already in a terminus-specific form and skipping terminus selection.\n");
-                    cc->ntdb[i] = NULL;
+                    cc->ntdb[i] = nullptr;
                 }
                 else
                 {
@@ -1907,7 +1906,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             }
             else
             {
-                cc->ntdb[i] = NULL;
+                cc->ntdb[i] = nullptr;
             }
 
             /* And the C terminus */
@@ -1921,7 +1920,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 {
                     printf("No suitable end (C or 3') terminus found in database - assuming this residue\n"
                            "is already in a terminus-specific form and skipping terminus selection.\n");
-                    cc->ctdb[i] = NULL;
+                    cc->ctdb[i] = nullptr;
                 }
                 else
                 {
@@ -1945,7 +1944,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             }
             else
             {
-                cc->ctdb[i] = NULL;
+                cc->ctdb[i] = nullptr;
             }
         }
         /* lookup hackblocks and rtp for all residues */
@@ -1957,7 +1956,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
            requires some re-thinking of code in gen_vsite.c, which I won't
            do now :( AF 26-7-99 */
 
-        rename_atoms(NULL, ffdir,
+        rename_atoms(nullptr, ffdir,
                      pdba, &symtab, restp_chain, FALSE, rt, FALSE, bVerbose);
 
         match_atomnames_with_rtp(restp_chain, hb_chain, pdba, x, bVerbose);
@@ -1996,12 +1995,12 @@ int gmx_pdb2gmx(int argc, char *argv[])
         printf("Generating any missing hydrogen atoms and/or adding termini.\n");
         natom = add_h(&pdba, &x, nah, ah,
                       cc->nterpairs, cc->ntdb, cc->ctdb, cc->r_start, cc->r_end, bAllowMissing,
-                      NULL, NULL, TRUE, FALSE);
+                      nullptr, nullptr, TRUE, FALSE);
         printf("Now there are %d residues with %d atoms\n",
                pdba->nres, pdba->nr);
         if (debug)
         {
-            write_pdbfile(debug, title, pdba, x, ePBC, box, ' ', 0, NULL, TRUE);
+            write_pdbfile(debug, title, pdba, x, ePBC, box, ' ', 0, nullptr, TRUE);
         }
 
         if (debug)
@@ -2113,7 +2112,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
         if (cc->bAllWat)
         {
-            top_file2 = NULL;
+            top_file2 = nullptr;
         }
         else
         if (bITP)
@@ -2158,11 +2157,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
             {
                 sprintf(fn, "chain_%c.pdb", cc->chainid);
             }
-            write_sto_conf(fn, "", pdba, x, NULL, ePBC, box);
+            write_sto_conf(fn, "", pdba, x, nullptr, ePBC, box);
         }
     }
 
-    if (watermodel == NULL)
+    if (watermodel == nullptr)
     {
         for (chain = 0; chain < nch; chain++)
         {
@@ -2246,12 +2245,12 @@ int gmx_pdb2gmx(int argc, char *argv[])
     {
         make_new_box(atoms->nr, x, box, box_space, FALSE);
     }
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), title, atoms, x, NULL, ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), title, atoms, x, nullptr, ePBC, box);
 
     printf("\t\t--------- PLEASE NOTE ------------\n");
     printf("You have successfully generated a topology from: %s.\n",
            opt2fn("-f", NFILE, fnm));
-    if (watermodel != NULL)
+    if (watermodel != nullptr)
     {
         printf("The %s force field and the %s water model are used.\n",
                ffname, watermodel);

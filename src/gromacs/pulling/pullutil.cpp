@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ static void pull_reduce_real(t_commrec   *cr,
                              int          n,
                              real        *data)
 {
-    if (cr != NULL && PAR(cr))
+    if (cr != nullptr && PAR(cr))
     {
         if (comm->bParticipateAll)
         {
@@ -105,7 +105,7 @@ static void pull_reduce_double(t_commrec   *cr,
                                int          n,
                                double      *data)
 {
-    if (cr != NULL && PAR(cr))
+    if (cr != nullptr && PAR(cr))
     {
         if (comm->bParticipateAll)
         {
@@ -146,7 +146,7 @@ static void pull_set_pbcatom(t_commrec *cr, pull_group_work_t *pgrp,
 {
     int a;
 
-    if (cr != NULL && DOMAINDECOMP(cr))
+    if (cr != nullptr && DOMAINDECOMP(cr))
     {
         if (ga2la_get_home(cr->dd->ga2la, pgrp->params.pbcatom, &a))
         {
@@ -202,11 +202,11 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
     rvec            g_x, dx, dir;
     double          inv_cyl_r2;
     pull_comm_t    *comm;
-    gmx_ga2la_t    *ga2la = NULL;
+    gmx_ga2la_t    *ga2la = nullptr;
 
     comm = &pull->comm;
 
-    if (comm->dbuf_cyl == NULL)
+    if (comm->dbuf_cyl == nullptr)
     {
         snew(comm->dbuf_cyl, pull->ncoord*stride);
     }
@@ -346,7 +346,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
         comm->dbuf_cyl[c*stride+8] = radf_fac1[ZZ];
     }
 
-    if (cr != NULL && PAR(cr))
+    if (cr != nullptr && PAR(cr))
     {
         /* Sum the contributions over the ranks */
         pull_reduce_double(cr, comm, pull->ncoord*stride, comm->dbuf_cyl);
@@ -439,7 +439,7 @@ static void sum_com_part(const pull_group_work_t *pgrp,
     {
         int  ii = pgrp->ind_loc[i];
         real wm;
-        if (pgrp->weight_loc == NULL)
+        if (pgrp->weight_loc == nullptr)
         {
             wm      = mass[ii];
             sum_wm += wm;
@@ -530,7 +530,7 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
         sum_csm += static_cast<double>(cw*sw*m);
         sum_ssm += static_cast<double>(sw*sw*m);
 
-        if (xp != NULL)
+        if (xp != nullptr)
         {
             real cw  = std::cos(xp[ii][cosdim]*twopi_box);
             real sw  = std::sin(xp[ii][cosdim]*twopi_box);
@@ -559,11 +559,11 @@ void pull_calc_coms(t_commrec *cr,
 
     comm = &pull->comm;
 
-    if (comm->rbuf == NULL)
+    if (comm->rbuf == nullptr)
     {
         snew(comm->rbuf, pull->ngroup);
     }
-    if (comm->dbuf == NULL)
+    if (comm->dbuf == nullptr)
     {
         snew(comm->dbuf, 3*pull->ngroup);
     }
@@ -572,7 +572,7 @@ void pull_calc_coms(t_commrec *cr,
     {
         pull_set_pbcatoms(cr, pull, x, comm->rbuf);
 
-        if (cr != NULL && DOMAINDECOMP(cr))
+        if (cr != nullptr && DOMAINDECOMP(cr))
         {
             /* We can keep these PBC reference coordinates fixed for nstlist
              * steps, since atoms won't jump over PBC.
@@ -672,7 +672,7 @@ void pull_calc_coms(t_commrec *cr,
                     }
                 }
 
-                if (pgrp->weight_loc == NULL)
+                if (pgrp->weight_loc == nullptr)
                 {
                     sum_com->sum_wwm = sum_com->sum_wm;
                 }

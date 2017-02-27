@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,14 +41,14 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
 
 struct gmx_edsam;
 struct gmx_gpu_info_t;
 struct gmx_groups_t;
 struct gmx_vsite_t;
-struct history_t;
+class history_t;
 struct nonbonded_verlet_t;
 struct t_blocka;
 struct t_commrec;
@@ -150,7 +150,7 @@ void reset_enerdata(gmx_enerdata_t *enerd);
 void sum_epot(gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
 
-void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *fepvals);
+void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *fepvals);
 /* Sum the free energy contributions */
 
 /* Compute the average C6 and C12 params for LJ corrections */
@@ -167,7 +167,7 @@ void do_force(FILE *log, t_commrec *cr,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
-              std::vector<real> *lambda, struct t_graph *graph,
+              gmx::ArrayRef<real> lambda, t_graph *graph,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, struct gmx_edsam *ed,

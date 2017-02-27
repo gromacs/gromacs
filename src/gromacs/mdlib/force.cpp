@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -363,7 +363,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     do_force_listed(wcycle, box, ir->fepvals, cr,
                     idef, (const rvec *) x, hist, f, fr,
                     &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                    DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr,
                     flags);
 
     where();
@@ -735,14 +735,14 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *fepvals)
 {
-    int    i, j, index;
+    int    index;
     double dlam;
 
     enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
     enerd->term[F_DVDL]       = 0.0;
-    for (i = 0; i < efptNR; i++)
+    for (int i = 0; i < efptNR; i++)
     {
         if (fepvals->separate_dvdl[i])
         {
@@ -803,7 +803,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *
     }
     enerd->term[F_DVDL_CONSTR] = 0;
 
-    for (i = 0; i < fepvals->n_lambda; i++)
+    for (int i = 0; i < fepvals->n_lambda; i++)
     {
         /* note we are iterating over fepvals here!
            For the current lam, dlam = 0 automatically,
@@ -814,10 +814,10 @@ void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *
            current lambda, because the contributions to the current
            lambda are automatically zeroed */
 
-        for (j = 0; j < efptNR; j++)
+        for (size_t j = 0; j < lambda.size(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            dlam = (fepvals->all_lambda[j][i] - (*lambda)[j]);
+            dlam = (fepvals->all_lambda[j][i] - lambda[j]);
             enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
             if (debug)
             {

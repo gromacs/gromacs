@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/warninp.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -63,10 +62,8 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     FILE      *in;
     char       buf[STRLEN], lbuf[STRLEN], rbuf[STRLEN], warn_buf[STRLEN];
     char      *ptr, *cptr;
-    t_inpfile *inp = NULL;
+    t_inpfile *inp = nullptr;
     int        nin, lc, i, j, k;
-    /* setting cppopts from command-line options would be cooler */
-    gmx_bool   allow_override = FALSE;
 
 
     if (debug)
@@ -88,7 +85,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
             // strchr, etc. rather than re-inventing wheels.
 
             /* Strip comment */
-            if ((cptr = std::strchr(buf, COMMENTSIGN)) != NULL)
+            if ((cptr = std::strchr(buf, COMMENTSIGN)) != nullptr)
             {
                 *cptr = '\0';
             }
@@ -141,71 +138,26 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                     }
                     else
                     {
-                        /* Now finally something sensible */
-                        int found_index;
+                        /* Now finally something sensible; check for duplicates */
+                        int found_index = search_einp(nin, inp, lbuf);
 
-                        /* first check whether we hit the 'multiple_entries' option */
-                        if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptName], lbuf) == 0)
+                        if (found_index == -1)
                         {
-                            /* we now check whether to allow overrides from here or not */
-                            if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptNo], rbuf) == 0)
-                            {
-                                allow_override = FALSE;
-                            }
-                            else if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptLast], rbuf) == 0)
-                            {
-                                allow_override = TRUE;
-                            }
-                            else
-                            {
-                                sprintf(warn_buf,
-                                        "Parameter \"%s\" should either be %s or %s\n",
-                                        lbuf,
-                                        eMultentOpt_names[eMultentOptNo],
-                                        eMultentOpt_names[eMultentOptLast]);
-                                warning_error(wi, warn_buf);
-                            }
+                            /* add a new item */
+                            srenew(inp, ++nin);
+                            inp[nin-1].inp_count  = 1;
+                            inp[nin-1].count      = 0;
+                            inp[nin-1].bObsolete  = FALSE;
+                            inp[nin-1].bSet       = FALSE;
+                            inp[nin-1].name       = gmx_strdup(lbuf);
+                            inp[nin-1].value      = gmx_strdup(rbuf);
                         }
                         else
                         {
-                            /* it is a regular option; check for duplicates */
-                            found_index = search_einp(nin, inp, lbuf);
-
-                            if (found_index == -1)
-                            {
-                                /* add a new item */
-                                srenew(inp, ++nin);
-                                inp[nin-1].inp_count  = 1;
-                                inp[nin-1].count      = 0;
-                                inp[nin-1].bObsolete  = FALSE;
-                                inp[nin-1].bSet       = FALSE;
-                                inp[nin-1].name       = gmx_strdup(lbuf);
-                                inp[nin-1].value      = gmx_strdup(rbuf);
-                            }
-                            else
-                            {
-                                if (!allow_override)
-                                {
-                                    sprintf(warn_buf,
-                                            "Parameter \"%s\" doubly defined (and multiple assignments not allowed)\n",
-                                            lbuf);
-                                    warning_error(wi, warn_buf);
-                                }
-                                else
-                                {
-                                    /* override */
-                                    if (!inp)
-                                    {
-                                        gmx_fatal(FARGS, "Internal inconsistency; inp[] base pointer is NULL");
-                                    }
-                                    sfree(inp[found_index].value);
-                                    inp[found_index].value = gmx_strdup(rbuf);
-                                    sprintf(warn_buf,
-                                            "Overriding existing parameter \"%s\" with value \"%s\"\n",
-                                            lbuf, rbuf);
-                                    warning_note(wi, warn_buf);
-                                }
-                            }
+                            sprintf(warn_buf,
+                                    "Parameter \"%s\" doubly defined\n",
+                                    lbuf);
+                            warning_error(wi, warn_buf);
                         }
                     }
                 }
@@ -344,7 +296,7 @@ int search_einp(int ninp, const t_inpfile *inp, const char *name)
 {
     int i;
 
-    if (inp == NULL)
+    if (inp == nullptr)
     {
         return -1;
     }
@@ -508,7 +460,7 @@ const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *d
         }
         else
         {
-            (*inp)[(*ninp)-1].value = NULL;
+            (*inp)[(*ninp)-1].value = nullptr;
         }
 
         return def;
@@ -536,7 +488,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
         return 0;
     }
 
-    for (i = 0; (defs[i] != NULL); i++)
+    for (i = 0; (defs[i] != nullptr); i++)
     {
         if (gmx_strcasecmp_min(defs[i], (*inp)[ii].value) == 0)
         {
@@ -544,7 +496,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
         }
     }
 
-    if (defs[i] == NULL)
+    if (defs[i] == nullptr)
     {
         n += sprintf(buf, "Invalid enum '%s' for variable %s, using '%s'\n",
                      (*inp)[ii].value, name, defs[0]);
@@ -555,7 +507,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
             n += sprintf(buf+n, " '%s'", defs[j]);
             j++;
         }
-        if (wi != NULL)
+        if (wi != nullptr)
         {
             warning_error(wi, buf);
         }
@@ -574,5 +526,5 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 
 int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs)
 {
-    return get_eeenum(ninp, inp, name, defs, NULL);
+    return get_eeenum(ninp, inp, name, defs, nullptr);
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,8 +92,8 @@ int gmx_nmens(int argc, char *argv[])
     t_atoms            *atoms;
     rvec               *xtop, *xref, *xav, *xout1, *xout2;
     gmx_bool            bDMR, bDMA, bFit;
-    int                 nvec, *eignr = NULL;
-    rvec              **eigvec = NULL;
+    int                 nvec, *eignr = nullptr;
+    rvec              **eigvec = nullptr;
     matrix              box;
     real               *eigval, *invsqrtm, t, disp;
     int                 natoms;
@@ -113,14 +113,14 @@ int gmx_nmens(int argc, char *argv[])
     t_filenm fnm[] = {
         { efTRN, "-v",    "eigenvec",    ffREAD  },
         { efXVG, "-e",    "eigenval",    ffREAD  },
-        { efTPS, NULL,    NULL,          ffREAD },
-        { efNDX, NULL,    NULL,          ffOPTRD },
+        { efTPS, nullptr,    nullptr,          ffREAD },
+        { efNDX, nullptr,    nullptr,          ffOPTRD },
         { efTRO, "-o",    "ensemble",    ffWRITE }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -130,7 +130,7 @@ int gmx_nmens(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bDMA);
     atoms = &top.atoms;
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);
@@ -176,7 +176,7 @@ int gmx_nmens(int argc, char *argv[])
     {
         printf("Select eigenvectors for output, end your selection with 0\n");
         nout = -1;
-        iout = NULL;
+        iout = nullptr;
         do
         {
             nout++;
@@ -268,7 +268,7 @@ int gmx_nmens(int argc, char *argv[])
             copy_rvec(xout1[i], xout2[index[i]]);
         }
         t = s+1;
-        write_trx(out, natoms, index, atoms, 0, t, box, xout2, NULL, NULL);
+        write_trx(out, natoms, index, atoms, 0, t, box, xout2, nullptr, nullptr);
         fprintf(stderr, "\rGenerated %d structures", s+1);
         fflush(stderr);
     }

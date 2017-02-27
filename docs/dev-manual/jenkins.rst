@@ -113,7 +113,8 @@ On-demand builds
 ----------------
 
 These builds can be triggered on request for certain changes in Gerrit, or
-manually from Jenkins.
+manually from Jenkins.  See :ref:`releng-triggering-builds` for details on
+how to trigger these.
 
 Coverage
 ^^^^^^^^
@@ -151,3 +152,9 @@ The exact build sequence is desribed in :ref:`releng-workflow-release`.
 The build uses the source tarball build as a subbuild, and parts of the build
 are executed using :file:`admin/builds/gromacs.py` and
 :file:`admin/builds/documentation.py`.
+
+:file:`admin/builds/get-version-info.py` is used for getting the version
+information from the source tree as part of this workflow.
+
+:file:`admin/builds/update-regtest-hash.py` has logic to update the
+regressiontests tarball MD5 sum for the released tarball automatically.

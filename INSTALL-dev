@@ -1,0 +1,16 @@
+The GROMACS developers generally suggest you install GROMACS for
+production scientific use only from a tarball from an official
+source-code release.
+
+However, if you have a special need and wish to build and/or install a
+version from a git repository, please see
+docs/install-guide/index.rst in this repository, or (if applicable)
+the latest master branch documentation found via
+http://manual.gromacs.org/documentation/.
+
+Note for GROMACS developers
+---------------------------
+This file is excluded from the GROMACS source packages made with CPack,
+and not included into binary packages made with CPack. Source packages
+do include an INSTALL file containing the installation instructions, which
+has been compiled into plain text by Sphinx from docs/install-guide.

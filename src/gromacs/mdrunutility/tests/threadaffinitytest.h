@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,9 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/loggertest.h"
 
 struct t_commrec;
 
@@ -61,12 +64,15 @@ class MockThreadAffinityAccess : public IThreadAffinityAccess
         ~MockThreadAffinityAccess();
 
         void setSupported(bool supported) { supported_ = supported; }
+        void setPhysicalNodeId(int nodeId) { physicalNodeId_ = nodeId; }
 
         virtual bool isThreadAffinitySupported() const { return supported_; }
+        virtual int physicalNodeId() const { return physicalNodeId_; }
         MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
 
     private:
         bool supported_;
+        int  physicalNodeId_;
 };
 
 class ThreadAffinityTestHelper
@@ -89,6 +95,11 @@ class ThreadAffinityTestHelper
             hwOpt_->core_pinning_stride = stride;
         }
 
+        void setPhysicalNodeId(int nodeId)
+        {
+            affinityAccess_.setPhysicalNodeId(nodeId);
+        }
+
         void setLogicalProcessorCount(int logicalProcessorCount);
 
         void expectAffinitySet(int core)
@@ -109,14 +120,53 @@ class ThreadAffinityTestHelper
                 .WillOnce(Return(false));
         }
 
+        void expectWarningMatchingRegex(const char *re)
+        {
+            expectWarningMatchingRegexIf(re, true);
+        }
+        void expectWarningMatchingRegexIf(const char *re, bool condition)
+        {
+            expectLogMessageMatchingRegexIf(MDLogger::LogLevel::Warning, re, condition);
+        }
+        void expectInfoMatchingRegex(const char *re)
+        {
+            expectInfoMatchingRegexIf(re, true);
+        }
+        void expectInfoMatchingRegexIf(const char *re, bool condition)
+        {
+            expectLogMessageMatchingRegexIf(MDLogger::LogLevel::Info, re, condition);
+        }
+        void expectGenericFailureMessage()
+        {
+            expectGenericFailureMessageIf(true);
+        }
+        void expectGenericFailureMessageIf(bool condition)
+        {
+            expectWarningMatchingRegexIf("NOTE: Thread affinity setting failed.", condition);
+        }
+        void expectPinningMessage(bool userSpecifiedStride, int stride)
+        {
+            std::string pattern = formatString("Pinning threads .* %s.* stride of %d",
+                                               userSpecifiedStride ? "user" : "auto",
+                                               stride);
+            expectInfoMatchingRegex(pattern.c_str());
+        }
+        void expectLogMessageMatchingRegexIf(MDLogger::LogLevel level,
+                                             const char *re, bool condition)
+        {
+            if (condition)
+            {
+                logHelper_.expectEntryMatchingRegex(level, re);
+            }
+        }
+
         void setAffinity(int nthread_local)
         {
             if (hwTop_ == nullptr)
             {
                 setLogicalProcessorCount(1);
             }
-            MDLogger mdlog;
-            gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_, *hwTop_,
+            gmx_set_thread_affinity(logHelper_.logger(), cr_, hwOpt_, *hwTop_,
                                     nthread_local, &affinityAccess_);
         }
 
@@ -125,6 +175,7 @@ class ThreadAffinityTestHelper
         gmx_hw_opt_t                      *hwOpt_;
         std::unique_ptr<HardwareTopology>  hwTop_;
         MockThreadAffinityAccess           affinityAccess_;
+        LoggerTestHelper                   logHelper_;
 };
 
 } // namespace test

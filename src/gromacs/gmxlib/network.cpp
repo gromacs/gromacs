@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,8 +85,8 @@ t_commrec *init_commrec()
 #if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
 #else
-    cr->mpi_comm_mysim   = NULL;
-    cr->mpi_comm_mygroup = NULL;
+    cr->mpi_comm_mysim   = nullptr;
+    cr->mpi_comm_mygroup = nullptr;
     cr->nnodes           = 1;
     cr->sim_nodeid       = 0;
     cr->nodeid           = cr->sim_nodeid;
@@ -113,7 +113,7 @@ t_commrec *init_commrec()
 
 static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 {
-    if (NULL != buf)
+    if (nullptr != buf)
     {
         sfree(buf->ibuf);
         sfree(buf->libuf);
@@ -125,12 +125,12 @@ static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 
 void done_commrec(t_commrec *cr)
 {
-    if (NULL != cr->dd)
+    if (nullptr != cr->dd)
     {
         // TODO: implement
         // done_domdec(cr->dd);
     }
-    if (NULL != cr->ms)
+    if (nullptr != cr->ms)
     {
         done_mpi_in_place_buf(cr->ms->mpb);
         sfree(cr->ms);
@@ -158,7 +158,7 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 
     return cr;
 #else
-    return NULL;
+    return nullptr;
 #endif
 }
 
@@ -219,7 +219,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
                 ng, ni);
     }
 
-    if (getenv("GMX_NO_NODECOMM") == NULL &&
+    if (getenv("GMX_NO_NODECOMM") == nullptr &&
         ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
     {
         nc->bUse = TRUE;
@@ -386,7 +386,7 @@ void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unus
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_DOUBLE, 0, cr->nc.comm_intra);
     }
@@ -449,7 +449,7 @@ void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unuse
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_FLOAT, 0, cr->nc.comm_intra);
     }
@@ -509,7 +509,7 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_INT, 0, cr->nc.comm_intra);
     }
@@ -569,7 +569,7 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_INT64_T, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_INT64_T, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_INT64_T, 0, cr->nc.comm_intra);
     }
@@ -732,7 +732,7 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
                           t_commrec *cr)
 {
-    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : NULL;
+    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : nullptr;
 }
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,

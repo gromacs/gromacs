@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,8 +105,8 @@ gmx_cycles_calibrate(double sampletime)
      *
      * We call gettimeofday an extra time at the start to avoid cache misses.
      */
-    gettimeofday(&t1, NULL);
-    gettimeofday(&t1, NULL);
+    gettimeofday(&t1, nullptr);
+    gettimeofday(&t1, nullptr);
     c1 = gmx_cycles_read();
 
     do
@@ -120,7 +120,7 @@ gmx_cycles_calibrate(double sampletime)
             d = d/(1.0+static_cast<double>(i));
         }
         /* Read the time again */
-        gettimeofday(&t2, NULL);
+        gettimeofday(&t2, nullptr);
         c2       = gmx_cycles_read();
         timediff = static_cast<double>(t2.tv_sec-t1.tv_sec)+(t2.tv_usec-t1.tv_usec)*1e-6;
     }

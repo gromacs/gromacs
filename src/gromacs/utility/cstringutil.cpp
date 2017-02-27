@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,11 +79,11 @@ int continuing(char *s)
 char *fgets2(char *line, int n, FILE *stream)
 {
     char *c;
-    if (fgets(line, n, stream) == NULL)
+    if (fgets(line, n, stream) == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
-    if ((c = strchr(line, '\n')) != NULL)
+    if ((c = strchr(line, '\n')) != nullptr)
     {
         *c = '\0';
     }
@@ -98,7 +98,7 @@ char *fgets2(char *line, int n, FILE *stream)
             gmx_fatal(FARGS, "An input file contains a line longer than %d characters, while the buffer passed to fgets2 has size %d. The line starts with: '%20.20s'", n, n, line);
         }
     }
-    if ((c = strchr(line, '\r')) != NULL)
+    if ((c = strchr(line, '\r')) != nullptr)
     {
         *c = '\0';
     }
@@ -116,7 +116,7 @@ void strip_comment (char *line)
     }
 
     /* search for a comment mark and replace it by a zero */
-    if ((c = strchr(line, COMMENTSIGN)) != NULL)
+    if ((c = strchr(line, COMMENTSIGN)) != nullptr)
     {
         (*c) = 0;
     }
@@ -136,7 +136,7 @@ void ltrim (char *str)
 {
     int   i, c;
 
-    if (NULL == str)
+    if (nullptr == str)
     {
         return;
     }
@@ -160,7 +160,7 @@ void rtrim (char *str)
 {
     int nul;
 
-    if (NULL == str)
+    if (nullptr == str)
     {
         return;
     }
@@ -440,7 +440,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
      * the current line (where it also won't fit, but looks better)
      */
 
-    b2    = NULL;
+    b2    = nullptr;
     b2len = strlen(buf)+1+indent;
     snew(b2, b2len);
     i0 = i2 = 0;
@@ -581,14 +581,14 @@ char *gmx_step_str(gmx_int64_t i, char *buf)
 void parse_digits_from_string(const char *digitstring, int *ndigits, int **digitlist)
 {
     /* TODO use std::string, once gmx_gpu_opt_t is ready for it */
-    if (NULL == digitstring)
+    if (nullptr == digitstring)
     {
         *ndigits   = 0;
-        *digitlist = NULL;
+        *digitlist = nullptr;
         return;
     }
 
-    if (strstr(digitstring, ",") != NULL)
+    if (strstr(digitstring, ",") != nullptr)
     {
         parse_digits_from_csv_string(digitstring, ndigits, digitlist);
     }
@@ -602,10 +602,10 @@ void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int *
 {
     int i;
 
-    if (NULL == digitstring)
+    if (nullptr == digitstring)
     {
         *ndigits   = 0;
-        *digitlist = NULL;
+        *digitlist = nullptr;
         return;
     }
 
@@ -626,10 +626,10 @@ void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int *
 
 void parse_digits_from_csv_string(const char *digitstring, int *ndigits, int **digitlist)
 {
-    if (NULL == digitstring)
+    if (nullptr == digitstring)
     {
         *ndigits   = 0;
-        *digitlist = NULL;
+        *digitlist = nullptr;
         return;
     }
 
@@ -643,7 +643,7 @@ void parse_digits_from_csv_string(const char *digitstring, int *ndigits, int **d
             gmx_fatal(FARGS, "Invalid token in digit-only string: \"%s\"\n",
                       token.c_str());
         }
-        int number = static_cast<int>(str_to_int64_t(token.c_str(), NULL));
+        int number = static_cast<int>(str_to_int64_t(token.c_str(), nullptr));
         digits.push_back(number);
     }
 

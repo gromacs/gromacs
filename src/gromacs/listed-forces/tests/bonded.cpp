@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -127,8 +127,8 @@ class BondedTest : public ::testing::Test
                        const t_iparams             iparams[],
                        int                         epbc)
         {
-            real  lambda = 0;
-            real  dvdlambda;
+            real  lambda    = 0;
+            real  dvdlambda = 0;
             rvec4 f[NATOMS];
             for (int i = 0; i < NATOMS; i++)
             {
@@ -147,10 +147,10 @@ class BondedTest : public ::testing::Test
                                                                  iparams,
                                                                  x, f, fshift,
                                                                  &pbc,
-                                                                 /* const struct t_graph *g */ NULL,
+                                                                 /* const struct t_graph *g */ nullptr,
                                                                  lambda, &dvdlambda,
-                                                                 /* const struct t_mdatoms *md */ NULL,
-                                                                 /* struct t_fcdata *fcd */ NULL,
+                                                                 /* const struct t_mdatoms *md */ nullptr,
+                                                                 /* struct t_fcdata *fcd */ nullptr,
                                                                  &ddgatindex);
             checker_.checkReal(energy, interaction_function[ftype].longname);
         }
@@ -182,7 +182,7 @@ TEST_F (BondedTest, DihedralAnglePbcXy)
     testDihedralAngle(epbcXY);
 }
 
-TEST_F (BondedTest, DihedarlAnglePbcXyz)
+TEST_F (BondedTest, DihedralAnglePbcXyz)
 {
     testDihedralAngle(epbcXYZ);
 }

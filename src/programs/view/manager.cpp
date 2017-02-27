@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -229,7 +229,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     snew(man->szLab, sh.natoms);
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
-    read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, &man->top);
+    read_tpx_top(status, nullptr, man->box, &man->natom, nullptr, nullptr, &man->top);
     man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
     man->natom =
@@ -644,7 +644,7 @@ t_manager *init_man(t_x11 *x11, Window Parent,
     t_manager *man;
 
     snew(man, 1);
-    man->status = NULL;
+    man->status = nullptr;
     man->bPlus  = true;
     man->bSort  = true;
     man->oenv   = oenv;
@@ -661,7 +661,7 @@ t_manager *init_man(t_x11 *x11, Window Parent,
     man->molw = init_mw(x11, man->wd.self, 0, 0, 1, 1, WHITE, BLUE, ePBC, box);
 
     /* Title Window */
-    InitWin(&(man->title), 0, 0, 1, 1, 0, NULL);
+    InitWin(&(man->title), 0, 0, 1, 1, 0, nullptr);
     man->title.self = XCreateSimpleWindow(x11->disp, man->molw->wd.self,
                                           man->title.x, man->title.y,
                                           man->title.width, man->title.height,

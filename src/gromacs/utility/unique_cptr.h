@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,55 +32,50 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
-#include "gmxpre.h"
+/*! \libinternal \file
+ * \brief
+ * Declares gmx::unique_cptr and gmx::sfree_guard.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_UNIQUE_PTR_SFREE_H
+#define GMX_UTILITY_UNIQUE_PTR_SFREE_H
 
-#include "energyhistory.h"
-
-#include <cstring>
-
-#include <algorithm>
+#include <memory>
 
 #include "gromacs/utility/smalloc.h"
 
-static void done_delta_h_history(delta_h_history_t *dht)
+namespace gmx
 {
-    int i;
 
-    for (i = 0; i < dht->nndh; i++)
-    {
-        sfree(dht->dh[i]);
-    }
-    sfree(dht->dh);
-    sfree(dht->ndh);
+//! sfree wrapper to be used as unique_cptr deleter
+template <class T>
+inline void sfree_wrapper(T *p)
+{
+    sfree(p);
 }
 
-void init_energyhistory(energyhistory_t * enerhist)
-{
-    enerhist->nener = 0;
+//! \internal \brief wrap function into functor to be used as deleter
+template<class T, void D(T *)>
+struct functor_wrapper {
+    //! call wrapped function
+    void operator()(T* t) { D(t); }
+};
 
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
+//! unique_ptr which takes function pointer (has to return void) as template argument
+template<typename T, void D(T *) = sfree_wrapper>
+using unique_cptr                = std::unique_ptr<T, functor_wrapper<T, D> >;
 
-    enerhist->nsteps     = 0;
-    enerhist->nsum       = 0;
-    enerhist->nsteps_sim = 0;
-    enerhist->nsum_sim   = 0;
+//! Simple guard which calls sfree. See unique_cptr for details.
+typedef unique_cptr<void> sfree_guard;
 
-    enerhist->dht = NULL;
-}
 
-void done_energyhistory(energyhistory_t * enerhist)
-{
-    sfree(enerhist->ener_ave);
-    sfree(enerhist->ener_sum);
-    sfree(enerhist->ener_sum_sim);
+//! Create unique_ptr with any deleter function or lambda
+template<typename T, typename D>
+std::unique_ptr<T, D> create_unique_with_deleter(T *t, D d) { return std::unique_ptr<T, D>(t, d); }
 
-    if (enerhist->dht != NULL)
-    {
-        done_delta_h_history(enerhist->dht);
-        sfree(enerhist->dht);
-    }
-}
+}      // namespace gmx
+
+#endif

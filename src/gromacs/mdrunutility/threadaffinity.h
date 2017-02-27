@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@ class IThreadAffinityAccess
 {
     public:
         virtual bool isThreadAffinitySupported() const        = 0;
+        virtual int physicalNodeId() const                    = 0;
         virtual bool setCurrentThreadAffinityToCore(int core) = 0;
 
     protected:
@@ -71,8 +72,7 @@ class IThreadAffinityAccess
  * Sets the thread affinity using the requested setting stored in hw_opt.
  */
 void
-gmx_set_thread_affinity(FILE                        *fplog,
-                        const gmx::MDLogger         &mdlog,
+gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,

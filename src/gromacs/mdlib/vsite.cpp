@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ static void init_ilist(t_ilist *ilist)
     {
         ilist[i].nr     = 0;
         ilist[i].nalloc = 0;
-        ilist[i].iatoms = NULL;
+        ilist[i].iatoms = nullptr;
     }
 }
 
@@ -432,7 +432,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
     const t_pbc *pbc_null2;
     int         *vsite_pbc;
 
-    if (v != NULL)
+    if (v != nullptr)
     {
         inv_dt = 1.0/dt;
     }
@@ -441,10 +441,10 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
         inv_dt = 1.0;
     }
 
-    bPBCAll = (pbc_null != NULL && !vsite->bHaveChargeGroups);
+    bPBCAll = (pbc_null != nullptr && !vsite->bHaveChargeGroups);
 
-    pbc_null2 = NULL;
-    vsite_pbc = NULL;
+    pbc_null2 = nullptr;
+    vsite_pbc = nullptr;
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
         if (ilist[ftype].nr == 0)
@@ -463,7 +463,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
             {
                 pbc_null2 = pbc_null;
             }
-            else if (pbc_null != NULL)
+            else if (pbc_null != nullptr)
             {
                 vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
             }
@@ -485,7 +485,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                     pbc_atom = avsite;
                     copy_rvec(x[avsite], xpbc);
                 }
-                else if (vsite_pbc != NULL)
+                else if (vsite_pbc != nullptr)
                 {
                     pbc_atom = vsite_pbc[i/(1 + nra)];
                     if (pbc_atom > -2)
@@ -502,7 +502,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                     }
                     else
                     {
-                        pbc_null2 = NULL;
+                        pbc_null2 = nullptr;
                     }
                 }
                 else
@@ -583,7 +583,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                         rvec_add(xpbc, dx, x[avsite]);
                     }
                 }
-                if (v != NULL)
+                if (v != nullptr)
                 {
                     /* Calculate velocity of vsite... */
                     rvec vv;
@@ -624,7 +624,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     if (bDomDec)
@@ -732,9 +732,9 @@ void construct_vsites_mtop(gmx_vsite_t *vsite,
         const gmx_moltype_t  *molt = &mtop->moltype[molb->type];
         for (int mol = 0; mol < molb->nmol; mol++)
         {
-            construct_vsites(vsite, x+as, 0.0, NULL,
+            construct_vsites(vsite, x+as, 0.0, nullptr,
                              mtop->ffparams.iparams, molt->ilist,
-                             epbcNONE, TRUE, NULL, NULL);
+                             epbcNONE, TRUE, nullptr, nullptr);
             as += molt->atoms.nr;
         }
     }
@@ -1452,12 +1452,12 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
     const t_pbc *pbc_null2;
     const int   *vsite_pbc;
 
-    bPBCAll = (pbc_null != NULL && !vsite->bHaveChargeGroups);
+    bPBCAll = (pbc_null != nullptr && !vsite->bHaveChargeGroups);
 
     /* this loop goes backwards to be able to build *
      * higher type vsites from lower types         */
-    pbc_null2 = NULL;
-    vsite_pbc = NULL;
+    pbc_null2 = nullptr;
+    vsite_pbc = nullptr;
     for (int ftype = c_ftypeVsiteEnd - 1; ftype >= c_ftypeVsiteStart; ftype--)
     {
         if (ilist[ftype].nr == 0)
@@ -1476,14 +1476,14 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
             {
                 pbc_null2 = pbc_null;
             }
-            else if (pbc_null != NULL)
+            else if (pbc_null != nullptr)
             {
                 vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
             }
 
             for (int i = 0; i < nr; )
             {
-                if (vsite_pbc != NULL)
+                if (vsite_pbc != nullptr)
                 {
                     if (vsite_pbc[i/(1 + nra)] > -2)
                     {
@@ -1491,7 +1491,7 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
                     }
                     else
                     {
-                        pbc_null2 = NULL;
+                        pbc_null2 = nullptr;
                     }
                 }
 
@@ -1582,11 +1582,11 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd ? cr->dd->nc : NULL, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd ? cr->dd->nc : nullptr, FALSE, box);
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     if (DOMAINDECOMP(cr))
@@ -1628,7 +1628,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                 VsiteThread *tData  = vsite->tData[thread];
 
                 rvec        *fshift_t;
-                if (thread == 0 || fshift == NULL)
+                if (thread == 0 || fshift == nullptr)
                 {
                     fshift_t = fshift;
                 }
@@ -1717,7 +1717,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
-        if (fshift != NULL)
+        if (fshift != nullptr)
         {
             for (int th = 1; th < vsite->nthreads; th++)
             {
@@ -1974,7 +1974,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
 
     if (nvsite == 0)
     {
-        return NULL;
+        return nullptr;
     }
 
     snew(vsite, 1);
@@ -1997,7 +1997,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
             int *a2cg = atom2cg(&molt->cgs);
             vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop->ffparams.iparams,
                                                       molt->ilist,
-                                                      molt->atoms.atom, NULL,
+                                                      molt->atoms.atom, nullptr,
                                                       &molt->cgs, a2cg);
             sfree(a2cg);
         }
@@ -2037,7 +2037,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
         }
     }
 
-    vsite->taskIndex       = NULL;
+    vsite->taskIndex       = nullptr;
     vsite->taskIndexNalloc = 0;
 
     return vsite;
@@ -2539,7 +2539,7 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
             /* Make an atom to charge group index */
             int *a2cg = atom2cg(&top->cgs);
             vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
-                                                 top->idef.il, NULL, md,
+                                                 top->idef.il, nullptr, md,
                                                  &top->cgs, a2cg);
             sfree(a2cg);
         }

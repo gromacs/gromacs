@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -94,6 +94,21 @@ gmx_cpack_init()
 # Variables that accumulate stuff influencing the installed headers
 set(INSTALLED_HEADER_INCLUDE_DIRS "")
 set(INSTALLED_HEADER_DEFINITIONS "")
+
+########################################################################
+# Global non-cache variables for implementing the build system
+########################################################################
+
+# These variables collect libraries that GROMACS requires for
+# linking. They should be appended to with list(APPEND ${name}
+# new-library) calls. They are:
+#  - Libraries that are required for libgromacs (only)
+set(GMX_EXTRA_LIBRARIES "")
+#  - Libraries that are required for all code in the repository
+set(GMX_COMMON_LIBRARIES "")
+#  - Libraries that all code linked against libgromacs needs
+#    (i.e., something that is exposed in installed headers).
+set(GMX_PUBLIC_LIBRARIES "")
 
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
@@ -267,8 +282,6 @@ gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double pr
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
-option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_LOAD_PLUGINS)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
@@ -516,8 +529,18 @@ if(DEFINED HWLOC_LIBRARIES)
   set(Hwloc_FIND_QUIETLY TRUE)
 endif()
 find_package(Hwloc 1.5)
-if(HWLOC_FOUND)
-    set(GMX_HWLOC_DEFAULT ON)
+if (HWLOC_FOUND)
+    if (HWLOC_LIBRARIES MATCHES ".a$")
+        set(_STATIC_HWLOC TRUE)
+    endif()
+
+    gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
+    if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
+        message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
+        set(GMX_HWLOC_DEFAULT OFF)
+    else()
+        set(GMX_HWLOC_DEFAULT ON)
+    endif()
 else()
     set(GMX_HWLOC_DEFAULT OFF)
 endif()
@@ -709,32 +732,13 @@ include(gmxManageFFTLibraries)
 
 include(gmxManageLinearAlgebraLibraries)
 
-# Whether GROMACS will really try to compile support for VMD plugins
-set(GMX_USE_PLUGINS OFF)
+include(gmxManagePluginSupport)
 
-if(GMX_LOAD_PLUGINS)
-  if(NOT WIN32)
-    # Native Windows does not have, nor need dlopen
-    include(gmxTestdlopen)
-    gmx_test_dlopen(HAVE_DLOPEN)
-  endif()
-
-  # so, should we use plug-ins?
-  if(WIN32 OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
-    if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
-    endif()
+if (GMX_USE_PLUGINS)
     if(NOT GMX_VMD_PLUGIN_PATH)
-      find_package(VMD)
+        find_package(VMD)
     endif()
-    set(GMX_USE_PLUGINS ON)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
-    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
-  else()
-    set(PKG_DL_LIBS)
-  endif()
 endif()
-set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
@@ -743,8 +747,8 @@ if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
 endif()
 
 # Math and thread libraries must often come after all others when linking...
-if(HAVE_LIBM)
-    list(APPEND GMX_EXTRA_LIBRARIES m)
+if (HAVE_LIBM)
+    list(APPEND GMX_PUBLIC_LIBRARIES m)
 endif()
 
 option(GMX_NACL "Configure for Native Client builds" OFF)
@@ -794,7 +798,7 @@ else()
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
-    message("CMAKE_SHARED_LINKER_FLAGS: ${MPI_LINKER_FLAGS}")
+    message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
 endif()
 
 if(NOT GMX_OPENMP)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,13 +53,16 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
 
 static void bc_cstring(const t_commrec *cr, char **s)
 {
     int size = 0;
 
-    if (MASTER(cr) && *s != NULL)
+    if (MASTER(cr) && *s != nullptr)
     {
         /* Size of the char buffer is string length + 1 for '\0' */
         size = strlen(*s) + 1;
@@ -73,10 +76,10 @@ static void bc_cstring(const t_commrec *cr, char **s)
         }
         nblock_bc(cr, size, *s);
     }
-    else if (!MASTER(cr) && *s != NULL)
+    else if (!MASTER(cr) && *s != nullptr)
     {
         sfree(*s);
-        *s = NULL;
+        *s = nullptr;
     }
 }
 
@@ -241,7 +244,7 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
         block_bc(cr, n);
         if (n == 0)
         {
-            groups->grpnr[g] = NULL;
+            groups->grpnr[g] = nullptr;
         }
         else
         {
@@ -257,6 +260,9 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
 
 static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsigned int n)
 {
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
     (*v).resize(n + 1);
     nblock_bc(cr, n, as_rvec_array(v->data()));
 }
@@ -277,7 +283,6 @@ void bcast_state(const t_commrec *cr, t_state *state)
     block_bc(cr, state->nnhpres);
     block_bc(cr, state->nhchainlength);
     block_bc(cr, state->flags);
-    state->lambda.resize(efptNR);
 
     if (cr->dd)
     {
@@ -311,9 +316,9 @@ void bcast_state(const t_commrec *cr, t_state *state)
                 case estTC_INT:  nblock_abc(cr, state->ngtc, &state->therm_integral); break;
                 case estVETA:    block_bc(cr, state->veta); break;
                 case estVOL0:    block_bc(cr, state->vol0); break;
-                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms);
-                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms);
-                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms);
+                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms); break;
+                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms); break;
+                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms); break;
                 case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
                 case estDISRE_RM3TAV:
                     block_bc(cr, state->hist.ndisrepairs);
@@ -511,7 +516,7 @@ static void bc_pull(const t_commrec *cr, pull_params_t *pull)
     {
         if (!MASTER(cr))
         {
-            pull->coord[c].externalPotentialProvider = NULL;
+            pull->coord[c].externalPotentialProvider = nullptr;
         }
         if (pull->coord[c].eType == epullEXTERNAL)
         {
@@ -669,6 +674,30 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     gmx::IInputRecExtension *eptr = inputrec->efield;
     block_bc(cr, *inputrec);
     inputrec->efield = eptr;
+    if (SIMMASTER(cr))
+    {
+        gmx::InMemorySerializer serializer;
+        gmx::serializeKeyValueTree(*inputrec->params, &serializer);
+        std::vector<char>       buffer = serializer.finishAndGetBuffer();
+        size_t                  size   = buffer.size();
+        block_bc(cr, size);
+        nblock_bc(cr, size, buffer.data());
+    }
+    else
+    {
+        // block_bc() above overwrites the old pointer, so set it to a
+        // reasonable value in case code below throws.
+        // cppcheck-suppress redundantAssignment
+        inputrec->params = nullptr;
+        std::vector<char> buffer;
+        size_t            size;
+        block_bc(cr, size);
+        nblock_abc(cr, size, &buffer);
+        gmx::InMemoryDeserializer serializer(buffer);
+        // cppcheck-suppress redundantAssignment
+        inputrec->params = new gmx::KeyValueTreeObject(
+                    gmx::deserializeKeyValueTree(&serializer));
+    }
 
     bc_grpopts(cr, &(inputrec->opts));
 
@@ -706,7 +735,6 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->imd, 1);
         bc_imd(cr, inputrec->imd);
     }
-    inputrec->efield->broadCast(cr);
     if (inputrec->eSwapCoords != eswapNO)
     {
         snew_bc(cr, inputrec->swap, 1);

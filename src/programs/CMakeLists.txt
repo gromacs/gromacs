@@ -41,9 +41,13 @@ if(GMX_FAHCORE)
     # may break some generators, according to CMake documentation. If
     # so, we can consider adding some dummy file to make it work.
     add_library(fahcore $<TARGET_OBJECTS:mdrun_objlib>)
+    target_link_libraries(fahcore PRIVATE ${GMX_COMMON_LIBRARIES})
 elseif(GMX_BUILD_MDRUN_ONLY)
     add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
-    target_link_libraries(mdrun libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+    target_link_libraries(mdrun libgromacs
+        ${GMX_COMMON_LIBRARIES}
+        ${GMX_EXE_LINKER_FLAGS}
+        ${GMX_STDLIB_LIBRARIES})
     set(BINARY_NAME "mdrun${GMX_BINARY_SUFFIX}")
     set_target_properties(mdrun PROPERTIES
         OUTPUT_NAME "${BINARY_NAME}"
@@ -65,7 +69,10 @@ else()
         ${GMX_MAIN_SOURCES}
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
-    target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+    target_link_libraries(gmx libgromacs
+        ${GMX_COMMON_LIBRARIES}
+        ${GMX_EXE_LINKER_FLAGS}
+        ${GMX_STDLIB_LIBRARIES})
     if(GMX_X11)
         target_link_libraries(gmx ${X11_LIBRARIES})
     endif()

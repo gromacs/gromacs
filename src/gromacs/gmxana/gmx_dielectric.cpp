@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,7 +133,7 @@ real numerical_deriv(int nx, real x[], real y[], real fity[], real combined[], r
     }
 
     tmpfp        = gmx_ffopen("integral_smth.xvg", "w");
-    integralSmth = print_and_integrate(tmpfp, nx, x[1]-x[0], combined, NULL, 1);
+    integralSmth = print_and_integrate(tmpfp, nx, x[1]-x[0], combined, nullptr, 1);
     printf("SMOOTH integral = %10.5e\n", integralSmth);
 
     dy[0] = (combined[1]-combined[0])/(x[1]-x[0]);
@@ -314,7 +314,7 @@ int gmx_dielectric(int argc, char *argv[])
     };
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -389,10 +389,10 @@ int gmx_dielectric(int argc, char *argv[])
     snew(y[4], nx);
     snew(y[5], nx);
 
-    integral = print_and_integrate(NULL, calc_nbegin(nx, y[0], tbegin),
-                                   dt, y[1], NULL, 1);
+    integral = print_and_integrate(nullptr, calc_nbegin(nx, y[0], tbegin),
+                                   dt, y[1], nullptr, 1);
     integral += do_lmfit(nx, y[1], y[2], dt, y[0], tbegin, tend,
-                         oenv, TRUE, eFitFn, fitparms, fix, NULL);
+                         oenv, TRUE, eFitFn, fitparms, fix, nullptr);
     for (i = 0; i < nx; i++)
     {
         y[3][i] = fit_function(eFitFn, fitparms, y[0][i]);
@@ -429,7 +429,7 @@ int gmx_dielectric(int argc, char *argv[])
             nx-1, y[0], y[5], eps0, epsRF, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
-    do_view(oenv, opt2fn("-c", NFILE, fnm), NULL);
+    do_view(oenv, opt2fn("-c", NFILE, fnm), nullptr);
     do_view(oenv, opt2fn("-d", NFILE, fnm), "-nxy");
 
     return 0;

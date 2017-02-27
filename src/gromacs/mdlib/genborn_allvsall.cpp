@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -377,7 +377,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
 
     aadata = *((gmx_allvsallgb2_data_t **)work);
 
-    if (aadata == NULL)
+    if (aadata == nullptr)
     {
         genborn_allvsall_setup(&aadata, top->idef.il, mdatoms->nr,
                                FALSE, FALSE, TRUE);
@@ -590,7 +590,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
     aadata = *((gmx_allvsallgb2_data_t **)work);
 
-    if (aadata == NULL)
+    if (aadata == nullptr)
     {
         genborn_allvsall_setup(&aadata, top->idef.il, mdatoms->nr,
                                TRUE, TRUE, TRUE);

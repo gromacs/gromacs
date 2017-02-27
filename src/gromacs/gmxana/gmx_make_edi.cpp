@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -149,12 +148,12 @@ int sscan_list(int *list[], const char *str, const char *listname)
     int   number     = 0;
     int   end_number = 0;
 
-    char *start = NULL; /*holds the string of the number behind a ','*/
-    char *end   = NULL; /*holds the string of the number behind a '-' */
+    char *start = nullptr; /*holds the string of the number behind a ','*/
+    char *end   = nullptr; /*holds the string of the number behind a '-' */
 
-    int   nvecs = 0;    /* counts the number of vectors in the list*/
+    int   nvecs = 0;       /* counts the number of vectors in the list*/
 
-    step = NULL;
+    step = nullptr;
     snew(pos, n+4);
     startpos = pos;
     std::strcpy(pos, str);
@@ -162,7 +161,7 @@ int sscan_list(int *list[], const char *str, const char *listname)
     pos[n+1] = '1';
     pos[n+2] = '\0';
 
-    *list = NULL;
+    *list = nullptr;
 
     while ((c = *pos) != 0)
     {
@@ -185,7 +184,7 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 {
                     /*store number*/
                     srenew(*list, nvecs+1);
-                    (*list)[nvecs++] = number = std::strtol(start, NULL, 10);
+                    (*list)[nvecs++] = number = std::strtol(start, nullptr, 10);
                     status           = sBefore;
                     if (number == 0)
                     {
@@ -242,8 +241,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 if (c == ',')
                 {
                     /*store numbers*/
-                    end_number = std::strtol(end, NULL, 10);
-                    number     = std::strtol(start, NULL, 10);
+                    end_number = std::strtol(end, nullptr, 10);
+                    number     = std::strtol(start, nullptr, 10);
                     status     = sBefore;
                     if (number == 0)
                     {
@@ -256,8 +255,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                     srenew(*list, nvecs+end_number-number+1);
                     if (step)
                     {
-                        istep = strtol(step, NULL, 10);
-                        step  = NULL;
+                        istep = strtol(step, nullptr, 10);
+                        step  = nullptr;
                     }
                     else
                     {
@@ -380,12 +379,12 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
 
     /*Eigenvectors */
 
-    write_eigvec(fp, edpars->ned, eig_listen[evMON], eigvecs, nvec, "COMPONENTS GROUP 1", NULL);
+    write_eigvec(fp, edpars->ned, eig_listen[evMON], eigvecs, nvec, "COMPONENTS GROUP 1", nullptr);
     write_eigvec(fp, edpars->ned, eig_listen[evLINFIX], eigvecs, nvec, "COMPONENTS GROUP 2", evStepList[evLINFIX]);
     write_eigvec(fp, edpars->ned, eig_listen[evLINACC], eigvecs, nvec, "COMPONENTS GROUP 3", evStepList[evLINACC]);
     write_eigvec(fp, edpars->ned, eig_listen[evRADFIX], eigvecs, nvec, "COMPONENTS GROUP 4", evStepList[evRADFIX]);
-    write_eigvec(fp, edpars->ned, eig_listen[evRADACC], eigvecs, nvec, "COMPONENTS GROUP 5", NULL);
-    write_eigvec(fp, edpars->ned, eig_listen[evRADCON], eigvecs, nvec, "COMPONENTS GROUP 6", NULL);
+    write_eigvec(fp, edpars->ned, eig_listen[evRADACC], eigvecs, nvec, "COMPONENTS GROUP 5", nullptr);
+    write_eigvec(fp, edpars->ned, eig_listen[evRADCON], eigvecs, nvec, "COMPONENTS GROUP 6", nullptr);
     write_eigvec(fp, edpars->ned, eig_listen[evFLOOD], eigvecs, nvec, "COMPONENTS GROUP 7", evStepList[evFLOOD]);
 
 
@@ -399,7 +398,7 @@ int read_conffile(const char *confin, rvec **x)
     t_topology  top;
     matrix      box;
     printf("read coordnumber from file %s\n", confin);
-    read_tps_conf(confin, &top, NULL, x, NULL, box, FALSE);
+    read_tps_conf(confin, &top, nullptr, x, nullptr, box, FALSE);
     printf("number of coordinates in file %d\n", top.atoms.nr);
     return top.atoms.nr;
 }
@@ -650,9 +649,9 @@ int gmx_make_edi(int argc, char *argv[])
     enum  {
         evStepNr = evRADFIX + 1
     };
-    static const char* evSelections[evNr]      = {NULL, NULL, NULL, NULL, NULL, NULL};
+    static const char* evSelections[evNr]      = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     static const char* evOptions[evNr]         = {"-linfix", "-linacc", "-flood", "-radfix", "-radacc", "-radcon", "-mon"};
-    static const char* evParams[evStepNr]      = {NULL, NULL};
+    static const char* evParams[evStepNr]      = {nullptr, nullptr};
     static const char* evStepOptions[evStepNr] = {"-linstep", "-accdir", "-not_used", "-radstep"};
     static const char* ConstForceStr;
     static real      * evStepList[evStepNr];
@@ -724,18 +723,18 @@ int gmx_make_edi(int argc, char *argv[])
 #define NPA asize(pa)
 
     rvec             *xref1;
-    int               nvec1, *eignr1 = NULL;
-    rvec             *xav1, **eigvec1 = NULL;
-    t_atoms          *atoms = NULL;
+    int               nvec1, *eignr1 = nullptr;
+    rvec             *xav1, **eigvec1 = nullptr;
+    t_atoms          *atoms = nullptr;
     int               nav; /* Number of atoms in the average structure */
     char             *grpname;
     const char       *indexfile;
     int               i;
     int              *index, *ifit;
-    int               nfit;           /* Number of atoms in the reference/fit structure */
-    int               ev_class;       /* parameter _class i.e. evMON, evRADFIX etc. */
+    int               nfit;              /* Number of atoms in the reference/fit structure */
+    int               ev_class;          /* parameter _class i.e. evMON, evRADFIX etc. */
     int               nvecs;
-    real             *eigval1 = NULL; /* in V3.3 this is parameter of read_eigenvectors */
+    real             *eigval1 = nullptr; /* in V3.3 this is parameter of read_eigenvectors */
 
     const char       *EdiFile;
     const char       *TargetFile;
@@ -754,8 +753,8 @@ int gmx_make_edi(int argc, char *argv[])
     t_filenm    fnm[] = {
         { efTRN, "-f",    "eigenvec",    ffREAD  },
         { efXVG, "-eig",  "eigenval",    ffOPTRD },
-        { efTPS, NULL,    NULL,          ffREAD },
-        { efNDX, NULL,    NULL,  ffOPTRD },
+        { efTPS, nullptr,    nullptr,          ffREAD },
+        { efNDX, nullptr,    nullptr,  ffOPTRD },
         { efSTX, "-tar", "target", ffOPTRD},
         { efSTX, "-ori", "origin", ffOPTRD},
         { efEDI, "-o", "sam", ffWRITE }
@@ -763,7 +762,7 @@ int gmx_make_edi(int argc, char *argv[])
 #define NFILE asize(fnm)
     edi_params.outfrq = 100; edi_params.slope = 0.0; edi_params.maxedsteps = 0;
     if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -822,7 +821,7 @@ int gmx_make_edi(int argc, char *argv[])
         }
         else     /* if there are no eigenvectors for this option set list to zero */
         {
-            listen[ev_class] = NULL;
+            listen[ev_class] = nullptr;
             snew(listen[ev_class], 1);
             listen[ev_class][0] = 0;
         }
@@ -847,7 +846,7 @@ int gmx_make_edi(int argc, char *argv[])
                       &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                  &top, &ePBC, &xtop, NULL, topbox, 0);
+                  &top, &ePBC, &xtop, nullptr, topbox, 0);
     atoms = &top.atoms;
 
 
@@ -861,7 +860,7 @@ int gmx_make_edi(int argc, char *argv[])
     printf("\n");
 
 
-    if (xref1 == NULL)
+    if (xref1 == nullptr)
     {
         if (bFit1)
         {
@@ -945,7 +944,7 @@ int gmx_make_edi(int argc, char *argv[])
     }
     else
     {
-        make_t_edx(&edi_params.star, 0, NULL, index);
+        make_t_edx(&edi_params.star, 0, nullptr, index);
     }
 
     /* Store origin positions */
@@ -955,7 +954,7 @@ int gmx_make_edi(int argc, char *argv[])
     }
     else
     {
-        make_t_edx(&edi_params.sori, 0, NULL, index);
+        make_t_edx(&edi_params.sori, 0, nullptr, index);
     }
 
     /* Write edi-file */

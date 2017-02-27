@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,6 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/treesupport.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/real.h"
@@ -100,11 +98,9 @@ class ElectricFieldTest : public ::testing::Test
             gmx::KeyValueTreeTransformer transform;
             transform.rules()->addRule()
                 .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-            inputrec->efield->initMdpTransform(transform.rules());
-            gmx::Options                 options;
-            inputrec->efield->initMdpOptions(&options);
-            auto                         result = transform.transform(mdpValues.build(), nullptr);
-            gmx::assignOptionsFromKeyValueTree(&options, result.object(), nullptr);
+            module.initMdpTransform(transform.rules());
+            auto result = transform.transform(mdpValues.build(), nullptr);
+            module.assignOptionsToModulesFromMdp(result.object(), nullptr);
 
             t_mdatoms        md;
             PaddedRVecVector f = { { 0, 0, 0 } };

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/random/uniformrealdistribution.h"
@@ -162,7 +163,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     fprintf(fplog, "\nInitializing Replica Exchange\n");
 
-    if (ms == NULL || ms->nsim == 1)
+    if (ms == nullptr || ms->nsim == 1)
     {
         gmx_fatal(FARGS, "Nothing to exchange with only one replica, maybe you forgot to set the -multi option of mdrun?");
     }
@@ -620,7 +621,7 @@ static void print_ind(FILE *fplog, const char *leg, int n, int *ind, gmx_bool *b
     fprintf(fplog, "Repl %2s %2d", leg, ind[0]);
     for (i = 1; i < n; i++)
     {
-        fprintf(fplog, " %c %2d", (bEx != 0 && bEx[i]) ? 'x' : ' ', ind[i]);
+        fprintf(fplog, " %c %2d", (bEx != nullptr && bEx[i]) ? 'x' : ' ', ind[i]);
     }
     fprintf(fplog, "\n");
 }
@@ -1311,11 +1312,11 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
                 re->prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
             }
         }
-        print_ind(fplog, "", re->nrepl, re->ind, NULL);
+        print_ind(fplog, "", re->nrepl, re->ind, nullptr);
         print_prob(fplog, "", re->nrepl, re->prob);
 
         fprintf(fplog, "Repl  number of exchanges:\n");
-        print_ind(fplog, "", re->nrepl, re->ind, NULL);
+        print_ind(fplog, "", re->nrepl, re->ind, nullptr);
         print_count(fplog, "", re->nrepl, re->nexchange);
 
         fprintf(fplog, "Repl  average number of exchanges:\n");
@@ -1330,7 +1331,7 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
                 re->prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
             }
         }
-        print_ind(fplog, "", re->nrepl, re->ind, NULL);
+        print_ind(fplog, "", re->nrepl, re->ind, nullptr);
         print_prob(fplog, "", re->nrepl, re->prob);
 
         fprintf(fplog, "\n");

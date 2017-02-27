@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,7 +124,7 @@ static void gmx_hash_realloc(gmx_hash_t *hash, int nkey_used_estimate)
     hash->nalloc = over_alloc_dd(hash->mod);
     srenew(hash->hash, hash->nalloc);
 
-    if (debug != NULL)
+    if (debug != nullptr)
     {
         fprintf(debug, "Hash table mod %d nalloc %d\n", hash->mod, hash->nalloc);
     }
@@ -141,7 +141,7 @@ static void gmx_hash_clear_and_optimize(gmx_hash_t *hash)
     if (hash->nkey > 0 &&
         (4*hash->nkey < hash->mod || 3*hash->nkey > 2*hash->mod))
     {
-        if (debug != NULL)
+        if (debug != nullptr)
         {
             fprintf(debug, "Hash table size %d #key %d: resizing\n",
                     hash->mod, hash->nkey);
@@ -158,7 +158,7 @@ static gmx_hash_t *gmx_hash_init(int nkey_used_estimate)
     gmx_hash_t *hash;
 
     snew(hash, 1);
-    hash->hash = NULL;
+    hash->hash = nullptr;
 
     gmx_hash_realloc(hash, nkey_used_estimate);
 

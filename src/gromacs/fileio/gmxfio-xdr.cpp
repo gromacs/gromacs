@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,6 @@
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmxfio-impl.h"
@@ -72,9 +71,9 @@ void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
 
 XDR *gmx_fio_getxdr(t_fileio *fio)
 {
-    XDR *ret = NULL;
+    XDR *ret = nullptr;
     gmx_fio_lock(fio);
-    GMX_RELEASE_ASSERT( fio->xdr != NULL, "Implementation error: NULL XDR pointers");
+    GMX_RELEASE_ASSERT( fio->xdr != nullptr, "Implementation error: NULL XDR pointers");
     ret = fio->xdr;
     gmx_fio_unlock(fio);
     return ret;
@@ -118,7 +117,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     double          d = 0;
     float           f = 0;
 
-    GMX_RELEASE_ASSERT( fio->xdr != NULL, "Implementation error: NULL XDR pointers");
+    GMX_RELEASE_ASSERT( fio->xdr != nullptr, "Implementation error: NULL XDR pointers");
     gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
@@ -265,7 +264,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioNRVEC:
-            ptr = NULL;
+            ptr = nullptr;
             res = 1;
             for (j = 0; (j < nitem) && res; j++)
             {
@@ -690,6 +689,11 @@ void FileIOXdrSerializer::doUChar(unsigned char *value)
 void FileIOXdrSerializer::doInt(int *value)
 {
     gmx_fio_do_int(fio_, *value);
+}
+
+void FileIOXdrSerializer::doInt64(gmx_int64_t *value)
+{
+    gmx_fio_do_int64(fio_, *value);
 }
 
 void FileIOXdrSerializer::doFloat(float *value)

@@ -58,30 +58,15 @@
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
 namespace ocl
 {
-
-/*! \brief RAII helper to use with scoped_cptr
- *
- * Can't use fclose because the template requires a function that
- * returns void.
- *
- * \todo Either generalise scoped_cptr somehow, or (better) make
- * general infrastructure for reading and writing binary lumps.
- * Neither of these is a priority while JIT caching is inactive.
- */
-static void fclose_wrapper(FILE *fp)
-{
-    assert(fp != NULL);
-    fclose(fp);
-}
 
 std::string makeBinaryCacheFilename(const std::string &kernelFilename,
                                     cl_device_id       deviceId)
@@ -119,22 +104,21 @@ makeProgramFromCache(const std::string &filename,
                      cl_device_id       deviceId)
 {
     // TODO all this file reading stuff should become gmx::BinaryReader
-    FILE *f = fopen(filename.c_str(), "rb");
-    scoped_cptr<FILE, fclose_wrapper> fileGuard(f);
+    const auto f = create_unique_with_deleter(fopen(filename.c_str(), "rb"), fclose);
     if (!f)
     {
         GMX_THROW(FileIOError("Failed to open binary cache file " + filename));
     }
 
     // TODO more stdio error handling
-    fseek(f, 0, SEEK_END);
+    fseek(f.get(), 0, SEEK_END);
     unsigned char             *binary;
-    scoped_cptr<unsigned char> binaryGuard;
-    size_t                     fileSize = ftell(f);
+    unique_cptr<unsigned char> binaryGuard;
+    size_t                     fileSize = ftell(f.get());
     snew(binary, fileSize);
     binaryGuard.reset(binary);
-    fseek(f, 0, SEEK_SET);
-    size_t readCount = fread(binary, 1, fileSize, f);
+    fseek(f.get(), 0, SEEK_SET);
+    size_t readCount = fread(binary, 1, fileSize, f.get());
 
     if (readCount != fileSize)
     {
@@ -176,9 +160,9 @@ writeBinaryToCache(cl_program program, const std::string &filename)
     }
 
     // TODO all this file writing stuff should become gmx::BinaryWriter
-    unsigned char             *binary;
+    unsigned char                   *binary;
     snew(binary, fileSize);
-    scoped_cptr<unsigned char> binaryGuard(binary);
+    const unique_cptr<unsigned char> binaryGuard(binary);
 
     cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(binary), &binary, NULL);
     if (cl_error != CL_SUCCESS)
@@ -186,14 +170,13 @@ writeBinaryToCache(cl_program program, const std::string &filename)
         GMX_THROW(InternalError("Could not get OpenCL program binary, error was " + ocl_get_error_string(cl_error)));
     }
 
-    FILE *f = fopen(filename.c_str(), "wb");
-    scoped_cptr<FILE, fclose_wrapper> fileGuard(f);
+    const auto f = create_unique_with_deleter(fopen(filename.c_str(), "wb"), fclose);
     if (!f)
     {
         GMX_THROW(FileIOError("Failed to open binary cache file " + filename));
     }
 
-    fwrite(binary, 1, fileSize, f);
+    fwrite(binary, 1, fileSize, f.get());
 }
 
 } // namespace

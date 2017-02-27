@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,10 +68,10 @@ CorrelationDataSet::~CorrelationDataSet()
     for (int i = 0; i < nrColumns_; i++)
     {
         sfree(tempValues_[i]);
-        tempValues_[i] = NULL;
+        tempValues_[i] = nullptr;
     }
     sfree(tempValues_);
-    tempValues_ = NULL;
+    tempValues_ = nullptr;
 }
 
 real CorrelationDataSet::getValue(int set, int time) const

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : minValueCount_(1), maxValueCount_(1),
-              name_(name), descr_(NULL), storeIsSet_(NULL)
+              name_(name), descr_(nullptr), storeIsSet_(nullptr)
         { }
 
         /*! \brief
@@ -360,8 +360,8 @@ class OptionTemplate : public AbstractOption
         //! Initializes the name and default values for an option.
         explicit OptionTemplate(const char *name)
             : AbstractOption(name),
-              defaultValue_(NULL), defaultValueIfSet_(NULL), store_(NULL),
-              countptr_(NULL), storeVector_(NULL)
+              defaultValue_(nullptr), defaultValueIfSet_(nullptr), store_(nullptr),
+              countptr_(nullptr), storeVector_(nullptr)
         { }
 
         /*! \brief
@@ -448,7 +448,7 @@ class OptionInfo
         template <class InfoType>
         bool isType() const
         {
-            return toType<InfoType>() != NULL;
+            return toType<InfoType>() != nullptr;
         }
         /*! \brief
          * Convert the info object to a particular type if the type is correct.

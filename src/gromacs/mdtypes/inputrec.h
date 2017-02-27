@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,18 +55,15 @@
 
 struct gmx_output_env_t;
 struct pull_params_t;
-struct t_commrec;
-struct t_fileio;
 struct t_filenm;
 struct t_forcerec;
-struct t_inpfile;
-struct warninp;
 
 namespace gmx
 {
 
 class IKeyValueTreeTransformRules;
 class IOptionsContainerWithSections;
+class KeyValueTreeObject;
 
 /*! \libinternal \brief
  * Inputrec extension interface for a mdrun module.
@@ -91,15 +88,6 @@ class IInputRecExtension
     public:
         virtual ~IInputRecExtension() {}
 
-        /*! \brief Read or write tpr file
-         *
-         * Read or write the necessary data from a tpr file. The routine is responsible
-         * for consistency, such that all data belonging to this module is read or written.
-         * \param[inout] fio Gromacs file descriptor
-         * \param[in]    bRead boolean determines whether we are reading or writing
-         */
-        virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
-
         /*! \brief
          * Initializes a transform from mdp values to sectioned options.
          *
@@ -112,32 +100,6 @@ class IInputRecExtension
          * Defines input (mdp) parameters for this extension.
          */
         virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
-
-        /*! \brief Broadcast input parameters to all ranks
-         *
-         * \param[in] cr  Communication record, gromacs structure
-         */
-        virtual void broadCast(const t_commrec *cr)     = 0;
-
-        /*! \brief compare a section of two input record structures
-         *
-         * Routine is used in gmx check.
-         * \param[in]    fp     File pointer
-         * \param[inout] field2 Electric field
-         * \param[in]    reltol Relative tolerance
-         * \param[in]    abstol Absolute tolerance
-         */
-        virtual void compare(FILE                          *fp,
-                             const gmx::IInputRecExtension *field2,
-                             real                           reltol,
-                             real                           abstol)  = 0;
-
-        /*! \brief Print parameters belonging to this class to a file
-         *
-         * \param[in] fp     File pointer
-         * \param[in] indent Initial indentation level for printing
-         */
-        virtual void printParameters(FILE *fp, int indent)           = 0;
 
         /*! \brief Initiate output parameters
          *
@@ -340,6 +302,9 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
+// TODO gmx::IInputRecExtension pointers (e.g. efield) will eventually
+// be removed from this struct. In at least some cases, those will be
+// handled by MDModules.
 struct t_inputrec
 {
     int             eI;                      /* Integration method                 */
@@ -489,8 +454,10 @@ struct t_inputrec
     real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
-    gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
-    gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
+    gmx_bool                 bAdress;      // Whether AdResS is enabled - always false if a valid .tpr was read
+    gmx_bool                 useTwinRange; // Whether twin-range scheme is active - always false if a valid .tpr was read
+
+    gmx::KeyValueTreeObject *params;
 };
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);

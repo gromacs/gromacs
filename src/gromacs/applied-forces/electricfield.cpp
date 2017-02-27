@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,11 +47,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio-xdr.h"
-#include "gromacs/fileio/readinp.h"
-#include "gromacs/fileio/warninp.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -61,15 +57,12 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
-#include "gromacs/utility/compare.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/txtdump.h"
 
 namespace gmx
 {
@@ -165,15 +158,9 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         ElectricField() : fpField_(nullptr) {}
 
         // From IInputRecExtension
-        virtual void doTpxIO(t_fileio *fio, bool bRead);
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
-        virtual void broadCast(const t_commrec *cr);
-        virtual void compare(FILE                     *fp,
-                             const IInputRecExtension *field2,
-                             real                      reltol,
-                             real                      abstol);
-        virtual void printParameters(FILE *fp, int indent);
+
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                 bool bAppendFiles, const gmx_output_env_t *oenv);
         virtual void finishOutput();
@@ -188,18 +175,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
     private:
         //! Return whether or not to apply a field
         bool isActive() const;
-
-        /*! \brief Add a component to the electric field
-         *
-         * The electric field has three spatial dimensions that are
-         * added to the data structure one at a time.
-         * \param[in] dim   Dimension, XX, YY, ZZ (0, 1, 2)
-         * \param[in] a     Amplitude of the field in V/nm
-         * \param[in] omega Frequency (1/ps)
-         * \param[in] t0    Time of pulse peak (ps)
-         * \param[in] sigma Width of peak (ps)
-         */
-        void setFieldTerm(int dim, real a, real omega, real t0, real sigma);
 
         /*! \brief Return the field strength
          *
@@ -246,54 +221,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         //! File pointer for electric field
         FILE             *fpField_;
 };
-
-void ElectricField::doTpxIO(t_fileio *fio, bool bRead)
-{
-    // The content of the tpr file for this feature has
-    // been the same since gromacs 4.0 that was used for
-    // developing.
-    for (int j = 0; (j < DIM); j++)
-    {
-        int n = 0, nt = 0;
-        if (!bRead)
-        {
-            n = 1;
-            if (omega(j) != 0 || sigma(j) != 0 || t0(j) != 0)
-            {
-                nt = 1;
-            }
-        }
-        gmx_fio_do_int(fio, n);
-        gmx_fio_do_int(fio, nt);
-        std::vector<real> aa, phi, at, phit;
-        if (!bRead)
-        {
-            aa.push_back(a(j));
-            phi.push_back(t0(j));
-            at.push_back(omega(j));
-            phit.push_back(sigma(j));
-        }
-        else
-        {
-            aa.resize(n+1);
-            phi.resize(nt+1);
-            at.resize(nt+1);
-            phit.resize(nt+1);
-        }
-        gmx_fio_ndo_real(fio, aa.data(),  n);
-        gmx_fio_ndo_real(fio, phi.data(), n);
-        gmx_fio_ndo_real(fio, at.data(),  nt);
-        gmx_fio_ndo_real(fio, phit.data(), nt);
-        if (bRead && n > 0)
-        {
-            setFieldTerm(j, aa[0], at[0], phi[0], phit[0]);
-            if (n > 1 || nt > 1)
-            {
-                gmx_fatal(FARGS, "Can not handle tpr files with more than one electric field term per direction.");
-            }
-        }
-    }
-}
 
 //! Converts static parameters from mdp format to E0.
 real convertStaticParameters(const std::string &value)
@@ -356,17 +283,21 @@ void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
 
 void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
-    rules->addRule().from<std::string>("/E-x").to<real>("/electric-field/x/E0")
+    // TODO This responsibility should be handled by the caller,
+    // e.g. embedded in the rules, somehow.
+    std::string prefix = "/applied-forces/";
+
+    rules->addRule().from<std::string>("/E-x").to<real>(prefix + "electric-field/x/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-xt").toObject("/electric-field/x")
+    rules->addRule().from<std::string>("/E-xt").toObject(prefix + "electric-field/x")
         .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-y").to<real>("/electric-field/y/E0")
+    rules->addRule().from<std::string>("/E-y").to<real>(prefix + "electric-field/y/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-yt").toObject("/electric-field/y")
+    rules->addRule().from<std::string>("/E-yt").toObject(prefix + "electric-field/y")
         .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-z").to<real>("/electric-field/z/E0")
+    rules->addRule().from<std::string>("/E-z").to<real>(prefix + "electric-field/z/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-zt").toObject("/electric-field/z")
+    rules->addRule().from<std::string>("/E-zt").toObject(prefix + "electric-field/z")
         .transformWith(&convertDynamicParameters);
 }
 
@@ -377,37 +308,6 @@ void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
     efield_[XX].initMdpOptions(&section, "x");
     efield_[YY].initMdpOptions(&section, "y");
     efield_[ZZ].initMdpOptions(&section, "z");
-}
-
-void ElectricField::broadCast(const t_commrec *cr)
-{
-    rvec a1, omega1, sigma1, t01;
-
-    if (MASTER(cr))
-    {
-        // Load the parameters read from tpr into temp vectors
-        for (int m = 0; m < DIM; m++)
-        {
-            a1[m]     = a(m);
-            omega1[m] = omega(m);
-            sigma1[m] = sigma(m);
-            t01[m]    = t0(m);
-        }
-    }
-    // Broadcasting the parameters
-    gmx_bcast(DIM*sizeof(a1[0]), a1, cr);
-    gmx_bcast(DIM*sizeof(omega1[0]), omega1, cr);
-    gmx_bcast(DIM*sizeof(t01[0]), t01, cr);
-    gmx_bcast(DIM*sizeof(sigma1[0]), sigma1, cr);
-
-    // And storing them locally
-    if (!MASTER(cr))
-    {
-        for (int m = 0; m < DIM; m++)
-        {
-            setFieldTerm(m, a1[m], omega1[m], t01[m], sigma1[m]);
-        }
-    }
 }
 
 void ElectricField::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
@@ -454,24 +354,6 @@ void ElectricField::initForcerec(t_forcerec *fr)
     }
 }
 
-void ElectricField::printParameters(FILE *fp, int indent)
-{
-    const char *const dimension[DIM] = { "X", "Y", "Z" };
-    indent = pr_title(fp, indent, "ElectricField");
-    for (int m = 0; m < DIM; m++)
-    {
-        pr_indent(fp, indent);
-        fprintf(fp, "-%s E0 = %g omega = %g t0 = %g sigma = %g\n",
-                dimension[m], a(m), omega(m), t0(m), sigma(m));
-    }
-}
-
-void ElectricField::setFieldTerm(int dim, real a, real omega, real t0, real sigma)
-{
-    range_check(dim, 0, DIM);
-    efield_[dim].setField(a, omega, t0, sigma);
-}
-
 real ElectricField::field(int dim, real t) const
 {
     return efield_[dim].evaluate(t);
@@ -482,26 +364,6 @@ bool ElectricField::isActive() const
     return (efield_[XX].a() != 0 ||
             efield_[YY].a() != 0 ||
             efield_[ZZ].a() != 0);
-}
-
-void ElectricField::compare(FILE                     *fp,
-                            const IInputRecExtension *other,
-                            real                      reltol,
-                            real                      abstol)
-{
-    GMX_ASSERT(dynamic_cast<const ElectricField *>(other) != nullptr,
-               "Invalid other type");
-    const ElectricField *f2 = static_cast<const ElectricField *>(other);
-    for (int m = 0; (m < DIM); m++)
-    {
-        char buf[256];
-
-        sprintf(buf, "inputrec->field[%d]", m);
-        cmp_real(fp, buf, -1, a(m), f2->a(m), reltol, abstol);
-        cmp_real(fp, buf, -1, omega(m), f2->omega(m), reltol, abstol);
-        cmp_real(fp, buf, -1, t0(m), f2->t0(m), reltol, abstol);
-        cmp_real(fp, buf, -1, sigma(m), f2->sigma(m), reltol, abstol);
-    }
 }
 
 void ElectricField::printComponents(double t) const

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -223,14 +223,15 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     int      i, n;
     gmx_bool found;
 
+    if (n_bfac > atoms->nres)
+    {
+        peratom = TRUE;
+    }
+
     bfac_max = -1e10;
     bfac_min = 1e10;
     for (i = 0; (i < n_bfac); i++)
     {
-        if (bfac_nr[i] - 1 >= atoms->nres)
-        {
-            peratom = TRUE;
-        }
         /*    if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
            gmx_fatal(FARGS,"Index of B-Factor %d is out of range: %d (%g)",
            i+1,bfac_nr[i],bfac[i]); */
@@ -359,7 +360,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
     }
     calc_triclinic_images(box, img + 1);
 
-    write_sto_conf(fn, "Images", &atoms, img, NULL, ePBC, box);
+    write_sto_conf(fn, "Images", &atoms, img, nullptr, ePBC, box);
 
     done_atom(&atoms);
     sfree(img);
@@ -492,7 +493,7 @@ static void renum_resnr(t_atoms *atoms, int isize, const int *index,
     resind_prev = -1;
     for (i = 0; i < isize; i++)
     {
-        resind = atoms->atom[index == NULL ? i : index[i]].resind;
+        resind = atoms->atom[index == nullptr ? i : index[i]].resind;
         if (resind != resind_prev)
         {
             atoms->resinfo[resind].nr = resnr_start;
@@ -564,7 +565,7 @@ int gmx_editconf(int argc, char *argv[])
         "from a file with with following format: first line states number of",
         "entries in the file, next lines state an index",
         "followed by a B-factor. The B-factors will be attached per residue",
-        "unless an index is larger than the number of residues or unless the",
+        "unless the number of B-factors is larger than the number of the residues or unless the",
         "[TT]-atom[tt] option is set. Obviously, any type of numeric data can",
         "be added instead of B-factors. [TT]-legend[tt] will produce",
         "a row of CA atoms with B-factors ranging from the minimum to the",
@@ -616,7 +617,7 @@ int gmx_editconf(int argc, char *argv[])
     { 0, 0, 0 }, targetvec   =
     { 0, 0, 0 };
     static const char *btype[] =
-    { NULL, "triclinic", "cubic", "dodecahedron", "octahedron", NULL },
+    { nullptr, "triclinic", "cubic", "dodecahedron", "octahedron", nullptr },
     *label             = "A";
     static rvec visbox =
     { 0, 0, 0 };
@@ -699,9 +700,9 @@ int gmx_editconf(int argc, char *argv[])
     FILE             *out;
     const char       *infile, *outfile;
     int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
-    double           *bfac    = NULL, c6, c12;
-    int              *bfac_nr = NULL;
-    t_topology       *top     = NULL;
+    double           *bfac    = nullptr, c6, c12;
+    int              *bfac_nr = nullptr;
+    t_topology       *top     = nullptr;
     char             *grpname, *sgrpname, *agrpname;
     int               isize, ssize, asize;
     int              *index, *sindex, *aindex;
@@ -717,9 +718,9 @@ int gmx_editconf(int argc, char *argv[])
     gmx_output_env_t *oenv;
     t_filenm          fnm[] =
     {
-        { efSTX, "-f", NULL, ffREAD },
-        { efNDX, "-n", NULL, ffOPTRD },
-        { efSTO, NULL, NULL, ffOPTWR },
+        { efSTX, "-f", nullptr, ffREAD },
+        { efNDX, "-n", nullptr, ffOPTRD },
+        { efSTO, nullptr, nullptr, ffOPTWR },
         { efPQR, "-mead", "mead", ffOPTWR },
         { efDAT, "-bf", "bfact", ffOPTRD }
     };
@@ -754,7 +755,7 @@ int gmx_editconf(int argc, char *argv[])
     bScale    = bScale || bRho;
     bCalcGeom = bCenter || bRotate || bOrient || bScale;
 
-    GMX_RELEASE_ASSERT(btype[0] != NULL, "Option setting inconsistency; btype[0] is NULL");
+    GMX_RELEASE_ASSERT(btype[0] != nullptr, "Option setting inconsistency; btype[0] is NULL");
 
     bCalcDiam = (btype[0][0] == 'c' || btype[0][0] == 'd' || btype[0][0] == 'o');
 
@@ -793,7 +794,7 @@ int gmx_editconf(int argc, char *argv[])
     read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
     t_atoms  &atoms = top_tmp->atoms;
     natom = atoms.nr;
-    if (atoms.pdbinfo == NULL)
+    if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
     }
@@ -820,7 +821,7 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bMead || bGrasp || bCONECT)
     {
-        top = read_top(infile, NULL);
+        top = read_top(infile, nullptr);
     }
 
     if (bMead || bGrasp)
@@ -924,7 +925,7 @@ int gmx_editconf(int argc, char *argv[])
         else
         {
             ssize  = atoms.nr;
-            sindex = NULL;
+            sindex = nullptr;
         }
         diam = calc_geom(ssize, sindex, x, gc, rmin, rmax, bCalcDiam);
         rvec_sub(rmax, rmin, size);
@@ -962,7 +963,7 @@ int gmx_editconf(int argc, char *argv[])
         get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
 
         /* Orient the principal axes along the coordinate axes */
-        orient_princ(&atoms, isize, index, natom, x, bHaveV ? v : NULL, NULL);
+        orient_princ(&atoms, isize, index, natom, x, bHaveV ? v : nullptr, nullptr);
         sfree(index);
         sfree(grpnames);
     }
@@ -1055,7 +1056,7 @@ int gmx_editconf(int argc, char *argv[])
         else
         {
             ssize  = atoms.nr;
-            sindex = NULL;
+            sindex = nullptr;
         }
         printf("Translating %d atoms (out of %d) by %g %g %g nm\n", ssize, natom,
                translation[XX], translation[YY], translation[ZZ]);
@@ -1097,7 +1098,7 @@ int gmx_editconf(int argc, char *argv[])
         }
     }
 
-    if ((btype[0] != NULL) && (bSetSize || bDist || (btype[0][0] == 't' && bSetAng)))
+    if ((btype[0] != nullptr) && (bSetSize || bDist || (btype[0][0] == 't' && bSetAng)))
     {
         ePBC = epbcXYZ;
         if (!(bSetSize || bDist))
@@ -1231,7 +1232,7 @@ int gmx_editconf(int argc, char *argv[])
     }
     else
     {
-        conect = NULL;
+        conect = nullptr;
     }
 
     if (bIndex)
@@ -1266,14 +1267,14 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : NULL, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
         }
     }
     else
     {
         if (resnr_start >= 0)
         {
-            renum_resnr(&atoms, atoms.nr, NULL, resnr_start);
+            renum_resnr(&atoms, atoms.nr, nullptr, resnr_start);
         }
 
         if ((outftp == efPDB) || (outftp == efPQR))
@@ -1321,12 +1322,12 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : NULL, ePBC, box);
+            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
         }
     }
     gmx_atomprop_destroy(aps);
 
-    do_view(oenv, outfile, NULL);
+    do_view(oenv, outfile, nullptr);
 
     return 0;
 }

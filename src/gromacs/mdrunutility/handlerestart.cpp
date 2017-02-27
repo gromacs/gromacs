@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -205,8 +205,8 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                  */
                 strcpy(suf_up, part_suffix);
                 upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != NULL ||
-                             strstr(fn, suf_up) != NULL);
+                *bAddPart = (strstr(fn, part_suffix) != nullptr ||
+                             strstr(fn, suf_up) != nullptr);
             }
 
             sfree(outputfiles);
@@ -270,7 +270,7 @@ handleRestart(t_commrec *cr,
             }
             else
             {
-                fpmulti = NULL;
+                fpmulti = nullptr;
             }
             check_multi_int(fpmulti, cr->ms, sim_part, "simulation part", TRUE);
         }

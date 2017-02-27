@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
@@ -46,14 +45,22 @@
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+class MDModules;
+}
+
 struct gmx_groups_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;
 struct pull_t;
 struct t_grpopts;
+struct t_inpfile;
 struct t_inputrec;
 struct t_rot;
+struct warninp;
+typedef warninp *warninp_t;
 
 enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
@@ -63,7 +70,8 @@ enum {
     ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
 };
 
-typedef struct {
+struct t_gromppopts
+{
     int      warnings;
     int      nshake;
     char    *include;
@@ -79,16 +87,13 @@ typedef struct {
     int      couple_lam0;
     int      couple_lam1;
     gmx_bool bCoupleIntra;
-} t_gromppopts;
+};
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */
 void init_inputrec_strings();
 
 /*! \brief Clean up object that holds strings parsed from an .mdp file */
 void done_inputrec_strings();
-
-void init_ir(t_inputrec *ir, t_gromppopts *opts);
-/* Initiate stuff */
 
 void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi);
@@ -114,7 +119,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
 /* Even more checks, charge group radii vs. cut-off's only. */
 
 void get_ir(const char *mdparin, const char *mdparout,
-            t_inputrec *ir, t_gromppopts *opts,
+            gmx::MDModules *mdModules, t_gromppopts *opts,
             warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next

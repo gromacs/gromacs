@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,11 +154,11 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     int          natoms, ind_min[2] = {0, 0}, ind_mini = 0, ind_minj = 0;
     real         rmin, rmax, rmint, tmint;
     gmx_bool     bFirst;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     natoms = read_first_x(oenv, &status, trxfn, &t, &x, box);
 
-    check_index(NULL, n, index, NULL, natoms);
+    check_index(nullptr, n, index, nullptr, natoms);
 
     out = xvgropen(outfn, "Minimum distance to periodic image",
                    output_env_get_time_label(oenv), "Distance (nm)", oenv);
@@ -171,7 +171,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     rmint = box[XX][XX];
     tmint = 0;
 
-    if (NULL != top)
+    if (nullptr != top)
     {
         gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
@@ -179,7 +179,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     bFirst = TRUE;
     do
     {
-        if (NULL != top)
+        if (nullptr != top)
         {
             gmx_rmpbc(gpbc, natoms, box, x);
         }
@@ -202,7 +202,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     }
     while (read_next_x(oenv, status, &t, x, box));
 
-    if (NULL != top)
+    if (nullptr != top)
     {
         gmx_rmpbc_done(gpbc);
     }
@@ -262,7 +262,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
     for (j = 0; (j < j1); j++)
     {
         jx = index3[j];
-        if (index2 == NULL)
+        if (index2 == nullptr)
         {
             i0 = j + 1;
         }
@@ -337,7 +337,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     t_trxstatus     *trxout;
     char             buf[256];
     char           **leg;
-    real             t, dmin, dmax, **mindres = NULL, **maxdres = NULL;
+    real             t, dmin, dmax, **mindres = nullptr, **maxdres = nullptr;
     int              nmin, nmax;
     t_trxstatus     *status;
     int              i = -1, j, k;
@@ -348,7 +348,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     rvec            *x0;
     matrix           box;
     gmx_bool         bFirst;
-    FILE            *respertime = NULL;
+    FILE            *respertime = nullptr;
 
     if (read_first_x(oenv, &status, fn, &t, &x0, box) == 0)
     {
@@ -358,9 +358,9 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     sprintf(buf, "%simum Distance", bMin ? "Min" : "Max");
     dist = xvgropen(dfile, buf, output_env_get_time_label(oenv), "Distance (nm)", oenv);
     sprintf(buf, "Number of Contacts %s %g nm", bMin ? "<" : ">", rcut);
-    num    = nfile ? xvgropen(nfile, buf, output_env_get_time_label(oenv), "Number", oenv) : NULL;
-    atm    = afile ? gmx_ffopen(afile, "w") : NULL;
-    trxout = xfile ? open_trx(xfile, "w") : NULL;
+    num    = nfile ? xvgropen(nfile, buf, output_env_get_time_label(oenv), "Number", oenv) : nullptr;
+    atm    = afile ? gmx_ffopen(afile, "w") : nullptr;
+    trxout = xfile ? open_trx(xfile, "w") : nullptr;
 
     if (bMat)
     {
@@ -533,7 +533,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
         {
             oindex[0] = bMin ? min1 : max1;
             oindex[1] = bMin ? min2 : max2;
-            write_trx(trxout, 2, oindex, atoms, i, t, box, x0, NULL, NULL);
+            write_trx(trxout, 2, oindex, atoms, i, t, box, x0, nullptr, nullptr);
         }
         bFirst = FALSE;
         /*dmin should be minimum distance for residue and group*/
@@ -693,7 +693,7 @@ int gmx_mindist(int argc, char *argv[])
           "Write residue names" }
     };
     gmx_output_env_t *oenv;
-    t_topology       *top  = NULL;
+    t_topology       *top  = nullptr;
     int               ePBC = -1;
     rvec             *x;
     matrix            box;
@@ -703,11 +703,11 @@ int gmx_mindist(int argc, char *argv[])
     const char       *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
     char            **grpname;
     int              *gnx;
-    int             **index, *residues = NULL;
+    int             **index, *residues = nullptr;
     t_filenm          fnm[] = {
-        { efTRX, "-f",  NULL,      ffREAD },
-        { efTPS,  NULL, NULL,      ffOPTRD },
-        { efNDX,  NULL, NULL,      ffOPTRD },
+        { efTRX, "-f",  nullptr,      ffREAD },
+        { efTPS,  nullptr, nullptr,      ffOPTRD },
+        { efNDX,  nullptr, nullptr,      ffOPTRD },
         { efXVG, "-od", "mindist",  ffWRITE },
         { efXVG, "-on", "numcont",  ffOPTWR },
         { efOUT, "-o", "atm-pair", ffOPTWR },
@@ -718,7 +718,7 @@ int gmx_mindist(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -730,7 +730,7 @@ int gmx_mindist(int argc, char *argv[])
     atmfnm  = ftp2fn_null(efOUT, NFILE, fnm);
     oxfnm   = opt2fn_null("-ox", NFILE, fnm);
     resfnm  = opt2fn_null("-or", NFILE, fnm);
-    if (bPI || resfnm != NULL)
+    if (bPI || resfnm != nullptr)
     {
         /* We need a tps file */
         tpsfnm = ftp2fn(efTPS, NFILE, fnm);
@@ -762,13 +762,13 @@ int gmx_mindist(int argc, char *argv[])
     if (tpsfnm || resfnm || !ndxfnm)
     {
         snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, NULL, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
         }
     }
-    get_index(top ? &(top->atoms) : NULL, ndxfnm, ng, gnx, index, grpname);
+    get_index(top ? &(top->atoms) : nullptr, ndxfnm, ng, gnx, index, grpname);
 
     if (bMat && (ng == 1))
     {
@@ -790,7 +790,7 @@ int gmx_mindist(int argc, char *argv[])
 
     if (resfnm)
     {
-        GMX_RELEASE_ASSERT(top != NULL, "top pointer cannot be NULL when finding residues");
+        GMX_RELEASE_ASSERT(top != nullptr, "top pointer cannot be NULL when finding residues");
         nres = find_residues(&(top->atoms), gnx[0], index[0], &residues);
 
         if (debug)
@@ -806,7 +806,7 @@ int gmx_mindist(int argc, char *argv[])
     else
     {
         dist_plot(trxfnm, atmfnm, distfnm, numfnm, resfnm, oxfnm,
-                  rcutoff, bMat, top ? &(top->atoms) : NULL,
+                  rcutoff, bMat, top ? &(top->atoms) : nullptr,
                   ng, index, gnx, grpname, bSplit, !bMax, nres, residues, bPBC, ePBC,
                   bGroup, bEachResEachTime, bPrintResName, oenv);
     }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,23 +120,23 @@ int gmx_helix(int argc, char *argv[])
     } t_xvgrfile;
 
     t_xvgrfile        xf[efhNR] = {
-        { NULL, NULL, TRUE,  "radius",  "Helix radius",               NULL, "r (nm)", 0.0 },
-        { NULL, NULL, TRUE,  "twist",   "Twist per residue",          NULL, "Angle (deg)", 0.0 },
-        { NULL, NULL, TRUE,  "rise",    "Rise per residue",           NULL, "Rise (nm)", 0.0 },
-        { NULL, NULL, FALSE, "len-ahx", "Length of the Helix",        NULL, "Length (nm)", 0.0 },
-        { NULL, NULL, FALSE, "dip-ahx", "Helix Backbone Dipole",      NULL, "rq (nm e)", 0.0 },
-        { NULL, NULL, TRUE,  "rms-ahx", "RMS Deviation from Ideal Helix", NULL, "RMS (nm)", 0.0 },
-        { NULL, NULL, FALSE, "rmsa-ahx", "Average RMSD per Residue",   "Residue", "RMS (nm)", 0.0 },
-        { NULL, NULL, FALSE,  "cd222",   "Ellipticity at 222 nm", NULL, "nm", 0.0 },
-        { NULL, NULL, TRUE,  "pprms",   "RMS Distance from \\8a\\4-helix", NULL, "deg", 0.0 },
-        { NULL, NULL, TRUE,  "caphi",   "Average Ca-Ca Dihedral",     NULL, "\\8F\\4(deg)", 0.0 },
-        { NULL, NULL, TRUE,  "phi",     "Average \\8F\\4 angles", NULL, "deg", 0.0 },
-        { NULL, NULL, TRUE,  "psi",     "Average \\8Y\\4 angles", NULL, "deg", 0.0 },
-        { NULL, NULL, TRUE,  "hb3",     "Average n-n+3 hbond length", NULL, "nm", 0.0 },
-        { NULL, NULL, TRUE,  "hb4",     "Average n-n+4 hbond length", NULL, "nm", 0.0 },
-        { NULL, NULL, TRUE,  "hb5",     "Average n-n+5 hbond length", NULL, "nm", 0.0 },
-        { NULL, NULL, FALSE,  "JCaHa",   "J-Coupling Values",        "Residue", "Hz", 0.0 },
-        { NULL, NULL, FALSE,  "helicity", "Helicity per Residue",     "Residue", "% of time", 0.0 }
+        { nullptr, nullptr, TRUE,  "radius",  "Helix radius",               nullptr, "r (nm)", 0.0 },
+        { nullptr, nullptr, TRUE,  "twist",   "Twist per residue",          nullptr, "Angle (deg)", 0.0 },
+        { nullptr, nullptr, TRUE,  "rise",    "Rise per residue",           nullptr, "Rise (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "len-ahx", "Length of the Helix",        nullptr, "Length (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "dip-ahx", "Helix Backbone Dipole",      nullptr, "rq (nm e)", 0.0 },
+        { nullptr, nullptr, TRUE,  "rms-ahx", "RMS Deviation from Ideal Helix", nullptr, "RMS (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "rmsa-ahx", "Average RMSD per Residue",   "Residue", "RMS (nm)", 0.0 },
+        { nullptr, nullptr, FALSE,  "cd222",   "Ellipticity at 222 nm", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, TRUE,  "pprms",   "RMS Distance from \\8a\\4-helix", nullptr, "deg", 0.0 },
+        { nullptr, nullptr, TRUE,  "caphi",   "Average Ca-Ca Dihedral",     nullptr, "\\8F\\4(deg)", 0.0 },
+        { nullptr, nullptr, TRUE,  "phi",     "Average \\8F\\4 angles", nullptr, "deg", 0.0 },
+        { nullptr, nullptr, TRUE,  "psi",     "Average \\8Y\\4 angles", nullptr, "deg", 0.0 },
+        { nullptr, nullptr, TRUE,  "hb3",     "Average n-n+3 hbond length", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, TRUE,  "hb4",     "Average n-n+4 hbond length", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, TRUE,  "hb5",     "Average n-n+5 hbond length", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, FALSE,  "JCaHa",   "J-Coupling Values",        "Residue", "Hz", 0.0 },
+        { nullptr, nullptr, FALSE,  "helicity", "Helicity per Residue",     "Residue", "% of time", 0.0 }
     };
 
     gmx_output_env_t *oenv;
@@ -152,18 +152,18 @@ int gmx_helix(int argc, char *argv[])
     real              t;
     real              rms;
     matrix            box;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
     gmx_bool          bRange;
     t_filenm          fnm[] = {
-        { efTPR, NULL,  NULL,   ffREAD  },
-        { efNDX, NULL,  NULL,   ffREAD  },
-        { efTRX, "-f",  NULL,   ffREAD  },
+        { efTPR, nullptr,  nullptr,   ffREAD  },
+        { efNDX, nullptr,  nullptr,   ffREAD  },
+        { efTRX, "-f",  nullptr,   ffREAD  },
         { efSTO, "-cz", "zconf", ffWRITE },
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -207,7 +207,7 @@ int gmx_helix(int argc, char *argv[])
     /* Read reference frame from tpx file to compute helix length */
     snew(xref, top->atoms.nr);
     read_tpx(ftp2fn(efTPR, NFILE, fnm),
-             NULL, NULL, &natoms, xref, NULL, NULL);
+             nullptr, nullptr, &natoms, xref, nullptr, nullptr);
     calc_hxprops(nres, bb, xref);
     do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);
     sfree(xref);
@@ -243,7 +243,7 @@ int gmx_helix(int argc, char *argv[])
             if (teller == 1)
             {
                 write_sto_conf(opt2fn("-cz", NFILE, fnm), "Helix fitted to Z-Axis",
-                               &(top->atoms), x, NULL, ePBC, box);
+                               &(top->atoms), x, nullptr, ePBC, box);
             }
 
             xf[efhRAD].val   = radius(xf[efhRAD].fp2, nca, caindex, x);

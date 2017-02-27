@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,7 @@ class BaseFFTTest : public ::testing::Test
 class FFTTest : public BaseFFTTest
 {
     public:
-        FFTTest() : fft_(NULL)
+        FFTTest() : fft_(nullptr)
         {
         }
         ~FFTTest()
@@ -134,7 +134,7 @@ class FFTTest : public BaseFFTTest
 class ManyFFTTest : public BaseFFTTest
 {
     public:
-        ManyFFTTest() : fft_(NULL)
+        ManyFFTTest() : fft_(nullptr)
         {
         }
         ~ManyFFTTest()
@@ -158,7 +158,7 @@ class FFTTest1D : public FFTTest, public ::testing::WithParamInterface<int>
 class FFFTest3D : public BaseFFTTest
 {
     public:
-        FFFTest3D() : fft_(NULL)
+        FFFTest3D() : fft_(nullptr)
         {
         }
         ~FFFTest3D()
@@ -301,7 +301,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     std::copy(inputdata, inputdata+sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(rdata, in_.data(), sizeInBytes);
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, NULL);
+    gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);
     //TODO use std::complex and add checkComplex for it
     checker_.checkSequenceArray(size*2,
                                 reinterpret_cast<real*>(cdata), "forward");
@@ -310,7 +310,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     std::copy(inputdata, inputdata+sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(cdata, in_.data(), sizeInBytes);
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, NULL);
+    gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, nullptr);
     for (int i = 0; i < ndata[0]*ndata[1]; i++) //check sequence but skip unused data
     {
         checker_.checkSequenceArray(ndata[2], rdata+i*rsize[2],

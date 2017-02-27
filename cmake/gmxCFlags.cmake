@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -213,12 +213,12 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
             GMX_TEST_CXXFLAG(CXXFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CXXFLAGS_RELWITHASSERT)
         else()
-#809: exception specification for virtual function X is incompatible with that of overridden function
             if(NOT GMX_OPENMP)
                 GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
             endif()
             if (GMX_COMPILER_WARNINGS)
-GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd383 /wd411 /wd444 /wd809 /wd981 /wd1418 /wd1572 /wd1599 /wd2259 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
+#809: exception specification for virtual function X is incompatible with that of overridden function
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd383 /wd411 /wd444 /wd809 /wd981 /wd1418 /wd1572 /wd1599 /wd2259 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()

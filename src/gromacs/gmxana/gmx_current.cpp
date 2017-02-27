@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -356,12 +356,12 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     int       i, j;
     int       valloc, nalloc, nfr, nvfr;
     int       vshfr;
-    real     *xshfr       = NULL;
-    int      *vfr         = NULL;
+    real     *xshfr       = nullptr;
+    int      *vfr         = nullptr;
     real      refr        = 0.0;
-    real     *cacf        = NULL;
-    real     *time        = NULL;
-    real     *djc         = NULL;
+    real     *cacf        = nullptr;
+    real     *time        = nullptr;
+    real     *djc         = nullptr;
     real      corint      = 0.0;
     real      prefactorav = 0.0;
     real      prefactor   = 0.0;
@@ -378,16 +378,16 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     rvec      mja_tmp;
     rvec      mjd_tmp;
     rvec      mdvec;
-    rvec     *mu    = NULL;
-    rvec     *xp    = NULL;
-    rvec     *v0    = NULL;
-    rvec     *mjdsp = NULL;
-    real     *dsp2  = NULL;
+    rvec     *mu    = nullptr;
+    rvec     *xp    = nullptr;
+    rvec     *v0    = nullptr;
+    rvec     *mjdsp = nullptr;
+    real     *dsp2  = nullptr;
     real      t0;
     real      rtmp;
 
     rvec      tmp;
-    rvec     *mtrans = NULL;
+    rvec     *mtrans = nullptr;
 
     /*
      * Variables for the least-squares fit for Einstein-Helfand and Green-Kubo
@@ -400,7 +400,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     real         err   = 0.0;
     real        *xfit;
     real        *yfit;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     /*
      * indices for EH
@@ -460,7 +460,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                 xshfr[i] = 0.0;
             }
         }
-        GMX_RELEASE_ASSERT(time != NULL, "Memory not allocated correctly - time array is NULL");
+        GMX_RELEASE_ASSERT(time != nullptr, "Memory not allocated correctly - time array is NULL");
 
         if (nfr == 0)
         {
@@ -639,7 +639,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     printf("\n\nAverage translational dipole moment M_J [enm] after %d frames (|M|^2): %f %f %f (%f)\n", nfr, mja_tmp[XX], mja_tmp[YY], mja_tmp[ZZ], mj2);
     printf("\n\nAverage molecular dipole moment M_D [enm] after %d frames (|M|^2): %f %f %f (%f)\n", nfr, mdvec[XX], mdvec[YY], mdvec[ZZ], md2);
 
-    if (v0 != NULL)
+    if (v0 != nullptr)
     {
         if (bINT)
         {
@@ -751,7 +751,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     }
 
 
-    if (v0 != NULL)
+    if (v0 != nullptr)
     {
         sfree(v0);
     }
@@ -805,13 +805,13 @@ int gmx_current(int argc, char *argv[])
 
     gmx_output_env_t      *oenv;
     t_topology             top;
-    char                 **grpname = NULL;
+    char                 **grpname = nullptr;
     const char            *indexfn;
     t_trxframe             fr;
-    real                  *mass2 = NULL;
+    real                  *mass2 = nullptr;
     matrix                 box;
     int                   *index0;
-    int                   *indexm = NULL;
+    int                   *indexm = nullptr;
     int                    isize;
     t_trxstatus           *status;
     int                    flags = 0;
@@ -821,16 +821,16 @@ int gmx_current(int argc, char *argv[])
     int                    nmols;
     int                    i;
     real                  *qmol;
-    FILE                  *outf   = NULL;
-    FILE                  *mcor   = NULL;
-    FILE                  *fmj    = NULL;
-    FILE                  *fmd    = NULL;
-    FILE                  *fmjdsp = NULL;
-    FILE                  *fcur   = NULL;
+    FILE                  *outf   = nullptr;
+    FILE                  *mcor   = nullptr;
+    FILE                  *fmj    = nullptr;
+    FILE                  *fmd    = nullptr;
+    FILE                  *fmjdsp = nullptr;
+    FILE                  *fcur   = nullptr;
     t_filenm               fnm[]  = {
-        { efTPS,  NULL,  NULL, ffREAD }, /* this is for the topology */
-        { efNDX, NULL, NULL, ffOPTRD },
-        { efTRX, "-f", NULL, ffREAD },   /* and this for the trajectory */
+        { efTPS,  nullptr,  nullptr, ffREAD }, /* this is for the topology */
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD },      /* and this for the trajectory */
         { efXVG, "-o",   "current", ffWRITE },
         { efXVG, "-caf", "caf",     ffOPTWR },
         { efXVG, "-dsp", "dsp",     ffWRITE },
@@ -880,7 +880,7 @@ int gmx_current(int argc, char *argv[])
 
     /* At first the arguments will be parsed and the system information processed */
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -888,7 +888,7 @@ int gmx_current(int argc, char *argv[])
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);

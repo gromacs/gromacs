@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
         }
     }
 
-    if (cr_sum != NULL)
+    if (cr_sum != nullptr)
     {
         for (d = 0; d < DIM; d++)
         {
@@ -146,7 +146,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
             if (box[j][d] != 0)
             {
                 ddbox->tric_dir[d] = 1;
-                if (dd_nc != NULL && (*dd_nc)[j] > 1 && (*dd_nc)[d] == 1)
+                if (dd_nc != nullptr && (*dd_nc)[j] > 1 && (*dd_nc)[d] == 1)
                 {
                     gmx_fatal(FARGS, "Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
                               (*dd_nc)[XX], (*dd_nc)[YY], (*dd_nc)[ZZ],
@@ -292,7 +292,7 @@ void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
     {
         low_set_ddbox(ir, &dd->nc, box, bCalcUnboundedSize,
                       bMasterState ? cgs->nr : dd->ncg_home, cgs, x,
-                      bMasterState ? NULL : cr_sum,
+                      bMasterState ? nullptr : cr_sum,
                       ddbox);
     }
 
@@ -309,7 +309,7 @@ void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
 {
     if (MASTER(cr))
     {
-        low_set_ddbox(ir, dd_nc, box, TRUE, cgs->nr, cgs, x, NULL, ddbox);
+        low_set_ddbox(ir, dd_nc, box, TRUE, cgs->nr, cgs, x, nullptr, ddbox);
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, cr);

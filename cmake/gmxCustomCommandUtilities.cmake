@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -90,10 +90,6 @@ endfunction()
 
 # More flexible alternative to add_custom_command() and add_custom_target()
 # for dependent custom commands.  It adds a few convenience features:
-#   - Support for custom commands that always run (like add_custom_target()),
-#     but still have the ability to act as dependencies of other custom
-#     commands (such that the dependent commands run only if the output
-#     has been updated) also for Ninja.
 #   - Adds file-level dependencies between custom targets added with this
 #     command such that if there is a target-level dependency, it also implies
 #     that the custom command should always be run if the output file of the
@@ -110,16 +106,13 @@ endfunction()
 #                                [WORKING_DIRECTORY <dir>]
 #                                [DEPENDS <deps...>]
 #                                [DEPENDS_FILE_LIST <list>]
-#                                [COMMENT <comment>])
+#                                [COMMENT <comment>] [USES_TERMINAL])
 #
 #   <target>
 #     - Name of the custom target to create.
 #   RUN_ALWAYS
-#     - Create the command such that it always runs.
-#       This takes care of differences between the Ninja generator and others,
-#       which require different rules to make this happen such that
-#       dependencies on the output of the target work correctly, also in the
-#       case the command does not always update the timestamp of the output.
+#     - Create the command such that it always runs, and may update the output
+#       file in the process.
 #       The dependencies listed with DEPENDS are ignored in this case.
 #   ADD_FAST_TARGET
 #     - In addition to creating <target>, create a secondary target
@@ -142,6 +135,8 @@ endfunction()
 #   WORKING_DIRECTORY
 #     - Passed to add_custom_command()/add_custom_target()
 #   COMMENT
+#     - Passed to add_custom_command()/add_custom_target()
+#   USES_TERMINAL
 #     - Passed to add_custom_command()/add_custom_target()
 #   DEPENDS
 #     - Dependencies passed to add_custom_command().  Any targets in this list
@@ -176,7 +171,7 @@ function (gmx_add_custom_output_target targetname)
             set(_add_fast ON)
         elseif ("x${_arg}" MATCHES "^x(OUTPUT|DEPENDS|DEPENDS_FILE_LIST)$")
             set(_option ${_arg})
-        elseif ("x${_arg}" MATCHES "^x(COMMAND|COMMENT|WORKING_DIRECTORY)$")
+        elseif ("x${_arg}" MATCHES "^x(COMMAND|COMMENT|WORKING_DIRECTORY|USES_TERMINAL)$")
             set(_option "PASS")
             list(APPEND _command_args "${_arg}")
         elseif ("x${_option}" STREQUAL "xDEPENDS")
@@ -214,37 +209,12 @@ function (gmx_add_custom_output_target targetname)
     endif()
     # Create the actual command as requested.
     if (NOT _always)
-        # If the command does not need to run always, the standard CMake
-        # mechanism is sufficient.
         add_custom_command(OUTPUT ${_output}
             ${_command_args} DEPENDS ${_deps} VERBATIM)
         add_custom_target(${targetname} DEPENDS ${_output})
-    elseif (CMAKE_GENERATOR STREQUAL "Ninja")
-        # Ninja requires all generated files mentioned in dependencies of custom
-        # commands to be actually mentioned in the build system, and luckily
-        # add_custom_command() makes that possible.
-        # But it seems impossible to create a robust custom command that would be
-        # always run, so other generators that do not have this constraint simply
-        # use an add_custom_target().
-        #
-        # The second, phony file is never created, so the rule is always
-        # triggered again.  TODO: Figure out why this works, even though ninja
-        # very eagerly complains about missing files.
-        # This unfortunately does not work with the make generator, as
-        # the non-existent second file causes some part of the generated system
-        # erase the first file at the beginning of every build, causing a full
-        # rebuild of the dependencies.
-        add_custom_command(OUTPUT ${_output} ${targetname}-phony
-            ${_command_args} VERBATIM)
-        # The generated Ninja build system would probably work fine even
-        # without this target, but CMake requires all custom commands to belong
-        # to a target in the same CMakeLists.txt to generate anything for them.
-        add_custom_target(${targetname} DEPENDS ${_output})
     else()
-        # For other generators, a target-level dependency on the custom target
-        # ensures that the output is created before the dependent targets'
-        # dependencies are even evaluated.
-        add_custom_target(${targetname} ${_command_args} VERBATIM)
+        add_custom_target(${targetname} BYPRODUCTS ${_output}
+            ${_command_args} VERBATIM)
     endif()
     # Store the output file name in a custom property to be used in dependency
     # resolution later.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,6 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -157,7 +156,8 @@ int gmx_mdrun(int argc, char *argv[])
         "The option [TT]-pforce[tt] is useful when you suspect a simulation",
         "crashes due to too large forces. With this option coordinates and",
         "forces of atoms with a force larger than a certain value will",
-        "be printed to stderr.",
+        "be printed to stderr. It will also terminate the run when non-finite",
+        "forces are present.",
         "[PAR]",
         "Checkpoints containing the complete state of the system are written",
         "at regular intervals (option [TT]-cpt[tt]) to the file [TT]-cpo[tt],",
@@ -229,11 +229,11 @@ int gmx_mdrun(int argc, char *argv[])
     };
     t_commrec    *cr;
     t_filenm      fnm[] = {
-        { efTPR, NULL,      NULL,       ffREAD },
-        { efTRN, "-o",      NULL,       ffWRITE },
-        { efCOMPRESSED, "-x", NULL,     ffOPTWR },
-        { efCPT, "-cpi",    NULL,       ffOPTRD | ffALLOW_MISSING },
-        { efCPT, "-cpo",    NULL,       ffOPTWR },
+        { efTPR, nullptr,      nullptr,       ffREAD },
+        { efTRN, "-o",      nullptr,       ffWRITE },
+        { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
+        { efCPT, "-cpi",    nullptr,       ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-cpo",    nullptr,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
         { efEDR, "-e",      "ener",     ffWRITE },
         { efLOG, "-g",      "md",       ffWRITE },
@@ -256,7 +256,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efRND, "-multidir", NULL,      ffOPTRDMULT},
+        { efRND, "-multidir", nullptr,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
         { efNDX, "-mn",     "membed",   ffOPTRD },
@@ -291,20 +291,20 @@ int gmx_mdrun(int argc, char *argv[])
 
     rvec              realddxyz                   = {0, 0, 0};
     const char       *ddrank_opt[ddrankorderNR+1] =
-    { NULL, "interleave", "pp_pme", "cartesian", NULL };
+    { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
     const char       *dddlb_opt[] =
-    { NULL, "auto", "no", "yes", NULL };
+    { nullptr, "auto", "no", "yes", nullptr };
     const char       *thread_aff_opt[threadaffNR+1] =
-    { NULL, "auto", "on", "off", NULL };
+    { nullptr, "auto", "on", "off", nullptr };
     const char       *nbpu_opt[] =
-    { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
+    { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char             *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
+    char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
     real              cpt_period            = 15.0, max_hours = -1;
     gmx_bool          bTryToAppendFiles     = TRUE;
     gmx_bool          bKeepAndNumCPT        = FALSE;
     gmx_bool          bResetCountersHalfWay = FALSE;
-    gmx_output_env_t *oenv                  = NULL;
+    gmx_output_env_t *oenv                  = nullptr;
 
     /* Non transparent initialization of a complex gmx_hw_opt_t struct.
      * But unfortunately we are not allowed to call a function here,
@@ -312,7 +312,7 @@ int gmx_mdrun(int argc, char *argv[])
      */
     gmx_hw_opt_t    hw_opt = {
         0, 0, 0, 0, threadaffSEL, 0, 0,
-        { NULL, FALSE, 0, NULL }
+        { nullptr, FALSE, 0, nullptr }
     };
 
     t_pargs         pa[] = {
@@ -421,7 +421,7 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bDoAppendFiles, bStartFromCpt;
     FILE           *fplog;
     int             rc;
-    char          **multidir = NULL;
+    char          **multidir = nullptr;
 
     cr = init_commrec();
 
@@ -448,7 +448,7 @@ int gmx_mdrun(int argc, char *argv[])
      */
 
     if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(cr);
         return 0;
@@ -535,7 +535,7 @@ int gmx_mdrun(int argc, char *argv[])
     }
     else
     {
-        fplog = NULL;
+        fplog = nullptr;
     }
 
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);

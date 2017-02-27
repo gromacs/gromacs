@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@ void
 _gmx_selvalue_clear(gmx_ana_selvalue_t *val)
 {
     val->nr     = 0;
-    val->u.ptr  = NULL;
+    val->u.ptr  = nullptr;
     val->nalloc = 0;
 }
 
@@ -71,7 +71,7 @@ _gmx_selvalue_free(gmx_ana_selvalue_t *val)
         }
     }
     // TODO: It causes a memory leak somewhere if val->nr is assigned zero here...
-    val->u.ptr  = NULL;
+    val->u.ptr  = nullptr;
     val->nalloc = 0;
 }
 
@@ -95,11 +95,11 @@ _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
                 srenew(val->u.s, n);
                 for (i = val->nalloc; i < n; ++i)
                 {
-                    val->u.s[i] = NULL;
+                    val->u.s[i] = nullptr;
                 }
                 break;
             case POS_VALUE:
-                GMX_RELEASE_ASSERT(val->u.ptr == NULL,
+                GMX_RELEASE_ASSERT(val->u.ptr == nullptr,
                                    "Reallocation of position values not supported");
                 val->u.p = new gmx_ana_pos_t[n];
                 break;
@@ -121,7 +121,7 @@ _gmx_selvalue_getstore_and_release(gmx_ana_selvalue_t *val, void **ptr, int *nal
 {
     *ptr        = val->u.ptr;
     *nalloc     = val->nalloc;
-    val->u.ptr  = NULL;
+    val->u.ptr  = nullptr;
     val->nalloc = 0;
 }
 

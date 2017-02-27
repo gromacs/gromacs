@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ bool AbstractSimpleHelpTopic::hasSubTopics() const
 const IHelpTopic *
 AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
 {
-    return NULL;
+    return nullptr;
 }
 
 void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
@@ -131,7 +131,7 @@ AbstractCompositeHelpTopic::findSubTopic(const char *name) const
     Impl::SubTopicMap::const_iterator topic = impl_->subTopicMap_.find(name);
     if (topic == impl_->subTopicMap_.end())
     {
-        return NULL;
+        return nullptr;
     }
     return topic->second;
 }
@@ -182,8 +182,8 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     }
     TextWriter        &file = context.outputFile();
     TextTableFormatter formatter;
-    formatter.addColumn(NULL, maxNameLength + 1, false);
-    formatter.addColumn(NULL, 72 - maxNameLength, true);
+    formatter.addColumn(nullptr, maxNameLength + 1, false);
+    formatter.addColumn(nullptr, 72 - maxNameLength, true);
     formatter.setFirstColumnIndent(4);
     file.writeLine(title);
     for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)

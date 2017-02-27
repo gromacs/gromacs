@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
-              defaultBasename_(NULL), defaultType_(-1),
+              defaultBasename_(nullptr), defaultType_(-1),
               bLegacyOptionalBehavior_(false),
               bRead_(false), bWrite_(false), bLibrary_(false),
               bAllowMissing_(false)

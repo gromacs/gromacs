@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,7 @@
 }
 %{
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "parser.h"
 #include "scanner.h"
@@ -71,6 +72,11 @@
 // when we have return statements followed by break. Instead, we add breaks
 // manually.
 #define YY_BREAK
+
+#ifdef __INTEL_COMPILER
+// Ignore unused variables in generated code.
+#pragma warning(disable:593)
+#endif
 %}
 
 INTEGER    [[:digit:]]+
@@ -137,7 +143,7 @@ COMMENT    (#.*)
 ";"|\n          {
                     if (yytext[0] == ';' || state->statusWriter != NULL)
                     {
-                        rtrim(state->pselstr);
+                        state->pselstr = gmx::stripString(state->pselstr);
                         state->bCmdStart = true;
                         return CMD_SEP;
                     }

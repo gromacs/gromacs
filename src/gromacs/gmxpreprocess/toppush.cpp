@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
@@ -55,6 +56,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -537,16 +539,22 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     sfree(param);
 }
 
+//! Return whether the contents of \c a and \c b are the same, considering also reversed order.
+template <typename T>
+static bool equalEitherForwardOrBackward(gmx::ConstArrayRef<T> a, gmx::ConstArrayRef<T> b)
+{
+    return (std::equal(a.begin(), a.end(), b.begin()) ||
+            std::equal(a.begin(), a.end(), b.rbegin()));
+}
+
 static void push_bondtype(t_params     *       bt,
-                          t_param     *        b,
+                          const t_param *      b,
                           int                  nral,
                           int                  ftype,
                           gmx_bool             bAllowRepeat,
-                          char     *           line,
+                          const char *         line,
                           warninp_t            wi)
 {
-    int      i, j;
-    gmx_bool bTest, bFound, bCont, bId;
     int      nr   = bt->nr;
     int      nrfp = NRFP(ftype);
     char     errbuf[STRLEN];
@@ -561,73 +569,93 @@ static void push_bondtype(t_params     *       bt,
        in this group.
      */
 
-    bFound = FALSE;
-    bCont  = FALSE;
-
+    bool isContinuationOfBlock = false;
     if (bAllowRepeat && nr > 1)
     {
-        for (j = 0, bCont = TRUE; (j < nral); j++)
+        isContinuationOfBlock = true;
+        for (int j = 0; j < nral; j++)
         {
-            bCont = bCont && (b->a[j] == bt->param[nr-2].a[j]);
+            if (b->a[j] != bt->param[nr - 2].a[j])
+            {
+                isContinuationOfBlock = false;
+            }
         }
     }
 
     /* Search for earlier duplicates if this entry was not a continuation
        from the previous line.
      */
-    if (!bCont)
+    bool addBondType = true;
+    bool haveWarned  = false;
+    bool haveErrored = false;
+    for (int i = 0; (i < nr); i++)
     {
-        bFound = FALSE;
-        for (i = 0; (i < nr); i++)
+        gmx::ConstArrayRef<int> bParams(b->a, b->a + nral);
+        gmx::ConstArrayRef<int> testParams(bt->param[i].a, bt->param[i].a + nral);
+        if (equalEitherForwardOrBackward(bParams, testParams))
         {
-            bTest = TRUE;
-            for (j = 0; (j < nral); j++)
+            GMX_ASSERT(nrfp <= MAXFORCEPARAM, "This is ensured in other places, but we need this assert to keep the clang analyzer happy");
+            // TODO consider improving the following code by using:
+            // bool identicalParameters = std::equal(bt->param[i].c, bt->param[i].c + nrfp, b->c);
+            bool identicalParameters = true;
+            for (int j = 0; (j < nrfp); j++)
             {
-                bTest = (bTest && (b->a[j] == bt->param[i].a[j]));
+                identicalParameters = identicalParameters && (bt->param[i].c[j] == b->c[j]);
             }
-            if (!bTest)
+
+            if (!bAllowRepeat || identicalParameters)
             {
-                bTest = TRUE;
-                for (j = 0; (j < nral); j++)
-                {
-                    bTest = (bTest && (b->a[nral-1-j] == bt->param[i].a[j]));
-                }
+                addBondType = false;
             }
-            if (bTest)
+
+            if (!identicalParameters)
             {
-                if (!bFound)
+                if (bAllowRepeat)
                 {
-                    bId = TRUE;
-                    for (j = 0; (j < nrfp); j++)
+                    /* With dihedral type 9 we only allow for repeating
+                     * of the same parameters with blocks with 1 entry.
+                     * Allowing overriding is too complex to check.
+                     */
+                    if (!isContinuationOfBlock && !haveErrored)
                     {
-                        bId = bId && (bt->param[i].c[j] == b->c[j]);
-                    }
-                    if (!bId)
-                    {
-                        sprintf(errbuf, "Overriding %s parameters.%s",
-                                interaction_function[ftype].longname,
-                                (ftype == F_PDIHS) ?
-                                "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
-                                : "");
-                        warning(wi, errbuf);
-                        fprintf(stderr, "  old:                                         ");
-                        for (j = 0; (j < nrfp); j++)
-                        {
-                            fprintf(stderr, " %g", bt->param[i].c[j]);
-                        }
-                        fprintf(stderr, " \n  new: %s\n\n", line);
+                        warning_error(wi, "Encountered a second block of parameters for dihedral type 9 for the same atoms, with either different parameters and/or the first block has multiple lines. This is not supported.");
+                        haveErrored = true;
                     }
                 }
-                /* Overwrite it! */
-                for (j = 0; (j < nrfp); j++)
+                else if (!haveWarned)
+                {
+                    sprintf(errbuf, "Overriding %s parameters.%s",
+                            interaction_function[ftype].longname,
+                            (ftype == F_PDIHS) ?
+                            "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                            : "");
+                    warning(wi, errbuf);
+
+                    fprintf(stderr, "  old:                                         ");
+                    for (int j = 0; (j < nrfp); j++)
+                    {
+                        fprintf(stderr, " %g", bt->param[i].c[j]);
+                    }
+                    fprintf(stderr, " \n  new: %s\n\n", line);
+
+                    haveWarned = true;
+                }
+            }
+
+            if (!identicalParameters && !bAllowRepeat)
+            {
+                /* Overwrite the parameters with the latest ones */
+                // TODO considering improving the following code by replacing with:
+                // std::copy(b->c, b->c + nrfp, bt->param[i].c);
+                for (int j = 0; (j < nrfp); j++)
                 {
                     bt->param[i].c[j] = b->c[j];
                 }
-                bFound = TRUE;
             }
         }
     }
-    if (!bFound)
+
+    if (addBondType)
     {
         /* alloc */
         pr_alloc (2, bt);
@@ -649,7 +677,7 @@ static void push_bondtype(t_params     *       bt,
             bt->param[bt->nr+1].c[7] = 1-bt->param[bt->nr+1].c[7];
         }
 
-        for (j = 0; (j < nral); j++)
+        for (int j = 0; (j < nral); j++)
         {
             bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
         }
@@ -704,7 +732,7 @@ void push_bt(directive d, t_params bt[], int nral,
         return;
     }
 
-    ft    = strtol(alc[nral], NULL, 10);
+    ft    = strtol(alc[nral], nullptr, 10);
     ftype = ifunc_index(d, ft);
     nrfp  = NRFP(ftype);
     nrfpA = interaction_function[ftype].nrfpA;
@@ -813,7 +841,7 @@ void push_dihedraltype(directive d, t_params bt[],
     if (nn >= 3 && strlen(alc[2]) == 1 && isdigit(alc[2][0]))
     {
         nral  = 2;
-        ft    = strtol(alc[nral], NULL, 10);
+        ft    = strtol(alc[nral], nullptr, 10);
         /* Move atom types around a bit and use 'X' for wildcard atoms
          * to create a 4-atom dihedral definition with arbitrary atoms in
          * position 1 and 4.
@@ -838,7 +866,7 @@ void push_dihedraltype(directive d, t_params bt[],
     else if (nn == 5 && strlen(alc[4]) == 1 && isdigit(alc[4][0]))
     {
         nral  = 4;
-        ft    = strtol(alc[nral], NULL, 10);
+        ft    = strtol(alc[nral], nullptr, 10);
     }
     else
     {
@@ -1112,9 +1140,9 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     }
     start += nchar_consumed;
 
-    ft     = strtol(alc[nral], NULL, 10);
-    nxcmap = strtol(alc[nral+1], NULL, 10);
-    nycmap = strtol(alc[nral+2], NULL, 10);
+    ft     = strtol(alc[nral], nullptr, 10);
+    nxcmap = strtol(alc[nral+1], nullptr, 10);
+    nycmap = strtol(alc[nral+2], nullptr, 10);
 
     /* Check for equal grid spacing in x and y dims */
     if (nxcmap != nycmap)
@@ -1125,8 +1153,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 
     ncmap  = nxcmap*nycmap;
     ftype  = ifunc_index(d, ft);
-    nrfpA  = strtol(alc[6], NULL, 10)*strtol(alc[6], NULL, 10);
-    nrfpB  = strtol(alc[7], NULL, 10)*strtol(alc[7], NULL, 10);
+    nrfpA  = strtol(alc[6], nullptr, 10)*strtol(alc[6], nullptr, 10);
+    nrfpB  = strtol(alc[7], nullptr, 10)*strtol(alc[7], nullptr, 10);
     nrfp   = nrfpA+nrfpB;
 
     /* Allocate memory for the CMAP grid */
@@ -1143,7 +1171,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         }
         nn  = sscanf(line+start+sl, " %s ", s);
         sl += strlen(s);
-        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, NULL);
+        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, nullptr);
 
         if (nn == 1)
         {
@@ -1264,7 +1292,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
             warning_error_and_exit(wi, errbuf, FARGS);
         }
     }
-    resnr = strtol(resnumberic, NULL, 10);
+    resnr = strtol(resnumberic, nullptr, 10);
 
     if (nr > 0)
     {
@@ -1461,7 +1489,7 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
 {
     int          i, j, ti, tj, ntype;
     gmx_bool     bFound;
-    t_param     *pi    = NULL;
+    t_param     *pi    = nullptr;
     int          nr    = bt[ftype].nr;
     int          nral  = NRAL(ftype);
     int          nrfp  = interaction_function[ftype].nrfpA;
@@ -1635,8 +1663,8 @@ static gmx_bool default_params(int ftype, t_params bt[],
 {
     int          nparam_found;
     gmx_bool     bFound, bSame;
-    t_param     *pi    = NULL;
-    t_param     *pj    = NULL;
+    t_param     *pi    = nullptr;
+    t_param     *pj    = nullptr;
     int          nr    = bt[ftype].nr;
     int          nral  = NRAL(ftype);
     int          nrfpA = interaction_function[ftype].nrfpA;
@@ -2238,8 +2266,8 @@ void push_vsitesn(directive d, t_params bond[],
 {
     char   *ptr;
     int     type, ftype, j, n, ret, nj, a;
-    int    *atc    = NULL;
-    double *weight = NULL, weight_tot;
+    int    *atc    = nullptr;
+    double *weight = nullptr, weight_tot;
     t_param param;
     char    errbuf[STRLEN];
 
@@ -2412,7 +2440,7 @@ void init_block2(t_block2 *b2, int natom)
     snew(b2->a, b2->nr);
     for (i = 0; (i < b2->nr); i++)
     {
-        b2->a[i] = NULL;
+        b2->a[i] = nullptr;
     }
 }
 
@@ -2665,7 +2693,7 @@ static void convert_pairs_to_pairsQ(t_params *plist,
 
     /* Empty the LJ14 pairlist */
     plist[F_LJ14].nr    = 0;
-    plist[F_LJ14].param = NULL;
+    plist[F_LJ14].param = nullptr;
 }
 
 static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, warninp_t wi)

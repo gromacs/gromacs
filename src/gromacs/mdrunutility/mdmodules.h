@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,10 @@ struct t_inputrec;
 namespace gmx
 {
 
+class KeyValueTreeObject;
+class IKeyValueTreeErrorHandler;
+class IKeyValueTreeTransformRules;
+
 /*! \libinternal \brief
  * Factory for t_inputrec.
  *
@@ -75,8 +79,14 @@ namespace gmx
  * This (and other refactoring) would allow simplifying IInputRecExtension.
  * IForceProvider is the other interface currently used to interact with these
  * modules.  Also, all the places where these interfaces are used should become
- * loops over a container of these interfaces, instead of the current single
- * pointer.
+ * loops over a container of these interfaces, and/or groups of them (e.g.
+ * applied forces), instead of the current single pointer.
+ *
+ * The assignOptionsToModules() and
+ * assignOptionsToModulesFromInputrec() methods of this class also
+ * take responsibility for wiring up the options (and their defaults)
+ * for each module, respectively for mdp- and tpr-style input of those
+ * options.
  *
  * \inlibraryapi
  * \ingroup module_mdrunutility
@@ -94,6 +104,46 @@ class MDModules
          * with it.
          */
         t_inputrec *inputrec();
+        //! \copydoc t_inputrec *inputrec()
+        const t_inputrec *inputrec() const;
+
+        /*! \brief Initializes a transform from mdp values to
+         * sectioned options.
+         *
+         * The transform is specified from a flat KeyValueTreeObject that
+         * contains each mdp value as a property, to a structure which is then
+         * assigned to the options defined with initMdpOptions().
+         *
+         * Once the transition from mdp to key-value input is
+         * complete, this method will probably not exist.
+         */
+        void initMdpTransform(IKeyValueTreeTransformRules *rules);
+
+        /*! \brief Use \c mdpOptionValues to set the options (e.g.read
+         * from mdp input) for each module.
+         *
+         * \param[in] mdpOptionValues Contains keys and values from user
+         *     input (and defaults) to configure modules that have
+         *     registered options with those keys.
+         * \param[out] errorHandler  Called to report errors. */
+        void assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
+                                           IKeyValueTreeErrorHandler *errorHandler);
+
+        /*! \brief
+         * Initializes modules based on inputrec values read from tpr file.
+         *
+         * This needs to be called after read_tpx_state() if the modules need
+         * to be accessed.
+         */
+        void assignOptionsToModulesFromTpr();
+
+        /*! \brief
+         * Normalizes inputrec parameters to match current code version.
+         *
+         * This orders the parameters in inputrec to match the current code and
+         * adds any missing defaults.
+         */
+        void adjustInputrecBasedOnModules();
 
     private:
         class Impl;

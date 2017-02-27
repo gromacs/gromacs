@@ -1108,19 +1108,23 @@ Pressure coupling
 
 .. mdp:: pcoupltype
 
+   Specifies the kind of isotropy of the pressure coupling used. Each
+   kind takes one or more values for :mdp:`compressibility` and
+   :mdp:`ref-p`. Only a single value is permitted for :mdp:`tau-p`.
+
    .. mdp-value:: isotropic
 
       Isotropic pressure coupling with time constant
-      :mdp:`tau-p`. The compressibility and reference pressure are
-      set with :mdp:`compressibility` and :mdp:`ref-p`, one value is
-      needed.
+      :mdp:`tau-p`. One value each for :mdp:`compressibility` and
+      :mdp:`ref-p` is required.
 
    .. mdp-value:: semiisotropic
 
       Pressure coupling which is isotropic in the ``x`` and ``y``
       direction, but different in the ``z`` direction. This can be
-      useful for membrane simulations. 2 values are needed for ``x/y``
-      and ``z`` directions respectively.
+      useful for membrane simulations. Two values each for
+      :mdp:`compressibility` and :mdp:`ref-p` are required, for
+      ``x/y`` and ``z`` directions respectively.
 
    .. mdp-value:: anisotropic
 
@@ -1156,18 +1160,21 @@ Pressure coupling
 .. mdp:: tau-p
 
    (1) \[ps\]
-   time constant for coupling
+   The time constant for pressure coupling (one value for all
+   directions).
 
 .. mdp:: compressibility
 
    \[bar^-1\]
-   compressibility (NOTE: this is now really in bar-1) For water at 1
-   atm and 300 K the compressibility is 4.5e-5 bar^-1.
+   The compressibility (NOTE: this is now really in bar^-1) For water at 1
+   atm and 300 K the compressibility is 4.5e-5 bar^-1. The number of
+   required values is implied by :mdp:`pcoupltype`.
 
 .. mdp:: ref-p
 
    \[bar\]
-   reference pressure for coupling
+   The reference pressure for coupling. The number of required values
+   is implied by :mdp:`pcoupltype`.
 
 .. mdp:: refcoord-scaling
 

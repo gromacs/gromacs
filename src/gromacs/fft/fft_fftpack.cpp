@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,23 +81,23 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 {
     gmx_fft_t    fft;
 
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid FFT opaque type pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == nullptr)
     {
         return ENOMEM;
     }
 
-    fft->next = NULL;
+    fft->next = nullptr;
     fft->n    = nx;
 
     /* Need 4*n storage for 1D complex FFT */
-    if ( (fft->work = (real *)malloc(sizeof(real)*(4*nx))) == NULL)
+    if ( (fft->work = (real *)malloc(sizeof(real)*(4*nx))) == nullptr)
     {
         free(fft);
         return ENOMEM;
@@ -121,23 +121,23 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
 {
     gmx_fft_t    fft;
 
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid FFT opaque type pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == nullptr)
     {
         return ENOMEM;
     }
 
-    fft->next = NULL;
+    fft->next = nullptr;
     fft->n    = nx;
 
     /* Need 2*n storage for 1D real FFT */
-    if ((fft->work = (real *)malloc(sizeof(real)*(2*nx))) == NULL)
+    if ((fft->work = (real *)malloc(sizeof(real)*(2*nx))) == nullptr)
     {
         free(fft);
         return ENOMEM;
@@ -162,15 +162,15 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     int           nyc = (ny/2 + 1);
     int           rc;
 
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid FFT opaque type pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
     /* Create the X transform */
-    if ( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -180,7 +180,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     /* Need 4*nx storage for 1D complex FFT, and another
      * 2*nx*nyc elements for complex-to-real storage in our high-level routine.
      */
-    if ( (fft->work = (real *)malloc(sizeof(real)*(4*nx+2*nx*nyc))) == NULL)
+    if ( (fft->work = (real *)malloc(sizeof(real)*(4*nx+2*nx*nyc))) == nullptr)
     {
         free(fft);
         return ENOMEM;
@@ -480,10 +480,10 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
 void
 gmx_fft_destroy(gmx_fft_t      fft)
 {
-    if (fft != NULL)
+    if (fft != nullptr)
     {
         free(fft->work);
-        if (fft->next != NULL)
+        if (fft->next != nullptr)
         {
             gmx_fft_destroy(fft->next);
         }

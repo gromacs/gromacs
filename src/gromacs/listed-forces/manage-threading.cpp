@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #include "gmxpre.h"
 
 #include "manage-threading.h"
+
+#include "config.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -188,7 +190,8 @@ static void divide_bondeds_by_locality(int                 ntype,
 //! Divides bonded interactions over threads
 static void divide_bondeds_over_threads(t_idef *idef,
                                         int     nthread,
-                                        int     max_nthread_uniform)
+                                        int     max_nthread_uniform,
+                                        bool   *haveBondeds)
 {
     ilist_data_t ild[F_NRE];
     int          ntype;
@@ -204,12 +207,18 @@ static void divide_bondeds_over_threads(t_idef *idef,
         snew(idef->il_thread_division, idef->il_thread_division_nalloc);
     }
 
-    ntype = 0;
+    *haveBondeds = false;
+    ntype        = 0;
     for (f = 0; f < F_NRE; f++)
     {
         if (!ftype_is_bonded_potential(f))
         {
             continue;
+        }
+
+        if (idef->il[f].nr > 0)
+        {
+            *haveBondeds = true;
         }
 
         if (idef->il[f].nr == 0)
@@ -308,7 +317,16 @@ calc_bonded_reduction_mask(int natoms,
                            const t_idef *idef,
                            int thread, int nthread)
 {
-    assert(nthread <= BITMASK_SIZE);
+    static_assert(BITMASK_SIZE == GMX_OPENMP_MAX_THREADS, "For the error message below we assume these two are equal.");
+
+    if (nthread > BITMASK_SIZE)
+    {
+#pragma omp master
+        gmx_fatal(FARGS, "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS (%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger value for GMX_OPENMP_MAX_THREADS.",
+                  nthread, GMX_OPENMP_MAX_THREADS);
+#pragma omp barrier
+    }
+    GMX_ASSERT(nthread <= BITMASK_SIZE, "We need at least nthread bits in the mask");
 
     int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
 
@@ -374,7 +392,14 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     /* Divide the bonded interaction over the threads */
     divide_bondeds_over_threads(idef,
                                 bt->nthreads,
-                                bt->bonded_max_nthread_uniform);
+                                bt->bonded_max_nthread_uniform,
+                                &bt->haveBondeds);
+
+    if (!bt->haveBondeds)
+    {
+        /* We don't have bondeds, so there is nothing to reduce */
+        return;
+    }
 
     /* Determine to which blocks each thread's bonded force calculation
      * contributes. Store this as a mask for each thread.
@@ -479,7 +504,7 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
             /* Note that thread 0 uses the global fshift and energy arrays,
              * but to keep the code simple, we initialize all data here.
              */
-            bt->f_t[t].f        = NULL;
+            bt->f_t[t].f        = nullptr;
             bt->f_t[t].f_nalloc = 0;
             snew(bt->f_t[t].fshift, SHIFTS);
             bt->f_t[t].grpp.nener = nenergrp*nenergrp;
@@ -492,8 +517,8 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
     }
 
     bt->nblock_used  = 0;
-    bt->block_index  = NULL;
-    bt->mask         = NULL;
+    bt->block_index  = nullptr;
+    bt->mask         = nullptr;
     bt->block_nalloc = 0;
 
     /* The optimal value after which to switch from uniform to localized
@@ -503,10 +528,10 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
     const int max_nthread_uniform = 4;
     char *    ptr;
 
-    if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != NULL)
+    if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
     {
         sscanf(ptr, "%d", &bt->bonded_max_nthread_uniform);
-        if (fplog != NULL)
+        if (fplog != nullptr)
         {
             fprintf(fplog, "\nMax threads for uniform bonded distribution set to %d by env.var.\n",
                     bt->bonded_max_nthread_uniform);

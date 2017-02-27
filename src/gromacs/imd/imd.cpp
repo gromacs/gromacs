@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,6 +77,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
@@ -234,7 +235,7 @@ const char *eIMDType_names[IMD_NR + 1] = {
     "IMD_PAUSE",
     "IMD_TRATE",
     "IMD_IOERROR",
-    NULL
+    nullptr
 };
 
 
@@ -492,7 +493,7 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
 /*! \brief Initializes the IMD private data. */
 static t_gmx_IMD_setup* imd_create(int imdatoms, int nstimddef, int imdport)
 {
-    t_gmx_IMD_setup *IMDsetup = NULL;
+    t_gmx_IMD_setup *IMDsetup = nullptr;
 
 
     snew(IMDsetup, 1);
@@ -582,7 +583,7 @@ static void imd_disconnect(t_gmx_IMD_setup *IMDsetup)
 
     /* then we reset the IMD step to its default, and reset the connection boolean */
     IMDsetup->nstimd_new   = IMDsetup->nstimd_def;
-    IMDsetup->clientsocket = NULL;
+    IMDsetup->clientsocket = nullptr;
     IMDsetup->bConnected   = FALSE;
 }
 
@@ -1051,7 +1052,7 @@ static FILE *open_imd_out(const char             *fn,
     fprintf(stdout, "%s For a log of the IMD pull forces explicitly specify '-if' on the command line.\n"
             "%s (Not possible with energy minimization.)\n", IMDstr, IMDstr);
 
-    return NULL;
+    return nullptr;
 }
 #endif
 

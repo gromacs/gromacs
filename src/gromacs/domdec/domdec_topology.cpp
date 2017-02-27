@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -626,7 +626,7 @@ static int make_reverse_ilist(const t_ilist *ilist,
     snew(count, nat_mt);
     low_make_reverse_ilist(ilist, atoms->atom, vsite_pbc,
                            count,
-                           bConstr, bSettle, bBCheck, NULL, NULL,
+                           bConstr, bSettle, bBCheck, nullptr, nullptr,
                            bLinkToAllAtoms, FALSE);
 
     snew(ril_mt->index, nat_mt+1);
@@ -692,7 +692,7 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
         /* Make the atom to interaction list for this molecule type */
         nint_mt[mt] =
             make_reverse_ilist(molt->ilist, &molt->atoms,
-                               vsite_pbc_molt ? vsite_pbc_molt[mt] : NULL,
+                               vsite_pbc_molt ? vsite_pbc_molt[mt] : nullptr,
                                rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
                                &rt->ril_mt[mt]);
 
@@ -716,15 +716,15 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     {
         t_atoms atoms_global;
 
-        rt->ril_intermol.index = NULL;
-        rt->ril_intermol.il    = NULL;
+        rt->ril_intermol.index = nullptr;
+        rt->ril_intermol.il    = nullptr;
 
         atoms_global.nr   = mtop->natoms;
-        atoms_global.atom = NULL; /* Only used with virtual sites */
+        atoms_global.atom = nullptr; /* Only used with virtual sites */
 
         *nint +=
             make_reverse_ilist(mtop->intermolecular_ilist, &atoms_global,
-                               NULL,
+                               nullptr,
                                rt->bConstr, rt->bSettle, rt->bBCheck, FALSE,
                                &rt->ril_intermol);
     }
@@ -753,7 +753,7 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
 
     rt->nthread = gmx_omp_nthreads_get(emntDomdec);
     snew(rt->th_work, rt->nthread);
-    if (vsite_pbc_molt != NULL)
+    if (vsite_pbc_molt != nullptr)
     {
         for (thread = 0; thread < rt->nthread; thread++)
         {
@@ -782,7 +782,7 @@ void dd_make_reverse_top(FILE *fplog,
      */
 
     dd->reverse_top = make_reverse_top(mtop, ir->efep != efepNO,
-                                       vsite ? vsite->vsite_pbc_molt : NULL,
+                                       vsite ? vsite->vsite_pbc_molt : nullptr,
                                        !dd->bInterCGcons, !dd->bInterCGsettles,
                                        bBCheck, &dd->nbonded_global);
 
@@ -1227,7 +1227,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             int      nral1 = 0, ftv = 0;
 
             vpbc = ((interaction_function[ftype].flags & IF_VSITE) &&
-                    vsite->vsite_pbc_loc != NULL);
+                    vsite->vsite_pbc_loc != nullptr);
             if (vpbc)
             {
                 nral1 = 1 + NRAL(ftype);
@@ -1266,40 +1266,33 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             /* Position restraints need an additional treatment */
             if (ftype == F_POSRES || ftype == F_FBPOSRES)
             {
-                int nposres = dest->il[ftype].nr/2;
-                if (nposres > dest->iparams_posres_nalloc)
+                int          nposres       = dest->il[ftype].nr/2;
+                // TODO: Simplify this code using std::vector
+                t_iparams * &iparams_dest  = (ftype == F_POSRES ? dest->iparams_posres : dest->iparams_fbposres);
+                int         &posres_nalloc = (ftype == F_POSRES ? dest->iparams_posres_nalloc : dest->iparams_fbposres_nalloc);
+                if (nposres > posres_nalloc)
                 {
-                    dest->iparams_posres_nalloc = over_alloc_large(nposres);
-                    srenew(dest->iparams_posres, dest->iparams_posres_nalloc);
+                    posres_nalloc = over_alloc_large(nposres);
+                    srenew(iparams_dest, posres_nalloc);
                 }
+
                 /* Set nposres to the number of original position restraints in dest */
                 for (int s = 1; s < nsrc; s++)
                 {
                     nposres -= src[s].idef.il[ftype].nr/2;
                 }
+
                 for (int s = 1; s < nsrc; s++)
                 {
-                    if (ftype == F_POSRES)
+                    const t_iparams *iparams_src = (ftype == F_POSRES ? src[s].idef.iparams_posres : src[s].idef.iparams_fbposres);
+
+                    for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
                     {
-                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
-                        {
-                            /* Correct the index into iparams_posres */
-                            dest->il[ftype].iatoms[nposres*2] = nposres;
-                            /* Copy the position restraint force parameters */
-                            dest->iparams_posres[nposres] = src[s].idef.iparams_posres[i];
-                            nposres++;
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
-                        {
-                            /* Correct the index into iparams_fbposres */
-                            dest->il[ftype].iatoms[nposres*2] = nposres;
-                            /* Copy the position restraint force parameters */
-                            dest->iparams_fbposres[nposres] = src[s].idef.iparams_fbposres[i];
-                            nposres++;
-                        }
+                        /* Correct the index into iparams_posres */
+                        dest->il[ftype].iatoms[nposres*2] = nposres;
+                        /* Copy the position restraint force parameters */
+                        iparams_dest[nposres]             = iparams_src[i];
+                        nposres++;
                     }
                 }
             }
@@ -2032,8 +2025,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 }
                 else
                 {
-                    vsite_pbc        = NULL;
-                    vsite_pbc_nalloc = NULL;
+                    vsite_pbc        = nullptr;
+                    vsite_pbc_nalloc = nullptr;
                 }
 
                 rt->th_work[thread].nbonded =
@@ -2144,7 +2137,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     real     rc = -1;
     ivec     rcheck;
     int      d, nexcl;
-    t_pbc    pbc, *pbc_null = NULL;
+    t_pbc    pbc, *pbc_null = nullptr;
 
     if (debug)
     {
@@ -2202,7 +2195,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
             }
             else
             {
-                pbc_null = NULL;
+                pbc_null = nullptr;
             }
         }
     }
@@ -2257,7 +2250,7 @@ gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 
     for (i = 0; i < F_NRE; i++)
     {
-        top->idef.il[i].iatoms = NULL;
+        top->idef.il[i].iatoms = nullptr;
         top->idef.il[i].nalloc = 0;
     }
     top->idef.ilsort   = ilsortUNKNOWN;
@@ -2280,7 +2273,8 @@ void dd_init_local_state(gmx_domdec_t *dd,
     }
     dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
 
-    init_state(state_local, 0, buf[1], buf[2], buf[3], buf[4]);
+    init_gtc_state(state_local, buf[1], buf[2], buf[3]);
+    init_dfhist_state(state_local, buf[4]);
     state_local->flags = buf[0];
 }
 
@@ -2362,16 +2356,16 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
         t_atoms atoms;
 
         atoms.nr   = mtop->natoms;
-        atoms.atom = NULL;
+        atoms.atom = nullptr;
 
         make_reverse_ilist(mtop->intermolecular_ilist, &atoms,
-                           NULL, FALSE, FALSE, FALSE, TRUE, &ril_intermol);
+                           nullptr, FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
 
     snew(link, 1);
     snew(link->index, ncg_mtop(mtop)+1);
     link->nalloc_a = 0;
-    link->a        = NULL;
+    link->a        = nullptr;
 
     link->index[0] = 0;
     cg_offset      = 0;
@@ -2392,7 +2386,7 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         make_reverse_ilist(molt->ilist, &molt->atoms,
-                           NULL, FALSE, FALSE, FALSE, TRUE, &ril);
+                           nullptr, FALSE, FALSE, FALSE, TRUE, &ril);
 
         cgi_mb = &cginfo_mb[mb];
 
@@ -2652,7 +2646,7 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
 
     if (ePBC != epbcNONE)
     {
-        mk_mshift(NULL, graph, ePBC, box, x);
+        mk_mshift(nullptr, graph, ePBC, box, x);
 
         shift_x(graph, box, x, xs);
         /* By doing an extra mk_mshift the molecules that are broken
@@ -2660,7 +2654,7 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
          * will be made whole again. Such are the healing powers
          * of GROMACS.
          */
-        mk_mshift(NULL, graph, ePBC, box, xs);
+        mk_mshift(nullptr, graph, ePBC, box, xs);
     }
     else
     {
@@ -2677,12 +2671,12 @@ static void get_cgcm_mol(const gmx_moltype_t *molt,
 
     if (vsite)
     {
-        construct_vsites(vsite, xs, 0.0, NULL,
+        construct_vsites(vsite, xs, 0.0, nullptr,
                          ffparams->iparams, molt->ilist,
-                         epbcNONE, TRUE, NULL, NULL);
+                         epbcNONE, TRUE, nullptr, nullptr);
     }
 
-    calc_cgcm(NULL, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);
+    calc_cgcm(nullptr, 0, molt->cgs.nr, &molt->cgs, xs, cg_cm);
 }
 
 //! Returns whether \p molt has a virtual site
@@ -2723,7 +2717,7 @@ void dd_bonded_cg_distance(FILE *fplog,
 
     bExclRequired = inputrecExclForces(ir);
 
-    vsite = init_vsite(mtop, NULL, TRUE);
+    vsite = init_vsite(mtop, nullptr, TRUE);
 
     *r_2b     = 0;
     *r_mb     = 0;
@@ -2740,7 +2734,7 @@ void dd_bonded_cg_distance(FILE *fplog,
         {
             if (ir->ePBC != epbcNONE)
             {
-                mk_graph_ilist(NULL, molt->ilist, 0, molt->atoms.nr, FALSE, FALSE,
+                mk_graph_ilist(nullptr, molt->ilist, 0, molt->atoms.nr, FALSE, FALSE,
                                &graph);
             }
 
@@ -2750,7 +2744,7 @@ void dd_bonded_cg_distance(FILE *fplog,
             for (mol = 0; mol < molb->nmol; mol++)
             {
                 get_cgcm_mol(molt, &mtop->ffparams, ir->ePBC, &graph, box,
-                             have_vsite_molt(molt) ? vsite : NULL,
+                             have_vsite_molt(molt) ? vsite : nullptr,
                              x+at_offset, xs, cg_cm);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };

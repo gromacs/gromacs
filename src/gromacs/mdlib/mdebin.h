@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,8 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/state.h"
 
-struct energyhistory_t;
+class energyhistory_t;
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
@@ -53,6 +52,7 @@ struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
+class t_state;
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions
@@ -160,13 +160,13 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
 /* Between .edr writes, the averages are history dependent,
    and that history needs to be retained in checkpoints.
-   These functions set/read the energyhistory_t structure
+   These functions set/read the energyhistory_t class
    that is written to checkpoints in checkpoint.c */
 
-/* Set the energyhistory_t data structure from a mdebin structure */
+/* Set the energyhistory_t data from a mdebin structure */
 void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin);
 
-/* Read the energyhistory_t data structure to a mdebin structure*/
+/* Read the energyhistory_t data to a mdebin structure*/
 void restore_energyhistory_from_state(t_mdebin        * mdebin,
                                       energyhistory_t * enerhist);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,9 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/utilities.h"
@@ -60,6 +60,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/topology.h"
@@ -169,7 +170,7 @@ static void finalize(const char *fn_out)
     fp = fopen(fn_out, "r");
     fprintf(stdout, "\n\n");
 
-    while (fgets(buf, STRLEN-1, fp) != NULL)
+    while (fgets(buf, STRLEN-1, fp) != nullptr)
     {
         fprintf(stdout, "%s", buf);
     }
@@ -219,13 +220,13 @@ static int parse_logfile(const char *logfile, const char *errfile,
         iFound = eFoundDDStr; /* Skip some case statements */
     }
 
-    while (fgets(line, STRLEN, fp) != NULL)
+    while (fgets(line, STRLEN, fp) != nullptr)
     {
         /* Remove leading spaces */
         ltrim(line);
 
         /* Check for TERM and INT signals from user: */
-        if (std::strstr(line, errSIG) != NULL)
+        if (std::strstr(line, errSIG) != nullptr)
         {
             fclose(fp);
             cleandata(perfdata, test_nr);
@@ -235,7 +236,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
         /* Check whether cycle resetting  worked */
         if (presteps > 0 && !bFoundResetStr)
         {
-            if (std::strstr(line, matchstrcr) != NULL)
+            if (std::strstr(line, matchstrcr) != nullptr)
             {
                 sprintf(dumstring, "step %s", "%" GMX_SCNd64);
                 sscanf(line, dumstring, &resetsteps);
@@ -357,11 +358,11 @@ static int parse_logfile(const char *logfile, const char *errfile,
     if (gmx_fexist(errfile))
     {
         fp = fopen(errfile, "r");
-        while (fgets(line, STRLEN, fp) != NULL)
+        while (fgets(line, STRLEN, fp) != nullptr)
         {
             if (str_starts(line, "Fatal error:") )
             {
-                if (fgets(line, STRLEN, fp) != NULL)
+                if (fgets(line, STRLEN, fp) != nullptr)
                 {
                     fprintf(stderr, "\nWARNING: An error occurred during this benchmark:\n"
                             "%s\n", line);
@@ -608,7 +609,7 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     /* Get the commands we need to set up the runs from environment variables */
     if (!bThreads)
     {
-        if ( (cp = getenv("MPIRUN")) != NULL)
+        if ( (cp = getenv("MPIRUN")) != nullptr)
         {
             *cmd_mpirun = gmx_strdup(cp);
         }
@@ -622,12 +623,12 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
         *cmd_mpirun = gmx_strdup(empty_mpirun);
     }
 
-    if (*cmd_mdrun == NULL)
+    if (*cmd_mdrun == nullptr)
     {
         /* The use of MDRUN is deprecated, but made available in 5.1
            for backward compatibility. It may be removed in a future
            version. */
-        if ( (cp = getenv("MDRUN" )) != NULL)
+        if ( (cp = getenv("MDRUN" )) != nullptr)
         {
             *cmd_mdrun = gmx_strdup(cp);
         }
@@ -650,7 +651,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
                               const char *cmd_mdrun,
                               gmx_bool    bNeedGpuSupport)
 {
-    char      *command = NULL;
+    char      *command = nullptr;
     char      *cp;
     char       line[STRLEN];
     FILE      *fp;
@@ -693,7 +694,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     while (!feof(fp) )
     {
         cp = fgets(line, STRLEN, fp);
-        if (cp != NULL)
+        if (cp != nullptr)
         {
             if (str_starts(line, match_mdrun) )
             {
@@ -1079,7 +1080,8 @@ static void make_benchmark_tprs(
 
             /* Scale the Fourier grid spacing */
             ir->nkx = ir->nky = ir->nkz = 0;
-            calc_grid(NULL, state.box, fourierspacing*fac, &ir->nkx, &ir->nky, &ir->nkz);
+            calcFftGrid(nullptr, state.box, fourierspacing*fac, minimalPmeGridSize(ir->pme_order),
+                        &ir->nkx, &ir->nky, &ir->nkz);
 
             /* Adjust other radii since various conditions need to be fulfilled */
             if (eelPME == ir->coulombtype)
@@ -1179,7 +1181,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
 {
     char        numstring[STRLEN];
     char        newfilename[STRLEN];
-    const char *fn = NULL;
+    const char *fn = nullptr;
     int         i;
     const char *opt;
 
@@ -1448,8 +1450,8 @@ static void do_the_tests(
                                                    * constructing mdrun command lines */
 {
     int      i, nr, k, ret, count = 0, totaltests;
-    int     *nPMEnodes = NULL;
-    t_perf  *pd        = NULL;
+    int     *nPMEnodes = nullptr;
+    t_perf  *pd        = nullptr;
     int      cmdline_length;
     char    *command, *cmd_stub;
     char     buf[STRLEN];
@@ -1531,7 +1533,7 @@ static void do_the_tests(
         /* Loop over various numbers of PME nodes: */
         for (i = 0; i < *pmeentries; i++)
         {
-            char *cmd_gpu_ids = NULL;
+            char *cmd_gpu_ids = nullptr;
 
             pd = &perfdata[k][i];
 
@@ -2203,30 +2205,30 @@ int gmx_tune_pme(int argc, char *argv[])
     real            rcoulomb       = -1.0;            /* Coulomb radius as set in .tpr file */
     gmx_bool        bScaleRvdw     = TRUE;
     gmx_int64_t     bench_nsteps   = BENCHSTEPS;
-    gmx_int64_t     new_sim_nsteps = -1;  /* -1 indicates: not set by the user */
-    gmx_int64_t     cpt_steps      = 0;   /* Step counter in .cpt input file   */
-    int             presteps       = 100; /* Do a full cycle reset after presteps steps */
+    gmx_int64_t     new_sim_nsteps = -1;   /* -1 indicates: not set by the user */
+    gmx_int64_t     cpt_steps      = 0;    /* Step counter in .cpt input file   */
+    int             presteps       = 1500; /* Do a full cycle reset after presteps steps */
     gmx_bool        bOverwrite     = FALSE, bKeepTPR;
     gmx_bool        bLaunch        = FALSE;
-    char           *ExtraArgs      = NULL;
-    char          **tpr_names      = NULL;
-    const char     *simulation_tpr = NULL;
-    char           *deffnm         = NULL;
+    char           *ExtraArgs      = nullptr;
+    char          **tpr_names      = nullptr;
+    const char     *simulation_tpr = nullptr;
+    char           *deffnm         = nullptr;
     int             best_npme, best_tpr;
     int             sim_part = 1; /* For benchmarks with checkpoint files */
     char            bbuf[STRLEN];
 
 
     /* Default program names if nothing else is found */
-    char               *cmd_mpirun = NULL, *cmd_mdrun = NULL;
+    char               *cmd_mpirun = nullptr, *cmd_mdrun = nullptr;
     char               *cmd_args_bench, *cmd_args_launch;
-    char               *cmd_np           = NULL;
+    char               *cmd_np           = nullptr;
 
     /* IDs of GPUs that are eligible for computation */
-    char               *eligible_gpu_ids = NULL;
-    t_eligible_gpu_ids *gpu_ids          = NULL;
+    char               *eligible_gpu_ids = nullptr;
+    t_eligible_gpu_ids *gpu_ids          = nullptr;
 
-    t_perf            **perfdata = NULL;
+    t_perf            **perfdata = nullptr;
     t_inputinfo        *info;
     int                 i;
     FILE               *fp;
@@ -2240,11 +2242,11 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-err",    "bencherr", ffWRITE },
         { efTPR, "-so",     "tuned",    ffWRITE },
         /* mdrun: */
-        { efTPR, NULL,      NULL,       ffREAD },
-        { efTRN, "-o",      NULL,       ffWRITE },
-        { efCOMPRESSED, "-x", NULL,     ffOPTWR },
-        { efCPT, "-cpi",    NULL,       ffOPTRD },
-        { efCPT, "-cpo",    NULL,       ffOPTWR },
+        { efTPR, nullptr,      nullptr,       ffREAD },
+        { efTRN, "-o",      nullptr,       ffWRITE },
+        { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
+        { efCPT, "-cpi",    nullptr,       ffOPTRD },
+        { efCPT, "-cpo",    nullptr,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
         { efEDR, "-e",      "ener",     ffWRITE },
         { efLOG, "-g",      "md",       ffWRITE },
@@ -2298,9 +2300,9 @@ int gmx_tune_pme(int argc, char *argv[])
     int             nthreads = 1;
 
     const char     *procstring[] =
-    { NULL, "np", "n", "none", NULL };
+    { nullptr, "np", "n", "none", nullptr };
     const char     *npmevalues_opt[] =
-    { NULL, "auto", "all", "subset", NULL };
+    { nullptr, "auto", "all", "subset", nullptr };
 
     gmx_bool          bAppendFiles          = TRUE;
     gmx_bool          bKeepAndNumCPT        = FALSE;
@@ -2308,7 +2310,7 @@ int gmx_tune_pme(int argc, char *argv[])
     gmx_bool          bBenchmark            = TRUE;
     gmx_bool          bCheck                = TRUE;
 
-    gmx_output_env_t *oenv = NULL;
+    gmx_output_env_t *oenv = nullptr;
 
     t_pargs           pa[] = {
         /***********************/
@@ -2377,13 +2379,13 @@ int gmx_tune_pme(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }
 
     // procstring[0] is used inside two different conditionals further down
-    GMX_RELEASE_ASSERT(procstring[0] != NULL, "Options inconsistency; procstring[0] is NULL");
+    GMX_RELEASE_ASSERT(procstring[0] != nullptr, "Options inconsistency; procstring[0] is NULL");
 
     /* Store the remaining unparsed command line entries in a string which
      * is then attached to the mdrun command line */
@@ -2514,7 +2516,7 @@ int gmx_tune_pme(int argc, char *argv[])
     get_program_paths(bThreads, &cmd_mpirun, &cmd_mdrun);
     if (bBenchmark && repeats > 0)
     {
-        check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun, NULL != eligible_gpu_ids);
+        check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun, nullptr != eligible_gpu_ids);
     }
 
     /* Print some header info to file */
@@ -2611,7 +2613,7 @@ int gmx_tune_pme(int argc, char *argv[])
     snew(perfdata, ntprs);
     if (bBenchmark)
     {
-        GMX_RELEASE_ASSERT(npmevalues_opt[0] != NULL, "Options inconsistency; npmevalues_opt[0] is NULL");
+        GMX_RELEASE_ASSERT(npmevalues_opt[0] != nullptr, "Options inconsistency; npmevalues_opt[0] is NULL");
         do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, npme_fixed, npmevalues_opt[0], perfdata, &pmeentries,
                      repeats, nnodes, ntprs, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
                      cmd_args_bench, fnm, NFILE, presteps, cpt_steps, bCheck, gpu_ids);

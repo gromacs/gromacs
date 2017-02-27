@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,6 +91,11 @@ isPairInteraction(int ftype)
 static void
 zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
+    if (!bt->haveBondeds)
+    {
+        return;
+    }
+
     f_thread_t *f_t      = &bt->f_t[thread];
     const int   nelem_fa = sizeof(*f_t->f)/sizeof(real);
 
@@ -198,6 +203,11 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
+    if (!bt->haveBondeds)
+    {
+        return;
+    }
+
     if (bt->nblock_used > 0)
     {
         /* Reduce the bonded force buffer */
@@ -429,7 +439,7 @@ void calc_listed(const t_commrec             *cr,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
 #ifdef DEBUG
@@ -482,6 +492,7 @@ void calc_listed(const t_commrec             *cr,
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
+    /* TODO: Skip this whole loop with a system/domain without listeds */
     wallcycle_sub_start(wcycle, ewcsLISTED);
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
     for (thread = 0; thread < bt->nthreads; thread++)
@@ -581,7 +592,7 @@ void calc_listed_lambda(const t_idef *idef,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     /* Copy the whole idef, so we can modify the contents locally */

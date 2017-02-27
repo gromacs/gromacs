@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,6 +69,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
@@ -113,6 +115,7 @@ enum tpxv {
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_HyperPolarizability,                                /**< Added hyperpolarizability */
+    tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -294,14 +297,14 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
             }
             else
             {
-                pcrd->externalPotentialProvider = NULL;
+                pcrd->externalPotentialProvider = nullptr;
             }
         }
         else
         {
             if (bRead)
             {
-                pcrd->externalPotentialProvider = NULL;
+                pcrd->externalPotentialProvider = nullptr;
             }
         }
         /* Note that we try to support adding new geometries without
@@ -540,7 +543,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     else
     {
         fepvals->n_lambda     = 0;
-        fepvals->all_lambda   = NULL;
+        fepvals->all_lambda   = nullptr;
         if (fepvals->init_lambda >= 0)
         {
             fepvals->separate_dvdl[efptFEP] = TRUE;
@@ -921,6 +924,40 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
 
 }
 
+static void do_legacy_efield(t_fileio *fio, gmx::KeyValueTreeObjectBuilder *root)
+{
+    const char *const dimName[] = { "x", "y", "z" };
+
+    auto              appliedForcesObj = root->addObject("applied-forces");
+    auto              efieldObj        = appliedForcesObj.addObject("electric-field");
+    // The content of the tpr file for this feature has
+    // been the same since gromacs 4.0 that was used for
+    // developing.
+    for (int j = 0; j < DIM; ++j)
+    {
+        int n, nt;
+        gmx_fio_do_int(fio, n);
+        gmx_fio_do_int(fio, nt);
+        std::vector<real> aa(n+1), phi(nt+1), at(nt+1), phit(nt+1);
+        gmx_fio_ndo_real(fio, aa.data(),  n);
+        gmx_fio_ndo_real(fio, phi.data(), n);
+        gmx_fio_ndo_real(fio, at.data(),  nt);
+        gmx_fio_ndo_real(fio, phit.data(), nt);
+        if (n > 0)
+        {
+            if (n > 1 || nt > 1)
+            {
+                gmx_fatal(FARGS, "Can not handle tpr files with more than one electric field term per direction.");
+            }
+            auto dimObj = efieldObj.addObject(dimName[j]);
+            dimObj.addValue<real>("E0", aa[0]);
+            dimObj.addValue<real>("omega", at[0]);
+            dimObj.addValue<real>("t0", phi[0]);
+            dimObj.addValue<real>("sigma", phit[0]);
+        }
+    }
+}
+
 
 static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                         int file_version, real *fudgeQQ)
@@ -940,6 +977,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         return;
     }
+
+    gmx::KeyValueTreeBuilder       paramsBuilder;
+    gmx::KeyValueTreeObjectBuilder paramsObj = paramsBuilder.rootObject();
 
     /* Basic inputrec stuff */
     gmx_fio_do_int(fio, ir->eI);
@@ -1628,7 +1668,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->wall_ewald_zfac  = 3;
     }
     /* Cosine stuff for electric fields */
-    ir->efield->doTpxIO(fio, bRead);
+    if (file_version < tpxv_GenericParamsForElectricField)
+    {
+        do_legacy_efield(fio, &paramsObj);
+    }
 
     /* Swap ions */
     if (file_version >= tpxv_ComputationalElectrophysiology)
@@ -1682,6 +1725,26 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             gmx_fio_ndo_gmx_bool(fio, ir->opts.bTS, ir->opts.ngQM);
         }
         /* end of QMMM stuff */
+    }
+
+    if (file_version >= tpxv_GenericParamsForElectricField)
+    {
+        gmx::FileIOXdrSerializer serializer(fio);
+        if (bRead)
+        {
+            paramsObj.mergeObject(
+                    gmx::deserializeKeyValueTree(&serializer));
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(ir->params != nullptr,
+                               "Parameters should be present when writing inputrec");
+            gmx::serializeKeyValueTree(*ir->params, &serializer);
+        }
+    }
+    if (bRead)
+    {
+        ir->params = new gmx::KeyValueTreeObject(paramsBuilder.build());
     }
 }
 
@@ -2132,7 +2195,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
         if (bClear)
         {
             ilist[j].nr     = 0;
-            ilist[j].iatoms = NULL;
+            ilist[j].iatoms = nullptr;
         }
         else
         {
@@ -2176,7 +2239,7 @@ static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_ver
     }
     if (bRead)
     {
-        if ((block->nalloc_index > 0) && (NULL != block->index))
+        if ((block->nalloc_index > 0) && (nullptr != block->index))
         {
             sfree(block->index);
         }
@@ -2433,7 +2496,7 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
         {
             snew(groups->grpname, groups->ngrpname);
         }
-        atoms->pdbinfo = NULL;
+        atoms->pdbinfo = nullptr;
     }
     else
     {
@@ -2477,7 +2540,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
         {
             if (bRead)
             {
-                groups->grpnr[g] = NULL;
+                groups->grpnr[g] = nullptr;
             }
         }
         else
@@ -2544,7 +2607,7 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
     else
     {
         symbuf = symtab->symbuf;
-        while (symbuf != NULL)
+        while (symbuf != nullptr)
         {
             for (i = 0; (i < symbuf->bufsize) && (i < nr); i++)
             {
@@ -2891,7 +2954,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     {
         mtop->ffparams.cmap_grid.ngrid        = 0;
         mtop->ffparams.cmap_grid.grid_spacing = 0;
-        mtop->ffparams.cmap_grid.cmapdata     = NULL;
+        mtop->ffparams.cmap_grid.cmapdata     = nullptr;
     }
 
     if (file_version >= 57)
@@ -3094,14 +3157,15 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (!bRead)
     {
-        GMX_RELEASE_ASSERT(x == NULL && v == NULL, "Passing separate x and v pointers to do_tpx() is not supported when writing");
+        GMX_RELEASE_ASSERT(state != nullptr, "Cannot write a null state");
+        GMX_RELEASE_ASSERT(x == nullptr && v == nullptr, "Passing separate x and v pointers to do_tpx() is not supported when writing");
 
         tpx.natoms    = state->natoms;
         tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
-        tpx.bIr       = (ir       != NULL);
-        tpx.bTop      = (mtop     != NULL);
+        tpx.bIr       = (ir       != nullptr);
+        tpx.bTop      = (mtop     != nullptr);
         tpx.bX        = (state->flags & (1 << estX));
         tpx.bV        = (state->flags & (1 << estV));
         tpx.bF        = FALSE;
@@ -3109,10 +3173,10 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
     else
     {
-        GMX_RELEASE_ASSERT(!(x == NULL && v != NULL), "Passing x==NULL and v!=NULL is not supported");
+        GMX_RELEASE_ASSERT(!(x == nullptr && v != nullptr), "Passing x==NULL and v!=NULL is not supported");
     }
 
-    TopOnlyOK = (ir == NULL);
+    TopOnlyOK = (ir == nullptr);
 
     int fileVersion;    /* Version number of the code that wrote the file */
     int fileGeneration; /* Generation version number of the code that wrote the file */
@@ -3120,18 +3184,26 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (bRead)
     {
-        state->flags  = 0;
-        if (x != NULL)
+        state->flags = 0;
+        init_gtc_state(state, tpx.ngtc, 0, 0);
+        if (x == nullptr)
         {
-            init_state(state, 0, tpx.ngtc, 0, 0, 0);
-        }
-        else
-        {
-            init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0);
+            // v is also nullptr by the above assertion, so we may
+            // need to make memory in state for storing the contents
+            // of the tpx file.
+            if (tpx.bX)
+            {
+                state->flags |= (1 << estX);
+            }
+            if (tpx.bV)
+            {
+                state->flags |= (1 << estV);
+            }
+            state_change_natoms(state, tpx.natoms);
         }
     }
 
-    if (x == NULL)
+    if (x == nullptr)
     {
         x = as_rvec_array(state->x.data());
         v = as_rvec_array(state->v.data());
@@ -3241,10 +3313,10 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         if (fileGeneration <= tpx_generation && ir)
         {
-            do_inputrec(fio, ir, bRead, fileVersion, mtop ? &mtop->ffparams.fudgeQQ : NULL);
+            do_inputrec(fio, ir, bRead, fileVersion, mtop ? &mtop->ffparams.fudgeQQ : nullptr);
             if (fileVersion < 51)
             {
-                set_box_rel(ir, state);
+                set_box_rel(ir, state->box_rel, state->box);
             }
             if (fileVersion < 53)
             {
@@ -3316,7 +3388,7 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
     t_fileio *fio;
 
     fio = open_tpx(fn, "r");
-    do_tpxheader(fio, TRUE, tpx, TopOnlyOK, NULL, NULL);
+    do_tpxheader(fio, TRUE, tpx, TopOnlyOK, nullptr, nullptr);
     close_tpx(fio);
 }
 
@@ -3328,7 +3400,7 @@ void write_tpx_state(const char *fn,
     fio = open_tpx(fn, "w");
     do_tpx(fio, FALSE,
            const_cast<t_inputrec *>(ir),
-           const_cast<t_state *>(state), NULL, NULL,
+           const_cast<t_state *>(state), nullptr, nullptr,
            const_cast<gmx_mtop_t *>(mtop));
     close_tpx(fio);
 }
@@ -3339,7 +3411,7 @@ void read_tpx_state(const char *fn,
     t_fileio *fio;
 
     fio = open_tpx(fn, "r");
-    do_tpx(fio, TRUE, ir, state, NULL, NULL, mtop);
+    do_tpx(fio, TRUE, ir, state, nullptr, nullptr, mtop);
     close_tpx(fio);
 }
 
@@ -3348,7 +3420,7 @@ int read_tpx(const char *fn,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
-    t_state   state {};
+    t_state   state;
     int       ePBC;
 
     fio     = open_tpx(fn, "r");

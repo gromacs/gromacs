@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@ void
 nb_kernel_allvsall(t_nblist *                nlist,
                    rvec *                    x,
                    rvec *                    f,
-                   t_forcerec *              fr,
+                   struct t_forcerec *       fr,
                    t_mdatoms *               mdatoms,
                    nb_kernel_data_t *        kernel_data,
                    t_nrnb *                  nrnb);

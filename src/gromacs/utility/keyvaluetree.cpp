@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,15 +39,13 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
-
-/********************************************************************
- * KeyValueTreePath
- */
 
 namespace
 {
@@ -60,7 +58,31 @@ std::vector<std::string> splitPathElements(const std::string &path)
     return splitDelimitedString(path.substr(1), '/');
 }
 
+//! Helper function to format a simple KeyValueTreeValue.
+std::string formatSingleValue(const KeyValueTreeValue &value)
+{
+    if (value.isType<float>())
+    {
+        return formatString("%g", value.cast<float>());
+    }
+    else if (value.isType<double>())
+    {
+        return formatString("%g", value.cast<double>());
+    }
+    GMX_RELEASE_ASSERT(false, "Unknown value type");
+    return std::string();
+}
+
 }   // namespace
+
+/********************************************************************
+ * KeyValueTreePath
+ */
+
+KeyValueTreePath::KeyValueTreePath(const char *path)
+    : path_(splitPathElements(path))
+{
+}
 
 KeyValueTreePath::KeyValueTreePath(const std::string &path)
     : path_(splitPathElements(path))
@@ -71,5 +93,218 @@ std::string KeyValueTreePath::toString() const
 {
     return "/" + joinStrings(path_, "/");
 }
+
+/********************************************************************
+ * KeyValueTreeObject
+ */
+
+bool KeyValueTreeObject::hasDistinctProperties(const KeyValueTreeObject &obj) const
+{
+    for (const auto &prop : obj.values_)
+    {
+        if (keyExists(prop.key()))
+        {
+            GMX_RELEASE_ASSERT(!prop.value().isArray(),
+                               "Comparison of arrays not implemented");
+            if (prop.value().isObject() && valueMap_.at(prop.key()).isObject())
+            {
+                return valueMap_.at(prop.key()).asObject().hasDistinctProperties(prop.value().asObject());
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+void KeyValueTreeObject::writeUsing(TextWriter *writer) const
+{
+    for (const auto &prop : properties())
+    {
+        const auto &value = prop.value();
+        if (value.isObject())
+        {
+            writer->writeString(prop.key());
+            writer->writeLine(":");
+            int oldIndent = writer->wrapperSettings().indent();
+            writer->wrapperSettings().setIndent(oldIndent + 2);
+            value.asObject().writeUsing(writer);
+            writer->wrapperSettings().setIndent(oldIndent);
+        }
+        else
+        {
+            int indent = writer->wrapperSettings().indent();
+            writer->writeString(formatString("%*s", -(33-indent), prop.key().c_str()));
+            writer->writeString(" = ");
+            if (value.isArray())
+            {
+                writer->writeString("[");
+                for (const auto &elem : value.asArray().values())
+                {
+                    GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
+                                       "Arrays of objects not currently implemented");
+                    writer->writeString(" ");
+                    writer->writeString(formatSingleValue(elem));
+                }
+                writer->writeString(" ]");
+            }
+            else
+            {
+                writer->writeString(formatSingleValue(value));
+            }
+            writer->writeLine();
+        }
+    }
+}
+
+/********************************************************************
+ * Key value tree comparison
+ */
+
+namespace
+{
+
+class CompareHelper
+{
+    public:
+        CompareHelper(TextWriter *writer, real ftol, real abstol)
+            : writer_(writer), ftol_(ftol), abstol_(abstol)
+        {
+        }
+
+        void compareObjects(const KeyValueTreeObject &obj1,
+                            const KeyValueTreeObject &obj2)
+        {
+            for (const auto &prop1 : obj1.properties())
+            {
+                currentPath_.append(prop1.key());
+                if (obj2.keyExists(prop1.key()))
+                {
+                    compareValues(prop1.value(), obj2[prop1.key()]);
+                }
+                else
+                {
+                    handleMissingKeyInSecondObject(prop1.value());
+                }
+                currentPath_.pop_back();
+            }
+            for (const auto &prop2 : obj2.properties())
+            {
+                currentPath_.append(prop2.key());
+                if (!obj1.keyExists(prop2.key()))
+                {
+                    handleMissingKeyInFirstObject(prop2.value());
+                }
+                currentPath_.pop_back();
+            }
+        }
+
+    private:
+        void compareValues(const KeyValueTreeValue &value1,
+                           const KeyValueTreeValue &value2)
+        {
+            if (value1.type() == value2.type())
+            {
+                if (value1.isObject())
+                {
+                    compareObjects(value1.asObject(), value2.asObject());
+                }
+                else if (value1.isArray())
+                {
+                    GMX_RELEASE_ASSERT(false, "Array comparison not implemented");
+                }
+                else if (value1.isType<double>())
+                {
+                    const double v1 = value1.cast<double>();
+                    const double v2 = value2.cast<double>();
+                    if (!equal_double(v1, v2, ftol_, abstol_))
+                    {
+                        writer_->writeString(currentPath_.toString());
+                        writer_->writeLine(formatString(" (%e - %e)", v1, v2));
+                    }
+                }
+                else if (value1.isType<float>())
+                {
+                    const float v1 = value1.cast<float>();
+                    const float v2 = value2.cast<float>();
+                    if (!equal_float(v1, v2, ftol_, abstol_))
+                    {
+                        writer_->writeString(currentPath_.toString());
+                        writer_->writeLine(formatString(" (%e - %e)", v1, v2));
+                    }
+                }
+                else
+                {
+                    GMX_RELEASE_ASSERT(false, "Unknown value type");
+                }
+            }
+            else if ((value1.isType<double>() && value2.isType<float>())
+                     || (value1.isType<float>() && value2.isType<double>()))
+            {
+                const bool  firstIsDouble
+                    = value1.isType<double>();
+                const float v1 = firstIsDouble ? value1.cast<double>() : value1.cast<float>();
+                const float v2 = firstIsDouble ? value2.cast<float>() : value2.cast<double>();
+                if (!equal_float(v1, v2, ftol_, abstol_))
+                {
+                    writer_->writeString(currentPath_.toString());
+                    writer_->writeLine(formatString(" (%e - %e)", v1, v2));
+                }
+            }
+            else
+            {
+                handleMismatchingTypes(value1, value2);
+            }
+        }
+
+        void handleMismatchingTypes(const KeyValueTreeValue & /* value1 */,
+                                    const KeyValueTreeValue & /* value2 */)
+        {
+            writer_->writeString(currentPath_.toString());
+            writer_->writeString(" type mismatch");
+        }
+
+        void handleMissingKeyInFirstObject(const KeyValueTreeValue &value)
+        {
+            const std::string message = formatString(
+                        "%s (missing - %s)", currentPath_.toString().c_str(),
+                        formatValueForMissingMessage(value).c_str());
+            writer_->writeLine(message);
+        }
+        void handleMissingKeyInSecondObject(const KeyValueTreeValue &value)
+        {
+            const std::string message = formatString(
+                        "%s (%s - missing)", currentPath_.toString().c_str(),
+                        formatValueForMissingMessage(value).c_str());
+            writer_->writeLine(message);
+        }
+
+        std::string formatValueForMissingMessage(const KeyValueTreeValue &value)
+        {
+            if (value.isObject() || value.isArray())
+            {
+                return "present";
+            }
+            return formatSingleValue(value);
+        }
+
+        KeyValueTreePath  currentPath_;
+        TextWriter       *writer_;
+        real              ftol_;
+        real              abstol_;
+};
+
+}   // namespace
+
+//! \cond libapi
+void compareKeyValueTrees(TextWriter               *writer,
+                          const KeyValueTreeObject &tree1,
+                          const KeyValueTreeObject &tree2,
+                          real                      ftol,
+                          real                      abstol)
+{
+    CompareHelper helper(writer, ftol, abstol);
+    helper.compareObjects(tree1, tree2);
+}
+//! \endcond
 
 } // namespace gmx

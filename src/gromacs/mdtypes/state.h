@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,7 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
+#include <array>
 #include <vector>
 
 #include "gromacs/math/paddedvector.h"
@@ -58,29 +59,30 @@
 enum {
     estLAMBDA,
     estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-    estX,   estV,       est_SDX_NOTSUPPORTED,  estCGP,
-    estLD_RNG, estLD_RNGI,
+    estX,   estV,       estSDX_NOTSUPPORTED,  estCGP,
+    estLD_RNG_NOTSUPPORTED, estLD_RNGI_NOTSUPPORTED,
     estDISRE_INITF, estDISRE_RM3TAV,
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
-    estFEPSTATE, estMC_RNG, estMC_RNGI,
+    estFEPSTATE, estMC_RNG_NOTSUPPORTED, estMC_RNGI_NOTSUPPORTED,
     estNR
 };
-
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
 
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
 
-typedef struct history_t
+class history_t
 {
-    real  disre_initf;  /* The scaling factor for initializing the time av. */
-    int   ndisrepairs;  /* The number of distance restraints                */
-    real *disre_rm3tav; /* The r^-3 time averaged pair distances            */
-    real  orire_initf;  /* The scaling factor for initializing the time av. */
-    int   norire_Dtav;  /* The number of matrix element in dtav (npair*5)   */
-    real *orire_Dtav;   /* The time averaged orientation tensors            */
-} history_t;
+    public:
+        history_t();
+
+        real  disre_initf;  /* The scaling factor for initializing the time av. */
+        int   ndisrepairs;  /* The number of distance restraints                */
+        real *disre_rm3tav; /* The r^-3 time averaged pair distances            */
+        real  orire_initf;  /* The scaling factor for initializing the time av. */
+        int   norire_Dtav;  /* The number of matrix element in dtav (npair*5)   */
+        real *orire_Dtav;   /* The time averaged orientation tensors            */
+};
 
 /* Struct used for checkpointing only.
  * This struct would not be required with unlimited precision.
@@ -88,20 +90,23 @@ typedef struct history_t
  * can cause the kinetic energy in the MD loop to differ by a few bits from
  * the kinetic energy one would determine from state.v.
  */
-typedef struct ekinstate_t
+class ekinstate_t
 {
-    gmx_bool             bUpToDate;
-    int                  ekin_n;
-    tensor              *ekinh;
-    tensor              *ekinf;
-    tensor              *ekinh_old;
-    tensor               ekin_total;
-    std::vector<double>  ekinscalef_nhc;
-    std::vector<double>  ekinscaleh_nhc;
-    std::vector<double>  vscale_nhc;
-    real                 dekindl;
-    real                 mvcos;
-} ekinstate_t;
+    public:
+        ekinstate_t();
+
+        gmx_bool             bUpToDate;
+        int                  ekin_n;
+        tensor              *ekinh;
+        tensor              *ekinf;
+        tensor              *ekinh_old;
+        tensor               ekin_total;
+        std::vector<double>  ekinscalef_nhc;
+        std::vector<double>  ekinscaleh_nhc;
+        std::vector<double>  vscale_nhc;
+        real                 dekindl;
+        real                 mvcos;
+};
 
 typedef struct df_history_t
 {
@@ -192,44 +197,49 @@ typedef struct swapstate_t
 swapstate_t;
 
 
-typedef struct t_state
+class t_state
 {
-    int                     natoms;
-    int                     ngtc;
-    int                     nnhpres;
-    int                     nhchainlength;   /* number of nose-hoover chains               */
-    int                     flags;           /* Flags telling which entries are present      */
-    int                     fep_state;       /* indicates which of the alchemical states we are in                 */
-    std::vector<real>       lambda;          /* lambda vector                               */
-    matrix                  box;             /* box vector coordinates                         */
-    matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
-    matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
-    matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
-    matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
-    matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
-    std::vector<double>     nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
-    std::vector<double>     nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
-    std::vector<double>     nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
-    real                    veta;            /* trotter based isotropic P-coupling             */
-    real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    PaddedRVecVector        x;               /* the coordinates (natoms)                     */
-    PaddedRVecVector        v;               /* the velocities (natoms)                      */
-    PaddedRVecVector        cg_p;            /* p vector for conjugate gradient minimization */
+    public:
+        // Constructor
+        t_state();
 
-    ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
+        // All things public
+        int                      natoms;
+        int                      ngtc;
+        int                      nnhpres;
+        int                      nhchainlength;  /* number of nose-hoover chains               */
+        int                      flags;          /* Flags telling which entries are present      */
+        int                      fep_state;      /* indicates which of the alchemical states we are in                 */
+        std::array<real, efptNR> lambda;         /* lambda vector                               */
+        matrix                   box;            /* box vector coordinates                         */
+        matrix                   box_rel;        /* Relitaive box vectors to preserve shape        */
+        matrix                   boxv;           /* box velocitites for Parrinello-Rahman pcoupl */
+        matrix                   pres_prev;      /* Pressure of the previous step for pcoupl  */
+        matrix                   svir_prev;      /* Shake virial for previous step for pcoupl */
+        matrix                   fvir_prev;      /* Force virial of the previous step for pcoupl  */
+        std::vector<double>      nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
+        std::vector<double>      nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
+        std::vector<double>      nhpres_xi;      /* for Nose-Hoover pcoupl for barostat     */
+        std::vector<double>      nhpres_vxi;     /* for Nose-Hoover pcoupl for barostat     */
+        std::vector<double>      therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
+        real                     veta;           /* trotter based isotropic P-coupling             */
+        real                     vol0;           /* initial volume,required for computing NPT conserverd quantity */
+        PaddedRVecVector         x;              /* the coordinates (natoms)                     */
+        PaddedRVecVector         v;              /* the velocities (natoms)                      */
+        PaddedRVecVector         cg_p;           /* p vector for conjugate gradient minimization */
 
-    /* History for special algorithms, should be moved to a history struct */
-    history_t               hist;            /* Time history for restraints                  */
-    swapstate_t            *swapstate;       /* Position swapping                       */
-    df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
+        ekinstate_t              ekinstate;      /* The state of the kinetic energy data      */
 
-    int                     ddp_count;       /* The DD partitioning count for this state  */
-    int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
-    std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
-} t_state;
+        /* History for special algorithms, should be moved to a history struct */
+        history_t               hist;            /* Time history for restraints                  */
+        swapstate_t            *swapstate;       /* Position swapping                       */
+        df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
+        edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
+
+        int                     ddp_count;       /* The DD partitioning count for this state  */
+        int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
+        std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
+};
 
 typedef struct t_extmass
 {
@@ -250,9 +260,14 @@ typedef struct
     double *vscale_nhc;
 } t_vetavars;
 
+//! Allocates memory for temperature coupling
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda);
+//! Change the number of atoms represented by this state, allocating memory as needed.
+void state_change_natoms(t_state *state, int natoms);
+
+//! Allocates memory for free-energy history
+void init_dfhist_state(t_state *state, int dfhistNumLambda);
 
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
 

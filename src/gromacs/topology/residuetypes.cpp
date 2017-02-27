@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,8 +66,8 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
     *prt = rt;
 
     rt->n        = 0;
-    rt->resname  = NULL;
-    rt->restype  = NULL;
+    rt->resname  = nullptr;
+    rt->restype  = nullptr;
 
     db = libopen("residuetypes.dat");
 
@@ -158,7 +158,7 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
                              int *                ntypes)
 {
     int          n           = 0;
-    const char **my_typename = NULL;
+    const char **my_typename = nullptr;
 
     if (rt->n > 0)
     {
@@ -280,6 +280,6 @@ gmx_residuetype_get_name(gmx_residuetype_t *rt, int index)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }

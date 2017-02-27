@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -224,7 +224,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                            ir, ekind, constr, bStopCM ? vcm : NULL,
+                            ir, ekind, constr, bStopCM ? vcm : nullptr,
                             signalBuffer.size(), signalBuffer.data(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
@@ -541,11 +541,11 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
 }
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bNotLastFrame)
+                         gmx_bool *bLastStep)
 {
     rvec    *xp, *vp;
 
-    if (MASTER(cr) && !*bNotLastFrame)
+    if (MASTER(cr) && *bLastStep)
     {
         fr->natoms = -1;
     }
@@ -555,10 +555,11 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
     fr->x = xp;
     fr->v = vp;
 
-    *bNotLastFrame = (fr->natoms >= 0);
+    *bLastStep = (fr->natoms < 0);
 
 }
 
+// TODO Most of this logic seems to belong in the respective modules
 void set_state_entries(t_state *state, const t_inputrec *ir)
 {
     /* The entries in the state in the tpx file might not correspond
@@ -571,18 +572,10 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estFEPSTATE);
     }
     state->flags |= (1<<estX);
-    state->lambda.resize(efptNR);
     GMX_RELEASE_ASSERT(state->x.size() >= static_cast<unsigned int>(state->natoms), "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
-        state->v.resize(state->natoms + 1);
-    }
-    if (ir->eI == eiCG)
-    {
-        state->flags |= (1<<estCGP);
-        /* cg_p is not stored in the tpx file, so we need to allocate it */
-        state->cg_p.resize(state->natoms + 1);
     }
 
     state->nnhpres = 0;
@@ -631,7 +624,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
     if (ir->eSwapCoords != eswapNO)
     {
-        if (state->swapstate == NULL)
+        if (state->swapstate == nullptr)
         {
             snew(state->swapstate, 1);
         }

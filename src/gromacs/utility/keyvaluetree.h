@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/variant.h"
 
 namespace gmx
@@ -57,15 +58,43 @@ namespace gmx
 
 class KeyValueTreeArray;
 class KeyValueTreeObject;
+class TextWriter;
 
+/*! \libinternal \brief
+ * Identifies an entry in a key-value tree.
+ *
+ * This class is mainly an internal utility within the key-value tree
+ * implementation, but it is exposed on the API level where string-based
+ * specification of a location in the tree is necessary.  Constructors are not
+ * explicit to allow passing a simple string in contexts where a
+ * KeyValueTreePath is expected.
+ *
+ * The string specifying a location should start with a `/`, followed by the
+ * names of the properties separated by `/`.  For example, `/a/b/c` specifies
+ * property `c` in an object that is the value of `b` in an object that is the
+ * value of `a` at the root of the tree.
+ * Currently, there is no support for specifying paths to values within arrays
+ * (since none of the places where this is used implement array handling,
+ * either).
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
 class KeyValueTreePath
 {
     public:
+        //! Creates an empty path (corresponds to the root object).
         KeyValueTreePath() = default;
+        //! Creates a path from given string representation.
+        KeyValueTreePath(const char *path);
+        //! Creates a path from given string representation.
         KeyValueTreePath(const std::string &path);
 
+        //! Adds another element to the path, making it a child of the old path.
         void append(const std::string &key) { path_.push_back(key); }
+        //! Removes the last element in the path, making it the parent path.
         void pop_back() { return path_.pop_back(); }
+        //! Removes and returns the last element in the path.
         std::string pop_last()
         {
             std::string result = std::move(path_.back());
@@ -73,11 +102,16 @@ class KeyValueTreePath
             return result;
         }
 
+        //! Whether the path is empty (pointing to the root object).
         bool empty() const { return path_.empty(); }
+        //! Returns the number of elements (=nesting level) in the path.
         size_t size() const { return path_.size(); }
+        //! Returns the i'th path element.
         const std::string &operator[](int i) const { return path_[i]; }
+        //! Returns all the path elements.
         const std::vector<std::string> &elements() const { return path_; }
 
+        //! Formats the path as a string for display.
         std::string toString() const;
 
     private:
@@ -93,6 +127,8 @@ class KeyValueTreeValue
         bool isType() const { return value_.isType<T>(); }
         std::type_index type() const { return value_.type(); }
 
+        KeyValueTreeArray &asArray();
+        KeyValueTreeObject       &asObject();
         const KeyValueTreeArray  &asArray() const;
         const KeyValueTreeObject &asObject() const;
         template <typename T>
@@ -102,9 +138,6 @@ class KeyValueTreeValue
 
     private:
         explicit KeyValueTreeValue(Variant &&value) : value_(std::move(value)) {}
-
-        KeyValueTreeArray &asArray();
-        KeyValueTreeObject &asObject();
 
         Variant             value_;
 
@@ -180,6 +213,9 @@ class KeyValueTreeObject
             return valueMap_.at(key);
         }
 
+        bool hasDistinctProperties(const KeyValueTreeObject &obj) const;
+        void writeUsing(TextWriter *writer) const;
+
     private:
         KeyValueTreeValue &operator[](const std::string &key)
         {
@@ -188,6 +224,7 @@ class KeyValueTreeObject
         std::map<std::string, KeyValueTreeValue>::iterator
         addProperty(const std::string &key, KeyValueTreeValue &&value)
         {
+            GMX_RELEASE_ASSERT(!keyExists(key), "Duplicate key value");
             values_.reserve(values_.size() + 1);
             auto iter = valueMap_.insert(std::make_pair(key, std::move(value))).first;
             values_.push_back(KeyValueTreeProperty(iter));
@@ -228,6 +265,19 @@ inline KeyValueTreeObject &KeyValueTreeValue::asObject()
 {
     return value_.castRef<KeyValueTreeObject>();
 }
+
+//! \cond libapi
+/*! \brief
+ * Compares two KeyValueTrees and prints any differences.
+ *
+ * \ingroup module_utility
+ */
+void compareKeyValueTrees(TextWriter               *writer,
+                          const KeyValueTreeObject &tree1,
+                          const KeyValueTreeObject &tree2,
+                          real                      ftol,
+                          real                      abstol);
+//! \endcond
 
 } // namespace gmx
 

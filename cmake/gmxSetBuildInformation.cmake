@@ -95,10 +95,12 @@ macro(gmx_set_build_information)
 
     if(NOT CMAKE_CROSSCOMPILING)
         # Get CPU information, e.g. for deciding what SIMD support probably exists
-        set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS}")
         if(GMX_TARGET_X86)
-            set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
+            set(GMX_TARGET_X86_VALUE 1)
+        else()
+            set(GMX_TARGET_X86_VALUE 0)
         endif()
+        set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS} -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE}")
 
         set(GMX_BUILDINFORMATION_BINARY "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/GmxBuildInformation${CMAKE_EXECUTABLE_SUFFIX}")
         set(LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}")

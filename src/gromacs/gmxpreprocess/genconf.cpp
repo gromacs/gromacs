@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/utilities.h"
@@ -138,7 +137,7 @@ int gmx_genconf(int argc, char *argv[])
     t_filenm          fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
         { efSTO, "-o", "out",  ffWRITE },
-        { efTRX, "-trj", NULL,  ffOPTRD }
+        { efTRX, "-trj", nullptr,  ffOPTRD }
     };
 #define NFILE asize(fnm)
     static rvec       nrbox    = {1, 1, 1};

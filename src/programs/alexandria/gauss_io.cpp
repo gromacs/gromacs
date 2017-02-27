@@ -192,8 +192,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     std::vector<alexandria::ElectrostaticPotential> espv;
 
     const char              *reference = "Ghahremanpour2016a", *unknown = "unknown";
-    std::string              basis;
-    char                    *program, *method, *charge_model, *g98ptr;
+    char                    *charge_model, *g98ptr;
     int                      bondid;
 
     OpenBabel::OBConversion *conv = read_babel(g98, &mol);
@@ -244,6 +243,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     //mol.PerceiveBondOrders();
     //mol.ConnectTheDots();
 
+    std::string basis;
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
     if ((nullptr != basisset) && (strlen(basisset) > 0))
     {
@@ -260,25 +260,20 @@ static void gmx_molprop_read_babel(const char          *g98,
         basis.assign(unknown);
     }
 
+    std::string program(unknown);
     OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
     if (nullptr != OBpd)
     {
-        program = strdup(OBpd->GetValue().c_str());
-    }
-    else
-    {
-        program = strdup(unknown);
+        program.assign(OBpd->GetValue());
     }
 
+    std::string method(unknown);
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
     if (nullptr != OBpd)
     {
-        method = strdup(OBpd->GetValue().c_str());
+        method.assign(OBpd->GetValue());
     }
-    else
-    {
-        method = strdup(unknown);
-    }
+
     g98ptr = (char *) strrchr(g98, '/');
     if (nullptr == g98ptr)
     {

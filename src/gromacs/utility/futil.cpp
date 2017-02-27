@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,13 +58,12 @@
 #include <windows.h>
 #endif
 
-#include "thread_mpi/threads.h"
-
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/datafilefinder.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -79,13 +78,15 @@ typedef struct t_pstack {
     struct t_pstack *prev;
 } t_pstack;
 
-static t_pstack    *pstack           = NULL;
+static t_pstack    *pstack           = nullptr;
 static bool         bUnbuffered      = false;
 static int          s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
-static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+static gmx::Mutex pstack_mutex;
+
+using Lock = gmx::lock_guard<gmx::Mutex>;
 
 namespace gmx
 {
@@ -99,7 +100,7 @@ const DataFileFinder  g_defaultLibFileFinder;
 
 const DataFileFinder &getLibraryFileFinder()
 {
-    if (g_libFileFinder != NULL)
+    if (g_libFileFinder != nullptr)
     {
         return *g_libFileFinder;
     }
@@ -123,10 +124,10 @@ void gmx_set_max_backup_count(int count)
     if (count < 0)
     {
         const char *env = getenv("GMX_MAXBACKUP");
-        if (env != NULL)
+        if (env != nullptr)
         {
             // TODO: Check that the value is converted properly.
-            count = strtol(env, NULL, 10);
+            count = strtol(env, nullptr, 10);
             if (count < 0)
             {
                 count = 0;
@@ -147,14 +148,12 @@ void push_ps(FILE *fp)
 {
     t_pstack *ps;
 
-    tMPI_Thread_mutex_lock(&pstack_mutex);
+    Lock      pstackLock(pstack_mutex);
 
     snew(ps, 1);
     ps->fp   = fp;
     ps->prev = pstack;
     pstack   = ps;
-
-    tMPI_Thread_mutex_unlock(&pstack_mutex);
 }
 
 #ifdef GMX_FAHCORE
@@ -191,19 +190,19 @@ int gmx_ffclose(FILE *fp)
     t_pstack *ps, *tmp;
     int       ret = 0;
 
-    tMPI_Thread_mutex_lock(&pstack_mutex);
+    Lock      pstackLock(pstack_mutex);
 
     ps = pstack;
-    if (ps == NULL)
+    if (ps == nullptr)
     {
-        if (fp != NULL)
+        if (fp != nullptr)
         {
             ret = fclose(fp);
         }
     }
     else if (ps->fp == fp)
     {
-        if (fp != NULL)
+        if (fp != nullptr)
         {
             ret = pclose(fp);
         }
@@ -212,13 +211,13 @@ int gmx_ffclose(FILE *fp)
     }
     else
     {
-        while ((ps->prev != NULL) && (ps->prev->fp != fp))
+        while ((ps->prev != nullptr) && (ps->prev->fp != fp))
         {
             ps = ps->prev;
         }
-        if ((ps->prev != NULL) && ps->prev->fp == fp)
+        if ((ps->prev != nullptr) && ps->prev->fp == fp)
         {
-            if (ps->prev->fp != NULL)
+            if (ps->prev->fp != nullptr)
             {
                 ret = pclose(ps->prev->fp);
             }
@@ -228,14 +227,13 @@ int gmx_ffclose(FILE *fp)
         }
         else
         {
-            if (fp != NULL)
+            if (fp != nullptr)
             {
                 ret = fclose(fp);
             }
         }
     }
 
-    tMPI_Thread_mutex_unlock(&pstack_mutex);
     return ret;
 #endif
 }
@@ -243,21 +241,19 @@ int gmx_ffclose(FILE *fp)
 
 void frewind(FILE *fp)
 {
-    tMPI_Thread_mutex_lock(&pstack_mutex);
+    Lock      pstackLock(pstack_mutex);
 
     t_pstack *ps = pstack;
-    while (ps != NULL)
+    while (ps != nullptr)
     {
         if (ps->fp == fp)
         {
             fprintf(stderr, "Cannot rewind compressed file!\n");
-            tMPI_Thread_mutex_unlock(&pstack_mutex);
             return;
         }
         ps = ps->prev;
     }
     rewind(fp);
-    tMPI_Thread_mutex_unlock(&pstack_mutex);
 }
 
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
@@ -317,7 +313,7 @@ static FILE *uncompress(const char *fn, const char *mode)
 
     sprintf(buf, "uncompress -c < %s", fn);
     fprintf(stderr, "Going to execute '%s'\n", buf);
-    if ((fp = popen(buf, mode)) == NULL)
+    if ((fp = popen(buf, mode)) == nullptr)
     {
         gmx_open(fn);
     }
@@ -333,7 +329,7 @@ static FILE *gunzip(const char *fn, const char *mode)
 
     sprintf(buf, "gunzip -c < %s", fn);
     fprintf(stderr, "Going to execute '%s'\n", buf);
-    if ((fp = popen(buf, mode)) == NULL)
+    if ((fp = popen(buf, mode)) == nullptr)
     {
         gmx_open(fn);
     }
@@ -346,12 +342,12 @@ gmx_bool gmx_fexist(const char *fname)
 {
     FILE *test;
 
-    if (fname == NULL)
+    if (fname == nullptr)
     {
         return FALSE;
     }
     test = fopen(fname, "r");
-    if (test == NULL)
+    if (test == nullptr)
     {
         /*Windows doesn't allow fopen of directory - so we need to check this seperately */
         #if GMX_NATIVE_WINDOWS
@@ -445,14 +441,14 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #ifdef SKIP_FFOPS
     return fopen(file, mode);
 #else
-    FILE    *ff = NULL;
-    char     buf[256], *bufsize = 0, *ptr;
+    FILE    *ff = nullptr;
+    char     buf[256], *bufsize = nullptr, *ptr;
     gmx_bool bRead;
     int      bs;
 
-    if (file == NULL)
+    if (file == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     if (mode[0] == 'w')
@@ -465,7 +461,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
     strcpy(buf, file);
     if (!bRead || gmx_fexist(buf))
     {
-        if ((ff = fopen(buf, mode)) == NULL)
+        if ((ff = fopen(buf, mode)) == nullptr)
         {
             gmx_file(buf);
         }
@@ -473,7 +469,7 @@ FILE *gmx_ffopen(const char *file, const char *mode)
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
          */
-        if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != NULL))
+        if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
             if (bUnbuffered)
@@ -482,11 +478,11 @@ FILE *gmx_ffopen(const char *file, const char *mode)
             }
             else
             {
-                bs = strtol(bufsize, NULL, 10);
+                bs = strtol(bufsize, nullptr, 10);
             }
             if (bs <= 0)
             {
-                setbuf(ff, NULL);
+                setbuf(ff, nullptr);
             }
             else
             {
@@ -538,7 +534,7 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    return NULL;
+    return nullptr;
 }
 
 FILE *low_libopen(const char *file, gmx_bool bFatal)
@@ -553,7 +549,7 @@ FILE *low_libopen(const char *file, gmx_bool bFatal)
         return fp;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    return NULL;
+    return nullptr;
 }
 
 char *gmxlibfn(const char *file)
@@ -609,7 +605,7 @@ void gmx_tmpnam(char *buf)
 FILE *gmx_fopen_temporary(char *buf)
 {
     int   i, len;
-    FILE *fpout = NULL;
+    FILE *fpout = nullptr;
 
     if ((len = strlen(buf)) < 7)
     {
@@ -641,7 +637,7 @@ FILE *gmx_fopen_temporary(char *buf)
         gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
                   strerror(errno));
     }
-    if ((fpout = fdopen(fd, "w")) == NULL)
+    if ((fpout = fdopen(fd, "w")) == nullptr)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
@@ -673,8 +669,8 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
 {
 /* the full copy buffer size: */
 #define FILECOPY_BUFSIZE (1<<16)
-    FILE *in  = NULL;
-    FILE *out = NULL;
+    FILE *in  = nullptr;
+    FILE *out = nullptr;
     char *buf;
 
     snew(buf, FILECOPY_BUFSIZE);
@@ -818,7 +814,7 @@ void gmx_getcwd(char *buffer, size_t size)
 #else
     char *pdum = getcwd(buffer, size);
 #endif
-    if (pdum == NULL)
+    if (pdum == nullptr)
     {
         gmx_fatal(FARGS, "Cannot get working directory. Reason: %s",
                   strerror(errno));

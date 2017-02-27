@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,8 +59,9 @@ const int grid_init[g_initNR] = { 6, 8, 10, 12, 14, 16, 20, 24, 25, 28, 32, 36, 
 #define g_baseNR 14
 const int grid_base[g_baseNR] = { 45, 48, 50, 52, 54, 56, 60, 64, 70, 72, 75, 80, 81, 84 };
 
-real calc_grid(FILE *fp, const matrix box, real gr_sp,
-               int *nx, int *ny, int *nz)
+real calcFftGrid(FILE *fp,
+                 const matrix box, real gridSpacing, int minGridPointsPerDim,
+                 int *nx, int *ny, int *nz)
 {
     int  d, n[DIM];
     int  i;
@@ -69,9 +70,9 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
     rvec spacing;
     real max_spacing;
 
-    if ((*nx <= 0 || *ny <= 0 || *nz <= 0) && gr_sp <= 0)
+    if ((*nx <= 0 || *ny <= 0 || *nz <= 0) && gridSpacing <= 0)
     {
-        gmx_fatal(FARGS, "invalid fourier grid spacing: %g", gr_sp);
+        gmx_fatal(FARGS, "invalid fourier grid spacing: %g", gridSpacing);
     }
 
     if (grid_base[g_baseNR-1] % 4 != 0)
@@ -107,7 +108,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
 
     if ((*nx <= 0) || (*ny <= 0) || (*nz <= 0))
     {
-        if (NULL != fp)
+        if (nullptr != fp)
         {
             fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n",
                     *nx > 0 ? "" : " X", *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
@@ -119,7 +120,8 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
     {
         if (n[d] <= 0)
         {
-            nmin = static_cast<int>(box_size[d]/gr_sp + 0.999);
+            nmin = static_cast<int>(box_size[d]/gridSpacing + 0.999);
+            nmin = std::max(nmin, minGridPointsPerDim);
 
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
@@ -162,7 +164,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
     *nx = n[XX];
     *ny = n[YY];
     *nz = n[ZZ];
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
                 *nx, *ny, *nz, spacing[XX], spacing[YY], spacing[ZZ]);

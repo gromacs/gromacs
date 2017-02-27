@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,9 +51,11 @@
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
 //! Macro to select a bool name
@@ -275,6 +277,18 @@ static void done_pull_params(pull_params_t *pull)
     sfree(pull->coord);
 }
 
+static void done_lambdas(t_lambda *fep)
+{
+    if (fep->n_lambda > 0)
+    {
+        for (int i = 0; i < efptNR; i++)
+        {
+            sfree(fep->all_lambda[i]);
+        }
+        sfree(fep->all_lambda);
+    }
+}
+
 void done_inputrec(t_inputrec *ir)
 {
     sfree(ir->opts.nrdf);
@@ -298,6 +312,8 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.SAsteps);
     sfree(ir->opts.bOPT);
     sfree(ir->opts.bTS);
+    sfree(ir->opts.egp_flags);
+    done_lambdas(ir->fepvals);
     sfree(ir->fepvals);
     sfree(ir->expandedvals);
     sfree(ir->simtempvals);
@@ -307,6 +323,7 @@ void done_inputrec(t_inputrec *ir)
         done_pull_params(ir->pull);
         sfree(ir->pull);
     }
+    delete ir->params;
 }
 
 static void pr_qm_opts(FILE *fp, int indent, const char *title, const t_grpopts *opts)
@@ -949,9 +966,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
             pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
         }
 
-        /* ELECTRIC FIELDS */
-        ir->efield->printParameters(fp, indent);
-
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
         if (ir->eSwapCoords != eswapNO)
@@ -968,6 +982,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PR("userreal2", ir->userreal2);
         PR("userreal3", ir->userreal3);
         PR("userreal4", ir->userreal4);
+
+        if (!bMDPformat)
+        {
+            gmx::TextWriter writer(fp);
+            writer.wrapperSettings().setIndent(indent);
+            ir->params->writeUsing(&writer);
+        }
 
         pr_grp_opts(fp, indent, "grpopts", &(ir->opts), bMDPformat);
     }
@@ -1254,7 +1275,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->userreal3", -1, ir1->userreal3, ir2->userreal3, ftol, abstol);
     cmp_real(fp, "inputrec->userreal4", -1, ir1->userreal4, ir2->userreal4, ftol, abstol);
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
-    ir1->efield->compare(fp, ir2->efield, ftol, abstol);
+    gmx::TextWriter writer(fp);
+    gmx::compareKeyValueTrees(&writer, *ir1->params, *ir2->params, ftol, abstol);
 }
 
 void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)

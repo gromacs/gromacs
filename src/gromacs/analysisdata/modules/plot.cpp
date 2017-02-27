@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,8 +61,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 namespace
 {
@@ -82,7 +82,7 @@ namespace gmx
  */
 
 AnalysisDataPlotSettings::AnalysisDataPlotSettings()
-    : selections_(NULL), timeUnit_(TimeUnit_Default), plotFormat_(1)
+    : selections_(nullptr), timeUnit_(TimeUnit_Default), plotFormat_(1)
 {
 }
 
@@ -132,7 +132,7 @@ class AbstractPlotModule::Impl
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
-    : settings_(settings), fp_(NULL), bPlain_(false), bOmitX_(false),
+    : settings_(settings), fp_(nullptr), bPlain_(false), bOmitX_(false),
       bErrorsAsSeparateColumn_(false), xscale_(1.0)
 {
     strcpy(xformat_, "%11.3f");
@@ -148,7 +148,7 @@ AbstractPlotModule::Impl::~Impl()
 void
 AbstractPlotModule::Impl::closeFile()
 {
-    if (fp_ != NULL)
+    if (fp_ != nullptr)
     {
         if (bPlain_)
         {
@@ -158,7 +158,7 @@ AbstractPlotModule::Impl::closeFile()
         {
             xvgrclose(fp_);
         }
-        fp_ = NULL;
+        fp_ = nullptr;
     }
 }
 
@@ -299,7 +299,7 @@ AbstractPlotModule::setXFormat(int width, int precision, char format)
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
                        && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != NULL,
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
                        "Invalid format specifier");
     sprintf(impl_->xformat_, "%%%d.%d%c", width, precision, format);
 }
@@ -311,7 +311,7 @@ AbstractPlotModule::setYFormat(int width, int precision, char format)
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
                        && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != NULL,
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
                        "Invalid format specifier");
     sprintf(impl_->yformat_, " %%%d.%d%c", width, precision, format);
 }
@@ -342,15 +342,15 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                 = (impl_->settings_.plotFormat() > 0
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
-            gmx_output_env_t                              *oenv;
+            gmx_output_env_t                                    *oenv;
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
-            scoped_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
+            const unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
                                   oenv);
             const SelectionCollection *selections
                 = impl_->settings_.selectionCollection();
-            if (selections != NULL && output_env_get_xvg_format(oenv) != exvgNONE)
+            if (selections != nullptr && output_env_get_xvg_format(oenv) != exvgNONE)
             {
                 selections->printXvgrInfo(impl_->fp_);
             }
@@ -409,7 +409,7 @@ AbstractPlotModule::dataFinished()
 bool
 AbstractPlotModule::isFileOpen() const
 {
-    return impl_->fp_ != NULL;
+    return impl_->fp_ != nullptr;
 }
 
 

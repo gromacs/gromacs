@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,14 +73,14 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
     rmpbc_graph_t *gr;
 
     if (ePBC == epbcNONE
-        || NULL == gpbc
-        || NULL == gpbc->idef
+        || nullptr == gpbc
+        || nullptr == gpbc->idef
         || gpbc->idef->ntypes <= 0)
     {
-        return NULL;
+        return nullptr;
     }
 
-    gr = NULL;
+    gr = nullptr;
     for (i = 0; i < gpbc->ngraph; i++)
     {
         if (natoms == gpbc->graph[i].natoms)
@@ -88,7 +88,7 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
             gr = &gpbc->graph[i];
         }
     }
-    if (gr == NULL)
+    if (gr == nullptr)
     {
         /* We'd like to check with the number of atoms in the topology,
          * but we don't have that available.
@@ -103,7 +103,7 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
         srenew(gpbc->graph, gpbc->ngraph);
         gr         = &gpbc->graph[gpbc->ngraph-1];
         gr->natoms = natoms;
-        gr->gr     = mk_graph(NULL, gpbc->idef, 0, natoms, FALSE, FALSE);
+        gr->gr     = mk_graph(nullptr, gpbc->idef, 0, natoms, FALSE, FALSE);
     }
 
     return gr->gr;
@@ -140,14 +140,14 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
 {
     int i;
 
-    if (NULL != gpbc)
+    if (nullptr != gpbc)
     {
         for (i = 0; i < gpbc->ngraph; i++)
         {
             done_graph(gpbc->graph[i].gr);
             sfree(gpbc->graph[i].gr);
         }
-        if (gpbc->graph != NULL)
+        if (gpbc->graph != nullptr)
         {
             sfree(gpbc->graph);
         }
@@ -157,7 +157,7 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
 
 static int gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc, const matrix box)
 {
-    if (NULL != gpbc && gpbc->ePBC >= 0)
+    if (nullptr != gpbc && gpbc->ePBC >= 0)
     {
         return gpbc->ePBC;
     }
@@ -174,7 +174,7 @@ void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[])
 
     ePBC = gmx_rmpbc_ePBC(gpbc, box);
     gr   = gmx_rmpbc_get_graph(gpbc, ePBC, natoms);
-    if (gr != NULL)
+    if (gr != nullptr)
     {
         mk_mshift(stdout, gr, ePBC, box, x);
         shift_self(gr, box, x);
@@ -189,7 +189,7 @@ void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[], rv
 
     ePBC = gmx_rmpbc_ePBC(gpbc, box);
     gr   = gmx_rmpbc_get_graph(gpbc, ePBC, natoms);
-    if (gr != NULL)
+    if (gr != nullptr)
     {
         mk_mshift(stdout, gr, ePBC, box, x);
         shift_x(gr, box, x, x_s);
@@ -212,7 +212,7 @@ void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, t_trxframe *fr)
     {
         ePBC = gmx_rmpbc_ePBC(gpbc, fr->box);
         gr   = gmx_rmpbc_get_graph(gpbc, ePBC, fr->natoms);
-        if (gr != NULL)
+        if (gr != nullptr)
         {
             mk_mshift(stdout, gr, ePBC, fr->box, fr->x);
             shift_self(gr, fr->box, fr->x);
