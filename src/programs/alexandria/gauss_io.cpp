@@ -253,7 +253,10 @@ static void gmx_molprop_read_babel(const char          *g98,
     {
         basis = OBpd->GetValue();
         size_t p = basis.find(" (5D, 7F)");
-        basis.erase(p, basis.npos);
+        if (p != basis.npos)
+        {
+            basis.erase(p, basis.npos);
+        }
     }
     else
     {

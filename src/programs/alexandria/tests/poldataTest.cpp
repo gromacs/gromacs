@@ -121,21 +121,13 @@ TEST_F (PoldataTest, getAtype){
 }
 
 TEST_F(PoldataTest, addAtype){
-    const std::string        elem         = "elm";
-    const std::string        desc         = "temproary test atom";
+    const std::string        elem         = "elem";
+    const std::string        desc         = "temporary test atom";
     const std::string        atype        = "aType";
     const std::string        ptype        = "Type";
     const std::string        btype        = "bType";
           std::string        vdwparams    = "vdwparams";
     const std::string        ref_enthalpy = "1000";
-
-    std::string              newElem;
-    std::string              newDesc;
-    std::string              newAtype;
-    std::string              newPtype;
-    std::string              newBtype;
-    std::string              newVdwparams;
-    alexandria::Ffatype      fatype;
 
     pd_.addAtype(elem,
                  desc,
@@ -149,12 +141,12 @@ TEST_F(PoldataTest, addAtype){
     if (fa != pd_.getAtypeEnd())
     {
         // Test if the extractions where correct
-        checker_.checkBoolean(fa->getElem().compare(elem) == 0, "elem");
-        checker_.checkBoolean(fa->getDesc().compare(desc) == 0, "desc");
-        checker_.checkBoolean(fa->getType().compare(atype) == 0, "atype");
-        checker_.checkBoolean(fa->getPtype().compare(ptype) == 0, "ptype");
-        checker_.checkBoolean(fa->getBtype().compare(btype) == 0, "btype");
-        checker_.checkBoolean(fa->getVdwparams().compare(vdwparams) == 0, "vdwparams" );
+        checker_.checkString(fa->getElem(), elem.c_str());
+        checker_.checkString(fa->getDesc(), desc.c_str());
+        checker_.checkString(fa->getType(), atype.c_str());
+        checker_.checkString(fa->getPtype(), ptype.c_str());
+        checker_.checkString(fa->getBtype(), btype.c_str());
+        checker_.checkString(fa->getVdwparams(), vdwparams.c_str());
     }
 }
 

@@ -40,6 +40,7 @@
 #include "mymol.h"
 
 #include <assert.h>
+
 #include <cstdio>
 #include <cstring>
 
@@ -1107,7 +1108,9 @@ immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
         {
             zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 1);
         }
-        if (zeta == 0 && (eqdModel != eqdAXp && eqdModel != eqdAXpp))
+        if (zeta == 0 && (eqdModel != eqdAXp && 
+                          eqdModel != eqdAXpp && 
+                          eqdModel != eqdBultinck))
         {
             printf("Zeta is zero for %s atom\n", *topology_->atoms.atomtype[i]);
             return immZeroZeta;
@@ -1711,7 +1714,8 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     fr_->hwinfo = hwinfo;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    //    init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
+    // The line below is a hack, there should be an official way!
+    state_->x.resize(topology_->atoms.nr);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
     

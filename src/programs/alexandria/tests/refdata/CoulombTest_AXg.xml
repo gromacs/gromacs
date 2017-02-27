@@ -28,11 +28,11 @@
   <Sequence Name="NuclearPotential-AXg">
     <Int Name="Length">9</Int>
     <Real>5.2049987781304647</Real>
-    <Real>4.2135039647485746</Real>
+    <Real>4.2135039647485737</Real>
     <Real>3.2203504882510354</Real>
     <Real>2.4883056625473818</Real>
     <Real>1.99918609596511</Real>
-    <Real>1.6666298491716687</Real>
+    <Real>1.6666298491716689</Real>
     <Real>1.4285703670023251</Real>
     <Real>1.2499999807284274</Real>
     <Real>1.1111111108926488</Real>

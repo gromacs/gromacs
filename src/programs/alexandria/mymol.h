@@ -64,7 +64,6 @@ struct gmx_shellfc_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
-struct t_state;
 struct t_topology;
 
 enum immStatus {

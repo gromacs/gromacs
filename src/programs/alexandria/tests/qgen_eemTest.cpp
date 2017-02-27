@@ -122,11 +122,11 @@ class EemTest : public gmx::test::CommandLineTestBase
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
             // Generate charges and topology
-            const char               *lot         = "B3LYP/aug-cc-pVTZ";
-            const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
-            eDih                      edih        = (eDih) get_option(dihopt);
-            gmx::MDModules            mdModules;
-            t_inputrec               *inputrec   = mdModules.inputrec();
+            const char     *lot        = "B3LYP/aug-cc-pVTZ";
+            const char     *dihopt[]   = { NULL, "No", "Single", "All", NULL };
+            eDih            edih       = (eDih) get_option(dihopt);
+            gmx::MDModules  mdModules;
+            t_inputrec     *inputrec   = mdModules.inputrec();
             fill_inputrec(inputrec);
             mp_.setInputrec(inputrec);
 

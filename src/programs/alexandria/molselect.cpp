@@ -6,6 +6,7 @@
 #include "molselect.h"
 
 #include <vector>
+
 #include <strings.h>
 
 #include "gromacs/utility/textreader.h"

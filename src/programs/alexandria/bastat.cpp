@@ -38,11 +38,13 @@
  */
 #include "gmxpre.h"
 
-#include <algorithm>
-#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/pdbio.h"

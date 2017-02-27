@@ -5,9 +5,9 @@
 #ifndef MOLSELECT_H
 #define MOLSELECT_H
 
+#include <algorithm>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 enum iMolSelect {
     imsTrain, imsTest, imsIgnore, imsUnknown, imsNR
