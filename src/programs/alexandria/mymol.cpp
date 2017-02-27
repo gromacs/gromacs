@@ -772,7 +772,7 @@ static void do_init_mtop(const Poldata            &pd,
         {
             for (int m = k; m < ntype; m++)
             {
-                ir->opts.egp_flags[k*ntype+m] |= EGP_TABLE;
+                ir->opts.egp_flags[k*ntype + m] |= EGP_TABLE;
             }
         }
     }
