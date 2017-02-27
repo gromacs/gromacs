@@ -70,7 +70,8 @@ int alex_gauss2molprop(int argc, char *argv[])
     };
 
     t_filenm                         fnm[] = {
-        { efLOG, "-g03",  "gauss",  ffRDMULT },
+        { efLOG, "-g03",  "gauss",   ffRDMULT },
+        { efDAT, "-d",    "gentop",  ffREAD },
         { efDAT, "-o",    "molprop", ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
@@ -123,7 +124,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     /* Read force field stuff */
     try
     {
-        readPoldata("", pd, aps);
+        readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
