@@ -181,7 +181,6 @@ class MyMol
         eSupport                  eSupp_;
         t_state                  *state_;
         t_forcerec               *fr_;
-        PaddedRVecVector          x_;
         PaddedRVecVector          f_;
         PaddedRVecVector          optf_;
         std::vector<int>          symmetric_charges_;

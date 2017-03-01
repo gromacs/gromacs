@@ -125,6 +125,133 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return false;
 }
 
+
+static void add_excl(t_excls *excls, int e)
+{
+    int i;
+
+    for (i = 0; (i < excls->nr); i++)
+    {
+        if (excls->e[i] == e)
+        {
+            return;
+        }
+    }
+    srenew(excls->e, excls->nr+1);
+    excls->e[excls->nr++] = e;
+}
+
+static void add_excl_pair(t_excls excls[], int e1, int e2)
+{
+    if (e1 != e2)
+    {
+        add_excl(&excls[e1], e2);
+        add_excl(&excls[e2], e1);
+    }
+}
+
+static void remove_excl(t_excls *excls, int remove)
+{
+    int i;
+
+    for (i = remove+1; i < excls->nr; i++)
+    {
+        excls->e[i-1] = excls->e[i];
+    }
+
+    excls->nr--;
+}
+
+static void prune_excl(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype)
+{
+    int i, k, ak;
+
+    for (i = 0; (i < atoms->nr); i++)
+    {
+        if (get_atomtype_ptype(atoms->atom[i].type, atype) != eptShell)
+        {
+            for (k = 0; (k < excls[i].nr); )
+            {
+                ak = excls[i].e[k];
+                if (get_atomtype_ptype(atoms->atom[ak].type, atype) != eptShell)
+                {
+                    remove_excl(&(excls[i]), k);
+                }
+                else
+                {
+                    k++;
+                }
+            }
+        }
+    }
+}
+
+static void copy_atoms(t_atoms *src, t_atoms *dest)
+{
+    int i;
+
+    if (dest->nr < src->nr)
+    {
+        srenew(dest->atom, src->nr);
+        srenew(dest->atomname, src->nr);
+        if (nullptr != src->atomtype)
+        {
+            srenew(dest->atomtype, src->nr);
+        }
+        else if (nullptr != dest->atomtype)
+        {
+            sfree(dest->atomtype);
+            dest->atomtype = nullptr;
+        }
+        if (nullptr != src->atomtypeB)
+        {
+            srenew(dest->atomtypeB, src->nr);
+        }
+        else if (nullptr != dest->atomtypeB)
+        {
+            sfree(dest->atomtypeB);
+            dest->atomtypeB = nullptr;
+        }
+    }
+    dest->nr = src->nr;
+    for (i = 0; (i < src->nr); i++)
+    {
+        dest->atom[i]      = src->atom[i];
+        dest->atomname[i]  = src->atomname[i];
+        if (nullptr != src->atomtype)
+        {
+            dest->atomtype[i]  = src->atomtype[i];
+        }
+        if (nullptr != src->atomtypeB)
+        {
+            dest->atomtypeB[i] = src->atomtypeB[i];
+        }
+    }
+    if (dest->nres < src->nres)
+    {
+        srenew(dest->resinfo, src->nres);
+    }
+
+    if (nullptr != src->pdbinfo)
+    {
+        srenew(dest->pdbinfo, src->nres);
+    }
+    else if (nullptr != dest->pdbinfo)
+    {
+        sfree(dest->pdbinfo);
+        dest->pdbinfo = nullptr;
+    }
+    dest->nres = src->nres;
+    for (i = 0; (i < src->nres); i++)
+    {
+        dest->resinfo[i] = src->resinfo[i];
+        if (nullptr != src->pdbinfo)
+        {
+            dest->pdbinfo[i] = src->pdbinfo[i];
+        }
+    }
+}
+
 /*
  * Make Linear Angles, Improper Dihedrals, and Virtual Sites
  */
@@ -137,7 +264,7 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
     real             th_toler = 175;
     real             ph_toler = 5;
 
-    rvec *x = as_rvec_array(x_.data());
+    rvec *x = as_rvec_array(state_->x.data());
     
     clear_mat(box_);
     set_pbc(&pbc, epbcNONE, box_);
@@ -902,7 +1029,7 @@ bool MyMol::IsSymmetric(real toler)
         tm += mm;
         for (m = 0; (m < DIM); m++)
         {
-            com[m] += mm*x_[i][m];
+            com[m] += mm*state_->x[i][m];
         }
     }
     if (tm > 0)
@@ -914,16 +1041,16 @@ bool MyMol::IsSymmetric(real toler)
     }
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        rvec_dec(x_[i], com);
+        rvec_dec(state_->x[i], com);
     }
 
     snew(bSymm, topology_->atoms.nr);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        bSymm[i] = (norm(x_[i]) < toler);
+        bSymm[i] = (norm(state_->x[i]) < toler);
         for (j = i+1; (j < topology_->atoms.nr) && !bSymm[i]; j++)
         {
-            rvec_add(x_[i], x_[j], test);
+            rvec_add(state_->x[i], state_->x[j], test);
             if (norm(test) < toler)
             {
                 bSymm[i] = true;
@@ -939,7 +1066,7 @@ bool MyMol::IsSymmetric(real toler)
     sfree(bSymm);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        rvec_inc(x_[i], com);
+        rvec_inc(state_->x[i], com);
     }
 
     return bSymmAll;
@@ -966,6 +1093,9 @@ MyMol::MyMol() : gvt_(egvtALL)
     mdatoms_    = nullptr;
     mp_         = new MolProp;
     state_      = new t_state;
+    state_->flags |= (1<<estX);
+    state_->flags |= (1<<estV);
+    state_->flags |= (1<<estCGP);
     snew(enerd_, 1);
     snew(fcd_, 1);
     init_enerdata(1, 0, enerd_);
@@ -984,9 +1114,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
     if (ci < molProp()->EndExperiment())
     {
         t_param nb;
-
         memset(&nb, 0, sizeof(nb));
-        x_.resize(ci->NAtom()+1);
         natom = 0;
         init_t_atoms(&(topology_->atoms), ci->NAtom(), false);
         snew(topology_->atoms.atomtype, ci->NAtom());
@@ -1002,9 +1130,9 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             }
             cai->getCoords(&xx, &yy, &zz); 
                        
-            x_[natom][XX] = convert2gmx(xx, myunit);
-            x_[natom][YY] = convert2gmx(yy, myunit);
-            x_[natom][ZZ] = convert2gmx(zz, myunit);
+            state_->x[natom][XX] = convert2gmx(xx, myunit);
+            state_->x[natom][YY] = convert2gmx(yy, myunit);
+            state_->x[natom][ZZ] = convert2gmx(zz, myunit);
 
             double q = 0;
             for (auto qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
@@ -1151,6 +1279,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         snew(topology_, 1);
         init_top(topology_);
+        state_change_natoms(state_, molProp()->NAtom());
         imm = GenerateAtoms(ap, lot, iChargeDistributionModel); /* get atoms */      
     }
     if (immOK == imm)
@@ -1229,9 +1358,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         for (int i = 0; i < topology_->atoms.nr; i++)
         {
             auto atn    = topology_->atoms.atom[i].atomnumber;
-            coq_[XX]   += x_[i][XX]*atn;
-            coq_[YY]   += x_[i][YY]*atn;
-            coq_[ZZ]   += x_[i][ZZ]*atn;
+            coq_[XX]   += state_->x[i][XX]*atn;
+            coq_[YY]   += state_->x[i][YY]*atn;
+            coq_[ZZ]   += state_->x[i][ZZ]*atn;
             total_atn  += atn;
         }
         if (total_atn > 0) 
@@ -1264,6 +1393,398 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
 
     return imm;
+}
+
+void MyMol::addShells(const Poldata          &pd,
+                      ChargeDistributionModel iModel)
+{
+    int              i, j, k, iat, shell, nshell = 0;
+    std::vector<int> renum, inv_renum;
+    char             buf[32], **newname;
+    t_param          p;
+    t_atoms         *newa;
+    t_excls         *newexcls;
+    PaddedRVecVector newx;
+    double           pol, sigpol;
+
+    int              maxatom = 2*topology_->atoms.nr;
+
+    state_change_natoms(state_, maxatom);
+    memset(&p, 0, sizeof(p));
+    inv_renum.resize(topology_->atoms.nr*2, -1);
+    int polarUnit = string2unit(pd.getPolarUnit().c_str());
+    if (-1 == polarUnit)
+    {
+        gmx_fatal(FARGS, "No such polarizability unit '%s'",
+                  pd.getPolarUnit().c_str());
+    }
+    for (i = 0; i < topology_->atoms.nr; i++)
+    {
+        renum.push_back(i+nshell);
+        inv_renum[i+nshell] = i;
+        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol) &&
+            (pol > 0) && (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
+        {
+            nshell++;
+            p.a[0] = renum[i];
+            p.a[1] = renum[i]+1;
+            p.c[0] = convert2gmx(pol, polarUnit);
+            add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
+        }
+    }
+    renum.resize(topology_->atoms.nr + 1, 0);
+    renum[topology_->atoms.nr] = topology_->atoms.nr + nshell;
+    if (nullptr != debug)
+    {
+        fprintf(debug, "added %d shells\n", nshell);
+    }
+    if (nshell > 0)
+    {
+        t_atom          *shell_atom;
+        snew(shell_atom, 1);
+        shell_atom->ptype = eptShell;
+
+        /* Make new atoms and x arrays */
+        snew(newa, 1);
+        init_t_atoms(newa, topology_->atoms.nr+nshell, true);
+        snew(newa->atomtype, topology_->atoms.nr+nshell);
+        snew(newa->atomtypeB, topology_->atoms.nr+nshell);
+        newa->nres = topology_->atoms.nres;
+        newx.resize(newa->nr);
+        snew(newname, newa->nr);
+
+        /* Make new exclusion array, and put the shells in it */
+        snew(newexcls, newa->nr);
+        /* TODO: other polarization types */
+        auto pw = SearchPlist(plist_, F_POLARIZATION);
+        if (plist_.end() != pw)
+        {
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                // Exclude nucleus and shell from each other
+                add_excl_pair(newexcls, j->a[0], j->a[1]);
+            }
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                // Now add the exclusions from the nucleus to the shell.
+                // We know that the nuclues is 0 since we just made the list
+                int  i0 = inv_renum[j->a[0]];
+                char buf[256];
+                snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) shell %d (%d)",
+                         j->a[0], inv_renum[j->a[0]],
+                         j->a[1], inv_renum[j->a[1]]);
+                GMX_RELEASE_ASSERT(i0 >= 0, buf);
+                for (int j0 = 0; (j0 < excls_[i0].nr); j0++)
+                {
+                    add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
+                    add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
+                }
+            }
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                for (int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
+                {
+                    add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
+                }
+            }
+        }
+        // Now copy the old atoms to the new structures
+        for (i = 0; (i < topology_->atoms.nr); i++)
+        {
+            newa->atom[renum[i]]      = topology_->atoms.atom[i];
+            newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
+            newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
+            newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
+            copy_rvec(state_->x[i], newx[renum[i]]);
+            newname[renum[i]] = *topology_->atoms.atomtype[i];
+            t_atoms_set_resinfo(newa, renum[i], symtab_,
+                                *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
+                                topology_->atoms.atom[i].resind, ' ', 1, ' ');
+        }
+        // Now insert the shell particles
+        for (i = 0; (i < topology_->atoms.nr); i++)
+        {
+            iat = renum[i];
+            for (j = iat+1; (j < renum[i+1]); j++)
+            {
+                newa->atom[j]            = topology_->atoms.atom[i];
+                newa->atom[iat].q        = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
+                newa->atom[iat].qB       = newa->atom[iat].q;
+                newa->atom[iat].zetaA    = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 0);
+                newa->atom[iat].zetaB    = newa->atom[iat].zetaA;
+                newa->atom[j].m          = 0;
+                newa->atom[j].mB         = 0;
+                newa->atom[j].atomnumber = 0;
+                sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type, atype_));
+                newname[j] = strdup(buf);
+                shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
+                newa->atom[j].type          = shell;
+                newa->atom[j].typeB         = shell;
+                newa->atomtype[j]           =
+                    newa->atomtypeB[j]      = put_symtab(symtab_, buf);
+                newa->atom[j].ptype         = eptShell;
+                newa->atom[j].q             = pd.getQ(iModel, *topology_->atoms.atomtype[i], 1);
+                newa->atom[j].qB            = newa->atom[j].q;
+                newa->atom[j].zetaA         = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 1);
+                newa->atom[j].zetaB         = newa->atom[j].zetaA;
+                newa->atom[j].resind        = topology_->atoms.atom[i].resind;
+                sprintf(buf, "%s_s", *(topology_->atoms.atomname[i]));
+                newa->atomname[j] = put_symtab(symtab_, buf);
+                copy_rvec(state_->x[i], newx[j]);
+            }
+        }
+        /* Copy newa to atoms */
+        copy_atoms(newa, &topology_->atoms);
+        /* Copy coordinates and smnames */
+        for (i = 0; i < newa->nr; i++)
+        {
+            copy_rvec(newx[i], state_->x[i]);
+            topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
+        }
+
+        sfree(newname);
+        /* Copy exclusions, may need to empty the original first */
+        sfree(excls_);
+        excls_ = newexcls;
+
+        for (auto i = plist_.begin(); i < plist_.end(); ++i)
+        {
+            if (i->getFtype() != F_POLARIZATION)
+            {
+                for (auto j = i->beginParam(); (j < i->endParam()); ++j)
+                {
+                    for (k = 0; (k < NRAL(i->getFtype())); k++)
+                    {
+                        j->a[k] = renum[j->a[k]];
+                    }
+                }
+            }
+        }
+        bHaveShells_ = true;
+        sfree(shell_atom);
+    }
+}
+
+immStatus MyMol::GenerateCharges(const Poldata             &pd,
+                                 const gmx::MDLogger       &mdlog,
+                                 gmx_atomprop_t             ap,
+                                 ChargeDistributionModel    iChargeDistributionModel,
+                                 ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
+                                 real                       watoms,
+                                 real                       hfac,
+                                 const char                *lot,
+                                 bool                       bSymmetricCharges,
+                                 const char                *symm_string,
+                                 t_commrec                 *cr,
+                                 const char                *tabfn,
+                                 gmx_hw_info_t             *hwinfo)
+{
+    immStatus imm       = immOK;
+    real      tolerance = 1e-6;
+    bool      converged = false;
+    int       maxiter   = 100, iter;
+    std::vector<double> qq;
+
+    // This might be moved to a better place
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
+    GenerateGromacs(mdlog, cr, tabfn, hwinfo);
+    if (bSymmetricCharges)
+    {
+        auto bonds = SearchPlist(plist_, eitBONDS);
+        if (plist_.end() != bonds)
+        {
+            symmetrize_charges(bSymmetricCharges, &topology_->atoms, bonds,
+                               pd, ap, symm_string, symmetric_charges_);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < topology_->atoms.nr; i++)
+        {
+            symmetric_charges_.push_back(i);
+        }
+    } 
+    switch (iChargeGenerationAlgorithm)
+    {
+        case eqgNONE:
+            printf("Using zero charges!\n");
+            for (int i = 0; (i < topology_->atoms.nr); i++)
+            {
+                topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
+            }
+            return immOK;
+        case eqgESP:
+        {
+            gr_.setChargeDistributionModel(iChargeDistributionModel);
+            gr_.setAtomWeight(watoms);
+            gr_.setAtomInfo(&topology_->atoms, pd, state_->x, molProp()->getCharge());
+            gr_.setAtomSymmetry(symmetric_charges_);
+            gr_.setMolecularCharge(molProp()->getCharge());
+            gr_.summary(debug);
+
+            auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
+            if (ci != molProp()->EndExperiment())
+            {
+                size_t iesp = 0;
+                for (auto epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi, ++iesp)
+                {
+                    if (gr_.myWeight(iesp) == 0)
+                    {
+                        continue;
+                    }
+                    int xu = string2unit(epi->getXYZunit().c_str());
+                    int vu = string2unit(epi->getVunit().c_str());
+                    if (-1 == xu)
+                    {
+                        gmx_fatal(FARGS, "No such length unit '%s' for potential",
+                                  epi->getXYZunit().c_str());
+                    }
+                    if (-1 == vu)
+                    {
+                        gmx_fatal(FARGS, "No such potential unit '%s' for potential",
+                                  epi->getVunit().c_str());
+                    }
+                    gr_.addEspPoint(convert2gmx(epi->getX(), xu),
+                                    convert2gmx(epi->getY(), xu),
+                                    convert2gmx(epi->getZ(), xu),
+                                    convert2gmx(epi->getV(), vu));
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Added %d ESP points to the RESP structure.\n",
+                            static_cast<int>(gr_.nEsp()));
+                }
+            }
+            double chi2[2]   = {1e8, 1e8};
+            real   rrms      = 0, wtot;
+            int    cur       = 0;
+            EspRms_          = 0;
+            do
+            {
+                gr_.updateAtomCoords(state_->x);
+                gr_.optimizeCharges();
+                for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
+                {
+                    mtop_->moltype[0].atoms.atom[i].q      =
+                        mtop_->moltype[0].atoms.atom[i].qB = gr_.getAtomCharge(i);
+                }
+                if (nullptr != shellfc_)
+                {
+                    computeForces(nullptr, cr);
+                }
+                gr_.calcPot();
+                EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
+                printf("RESP: RMS %g\n", chi2[cur]);
+                converged = (fabs(chi2[cur] - chi2[1-cur]) < tolerance) || (nullptr == shellfc_);
+                cur       = 1-cur;
+            }
+            while (!converged);
+            for (int i = 0; i < topology_->atoms.nr; i++)
+            {
+                topology_->atoms.atom[i].q      =
+                    topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
+            }
+        }
+        break;
+        case eqgEEM:
+        {
+            Qge_.setInfo(pd, &topology_->atoms,
+                         iChargeDistributionModel,
+                         hfac, molProp()->getCharge(),
+                         bHaveShells_);
+                                       
+            auto q     = Qge_.q();
+            auto natom = Qge_.natom();
+            
+            qq.resize(natom + 1);
+            for (int i = 0; i < natom + 1; i++)
+            {           
+                qq[i] = q[i][0];
+            }
+                
+            iter = 0;
+            do
+            {                
+                if (eQGEN_OK == Qge_.generateCharges(nullptr,
+                                                     molProp()->getMolname().c_str(),
+                                                     pd, &topology_->atoms,
+                                                     state_->x))
+                {   
+                    for (int i = 0; i < mtop_->natoms; i++)
+                    {
+                        mtop_->moltype[0].atoms.atom[i].q = 
+                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
+                        
+                    }           
+                                              
+                    if (nullptr != shellfc_)
+                    {
+                        computeForces(nullptr, cr);
+                    }
+                    
+                    q       = Qge_.q(); 
+                    EemRms_ = 0;                  
+                    for (int i = 0; i < natom + 1; i++)
+                    {
+                        EemRms_  += gmx::square(qq[i] - q[i][0]);
+                        qq[i]     = q[i][0];
+                    }
+                    
+                    EemRms_  /= natom;
+                    converged = (EemRms_ < tolerance) || (nullptr == shellfc_);
+                    iter++;
+                }
+                else
+                {
+                    imm = immChargeGeneration;
+                }           
+            }
+            while(imm == immOK && (!converged) && (iter < maxiter));
+            
+            if (!converged)
+            {
+                printf("EEM did not converge to %g. rms: %g\n", tolerance, EemRms_);
+            }
+        }
+        break;
+        default:
+            gmx_fatal(FARGS, "Not implemented");
+            break;
+    }
+    return imm;
+}
+
+immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
+                                 t_commrec           *cr,
+                                 const char          *tabfn,
+                                 gmx_hw_info_t       *hwinfo)
+{
+    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
+    int nalloc = 2 * topology_->atoms.nr;
+
+    if (nullptr == fr_)
+    {
+        fr_ = mk_forcerec();
+    }
+    if (nullptr != tabfn)
+    {
+        inputrec_->coulombtype = eelUSER;
+    }
+
+    f_.resize(nalloc);
+    optf_.resize(nalloc);
+   
+    fr_->hwinfo = hwinfo;
+    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
+                  box_, tabfn, tabfn, nullptr, nullptr, true, -1);
+    mdatoms_   = init_mdatoms(nullptr, mtop_, false);
+    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
+    
+    if (nullptr != shellfc_)
+    {
+        make_local_shells(cr, mdatoms_, shellfc_);
+    }
+    return immOK;
 }
 
 void MyMol::computeForces(FILE *fplog, t_commrec *cr)
@@ -1302,12 +1823,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
                             &(mtop_->groups),
                             shellfc_, fr_, false, t, nullptr,
                             nullptr);
-        cr->nnodes = nnodes;
-        
-        for (int i = 0; i < mtop_->natoms; i++)
-        {
-            copy_rvec(state_->x[i], x_[i]);
-        }      
+        cr->nnodes = nnodes;     
     }
     else
     {   
@@ -1315,7 +1831,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
         do_force(fplog, cr, inputrec_, 0,
                  &my_nrnb, wcycle, ltop_,
                  &(mtop_->groups),
-                 box_, &x_, nullptr,
+                 box_, &state_->x, nullptr,
                  &f_, force_vir, mdatoms_,
                  enerd_, fcd_,
                  state_->lambda, nullptr,
@@ -1334,9 +1850,9 @@ void MyMol::changeCoordinate(ExperimentIterator ei)
     {
         unit = string2unit((char *)eia->getUnit().c_str());
         eia->getCoords(&xx, &yy, &zz);         
-        x_[natom][XX] = convert2gmx(xx, unit);
-        x_[natom][YY] = convert2gmx(yy, unit);
-        x_[natom][ZZ] = convert2gmx(zz, unit);
+        state_->x[natom][XX] = convert2gmx(xx, unit);
+        state_->x[natom][YY] = convert2gmx(yy, unit);
+        state_->x[natom][ZZ] = convert2gmx(zz, unit);
 
         natom++;
     }
@@ -1420,7 +1936,7 @@ void MyMol::CalcDipole(rvec mu)
         
         for (int m = 0; m < DIM; m++)
         {
-            mu[m] += x_[i][m]*q;
+            mu[m] += state_->x[i][m]*q;
         }
     }
     dip_calc_ = norm(mu);
@@ -1435,14 +1951,14 @@ void MyMol::CalcQuadrupole()
     {
         q    = ENM2DEBYE*topology_->atoms.atom[i].q;
         dfac = q*0.5*10;
-        r2   = iprod(x_[i], x_[i]);
+        r2   = iprod(state_->x[i], state_->x[i]);
         for (int m = 0; m < DIM; m++)
         {
-            Q_calc_[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
+            Q_calc_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
         }
-        Q_calc_[XX][YY] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][YY]+coq_[YY]);
-        Q_calc_[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
-        Q_calc_[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
+        Q_calc_[XX][YY] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][YY]+coq_[YY]);
+        Q_calc_[XX][ZZ] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][ZZ]+coq_[ZZ]);
+        Q_calc_[YY][ZZ] += dfac*3*(state_->x[i][YY]+coq_[YY])*(state_->x[i][ZZ]+coq_[ZZ]);
     }
 }
 
@@ -1509,227 +2025,6 @@ std::vector<double> MyMol::CalcPolarizability(double     efield,
     return pols;
 }
 
-immStatus MyMol::GenerateCharges(const Poldata             &pd,
-                                 const gmx::MDLogger       &mdlog,
-                                 gmx_atomprop_t             ap,
-                                 ChargeDistributionModel    iChargeDistributionModel,
-                                 ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
-                                 real                       watoms,
-                                 real                       hfac,
-                                 const char                *lot,
-                                 bool                       bSymmetricCharges,
-                                 const char                *symm_string,
-                                 t_commrec                 *cr,
-                                 const char                *tabfn,
-                                 gmx_hw_info_t             *hwinfo)
-{
-    immStatus imm       = immOK;
-    real      tolerance = 1e-8;
-    bool      converged = false;
-    int       maxiter   = 100, iter;
-    std::vector<double> qq;
-
-    // This might be moved to a better place
-    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
-    GenerateGromacs(mdlog, cr, tabfn, hwinfo);
-    if (bSymmetricCharges)
-    {
-        auto bonds = SearchPlist(plist_, eitBONDS);
-        if (plist_.end() != bonds)
-        {
-            symmetrize_charges(bSymmetricCharges, &topology_->atoms, bonds,
-                               pd, ap, symm_string, symmetric_charges_);
-        }
-    } 
-    switch (iChargeGenerationAlgorithm)
-    {
-        case eqgNONE:
-            printf("Using zero charges!\n");
-            for (int i = 0; (i < topology_->atoms.nr); i++)
-            {
-                topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
-            }
-            return immOK;
-        case eqgESP:
-        {
-            gr_.setChargeDistributionModel(iChargeDistributionModel);
-            gr_.setAtomWeight(watoms);
-            gr_.setAtomInfo(&topology_->atoms, pd, x_, molProp()->getCharge());
-            gr_.setAtomSymmetry(symmetric_charges_);
-            gr_.setMolecularCharge(molProp()->getCharge());
-            gr_.summary(debug);
-
-            auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
-            if (ci != molProp()->EndExperiment())
-            {
-                size_t iesp = 0;
-                for (auto epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi, ++iesp)
-                {
-                    if (gr_.myWeight(iesp) == 0)
-                    {
-                        continue;
-                    }
-                    int xu = string2unit(epi->getXYZunit().c_str());
-                    int vu = string2unit(epi->getVunit().c_str());
-                    if (-1 == xu)
-                    {
-                        gmx_fatal(FARGS, "No such length unit '%s' for potential",
-                                  epi->getXYZunit().c_str());
-                    }
-                    if (-1 == vu)
-                    {
-                        gmx_fatal(FARGS, "No such potential unit '%s' for potential",
-                                  epi->getVunit().c_str());
-                    }
-                    gr_.addEspPoint(convert2gmx(epi->getX(), xu),
-                                    convert2gmx(epi->getY(), xu),
-                                    convert2gmx(epi->getZ(), xu),
-                                    convert2gmx(epi->getV(), vu));
-                }
-                if (debug)
-                {
-                    fprintf(debug, "Added %d ESP points to the RESP structure.\n",
-                            static_cast<int>(gr_.nEsp()));
-                }
-            }
-            double chi2[2]   = {1e8, 1e8};
-            real   rrms      = 0, wtot;
-            int    cur       = 0;
-            EspRms_          = 0;
-            do
-            {
-                gr_.updateAtomCoords(x_);
-                gr_.optimizeCharges();
-                for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
-                {
-                    mtop_->moltype[0].atoms.atom[i].q      =
-                        mtop_->moltype[0].atoms.atom[i].qB = gr_.getAtomCharge(i);
-                }
-                if (nullptr != shellfc_)
-                {
-                    computeForces(nullptr, cr);
-                }
-                gr_.calcPot();
-                EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
-                printf("RESP: RMS %g\n", chi2[cur]);
-                converged = (fabs(chi2[cur] - chi2[1-cur]) < tolerance) || (nullptr == shellfc_);
-                cur       = 1-cur;
-            }
-            while (!converged);
-            for (int i = 0; i < topology_->atoms.nr; i++)
-            {
-                topology_->atoms.atom[i].q      =
-                    topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
-            }
-        }
-        break;
-        case eqgEEM:
-        {
-            Qge_.setInfo(pd, &topology_->atoms,
-                         iChargeDistributionModel,
-                         hfac, molProp()->getCharge(),
-                         bHaveShells_);
-                                       
-            auto q     = Qge_.q();
-            auto natom = Qge_.natom();
-            
-            qq.resize(natom + 1);
-            for (int i = 0; i < natom + 1; i++)
-            {           
-                qq[i] = q[i][0];
-            }
-                
-            iter = 0;
-            do
-            {                
-                if (eQGEN_OK == Qge_.generateCharges(nullptr,
-                                                     molProp()->getMolname().c_str(),
-                                                     pd, &topology_->atoms,
-                                                     x_))
-                {   
-                    for (int i = 0; i < mtop_->natoms; i++)
-                    {
-                        mtop_->moltype[0].atoms.atom[i].q = 
-                            mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
-                        
-                    }           
-                                              
-                    if (nullptr != shellfc_)
-                    {
-                        computeForces(nullptr, cr);
-                    }
-                    
-                    q       = Qge_.q(); 
-                    EemRms_ = 0;                  
-                    for (int i = 0; i < natom + 1; i++)
-                    {
-                        EemRms_  += gmx::square(qq[i] - q[i][0]);
-                        qq[i]     = q[i][0];
-                    }
-                    
-                    EemRms_  /= natom;
-                    converged = (EemRms_ < tolerance) || (nullptr == shellfc_);
-                    iter++;
-                }
-                else
-                {
-                    imm = immChargeGeneration;
-                }           
-            }
-            while(imm == immOK && (!converged) && (iter < maxiter));
-            
-            if (!converged)
-            {
-                printf("EEM did not converge to %g. rms: %g\n", tolerance, EemRms_);
-            }
-        }
-        break;
-        default:
-            gmx_fatal(FARGS, "Not implemented");
-            break;
-    }
-    return imm;
-}
-
-immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
-                                 t_commrec           *cr,
-                                 const char          *tabfn,
-                                 gmx_hw_info_t       *hwinfo)
-{
-    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
-    int nalloc = 2 * topology_->atoms.nr;
-
-    if (nullptr == fr_)
-    {
-        fr_ = mk_forcerec();
-    }
-    if (nullptr != tabfn)
-    {
-        inputrec_->coulombtype = eelUSER;
-    }
-
-    f_.resize(nalloc);
-    optf_.resize(nalloc);
-   
-    fr_->hwinfo = hwinfo;
-    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
-                  box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    // The line below is a hack, there should be an official way!
-    state_->x.resize(topology_->atoms.nr);
-    mdatoms_   = init_mdatoms(nullptr, mtop_, false);
-    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
-    
-    for (int i = 0; (i < topology_->atoms.nr); i++)
-    {
-        copy_rvec(x_[i], state_->x[i]);
-    }
-    if (nullptr != shellfc_)
-    {
-        make_local_shells(cr, mdatoms_, shellfc_);
-    }
-    return immOK;
-}
-
 static void put_in_box(int natom, matrix box, rvec x[], real dbox)
 {
     int  i, m;
@@ -1764,9 +2059,9 @@ void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
 
-    put_in_box(topology_->atoms.nr, box_, as_rvec_array(x_.data()), 0.3);
+    put_in_box(topology_->atoms.nr, box_, as_rvec_array(state_->x.data()), 0.3);
     sprintf(title, "%s processed by alexandria", molProp()->getMolname().c_str());
-    write_sto_conf(fn, title, &topology_->atoms, as_rvec_array(x_.data()), nullptr, epbcNONE, box_);
+    write_sto_conf(fn, title, &topology_->atoms, as_rvec_array(state_->x.data()), nullptr, epbcNONE, box_);
 }
 
 static void write_zeta_q(FILE *fp, QgenEem * qgen,
@@ -2202,302 +2497,6 @@ void MyMol::PrintTopology(FILE                   *fp,
     sfree(printmol.name);
 }
 
-static void add_excl(t_excls *excls, int e)
-{
-    int i;
-
-    for (i = 0; (i < excls->nr); i++)
-    {
-        if (excls->e[i] == e)
-        {
-            return;
-        }
-    }
-    srenew(excls->e, excls->nr+1);
-    excls->e[excls->nr++] = e;
-}
-
-static void add_excl_pair(t_excls excls[], int e1, int e2)
-{
-    if (e1 != e2)
-    {
-        add_excl(&excls[e1], e2);
-        add_excl(&excls[e2], e1);
-    }
-}
-
-static void remove_excl(t_excls *excls, int remove)
-{
-    int i;
-
-    for (i = remove+1; i < excls->nr; i++)
-    {
-        excls->e[i-1] = excls->e[i];
-    }
-
-    excls->nr--;
-}
-
-static void prune_excl(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype)
-{
-    int i, k, ak;
-
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        if (get_atomtype_ptype(atoms->atom[i].type, atype) != eptShell)
-        {
-            for (k = 0; (k < excls[i].nr); )
-            {
-                ak = excls[i].e[k];
-                if (get_atomtype_ptype(atoms->atom[ak].type, atype) != eptShell)
-                {
-                    remove_excl(&(excls[i]), k);
-                }
-                else
-                {
-                    k++;
-                }
-            }
-        }
-    }
-}
-
-static void copy_atoms(t_atoms *src, t_atoms *dest)
-{
-    int i;
-
-    if (dest->nr < src->nr)
-    {
-        srenew(dest->atom, src->nr);
-        srenew(dest->atomname, src->nr);
-        if (nullptr != src->atomtype)
-        {
-            srenew(dest->atomtype, src->nr);
-        }
-        else if (nullptr != dest->atomtype)
-        {
-            sfree(dest->atomtype);
-            dest->atomtype = nullptr;
-        }
-        if (nullptr != src->atomtypeB)
-        {
-            srenew(dest->atomtypeB, src->nr);
-        }
-        else if (nullptr != dest->atomtypeB)
-        {
-            sfree(dest->atomtypeB);
-            dest->atomtypeB = nullptr;
-        }
-    }
-    dest->nr = src->nr;
-    for (i = 0; (i < src->nr); i++)
-    {
-        dest->atom[i]      = src->atom[i];
-        dest->atomname[i]  = src->atomname[i];
-        if (nullptr != src->atomtype)
-        {
-            dest->atomtype[i]  = src->atomtype[i];
-        }
-        if (nullptr != src->atomtypeB)
-        {
-            dest->atomtypeB[i] = src->atomtypeB[i];
-        }
-    }
-    if (dest->nres < src->nres)
-    {
-        srenew(dest->resinfo, src->nres);
-    }
-
-    if (nullptr != src->pdbinfo)
-    {
-        srenew(dest->pdbinfo, src->nres);
-    }
-    else if (nullptr != dest->pdbinfo)
-    {
-        sfree(dest->pdbinfo);
-        dest->pdbinfo = nullptr;
-    }
-    dest->nres = src->nres;
-    for (i = 0; (i < src->nres); i++)
-    {
-        dest->resinfo[i] = src->resinfo[i];
-        if (nullptr != src->pdbinfo)
-        {
-            dest->pdbinfo[i] = src->pdbinfo[i];
-        }
-    }
-}
-
-void MyMol::addShells(const Poldata          &pd,
-                      ChargeDistributionModel iModel)
-{
-    int              i, j, k, iat, shell, nshell = 0;
-    std::vector<int> renum, inv_renum;
-    char             buf[32], **newname;
-    t_param          p;
-    t_atoms         *newa;
-    t_excls         *newexcls;
-    PaddedRVecVector newx;
-    double           pol, sigpol;
-
-    int              maxatom = topology_->atoms.nr*2+2;
-
-    x_.resize(maxatom);
-    memset(&p, 0, sizeof(p));
-    inv_renum.resize(topology_->atoms.nr*2, -1);
-    int polarUnit = string2unit(pd.getPolarUnit().c_str());
-    if (-1 == polarUnit)
-    {
-        gmx_fatal(FARGS, "No such polarizability unit '%s'",
-                  pd.getPolarUnit().c_str());
-    }
-    for (i = 0; i < topology_->atoms.nr; i++)
-    {
-        renum.push_back(i+nshell);
-        inv_renum[i+nshell] = i;
-        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol) &&
-            (pol > 0) && (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
-        {
-            nshell++;
-            p.a[0] = renum[i];
-            p.a[1] = renum[i]+1;
-            p.c[0] = convert2gmx(pol, polarUnit);
-            add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
-        }
-    }
-    renum.resize(1+topology_->atoms.nr, 0);
-    renum[topology_->atoms.nr] = topology_->atoms.nr + nshell;
-    if (nullptr != debug)
-    {
-        fprintf(debug, "added %d shells\n", nshell);
-    }
-    if (nshell > 0)
-    {
-        t_atom          *shell_atom;
-        snew(shell_atom, 1);
-        shell_atom->ptype = eptShell;
-
-        /* Make new atoms and x arrays */
-        snew(newa, 1);
-        init_t_atoms(newa, topology_->atoms.nr+nshell, true);
-        snew(newa->atomtype, topology_->atoms.nr+nshell);
-        snew(newa->atomtypeB, topology_->atoms.nr+nshell);
-        newa->nres = topology_->atoms.nres;
-        newx.resize(newa->nr);
-        snew(newname, newa->nr);
-
-        /* Make new exclusion array, and put the shells in it */
-        snew(newexcls, newa->nr);
-        /* TODO: other polarization types */
-        auto pw = SearchPlist(plist_, F_POLARIZATION);
-        if (plist_.end() != pw)
-        {
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
-            {
-                // Exclude nucleus and shell from each other
-                add_excl_pair(newexcls, j->a[0], j->a[1]);
-            }
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
-            {
-                // Now add the exclusions from the nucleus to the shell.
-                // We know that the nuclues is 0 since we just made the list
-                int  i0 = inv_renum[j->a[0]];
-                char buf[256];
-                snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) shell %d (%d)",
-                         j->a[0], inv_renum[j->a[0]],
-                         j->a[1], inv_renum[j->a[1]]);
-                GMX_RELEASE_ASSERT(i0 >= 0, buf);
-                for (int j0 = 0; (j0 < excls_[i0].nr); j0++)
-                {
-                    add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
-                    add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
-                }
-            }
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
-            {
-                for (int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
-                {
-                    add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
-                }
-            }
-        }
-        // Now copy the old atoms to the new structures
-        for (i = 0; (i < topology_->atoms.nr); i++)
-        {
-            newa->atom[renum[i]]      = topology_->atoms.atom[i];
-            newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
-            newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
-            newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
-            copy_rvec(x_[i], newx[renum[i]]);
-            newname[renum[i]] = *topology_->atoms.atomtype[i];
-            t_atoms_set_resinfo(newa, renum[i], symtab_,
-                                *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
-                                topology_->atoms.atom[i].resind, ' ', 1, ' ');
-        }
-        // Now insert the shell particles
-        for (i = 0; (i < topology_->atoms.nr); i++)
-        {
-            iat = renum[i];
-            for (j = iat+1; (j < renum[i+1]); j++)
-            {
-                newa->atom[j]            = topology_->atoms.atom[i];
-                newa->atom[iat].q        = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
-                newa->atom[iat].qB       = newa->atom[iat].q;
-                newa->atom[iat].zetaA    = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 0);
-                newa->atom[iat].zetaB    = newa->atom[iat].zetaA;
-                newa->atom[j].m          = 0;
-                newa->atom[j].mB         = 0;
-                newa->atom[j].atomnumber = 0;
-                sprintf(buf, "%s_s", get_atomtype_name(topology_->atoms.atom[i].type, atype_));
-                newname[j] = strdup(buf);
-                shell      = add_atomtype(atype_, symtab_, shell_atom, buf, &p, 0, 0, 0, 0, 0, 0, 0);
-                newa->atom[j].type          = shell;
-                newa->atom[j].typeB         = shell;
-                newa->atomtype[j]           =
-                    newa->atomtypeB[j]      = put_symtab(symtab_, buf);
-                newa->atom[j].ptype         = eptShell;
-                newa->atom[j].q             = pd.getQ(iModel, *topology_->atoms.atomtype[i], 1);
-                newa->atom[j].qB            = newa->atom[j].q;
-                newa->atom[j].zetaA         = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 1);
-                newa->atom[j].zetaB         = newa->atom[j].zetaA;
-                newa->atom[j].resind        = topology_->atoms.atom[i].resind;
-                sprintf(buf, "%s_s", *(topology_->atoms.atomname[i]));
-                newa->atomname[j] = put_symtab(symtab_, buf);
-                copy_rvec(x_[i], newx[j]);
-            }
-        }
-        /* Copy newa to atoms */
-        copy_atoms(newa, &topology_->atoms);
-        /* Copy coordinates and smnames */
-        for (i = 0; i < newa->nr; i++)
-        {
-            copy_rvec(newx[i], x_[i]);
-            topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
-        }
-
-        sfree(newname);
-        /* Copy exclusions, may need to empty the original first */
-        sfree(excls_);
-        excls_ = newexcls;
-
-        for (auto i = plist_.begin(); i < plist_.end(); ++i)
-        {
-            if (i->getFtype() != F_POLARIZATION)
-            {
-                for (auto j = i->beginParam(); (j < i->endParam()); ++j)
-                {
-                    for (k = 0; (k < NRAL(i->getFtype())); k++)
-                    {
-                        j->a[k] = renum[j->a[k]];
-                    }
-                }
-            }
-        }
-        bHaveShells_ = true;
-        sfree(shell_atom);
-    }
-}
-
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 {
     real qtot, mtot;
@@ -2550,14 +2549,14 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 
         if (nullptr != difffn)
         {
-            grref.setAtomInfo(&topology_->atoms, pd, x_, molProp()->getCharge());
+            grref.setAtomInfo(&topology_->atoms, pd, state_->x, molProp()->getCharge());
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
             gr_ = grref;
         }
         else
         {
-            gr_.makeGrid(spacing, box_, as_rvec_array(x_.data()));
+            gr_.makeGrid(spacing, box_, as_rvec_array(state_->x.data()));
         }
         if (nullptr != rhofn)
         {
@@ -2676,15 +2675,15 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 qESP_[j] = q[j];
                 Q        = ENM2DEBYE*qESP_[j];
                 dfac     = Q*0.5*10;
-                r2       = iprod(x_[i], x_[i]);
+                r2       = iprod(state_->x[i], state_->x[i]);
                 for (int m = 0; m < DIM; m++)
                 {
-                    mu_esp_[m]   += x_[i][m]*Q;
-                    Q_esp_[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
+                    mu_esp_[m]   += state_->x[i][m]*Q;
+                    Q_esp_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
                 }
-                Q_esp_[XX][YY] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][YY]+coq_[YY]);
-                Q_esp_[XX][ZZ] += dfac*3*(x_[i][XX]+coq_[XX])*(x_[i][ZZ]+coq_[ZZ]);
-                Q_esp_[YY][ZZ] += dfac*3*(x_[i][YY]+coq_[YY])*(x_[i][ZZ]+coq_[ZZ]);
+                Q_esp_[XX][YY] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][YY]+coq_[YY]);
+                Q_esp_[XX][ZZ] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][ZZ]+coq_[ZZ]);
+                Q_esp_[YY][ZZ] += dfac*3*(state_->x[i][YY]+coq_[YY])*(state_->x[i][ZZ]+coq_[ZZ]);
                 j++;
             }
         }       

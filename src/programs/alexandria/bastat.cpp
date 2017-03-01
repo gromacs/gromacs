@@ -711,7 +711,7 @@ int alex_bastat(int argc, char *argv[])
                     {
                         int         ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         int         aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-                        rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
+                        rvec_sub(mmi.state_->x[ai], mmi.state_->x[aj], dx);
                         std::string cai, caj;
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
@@ -758,8 +758,8 @@ int alex_bastat(int argc, char *argv[])
                         int          aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int          ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
 
-                        rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-                        rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
+                        rvec_sub(mmi.state_->x[ai], mmi.state_->x[aj], dx);
+                        rvec_sub(mmi.state_->x[ak], mmi.state_->x[aj], dx2);
 
                         refValue = RAD2DEG*gmx_angle(dx, dx2);
 
@@ -802,8 +802,8 @@ int alex_bastat(int argc, char *argv[])
                         int    aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int    ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
                         int    al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
-                        angle      = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
-                                                       mmi.x_[ak], mmi.x_[al],
+                        angle      = RAD2DEG*dih_angle(mmi.state_->x[ai], mmi.state_->x[aj],
+                                                       mmi.state_->x[ak], mmi.state_->x[al],
                                                        &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                        &sign, &t1, &t2, &t3);
                         std::string cai, caj, cak, cal;

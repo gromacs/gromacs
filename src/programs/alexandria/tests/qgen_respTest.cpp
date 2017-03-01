@@ -112,7 +112,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testResp(ChargeDistributionModel model, bool bPolar)
+        void testResp(ChargeDistributionModel qdist, bool bPolar)
         {
             //Generate charges and topology
             const char               *lot        = "B3LYP/aug-cc-pVTZ";
@@ -120,11 +120,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             gmx::MDModules            mdModules;
             t_inputrec               *inputrec   = mdModules.inputrec();
             fill_inputrec(inputrec);
-            inputrec->coulombtype = eelUSER;
-            inputrec->vdwtype     = evdwUSER;
             mp_.setInputrec(inputrec);
-            mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 false, false, false, bPolar, nullptr);
+            mp_.GenerateTopology(aps_, pd_, lot, qdist, false, false, false, bPolar, nullptr);
+            
             //Needed for GenerateCharges
             real           hfac        = 0;
             real           watoms      = 0;
@@ -135,22 +133,21 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             if(!bPolar)
             {
-                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
-                                    hfac, lot, false, symm_string, cr, nullptr,
-                                    hwinfo);
+                mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
+                                    hfac, lot, false, symm_string, cr, nullptr, hwinfo);
             }
             else
             {
-                if (model == eqdAXg)
+                if (qdist == eqdAXpg)
                 {
-                    mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
-                                    hfac, lot, false, symm_string, cr,
-                                    nullptr, hwinfo);
+                    mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
+                                        hfac, lot, false, symm_string, cr, nullptr, hwinfo);
                 }
-                else if (model == eqdAXs)
+                else if (qdist == eqdAXps)
                 {
+                    inputrec->coulombtype = eelUSER;
                     std::string tabFile = fileManager().getInputFilePath("table.xvg");
-                    mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
+                    mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
                                         hfac, lot, false, symm_string, cr,
                                         tabFile.c_str(), hwinfo);
                 }
@@ -162,7 +159,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
-                     static_cast<int>(model));
+                     static_cast<int>(qdist));
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
@@ -185,7 +182,7 @@ TEST_F (RespTest, AXgValues)
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp(eqdAXg, true);
+    testResp(eqdAXpg, true);
 }
 
 TEST_F (RespTest, AXsValues)
@@ -195,5 +192,5 @@ TEST_F (RespTest, AXsValues)
 
 TEST_F (RespTest, AXsPolarValues)
 {
-    testResp(eqdAXs, true);
+    testResp(eqdAXps, true);
 }

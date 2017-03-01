@@ -263,7 +263,7 @@ void OPtimization::addEspPoint()
         {
             mymol.gr_.setChargeDistributionModel(_iChargeDistributionModel);
             mymol.gr_.setAtomWeight(watoms_);
-            mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.x_, mymol.molProp()->getCharge());
+            mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.state_->x, mymol.molProp()->getCharge());
             mymol.gr_.setAtomSymmetry(mymol.symmetric_charges_);
             mymol.gr_.setMolecularCharge(mymol.molProp()->getCharge());
             mymol.gr_.summary(debug);
@@ -357,7 +357,7 @@ void OPtimization::calcDeviation()
             mymol.Qge_.generateChargesSm(debug,
                                          pd_, &(mymol.topology_->atoms),
                                          &chieq,
-                                         mymol.x_);
+                                         mymol.state_->x);
             mymol.chieq_ = chieq;
             
             if (nullptr != mymol.shellfc_)
@@ -401,7 +401,7 @@ void OPtimization::calcDeviation()
                 
                 if (nullptr != mymol.shellfc_)
                 {
-                    mymol.gr_.updateAtomCoords(mymol.x_);
+                    mymol.gr_.updateAtomCoords(mymol.state_->x);
                 }
                 mymol.gr_.updateAtomCharges(&(mymol.topology_->atoms));
                 mymol.gr_.calcPot();
@@ -953,7 +953,7 @@ void OPtimization::print_results(FILE                   *fp,
                         j+1,
                         *(mol.topology_->atoms.atomtype[j]),
                         qq, mol.qESP_[j],
-                        mol.x_[j][XX], mol.x_[j][YY], mol.x_[j][ZZ]);
+                        mol.state_->x[j][XX], mol.state_->x[j][YY], mol.state_->x[j][ZZ]);
                 gmx_stats_add_point(k->lsq, mol.qESP_[j], qq, 0, 0);
             }
             fprintf(fp, "\n");
