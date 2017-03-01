@@ -73,7 +73,12 @@ elseif(${GMX_SIMD} MATCHES "^(AVX)")
     # Support for --enable-avx2 was only added in 3.3.5, but
     # configuring with it is at worst a warning, even on an earlier
     # version.
+if((CMAKE_COMPILER_IS_GNUCC AND (C_COMPILER_VERSION VERSION_GREATER "4.9.0" OR CXX_COMPILER_VERSION VERSION_GREATER "4.9.0")) OR
+   (CMAKE_C_COMPILER_ID MATCHES "Clang" AND (C_COMPILER_VERSION VERSION_GREATER "3.9.0" OR CXX_COMPILER_VERSION VERSION_GREATER "3.9.0")))
     set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2;--enable-avx512)
+elseif()
+    set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2)
+endif()
 elseif(${GMX_SIMD} MATCHES "^(VSX)")
     set(_fftw_simd_support_level --enable-vsx)
 endif()

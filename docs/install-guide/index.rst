@@ -101,10 +101,12 @@ frequently provides the best performance.
 
 You should strive to use the most recent version of your
 compiler. Minimum supported compiler versions are
+
 * GNU (gcc) 4.6
 * Intel (icc) 14
 * LLVM (clang) 3.4
 * Microsoft (MSVC) 2015
+
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
 the performance with C++ is very bad.
