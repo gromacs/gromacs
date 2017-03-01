@@ -575,7 +575,7 @@ void MolDip::Read(FILE            *fp,
                                             _iChargeGenerationAlgorithm, 
                                             watoms, _hfac, lot, true, nullptr, 
                                             _cr, tabfn, hwinfo_);
-                rms = mpnew.espRms();
+                (void) mpnew.espRms();
             }
             if (immOK == imm)
             {
