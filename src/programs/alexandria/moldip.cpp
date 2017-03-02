@@ -357,9 +357,9 @@ void MolDip::Read(FILE            *fp,
                   bool             bZPE,
                   const char      *tabfn)
 {
-    int                              nwarn = 0, nmol_cpu;
+    int                              nwarn = 0, nmol_cpu = 0;
     int                              imm_count[immNR];
-    immStatus                        imm;
+    immStatus                        imm = immOK;
     std::vector<alexandria::MolProp> mp;
 
     for (int i = 0; (i < immNR); i++)

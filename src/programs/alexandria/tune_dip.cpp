@@ -79,8 +79,7 @@ static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bH
 
     if (bHeader)
     {
-        fprintf(fp, "Fitting data to y = ax+b, where x = %s and y = %s\n",
-                xaxis, yaxis);
+        fprintf(fp, "Fitting data to y = ax+b, where x = %s and y = %s\n", xaxis, yaxis);
         fprintf(fp, "%-12s %5s %13s %13s %8s %8s\n",
                 "Property", "N", "a", "b", "R", "RMSD");
         fprintf(fp, "---------------------------------------------------------------\n");
@@ -423,7 +422,7 @@ void OPtimization::calcDeviation()
             } 
             if (bQuadrupole_)
             {
-                mymol.CalcQuadrupole();               
+                mymol.CalcQuadrupole();             
                 for (int mm = 0; mm < DIM; mm++)
                 {
                     if (bfullTensor_)
@@ -628,8 +627,6 @@ double OPtimization::objFunction(const double v[])
 
     _ener[ermsBOUNDS] += bounds;
     _ener[ermsTOT]    += bounds;
-
-    //printf("TUNEDIP: Tot %g Quad %g Mu %g\n", _ener[ermsTOT], _ener[ermsQUAD], _ener[ermsMU]);
     
     return _ener[ermsTOT];
 }
@@ -738,7 +735,7 @@ void OPtimization::print_quadrapole(FILE  *fp,
                                     real   q_toler)
 {
     tensor dQ;
-    real   delta;
+    real   delta = 0;
     
     if (nullptr != calc_name)
     {
@@ -749,11 +746,15 @@ void OPtimization::print_quadrapole(FILE  *fp,
                          gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
             fprintf(fp,
                     "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
+                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
+                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name,
                     mol->Q_calc_[XX][XX], mol->Q_calc_[XX][YY], mol->Q_calc_[XX][ZZ],
                     dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_calc_[YY][YY], mol->Q_calc_[YY][ZZ], "", dQ[YY][YY], dQ[YY][ZZ]);
+                    "", mol->Q_calc_[YY][YY], mol->Q_calc_[YY][ZZ],
+                    "", dQ[YY][YY], dQ[YY][ZZ],
+                    "", "", mol->Q_calc_[ZZ][ZZ],
+                    "", "", dQ[ZZ][ZZ]);
         }
         else if (strcmp(calc_name, (char *)"ESP") == 0)
         {
@@ -762,20 +763,26 @@ void OPtimization::print_quadrapole(FILE  *fp,
                          gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
             fprintf(fp,
                     "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
+                    "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
+                    "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name,
                     mol->Q_esp_[XX][XX], mol->Q_esp_[XX][YY], mol->Q_esp_[XX][ZZ],
                     dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                    "", mol->Q_esp_[YY][YY], mol->Q_esp_[YY][ZZ], "", dQ[YY][YY], dQ[YY][ZZ]);
+                    "", mol->Q_esp_[YY][YY], mol->Q_esp_[YY][ZZ],
+                    "", dQ[YY][YY], dQ[YY][ZZ],
+                    "", "", mol->Q_esp_[ZZ][ZZ],
+                    "", "", dQ[ZZ][ZZ]);
         }
         else
         {
-            fprintf(fp, "Quadrupole analysis (5 independent components only)\n");
+            fprintf(fp, "Quadrupole analysis (6 independent components only)\n");
             fprintf(fp,
-                    "QM  (%6.2f %6.2f %6.2f)\n"
-                    "    (%6s %6.2f %6.2f)\n",
+                    "QM   (%6.2f %6.2f %6.2f)\n"
+                    "     (%6s %6.2f %6.2f)\n"
+                    "     (%6s %6s %6.2f)\n",
                     mol->Q_elec_[XX][XX], mol->Q_elec_[XX][YY], mol->Q_elec_[XX][ZZ],
-                    "", mol->Q_elec_[YY][YY], mol->Q_elec_[YY][ZZ]);
+                    "", mol->Q_elec_[YY][YY], mol->Q_elec_[YY][ZZ],
+                    "", "", mol->Q_calc_[ZZ][ZZ]);
         }
     }
 }
@@ -836,7 +843,7 @@ void OPtimization::print_dipole(FILE  *fp,
         else
         {
             fprintf(fp, "Dipole analysis\n");
-            fprintf(fp, "QM  (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
+            fprintf(fp, "QM   (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
                     mol->mu_elec_[XX], mol->mu_elec_[YY], mol->mu_elec_[ZZ], norm(mol->mu_elec_));
         }
     }
@@ -1157,7 +1164,7 @@ int alex_tune_dip(int argc, char *argv[])
     static int                  nprint        = 10;
     static int                  maxiter       = 100;
     static int                  reinit        = 0;
-    static int                  seed          = 0;
+    static int                  seed          = -1;
     static real                 tol           = 1e-3;
     static real                 stol          = 1e-6;
     static real                 watoms        = 0;

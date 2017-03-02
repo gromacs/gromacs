@@ -1222,20 +1222,12 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
 immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
                             const Poldata          &pd)
 { 
-    double zeta;
+    double zeta = 0;
     /*Here, we add zeta for the core. addShell will 
       take care of the zeta for the shells later*/
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        zeta = 0;
-        if (topology_->atoms.atom[i].ptype == eptAtom) 
-        {
-            zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);
-        }
-        else if (topology_->atoms.atom[i].ptype == eptShell)
-        {
-            zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 1);
-        }
+        zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);       
         if (zeta == 0 && (eqdModel != eqdAXp && 
                           eqdModel != eqdAXpp && 
                           eqdModel != eqdBultinck))
@@ -1760,7 +1752,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
                                  gmx_hw_info_t       *hwinfo)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
-    int nalloc = 2 * topology_->atoms.nr;
+    int nalloc = 2*topology_->atoms.nr + 1;
 
     if (nullptr == fr_)
     {
@@ -2619,7 +2611,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             mu_elec_[m] = vec[m];
         }
-        //printf("MUUUUUUUUUUU: %8f %8f %8f\n", mu_elec_[0], mu_elec_[1], mu_elec_[2]);
         dip_elec_ = norm(mu_elec_);
         mu_elec2_ = gmx::square(value);
         if (error <= 0)
@@ -2652,7 +2643,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             for (n = 0; n < DIM; n++)
             {
                 Q_elec_[m][n] = quadrupole[m][n];
-                //printf("QUAAAAAAAAAD: %8f\n", Q_elec_[m][n]);
             }
         }
     }
@@ -2681,9 +2671,9 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                     mu_esp_[m]   += state_->x[i][m]*Q;
                     Q_esp_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
                 }
-                Q_esp_[XX][YY] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][YY]+coq_[YY]);
-                Q_esp_[XX][ZZ] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][ZZ]+coq_[ZZ]);
-                Q_esp_[YY][ZZ] += dfac*3*(state_->x[i][YY]+coq_[YY])*(state_->x[i][ZZ]+coq_[ZZ]);
+                Q_esp_[XX][YY] += dfac*3*(state_->x[i][XX] + coq_[XX])*(state_->x[i][YY] + coq_[YY]);
+                Q_esp_[XX][ZZ] += dfac*3*(state_->x[i][XX] + coq_[XX])*(state_->x[i][ZZ] + coq_[ZZ]);
+                Q_esp_[YY][ZZ] += dfac*3*(state_->x[i][YY] + coq_[YY])*(state_->x[i][ZZ] + coq_[ZZ]);
                 j++;
             }
         }       
