@@ -38,7 +38,6 @@
 
 #include "groupcoord.h"
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
