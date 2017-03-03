@@ -37,13 +37,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "poldata.h"
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <algorithm>
 #include <vector>
 
@@ -51,6 +48,7 @@
 #include "gromacs/topology/ifunc.h"
 
 #include "gmx_simple_comm.h"
+#include "poldata.h"
 #include "stringutil.h"
 
 namespace alexandria
@@ -995,45 +993,4 @@ EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
         });
 }
 
-typedef struct {
-    ChargeDistributionModel eqd;
-    const char             *name, *ref;
-    gmx_bool                bWeight;
-} t_eemtype_props;
-
-t_eemtype_props eemtype_props[eqdNR] = {
-    { eqdAXp,      "AXp",      "Ghahremanpour2017a",   false },
-    { eqdAXg,      "AXg",      "Ghahremanpour2017a",   true },
-    { eqdAXs,      "AXs",      "Ghahremanpour2017a",   false },
-    { eqdAXpp,     "AXpp",     "Ghahremanpour2017a",   false },
-    { eqdAXpg,     "AXpg",     "Ghahremanpour2017a",   true },
-    { eqdAXps,     "AXps",     "Ghahremanpour2017a",   true },
-    { eqdYang,     "Yang",     "Yang2006b",            true },
-    { eqdBultinck, "Bultinck", "Bultinck2002a",        false },
-    { eqdRappe,    "Rappe",    "Rappe1991a",           true }
-};
-
-ChargeDistributionModel name2eemtype(const std::string name)
-{
-    for (int i = 0; (i < eqdNR); i++)
-    {
-        if (strcasecmp(name.c_str(), eemtype_props[i].name) == 0)
-        {
-            return eemtype_props[i].eqd;
-        }
-    }
-    return eqdNR;
-}
-
-const char *getEemtypeName(ChargeDistributionModel eem)
-{
-    for (int i = 0; (i < eqdNR); i++)
-    {
-        if (eem == eemtype_props[i].eqd)
-        {
-            return eemtype_props[i].name;
-        }
-    }
-    return nullptr;
-}
 } // namespace alexandria

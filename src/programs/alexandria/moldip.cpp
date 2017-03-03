@@ -37,10 +37,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "moldip.h"
-
 #include <cmath>
-
 #include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
@@ -54,14 +51,104 @@
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
+#include "moldip.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
-
 
 #define STRLEN 256
 
 namespace alexandria
 {
+
+static void dump_index_count(const IndexCount       *ic,
+                             FILE                   *fp,
+                             ChargeDistributionModel iDistributionModel,
+                             const Poldata          &pd,
+                             gmx_bool                bFitZeta)
+{
+    if (!fp)
+    {
+        return;
+    }
+    fprintf(fp, "Atom index for this optimization.\n");
+    fprintf(fp, "Name  Number  Action   #Zeta\n");
+    for (auto i = ic->beginIndex(); i < ic->endIndex(); ++i)
+    {
+        int nZeta = pd.getNzeta(iDistributionModel,
+                                i->name());
+        int nZopt = 0;
+        for (int j = 0; (j < nZeta); j++)
+        {
+            if (pd.getZeta(iDistributionModel,
+                           i->name(), j) > 0)
+            {
+                nZopt++;
+            }
+        }
+        if (i->isConst())
+        {
+            fprintf(fp, "%-4s  %6d  Constant\n",
+                    i->name().c_str(), i->count());
+        }
+        else
+        {
+            fprintf(fp, "%-4s  %6d  Optimized %4d%s\n",
+                    i->name().c_str(),
+                    i->count(), nZopt,
+                    bFitZeta ? " optimized" : " constant");
+        }
+    }
+    fprintf(fp, "\n");
+    fflush(fp);
+}
+
+static void update_index_count_bool(IndexCount             *ic,
+                                    const Poldata          &pd,
+                                    const char             *string,
+                                    gmx_bool                bSet,
+                                    gmx_bool                bAllowZero,
+                                    ChargeDistributionModel iDistributionModel)
+{
+    std::vector<std::string> ptr = gmx::splitString(string);
+    for (auto &k : ptr)
+    {
+        if (pd.haveEemSupport(iDistributionModel, k, bAllowZero))
+        {
+            ic->addName(k, bSet);
+        }
+    }
+}
+
+static void make_index_count(IndexCount               *ic,
+                             const Poldata             &pd,
+                             char                      *opt_elem,
+                             char                      *const_elem,
+                             ChargeDistributionModel   iDistributionModel,
+                             gmx_bool                  bFitZeta)
+{
+    if (nullptr != const_elem)
+    {
+        update_index_count_bool(ic, pd, const_elem, true, true, iDistributionModel);
+    }
+    if (nullptr != opt_elem)
+    {
+        update_index_count_bool(ic, pd, opt_elem, false, true, iDistributionModel);
+    }
+    else
+    {
+        for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
+        {
+            auto ai = ic->findName(eep->getName());
+            if ((eep->getEqdModel() == iDistributionModel) &&
+                (ai != ic->endIndex()) && !ai->isConst() &&
+                pd.haveEemSupport(iDistributionModel, eep->getName(), false))
+            {
+                ic->addName(eep->getName(), false);
+            }
+        }
+    }
+    dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
+}
 
 void IndexCount::addName(const std::string &name,
                          bool               bConst)
@@ -135,48 +222,6 @@ int IndexCount::count(const std::string &name)
     return 0;
 }
 
-static void dump_index_count(const IndexCount       *ic,
-                             FILE                   *fp,
-                             ChargeDistributionModel iDistributionModel,
-                             const Poldata          &pd,
-                             gmx_bool                bFitZeta)
-{
-    if (!fp)
-    {
-        return;
-    }
-    fprintf(fp, "Atom index for this optimization.\n");
-    fprintf(fp, "Name  Number  Action   #Zeta\n");
-    for (auto i = ic->beginIndex(); i < ic->endIndex(); ++i)
-    {
-        int nZeta = pd.getNzeta(iDistributionModel,
-                                i->name());
-        int nZopt = 0;
-        for (int j = 0; (j < nZeta); j++)
-        {
-            if (pd.getZeta(iDistributionModel,
-                           i->name(), j) > 0)
-            {
-                nZopt++;
-            }
-        }
-        if (i->isConst())
-        {
-            fprintf(fp, "%-4s  %6d  Constant\n",
-                    i->name().c_str(), i->count());
-        }
-        else
-        {
-            fprintf(fp, "%-4s  %6d  Optimized %4d%s\n",
-                    i->name().c_str(),
-                    i->count(), nZopt,
-                    bFitZeta ? " optimized" : " constant");
-        }
-    }
-    fprintf(fp, "\n");
-    fflush(fp);
-}
-
 int IndexCount::cleanIndex(int   minimum_data,
                            FILE *fp)
 {
@@ -198,52 +243,18 @@ int IndexCount::cleanIndex(int   minimum_data,
     return nremove;
 }
 
-static void update_index_count_bool(IndexCount             *ic,
-                                    const Poldata          &pd,
-                                    const char             *string,
-                                    gmx_bool                bSet,
-                                    gmx_bool                bAllowZero,
-                                    ChargeDistributionModel iDistributionModel)
+MolDip::MolDip()
 {
-    std::vector<std::string> ptr = gmx::splitString(string);
-    for (auto &k : ptr)
+    cr_     = nullptr;
+    fixchi_ = nullptr;
+    for (int i = 0; (i < ermsNR); i++)
     {
-        if (pd.haveEemSupport(iDistributionModel, k, bAllowZero))
-        {
-            ic->addName(k, bSet);
-        }
+        fc_[i]   = 0;
+        ener_[i] = 0;
     }
-}
 
-static void make_index_count(IndexCount               *ic,
-                             const Poldata             &pd,
-                             char                      *opt_elem,
-                             char                      *const_elem,
-                             ChargeDistributionModel   iDistributionModel,
-                             gmx_bool                  bFitZeta)
-{
-    if (nullptr != const_elem)
-    {
-        update_index_count_bool(ic, pd, const_elem, true, true, iDistributionModel);
-    }
-    if (nullptr != opt_elem)
-    {
-        update_index_count_bool(ic, pd, opt_elem, false, true, iDistributionModel);
-    }
-    else
-    {
-        for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
-        {
-            auto ai = ic->findName(eep->getName());
-            if ((eep->getEqdModel() == iDistributionModel) &&
-                (ai != ic->endIndex()) && !ai->isConst() &&
-                pd.haveEemSupport(iDistributionModel, eep->getName(), false))
-            {
-                ic->addName(eep->getName(), false);
-            }
-        }
-    }
-    dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
+    inputrec_ = mdModules_.inputrec();
+    fill_inputrec(inputrec_);
 }
 
 immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol, 
@@ -283,20 +294,6 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol,
     return imm;
 }
 
-MolDip::MolDip()
-{
-    _cr     = nullptr;
-    _fixchi = nullptr;
-    for (int i = 0; (i < ermsNR); i++)
-    {
-        _fc[i]   = 0;
-        _ener[i] = 0;
-    }
-
-    inputrec_ = mdModules_.inputrec();
-    fill_inputrec(inputrec_);
-}
-
 void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   ChargeDistributionModel iChargeDistributionModel,
                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
@@ -310,33 +307,33 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   gmx_hw_info_t *hwinfo,
                   gmx_bool bfullTensor)
 {
-    _cr                         = cr;
-    _bQM                        = bQM;
-    _bDone                      = false;
-    _bFinal                     = false;
-    _bGaussianBug               = bGaussianBug;
-    _bFitZeta                   = bFitZeta;
-    _iChargeDistributionModel   = iChargeDistributionModel;
-    _iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
-    _decrzeta                   = rDecrZeta;
-    _J0_0                       = J0_0;
-    _Chi0_0                     = Chi0_0;
-    _w_0                        = w_0;
-    _J0_1                       = J0_1;
-    _Chi0_1                     = Chi0_1;
-    _w_1                        = w_1;
-    _fc[ermsMU]                 = fc_mu;
-    _fc[ermsBOUNDS]             = fc_bound;
-    _fc[ermsQUAD]               = fc_quad;
-    _fc[ermsCHARGE]             = fc_charge;
-    _fc[ermsESP]                = fc_esp;
-    _fc[ermsForce2]             = fc_force;
-    _fc[ermsEPOT]               = fc_epot;
-    _fixchi                     = fixchi;
-    _hfac                       = hfac;
-    _hfac0                      = hfac;
-    _bOptHfac                   = bOptHfac;
-    _bPol                       = bPol;
+    cr_                         = cr;
+    bQM_                        = bQM;
+    bDone_                      = false;
+    bFinal_                     = false;
+    bGaussianBug_               = bGaussianBug;
+    bFitZeta_                   = bFitZeta;
+    iChargeDistributionModel_   = iChargeDistributionModel;
+    iChargeGenerationAlgorithm_ = iChargeGenerationAlgorithm;
+    decrzeta_                   = rDecrZeta;
+    J0_0_                       = J0_0;
+    Chi0_0_                     = Chi0_0;
+    w_0_                        = w_0;
+    J0_1_                       = J0_1;
+    Chi0_1_                     = Chi0_1;
+    w_1_                        = w_1;
+    fc_[ermsMU]                 = fc_mu;
+    fc_[ermsBOUNDS]             = fc_bound;
+    fc_[ermsQUAD]               = fc_quad;
+    fc_[ermsCHARGE]             = fc_charge;
+    fc_[ermsESP]                = fc_esp;
+    fc_[ermsForce2]             = fc_force;
+    fc_[ermsEPOT]               = fc_epot;
+    fixchi_                     = fixchi;
+    hfac_                       = hfac;
+    hfac0_                      = hfac;
+    bOptHfac_                   = bOptHfac;
+    bPol_                       = bPol;
     hwinfo_                     = hwinfo;
     bfullTensor_                = bfullTensor;
 }
@@ -362,42 +359,37 @@ void MolDip::Read(FILE            *fp,
     immStatus                        imm = immOK;
     std::vector<alexandria::MolProp> mp;
 
-    for (int i = 0; (i < immNR); i++)
+    atomprop_  = gmx_atomprop_init();
+    
+    for (int i = 0; i < immNR; i++)
     {
         imm_count[i] = 0;
     }
-
-    /* Read the EEM parameters */
-    _atomprop   = gmx_atomprop_init();
-
-    /* Force field data */
-    if (MASTER(_cr))
+    /*Reading Force Field Data from gentop.dat*/
+    if (MASTER(cr_))
     {
         try
         {
-            alexandria::readPoldata(pd_fn, pd_, _atomprop);
+            alexandria::readPoldata(pd_fn, pd_, atomprop_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    
-    if (PAR(_cr))
+    /*Broadcasting Force Field Data from Master to Slave nodes*/    
+    if (PAR(cr_))
     {
-        pd_.broadcast(_cr);
-    }
-    
+        pd_.broadcast(cr_);
+    }    
     if (nullptr != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
                 static_cast<int>(pd_.getNatypes()), pd_fn);
         fprintf(fp, "---\n\n");
     }
-
-    /* Read other stuff */
-    if (MASTER(_cr))
+    /*Reading Molecules from allmols.dat*/
+    if (MASTER(cr_))
     {
-        /* Now read the molecules */
         MolPropRead(fn, mp);
-        for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
+        for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
         {
             if (false == mpi->GenerateComposition(pd_))
             {
@@ -405,92 +397,91 @@ void MolDip::Read(FILE            *fp,
             }
             mpi->CheckConsistency();
         }
-        nmol_cpu = mp.size()/_cr->nnodes + 1;
+        nmol_cpu = mp.size()/cr_->nnodes + 1;
     }
     else
     {
         nmol_cpu = 0;
     }
-    if (PAR(_cr))
+    if (PAR(cr_))
     {
-        gmx_sumi(1, &nmol_cpu, _cr);
+        gmx_sumi(1, &nmol_cpu, cr_);
     }    
-    if (bCheckSupport && MASTER(_cr))
+    if (bCheckSupport && MASTER(cr_))
     {                     
         make_index_count(&indexCount_, pd_,
                          opt_elem, const_elem, 
-                         _iChargeDistributionModel, 
-                         _bFitZeta);
+                         iChargeDistributionModel_, 
+                         bFitZeta_);
     }
 
     int ntopol = 0;
-    if (MASTER(_cr))
+    if (MASTER(cr_))
     {
-        for (auto mpi = mp.begin(); (mpi < mp.end()); ++mpi)
+        for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
         {
             if (imsTrain == gms.status(mpi->getIupac()))
             {
-                int               dest = (ntopol % _cr->nnodes);
-                alexandria::MyMol mpnew;
+                int               dest = (ntopol % cr_->nnodes);
+                alexandria::MyMol mymol;
+                
                 printf("%s\n", mpi->getMolname().c_str());
-                mpnew.molProp()->Merge(mpi);
+                mymol.molProp()->Merge(mpi);
+                mymol.setInputrec(inputrec_);
 
-                mpnew.setInputrec(inputrec_);
-
-                imm = mpnew.GenerateTopology(_atomprop, pd_, lot,
-                                             _iChargeDistributionModel,
+                imm = mymol.GenerateTopology(atomprop_, pd_, lot,
+                                             iChargeDistributionModel_,
                                              false, bPairs, bDihedral, 
                                              bPolar, tabfn);
                                              
                 if (bCheckSupport && immOK == imm)
                 {
-                    imm = check_data_sufficiency(mpnew, &indexCount_);
+                    imm = check_data_sufficiency(mymol, &indexCount_);
                 }
 
                 if (immOK == imm)
                 {
-                    gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
-                    imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop,
-                                                _iChargeDistributionModel,
-                                                _iChargeGenerationAlgorithm,
-                                                watoms, _hfac, lot, true,
-                                                nullptr, _cr, tabfn, hwinfo_);
-                    (void) mpnew.espRms();
+                    gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
+                    imm = mymol.GenerateCharges(pd_, mdlog, atomprop_,
+                                                iChargeDistributionModel_,
+                                                iChargeGenerationAlgorithm_,
+                                                watoms, hfac_, lot, true,
+                                                nullptr, cr_, tabfn, hwinfo_);
+                    (void) mymol.espRms();
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.GenerateChargeGroups(ecgGroup, false);
+                    imm = mymol.GenerateChargeGroups(ecgGroup, false);
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
+                    imm = mymol.getExpProps(bQM_, bZero, bZPE, lot, pd_);
                 }
 
                 if (immOK == imm)
                 {
                     if (dest > 0)
                     {
-                        mpnew.eSupp_ = eSupportRemote;
-                        /* Send another molecule */
+                        mymol.eSupp_ = eSupportRemote;
                         if (nullptr != debug)
                         {
                             fprintf(debug, "Going to send %s to cpu %d\n",
                                     mpi->getMolname().c_str(), dest);
                         }
-                        gmx_send_int(_cr, dest, 1);
-                        CommunicationStatus cs = mpi->Send(_cr, dest);
+                        gmx_send_int(cr_, dest, 1);
+                        CommunicationStatus cs = mpi->Send(cr_, dest);
                         if (CS_OK != cs)
                         {
                             imm = immCommProblem;
                         }
                         else
                         {
-                            imm = (immStatus)gmx_recv_int(_cr, dest);
+                            imm = (immStatus)gmx_recv_int(cr_, dest);
                         }
                         if (imm != immOK)
                         {
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                    mpnew.molProp()->getMolname().c_str(), dest, alexandria::immsg(imm));
+                                    mymol.molProp()->getMolname().c_str(), dest, alexandria::immsg(imm));
                         }
                         else if (nullptr != debug)
                         {
@@ -500,16 +491,16 @@ void MolDip::Read(FILE            *fp,
                     }
                     else
                     {
-                        mpnew.eSupp_ = eSupportLocal;
+                        mymol.eSupp_ = eSupportLocal;
                     }
                     if (immOK == imm)
                     {
-                        _mymol.push_back(std::move(mpnew));
+                        mymol_.push_back(std::move(mymol));
                         ntopol++;
                         if (nullptr != debug)
                         {
                             fprintf(debug, "Added %s, ntopol = %d\n",
-                                    mpnew.molProp()->getMolname().c_str(),
+                                    mymol.molProp()->getMolname().c_str(),
                                     ntopol);
                         }
                     }
@@ -527,9 +518,9 @@ void MolDip::Read(FILE            *fp,
             imm_count[imm]++;
         }
         /* Send signal done with transferring molecules */
-        for (int i = 1; (i < _cr->nnodes); i++)
+        for (int i = 1; (i < cr_->nnodes); i++)
         {
-            gmx_send_int(_cr, i, 0);
+            gmx_send_int(cr_, i, 0);
         }
     }
     else
@@ -540,82 +531,80 @@ void MolDip::Read(FILE            *fp,
          *
          ***********************************************/
         ntopol = 0;
-        while (gmx_recv_int(_cr, 0) == 1)
+        while (gmx_recv_int(cr_, 0) == 1)
         {
-            /* Receive another molecule */
-            alexandria::MyMol mpnew;
-
+            alexandria::MyMol mymol;
+            
             if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new molecule\n");
             }
-            CommunicationStatus cs = mpnew.molProp()->Receive(_cr, 0);
+            CommunicationStatus cs = mymol.molProp()->Receive(cr_, 0);
             if (CS_OK != cs)
             {
                 imm = immCommProblem;
             }
             else if (nullptr != debug)
             {
-                fprintf(debug, "Succesfully retrieved %s\n", mpnew.molProp()->getMolname().c_str());
+                fprintf(debug, "Succesfully retrieved %s\n", mymol.molProp()->getMolname().c_str());
                 fflush(debug);
             }
 
-            mpnew.setInputrec(inputrec_);
+            mymol.setInputrec(inputrec_);
 
-            imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
-                                         _iChargeDistributionModel,
+            imm = mymol.GenerateTopology(atomprop_, pd_, lot, 
+                                         iChargeDistributionModel_,
                                          false, false, bDihedral, 
                                          bPolar, tabfn);
 
             if (immOK == imm)
             {
-                gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
-                imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, 
-                                            _iChargeDistributionModel,
-                                            _iChargeGenerationAlgorithm, 
-                                            watoms, _hfac, lot, true, nullptr, 
-                                            _cr, tabfn, hwinfo_);
-                (void) mpnew.espRms();
+                gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
+                imm = mymol.GenerateCharges(pd_, mdlog, atomprop_, 
+                                            iChargeDistributionModel_,
+                                            iChargeGenerationAlgorithm_, 
+                                            watoms, hfac_, lot, true, nullptr, 
+                                            cr_, tabfn, hwinfo_);
+                (void) mymol.espRms();
             }
             if (immOK == imm)
             {
-                imm = mpnew.GenerateChargeGroups(ecgAtom, false);
+                imm = mymol.GenerateChargeGroups(ecgAtom, false);
             }
             if (immOK == imm)
             {
-                imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
+                imm = mymol.getExpProps(bQM_, bZero, bZPE, lot, pd_);
             }
 
-            mpnew.eSupp_ = eSupportLocal;
+            mymol.eSupp_ = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
             {
-                _mymol.push_back(std::move(mpnew));
+                mymol_.push_back(std::move(mymol));
                 if (nullptr != debug)
                 {
-                    fprintf(debug, "Added molecule %s\n", mpnew.molProp()->getMolname().c_str());
+                    fprintf(debug, "Added molecule %s\n", mymol.molProp()->getMolname().c_str());
                 }
             }
-            gmx_send_int(_cr, 0, imm);
+            gmx_send_int(cr_, 0, imm);
         }
     }
-    int              nnn     = nmol_cpu;
+    
+    int              nnn = nmol_cpu;
     std::vector<int> nmolpar;
-
-    if (PAR(_cr))
+    if (PAR(cr_))
     {
-        nmolpar.resize(_cr->nnodes, 0);
-        nmolpar[_cr->nodeid] = nnn;
-        gmx_sumi(_cr->nnodes, nmolpar.data(), _cr);
+        nmolpar.resize(cr_->nnodes, 0);
+        nmolpar[cr_->nodeid] = nnn;
+        gmx_sumi(cr_->nnodes, nmolpar.data(), cr_);
     }
-
     if (fp)
     {
         fprintf(fp, "There were %d warnings because of zero error bars.\n", nwarn);
         int nmoltot = 0;
-        if (PAR(_cr))
+        if (PAR(cr_))
         {
-            for (int i = 0; (i < _cr->nnodes); i++)
+            for (int i = 0; (i < cr_->nnodes); i++)
             {
                 fprintf(fp, "node %d has %d molecules\n", i, nmolpar[i]);
                 nmoltot += nmolpar[i];
@@ -626,7 +615,7 @@ void MolDip::Read(FILE            *fp,
             nmoltot = mp.size();
         }
         fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                ntopol, (MASTER(_cr)) ? nmoltot : nmol_cpu);
+                ntopol, (MASTER(cr_)) ? nmoltot : nmol_cpu);
 
         for (int i = 0; (i < immNR); i++)
         {
@@ -640,8 +629,8 @@ void MolDip::Read(FILE            *fp,
             fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
         }
     }
-    _nmol_support = _mymol.size();
-    if (_nmol_support == 0)
+    nmol_support_ = mymol_.size();
+    if (nmol_support_ == 0)
     {
         gmx_fatal(FARGS, "No support for any molecule!");
     }

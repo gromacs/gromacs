@@ -256,11 +256,11 @@ void OPtimization::split_shell_charges(gmx_mtop_t *mtop,
 
 void OPtimization::addEspPoint()
 {
-    for (auto &mymol : _mymol)
+    for (auto &mymol : mymol_)
     {
         if (mymol.eSupp_ == eSupportLocal)
         {
-            mymol.gr_.setChargeDistributionModel(_iChargeDistributionModel);
+            mymol.gr_.setChargeDistributionModel(iChargeDistributionModel_);
             mymol.gr_.setAtomWeight(watoms_);
             mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.state_->x, mymol.molProp()->getCharge());
             mymol.gr_.setAtomSymmetry(mymol.symmetric_charges_);
@@ -306,7 +306,7 @@ void OPtimization::addEspPoint()
 
 void OPtimization::setEEM()
 {
-    for (auto &mymol : _mymol)
+    for (auto &mymol : mymol_)
     {
         if (mymol.eSupp_ != eSupportNo)
         {
@@ -316,8 +316,8 @@ void OPtimization::setEEM()
                 bHaveShells = true;
             }         
             mymol.Qge_.setInfo(pd_, &(mymol.topology_->atoms), 
-                               _iChargeDistributionModel,
-                               _hfac,
+                               iChargeDistributionModel_,
+                               hfac_,
                                mymol.molProp()->getCharge(),
                                bHaveShells);
         }
@@ -329,27 +329,27 @@ void OPtimization::calcDeviation()
     int    j;
     double qtot        = 0;
 
-    if (PAR(_cr))
+    if (PAR(cr_))
     {
-        gmx_bcast(sizeof(_bFinal), &_bFinal, _cr);
+        gmx_bcast(sizeof(bFinal_), &bFinal_, cr_);
     }
 
-    if (PAR(_cr) && !_bFinal)
+    if (PAR(cr_) && !bFinal_)
     {
-        pd_.broadcast(_cr);
+        pd_.broadcast(cr_);
     }
     
     for (j = 0; j < ermsNR; j++)
     {
-        _ener[j] = 0;
+        ener_[j] = 0;
     }
     
-    for (auto &mymol : _mymol)
+    for (auto &mymol : mymol_)
     {
         GMX_RELEASE_ASSERT(mymol.mtop_->natoms == mymol.topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
         
         if ((mymol.eSupp_ == eSupportLocal) ||
-            (_bFinal && (mymol.eSupp_ == eSupportRemote)))
+            (bFinal_ && (mymol.eSupp_ == eSupportRemote)))
         {    
             
             double chieq = 0;
@@ -367,7 +367,7 @@ void OPtimization::calcDeviation()
                         mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;     
                     
                 }               
-                mymol.computeForces(nullptr, _cr);
+                mymol.computeForces(nullptr, cr_);
             }
                         
             qtot = 0;            
@@ -383,7 +383,7 @@ void OPtimization::calcDeviation()
                                       (atomnr == 16) || (atomnr == 17) ||
                                       (atomnr == 35) || (atomnr == 53))))
                     {
-                        _ener[ermsBOUNDS] += fabs(qq);
+                        ener_[ermsBOUNDS] += fabs(qq);
                     }                    
                 }
             }
@@ -404,20 +404,20 @@ void OPtimization::calcDeviation()
                 }
                 mymol.gr_.updateAtomCharges(&(mymol.topology_->atoms));
                 mymol.gr_.calcPot();
-                _ener[ermsESP] += convert2gmx(mymol.gr_.getRms(&wtot, &rrms), eg2cHartree_e);               
+                ener_[ermsESP] += convert2gmx(mymol.gr_.getRms(&wtot, &rrms), eg2cHartree_e);               
             }
             if (bDipole_)
             {
                 mymol.CalcDipole(mymol.mu_calc_);
-                if (_bQM)
+                if (bQM_)
                 {
                     rvec dmu;                    
                     rvec_sub(mymol.mu_calc_, mymol.mu_elec_, dmu);
-                    _ener[ermsMU]  += iprod(dmu, dmu);
+                    ener_[ermsMU]  += iprod(dmu, dmu);
                 }
                 else
                 {
-                    _ener[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
+                    ener_[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
                 }
             } 
             if (bQuadrupole_)
@@ -429,35 +429,35 @@ void OPtimization::calcDeviation()
                     {
                         for (int nn = 0; nn < DIM; nn++)
                         {
-                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
+                            ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
                         }
                     }
                     else
                     {
-                        _ener[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_elec_[mm][mm]);
+                        ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][mm] - mymol.Q_elec_[mm][mm]);
                     }
                 }
             }
         }
     }
     
-    if (PAR(_cr) && !_bFinal)
+    if (PAR(cr_) && !bFinal_)
     {
-        gmx_sum(ermsNR, _ener, _cr);
+        gmx_sum(ermsNR, ener_, cr_);
     }    
-    if (MASTER(_cr))
+    if (MASTER(cr_))
     {
         for (j = 0; j < ermsTOT; j++)
         {
-            _ener[ermsTOT] += ((_fc[j]*_ener[j])/_nmol_support);
+            ener_[ermsTOT] += ((fc_[j]*ener_[j])/nmol_support_);
         }
     }   
-    if (nullptr != debug && MASTER(_cr))
+    if (nullptr != debug && MASTER(cr_))
     {
         fprintf(debug, "ENER:");
         for (j = 0; j < ermsNR; j++)
         {
-            fprintf(debug, "  %8.3f", _ener[j]);
+            fprintf(debug, "  %8.3f", ener_[j]);
         }
         fprintf(debug, "\n");
     }    
@@ -470,20 +470,20 @@ void OPtimization::polData2TuneDip()
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {               
-        auto J00  = pd_.getJ00(_iChargeDistributionModel, ai->name());
+        auto J00  = pd_.getJ00(iChargeDistributionModel_, ai->name());
         param_.push_back(std::move(J00));
 
-        if (ai->name().compare(_fixchi) != 0)
+        if (ai->name().compare(fixchi_) != 0)
         {
-            auto Chi0 = pd_.getChi0(_iChargeDistributionModel, ai->name());
+            auto Chi0 = pd_.getChi0(iChargeDistributionModel_, ai->name());
             param_.push_back(std::move(Chi0));
         }        
-        if (_bFitZeta)
+        if (bFitZeta_)
         {
-            auto nzeta = pd_.getNzeta(_iChargeDistributionModel, ai->name());
+            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
             for (int zz = 0; zz < nzeta; zz++)
             {
-                auto zeta = pd_.getZeta(_iChargeDistributionModel, ai->name(), zz);
+                auto zeta = pd_.getZeta(iChargeDistributionModel_, ai->name(), zz);
                 if (0 != zeta)
                 {
                     param_.push_back(std::move(zeta));
@@ -491,14 +491,14 @@ void OPtimization::polData2TuneDip()
                 else
                 {
                     gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
-                              ai->name().c_str(), _iChargeDistributionModel);
+                              ai->name().c_str(), iChargeDistributionModel_);
                 }
             }
         }       
     }
-    if (_bOptHfac)
+    if (bOptHfac_)
     {
-        param_.push_back(std::move(_hfac));
+        param_.push_back(std::move(hfac_));
     }       
 }
 }
@@ -513,28 +513,28 @@ void OPtimization::tuneDip2PolData()
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
-        std::string qstr   = pd_.getQstr(_iChargeDistributionModel, ai->name());
-        std::string rowstr = pd_.getRowstr(_iChargeDistributionModel, ai->name());
+        std::string qstr   = pd_.getQstr(iChargeDistributionModel_, ai->name());
+        std::string rowstr = pd_.getRowstr(iChargeDistributionModel_, ai->name());
         
         if (qstr.size() == 0 || rowstr.size() == 0)
         {
             gmx_fatal(FARGS, "No qstr/rowstr for atom %s in %d model\n",
-                      ai->name().c_str(), _iChargeDistributionModel);
+                      ai->name().c_str(), iChargeDistributionModel_);
         }
         
-        auto ei = pd_.findEem(_iChargeDistributionModel, ai->name());
+        auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
         GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
         
         ei->setJ0(param_[n++]);
         
-        if (ai->name().compare(_fixchi) != 0)
+        if (ai->name().compare(fixchi_) != 0)
         {      
             ei->setChi0(param_[n++]);           
         }       
-        if (_bFitZeta)
+        if (bFitZeta_)
         {
             zstr[0] = '\0';
-            auto nzeta = pd_.getNzeta(_iChargeDistributionModel, ai->name());
+            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
             for (int zz = 0; zz < nzeta; zz++)
             {
                 auto zeta = param_[n++];
@@ -545,9 +545,9 @@ void OPtimization::tuneDip2PolData()
             ei->setRowZetaQ(rowstr, zstr, qstr);
         }               
     }
-    if (_bOptHfac)
+    if (bOptHfac_)
     {
-        _hfac = param_[n++];
+        hfac_ = param_[n++];
     }   
 }
 
@@ -584,35 +584,35 @@ double OPtimization::objFunction(const double v[])
     {
         auto name = ai->name();
         auto J00  = v[n++];
-        bounds   += harmonic(J00, _J0_0, _J0_1);
+        bounds   += harmonic(J00, J0_0_, J0_1_);
         
-        if (strcasecmp(name.c_str(), _fixchi) != 0)
+        if (strcasecmp(name.c_str(), fixchi_) != 0)
         {
             auto Chi0 = v[n++];
-            bounds   += harmonic(Chi0, _Chi0_0, _Chi0_1);
+            bounds   += harmonic(Chi0, Chi0_0_, Chi0_1_);
         }
         
-        if (_bFitZeta)
+        if (bFitZeta_)
         {
-            auto nzeta = pd_.getNzeta(_iChargeDistributionModel, ai->name());
+            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
             for (int zz = 0; zz < nzeta; zz++)
             {
                 auto zeta = v[n++];
-                bounds += harmonic(zeta, _w_0, _w_1);
+                bounds += harmonic(zeta, w_0_, w_1_);
             }
         }
     }
     
-    if (_bOptHfac)
+    if (bOptHfac_)
     {
-        _hfac = v[n++];
-        if (_hfac > _hfac0)
+        hfac_ = v[n++];
+        if (hfac_ > hfac0_)
         {
-            bounds += 100*gmx::square(_hfac - _hfac0);
+            bounds += 100*gmx::square(hfac_ - hfac0_);
         }
-        else if (_hfac < -(_hfac0))
+        else if (hfac_ < -(hfac0_))
         {
-            bounds += 100*gmx::square(_hfac + _hfac0);
+            bounds += 100*gmx::square(hfac_ + hfac0_);
         }
     }
     
@@ -625,10 +625,10 @@ double OPtimization::objFunction(const double v[])
     tuneDip2PolData();
     calcDeviation();
 
-    _ener[ermsBOUNDS] += bounds;
-    _ener[ermsTOT]    += bounds;
+    ener_[ermsBOUNDS] += bounds;
+    ener_[ermsTOT]    += bounds;
     
-    return _ener[ermsTOT];
+    return ener_[ermsTOT];
 }
 
 void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
@@ -646,13 +646,13 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
         return objFunction(v);
     };
     
-    if (MASTER(_cr))
+    if (MASTER(cr_))
     {    
-        if (PAR(_cr))
+        if (PAR(cr_))
         {
-            for (int dest = 1; dest < _cr->nnodes; dest++)
+            for (int dest = 1; dest < cr_->nnodes; dest++)
             {
-                gmx_send_int(_cr, dest, (nrun*maxiter*param_.size()));
+                gmx_send_int(cr_, dest, (nrun*maxiter*param_.size()));
             }
         }
         
@@ -704,26 +704,26 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     else
     {
         /* S L A V E   N O D E S */
-        int niter = gmx_recv_int(_cr, 0);
+        int niter = gmx_recv_int(cr_, 0);
         for (int n = 0; n < niter + 2; n++)
         {
             calcDeviation();
         }
     }
     
-    _bFinal = true;
-    if(MASTER(_cr))
+    bFinal_ = true;
+    if(MASTER(cr_))
     {
         chi2 = objFunction(best_.data());;
         if (nullptr != fp)
         {
             fprintf(fp, "rmsd: %4.3f  ermsBOUNDS: %4.3f  after %d run(s)\n",
-                    sqrt(chi2), _ener[ermsBOUNDS], nrun);
+                    sqrt(chi2), ener_[ermsBOUNDS], nrun);
         }
         if (nullptr != fplog)
         {
             fprintf(fplog, "rmsd: %4.3f   ermsBOUNDS: %4.3f  after %d run(s)\n",
-                    sqrt(chi2), _ener[ermsBOUNDS], nrun);
+                    sqrt(chi2), ener_[ermsBOUNDS], nrun);
             fflush(fplog);
         }
     }
@@ -886,7 +886,7 @@ void OPtimization::print_results(FILE                   *fp,
     lsq_esp     = gmx_stats_init();
     n           = 0;
         
-    for (auto &mol: _mymol)
+    for (auto &mol: mymol_)
     {
         if (mol.eSupp_ != eSupportNo)
         {
@@ -976,7 +976,7 @@ void OPtimization::print_results(FILE                   *fp,
     print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
     print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
     print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
-    if (bESP_ || (!bESP_ && _iChargeGenerationAlgorithm == eqgEEM))
+    if (bESP_ || (!bESP_ && iChargeGenerationAlgorithm_ == eqgEEM))
     {
         print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"EEM");
     }
@@ -989,7 +989,7 @@ void OPtimization::print_results(FILE                   *fp,
     print_stats(fp, (char *)"Dipoles", lsq_mu[1], true, (char *)"QM", (char *)"ESP");
     print_stats(fp, (char *)"Dipole Moment", lsq_dip[1], false, (char *)"QM", (char *)"ESP");
     print_stats(fp, (char *)"Quadrupoles", lsq_quad[1], false, (char *)"QM", (char *)"ESP");
-    if (!bESP_ && _iChargeGenerationAlgorithm == eqgESP)
+    if (!bESP_ && iChargeGenerationAlgorithm_ == eqgESP)
     {
         print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"ESP");
     }
@@ -1059,7 +1059,7 @@ void OPtimization::print_results(FILE                   *fp,
         fclose(espc);
     }
 
-    fprintf(fp, "hfac = %g\n", _hfac);
+    fprintf(fp, "hfac = %g\n", hfac_);
     gmx_stats_get_ase(lsq_mu[0], &aver, &sigma, &error);
     sigma = sqrt(d2/n);
     nout  = 0;
@@ -1068,7 +1068,7 @@ void OPtimization::print_results(FILE                   *fp,
     fprintf(fp, "%-20s  %12s  %12s  %12s\n",
             "Name", "EEM", "QM", "Mu-Deviation (Debye)");
             
-    for (auto &mol : _mymol)
+    for (auto &mol : mymol_)
     {
         rvec dmu;
         rvec_sub(mol.mu_elec_, mol.mu_calc_, dmu);
@@ -1386,16 +1386,16 @@ int alex_tune_dip(int argc, char *argv[])
             
     if (nullptr != fp)
     {
-        fprintf(fp, "In the total data set of %zu molecules we have:\n", opt._mymol.size());
+        fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymol_.size());
     }
     if (MASTER(cr))
     {
         opt.InitOpt(factor);
     }    
-    /*if (bESP && iChargeGenerationAlgorithm != eqgESP)
+    if (bESP && iChargeGenerationAlgorithm != eqgESP)
     {
         opt.addEspPoint();
-        }*/   
+    }  
     if (iChargeGenerationAlgorithm != eqgEEM)
     {
         opt.setEEM();

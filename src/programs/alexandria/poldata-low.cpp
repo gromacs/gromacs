@@ -64,33 +64,6 @@ static const char * eit_names[eitNR] = {
     "LJ14", "POLARIZATION", "CONSTR", "VSITE2"
 };
 
-static const char * eqd_names[eqdNR] = {
-     "eqdAXp", "eqdAXg", "eqdAXs", "eqdAXpp", "eqdAXpg", "eqdAXps", 
-     "eqdYang", "eqdBultinck", "eqdRappe"
-};
-
-const char *eqd2string(ChargeDistributionModel eqd)
-{
-    if (eqd < eqdNR)
-    {
-        return eqd_names[eqd];
-    }
-    return nullptr;
-}
-
-ChargeDistributionModel string2eqd(const char *string)
-{
-    int i;    
-    for (i = 0; i < eqdNR; i++)
-    {
-        if (gmx_strcasecmp(string, eqd_names[i]) == 0)
-        {
-            return static_cast<ChargeDistributionModel>(i);
-        }
-    }
-    return eqdNR;
-}
-
 const char *iType2string(InteractionType iType)
 
 {
@@ -659,13 +632,13 @@ CommunicationStatus Epref::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, eqd2string(eqdModel_));
+        gmx_send_str(cr, dest, getEemtypeName(eqdModel_));
         gmx_send_str(cr, dest, epref_.c_str());
         
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Epref %s %s, status %s\n",
-                    eqd2string(eqdModel_), epref_.c_str(), cs_name(cs));
+                    getEemtypeName(eqdModel_), epref_.c_str(), cs_name(cs));
             fflush(debug);
         }
     }
@@ -678,13 +651,13 @@ CommunicationStatus Epref::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        eqdModel_ = string2eqd(gmx_recv_str(cr, src));
+        eqdModel_ = name2eemtype(gmx_recv_str(cr, src));
         epref_    = gmx_recv_str(cr, src);
         
         if (nullptr != debug)
         {
             fprintf(debug, "Received Epref %s %s, status %s\n",
-                    eqd2string(eqdModel_), epref_.c_str(), cs_name(cs));
+                    getEemtypeName(eqdModel_), epref_.c_str(), cs_name(cs));
             fflush(debug);
         }
     }
@@ -786,7 +759,7 @@ CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, eqd2string(eqdModel_));
+        gmx_send_str(cr, dest, getEemtypeName(eqdModel_));
         gmx_send_str(cr, dest, name_.c_str());
         gmx_send_str(cr, dest, rowstr_.c_str());
         gmx_send_str(cr, dest, zetastr_.c_str());
@@ -803,7 +776,7 @@ CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Eemprops %s %s %s %s %s %g %g, status %s\n",
-                    eqd2string(eqdModel_), name_.c_str(), rowstr_.c_str(), 
+                    getEemtypeName(eqdModel_), name_.c_str(), rowstr_.c_str(), 
                     zetastr_.c_str(), qstr_.c_str(), J0_, chi0_, cs_name(cs));
             fflush(debug);
         }
@@ -818,7 +791,7 @@ CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        eqdModel_ = string2eqd(gmx_recv_str(cr, src));
+        eqdModel_ = name2eemtype(gmx_recv_str(cr, src));
         name_     = gmx_recv_str(cr, src);
         rowstr_   = gmx_recv_str(cr, src);
         zetastr_  = gmx_recv_str(cr, src);
@@ -868,6 +841,49 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
         RowZetaQ rzq(atoi(sr[n].c_str()), atof(sz[n].c_str()), atof(sq[n].c_str()));
         rzq_.push_back(rzq);
     }
+}
+
+typedef struct {
+    ChargeDistributionModel eqd;
+    const char             *name;
+    const char             *ref;
+    gmx_bool                bWeight;
+} t_eemtype_props;
+
+t_eemtype_props eemtype_props[eqdNR] = {
+    { eqdAXp,      "AXp",      "Ghahremanpour2017a",   false },
+    { eqdAXg,      "AXg",      "Ghahremanpour2017a",   true },
+    { eqdAXs,      "AXs",      "Ghahremanpour2017a",   false },
+    { eqdAXpp,     "AXpp",     "Ghahremanpour2017a",   false },
+    { eqdAXpg,     "AXpg",     "Ghahremanpour2017a",   true },
+    { eqdAXps,     "AXps",     "Ghahremanpour2017a",   false },
+    { eqdYang,     "Yang",     "Yang2006b",            true },
+    { eqdBultinck, "Bultinck", "Bultinck2002a",        false },
+    { eqdRappe,    "Rappe",    "Rappe1991a",           true }
+};
+
+ChargeDistributionModel name2eemtype(const std::string name)
+{
+    for (int i = 0; i < eqdNR; i++)
+    {
+        if (strcasecmp(name.c_str(), eemtype_props[i].name) == 0)
+        {
+            return eemtype_props[i].eqd;
+        }
+    }
+    return eqdNR;
+}
+
+const char *getEemtypeName(ChargeDistributionModel eem)
+{
+    for (int i = 0; i < eqdNR; i++)
+    {
+        if (eem == eemtype_props[i].eqd)
+        {
+            return eemtype_props[i].name;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace alexandria

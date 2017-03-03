@@ -143,29 +143,28 @@ class MolDip
 {
     private:
     public:
-        bool                            _bDone, _bFinal, _bGaussianBug;
-        bool                            _bFitZeta, bfullTensor_;
-        std::vector<alexandria::MyMol>  _mymol;
-        int                             _nmol_support;
-        ChargeDistributionModel         _iChargeDistributionModel;
-        ChargeGenerationAlgorithm       _iChargeGenerationAlgorithm;
+        bool                            bDone_, bFinal_, bGaussianBug_;
+        bool                            bFitZeta_, bfullTensor_;
+        std::vector<alexandria::MyMol>  mymol_;
+        int                             nmol_support_;
+        ChargeDistributionModel         iChargeDistributionModel_;
+        ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
         IndexCount                      indexCount_;
-        real                            _J0_0, _Chi0_0, _w_0, _J0_1, _Chi0_1, _w_1;
-        real                            _hfac, _hfac0, _decrzeta;
-        real                            _ener[ermsNR], _fc[ermsNR];
-        gmx_bool                        _bOptHfac, _bPol, _bQM;
-        char                           *_fixchi;
+        real                            J0_0_, Chi0_0_, w_0_, J0_1_, Chi0_1_, w_1_;
+        real                            hfac_, hfac0_, decrzeta_;
+        real                            ener_[ermsNR], fc_[ermsNR];
+        gmx_bool                        bOptHfac_, bPol_, bQM_;
+        char                           *fixchi_;
         Poldata                         pd_;
-        gmx_atomprop_t                  _atomprop;
-        t_commrec                      *_cr;
+        gmx_atomprop_t                  atomprop_;
+        t_commrec                      *cr_;
         gmx::MDModules                  mdModules_;
         t_inputrec                     *inputrec_;
         gmx_hw_info_t                  *hwinfo_;
 
-        //! Constructor
+
         MolDip();
 
-        //! Destructor
         ~MolDip() {};
 
         IndexCount *indexCount() { return &indexCount_; }

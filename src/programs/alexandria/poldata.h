@@ -518,9 +518,5 @@ class Poldata
         }
 };
 
-const char *getEemtypeName(ChargeDistributionModel eem);
-
-ChargeDistributionModel name2eemtype(const std::string name);
-
 }
 #endif

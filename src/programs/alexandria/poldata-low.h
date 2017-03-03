@@ -65,10 +65,6 @@ enum ChargeDistributionModel {
     eqdAXp, eqdAXg, eqdAXs, eqdAXpp, eqdAXpg, eqdAXps, eqdYang, eqdBultinck, eqdRappe, eqdNR
 };
 
-const char *eqd2string(ChargeDistributionModel eqd);
-
-ChargeDistributionModel string2eqd(const char *string);
-
 /*! \brief
  * Convert interaction type to string
  */
@@ -834,6 +830,10 @@ class Eemprops
 
 using EempropsIterator      = typename std::vector<Eemprops>::iterator;
 using EempropsConstIterator = typename std::vector<Eemprops>::const_iterator;
+
+const char *getEemtypeName(ChargeDistributionModel eem);
+
+ChargeDistributionModel name2eemtype(const std::string name);
 
 } // namespace aleaxndria
 #endif
