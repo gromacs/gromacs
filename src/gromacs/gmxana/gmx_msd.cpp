@@ -178,31 +178,30 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
                        real *DD, real *SigmaD, char *grpname[],
                        const gmx_output_env_t *oenv)
 {
-    FILE *out;
-    int   i, j;
+    int     i, j;
 
-    out = xvgropen(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
+    XvgFile out(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
     if (DD)
     {
-        fprintf(out, "# MSD gathered over %g %s with %d restarts\n",
+        fprintf(out.get(), "# MSD gathered over %g %s with %d restarts\n",
                 msdtime, output_env_get_time_unit(oenv), curr->nrestart);
-        fprintf(out, "# Diffusion constants fitted from time %g to %g %s\n",
+        fprintf(out.get(), "# Diffusion constants fitted from time %g to %g %s\n",
                 beginfit, endfit, output_env_get_time_unit(oenv));
         for (i = 0; i < curr->ngrp; i++)
         {
-            fprintf(out, "# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
+            fprintf(out.get(), "# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
                     grpname[i], DD[i], SigmaD[i]);
         }
     }
     for (i = 0; i < curr->nframes; i++)
     {
-        fprintf(out, "%10g", output_env_conv_time(oenv, curr->time[i]));
+        fprintf(out.get(), "%10g", output_env_conv_time(oenv, curr->time[i]));
         for (j = 0; j < curr->ngrp; j++)
         {
-            fprintf(out, "  %10g", curr->data[j][i]);
+            fprintf(out.get(), "  %10g", curr->data[j][i]);
             if (bTen)
             {
-                fprintf(out, " %10g %10g %10g %10g %10g %10g",
+                fprintf(out.get(), " %10g %10g %10g %10g %10g %10g",
                         curr->datam[j][i][XX][XX],
                         curr->datam[j][i][YY][YY],
                         curr->datam[j][i][ZZ][ZZ],
@@ -211,9 +210,8 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
                         curr->datam[j][i][ZZ][YY]);
             }
         }
-        fprintf(out, "\n");
+        fprintf(out.get(), "\n");
     }
-    xvgrclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
