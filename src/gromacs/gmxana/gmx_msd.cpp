@@ -42,6 +42,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/plotfile.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -178,42 +179,63 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
                        real *DD, real *SigmaD, char *grpname[],
                        const gmx_output_env_t *oenv)
 {
-    FILE *out;
-    int   i, j;
-
-    out = xvgropen(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
+    gmx::PlotFile xvg(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
+    char          buf[256];
     if (DD)
     {
-        fprintf(out, "# MSD gathered over %g %s with %d restarts\n",
-                msdtime, output_env_get_time_unit(oenv), curr->nrestart);
-        fprintf(out, "# Diffusion constants fitted from time %g to %g %s\n",
-                beginfit, endfit, output_env_get_time_unit(oenv));
-        for (i = 0; i < curr->ngrp; i++)
+        if (snprintf(buf, sizeof(buf), "# MSD gathered over %g %s with %d restarts\n",
+                     msdtime, output_env_get_time_unit(oenv), curr->nrestart) > 0)
         {
-            fprintf(out, "# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
-                    grpname[i], DD[i], SigmaD[i]);
+            xvg.writeLine(buf);
         }
-    }
-    for (i = 0; i < curr->nframes; i++)
-    {
-        fprintf(out, "%10g", output_env_conv_time(oenv, curr->time[i]));
-        for (j = 0; j < curr->ngrp; j++)
+        if (snprintf(buf, sizeof(buf),
+                     "# Diffusion constants fitted from time %g to %g %s\n",
+                     beginfit, endfit, output_env_get_time_unit(oenv)) > 0)
         {
-            fprintf(out, "  %10g", curr->data[j][i]);
-            if (bTen)
+            xvg.writeLine(buf);
+        }
+        for (int i = 0; i < curr->ngrp; i++)
+        {
+            if (snprintf(buf, sizeof(buf),
+                         "# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
+                         grpname[i], DD[i], SigmaD[i]) > 0)
             {
-                fprintf(out, " %10g %10g %10g %10g %10g %10g",
-                        curr->datam[j][i][XX][XX],
-                        curr->datam[j][i][YY][YY],
-                        curr->datam[j][i][ZZ][ZZ],
-                        curr->datam[j][i][YY][XX],
-                        curr->datam[j][i][ZZ][XX],
-                        curr->datam[j][i][ZZ][YY]);
+                xvg.writeLine(buf);
             }
         }
-        fprintf(out, "\n");
     }
-    xvgrclose(out);
+    for (int i = 0; i < curr->nframes; i++)
+    {
+        if (snprintf(buf, sizeof(buf),
+                     "%10g", output_env_conv_time(oenv, curr->time[i])) > 0)
+        {
+            xvg.writeLine(buf);
+        }
+        for (int j = 0; j < curr->ngrp; j++)
+        {
+            if (snprintf(buf, sizeof(buf), "  %10g", curr->data[j][i]) > 0)
+            {
+                xvg.writeLine(buf);
+            }
+            if (bTen)
+            {
+                if (snprintf(buf, sizeof(buf), " %10g %10g %10g %10g %10g %10g",
+                             curr->datam[j][i][XX][XX],
+                             curr->datam[j][i][YY][YY],
+                             curr->datam[j][i][ZZ][ZZ],
+                             curr->datam[j][i][YY][XX],
+                             curr->datam[j][i][ZZ][XX],
+                             curr->datam[j][i][ZZ][YY]) > 0)
+                {
+                    xvg.writeLine(buf);
+                }
+            }
+        }
+        if (snprintf(buf, sizeof(buf), "\n") > 0)
+        {
+            xvg.writeLine(buf);
+        }
+    }
 }
 
 /* called from corr_loop, to do the main calculations */
