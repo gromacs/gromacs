@@ -55,6 +55,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/textwriter.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t *oenv)
 {
@@ -935,4 +936,32 @@ real **read_xvg_time(const char *fn,
     sfree(val_nalloc);
 
     return val;
+}
+
+class XvgFileImpl
+{
+    public:
+        XvgFileImpl(const char *fn, const char *title, const char *xaxis,
+                    const char *yaxis, const struct gmx_output_env_t *oenv)
+        {
+            writer_ = new gmx::TextWriter(xvgropen(fn, title, xaxis, yaxis, oenv));
+        }
+
+        gmx::TextWriter *writer_;
+};
+
+XvgFile::XvgFile(const char *fn, const char *title, const char *xaxis,
+                 const char *yaxis, const struct gmx_output_env_t *oenv)
+{
+    impl_ = new XvgFileImpl(fn, title, xaxis, yaxis, oenv);
+}
+
+void XvgFile::close()
+{
+    impl_->writer_->close();
+}
+
+void XvgFile::writeLine(const char *str)
+{
+    impl_->writer_->writeLine(str);
 }
