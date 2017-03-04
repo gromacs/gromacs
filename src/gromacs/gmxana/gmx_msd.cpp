@@ -178,10 +178,10 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
                        real *DD, real *SigmaD, char *grpname[],
                        const gmx_output_env_t *oenv)
 {
-    FILE *out;
-    int   i, j;
+    int     i, j;
 
-    out = xvgropen(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
+    XvgFile xvg(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
+    FILE   *out = xvg.handle();
     if (DD)
     {
         fprintf(out, "# MSD gathered over %g %s with %d restarts\n",
@@ -213,7 +213,6 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
         }
         fprintf(out, "\n");
     }
-    xvgrclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */

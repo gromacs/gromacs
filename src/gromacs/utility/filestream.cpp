@@ -254,6 +254,11 @@ TextOutputFile::~TextOutputFile()
 {
 }
 
+FILE *TextOutputFile::handle()
+{
+    return impl_->handle();
+}
+
 void TextOutputFile::write(const char *str)
 {
     if (std::fprintf(impl_->handle(), "%s", str) < 0)
