@@ -461,7 +461,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             svmul(scale, sum[index[i]], sum[index[i]]);
         }
 
-        fp = xvgropen(xname, title, "Atom", "", oenv);
+        fp = xvgropen(xname, title, "Atom", "Spatial component", oenv);
         for (i = 0; i < isize; i++)
         {
             fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1+i,
