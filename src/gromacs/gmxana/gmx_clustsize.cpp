@@ -40,6 +40,7 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
@@ -76,7 +77,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     t_trxstatus          *status;
     rvec                 *x = nullptr, *v = nullptr, dx;
     t_pbc                 pbc;
-    char                 *gname;
     char                  timebuf[32];
     gmx_bool              bSame, bTPRwarn = TRUE;
     /* Topology stuff */
@@ -148,11 +148,12 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         {
             index[i] = i;
         }
-        gname = gmx_strdup("mols");
     }
     else
     {
+        char *gname;
         rd_index(ndx, 1, &nindex, &index, &gname);
+        sfree(gname);
     }
 
     snew(clust_index, nindex);
@@ -334,6 +335,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     while (read_next_frame(oenv, status, &fr));
     close_trx(status);
+    done_frame(&fr);
     xvgrclose(fp);
     xvgrclose(gp);
     xvgrclose(hp);
@@ -426,7 +428,17 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                "Size", n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
                rlo, rmid, rhi, &nlevels);
     gmx_ffclose(fp);
-
+    if (mtop)
+    {
+        done_mtop(mtop);
+    }
+    sfree(t_x);
+    sfree(t_y);
+    for (i = 0; (i < n_x); i++)
+    {
+        sfree(cs_dist[i]);
+    }
+    sfree(cs_dist);
     sfree(clust_index);
     sfree(clust_size);
     sfree(index);
@@ -525,6 +537,9 @@ int gmx_clustsize(int argc, char *argv[])
                opt2fn("-temp", NFILE, fnm), opt2fn("-mcn", NFILE, fnm),
                bMol, bPBC, fnTPR,
                cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
+
+    done_filenms(NFILE, fnm);
+    output_env_done(oenv);
 
     return 0;
 }
