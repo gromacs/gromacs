@@ -86,7 +86,7 @@ typedef struct gmx_walltime_accounting {
     int             numOpenMPThreads;
     //! Set by integrators to report the amount of work they did
     gmx_int64_t     nsteps_done;
-    //! Whether the simulation has finished in a way valid for walltime reporting.
+    //! Whether the simulation has finished in a way valid for walltime reporting (only used on PP ranks).
     bool            isValidFinish;
 } t_gmx_walltime_accounting;
 

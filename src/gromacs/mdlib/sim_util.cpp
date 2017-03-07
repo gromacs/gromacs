@@ -2575,7 +2575,10 @@ void finish_run(FILE *fplog, t_commrec *cr,
             elapsed_time_over_all_threads,
             elapsed_time_over_all_threads_over_all_ranks;
 
-    if (!walltime_accounting_get_valid_finish(walltime_accounting))
+    /* Only check for valid walltime upon finish on PP ranks as PME ranks don't
+     * keep track of this. */
+    if (!walltime_accounting_get_valid_finish(walltime_accounting) &&
+        !(cr->duty & DUTY_PME))
     {
         md_print_warn(cr, fplog,
                       "Simulation ended prematurely, no performance report will be written.");
