@@ -173,10 +173,7 @@ static void gmx_fio_insert(t_fileio *fio)
     gmx_fio_unlock(fio);
 }
 
-/* remove a t_fileio into the list. We assume the fio is locked, and we leave
-   it locked.
-   NOTE: We also assume that the open_file_mutex has been locked */
-static void gmx_fio_remove(t_fileio *fio)
+void gmx_fio_remove(t_fileio *fio)
 {
     /* lock prev, because we're changing it */
     gmx_fio_lock(fio->prev);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,9 @@ void clear_trxframe(struct t_trxframe *fr, gmx_bool bFirst);
 
 void set_trxframe_ePBC(struct t_trxframe *fr, int ePBC);
 /* Set the type of periodic boundary conditions, ePBC=-1 is not set */
+
+void done_trxstatus(t_trxstatus **status);
+/* Release memory in this structure, and free the pointer */
 
 int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */

@@ -100,6 +100,21 @@ struct t_trxstatus
 
 /* utility functions */
 
+void done_trxstatus(t_trxstatus **status)
+{
+    if (*status)
+    {
+        //done_frame((*status)->xframe);
+        sfree((*status)->xframe);
+        gmx_fio_remove((*status)->fio);
+        sfree((*status)->persistent_line);
+#if GMX_USE_PLUGINS
+        sfree((*status)->vmdplugin);
+#endif
+        //sfree(*status);
+    }
+}
+
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 {
     int    iq;

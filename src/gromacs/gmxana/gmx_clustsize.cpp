@@ -334,6 +334,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     while (read_next_frame(oenv, status, &fr));
     close_trx(status);
+    done_trxstatus(&status);
     xvgrclose(fp);
     xvgrclose(gp);
     xvgrclose(hp);
