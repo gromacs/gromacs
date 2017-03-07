@@ -999,6 +999,14 @@ void rd_index(const char *statfile, int ngrps, int isize[],
     }
     grps = init_index(statfile, &gnames);
     rd_groups(grps, gnames, grpnames, ngrps, isize, index, grpnr);
+    for (int i = 0; i < grps->nr; i++)
+    {
+        sfree(gnames[i]);
+    }
+    sfree(gnames);
+    sfree(grpnr);
+    done_blocka(grps);
+    sfree(grps);
 }
 
 void rd_index_nrs(char *statfile, int ngrps, int isize[],
