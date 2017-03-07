@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,6 +140,13 @@ class CommandLine
         void append(const char *arg);
         //! Convenience overload taking a std::string.
         void append(const std::string &arg) { append(arg.c_str()); }
+        /*! \brief
+         * Adds an option to the command line, typically a boolean.
+         *
+         * \param[in] name   Name of the option to append, which
+         *                   should start with "-".
+         */
+        void addOption(const char *name);
         /*! \brief
          * Adds an option-value pair to the command line.
          *

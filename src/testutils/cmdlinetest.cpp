@@ -173,6 +173,11 @@ std::string value2string(T value)
 
 }       // namespace
 
+void CommandLine::addOption(const char *name)
+{
+    append(name);
+}
+
 void CommandLine::addOption(const char *name, const char *value)
 {
     append(name);
