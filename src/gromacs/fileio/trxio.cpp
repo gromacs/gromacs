@@ -629,6 +629,10 @@ void close_trx(t_trxstatus *status)
     {
         gmx_fio_close(status->fio);
     }
+    sfree(status->persistent_line);
+#if GMX_USE_PLUGINS
+    sfree(status->vmdplugin);
+#endif
     sfree(status);
 }
 

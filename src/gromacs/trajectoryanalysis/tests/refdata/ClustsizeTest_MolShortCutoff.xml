@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">clustsize -mol -cut 0.3</String>
+  <OutputFiles Name="Files">
+    <File Name="-mc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Max cluster size"
+xaxis  label "Time (ps)"
+yaxis  label "#molecules"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1.000000e+00</Real>
+          <Real>2</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000000e+00</Real>
+          <Real>2</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-nc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Number of clusters"
+xaxis  label "Time (ps)"
+yaxis  label "N"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1.000000e+00</Real>
+          <Real>7</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000000e+00</Real>
+          <Real>7</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-ac">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Average cluster size"
+xaxis  label "Time (ps)"
+yaxis  label "#molecules"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>1.000000e+00</Real>
+          <Real>2.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000000e+00</Real>
+          <Real>2.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-hc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Cluster size distribution"
+xaxis  label "Cluster size"
+yaxis  label "()"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>1</Real>
+          <Real>6.000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>2</Real>
+          <Real>1.000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>3</Real>
+          <Real>0.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
