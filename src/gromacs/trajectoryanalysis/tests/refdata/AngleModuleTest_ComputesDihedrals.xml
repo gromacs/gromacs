@@ -37,7 +37,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.0027777777777777779</Real>
+            <Real Name="Value">0.0027777778</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
@@ -47,7 +47,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.0027777777777777779</Real>
+            <Real Name="Value">0.0027777778</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
@@ -57,7 +57,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.0027777777777777779</Real>
+            <Real Name="Value">0.0027777778</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>

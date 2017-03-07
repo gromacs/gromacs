@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">6</Int>
           <DataValue>
-            <Real Name="Value">3.1622776601683795</Real>
+            <Real Name="Value">3.1622777</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">3.5</Real>
@@ -18,7 +18,7 @@
             <Real Name="Value">3.5</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3.1622776601683795</Real>
+            <Real Name="Value">3.1622777</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">3.5</Real>

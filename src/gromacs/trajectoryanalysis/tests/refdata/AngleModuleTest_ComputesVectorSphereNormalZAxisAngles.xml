@@ -9,10 +9,10 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">33.690067525979785</Real>
+            <Real Name="Value">33.690067</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">79.975012137924267</Real>
+            <Real Name="Value">79.975014</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -23,7 +23,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">56.832539831952026</Real>
+            <Real Name="Value">56.832542</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -34,7 +34,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0.0083333338</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
@@ -44,7 +44,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0.0083333338</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>

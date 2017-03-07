@@ -2,110 +2,110 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <SASA Name="100Points">
-    <Real Name="Area">970.3233653313689</Real>
-    <Real Name="Volume">755.27566235609231</Real>
+    <Real Name="Area">970.32336</Real>
+    <Real Name="Volume">755.27563</Real>
     <Sequence Name="AtomArea">
       <Int Name="Length">100</Int>
       <Real>0</Real>
-      <Real>4.0558342998210524</Real>
-      <Real>7.2141715090676897</Real>
-      <Real>11.802388026797145</Real>
-      <Real>11.861180790947769</Real>
-      <Real>0.45464961165214168</Real>
-      <Real>5.043792172937013</Real>
-      <Real>15.384025679555657</Real>
-      <Real>10.912202487640496</Real>
-      <Real>0.43403218100406638</Real>
-      <Real>10.713334542198128</Real>
-      <Real>16.771652296422438</Real>
-      <Real>8.8276839893363572</Real>
-      <Real>4.2928731067816637</Real>
-      <Real>19.876242886658954</Real>
-      <Real>7.3473384023008261</Real>
-      <Real>5.123338311508487</Real>
-      <Real>2.8620454019474546</Real>
-      <Real>5.536045981761772</Real>
-      <Real>2.3383059610786994</Real>
-      <Real>19.622224441255064</Real>
-      <Real>5.1732682330069339</Real>
+      <Real>4.0558343</Real>
+      <Real>7.2141728</Real>
+      <Real>11.802388</Real>
+      <Real>11.86118</Real>
+      <Real>0.45464963</Real>
+      <Real>5.0437927</Real>
+      <Real>15.384027</Real>
+      <Real>10.912204</Real>
+      <Real>0.43403223</Real>
+      <Real>10.713334</Real>
+      <Real>16.771656</Real>
+      <Real>8.8276834</Real>
+      <Real>4.2928734</Real>
+      <Real>19.876242</Real>
+      <Real>7.3473382</Real>
+      <Real>5.1233382</Real>
+      <Real>2.8620453</Real>
+      <Real>5.536047</Real>
+      <Real>2.338306</Real>
+      <Real>19.622225</Real>
+      <Real>5.1732683</Real>
       <Real>0</Real>
-      <Real>2.0181412882944527</Real>
-      <Real>28.357528355886974</Real>
-      <Real>19.656825673934645</Real>
-      <Real>14.380252449659684</Real>
-      <Real>0.62119701037022867</Real>
+      <Real>2.0181415</Real>
+      <Real>28.357531</Real>
+      <Real>19.656826</Real>
+      <Real>14.380252</Real>
+      <Real>0.62119704</Real>
       <Real>0</Real>
-      <Real>16.192715637728853</Real>
-      <Real>0.487269232403301</Real>
-      <Real>34.780541911681155</Real>
-      <Real>3.3409685556269464</Real>
-      <Real>17.646286675957931</Real>
-      <Real>5.6057676725125933</Real>
-      <Real>9.4597757596104</Real>
-      <Real>8.8419325475301882</Real>
-      <Real>6.6441008858207464</Real>
-      <Real>3.7372981529644793</Real>
+      <Real>16.192717</Real>
+      <Real>0.48726928</Real>
+      <Real>34.78054</Real>
+      <Real>3.3409684</Real>
+      <Real>17.646288</Real>
+      <Real>5.6057682</Real>
+      <Real>9.4597759</Real>
+      <Real>8.8419323</Real>
+      <Real>6.6441011</Real>
+      <Real>3.7372985</Real>
       <Real>0</Real>
-      <Real>0.43009453899901434</Real>
-      <Real>1.4670172358526787</Real>
-      <Real>30.361284360531087</Real>
-      <Real>12.313581963912952</Real>
-      <Real>0.80045842058331262</Real>
-      <Real>6.1145327575456738</Real>
-      <Real>25.284047865186135</Real>
-      <Real>0.24122376459561845</Real>
+      <Real>0.43009457</Real>
+      <Real>1.4670172</Real>
+      <Real>30.361284</Real>
+      <Real>12.313582</Real>
+      <Real>0.80045843</Real>
+      <Real>6.1145334</Real>
+      <Real>25.284048</Real>
+      <Real>0.24122375</Real>
       <Real>0</Real>
-      <Real>0.60444677733234042</Real>
+      <Real>0.60444677</Real>
       <Real>0</Real>
-      <Real>30.153093832027213</Real>
-      <Real>19.825676728066842</Real>
-      <Real>8.731414948991798</Real>
-      <Real>3.0440094939984932</Real>
-      <Real>12.51756035185813</Real>
-      <Real>19.221394995532286</Real>
-      <Real>15.331722934467219</Real>
-      <Real>10.823260349464695</Real>
-      <Real>14.578402700885372</Real>
-      <Real>14.060390554241039</Real>
-      <Real>8.2363872927380015</Real>
+      <Real>30.153095</Real>
+      <Real>19.825676</Real>
+      <Real>8.7314138</Real>
+      <Real>3.0440097</Real>
+      <Real>12.517562</Real>
+      <Real>19.221397</Real>
+      <Real>15.331722</Real>
+      <Real>10.823261</Real>
+      <Real>14.578403</Real>
+      <Real>14.060393</Real>
+      <Real>8.2363882</Real>
       <Real>0</Real>
-      <Real>1.6117664948922075</Real>
-      <Real>8.9079162947762036</Real>
-      <Real>7.7500726874234873</Real>
-      <Real>1.2949376750586779</Real>
-      <Real>7.7523043823524516</Real>
-      <Real>4.6219931487488664</Real>
-      <Real>33.57838147950239</Real>
-      <Real>6.3744960489582372</Real>
-      <Real>26.491235707043657</Real>
-      <Real>27.815603050362675</Real>
-      <Real>7.5825156036637589</Real>
-      <Real>27.000616751447261</Real>
-      <Real>13.364662589877645</Real>
-      <Real>3.0619954733465873</Real>
-      <Real>13.769070263002753</Real>
-      <Real>19.434087359037409</Real>
-      <Real>8.2703658636347424</Real>
-      <Real>0.34507436262709618</Real>
-      <Real>1.9422035055790727</Real>
+      <Real>1.6117667</Real>
+      <Real>8.9079161</Real>
+      <Real>7.750073</Real>
+      <Real>1.2949378</Real>
+      <Real>7.752305</Real>
+      <Real>4.6219935</Real>
+      <Real>33.578384</Real>
+      <Real>6.3744965</Real>
+      <Real>26.491236</Real>
+      <Real>27.815601</Real>
+      <Real>7.5825157</Real>
+      <Real>27.000618</Real>
+      <Real>13.364664</Real>
+      <Real>3.0619957</Real>
+      <Real>13.769072</Real>
+      <Real>19.434088</Real>
+      <Real>8.2703667</Real>
+      <Real>0.34507436</Real>
+      <Real>1.9422034</Real>
       <Real>0</Real>
-      <Real>2.5261159508956501</Real>
-      <Real>10.614378653200633</Real>
-      <Real>13.769159723076157</Real>
-      <Real>15.998188529562016</Real>
+      <Real>2.5261159</Real>
+      <Real>10.614379</Real>
+      <Real>13.76916</Real>
+      <Real>15.998191</Real>
       <Real>0</Real>
       <Real>0</Real>
-      <Real>10.189491973009357</Real>
-      <Real>24.614211968115924</Real>
-      <Real>14.790943404511392</Real>
-      <Real>0.66692847511160558</Real>
+      <Real>10.189493</Real>
+      <Real>24.614212</Real>
+      <Real>14.790943</Real>
+      <Real>0.66692853</Real>
       <Real>0</Real>
-      <Real>12.701810589313949</Real>
-      <Real>30.201389071536592</Real>
-      <Real>14.591619716942757</Real>
+      <Real>12.701809</Real>
+      <Real>30.201395</Real>
+      <Real>14.591619</Real>
       <Real>0</Real>
-      <Real>13.583637100776551</Real>
-      <Real>3.548957443508693</Real>
+      <Real>13.583639</Real>
+      <Real>3.5489576</Real>
     </Sequence>
     <Int Name="DotCount">1282</Int>
   </SASA>

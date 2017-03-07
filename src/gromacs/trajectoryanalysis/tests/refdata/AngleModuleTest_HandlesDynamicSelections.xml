@@ -55,7 +55,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">0.016666666666666666</Real>
+            <Real Name="Value">0.016666668</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>

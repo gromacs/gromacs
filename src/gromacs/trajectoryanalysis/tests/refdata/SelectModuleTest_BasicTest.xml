@@ -464,7 +464,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
@@ -478,7 +478,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
@@ -492,7 +492,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
@@ -506,7 +506,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
@@ -520,7 +520,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
@@ -534,7 +534,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -549,7 +549,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -579,7 +579,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -609,7 +609,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -639,7 +639,7 @@
           <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.5</Real>
-            <Real Name="Error">0.70710678118654757</Real>
+            <Real Name="Error">0.70710677</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>

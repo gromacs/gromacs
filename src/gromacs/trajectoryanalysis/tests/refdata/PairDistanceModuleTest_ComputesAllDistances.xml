@@ -9,31 +9,31 @@
         <DataValues>
           <Int Name="Count">9</Int>
           <DataValue>
-            <Real Name="Value">2.2360679774997898</Real>
+            <Real Name="Value">2.236068</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1.4142135623730951</Real>
+            <Real Name="Value">1.4142135</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3.1622776601683795</Real>
+            <Real Name="Value">3.1622777</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2.2360679774997898</Real>
+            <Real Name="Value">2.236068</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1.4142135623730951</Real>
+            <Real Name="Value">1.4142135</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">2</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2.2360679774997898</Real>
+            <Real Name="Value">2.236068</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2.8284271247461903</Real>
+            <Real Name="Value">2.8284271</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
