@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016,2017 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "modules/distance.h"
 #include "modules/freevolume.h"
 #include "modules/pairdist.h"
+#include "modules/rcore.h"
 #include "modules/rdf.h"
 #include "modules/sasa.h"
 #include "modules/select.h"
@@ -94,6 +95,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<DistanceInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
+    registerModule<RCoreInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);
     registerModule<SelectInfo>(manager, group);

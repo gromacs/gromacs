@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">rcore -select 'name CA'</String>
+  <OutputFiles Name="Files">
+    <File Name="-on">
+      <String Name="Contents"><![CDATA[
+[ rcore ]
+   17    27    58    75    99   118   140   152   159   180   202 
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
