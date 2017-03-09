@@ -1,13 +1,63 @@
-gcc-4.6 gpu cuda-5.0 mpi openmp x11 cmake-2.8.8
+# Comment line(s) preceding each configuration document the main
+# intent behind that configuration, so that we can correctly judge
+# whether to preserve that during maintenance decisions.
+
+# Test older gcc
+# Test oldest supported CUDA
+# Test oldest supported cmake
+# Test oldest supported Ubuntu
+# Test X11 build
+# Test MPI with CUDA
+# Test MPMD PME with library MPI
+gcc-4.6 gpu cuda-5.0 mpi npme=1 nranks=2 gpu_id=01 openmp x11 cmake-2.8.8
+
+# Test newest gcc supported by newest CUDA at time of release
+# Test thread-MPI with CUDA
 gcc-4.8 gpu cuda-7.5 openmp release
+
+# Test with ThreadSanitizer
+# Test AVX2_256 SIMD
+# Test fftpack fallback
 gcc-4.9 tsan fftpack simd=avx2_256
+
+# Test newest gcc at time of release
+# Test on MacOS
 gcc-6.1 double
+
+# Test older clang
+# Test double precision
+# Test with AddressSanitizer
+# Test without OpenMP
 clang-3.4 double no-openmp fftpack asan
-# TODO move mdrun-only config to post-submit matrix
-clang-3.7 double mpi no-openmp fftpack mdrun-only
+
+# Test oldest supported MSVC on Windows
+# Test newest supported MSVC on Windows
 msvc-2015 openmp release
+
+# Test oldest supported icc on Windows
+# Test newest supported icc on Windows
 icc-16.0 msvc-2015 fftpack
+
+# Test newest cmake at time of release
+# Test MKL
+# Test without any MPI
+# Test on CentOS
 icc-16.0 no-thread-mpi openmp mkl cmake-3.3.2 simd=avx_256
+
+# Test AVX_128_FMA SIMD
 gcc-5.2 mpi openmp simd=avx_128_fma
+
+# Test NVIDIA OpenCL
+# Test MPI + OpenCL
 gcc-4.8 openmp opencl cuda-7.5 mpi release
+
+# Test AMD OpenCL
 gcc-5.2 openmp opencl amdappsdk-3.0
+
+# TODO
+# When merging to master branch, make a configuration use bs_nix1204
+# When merging to master branch, note TODO to support updated compilers and cmake for release-2017
+# Test MPMD with 3 ranks once essentialdynamics tests can cope
+# Test hwloc support
+# Test newest supported Ubuntu
+# Migrate ThreadSanitizer test off GPU build slave
