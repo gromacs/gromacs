@@ -669,7 +669,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     if (bThreads)
     {
         snew(command, std::strlen(cmd_mdrun) + std::strlen(cmd_np) + std::strlen(filename) + 50);
-        sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", cmd_mdrun, cmd_np, filename);
+        sprintf(command, "%s%s -version -maxh 0.001 1> %s 2>&1", cmd_mdrun, cmd_np, filename);
     }
     else
     {
