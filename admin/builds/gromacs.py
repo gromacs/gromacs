@@ -146,6 +146,8 @@ def do_build(context):
             cmd += ['-double']
         if context.opts.mdrun_only:
             cmd += ['-mdrun', 'mdrun']
+        if context.opts.gmxtest:
+            cmd += [context.opts.gmxtest]
         context.run_cmd(cmd, failure_message='Regression tests failed to execute')
         # TODO: Add testing for building the template.
         # TODO: Generalize the machinery here such that it can easily be used
