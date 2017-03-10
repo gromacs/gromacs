@@ -1,0 +1,22 @@
+@INCLUDE               = Doxyfile-common
+
+PREDEFINED            += F77_FUNC(name,NAME)=name
+
+ENABLED_SECTIONS      += libapi internal
+INTERNAL_DOCS          = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = YES
+EXTRACT_ANON_NSPACES   = YES
+SOURCE_BROWSER         = YES
+HIDE_UNDOC_CLASSES     = NO
+HIDE_UNDOC_MEMBERS     = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+VERBATIM_HEADERS       = YES # restore default overridden by Doxyfile-common
+
+WARN_LOGFILE           = doxygen-dev.log
+HTML_OUTPUT            = html-dev
+
+ALIASES               += inpublicapi="\ingroup group_publicapi"
+ALIASES               += inlibraryapi="\ingroup group_libraryapi"
+ALIASES               += libinternal=
