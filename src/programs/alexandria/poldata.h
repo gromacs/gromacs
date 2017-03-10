@@ -135,7 +135,7 @@ class Poldata
 
         int  getCombRule() const { return gtCombRule_; }
 
-        std::string  getGeometry(  std::string gtBrule);
+        std::string  getGeometry(std::string gtBrule);
 
 
         /*! \brief
@@ -143,9 +143,16 @@ class Poldata
          *
          * \param[in] atype  Atom Type
          */
-        std::string  getDesc(  std::string atype);
+        std::string  getDesc(std::string atype);
 
-
+        /*! \brief
+         * Return the element name corresponding to the atom type
+         *
+         * \param[in] atype  Atom Type
+         */
+        std::string  getElem(std::string atype);
+        
+        
         /*! \brief
          * Return the charge corresponding to the atyom type
          * from the gentop.dat file

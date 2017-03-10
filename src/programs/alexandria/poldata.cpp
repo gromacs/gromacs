@@ -120,9 +120,9 @@ bool Poldata::getAtypeRefEnthalpy(const std::string &atype,
     return false;
 }
 
-std::string Poldata::getDesc( std::string atype)
+std::string Poldata::getDesc(std::string atype)
 {
-    unsigned int i;
+    size_t i;
 
     if (atype.size() != 0)
     {
@@ -135,6 +135,23 @@ std::string Poldata::getDesc( std::string atype)
         }
     }
 
+    return "";
+}
+
+std::string  Poldata::getElem(std::string atype)
+{
+    size_t i;
+    
+    if (atype.size() != 0)
+    {
+        for (i = 0; (i < alexandria_.size()); i++)
+        {
+            if (alexandria_[i].getType().compare(atype) == 0)
+            {
+                return alexandria_[i].getElem();
+            }
+        }
+    }
     return "";
 }
 

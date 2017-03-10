@@ -895,7 +895,7 @@ static void do_init_mtop(const Poldata            &pd,
     if (nullptr != tabfn)
     {
         ir->opts.ngener = ntype;
-        snew(ir->opts.egp_flags, ntype*ntype);
+        srenew(ir->opts.egp_flags, ntype*ntype);
         for (int k = 0; k < ntype; k++)
         {
             for (int m = k; m < ntype; m++)
@@ -1571,13 +1571,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo)
 {
+    std::vector<double> qq;
     immStatus imm       = immOK;
     real      tolerance = 1e-6;
     bool      converged = false;
-    int       maxiter   = 100, iter;
-    std::vector<double> qq;
-
-    // This might be moved to a better place
+    int       maxiter   = 1000;
+    int       iter      = 0;
+    
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
     GenerateGromacs(mdlog, cr, tabfn, hwinfo);
     if (bSymmetricCharges)
@@ -1600,7 +1600,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     {
         case eqgNONE:
             printf("Using zero charges!\n");
-            for (int i = 0; (i < topology_->atoms.nr); i++)
+            for (int i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
             }
@@ -1618,7 +1618,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             if (ci != molProp()->EndExperiment())
             {
                 size_t iesp = 0;
-                for (auto epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi, ++iesp)
+                for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
                 {
                     if (gr_.myWeight(iesp) == 0)
                     {
@@ -1651,6 +1651,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             real   rrms      = 0, wtot;
             int    cur       = 0;
             EspRms_          = 0;
+            iter             = 0;
             do
             {
                 gr_.updateAtomCoords(state_->x);
@@ -1669,8 +1670,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 printf("RESP: RMS %g\n", chi2[cur]);
                 converged = (fabs(chi2[cur] - chi2[1-cur]) < tolerance) || (nullptr == shellfc_);
                 cur       = 1-cur;
+                iter++;
             }
-            while (!converged);
+            while ((!converged) && (iter < maxiter));
             for (int i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q      =
@@ -1924,8 +1926,7 @@ void MyMol::CalcDipole(rvec mu)
     clear_rvec(mu);
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        auto q = ENM2DEBYE*topology_->atoms.atom[i].q;
-        
+        auto q = ENM2DEBYE*topology_->atoms.atom[i].q;   
         for (int m = 0; m < DIM; m++)
         {
             mu[m] += state_->x[i][m]*q;
@@ -1942,30 +1943,28 @@ void MyMol::CalcQuadrupole()
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
         q    = ENM2DEBYE*topology_->atoms.atom[i].q;
-        dfac = q*0.5*10;
+        dfac = NM2A*0.5*q;
         r2   = iprod(state_->x[i], state_->x[i]);
         for (int m = 0; m < DIM; m++)
         {
             Q_calc_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
         }
-        Q_calc_[XX][YY] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][YY]+coq_[YY]);
-        Q_calc_[XX][ZZ] += dfac*3*(state_->x[i][XX]+coq_[XX])*(state_->x[i][ZZ]+coq_[ZZ]);
-        Q_calc_[YY][ZZ] += dfac*3*(state_->x[i][YY]+coq_[YY])*(state_->x[i][ZZ]+coq_[ZZ]);
+        Q_calc_[XX][YY] += dfac*3*(state_->x[i][XX]-coq_[XX])*(state_->x[i][YY]-coq_[YY]);
+        Q_calc_[XX][ZZ] += dfac*3*(state_->x[i][XX]-coq_[XX])*(state_->x[i][ZZ]-coq_[ZZ]);
+        Q_calc_[YY][ZZ] += dfac*3*(state_->x[i][YY]-coq_[YY])*(state_->x[i][ZZ]-coq_[ZZ]);
     }
 }
 
-void MyMol::CalcQPol(const Poldata &pd)
+void MyMol::CalcQPol(const Poldata &pd, rvec mu)
 
 {
     int     i, np;
     double  poltot, pol, sigpol, sptot, ereftot, eref;
-    rvec    mu;
 
     poltot  = 0;
     sptot   = 0;
     ereftot = 0;
     np      = 0;
-    clear_rvec(mu);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
         if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol))
@@ -1981,7 +1980,7 @@ void MyMol::CalcQPol(const Poldata &pd)
         }
     }
     CalcDipole(mu);
-    mutot_          = norm(mu);
+    CalcQuadrupole();
     ref_enthalpy_   = ereftot;
     polarizability_ = poltot;
     sig_pol_        = sqrt(sptot/topology_->atoms.nr);
@@ -2334,8 +2333,7 @@ static void print_top_header2(FILE *fp, const Poldata &pd,
 
         gt_old = "";
 
-        for (auto aType = pd.getAtypeBegin();
-             aType != pd.getAtypeEnd(); aType++)
+        for (auto aType = pd.getAtypeBegin(); aType != pd.getAtypeEnd(); aType++)
         {
             gt_type = aType->getType();
             btype   = aType->getBtype();
@@ -2405,13 +2403,14 @@ void MyMol::PrintTopology(FILE                   *fp,
     double                   value, error, T;    
     tensor                   polar;
     std::string              myref, mylot;
+    rvec                     mu;
 
     if (fp == nullptr)
     {
         return;
     }
 
-    CalcQPol(pd);
+    CalcQPol(pd, mu);
     
     if (molProp()->getMolname().size() > 0)
     {
@@ -2427,16 +2426,19 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
     
     printmol.nr = 1;
-    snprintf(buf, sizeof(buf), "ref_enthalpy   = %.3f kJ/mol", ref_enthalpy_);
+    
+    snprintf(buf, sizeof(buf), "Total Mass   = %.3f Da", molProp()->getMass());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "polarizability = %.3f +/- %.3f A^3", polarizability_, sig_pol_);
+    snprintf(buf, sizeof(buf), "Reference_Enthalpy   = %.3f kJ/mol", ref_enthalpy_);
+    commercials.push_back(buf);
+    snprintf(buf, sizeof(buf), "Polarizability = %.3f +/- %.3f A^3", polarizability_, sig_pol_);
     commercials.push_back(buf);
     
-    if (1 == molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
-                                   (char *)"electronic", &value, &error,
-                                   &T, myref, mylot, vec, polar))
+    if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
+                              (char *)"electronic", &value, &error,
+                              &T, myref, mylot, vec, polar))
     {
-        snprintf(buf, sizeof(buf), "%s: axx = %.3f  ayy = %.3f  azz = %.3f", 
+        snprintf(buf, sizeof(buf), "Alpha from %s X= %.3f  Y= %.3f  Z= %.3f A^3", 
                  lot, polar[XX][XX], polar[YY][YY], polar[ZZ][ZZ]);
         commercials.push_back(buf);
     }
@@ -2444,25 +2446,22 @@ void MyMol::PrintTopology(FILE                   *fp,
     if (efield > 0 && nullptr != cr)
     {
         auto alphas = CalcPolarizability(efield, cr, fp);
-        snprintf(buf, sizeof(buf), "Alexandria: axx = %.3f  ayy = %.3f  azz = %.3f", 
+        snprintf(buf, sizeof(buf), "Alpha from Alexandria X= %.3f  Y= %.3f  Z= %.3f A^3", 
                  alphas[XX], alphas[YY], alphas[ZZ]);
         commercials.push_back(buf);
     }
     
-    snprintf(buf, sizeof(buf), "total charge   = %d e", molProp()->getCharge());
+    snprintf(buf, sizeof(buf), "Total Charge = %d e", molProp()->getCharge());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "total mass     = %.3f Da", molProp()->getMass());
+    snprintf(buf, sizeof(buf), "Charge Type  = %s", getEemtypeName(iChargeDistributionModel));
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "total dipole   = %.3f D", mutot_);
+    snprintf(buf, sizeof(buf), "Dipole Moment  X= %.3f Y= %.3f Z= %.3f Tot= %.3f Debye", mu[XX], mu[YY], mu[ZZ], norm(mu));
     commercials.push_back(buf);
+    snprintf(buf, sizeof(buf), "Traceless Quadrupole Moment XX= %.3f YY= %.3f ZZ= %.3f XY= %.3f XZ= %.3f YZ= %.3f Buckingham", 
+             Q_calc_[XX][XX], Q_calc_[YY][YY], Q_calc_[ZZ][ZZ], Q_calc_[XX][YY], Q_calc_[XX][ZZ], Q_calc_[YY][ZZ]);
+    commercials.push_back(buf);
+    
     print_top_header2(fp, pd, aps, bHaveShells_, commercials, bITP);
-
-    if (bHaveShells_ || (iChargeDistributionModel == eqdAXg) || (iChargeDistributionModel == eqdAXs))
-    {
-        //write_zeta_q(fp, qgen_, &topology_->atoms, iChargeDistributionModel);
-        //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iChargeDistributionModel);
-    }
-
     write_top2(fp, printmol.name, &topology_->atoms, FALSE,
                plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
@@ -2664,16 +2663,16 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             {
                 qESP_[j] = q[j];
                 Q        = ENM2DEBYE*qESP_[j];
-                dfac     = Q*0.5*10;
+                dfac     = NM2A*0.5*Q;
                 r2       = iprod(state_->x[i], state_->x[i]);
                 for (int m = 0; m < DIM; m++)
                 {
                     mu_esp_[m]   += state_->x[i][m]*Q;
                     Q_esp_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
                 }
-                Q_esp_[XX][YY] += dfac*3*(state_->x[i][XX] + coq_[XX])*(state_->x[i][YY] + coq_[YY]);
-                Q_esp_[XX][ZZ] += dfac*3*(state_->x[i][XX] + coq_[XX])*(state_->x[i][ZZ] + coq_[ZZ]);
-                Q_esp_[YY][ZZ] += dfac*3*(state_->x[i][YY] + coq_[YY])*(state_->x[i][ZZ] + coq_[ZZ]);
+                Q_esp_[XX][YY] += dfac*3*(state_->x[i][XX] - coq_[XX])*(state_->x[i][YY] - coq_[YY]);
+                Q_esp_[XX][ZZ] += dfac*3*(state_->x[i][XX] - coq_[XX])*(state_->x[i][ZZ] - coq_[ZZ]);
+                Q_esp_[YY][ZZ] += dfac*3*(state_->x[i][YY] - coq_[YY])*(state_->x[i][ZZ] - coq_[ZZ]);
                 j++;
             }
         }       
@@ -2697,7 +2696,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 {
                     if (debug)
                     {
-                        fprintf(debug, "WARNING: NO ref enthalpy for molecule %s.\n",
+                        fprintf(debug, "WARNING: NO reference enthalpy for molecule %s.\n",
                                 molProp()->getMolname().c_str());
                     }
                     Emol_ = 0;

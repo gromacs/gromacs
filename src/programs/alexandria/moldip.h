@@ -92,6 +92,9 @@ class AtomIndex
         }
 };
 
+using AtomIndexIterator      = typename std::vector<AtomIndex>::iterator;
+using AtomIndexConstIterator = typename std::vector<AtomIndex>::const_iterator;
+
 class IndexCount
 {
     private:
@@ -138,6 +141,9 @@ class IndexCount
                                 { return a.name().compare(name) == 0; });
         }
 };
+
+using IndexCountIterator      = typename std::vector<IndexCount>::iterator;
+using IndexCountConstIterator = typename std::vector<IndexCount>::const_iterator;
 
 class MolDip
 {

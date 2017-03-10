@@ -192,6 +192,8 @@ class OPtimization : public MolDip
     
         double objFunction(const double v[]);
         
+        double calcPenalty(AtomIndexIterator ai);
+        
         void optRun(FILE *fp, FILE *fplog, int maxiter,
                     int nrun, real stepsize, int seed,
                     const gmx_output_env_t *oenv,
@@ -574,21 +576,77 @@ void OPtimization::InitOpt(real  factor)
     }
 }
 
+double OPtimization::calcPenalty(AtomIndexIterator ai)
+{
+    double p       = 0;
+    double ref_chi = 0;
+    
+    ref_chi = pd_.getChi0(iChargeDistributionModel_, fixchi_); 
+       
+    auto ai_elem = pd_.getElem(ai->name());
+    auto ai_row  = pd_.getRowstr(iChargeDistributionModel_, ai->name());
+    auto ai_chi  = pd_.getChi0(iChargeDistributionModel_, ai->name());
+    auto ai_atn  = gmx_atomprop_atomnumber(atomprop_, ai_elem.c_str());
+       
+    if (ai_chi < ref_chi)
+    {
+        p += 1e3;
+    }
+
+    auto *iCount = indexCount();
+    for (auto aj = iCount->beginIndex(); aj < iCount->endIndex(); ++aj)
+    {       
+        auto aj_elem = pd_.getElem(aj->name());        
+        auto aj_row  = pd_.getRowstr(iChargeDistributionModel_, aj->name());        
+        auto aj_atn  = gmx_atomprop_atomnumber(atomprop_, aj_elem.c_str());
+               
+        if ((ai_row == aj_row) && (ai_atn != aj_atn))
+        {           
+            auto aj_chi = pd_.getChi0(iChargeDistributionModel_, aj->name());
+            
+            if (ai_atn > aj_atn)
+            {
+                if (ai_chi < aj_chi)
+                {
+                    p += 1e3;
+                }
+            }
+            else if (aj_atn > ai_atn) 
+            {
+                if (aj_chi < ai_chi)
+                {
+                    p += 1e3;
+                }
+            }     
+        }
+    }    
+    return p;
+}
+
 double OPtimization::objFunction(const double v[])
 {    
-    double bounds = 0;
-    int    n      = 0;
+    double bounds  = 0;
+    double penalty = 0;
+    int    n       = 0;
+    
+    size_t np  = param_.size();
+    for (size_t i = 0; i < np; i++)
+    {
+        param_[i] = v[i];
+    }
+
+    tuneDip2PolData();
     
     auto *iCount = indexCount();
     for (auto ai = iCount->beginIndex(); ai < iCount->endIndex(); ++ai)
     {
         auto name = ai->name();
-        auto J00  = v[n++];
+        auto J00  = param_[n++];
         bounds   += harmonic(J00, J0_0_, J0_1_);
         
         if (strcasecmp(name.c_str(), fixchi_) != 0)
         {
-            auto Chi0 = v[n++];
+            auto Chi0 = param_[n++];
             bounds   += harmonic(Chi0, Chi0_0_, Chi0_1_);
         }
         
@@ -597,15 +655,16 @@ double OPtimization::objFunction(const double v[])
             auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
             for (int zz = 0; zz < nzeta; zz++)
             {
-                auto zeta = v[n++];
+                auto zeta = param_[n++];
                 bounds += harmonic(zeta, w_0_, w_1_);
             }
-        }
+        }       
+        penalty += calcPenalty(ai);
     }
     
     if (bOptHfac_)
     {
-        hfac_ = v[n++];
+        hfac_ = param_[n++];
         if (hfac_ > hfac0_)
         {
             bounds += 100*gmx::square(hfac_ - hfac0_);
@@ -615,18 +674,12 @@ double OPtimization::objFunction(const double v[])
             bounds += 100*gmx::square(hfac_ + hfac0_);
         }
     }
-    
-    size_t np  = param_.size();
-    for (size_t i = 0; i < np; i++)
-    {
-        param_[i] = v[i];
-    }
-
-    tuneDip2PolData();
+       
     calcDeviation();
 
     ener_[ermsBOUNDS] += bounds;
     ener_[ermsTOT]    += bounds;
+    ener_[ermsTOT]    += penalty;
     
     return ener_[ermsTOT];
 }
@@ -973,16 +1026,18 @@ void OPtimization::print_results(FILE                   *fp,
     fprintf(fp, "ESP points are %s in EEM Parametrization.\n",  (bESP_ ? "used" : "not used"));
     fprintf(fp, "\n");
     
-    print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
-    print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
+    if (bDipole_)
+    {
+        print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
+        print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
+    }
+    if (bQuadrupole_)
+    {
+        print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
+    }
     if (bESP_ || (!bESP_ && iChargeGenerationAlgorithm_ == eqgEEM))
     {
         print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"EEM");
-    }
-    else
-    {
-        fprintf(fp, "Electrostatic Potential is not fitted by EEM\n");
     }        
     fprintf(fp, "\n");
 
@@ -992,11 +1047,7 @@ void OPtimization::print_results(FILE                   *fp,
     if (!bESP_ && iChargeGenerationAlgorithm_ == eqgESP)
     {
         print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"ESP");
-    }
-    else
-    {
-        fprintf(fp, "Electrostatic Potential is not fitted by ESP\n");
-    }    
+    }   
     fprintf(fp, "\n");
       
     std::vector<const char *> atypes;

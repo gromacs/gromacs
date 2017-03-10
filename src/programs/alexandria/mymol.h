@@ -111,7 +111,7 @@ class MyMol
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
-        double           ref_enthalpy_, mutot_;
+        double           ref_enthalpy_;
         double           polarizability_, sig_pol_;
         double           EspRms_, EemRms_;
 
@@ -332,7 +332,7 @@ class MyMol
          *
          * \param[in] pd   Data structure containing atomic properties
          */
-        void CalcQPol(const Poldata &pd);
+        void CalcQPol(const Poldata &pd, rvec mu);
         
         void CalcDipole(rvec mu);
 

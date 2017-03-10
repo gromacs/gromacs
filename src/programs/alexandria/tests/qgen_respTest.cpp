@@ -146,6 +146,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                 else if (qdist == eqdAXps)
                 {
                     inputrec->coulombtype = eelUSER;
+                    mp_.setInputrec(inputrec);
                     std::string tabFile = fileManager().getInputFilePath("table.xvg");
                     mp_.GenerateCharges(pd_, mdlog, aps_, qdist, eqgESP, watoms,
                                         hfac, lot, false, symm_string, cr,
