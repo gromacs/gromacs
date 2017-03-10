@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,7 @@ if (DOXYGEN_FOUND)
         set(DOXYGEN_EXTRA_SETTINGS "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact")
     endif()
     configure_file(Doxyfile-common.cmakein Doxyfile-common)
+    configure_file(Doxyfile-dev.cmakein Doxyfile-dev)
     configure_file(Doxyfile-full.cmakein Doxyfile-full)
     configure_file(Doxyfile-lib.cmakein Doxyfile-lib)
     configure_file(Doxyfile-user.cmakein Doxyfile-user)
@@ -193,6 +194,7 @@ if (DOXYGEN_FOUND)
     add_doxygen_target(doxygen-full full "Generating full documentation with Doxygen" DEPGRAPHS)
     add_doxygen_target(doxygen-lib  lib  "Generating library documentation with Doxygen" DEPGRAPHS)
     add_doxygen_target(doxygen-user user "Generating public API documentation with Doxygen")
+    add_doxygen_target(doxygen-dev dev "Generating verbose developer docs with Doxygen" DEPGRAPHS)
     # Convenience targets to build all the documentation flavors.
     add_custom_target(doxygen-all)
     add_custom_target(doxygen-all-fast)
