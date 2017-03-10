@@ -23,7 +23,7 @@ individual Doxygen commands, you should first look at Doxygen documentation
 Documentation flavors
 ---------------------
 
-The |Gromacs| source tree is set up to produce three different levels of Doxygen
+The |Gromacs| source tree is set up to produce several different levels of Doxygen
 documentation:
 
 1. Public API documentation (suffix ``-user``), which documents functions and
@@ -35,6 +35,8 @@ documentation:
    developers.
 3. Full documentation (suffix ``-full``), which includes (nearly) all (documented)
    functions and classes in the source tree.
+4. Maximally verbose documentation (suffix ``-dev``) with everything doxygen can
+   extract as well as additional internal links.
 
 Each subsequent level of documentation includes all the documentation from the
 levels above it.  The suffixes above refer to the suffixes of Doxygen input and
@@ -76,12 +78,14 @@ It is a good idea to build with all the different settings to see that the
 result is what you want, and that you do not produce any warnings.
 For local work, it is generally a good idea to set ``GMX_COMPACT_DOXYGEN=ON``
 CMake option, which removes some large generated graphs from the documentation
-and speeds up the process significantly.
+and speeds up the process significantly. There are also "fast" versions
+of the ``make`` targets that skip the additional diagrams built for the ``lib``
+level and lower.
 
 All files related to Doxygen reside in the ``docs/doxygen/`` subdirectory in the source
 and build trees.  In a freshly checked out source tree, this directory contains
 various ``Doxyfile-*.cmakein`` files.  When you run CMake, corresponding files
-``Doxyfile-user``, ``Doxyfile-lib``, and ``Doxyfile-full`` are generated at the
+``Doxyfile-user``, ``Doxyfile-lib``, ``Doxyfile-full``, ``Doxyfile-dev`` are generated at the
 corresponding location in the build tree.  There is also a
 ``Doxyfile-common.cmakein``, which is used to produce ``Doxyfile-common``.
 This file contains settings that are shared between all the input files.
@@ -89,14 +93,14 @@ This file contains settings that are shared between all the input files.
 
 You can run Doxygen directly with one of the generated files (all output will
 be produced under the current working directory), or build one of the
-``doxygen-user``, ``doxygen-lib``, and ``doxygen-full`` targets.  The targets run
+``doxygen-user``, ``doxygen-lib``, ``doxygen-full``, ``doxygen-dev`` targets.  The targets run
 Doxygen in a quieter mode and only show the warnings if there were any, and put
 the output under ``docs/html/doxygen/`` in the build tree, so that the Doxygen
 build cooperates with the broader ``webpage`` target.
 The ``doxygen-all`` target builds all three targets with less typing.
 
-The generated documentation is put under ``html-user/``, ``html-lib/``, and/or
-``html-full/``.  Open ``index.xhtml`` file from one of
+The generated documentation is put under ``html-user/``, ``html-lib/``,
+``html-full/``, and/or ``html-dev/``.  Open ``index.xhtml`` file from one of
 these subdirectories to start browsing (for |Gromacs| developers, the
 ``html-lib/`` is a reasonable starting point).  Log files with all Doxygen
 warnings are also produced as ``docs/doxygen/doxygen-*.log``, so you can inspect them after
