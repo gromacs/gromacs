@@ -1,0 +1,22 @@
+@INCLUDE               = Doxyfile-common
+
+PREDEFINED            += F77_FUNC(name,NAME)=name
+
+ENABLED_SECTIONS      += libapi internal
+INTERNAL_DOCS          = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
+SOURCE_BROWSER         = YES # allow linking from documentation to code
+# allow as much internal doxygen linking as possible
+HIDE_UNDOC_CLASSES     = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+WARN_LOGFILE           = doxygen-dev.log
+HTML_OUTPUT            = html-dev
+
+INLINE_INHERITED_MEMB  = YES # Makes it easier to see all relevant documentation
+
+ALIASES               += inpublicapi="\ingroup group_publicapi"
+ALIASES               += inlibraryapi="\ingroup group_libraryapi"
+ALIASES               += libinternal=
