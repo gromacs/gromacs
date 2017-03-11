@@ -610,6 +610,11 @@ std::string EnumOptionStorage::formatSingleValue(const int &value) const
     return allowed_[value];
 }
 
+Variant EnumOptionStorage::normalizeValue(const int &value) const
+{
+    return Variant::create<std::string>(formatSingleValue(value));
+}
+
 void EnumOptionStorage::initConverter(ConverterType *converter)
 {
     converter->addConverter<std::string>(
