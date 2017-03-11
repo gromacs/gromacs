@@ -284,7 +284,7 @@ TEST_F(TextLineWrapperTest, HandlesTrailingWhitespace)
 
     wrapper.settings().setKeepFinalSpaces(true);
     EXPECT_EQ("line   ", wrapper.wrapToString("line   "));
-    EXPECT_EQ("line\n", wrapper.wrapToString("line   \n"));
+    EXPECT_EQ("line   \n", wrapper.wrapToString("line   \n"));
 }
 
 TEST_F(TextLineWrapperTest, HandlesTrailingNewlines)
@@ -400,6 +400,10 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
 
     checkText(wrapper.wrapToString(g_wrapTextWhitespace),
               "WrappedAt14");
+
+    wrapper.settings().setKeepFinalSpaces(true);
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
+              "WrappedAt14WithTrailingWhitespace");
 }
 
 } // namespace
