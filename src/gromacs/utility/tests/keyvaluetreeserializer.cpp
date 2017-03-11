@@ -95,16 +95,26 @@ class KeyValueTreeSerializerTest : public ::testing::Test
             gmx::KeyValueTreeObject           input(builder_.build());
             gmx::test::TestReferenceData      data;
             gmx::test::TestReferenceChecker   checker(data.rootChecker());
+            fprintf(stderr, "checking input\n");
+            fflush(stderr);
             checker.checkKeyValueTreeObject(input, "Input");
             {
                 RefDataSerializer             serializer(&checker, "Stream");
+                fprintf(stderr, "checking serialization\n");
+                fflush(stderr);
                 gmx::serializeKeyValueTree(input, &serializer);
             }
+            fprintf(stderr, "serializing\n");
+            fflush(stderr);
             std::vector<char>                 buffer = serializeTree(input);
             {
                 gmx::InMemoryDeserializer     deserializer(buffer);
+                fprintf(stderr, "deserializing\n");
+                fflush(stderr);
                 gmx::KeyValueTreeObject       output
                     = gmx::deserializeKeyValueTree(&deserializer);
+                fprintf(stderr, "checking output\n");
+                fflush(stderr);
                 checker.checkKeyValueTreeObject(output, "Input");
             }
         }
