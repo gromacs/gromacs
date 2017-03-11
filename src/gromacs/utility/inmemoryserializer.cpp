@@ -47,11 +47,34 @@ namespace gmx
 namespace
 {
 
-//! Returns offset to add to `pos` to get it aligned at `alignment` bytes.
-size_t alignedOffset(size_t pos, size_t alignment)
+template <typename T>
+class CharBuffer
 {
-    return (alignment - pos % alignment) % alignment;
-}
+    public:
+        static const size_t ValueSize = sizeof(T);
+
+        explicit CharBuffer(T value)
+        {
+            u.v = value;
+        }
+        explicit CharBuffer(const char buffer[])
+        {
+            std::copy(buffer, buffer + ValueSize, u.c);
+        }
+
+        T value() const { return u.v; }
+
+        void appendTo(std::vector<char> *buffer)
+        {
+            buffer->insert(buffer->end(), u.c, u.c + ValueSize);
+        }
+
+    private:
+        union {
+            char c[ValueSize];
+            T    v;
+        } u;
+};
 
 }   // namespace
 
@@ -65,19 +88,12 @@ class InMemorySerializer::Impl
         template <typename T>
         void doValue(T value)
         {
-            // Here, we assume that the vector memory buffer start is aligned,
-            // similar to what malloc() guarantees.
-            const size_t size = buffer_.size();
-            const size_t pos  = size + alignedOffset(size, alignof(T));
-            buffer_.resize(pos + sizeof(T));
-            *reinterpret_cast<T *>(&buffer_[pos]) = value;
+            CharBuffer<T>(value).appendTo(&buffer_);
         }
         void doString(const std::string &value)
         {
             doValue<size_t>(value.size());
-            const size_t pos = buffer_.size();
-            buffer_.resize(pos + value.size());
-            std::copy(value.begin(), value.end(), &buffer_[pos]);
+            buffer_.insert(buffer_.end(), value.begin(), value.end());
         }
 
         std::vector<char> buffer_;
@@ -142,15 +158,14 @@ class InMemoryDeserializer::Impl
         template <typename T>
         void doValue(T *value)
         {
-            pos_  += alignedOffset(pos_, alignof(T));
-            *value = *reinterpret_cast<const T *>(&buffer_[pos_]);
-            pos_  += sizeof(T);
+            *value = CharBuffer<T>(&buffer_[pos_]).value();
+            pos_  += CharBuffer<T>::ValueSize;
         }
         void doString(std::string *value)
         {
             size_t size;
             doValue<size_t>(&size);
-            *value = std::string(&buffer_[pos_], &buffer_[pos_ + size]);
+            *value = std::string(&buffer_[pos_], size);
             pos_  += size;
         }
 
