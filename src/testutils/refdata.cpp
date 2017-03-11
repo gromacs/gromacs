@@ -982,6 +982,10 @@ void TestReferenceChecker::checkVariant(const Variant &variant, const char *id)
     {
         checkInteger(variant.cast<int>(), id);
     }
+    else if (variant.isType<gmx_int64_t>())
+    {
+        checkInt64(variant.cast<gmx_int64_t>(), id);
+    }
     else if (variant.isType<float>())
     {
         checkFloat(variant.cast<float>(), id);
