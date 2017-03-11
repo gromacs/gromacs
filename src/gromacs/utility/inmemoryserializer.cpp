@@ -134,15 +134,26 @@ void InMemorySerializer::doString(std::string *value)
 class InMemoryDeserializer::Impl
 {
     public:
-        explicit Impl(const std::vector<char> &buffer)
-            : buffer_(buffer), pos_(0)
+        explicit Impl(const std::vector<char> &buffer, bool debug)
+            : buffer_(buffer), pos_(0), debug_(debug)
         {
+            if (debug)
+            {
+                fprintf(stderr, "buffer: %d\n", (int)buffer.size());
+            }
         }
 
         template <typename T>
         void doValue(T *value)
         {
             pos_  += alignedOffset(pos_, alignof(T));
+            if (debug_)
+            {
+                fprintf(stderr, "read %s: %d\n", typeid(T).name(), (int)pos_);
+                fflush(stderr);
+            }
+            GMX_ASSERT(pos_ + sizeof(T) <= buffer_.size(),
+                       "Buffer too short");
             *value = *reinterpret_cast<const T *>(&buffer_[pos_]);
             pos_  += sizeof(T);
         }
@@ -150,16 +161,24 @@ class InMemoryDeserializer::Impl
         {
             size_t size;
             doValue<size_t>(&size);
+            if (debug_)
+            {
+                fprintf(stderr, "read string: %d %d\n", (int)pos_, (int)size);
+                fflush(stderr);
+            }
+            GMX_ASSERT(pos_ + size <= buffer_.size(),
+                       "Buffer too short");
             *value = std::string(&buffer_[pos_], &buffer_[pos_ + size]);
             pos_  += size;
         }
 
         const std::vector<char> &buffer_;
         size_t                   pos_;
+        bool                     debug_;
 };
 
-InMemoryDeserializer::InMemoryDeserializer(const std::vector<char> &buffer)
-    : impl_(new Impl(buffer))
+InMemoryDeserializer::InMemoryDeserializer(const std::vector<char> &buffer, bool debug)
+    : impl_(new Impl(buffer, debug))
 {
 }
 

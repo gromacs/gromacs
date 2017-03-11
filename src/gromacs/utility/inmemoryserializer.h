@@ -77,7 +77,7 @@ class InMemorySerializer : public ISerializer
 class InMemoryDeserializer : public ISerializer
 {
     public:
-        explicit InMemoryDeserializer(const std::vector<char> &buffer);
+        explicit InMemoryDeserializer(const std::vector<char> &buffer, bool debug = false);
         virtual ~InMemoryDeserializer();
 
         // From ISerializer
