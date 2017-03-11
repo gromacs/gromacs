@@ -386,8 +386,15 @@ TextLineWrapper::formatLine(const std::string &input,
     }
     int  indent        = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     bool bContinuation = (lineEnd < inputLength && input[lineEnd - 1] != '\n');
-    // Strip trailing whitespace.
-    if (!settings_.bKeepFinalSpaces_ || lineEnd < inputLength || input[inputLength - 1] == '\n')
+    // Remove explicit line breaks in input
+    // (the returned line should not contain line breaks).
+    while (lineEnd > lineStart && input[lineEnd - 1] == '\n')
+    {
+        --lineEnd;
+    }
+    // Strip trailing whitespace, unless they are explicit in the input and it
+    // has been requested to keep them.
+    if (bContinuation || !settings_.bKeepFinalSpaces_)
     {
         while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
         {

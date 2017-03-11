@@ -6,4 +6,9 @@
 fox jumps
  over the lazy
 dog]]></String>
+  <String Name="WrappedAt14WithTrailingWhitespace"><![CDATA[
+ A quick brown
+fox jumps  
+ over the lazy
+dog]]></String>
 </ReferenceData>
