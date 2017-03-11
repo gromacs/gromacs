@@ -334,9 +334,7 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
             std::vector<Variant> result;
             for (const auto &value : values)
             {
-                result.push_back(
-                        Variant::create<T>(
-                                processValue(converter_.convert(value))));
+                result.push_back(normalizeValue(converter_.convert(value)));
             }
             return result;
         }
@@ -358,6 +356,19 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         virtual T processValue(const T &value) const
         {
             return value;
+        }
+        /*! \brief
+         * Converts a single value to normalized type.
+         *
+         * \param[in] value  Value after conversion.
+         * \returns   Value to store for the option.
+         *
+         * This can be overridden to serialize a different type than `T`
+         * when using the option with KeyValueTreeObject.
+         */
+        virtual Variant normalizeValue(const T &value) const
+        {
+            return Variant::create<T>(processValue(value));
         }
 
     private:
@@ -471,7 +482,7 @@ std::vector<Variant> OptionStorageTemplate<T>::defaultValues() const
     {
         result.push_back(Variant::create<T>(value));
     }
-    return result;
+    return normalizeValues(result);
 }
 
 
