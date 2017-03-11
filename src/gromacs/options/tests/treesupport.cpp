@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -215,6 +215,84 @@ TEST_F(TreeValueSupportAdjustTest, OrdersValues)
     // TODO: This does not actually test the correct ordering, since the
     // reference data is not currently order-sensitive, but the order can be
     // checked manually from the reference data.
+    runTest();
+}
+
+/********************************************************************
+ * Support for different option types
+ */
+
+class TreeValueSupportTest : public ::testing::Test
+{
+    public:
+        void runTest()
+        {
+            gmx::test::TestReferenceData    refdata;
+            gmx::test::TestReferenceChecker checker(refdata.rootChecker());
+            gmx::KeyValueTreeObject         tree(builder_.build());
+            checker.checkKeyValueTreeObject(tree, "Input");
+            ASSERT_NO_THROW_GMX(tree = gmx::adjustKeyValueTreeFromOptions(tree, options_));
+            checker.checkKeyValueTreeObject(tree, "Adjusted");
+        }
+
+        gmx::Options              options_;
+        gmx::KeyValueTreeBuilder  builder_;
+};
+
+TEST_F(TreeValueSupportTest, SupportsBooleanOption)
+{
+    options_.addOption(gmx::BooleanOption("a").defaultValue(true));
+    runTest();
+}
+
+TEST_F(TreeValueSupportTest, SupportsIntegerOption)
+{
+    options_.addOption(gmx::IntegerOption("a").defaultValue(2));
+    runTest();
+}
+
+TEST_F(TreeValueSupportTest, SupportsInt64Option)
+{
+    options_.addOption(gmx::Int64Option("a").defaultValue(2));
+    runTest();
+}
+
+TEST_F(TreeValueSupportTest, SupportsStringOption)
+{
+    options_.addOption(gmx::StringOption("a").defaultValue("s"));
+    runTest();
+}
+
+TEST_F(TreeValueSupportTest, SupportsFloatOption)
+{
+    options_.addOption(gmx::FloatOption("a").defaultValue(1.5));
+    runTest();
+}
+
+TEST_F(TreeValueSupportTest, SupportsDoubleOption)
+{
+    options_.addOption(gmx::DoubleOption("a").defaultValue(1.5));
+    runTest();
+}
+
+TEST_F(TreeValueSupportTest, SupportsEnumIntOption)
+{
+    const char *const values[] = {"foo", "bar"};
+    options_.addOption(gmx::EnumIntOption("a").enumValue(values).defaultValue(0));
+    runTest();
+}
+
+//! Enum for testing EnumOption.
+enum class TestEnum
+{
+    Foo, Bar
+};
+
+TEST_F(TreeValueSupportTest, SupportsEnumOption)
+{
+    const char *const values[] = {"foo", "bar"};
+    options_.addOption(gmx::EnumOption<TestEnum>("a").enumValue(values)
+                           .defaultValue(TestEnum::Foo));
     runTest();
 }
 
