@@ -102,9 +102,13 @@ class KeyValueTreeSerializerTest : public ::testing::Test
             }
             std::vector<char>                 buffer = serializeTree(input);
             {
-                gmx::InMemoryDeserializer     deserializer(buffer);
+                gmx::InMemoryDeserializer     deserializer(buffer, true);
+                fprintf(stderr, "deserializing\n");
+                fflush(stderr);
                 gmx::KeyValueTreeObject       output
                     = gmx::deserializeKeyValueTree(&deserializer);
+                fprintf(stderr, "checking output\n");
+                fflush(stderr);
                 checker.checkKeyValueTreeObject(output, "Input");
             }
         }
