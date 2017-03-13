@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
  *  Data types used internally in the nbnxn_cuda module.
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \author Alfredo Metere <metere1@llnl.gov>
  *  \ingroup module_mdlib
  */
 
@@ -64,6 +65,10 @@ static const int c_clSize          = c_nbnxnGpuClusterSize;
 extern "C" {
 #endif
 
+/* Define a heap for user tables */
+#define USERTABLES_HEAP (1 << 20) /* bytes */
+
+
 /*! \brief Electrostatic CUDA kernel flavors.
  *
  *  Types of electrostatics implementations available in the CUDA non-bonded
@@ -79,7 +84,17 @@ extern "C" {
  *  should match the order of enumerated types below.
  */
 enum eelCu {
-    eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
+    eelCuCUT, 
+    eelCuRF, 
+    eelCuEWALD_TAB, 
+    eelCuEWALD_TAB_TWIN, 
+    eelCuEWALD_ANA, 
+    eelCuEWALD_ANA_TWIN, 
+    eelCuUSERTABLES, 
+    eelCuNONE,
+    eelCuCOULOMBTABLE,
+    eelCuSINGLETABLE,
+    eelCuNR
 };
 
 /*! \brief VdW CUDA kernel flavors.
@@ -92,7 +107,18 @@ enum eelCu {
  * should match the order of enumerated types below.
  */
 enum evdwCu {
-    evdwCuCUT, evdwCuCUTCOMBGEOM, evdwCuCUTCOMBLB, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
+    evdwCuCUT, 
+    evdwCuCUTCOMBGEOM, 
+    evdwCuCUTCOMBLB, 
+    evdwCuFSWITCH, 
+    evdwCuPSWITCH, 
+    evdwCuEWALDGEOM, 
+    evdwCuEWALDLB, 
+    evdwCuUSERTABLES, 
+    evdwCuNONE, 
+    evdwCuLJUSERTABLE,
+    evdwCuSINGLETABLE,
+    evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -182,6 +208,66 @@ struct cu_nbparam
     float                coulomb_tab_scale;  /**< table scale/spacing                        */
     float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
+
+    /* Verlet Tables */
+    
+    /* Short-range (vdw) SINGLE USER TABLE - accessed through texture memory */
+    int                   nb_vdwSingleTable_size;    /**< table size (s.t. it fits in texture cache) */
+    float                 nb_vdwSingleTable_scale;   /**< table scale/spacing                        */
+    float                *nb_vdwSingleTable_Ftab;       /**< pointer to the table in the device memory  */
+    float                *nb_vdwSingleTable_Vtab;       /**< pointer to the table in the device memory  */
+    cudaTextureObject_t   nb_vdwSingleTable_Ftab_texobj; /**< texture object bound to vdw_tab        */
+    cudaTextureObject_t   nb_vdwSingleTable_Vtab_texobj; /**< texture object bound to vdw_tab        */
+    
+    /* Short-range (vdw) MULTIPLE USER TABLES - accessed through texture memory */
+    int                   nb_vdwUserTables_count;   /**< tables count (how many tables are needed)  */
+    int                   nb_vdwUserTables_size;    /**< table size (s.t. it fits in texture cache) */
+    float                 nb_vdwUserTables_scale;   /**< table scale/spacing                        */
+    float                *nb_vdwUserTables_Ftab;       /**< pointer to the table in the device memory  */
+    float                *nb_vdwUserTables_Vtab;       /**< pointer to the table in the device memory  */
+    cudaTextureObject_t   nb_vdwUserTables_Ftab_texobj; /**< texture object bound to vdw_tab        */
+    cudaTextureObject_t   nb_vdwUserTables_Vtab_texobj; /**< texture object bound to vdw_tab        */
+      
+    /* VDW LJ SINGLE USER TABLES */
+    float                 nb_vdw_LJ_size;
+    float                 nb_vdw_LJ_scale;
+    float                *nb_vdw_LJ12_Ftab;
+    float                *nb_vdw_LJ12_Vtab;
+    cudaTextureObject_t   nb_vdw_LJ12_Ftab_texobj;
+    cudaTextureObject_t   nb_vdw_LJ12_Vtab_texobj;
+    
+    float                *nb_vdw_LJ6_Ftab;
+    float                *nb_vdw_LJ6_Vtab;
+    cudaTextureObject_t   nb_vdw_LJ6_Ftab_texobj;
+    cudaTextureObject_t   nb_vdw_LJ6_Vtab_texobj;
+
+    /* Long-range (eel) COULOMB USER TABLES */
+    float                 nb_elCoulombTable_size;
+    float                 nb_elCoulombTable_scale;
+    float                *nb_elCoulombTable_Ftab;
+    float                *nb_elCoulombTable_Vtab;
+    cudaTextureObject_t   nb_elCoulombTable_Ftab_texobj;
+    cudaTextureObject_t   nb_elCoulombTable_Vtab_texobj;
+    
+    /* Long-range SINGLE GENERIC USER TABLES */
+    float                 nb_elSingleTable_size;
+    float                 nb_elSingleTable_scale;
+    float                *nb_elSingleTable_Ftab;
+    float                *nb_elSingleTable_Vtab;
+    cudaTextureObject_t   nb_elSingleTable_Ftab_texobj;
+    cudaTextureObject_t   nb_elSingleTable_Vtab_texobj;
+    
+    /* Long-range (eel) MULTIPLE USER TABLES - accessed through texture memory */
+    int                   nb_elUserTables_count;  /**< tables count (how many tables are needed)  */
+    int                   nb_elUserTables_size;   /**< table size (s.t. it fits in texture cache) */
+    float                 nb_elUserTables_scale;  /**< table scale/spacing                        */
+    float                *nb_elUserTables_Ftab;       /**< pointer to the table in the device memory  */
+    float                *nb_elUserTables_Vtab;       /**< pointer to the table in the device memory  */
+    cudaTextureObject_t   nb_elUserTables_Ftab_texobj; /**< texture object bound to eel_tab        */
+    cudaTextureObject_t   nb_elUserTables_Vtab_texobj; /**< texture object bound to eel_tab        */
+
+
+    
 };
 
 /** \internal

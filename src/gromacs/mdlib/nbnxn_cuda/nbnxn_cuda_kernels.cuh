@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Berk Hess <hess@kth.se>
+ *  \author Alfredo Metere <metere1@llnl.gov>
  *  \ingroup module_mdlib
  */
 
@@ -57,6 +58,299 @@
 #else
 #define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_fermi.cuh"
 #endif
+
+
+/* No long-range
+ */
+#define EL_NONE
+#define VERLET_TABLES_NOCHARGE
+
+/* cut-off + V shift LJ */
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJ ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#define LJ_EWALD_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJEwCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#define LJ_EWALD_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJEwCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#define LJ_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJFsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#define LJ_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJPsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No short-range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
+#undef VERLET_TABLES_NOCHARGE
+#undef EL_NONE
+
+/* User Tabulated kernels
+ */
+#define EL_USERTABLES
+#define VERLET_TABLES_NOCHARGE
+
+/* cut-off + V shift LJ */
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJ ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#define LJ_EWALD_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJEwCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#define LJ_EWALD_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJEwCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#define LJ_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJFsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#define LJ_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJPsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUserTables_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
+
+#undef VERLET_TABLES_NOCHARGE
+#undef EL_USERTABLES
+
+
+/* Single tabulated long-range kernels
+ */
+#define EL_SINGLETABLE
+#define VERLET_TABLES_NOCHARGE
+
+/* cut-off + V shift LJ */
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJ ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#define LJ_EWALD_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJEwCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#define LJ_EWALD_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJEwCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#define LJ_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJFsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#define LJ_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJPsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecSingleTable_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
+
+#undef VERLET_TABLES_NOCHARGE
+#undef EL_SINGLETABLE
+
+/* Coulomb tabulated long-range kernels (like EL_SINGLETABLE but 
+ * multiplies the table values for the charges
+ */
+#define EL_COULOMBTABLE
+
+/* cut-off + V shift LJ */
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJ ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#define LJ_EWALD_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJEwCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#define LJ_EWALD_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJEwCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_EWALD_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#define LJ_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJFsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#define LJ_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJPsw ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCoulombTable_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
+
+#undef EL_COULOMBTABLE
 
 /* Analytical plain cut-off electrostatics kernels
  */
@@ -101,6 +395,30 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJPsw ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#define VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_CUTOFF
@@ -150,6 +468,30 @@
 #include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLES Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
 
 #undef EL_RF
 
@@ -197,6 +539,30 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJPsw ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_ANA
@@ -247,6 +613,30 @@
 #include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLES Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_ANA
 #undef VDW_CUTOFF_CHECK
@@ -295,6 +685,30 @@
 #include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLES Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
+#undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB
 
@@ -342,6 +756,30 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJPsw ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* USER TABLES Short Range (vdw) */
+#define VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwUserTables ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* No Short Range (vdw) */
+#define VDW_NONE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJNone ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_NONE
+#undef NB_KERNEL_FUNC_NAME
+/* LJ USER TABLE Short Range (vdw) */
+#define LJ_VDW_USERTABLES
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJUserTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_VDW_USERTABLES
+#undef NB_KERNEL_FUNC_NAME
+/* SINGLE USER TABLE Short Range (vdw) */
+#define VDW_SINGLETABLE
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwSingleTable ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef VDW_SINGLETABLE
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB

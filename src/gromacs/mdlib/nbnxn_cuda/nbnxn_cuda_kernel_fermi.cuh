@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Berk Hess <hess@kth.se>
+ *  \author Alfredo Metere <metere1@llnl.gov>
  *  \ingroup module_mdlib
  */
 
@@ -79,6 +80,14 @@
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB
 #define LJ_COMB
+#endif
+
+#ifdef VDW_USERTABLES
+#define VERLET_MULTIPLE_TABLES
+#endif
+
+#ifdef EL_USERTABLES
+#define VERLET_MULTIPLE_TABLES
 #endif
 
 /*
@@ -137,6 +146,63 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float3             *f           = atdat.f;
     const float3       *shift_vec   = atdat.shift_vec;
     float               rcoulomb_sq = nbparam.rcoulomb_sq;
+
+#ifdef VERLET_MULTIPLE_TABLES
+    const int          *tab_atom_types  = atdat.atom_types;
+    //~ int                 tab_ntypes      = atdat.ntypes;
+    int                 tab_typei, tab_typej;
+#endif
+
+#ifdef EL_COULOMBTABLE
+    float nb_elCoulombTable_scale = nbparam.nb_elCoulombTable_scale;
+    float nb_elCoulombTable_F;
+    #ifdef CALC_ENERGIES
+    float nb_elCoulombTable_V;
+    #endif
+#endif /* EL_COULOMBTABLE */
+
+#ifdef EL_SINGLETABLE
+    float nb_elSingleTable_scale = nbparam.nb_elSingleTable_scale;
+    float nb_elSingleTable_F;
+    #ifdef CALC_ENERGIES
+    float nb_elSingleTable_V;
+    #endif
+#endif /* EL_SINGLETABLE */
+
+#ifdef EL_USERTABLES
+    int   nb_elUserTables_size = nbparam.nb_elUserTables_size;
+    float nb_elUserTables_scale = nbparam.nb_elUserTables_scale;
+    float nb_elUserTables_F;
+    #ifdef CALC_ENERGIES
+    float nb_elUserTables_V;
+    #endif
+#endif /* EL_USERTABLES */
+
+#ifdef LJ_VDW_USERTABLES
+    float         nb_vdw_LJ_scale = nbparam.nb_vdw_LJ_scale;
+    float         nb_vdw_LJ6_F, nb_vdw_LJ12_F;
+    #ifdef CALC_ENERGIES
+    float         nb_vdw_LJ6_V, nb_vdw_LJ12_V;
+    #endif
+#endif /* LJ_VDW_USERTABLES */
+
+#ifdef VDW_SINGLETABLE 
+    float nb_vdwSingleTable_scale = nbparam.nb_vdwSingleTable_scale;
+    float nb_vdwSingleTable_F;
+    #ifdef CALC_ENERGIES
+    float nb_vdwSingleTable_V;
+    #endif
+#endif /* VDW_SINGLETABLE */
+
+#ifdef VDW_USERTABLES
+    int   nb_vdwUserTables_size = nbparam.nb_vdwUserTables_size;
+    float nb_vdwUserTables_scale = nbparam.nb_vdwUserTables_scale;
+    float nb_vdwUserTables_F;
+    #ifdef CALC_ENERGIES
+    float nb_vdwUserTables_V;
+    #endif
+#endif /* VDW_USERTABLES */
+
 #ifdef VDW_CUTOFF_CHECK
     float               rvdw_sq     = nbparam.rvdw_sq;
     float               vdw_in_range;
@@ -163,7 +229,13 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float  beta        = nbparam.ewald_beta;
     float  ewald_shift = nbparam.sh_ewald;
 #else
+#if defined EL_NONE || defined EL_USERTABLES || \
+    defined EL_SINGLETABLE || defined EL_COULOMBTABLE || \
+    defined VDW_NONE || defined VDW_USERTABLES || \
+    defined LJ_VDW_USERTABLES || defined VDW_SINGLETABLE
+#else
     float  c_rf        = nbparam.c_rf;
+#endif 
 #endif /* EL_EWALD_ANY */
     float *e_lj        = atdat.e_lj;
     float *e_el        = atdat.e_el;
@@ -179,12 +251,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     int          sci, ci, cj,
                  ai, aj,
                  cij4_start, cij4_end;
-#ifndef LJ_COMB
+#if !defined LJ_COMB
     int          typei, typej;
 #endif
     int          i, jm, j4, wexcl_idx;
-    float        qi, qj_f,
-                 r2, inv_r, inv_r2;
+    
+#if !defined VERLET_TABLES_NOCHARGE
+    float        qi, qj_f;
+#endif
+    float        r2, inv_r, inv_r2;
 #if !defined LJ_COMB_LB || defined CALC_ENERGIES
     float        inv_r6, c6, c12;
 #endif
@@ -273,10 +348,16 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
         /* Correct for epsfac^2 due to adding qi^2 */
         E_el /= nbparam.epsfac*c_clSize;
+#if defined EL_NONE || defined EL_USERTABLES || \
+    defined EL_SINGLETABLE || defined EL_COULOMBTABLE || \
+    defined VDW_NONE || defined VDW_USERTABLES || \
+    defined LJ_VDW_USERTABLES || defined VDW_SINGLETABLE
+#else
 #if defined EL_RF || defined EL_CUTOFF
         E_el *= -0.5f*c_rf;
 #else
         E_el *= -beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
+#endif
 #endif
 #endif                                  /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
     }
@@ -318,7 +399,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     /* load j atom data */
                     xqbuf   = xq[aj];
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
+                    
+#ifndef VERLET_TABLES_NOCHARGE                    
                     qj_f    = xqbuf.w;
+#endif
+
+#ifdef VERLET_MULTIPLE_TABLES
+                    tab_typej = tab_atom_types[aj];
+#endif                    
+                    
 #ifndef LJ_COMB
                     typej   = atom_types[aj];
 #else
@@ -366,7 +455,13 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
                             {
                                 /* load the rest of the i-atom parameters */
+#ifndef VERLET_TABLES_NOCHARGE
                                 qi      = xqbuf.w;
+#endif
+
+#ifdef VERLET_MULTIPLE_TABLES
+                                tab_typei = tab_atom_types[ai];
+#endif
 
 #ifndef LJ_COMB
                                 /* LJ 6*C6 and 12*C12 */
@@ -463,11 +558,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 #endif                          /* VDW_CUTOFF_CHECK */
 
-#ifdef CALC_ENERGIES
-                                E_lj    += E_lj_p;
-#endif
-
-
 #ifdef EL_CUTOFF
 #ifdef EXCLUSION_FORCES
                                 F_invr  += qi * qj_f * int_bit * inv_r2 * inv_r;
@@ -486,17 +576,145 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif                          /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES
+#if defined EL_NONE || defined EL_USERTABLES || \
+    defined EL_SINGLETABLE || defined EL_COULOMBTABLE || \
+    defined VDW_NONE || defined VDW_USERTABLES || \
+    defined LJ_VDW_USERTABLES || defined VDW_SINGLETABLE
+#else
 #ifdef EL_CUTOFF
                                 E_el    += qi * qj_f * (int_bit*inv_r - c_rf);
 #endif
 #ifdef EL_RF
                                 E_el    += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
 #endif
+#endif
 #ifdef EL_EWALD_ANY
                                 /* 1.0f - erff is faster than erfcf */
                                 E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
 #endif                          /* EL_EWALD_ANY */
 #endif
+
+
+#ifdef LJ_VDW_USERTABLES
+#ifdef CALC_ENERGIES
+                                interpolate_nb_vdw_LJ6_VFtab (nbparam.nb_vdw_LJ6_Ftab_texobj,
+                                                              nbparam.nb_vdw_LJ6_Vtab_texobj,
+                                                              r2*inv_r, nb_vdw_LJ_scale, &nb_vdw_LJ6_F,  &nb_vdw_LJ6_V);
+
+                                interpolate_nb_vdw_LJ12_VFtab(nbparam.nb_vdw_LJ12_Ftab_texobj,
+                                                              nbparam.nb_vdw_LJ12_Vtab_texobj,
+                                                              r2*inv_r, nb_vdw_LJ_scale, &nb_vdw_LJ12_F, &nb_vdw_LJ12_V);
+
+                                E_lj_p = int_bit * (c6 * nb_vdw_LJ6_V + c12 * nb_vdw_LJ12_V);
+#else
+                                interpolate_nb_vdw_LJ6_Ftab (nbparam.nb_vdw_LJ6_Ftab_texobj,
+                                                             r2*inv_r, nb_vdw_LJ_scale, &nb_vdw_LJ6_F);
+
+                                interpolate_nb_vdw_LJ12_Ftab(nbparam.nb_vdw_LJ12_Ftab_texobj,
+                                                             r2*inv_r, nb_vdw_LJ_scale, &nb_vdw_LJ12_F);
+#endif
+                                F_invr = int_bit * inv_r * (c12 * nb_vdw_LJ12_F + c6 * nb_vdw_LJ6_F);
+#endif /* LJ_VDW_USERTABLES */
+
+#ifdef VDW_SINGLETABLE
+#ifdef CALC_ENERGIES
+                                interpolate_nb_vdwSingleTable_VFtab(nbparam.nb_vdwSingleTable_Ftab_texobj,
+                                                             nbparam.nb_vdwSingleTable_Vtab_texobj,
+                                                             r2*inv_r, nb_vdwSingleTable_scale,
+                                                             &nb_vdwSingleTable_F, &nb_vdwSingleTable_V);
+
+                                E_lj_p = int_bit * nb_vdwSingleTable_V;
+#else
+                                interpolate_nb_vdwSingleTable_Ftab(nbparam.nb_vdwSingleTable_Ftab_texobj,
+                                                            r2*inv_r, nb_vdwSingleTable_scale,
+                                                            &nb_vdwSingleTable_F);
+#endif
+                                F_invr = int_bit * inv_r * nb_vdwSingleTable_F;
+#endif /* VDW_SINGLETABLE */ 
+
+#ifdef VDW_USERTABLES
+#ifdef CALC_ENERGIES
+                                interpolate_nb_vdwUserTables_VFtab(nbparam.nb_vdwUserTables_Ftab_texobj,
+                                                             nbparam.nb_vdwUserTables_Vtab_texobj,
+                                                             r2*inv_r, nb_vdwUserTables_scale,
+                                                             tab_typei, tab_typej, nb_vdwUserTables_size,
+                                                             &nb_vdwUserTables_F, &nb_vdwUserTables_V);
+
+                                E_lj_p = int_bit * nb_vdwUserTables_V;
+#else
+                                interpolate_nb_vdwUserTables_Ftab(nbparam.nb_vdwUserTables_Ftab_texobj,
+                                                            r2*inv_r, nb_vdwUserTables_scale,
+                                                            tab_typei, tab_typej, nb_vdwUserTables_size,
+                                                            &nb_vdwUserTables_F);
+#endif
+                                F_invr = int_bit * inv_r * nb_vdwUserTables_F;
+#endif /* VDW_USERTABLES */
+
+#ifdef EL_COULOMBTABLE
+#ifdef CALC_ENERGIES
+                                interpolate_nb_elCoulombTable_VFtab(nbparam.nb_elCoulombTable_Ftab_texobj,
+                                                          nbparam.nb_elCoulombTable_Vtab_texobj,
+                                                          r2*inv_r, nb_elCoulombTable_scale, 
+                                                          &nb_elCoulombTable_F, &nb_elCoulombTable_V);
+                                E_lj_p = int_bit * qi * qj_f * nb_elCoulombTable_V;
+#else
+                                interpolate_nb_elCoulombTable_Ftab(nbparam.nb_elCoulombTable_Ftab_texobj,
+                                                         r2*inv_r, nb_elCoulombTable_scale, &nb_elCoulombTable_F);
+#endif
+                                F_invr = int_bit * inv_r * qi * qj_f * nb_elCoulombTable_F;
+#endif /* EL_COULOMBTABLE */
+
+#ifdef EL_SINGLETABLE
+#ifdef CALC_ENERGIES
+                                interpolate_nb_elSingleTable_VFtab(nbparam.nb_elSingleTable_Ftab_texobj,
+                                                          nbparam.nb_elSingleTable_Vtab_texobj,
+                                                          r2*inv_r, nb_elSingleTable_scale,
+                                                          &nb_elSingleTable_F, &nb_elSingleTable_V);
+                                E_lj_p = int_bit * nb_elSingleTable_V;
+#else
+                                interpolate_nb_elSingleTable_Ftab(nbparam.nb_elSingleTable_Ftab_texobj,
+                                                         r2*inv_r, nb_elSingleTable_scale, &nb_elSingleTable_F);
+#endif
+                                F_invr = int_bit * inv_r * nb_elSingleTable_F;
+#endif /* EL_SINGLETABLE */
+
+#ifdef EL_USERTABLES
+#ifdef CALC_ENERGIES
+                                interpolate_nb_elUserTables_VFtab(nbparam.nb_elUserTables_Ftab_texobj,
+                                                          nbparam.nb_elUserTables_Vtab_texobj,
+                                                          r2*inv_r, nb_elUserTables_scale, 
+                                                          tab_typei, tab_typej, nb_elUserTables_size,
+                                                          &nb_elUserTables_F, &nb_elUserTables_V);
+                                //~ E_lj_p = int_bit * qi * qj_f * nb_elUserTables_V;
+                                E_lj_p = int_bit * nb_elUserTables_V;
+#else
+                                interpolate_nb_elUserTables_Ftab(nbparam.nb_elUserTables_Ftab_texobj,
+                                                         r2*inv_r, nb_elUserTables_scale, 
+                                                         tab_typei, tab_typej, nb_elUserTables_size,
+                                                         &nb_elUserTables_F);
+#endif
+                                F_invr = int_bit * inv_r * nb_elUserTables_F;
+#endif /* EL_USERTABLES */
+
+
+#ifdef EL_NONE
+#ifdef CALC_ENERGIES
+								E_el = 0.0f; // E_el += 0.0f * qi * qj_f * int_bit;
+#endif
+								F_invr = 0.0f; // F_invr = 0.0f * qi * qj_f * int_bit;
+#endif
+
+#ifdef VDW_NONE
+#ifdef CALC_ENERGIES
+								E_lj = 0.0f;
+#endif
+							    F_invr = 0.0f;
+#endif
+
+#ifdef CALC_ENERGIES
+                                E_lj    += E_lj_p;
+#endif
+
                                 f_ij    = rv * F_invr;
 
                                 /* accumulate j forces in registers */
@@ -572,3 +790,5 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #undef LJ_EWALD
 
 #undef LJ_COMB
+
+#undef VERLET_MULTIPLE_TABLES
