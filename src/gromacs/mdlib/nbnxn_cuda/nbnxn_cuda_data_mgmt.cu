@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
  *  \brief Define CUDA implementation of nbnxn_gpu_data_mgmt.h
  *
  *  \author Szilard Pall <pall.szilard@gmail.com>
+ *  \author Alfredo Metere <metere1@llnl.gov>
  */
 #include "gmxpre.h"
 
@@ -84,6 +85,36 @@ extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_n
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
 
+/* Verlet Tables */
+//~ extern const struct texture<float, cudaTextureType1DLayered, cudaReadModeElementType> &nbnxn_cuda_get_vdw_F_tab_texref();
+//~ extern const struct texture<float, cudaTextureType1DLayered, cudaReadModeElementType> &nbnxn_cuda_get_vdw_V_tab_texref();
+
+//~ extern const struct texture<float, cudaTextureType1DLayered, cudaReadModeElementType> &nbnxn_cuda_get_eel_F_tab_texref();
+//~ extern const struct texture<float, cudaTextureType1DLayered, cudaReadModeElementType> &nbnxn_cuda_get_eel_V_tab_texref();
+
+/* Feeding the inner loop */
+/* User tables */
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdwUserTables_Ftab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdwSingleTable_Ftab_texref();
+
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdwUserTables_Vtab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdwSingleTable_Vtab_texref();
+
+
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdw_LJ6_Ftab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdw_LJ6_Vtab_texref();
+
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdw_LJ12_Ftab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_vdw_LJ12_Vtab_texref();
+
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_elCoulombTable_Ftab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_elSingleTable_Ftab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_elUserTables_Ftab_texref();
+
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_elCoulombTable_Vtab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_elSingleTable_Vtab_texref();
+extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nb_elUserTables_Vtab_texref();
+/* --- */ 
 
 /* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
@@ -91,6 +122,12 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
 /* Fw. decl, */
 static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
                                           const gmx_device_info_t *dev_info);
+                                          
+/* USER TABLES Fw. decl, */
+static void nbnxn_cuda_free_vdwUser_tables(cu_nbparam_t            *nbparam,
+                                           const gmx_device_info_t *dev_info);
+static void nbnxn_cuda_free_eelUser_tables(cu_nbparam_t            *nbparam,
+                                           const gmx_device_info_t *dev_info);
 
 
 /*! \brief Return whether texture objects are used on this device.
@@ -166,6 +203,69 @@ static void setup1DFloatTexture(const struct texture<float, 1, cudaReadModeEleme
     CU_RET_ERR(stat, "cudaBindTexture failed");
 }
 
+/*! \brief Set up float texture object.
+ *
+ * Set up texture object for float data and bind it to the device memory
+ * \p devPtr points to.
+ *
+ * \param[out] texObj   texture object to initialize
+ * \param[in]  devPtr   pointer to device global memory to bind \p texObj to
+ * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
+ */
+//~ static void setup1DLayeredFloatTexture(cudaTextureObject_t &texObj,
+                                //~ void                       *devPtr,
+                                //~ size_t                      sizeInBytes,
+                                //~ int                         numlayers)
+//~ {
+    //~ cudaError_t      stat;
+    //~ cudaResourceDesc rd;
+    //~ cudaTextureDesc  td;
+
+    //~ memset(&rd, 0, sizeof(rd));
+    //~ rd.resType                  = cudaResourceTypeLinear;
+    //~ rd.res.linear.devPtr        = devPtr;
+    //~ rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+    //~ rd.res.linear.desc.x        = 32;
+    //~ rd.res.linear.sizeInBytes   = sizeInBytes;
+
+    //~ memset(&td, 0, sizeof(td));
+    //~ td.readMode                 = cudaReadModeElementType;
+    //~ stat = cudaCreateTextureObject(&texObj, &rd, &td, NULL);
+    //~ CU_RET_ERR(stat, "cudaCreateTextureObject failed");
+//~ }
+
+/*! \brief Set up float texture reference.
+ *
+ * Set up texture object for float data and bind it to the device memory
+ * \p devPtr points to.
+ *
+ * \param[out] texObj   texture reference to initialize
+ * \param[in]  devPtr   pointer to device global memory to bind \p texObj to
+ * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
+ */
+//~ static void setup1DLayeredFloatTexture(const struct texture<float, cudaTextureType1DLayered, cudaReadModeElementType> *texRef,
+                                       //~ const void                                                                     *devPtr,
+                                       //~ size_t                                                                          sizeInBytes,
+                                       //~ int                                                                             numlayers)
+//~ {
+    //~ cudaError_t           stat;
+    //~ cudaChannelFormatDesc cd;
+    
+    
+    //~ vdw_F_tab_texref.addressMode[0] = cudaAddressModeBorder;
+    //~ vdw_V_tab_texref.addressMode[0] = cudaAddressModeBorder;
+    //~ vdw_F_tab_texref.filterMode = cudaFilterModePoint;
+    //~ vdw_V_tab_texref.filterMode = cudaFilterModePoint;
+    
+    //~ cudaBindTextureToArray(texRef, cuFArray, channelDesc);
+    //~ cudaBindTextureToArray(texRef, cuVArray, channelDesc);
+
+
+    //~ cd   = cudaCreateChannelDesc<float>();
+    //~ stat = cudaBindTexture(NULL, texRef, devPtr, &cd, sizeInBytes);
+    //~ CU_RET_ERR(stat, "cudaBindTexture failed");
+//~ }
+
 
 /*! \brief Initialized the Ewald Coulomb correction GPU table.
 
@@ -204,6 +304,393 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
         setup1DFloatTexture(&nbnxn_cuda_get_coulomb_tab_texref(), nbp->coulomb_tab,
                             nbp->coulomb_tab_size*sizeof(*nbp->coulomb_tab));
     }
+}
+
+
+static void init_nb_vdwSingleTable(const interaction_const_t  *ic,
+                                    cu_nbparam_t               *nbp,
+                                    const gmx_device_info_t    *dev_info)
+{
+    float       *nbgFTab;
+    int          tabq_size;
+    cudaError_t  gFstat;
+
+    if (debug)
+    {
+        FILE        *fFgeneric, *fVgeneric;
+        fFgeneric = fopen("nb_vdwSingleTable_F.csv", "w");
+        fVgeneric = fopen("nb_vdwSingleTable_V.csv", "w");
+
+        for (int i = 0; i < ic->tabq_nb_vdwSingleTable_size; i++)
+        {
+            fprintf(fFgeneric, "%d,%12.10f\n", i, ic->tabVerlet_nb_vdwSingleTable_F[i]);
+            fprintf(fVgeneric, "%d,%12.10f\n", i, ic->tabVerlet_nb_vdwSingleTable_V[i]);
+        }
+        fprintf (debug, "Generic table CSV files created\n");
+        fclose(fFgeneric);
+        fclose(fVgeneric);
+    }
+
+    tabq_size = ic->tabq_nb_vdwSingleTable_size;
+
+    if (nbp->nb_vdwSingleTable_Ftab != NULL)
+    {
+        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+    }
+
+    gFstat = cudaMalloc((float **)&nbgFTab, tabq_size*sizeof(*nbgFTab));
+    CU_RET_ERR(gFstat, "cudaMalloc failed on nbFTab");
+
+    nbp->nb_vdwSingleTable_Ftab = nbgFTab;
+    /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+    if (use_texobj(dev_info))
+    {
+        cudaResourceDesc gFrd;
+
+        memset(&gFrd, 0, sizeof(gFrd));
+
+        gFrd.resType                  = cudaResourceTypeLinear;
+        gFrd.res.linear.devPtr        = nbp->nb_vdwSingleTable_Ftab;
+        gFrd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+        gFrd.res.linear.desc.x        = 32;
+        gFrd.res.linear.sizeInBytes   = ic->tabq_nb_vdwSingleTable_size*sizeof(*nbgFTab);
+
+        cudaTextureDesc gFtd;
+
+        memset(&gFtd, 0, sizeof(gFtd));
+
+        gFtd.readMode                 = cudaReadModeElementType;
+
+        gFstat = cudaCreateTextureObject(&nbp->nb_vdwSingleTable_Ftab_texobj, &gFrd, &gFtd, NULL);
+        CU_RET_ERR(gFstat, "cudaCreateTextureObject on nb_vdwSingleTable_Ftab_texobj failed");
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(dev_info);
+        cudaChannelFormatDesc gFcd   = cudaCreateChannelDesc<float>();
+
+        gFstat = cudaBindTexture(NULL, &nbnxn_cuda_get_nb_vdwSingleTable_Ftab_texref(),
+                                 nbgFTab, &gFcd,
+                                 ic->tabq_size*sizeof(*nbgFTab));
+        CU_RET_ERR(gFstat, "cudaBindTexture on nb_vdwSingleTable_Ftab_texref failed");
+    }
+
+    cu_copy_H2D(nbgFTab, ic->tabVerlet_nb_vdwSingleTable_F, ic->tabq_nb_vdwSingleTable_size*sizeof(*nbgFTab));
+
+    nbp->nb_vdwSingleTable_size          = ic->tabq_nb_vdwSingleTable_size;
+    nbp->nb_vdwSingleTable_scale         = ic->tabq_nb_vdwSingleTable_scale;
+}
+
+static void init_nb_vdwUserTables(const interaction_const_t *ic,
+                                  cu_nbparam_t              *nbp,
+                                  const gmx_device_info_t   *dev_info)
+{
+    #if 0
+    // MODIFY_ME
+    float       *coul_tab;
+    cudaError_t  stat;
+
+    if (nbp->coulomb_tab != NULL)
+    {
+        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+    }
+
+    /* initialize table data in nbp and crete/copy into in global mem */
+    stat = cudaMalloc((void **)&coul_tab, ic->tabq_size*sizeof(*coul_tab));
+    CU_RET_ERR(stat, "cudaMalloc failed on coulumb_tab");
+    cu_copy_H2D(coul_tab, ic->tabq_coul_F, ic->tabq_size*sizeof(*coul_tab));
+
+    nbp->coulomb_tab       = coul_tab;
+    nbp->coulomb_tab_size  = ic->tabq_size;
+    nbp->coulomb_tab_scale = ic->tabq_scale;
+
+    if (use_texobj(dev_info))
+    {
+        setup1DFloatTexture(nbp->coulomb_tab_texobj, nbp->coulomb_tab,
+                            nbp->coulomb_tab_size*sizeof(*nbp->coulomb_tab));
+    }
+    else
+    {
+        setup1DFloatTexture(&nbnxn_cuda_get_coulomb_tab_texref(), nbp->coulomb_tab,
+                            nbp->coulomb_tab_size*sizeof(*nbp->coulomb_tab));
+    }
+    #endif
+}
+
+static void init_nb_vdw_LJ6_Ftables(const interaction_const_t  *ic,
+                                    cu_nbparam_t               *nbp,
+                                    const gmx_device_info_t    *dev_info)
+{
+    float       *nbv6FTab;
+    int          tabq_size;
+    cudaError_t  v6Fstat;
+
+    if (debug)
+    {
+        FILE *fFvdw6, *fVvdw6;
+        fFvdw6 = fopen("vdw_LJ6_Ftable.csv", "w");
+        fVvdw6 = fopen("vdw_LJ6_Vtable.csv", "w");
+
+        for (int i = 0; i < ic->tabq_size; i++)
+        {
+            fprintf(fFvdw6, "%d,%12.10f\n", i, ic->tabVerlet_nb_vdw_LJ6_F[i]);
+            fprintf(fVvdw6, "%d,%12.10f\n", i, ic->tabVerlet_nb_vdw_LJ6_V[i]);
+        }
+        fprintf (debug, "vdw CSV files created\n");
+        fclose(fFvdw6);
+        fclose(fVvdw6);
+    }
+
+    tabq_size = ic->tabq_size;
+
+    if (nbp->nb_vdw_LJ6_Ftab != NULL)
+    {
+        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+    }
+
+    v6Fstat = cudaMalloc((float **)&nbv6FTab, tabq_size*sizeof(*nbv6FTab));
+    CU_RET_ERR(v6Fstat, "cudaMalloc failed on vdw LJ6 nbFTab");
+
+    nbp->nb_vdw_LJ6_Ftab = nbv6FTab;
+
+    if (use_texobj(dev_info))
+    {
+        cudaResourceDesc v6Frd;
+
+        memset(&v6Frd, 0, sizeof(v6Frd));
+
+        v6Frd.resType                  = cudaResourceTypeLinear;
+        v6Frd.res.linear.devPtr        = nbp->nb_vdw_LJ6_Ftab;
+        v6Frd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+        v6Frd.res.linear.desc.x        = 32;
+        v6Frd.res.linear.sizeInBytes   = ic->tabq_size*sizeof(*nbv6FTab);
+
+        cudaTextureDesc v6Ftd;
+
+        memset(&v6Ftd, 0, sizeof(v6Ftd));
+
+        v6Ftd.readMode                 = cudaReadModeElementType;
+
+        v6Fstat = cudaCreateTextureObject(&nbp->nb_vdw_LJ6_Ftab_texobj, &v6Frd, &v6Ftd, NULL);
+        CU_RET_ERR(v6Fstat, "cudaCreateTextureObject on nb_vdwLJ6_Ftab_texobj failed");
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(dev_info);
+        cudaChannelFormatDesc v6Fcd   = cudaCreateChannelDesc<float>();
+
+        v6Fstat = cudaBindTexture(NULL, &nbnxn_cuda_get_nb_vdw_LJ6_Ftab_texref(),
+                                  nbv6FTab, &v6Fcd,
+                                  ic->tabq_size*sizeof(*nbv6FTab));
+        CU_RET_ERR(v6Fstat, "cudaBindTexture on nb_vdw_LJ6_Ftab_texref failed");
+    }
+
+    cu_copy_H2D(nbv6FTab, ic->tabVerlet_nb_vdw_LJ6_F, ic->tabq_size*sizeof(*nbv6FTab));
+
+    nbp->nb_vdw_LJ_size          = ic->tabq_nb_vdw_LJ_size;
+    nbp->nb_vdw_LJ_scale         = ic->tabq_nb_vdw_LJ_scale;
+}
+static void init_nb_vdw_LJ12_Ftables(const interaction_const_t  *ic,
+                                     cu_nbparam_t               *nbp,
+                                     const gmx_device_info_t    *dev_info)
+{
+    float       *nbv12FTab;
+    int          tabq_size;
+    cudaError_t  v12Fstat;
+
+    if (debug)
+    {
+        FILE *fFvdw12, *fVvdw12;
+        fFvdw12 = fopen("vdw_LJ12_Ftable.csv", "w");
+        fVvdw12 = fopen("vdw_LJ12_Vtable.csv", "w");
+
+        for (int i = 0; i < ic->tabq_nb_vdw_LJ_size; i++)
+        {
+            fprintf(fFvdw12, "%d,%12.10f\n", i, ic->tabVerlet_nb_vdw_LJ12_F[i]);
+            fprintf(fVvdw12, "%d,%12.10f\n", i, ic->tabVerlet_nb_vdw_LJ12_V[i]);
+        }
+        fprintf (debug, "vdw LJ12 CSV files created\n");
+        fclose(fFvdw12);
+        fclose(fVvdw12);
+    }
+
+    tabq_size = ic->tabq_size;
+
+    if (nbp->nb_vdw_LJ12_Ftab != NULL)
+    {
+        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+    }
+
+    v12Fstat = cudaMalloc((float **)&nbv12FTab, tabq_size*sizeof(*nbv12FTab));
+    CU_RET_ERR(v12Fstat, "cudaMalloc failed on nb_vdw_LJ12_FTab");
+
+    nbp->nb_vdw_LJ12_Ftab = nbv12FTab;
+
+    if (use_texobj(dev_info))
+    {
+        cudaResourceDesc v12Frd;
+
+        memset(&v12Frd, 0, sizeof(v12Frd));
+
+        v12Frd.resType                  = cudaResourceTypeLinear;
+        v12Frd.res.linear.devPtr        = nbp->nb_vdw_LJ12_Ftab;
+        v12Frd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+        v12Frd.res.linear.desc.x        = 32;
+        v12Frd.res.linear.sizeInBytes   = ic->tabq_size*sizeof(*nbv12FTab);
+
+        cudaTextureDesc v12Ftd;
+
+        memset(&v12Ftd, 0, sizeof(v12Ftd));
+
+        v12Ftd.readMode                 = cudaReadModeElementType;
+
+        v12Fstat = cudaCreateTextureObject(&nbp->nb_vdw_LJ12_Ftab_texobj, &v12Frd, &v12Ftd, NULL);
+        CU_RET_ERR(v12Fstat, "cudaCreateTextureObject on nb_vdwLJ12_Ftab_texobj failed");
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(dev_info);
+        cudaChannelFormatDesc v12Fcd   = cudaCreateChannelDesc<float>();
+
+        v12Fstat = cudaBindTexture(NULL, &nbnxn_cuda_get_nb_vdw_LJ12_Ftab_texref(),
+                                   nbv12FTab, &v12Fcd,
+                                   ic->tabq_size*sizeof(*nbv12FTab));
+        CU_RET_ERR(v12Fstat, "cudaBindTexture on nb_vdwLJ12_Ftab_texref failed");
+    }
+
+    cu_copy_H2D(nbv12FTab, ic->tabVerlet_nb_vdw_LJ12_F, ic->tabq_size*sizeof(*nbv12FTab));
+
+    nbp->nb_vdw_LJ_size          = ic->tabq_nb_vdw_LJ_size;
+    nbp->nb_vdw_LJ_scale         = ic->tabq_nb_vdw_LJ_scale;
+}
+
+static void init_nb_vdw_LJ6_Vtables(const interaction_const_t  *ic,
+                                    cu_nbparam_t               *nbp,
+                                    const gmx_device_info_t    *dev_info)
+{
+    float       *nbv6VTab;
+
+    cudaError_t  v6Vstat;
+
+    if (nbp->nb_vdw_LJ6_Vtab != NULL)
+    {
+        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+    }
+
+    v6Vstat = cudaMalloc((float **)&nbv6VTab, ic->tabq_nb_vdw_LJ_size*sizeof(*nbv6VTab));
+    CU_RET_ERR(v6Vstat, "cudaMalloc failed on vdw LJ6 nbvVTab");
+    nbp->nb_vdw_LJ6_Vtab = nbv6VTab;
+
+    if (use_texobj(dev_info))
+    {
+        cudaResourceDesc v6Vrd;
+
+        memset(&v6Vrd, 0, sizeof(v6Vrd));
+        v6Vrd.resType                  = cudaResourceTypeLinear;
+        v6Vrd.res.linear.devPtr        = nbp->nb_vdw_LJ6_Vtab;
+        v6Vrd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+        v6Vrd.res.linear.desc.x        = 32;
+        v6Vrd.res.linear.sizeInBytes   = ic->tabq_nb_vdw_LJ_size*sizeof(*nbv6VTab);
+
+        cudaTextureDesc v6Vtd;
+        memset(&v6Vtd, 0, sizeof(v6Vtd));
+        v6Vtd.readMode                 = cudaReadModeElementType;
+
+        v6Vstat = cudaCreateTextureObject(&nbp->nb_vdw_LJ6_Vtab_texobj, &v6Vrd, &v6Vtd, NULL);
+        CU_RET_ERR(v6Vstat, "cudaCreateTextureObject on nb_vdw_LJ6_Vtab_texobj failed");
+
+
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(dev_info);
+        cudaChannelFormatDesc v6Vcd   = cudaCreateChannelDesc<float>();
+
+        v6Vstat = cudaBindTexture(NULL, &nbnxn_cuda_get_nb_vdw_LJ6_Vtab_texref(),
+                                  nbv6VTab, &v6Vcd,
+                                  ic->tabq_nb_vdw_LJ_size*sizeof(*nbv6VTab));
+        CU_RET_ERR(v6Vstat, "cudaBindTexture on nb_vdw_LJ6_Vtab_texref failed");
+    }
+
+    cu_copy_H2D(nbv6VTab, ic->tabVerlet_nb_vdw_LJ6_V, ic->tabq_nb_vdw_LJ_size*sizeof(*nbv6VTab));
+
+    nbp->nb_vdw_LJ_size          = ic->tabq_nb_vdw_LJ_size;
+    nbp->nb_vdw_LJ_scale         = ic->tabq_nb_vdw_LJ_scale;
+}
+
+static void init_nb_vdw_LJ12_Vtables(const interaction_const_t  *ic,
+                                     cu_nbparam_t               *nbp,
+                                     const gmx_device_info_t    *dev_info)
+{
+    float       *nbv12VTab;
+
+    cudaError_t  v12Vstat;
+
+    if (nbp->nb_vdw_LJ12_Vtab != NULL)
+    {
+        nbnxn_cuda_free_nbparam_table(nbp, dev_info);
+    }
+
+    v12Vstat = cudaMalloc((float **)&nbv12VTab, ic->tabq_nb_vdw_LJ_size*sizeof(*nbv12VTab));
+    CU_RET_ERR(v12Vstat, "cudaMalloc failed on vdw LJ12 nbvVTab");
+    nbp->nb_vdw_LJ12_Vtab = nbv12VTab;
+
+    if (use_texobj(dev_info))
+    {
+        cudaResourceDesc v12Vrd;
+
+        memset(&v12Vrd, 0, sizeof(v12Vrd));
+        v12Vrd.resType                  = cudaResourceTypeLinear;
+        v12Vrd.res.linear.devPtr        = nbp->nb_vdw_LJ12_Vtab;
+        v12Vrd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+        v12Vrd.res.linear.desc.x        = 32;
+        v12Vrd.res.linear.sizeInBytes   = ic->tabq_nb_vdw_LJ_size*sizeof(*nbv12VTab);
+
+        cudaTextureDesc v12Vtd;
+        memset(&v12Vtd, 0, sizeof(v12Vtd));
+        v12Vtd.readMode                 = cudaReadModeElementType;
+
+        v12Vstat = cudaCreateTextureObject(&nbp->nb_vdw_LJ12_Vtab_texobj, &v12Vrd, &v12Vtd, NULL);
+        CU_RET_ERR(v12Vstat, "cudaCreateTextureObject on nb_vdw_LJ12_Vtab_texobj failed");
+
+
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(dev_info);
+        cudaChannelFormatDesc v12Vcd   = cudaCreateChannelDesc<float>();
+
+        v12Vstat = cudaBindTexture(NULL, &nbnxn_cuda_get_nb_vdw_LJ12_Vtab_texref(),
+                                   nbv12VTab, &v12Vcd,
+                                   ic->tabq_nb_vdw_LJ_size*sizeof(*nbv12VTab));
+        CU_RET_ERR(v12Vstat, "cudaBindTexture on nb_Vtab_texref failed");
+    }
+
+    cu_copy_H2D(nbv12VTab, ic->tabVerlet_nb_vdw_LJ12_V, ic->tabq_nb_vdw_LJ_size*sizeof(*nbv12VTab));
+
+    nbp->nb_vdw_LJ_size          = ic->tabq_nb_vdw_LJ_size;
+    nbp->nb_vdw_LJ_scale         = ic->tabq_nb_vdw_LJ_scale;
+}
+
+static void init_nb_vdwLJTables(const interaction_const_t *ic,
+                                  cu_nbparam_t              *nbp,
+                                  const gmx_device_info_t   *dev_info)
+{
+}
+static void init_nb_elCoulombTables(const interaction_const_t *ic,
+                                  cu_nbparam_t              *nbp,
+                                  const gmx_device_info_t   *dev_info)
+{
+}
+static void init_nb_elSingleTable(const interaction_const_t *ic,
+                                  cu_nbparam_t              *nbp,
+                                  const gmx_device_info_t   *dev_info)
+{
+}
+static void init_nb_elUserTables(const interaction_const_t *ic,
+                                  cu_nbparam_t              *nbp,
+                                  const gmx_device_info_t   *dev_info)
+{
 }
 
 
@@ -416,6 +903,22 @@ static void init_nbparam(cu_nbparam_t              *nbp,
             nbp->vdwtype = evdwCuEWALDLB;
         }
     }
+    else if(ic->vdwtype == evdwSINGLETABLE)
+    {
+		nbp->vdwtype = evdwCuSINGLETABLE;
+	}
+	else if(ic->vdwtype == evdwLJTABLE)
+	{
+		nbp->vdwtype = evdwCuLJUSERTABLE;
+	}
+    else if(ic->vdwtype == evdwUSERTABLES)
+    {
+		nbp->vdwtype = evdwCuUSERTABLES;
+	}
+	else if(ic->vdwtype == evdwNONE)
+	{
+		nbp->vdwtype = evdwCuNONE;
+	}
     else
     {
         gmx_incons("The requested VdW type is not implemented in the CUDA GPU accelerated kernels!");
@@ -434,11 +937,78 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
         nbp->eeltype = pick_ewald_kernel_type(false, dev_info);
     }
+    else if (ic->eeltype == eelUSERTABLES)
+    {
+		nbp->eeltype = eelCuUSERTABLES;
+		// eelUSERTABLES
+	}
+	else if (ic->eeltype == eelNONE)
+	{
+		nbp->eeltype = eelCuNONE;
+		// eelNONE
+	}
+	else if (ic->eeltype == eelSINGLETABLE)
+	{
+		nbp->eeltype = eelCuSINGLETABLE;
+	}
+	else if (ic->eeltype == eelCOULOMBTABLE)
+	{
+		nbp->eeltype = eelCuCOULOMBTABLE;
+	}
     else
     {
         /* Shouldn't happen, as this is checked when choosing Verlet-scheme */
         gmx_incons("The requested electrostatics type is not implemented in the CUDA GPU accelerated kernels!");
     }
+/* -------------------------------------------- */
+//! Initialization of Verlet user tables
+    if (nbp->vdwtype == evdwCuSINGLETABLE)
+    {
+        nbp->nb_vdwSingleTable_Ftab = NULL;
+        nbp->nb_vdwSingleTable_Vtab = NULL;
+        
+        init_nb_vdwSingleTable(ic, nbp, dev_info);
+    }
+	if (nbp->vdwtype == evdwCuUSERTABLES)
+	{
+        nbp->nb_vdwUserTables_Ftab = NULL;
+        nbp->nb_vdwUserTables_Vtab = NULL;
+       
+		init_nb_vdwUserTables(ic, nbp, dev_info);
+	}
+    if (nbp->vdwtype == evdwCuLJUSERTABLE)
+    {
+        nbp->nb_vdw_LJ12_Ftab = NULL;
+        nbp->nb_vdw_LJ12_Vtab = NULL;
+        
+        nbp->nb_vdw_LJ6_Ftab = NULL;
+        nbp->nb_vdw_LJ6_Vtab = NULL;
+        
+        init_nb_vdwLJTables(ic, nbp, dev_info);
+    }
+    
+    if (nbp->eeltype == eelCuCOULOMBTABLE)
+    {
+        nbp->nb_elCoulombTable_Ftab = NULL;
+        nbp->nb_elCoulombTable_Vtab = NULL;
+        
+        init_nb_elCoulombTables(ic, nbp, dev_info);
+    }
+    if (nbp->eeltype == eelCuSINGLETABLE)
+    {
+        nbp->nb_elSingleTable_Ftab = NULL;
+        nbp->nb_elSingleTable_Vtab = NULL;
+        
+        init_nb_elSingleTable(ic, nbp, dev_info);
+    }
+	if (nbp->eeltype == eelCuUSERTABLES)
+	{
+        nbp->nb_elUserTables_Ftab = NULL;
+        nbp->nb_elUserTables_Vtab = NULL;
+        
+		init_nb_elUserTables(ic, nbp, dev_info);
+	}
+/* -------------------------------------------- */
 
     /* generate table for PME */
     nbp->coulomb_tab = NULL;
@@ -861,6 +1431,29 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
 }
 
 static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
+                                          const gmx_device_info_t *dev_info)
+{
+    cudaError_t stat;
+
+    if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
+    {
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (use_texobj(dev_info))
+        {
+            stat = cudaDestroyTextureObject(nbparam->coulomb_tab_texobj);
+            CU_RET_ERR(stat, "cudaDestroyTextureObject on coulomb_tab_texobj failed");
+        }
+        else
+        {
+            GMX_UNUSED_VALUE(dev_info);
+            stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
+            CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab_texref failed");
+        }
+        cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
+    }
+}
+
+static void nbnxn_cuda_free_vdwUser_tables(cu_nbparam_t            *nbparam,
                                           const gmx_device_info_t *dev_info)
 {
     cudaError_t stat;

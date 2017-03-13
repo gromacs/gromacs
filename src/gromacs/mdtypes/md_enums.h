@@ -168,7 +168,7 @@ extern const char *eintmod_names[eintmodNR+1];
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
-    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelUSERTABLES, eelNONE, eelSINGLETABLE, eelCOULOMBTABLE, eelNR
 };
 //! String corresponding to Coulomb treatment
 extern const char *eel_names[eelNR+1];
@@ -197,7 +197,7 @@ extern const char *eewg_names[eewgNR+1];
 //! Van der Waals interaction treatment
 enum {
     evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT,
-    evdwPME, evdwNR
+    evdwPME, evdwUSERTABLES, evdwNONE, evdwSINGLETABLE, evdwLJTABLE, evdwNR
 };
 //! String corresponding to Van der Waals treatment
 extern const char *evdw_names[evdwNR+1];
@@ -638,6 +638,9 @@ enum gmx_nbkernel_elec
     GMX_NBKERNEL_ELEC_CUBICSPLINETABLE,
     GMX_NBKERNEL_ELEC_GENERALIZEDBORN,
     GMX_NBKERNEL_ELEC_EWALD,
+    GMX_NBKERNEL_ELEC_USERTABLES,
+    GMX_NBKERNEL_ELEC_SINGLETABLE,
+    GMX_NBKERNEL_ELEC_COULOMBTABLE,
     GMX_NBKERNEL_ELEC_NR
 };
 //! String corresponding to electrostatics kernels
@@ -656,6 +659,9 @@ enum gmx_nbkernel_vdw
     GMX_NBKERNEL_VDW_BUCKINGHAM,
     GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
     GMX_NBKERNEL_VDW_LJEWALD,
+    GMX_NBKERNEL_VDW_USERTABLES,
+    GMX_NBKERNEL_VDW_SINGLETABLE,
+    GMX_NBKERNEL_VDW_LJTABLE,
     GMX_NBKERNEL_VDW_NR
 };
 //! String corresponding to VdW kernels
