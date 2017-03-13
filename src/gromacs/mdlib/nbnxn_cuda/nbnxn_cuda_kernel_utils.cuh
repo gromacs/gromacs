@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
  *  kernels are included (has to be preceded by nbnxn_cuda_types.h).
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \author Alfredo Metere <metere1@llnl.gov>
  *  \ingroup module_mdlib
  */
 #include "config.h"
@@ -89,6 +90,34 @@ extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
+#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
+
+#if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+/*! Texture reference for vdw User Table force table; bound to cu_nbparam_t->vdw_tab */
+/*! Texture reference for Non-bonded force table; bound to cu_nbparam_t.nb_Ftab */
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdwSingleTable_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdwSingleTable_Vtab_texref;
+
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdwUserTables_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdwUserTables_Vtab_texref;
+
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdw_LJ6_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdw_LJ6_Vtab_texref;
+
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdw_LJ12_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_vdw_LJ12_Vtab_texref;
+
+/*! Texture reference for Non-bonded force table; bound to cu_nbparam_t.nb_Ftab */
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_elCoulombTable_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_elCoulombTable_Vtab_texref;
+
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_elSingleTable_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_elSingleTable_Vtab_texref;
+
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_elUserTables_Ftab_texref;
+extern texture<float, cudaTextureType1D, cudaReadModeElementType> nb_elUserTables_Vtab_texref;
+
+
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
@@ -170,6 +199,8 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 /*! Apply potential switch, force-only version. */
 static __forceinline__ __device__
 void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
+                                  float               c6,
+                                  float               c12,
                                   float               inv_r,
                                   float               r2,
                                   float              *F_invr,
@@ -202,6 +233,8 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
 /*! Apply potential switch, force + energy version. */
 static __forceinline__ __device__
 void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
+                                    float               c6,
+                                    float               c12,
                                     float               inv_r,
                                     float               r2,
                                     float              *F_invr,
@@ -375,6 +408,303 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
     return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
+
+/* *******************************************************************************
+ * *******************************************************************************/
+/*! FORCE LINEAR INTERPOLATION FUNCTIONS */
+
+/* VDW_USERTABLES F */
+static __forceinline__ __device__
+void interpolate_nb_vdwUserTables_Ftab(cudaTextureObject_t texobj_nb_vdwUserTables_Ftab, 
+                                    int typei, int typej, 
+                                    float r, float scale, float *F)
+{
+    float         normalized = scale * r;
+    //~ int           index      = (int) normalized + typei * typej; // This was the original one
+    int           index      = (int) normalized + typei * typej; // This is temporary and wrong!!!
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_vdwUserTables_Ftab, index) +
+         fract2 * tex1Dfetch<float>(texobj_nb_vdwUserTables_Ftab, index+1);
+#else                        
+    *F = fract1 * tex1Dfetch(nb_vdwUserTables_Ftab_texref, index) +
+         fract2 * tex1Dfetch(nb_vdwUserTables_Ftab_texref, index+1);
+#endif
+}
+
+
+
+
+/* VDW_USERTABLES VF Texture Reference */
+static __forceinline__ __device__
+void interpolate_nb_vdwUserTables_VFtab(cudaTextureObject_t texobj_nb_vdwUserTables_Ftab,
+                                  cudaTextureObject_t texobj_nb_vdwUserTables_Vtab,
+                                  int typei, int typej,
+                                  float r, float scale, float *F, float *V)
+{
+    float         normalized = scale * r;
+    //~ int           index      = (int) normalized + typei * typej; // This was the original one
+    int           index      = (int) normalized + typei * typej; // This is temporary and wrong!!!
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_vdwUserTables_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_vdwUserTables_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_vdwUserTables_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_vdwUserTables_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_vdwUserTables_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_vdwUserTables_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+/* VDW_SINGLETABLE F */
+static __forceinline__ __device__
+void interpolate_nb_vdwSingleTable_Ftab(cudaTextureObject_t texobj_nb_vdwSingleTable_Ftab, float r, float scale, float *F)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_vdwSingleTable_Ftab, index) +
+         fract2 * tex1Dfetch<float>(texobj_nb_vdwSingleTable_Ftab, index+1);
+#else
+    *F = fract1 * tex1Dfetch(nb_vdwSingleTable_Ftab_texref, index) +
+         fract2 * tex1Dfetch(nb_vdwSingleTable_Ftab_texref, index+1);
+#endif
+}
+
+/* VDW_SINGLETABLE VF Texture Reference */
+static __forceinline__ __device__
+void interpolate_nb_vdwSingleTable_VFtab(cudaTextureObject_t texobj_nb_vdwSingleTable_Ftab,
+                                  cudaTextureObject_t texobj_nb_vdwSingleTable_Vtab,
+                                  float r, float scale, float *F, float *V)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_vdwSingleTable_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_vdwSingleTable_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_vdwSingleTable_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_vdwSingleTable_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_vdwSingleTable_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_vdwSingleTable_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+
+
+
+/* ***************************************************************************** */
+/* VDW_LJ6 F Texture Reference */
+static __forceinline__ __device__
+void interpolate_nb_vdw_LJ6_Ftab(cudaTextureObject_t texobj_nb_vdw_LJ6_Ftab, float r, float scale, float *F)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_vdw_LJ6_Ftab, index) +
+        fract2 * tex1Dfetch<float>(texobj_nb_vdw_LJ6_Ftab, index+1);
+#else
+    *F = fract1 * tex1Dfetch(nb_vdw_LJ6_Ftab_texref, index) +
+        fract2 * tex1Dfetch(nb_vdw_LJ6_Ftab_texref, index+1);
+#endif
+}
+
+/* VDW_LJ6 VF */
+static __forceinline__ __device__
+void interpolate_nb_vdw_LJ6_VFtab(cudaTextureObject_t texobj_nb_vdw_LJ6_Ftab,
+                                  cudaTextureObject_t texobj_nb_vdw_LJ6_Vtab,
+                                  float r, float scale, float *F, float *V)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_vdw_LJ6_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_vdw_LJ6_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_vdw_LJ6_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_vdw_LJ6_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_vdw_LJ6_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_vdw_LJ6_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+/* ******************************************************************************** */
+/* VDW_LJ12 F Texture Reference */
+static __forceinline__ __device__
+void interpolate_nb_vdw_LJ12_Ftab(cudaTextureObject_t texobj_nb_vdw_LJ12_Ftab, float r, float scale, float *F)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_vdw_LJ12_Ftab, index) +
+         fract2 * tex1Dfetch<float>(texobj_nb_vdw_LJ12_Ftab, index+1);
+#else
+    *F = fract1 * tex1Dfetch(nb_vdw_LJ12_Ftab_texref, index) +
+         fract2 * tex1Dfetch(nb_vdw_LJ12_Ftab_texref, index+1);
+#endif
+}
+/* VDW_LJ12 VF */
+static __forceinline__ __device__
+void interpolate_nb_vdw_LJ12_VFtab(cudaTextureObject_t texobj_nb_vdw_LJ12_Ftab,
+                                  cudaTextureObject_t texobj_nb_vdw_LJ12_Vtab,
+                                  float r, float scale, float *F, float *V)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_vdw_LJ12_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_vdw_LJ12_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_vdw_LJ12_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_vdw_LJ12_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_vdw_LJ12_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_vdw_LJ12_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+/* ******************************************************************************** */
+/* EL_COULOMBTABLE F */
+static __forceinline__ __device__
+void interpolate_nb_elCoulombTable_Ftab(cudaTextureObject_t texobj_nb_elCoulombTable_Ftab, float r, float scale, float *F)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_elCoulombTable_Ftab, index) +
+        fract2 * tex1Dfetch<float>(texobj_nb_elCoulombTable_Ftab, index+1);
+#else
+    *F = fract1 * tex1Dfetch(nb_elCoulombTable_Ftab_texref, index) +
+        fract2 * tex1Dfetch(nb_elCoulombTable_Ftab_texref, index+1);
+#endif
+}
+/* EL_COULOMBTABLE VF */
+static __forceinline__ __device__
+void interpolate_nb_elCoulombTable_VFtab(cudaTextureObject_t texobj_nb_elCoulombTable_Ftab,
+                               cudaTextureObject_t texobj_nb_elCoulombTable_Vtab,
+                               float r, float scale, float *F, float *V)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_elCoulombTable_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_elCoulombTable_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_elCoulombTable_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_elCoulombTable_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_elCoulombTable_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_elCoulombTable_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+/* ********************************************************************************** */
+
+/* ******************************************************************************** */
+/* EL_SINGLETABLE F */
+static __forceinline__ __device__
+void interpolate_nb_elSingleTable_Ftab(cudaTextureObject_t texobj_nb_elSingleTable_Ftab, float r, float scale, float *F)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_elSingleTable_Ftab, index) +
+        fract2 * tex1Dfetch<float>(texobj_nb_elSingleTable_Ftab, index+1);
+#else
+    *F = fract1 * tex1Dfetch(nb_elSingleTable_Ftab_texref, index) +
+        fract2 * tex1Dfetch(nb_elSingleTable_Ftab_texref, index+1);
+#endif
+}
+/* EL_SINGLETABLE VF */
+static __forceinline__ __device__
+void interpolate_nb_elSingleTable_VFtab(cudaTextureObject_t texobj_nb_elSingleTable_Ftab,
+                               cudaTextureObject_t texobj_nb_elSingleTable_Vtab,
+                               float r, float scale, float *F, float *V)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_elSingleTable_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_elSingleTable_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_elSingleTable_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_elSingleTable_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_elSingleTable_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_elSingleTable_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+/* ********************************************************************************** */
+
+/* ******************************************************************************** */
+/* EL_USERTABLES F */
+static __forceinline__ __device__
+void interpolate_nb_elUserTables_Ftab(cudaTextureObject_t texobj_nb_elUserTables_Ftab, 
+                                      float r, 
+                                      float scale,
+                                      int typei,
+                                      int typej,
+                                      float *F)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    *F = fract1 * tex1Dfetch<float>(texobj_nb_elUserTables_Ftab, index) +
+        fract2 * tex1Dfetch<float>(texobj_nb_elUserTables_Ftab, index+1);
+#else
+    *F = fract1 * tex1Dfetch(nb_elUserTables_Ftab_texref, index) +
+        fract2 * tex1Dfetch(nb_elUserTables_Ftab_texref, index+1);
+#endif
+}
+/* EL_USERTABLES VF */
+static __forceinline__ __device__
+void interpolate_nb_elUserTables_VFtab(cudaTextureObject_t texobj_nb_elUserTables_Ftab,
+                               cudaTextureObject_t texobj_nb_elUserTables_Vtab,
+                               float r, float scale, 
+                               int typei, int typej,
+                               float *F, float *V)
+{
+    float         normalized = scale * r;
+    int           index      = (int) normalized;
+    float         halfsc     = 0.5/scale;
+    float         fract2     = normalized - index;
+    float         fract1     = 1.0f - fract2;
+#ifdef USE_TEXOBJ
+    float         F_x0 = tex1Dfetch<float>(texobj_nb_elUserTables_Ftab, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch<float>(texobj_nb_elUserTables_Ftab, index+1);
+    *V = tex1Dfetch<float>(texobj_nb_elUserTables_Vtab, index) - halfsc*fract2*(F_x0 + *F);
+#else
+    float         F_x0 = tex1Dfetch(nb_elUserTables_Ftab_texref, index);
+    *F = fract1 * F_x0 + fract2 * tex1Dfetch(nb_elUserTables_Ftab_texref, index+1);
+    *V = tex1Dfetch(nb_elUserTables_Vtab_texref, index) - halfsc*fract2*(F_x0 + *F);
+#endif
+}
+/* ********************************************************************************** */
 
 /*! Calculate analytical Ewald correction term. */
 static __forceinline__ __device__
