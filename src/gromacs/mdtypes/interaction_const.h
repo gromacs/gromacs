@@ -131,6 +131,61 @@ struct interaction_const_t
        quadruplets are: F[i], F[i+1]-F[i], V[i], 0, this is used with
        single precision x86 SIMD for aligned loads */
     real *tabq_vdw_FDV0;
+    
+        /* VERLET TABLES */
+    
+    real *tabVerlet_nb_vdwUserTables_F;
+    real *tabVerlet_nb_vdwSingleTable_F;
+    real *tabVerlet_nb_vdw_LJ6_F;
+    real *tabVerlet_nb_vdw_LJ12_F;
+    
+    real *tabVerlet_nb_vdwUserTables_V;
+    real *tabVerlet_nb_vdwSingleTable_V;
+    real *tabVerlet_nb_vdw_LJ6_V;
+    real *tabVerlet_nb_vdw_LJ12_V;
+    
+    real *tabVerlet_nb_elCoulombTable_F;
+    real *tabVerlet_nb_elSingleTable_F;
+    real *tabVerlet_nb_elUserTables_F;
+    
+    real *tabVerlet_nb_elCoulombTable_V;
+    real *tabVerlet_nb_elSingleTable_V;
+    real *tabVerlet_nb_elUserTables_V;
+    
+
+
+    
+    /* USER MULTIPLE TABLES */
+    int tabq_nb_vdwUserTables_count;
+    int tabq_nb_elUserTables_count;
+    
+    real tabq_nb_vdwUserTables_scale;
+    real tabq_nb_vdwSingleTable_scale;
+    real tabq_nb_vdw_LJ_scale;
+    
+    real tabq_nb_elCoulombTable_scale;
+    real tabq_nb_elSingleTable_scale;
+    real tabq_nb_elUserTables_scale;
+    
+    int  tabq_nb_vdwUserTables_size;
+    int  tabq_nb_vdwSingleTable_size;
+    int  tabq_nb_vdw_LJ_size;
+    
+    int  tabq_nb_elCoulombTable_size;
+    int  tabq_nb_elSingleTable_size;
+    int  tabq_nb_elUserTables_size;
+    
+    real *tabq_nb_vdwUserTables_F;
+    
+    real *tabq_nb_vdwSingleTable_F;
+    real *tabq_nb_vdw_LJ_F;
+    
+    real *tabq_nb_vdwUserTables_V;
+    real *tabq_nb_vdwSingleTable_V;
+    real *tabq_nb_vdw_LJ_V;
+    
+    real *tabq_eelUser_F;
+    real *tabq_eelUser_V;
 };
 
 #ifdef __cplusplus
