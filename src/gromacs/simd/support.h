@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ enum class SimdType
     X86_Avx128Fma,  //!< 128-bit Avx with FMA (Amd)
     X86_Avx,        //!< 256-bit Avx
     X86_Avx2,       //!< AVX2
+    X86_Avx2_128,   //!< 128-bit AVX2, better than 256-bit for AMD Ryzen
     X86_Avx512,     //!< AVX_512
     X86_Avx512Knl,  //!< AVX_512_KNL
     X86_Mic,        //!< Knight's corner
