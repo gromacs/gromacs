@@ -41,7 +41,7 @@ void MolSelect::read(const char *fn)
         if ((ptr.size() == 2) && (ptr[0].length() > 1)
             && (ptr[1].length() > 1))
         {
-            iMolSelect ii;
+            iMolSelect status;
             int        j;
 
             for(j = 0; (j < (int)imsNR); j++)
@@ -50,28 +50,29 @@ void MolSelect::read(const char *fn)
                 {
                     break;
                 }
-            }
+            }                        
             if (j < imsNR)
             {
-                ii = static_cast<iMolSelect>(j);
+                status = static_cast<iMolSelect>(j);               
             }
             else
             {
-                ii = imsUnknown;
+                status = imsUnknown;
                 fprintf(stderr, "Unknown status '%s' for molecule %s on line %d in file %s\n",
                         ptr[1].c_str(), ptr[0].c_str(), index, fn);
             }
-            ims_.push_back(IMolSelect(ptr[0], ii, index++));
+            ims_.push_back(IMolSelect(ptr[0], status, index++));
         }
     }
 }
 
 iMolSelect MolSelect::status(const std::string &iupac) const
 {
-    std::vector<IMolSelect>::const_iterator imi = 
-        std::find_if(ims_.begin(), ims_.end(),
-                     [iupac](IMolSelect const &i)
-                     { return i.iupac().compare(iupac); });
+    auto imi = std::find_if(ims_.begin(), ims_.end(),
+                            [iupac](IMolSelect const &i)
+                            { 
+                                return i.iupac().compare(iupac) == 0; 
+                            });
 
     if (imi != ims_.end())
     {
@@ -83,10 +84,11 @@ iMolSelect MolSelect::status(const std::string &iupac) const
 
 int MolSelect::index(const std::string &iupac) const
 {
-    std::vector<IMolSelect>::const_iterator imi = 
-        std::find_if(ims_.begin(), ims_.end(),
-                     [iupac](IMolSelect const &i)
-                     { return i.iupac().compare(iupac); });
+    auto imi = std::find_if(ims_.begin(), ims_.end(),
+                            [iupac](IMolSelect const &i)
+                            { 
+                                return i.iupac().compare(iupac) == 0; 
+                            });
 
     if (imi != ims_.end())
     {

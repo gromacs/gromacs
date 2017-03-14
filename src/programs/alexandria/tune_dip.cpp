@@ -264,7 +264,7 @@ void OPtimization::addEspPoint()
         {
             mymol.gr_.setChargeDistributionModel(iChargeDistributionModel_);
             mymol.gr_.setAtomWeight(watoms_);
-            mymol.gr_.setAtomInfo(&(mymol.topology_->atoms), pd_, mymol.state_->x, mymol.molProp()->getCharge());
+            mymol.gr_.setAtomInfo(&mymol.topology_->atoms, pd_, mymol.state_->x, mymol.molProp()->getCharge());
             mymol.gr_.setAtomSymmetry(mymol.symmetric_charges_);
             mymol.gr_.setMolecularCharge(mymol.molProp()->getCharge());
             mymol.gr_.summary(debug);
@@ -404,13 +404,15 @@ void OPtimization::calcDeviation()
                 {
                     mymol.gr_.updateAtomCoords(mymol.state_->x);
                 }
-                mymol.gr_.updateAtomCharges(&(mymol.topology_->atoms));
+                mymol.gr_.updateAtomCharges(&mymol.topology_->atoms);
                 mymol.gr_.calcPot();
                 ener_[ermsESP] += convert2gmx(mymol.gr_.getRms(&wtot, &rrms), eg2cHartree_e);               
             }
+            
+            mymol.CalcDipole(mymol.mu_calc_);
+            
             if (bDipole_)
-            {
-                mymol.CalcDipole(mymol.mu_calc_);
+            {                
                 if (bQM_)
                 {
                     rvec dmu;                    
@@ -422,9 +424,11 @@ void OPtimization::calcDeviation()
                     ener_[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
                 }
             } 
+            
+            mymol.CalcQuadrupole();  
+            
             if (bQuadrupole_)
-            {
-                mymol.CalcQuadrupole();             
+            {                         
                 for (int mm = 0; mm < DIM; mm++)
                 {
                     if (bfullTensor_)
@@ -1026,15 +1030,10 @@ void OPtimization::print_results(FILE                   *fp,
     fprintf(fp, "ESP points are %s in EEM Parametrization.\n",  (bESP_ ? "used" : "not used"));
     fprintf(fp, "\n");
     
-    if (bDipole_)
-    {
-        print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
-        print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
-    }
-    if (bQuadrupole_)
-    {
-        print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
-    }
+    print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
+
     if (bESP_ || (!bESP_ && iChargeGenerationAlgorithm_ == eqgEEM))
     {
         print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"EEM");
@@ -1044,6 +1043,7 @@ void OPtimization::print_results(FILE                   *fp,
     print_stats(fp, (char *)"Dipoles", lsq_mu[1], true, (char *)"QM", (char *)"ESP");
     print_stats(fp, (char *)"Dipole Moment", lsq_dip[1], false, (char *)"QM", (char *)"ESP");
     print_stats(fp, (char *)"Quadrupoles", lsq_quad[1], false, (char *)"QM", (char *)"ESP");
+    
     if (!bESP_ && iChargeGenerationAlgorithm_ == eqgESP)
     {
         print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"ESP");

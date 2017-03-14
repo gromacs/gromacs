@@ -170,9 +170,9 @@ bool Poldata::atypeToPtype(const std::string &atype,
     }
     auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
                            [atype](Ffatype const &fa)
-        {
-            return fa.getType().compare(atype) == 0;
-        });
+                           {
+                               return fa.getType().compare(atype) == 0;
+                           });
     if (ai != alexandria_.end() && ai->getPtype().size() > 0)
     {
         ptype = ai->getPtype();
