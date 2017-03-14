@@ -89,6 +89,9 @@
 /* AVX2 256-bit SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_X86_AVX2_256
 
+/* AVX2 128-bit SIMD instruction set level was selected */
+#cmakedefine01 GMX_SIMD_X86_AVX2_128
+
 /* MIC (Xeon Phi) SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_X86_MIC
 
