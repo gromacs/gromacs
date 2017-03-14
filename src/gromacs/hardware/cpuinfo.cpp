@@ -876,6 +876,15 @@ CpuInfo CpuInfo::detect()
     defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
 
     result.vendor_            = detectX86Vendor();
+
+    if (result.vendor_ == CpuInfo::Vendor::Intel)
+    {
+        result.features_.insert(CpuInfo::Feature::X86_Intel);
+    }
+    else if (result.vendor_ == CpuInfo::Vendor::Amd)
+    {
+        result.features_.insert(CpuInfo::Feature::X86_Amd);
+    }
     detectX86Features(&result.brandString_, &result.family_, &result.model_,
                       &result.stepping_, &result.features_);
     result.logicalProcessors_ = detectX86LogicalProcessors();
@@ -944,6 +953,7 @@ const std::map<CpuInfo::Feature, std::string>
 CpuInfo::s_featureStrings_ =
 {
     { CpuInfo::Feature::X86_Aes, "aes"                            },
+    { CpuInfo::Feature::X86_Amd, "amd"                            },
     { CpuInfo::Feature::X86_Apic, "apic"                          },
     { CpuInfo::Feature::X86_Avx, "avx"                            },
     { CpuInfo::Feature::X86_Avx2, "avx2"                          },
@@ -962,6 +972,7 @@ CpuInfo::s_featureStrings_ =
     { CpuInfo::Feature::X86_Fma4, "fma4"                          },
     { CpuInfo::Feature::X86_Hle, "hle"                            },
     { CpuInfo::Feature::X86_Htt, "htt"                            },
+    { CpuInfo::Feature::X86_Intel, "intel"                        },
     { CpuInfo::Feature::X86_Lahf, "lahf"                          },
     { CpuInfo::Feature::X86_MisalignSse, "misalignsse"            },
     { CpuInfo::Feature::X86_Mmx, "mmx"                            },

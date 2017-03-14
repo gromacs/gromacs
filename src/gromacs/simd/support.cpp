@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,6 +74,7 @@ simdString(SimdType s)
         { SimdType::X86_Avx128Fma,  "AVX_128_FMA"     },
         { SimdType::X86_Avx,        "AVX_256"         },
         { SimdType::X86_Avx2,       "AVX2_256"        },
+        { SimdType::X86_Avx2_128,   "AVX2_128"        },
         { SimdType::X86_Avx512,     "AVX_512"         },
         { SimdType::X86_Avx512Knl,  "AVX_512_KNL"     },
         { SimdType::X86_Mic,        "X86_MIC"         },
@@ -126,8 +127,10 @@ simdSuggested(const CpuInfo &c)
             case CpuInfo::Vendor::Amd:
                 if (c.feature(CpuInfo::Feature::X86_Avx2))
                 {
-                    // When Amd starts supporting Avx2 we assume it will be 256 bits
-                    suggested = SimdType::X86_Avx2;
+                    // AMD Ryzen supports 256-bit AVX2, but performs better with 128-bit
+                    // since it can execute two independent such instructions per cycle,
+                    // and wider SIMD has slightly lower efficiency in GROMACS.
+                    suggested = SimdType::X86_Avx2_128;
                 }
                 else if (c.feature(CpuInfo::Feature::X86_Avx))
                 {
@@ -199,6 +202,8 @@ simdCompiled()
     return SimdType::X86_Mic;
 #elif GMX_SIMD_X86_AVX2_256
     return SimdType::X86_Avx2;
+#elif GMX_SIMD_X86_AVX2_128
+    return SimdType::X86_Avx2_128;
 #elif GMX_SIMD_X86_AVX_256
     return SimdType::X86_Avx;
 #elif GMX_SIMD_X86_AVX_128_FMA

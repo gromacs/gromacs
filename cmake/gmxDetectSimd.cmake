@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -113,7 +113,11 @@ function(gmx_suggest_simd _suggested_simd)
                         elseif(OUTPUT_TMP MATCHES " avx512f ")
                             set(OUTPUT_SIMD "AVX_512")
                         elseif(OUTPUT_TMP MATCHES " avx2 ")
-                            set(OUTPUT_SIMD "AVX2_256")
+                            if(OUTPUT_TMP MATCHES " amd ")
+                                set(OUTPUT_SIMD "AVX2_128")
+                            else()
+                                set(OUTPUT_SIMD "AVX2_256")
+                            endif()
                         elseif(OUTPUT_TMP MATCHES " avx ")
                             if(OUTPUT_TMP MATCHES " fma4 ")
                                 # AMD that works better with avx-128-fma
