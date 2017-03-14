@@ -265,7 +265,7 @@ elseif(GMX_SIMD STREQUAL "AVX_256")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "AVX2_256")
+elseif(GMX_SIMD MATCHES "AVX2_")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -283,7 +283,12 @@ elseif(GMX_SIMD STREQUAL "AVX2_256")
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
+
+    if(GMX_SIMD STREQUAL "AVX2_128")
+        set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX2 SIMD instructions")
+    else()
+        set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
+    endif()
 
 elseif(GMX_SIMD STREQUAL "MIC")
 
