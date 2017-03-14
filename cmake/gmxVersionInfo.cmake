@@ -188,7 +188,7 @@
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
 set(GMX_VERSION_MAJOR 2016)
-set(GMX_VERSION_PATCH 3)
+set(GMX_VERSION_PATCH 4)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
