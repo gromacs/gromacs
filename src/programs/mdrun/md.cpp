@@ -1191,8 +1191,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                     m_add(force_vir, shake_vir, total_vir);     /* we need the un-dispersion corrected total vir here */
                     trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ2);
 
-                    copy_mat(shake_vir, state->svir_prev);
-                    copy_mat(force_vir, state->fvir_prev);
+                    /* TODO This is only needed when we're about to write
+                     * a checkpoint, because we use it after the restart
+                     * (in a kludge?). But what should we be doing if
+                     * startingFromCheckpoint or bInitStep are true? */
+                    if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
+                    {
+                        copy_mat(shake_vir, state->svir_prev);
+                        copy_mat(force_vir, state->fvir_prev);
+                    }
                     if (inputrecNvtTrotter(ir) && ir->eI == eiVV)
                     {
                         /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
@@ -1271,7 +1278,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, as_rvec_array(state->x.data()), ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
-        if (startingFromCheckpoint && bTrotter)
+        if (startingFromCheckpoint && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
         {
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);

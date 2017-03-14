@@ -665,10 +665,6 @@ int gmx_trjconv(int argc, char *argv[])
         "   results if you in fact have a cluster. Luckily that can be checked",
         "   afterwards using a trajectory viewer. Note also that if your molecules",
         "   are broken this will not work either.",
-        "",
-        "   The separate option [TT]-clustercenter[tt] can be used to specify an",
-        "   approximate center for the cluster. This is useful e.g. if you have",
-        "   two big vesicles, and you want to maintain their relative positions.",
         " * [TT]whole[tt] only makes broken molecules whole.",
         "",
 

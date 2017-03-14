@@ -423,8 +423,8 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    /* now print percentages */
-    fprintf(fp, "%-8s %5.2f", "# SS %", total_count / static_cast<real>(mat->nx * mat->ny));
+    /* now print probabilities */
+    fprintf(fp, "%-8s %5.2f", "# SS pr.", total_count / static_cast<real>(mat->nx * mat->ny));
     for (s = 0; s < static_cast<size_t>(mat->nmap); s++)
     {
         fprintf(fp, " %5.2f", total[s] / static_cast<real>(mat->nx * mat->ny));

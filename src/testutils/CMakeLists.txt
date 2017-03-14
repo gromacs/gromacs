@@ -40,6 +40,7 @@ endif()
 include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
+    conftest.cpp
     integrationtests.cpp
     interactivetest.cpp
     loggertest.cpp

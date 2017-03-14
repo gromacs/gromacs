@@ -139,7 +139,7 @@ void printCopyright(gmx::TextWriter *writer)
     };
     static const char * const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2015, The GROMACS development team at",
+        "Copyright (c) 2001-2017, The GROMACS development team at",
         "Uppsala University, Stockholm University and",
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
