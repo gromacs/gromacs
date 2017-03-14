@@ -440,8 +440,8 @@ gatherLoadTransposeHsimd(const float *        base0,
         idx = _mm256_slli_epi32(idx, 1);
     }
 
-    tmp1 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, base0, sizeof(double)));
-    tmp2 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, base1, sizeof(double)));
+    tmp1 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, reinterpret_cast<const double *>(base0), sizeof(double)));
+    tmp2 = _mm512_castpd_ps(_mm512_i32gather_pd(idx, reinterpret_cast<const double *>(base1), sizeof(double)));
 
     v0->simdInternal_ = _mm512_mask_moveldup_ps(tmp1, 0xAAAA, tmp2);
     v1->simdInternal_ = _mm512_mask_movehdup_ps(tmp2, 0x5555, tmp1);
