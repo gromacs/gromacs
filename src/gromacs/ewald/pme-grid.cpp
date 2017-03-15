@@ -235,16 +235,15 @@ void gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction)
 
 int copy_pmegrid_to_fftgrid(const gmx_pme_t *pme, real *pmegrid, real *fftgrid, int grid_index)
 {
-    ivec    local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec    local_fft_ndata, local_fft_size;
     ivec    local_pme_size;
     int     ix, iy, iz;
     int     pmeidx, fftidx;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[grid_index],
+                                  local_fft_ndata,
+                                  local_fft_size);
 
     local_pme_size[0] = pme->pmegrid_nx;
     local_pme_size[1] = pme->pmegrid_ny;
@@ -318,7 +317,7 @@ static gmx_cycles_t omp_cyc_end(gmx_cycles_t c)
 int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pmegrid, int grid_index,
                             int nthread, int thread)
 {
-    ivec          local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec          local_fft_ndata, local_fft_size;
     ivec          local_pme_size;
     int           ixy0, ixy1, ixy, ix, iy, iz;
     int           pmeidx, fftidx;
@@ -332,10 +331,9 @@ int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pm
     c1 = omp_cyc_start();
 #endif
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[grid_index],
+                                  local_fft_ndata,
+                                  local_fft_size);
 
     local_pme_size[0] = pme->pmegrid_nx;
     local_pme_size[1] = pme->pmegrid_ny;
@@ -894,12 +892,11 @@ static void dump_grid(FILE *fp,
    that is commented out. */
 void dump_local_fftgrid(struct gmx_pme_t *pme, const real *fftgrid)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec local_fft_ndata, local_fft_size;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[PME_GRID_QA],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[PME_GRID_QA],
+                                  local_fft_ndata,
+                                  local_fft_size);
 
     dump_grid(stderr,
               pme->pmegrid_start_ix,
