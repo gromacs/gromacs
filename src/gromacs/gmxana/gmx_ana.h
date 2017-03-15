@@ -247,9 +247,6 @@ int
 gmx_velacc(int argc, char *argv[]);
 
 int
-gmx_clustsize(int argc, char *argv[]);
-
-int
 gmx_mdmat(int argc, char *argv[]);
 
 int

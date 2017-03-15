@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">clustsize -mol -sel all -nlevels 5 -nlevelsW 6</String>
+  <String Name="CommandLine">clustsize -sel 'res_com of resname SOL' -cut 0.6</String>
   <OutputData Name="Data">
     <AnalysisData Name="avclust">
       <DataFrame Name="Frame0">
@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">3.5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -18,7 +18,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">3.5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -29,10 +29,7 @@
         <DataValues>
           <Int Name="Count">8</Int>
           <DataValue>
-            <Real Name="Value">2</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">2</Real>
@@ -41,7 +38,12 @@
             <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1</Real>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -62,13 +64,7 @@
         <DataValues>
           <Int Name="Count">8</Int>
           <DataValue>
-            <Real Name="Value">1</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">1</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">2</Real>
@@ -77,7 +73,16 @@
             <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1</Real>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -96,7 +101,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -105,7 +110,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -116,7 +121,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">5</Real>
+            <Real Name="Value">3</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -125,7 +130,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">3</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -139,19 +144,19 @@
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -172,19 +177,19 @@
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">4</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -213,12 +218,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>2.000</Real>
+          <Real>5.000</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>2.000</Real>
+          <Real>5.000</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -235,12 +240,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>5.000</Real>
+          <Real>3.000</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>6.000</Real>
+          <Real>3.000</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -257,12 +262,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>2.000</Real>
+          <Real>3.500</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>2.000</Real>
+          <Real>3.500</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -284,12 +289,12 @@ TYPE xy
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>3.000</Real>
+          <Real>1.000</Real>
         </Sequence>
         <Sequence Name="Row2">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>2.500</Real>
+          <Real>1.000</Real>
         </Sequence>
         <Sequence Name="Row3">
           <Int Name="Length">2</Int>
@@ -304,7 +309,7 @@ TYPE xy
         <Sequence Name="Row5">
           <Int Name="Length">2</Int>
           <Real>5.000</Real>
-          <Real>0.000</Real>
+          <Real>1.000</Real>
         </Sequence>
         <Sequence Name="Row6">
           <Int Name="Length">2</Int>
@@ -322,51 +327,6 @@ TYPE xy
           <Real>0.000</Real>
         </Sequence>
       </XvgData>
-    </File>
-    <File Name="-o">
-      <String Name="Contents"><![CDATA[
-/* XPM */
-/* This file can be converted to EPS by the GROMACS program xpm2ps */
-/* title:   "Cluster size distribution" */
-/* legend:  "# clusters" */
-/* x-label: "Time (ps)" */
-/* y-label: "Size" */
-/* type:    "Continuous" */
-static char *gromacs_xpm[] = {
-"2 2   5 1",
-"A  c #FFFFFF " /* "0" */,
-"B  c #FFFF00 " /* "1" */,
-"C  c #AAAA55 " /* "2" */,
-"D  c #5555AA " /* "3" */,
-"E  c #0000FF " /* "4" */,
-/* x-axis:  1 2 */
-/* y-axis:  1 2 */
-"DC",
-"CE"
-]]></String>
-    </File>
-    <File Name="-ow">
-      <String Name="Contents"><![CDATA[
-/* XPM */
-/* This file can be converted to EPS by the GROMACS program xpm2ps */
-/* title:   "Weighted cluster size distribution" */
-/* legend:  "Fraction" */
-/* x-label: "Time (ps)" */
-/* y-label: "Size" */
-/* type:    "Continuous" */
-static char *gromacs_xpm[] = {
-"2 2   6 1",
-"A  c #FFFFFF " /* "0" */,
-"B  c #FFFF00 " /* "2" */,
-"C  c #BFBF40 " /* "3" */,
-"D  c #808080 " /* "4" */,
-"E  c #4040BF " /* "5" */,
-"F  c #0000FF " /* "6" */,
-/* x-axis:  1 2 */
-/* y-axis:  1 2 */
-"FD",
-"BD"
-]]></String>
     </File>
   </OutputFiles>
 </ReferenceData>
