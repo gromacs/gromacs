@@ -129,7 +129,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
 
                         /* Running the test */
                         PmeSafePointer pmeSafe = pmeInitEmpty(&inputRec, box, ewaldCoeff_q, ewaldCoeff_lj);
-                        pmeSetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first, nonZeroGridValues);
+                        pmeSetGrid(pmeSafe.get(), mode.first, gridOrdering.first, nonZeroGridValues);
                         const real     cellVolume = box[0] * box[4] * box[8];
                         //FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
                         pmePerformSolve(pmeSafe.get(), mode.first, method, cellVolume, gridOrdering.first, computeEnergyAndVirial);
@@ -139,10 +139,10 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                         const auto           ulpTolerance = 200;
                         checker.setDefaultTolerance(relativeToleranceAsUlp(10.0, ulpTolerance));
 
-                        SparseComplexGridValuesOutput nonZeroGridValuesOutput = pmeGetComplexGrid(pmeSafe.get(), mode.first, gridOrdering.first);
+                        auto                 nonZeroGridValuesOutput = pmeGetGrid<t_complex>(pmeSafe.get(), mode.first, gridOrdering.first);
                         /* Transformed grid */
-                        TestReferenceChecker          gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
-                        const auto                    ulpToleranceGrid = 50;
+                        TestReferenceChecker gridValuesChecker(checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
+                        const auto           ulpToleranceGrid = 50;
                         gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
                         for (const auto &point : nonZeroGridValuesOutput)
                         {

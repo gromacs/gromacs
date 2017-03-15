@@ -402,7 +402,7 @@ static void spread_coefficients_bsplines_thread(const pmegrid_t                 
 static void copy_local_grid(const gmx_pme_t *pme, const pmegrids_t *pmegrids,
                             int grid_index, int thread, real *fftgrid)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec local_fft_ndata, local_fft_size;
     int  fft_my, fft_mz;
     int  nsy, nsz;
     ivec nf;
@@ -410,10 +410,9 @@ static void copy_local_grid(const gmx_pme_t *pme, const pmegrids_t *pmegrids,
     int  d;
     real *grid_th;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[grid_index],
+                                  local_fft_ndata,
+                                  local_fft_size);
     fft_my = local_fft_size[YY];
     fft_mz = local_fft_size[ZZ];
 
@@ -456,7 +455,7 @@ reduce_threadgrid_overlap(const gmx_pme_t *pme,
                           real *fftgrid, real *commbuf_x, real *commbuf_y,
                           int grid_index)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec local_fft_ndata, local_fft_size;
     int  fft_nx, fft_ny, fft_nz;
     int  fft_my, fft_mz;
     int  buf_my = -1;
@@ -472,10 +471,9 @@ reduce_threadgrid_overlap(const gmx_pme_t *pme,
     const real *grid_th;
     real *commbuf = nullptr;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[grid_index],
+                                  local_fft_ndata,
+                                  local_fft_size);
     fft_nx = local_fft_ndata[XX];
     fft_ny = local_fft_ndata[YY];
     fft_nz = local_fft_ndata[ZZ];
@@ -703,7 +701,7 @@ reduce_threadgrid_overlap(const gmx_pme_t *pme,
 
 static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec local_fft_ndata, local_fft_size;
     int  send_index0, send_nindex;
     int  recv_nindex;
 #if GMX_MPI
@@ -721,10 +719,9 @@ static void sum_fftgrid_dd(const gmx_pme_t *pme, real *fftgrid, int grid_index)
      * communication setup.
      */
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
-                                   local_fft_ndata,
-                                   local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[grid_index],
+                                  local_fft_ndata,
+                                  local_fft_size);
 
     if (pme->nnodes_minor > 1)
     {

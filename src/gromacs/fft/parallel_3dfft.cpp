@@ -91,20 +91,28 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
 }
 
 
-static int
-fft5d_limits(fft5d_plan                p,
-             ivec                      local_ndata,
-             ivec                      local_offset,
-             ivec                      local_size)
+static void
+fft5d_get_offset(fft5d_plan  p,
+                 ivec        local_offset)
 {
     local_offset[2] = 0;
     local_offset[1] = p->oM[0];  /*=p->coor[0]*p->MG/p->P[0]; */
     local_offset[0] = p->oK[0];  /*=p->coor[1]*p->KG/p->P[1]; */
+}
 
+static void
+fft5d_get_ndata(fft5d_plan p,
+                ivec       local_ndata)
+{
     local_ndata[2] = p->rC[0];
     local_ndata[1] = p->pM[0];
     local_ndata[0] = p->pK[0];
+}
 
+static void
+fft5d_get_size(fft5d_plan p,
+               ivec       local_size)
+{
     if ((!(p->flags&FFT5D_BACKWARD)) && (p->flags&FFT5D_REALCOMPLEX))
     {
         //C is length in multiples of complex local_size in multiples of real
@@ -116,16 +124,27 @@ fft5d_limits(fft5d_plan                p,
     }
     local_size[1] = p->pM[0];
     local_size[0] = p->pK[0];
-    return 0;
 }
 
-int
+void
+gmx_parallel_3dfft_real_sizes(gmx_parallel_3dfft_t      pfft_setup,
+                              ivec                      local_ndata,
+                              ivec                      local_size)
+{
+    auto plan = pfft_setup->p1;
+    fft5d_get_ndata(plan, local_ndata);
+    fft5d_get_size(plan, local_size);
+}
+
+void
 gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
                                ivec                      local_ndata,
                                ivec                      local_offset,
                                ivec                      local_size)
 {
-    return fft5d_limits(pfft_setup->p1, local_ndata, local_offset, local_size);
+    gmx_parallel_3dfft_real_sizes(pfft_setup, local_ndata, local_size);
+    auto plan = pfft_setup->p1;
+    fft5d_get_offset(plan, local_offset);
 }
 
 static void reorder_ivec_yzx(ivec v)
@@ -138,27 +157,43 @@ static void reorder_ivec_yzx(ivec v)
     v[YY] = tmp;
 }
 
-int
+void
+gmx_parallel_3dfft_complex_sizes(gmx_parallel_3dfft_t      pfft_setup,
+                                 ivec                      complex_order,
+                                 ivec                      local_ndata,
+                                 ivec                      local_size)
+{
+    /* For now everything is in-order, but prepare to save communication by avoiding transposes */
+    complex_order[0] = 0;
+    complex_order[1] = 1;
+    complex_order[2] = 2;
+
+    auto plan = pfft_setup->p2;
+    fft5d_get_ndata(plan, local_ndata);
+    fft5d_get_size(plan, local_size);
+
+    reorder_ivec_yzx(local_ndata);
+    reorder_ivec_yzx(local_size);
+}
+
+void
 gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
                                   ivec                      complex_order,
                                   ivec                      local_ndata,
                                   ivec                      local_offset,
                                   ivec                      local_size)
 {
-    int ret;
+    gmx_parallel_3dfft_complex_sizes(pfft_setup, complex_order, local_ndata, local_size);
 
     /* For now everything is in-order, but prepare to save communication by avoiding transposes */
     complex_order[0] = 0;
     complex_order[1] = 1;
     complex_order[2] = 2;
 
-    ret = fft5d_limits(pfft_setup->p2, local_ndata, local_offset, local_size);
+    auto plan = pfft_setup->p2;
+    fft5d_get_offset(plan, local_offset);
 
-    reorder_ivec_yzx(local_ndata);
     reorder_ivec_yzx(local_offset);
-    reorder_ivec_yzx(local_size);
-
-    return ret;
 }
 
 
