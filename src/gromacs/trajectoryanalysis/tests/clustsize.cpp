@@ -45,112 +45,105 @@
 
 #include "gmxpre.h"
 
-#include <cstring>
+#include "gromacs/trajectoryanalysis/modules/clustsize.h"
 
-#include <string>
-
-#include "gromacs/gmxana/gmx_ana.h"
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
-namespace gmx
-{
-
-namespace test
-{
+#include "moduletest.h"
 
 namespace
 {
 
-class ClustsizeTest : public CommandLineTestBase
-{
-    public:
-        ClustsizeTest()
-        {
-            double            tolerance = 1e-4;
-            test::XvgMatch    xvg;
-            test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+using gmx::test::CommandLine;
+using gmx::test::ExactTextMatch;
+using gmx::test::NoTextMatch;
+using gmx::test::XvgMatch;
 
-            setOutputFile("-mc", ".xvg", toler);
-            setOutputFile("-nc", ".xvg", toler);
-            setOutputFile("-ac", ".xvg", toler);
-            setOutputFile("-hc", ".xvg", toler);
-            setInputFile("-f", "clustsize.pdb");
-        }
+/********************************************************************
+ * Tests for gmx::analysismodules::ClustSize.
+ */
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
-
-            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
-            rootChecker.checkString(args.toString(), "CommandLine");
-
-            ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
-
-            checkOutputFiles();
-        }
-};
+//! Test fixture for the `clustsize` analysis module.
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::ClustSizeInfo>
+    ClustsizeTest;
 
 TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 {
-    const char *const command[] = { "clustsize" };
-    CommandLine       args      = CommandLine(command);
+    const char *const command[] = { "clustsize", "-selection", "0" };
 
+    setInputFile("-f", "clustsize.pdb");
+    setInputFile("-s", "clustsize.tpr");
     setInputFile("-n", "clustsize.ndx");
-
-    runTest(args);
+    setOutputFile("-mc", ".xvg", XvgMatch());
+    setOutputFile("-nc", ".xvg", XvgMatch());
+    setOutputFile("-ac", ".xvg", XvgMatch());
+    setOutputFile("-hc", ".xvg", XvgMatch());
+    setDatasetTolerance("avclust", gmx::test::relativeToleranceAsFloatingPoint(4, 1e-7));
+    runTest(CommandLine(command));
 }
 
 TEST_F(ClustsizeTest, NoMolShortCutoff)
 {
-    const char *const command[] = { "clustsize", "-cut", "0.3" };
-    CommandLine       args      = CommandLine(command);
+    const char *const command[] = { "clustsize", "-cut", "0.3", "-selection", "0" };
 
+    setInputFile("-f", "clustsize.pdb");
+    setInputFile("-s", "clustsize.tpr");
     setInputFile("-n", "clustsize.ndx");
-
-    runTest(args);
+    setOutputFile("-mc", ".xvg", XvgMatch());
+    setOutputFile("-nc", ".xvg", XvgMatch());
+    setOutputFile("-ac", ".xvg", XvgMatch());
+    setOutputFile("-hc", ".xvg", XvgMatch());
+    setDatasetTolerance("avclust", gmx::test::relativeToleranceAsFloatingPoint(4, 1e-7));
+    runTest(CommandLine(command));
 }
 
 TEST_F(ClustsizeTest, MolDefaultCutoff)
 {
-    const char *const command[] = { "clustsize", "-mol" };
-    CommandLine       args      = CommandLine(command);
+    const char *const command[] = { "clustsize", "-mol", "-selection", "0" };
 
+    setInputFile("-f", "clustsize.pdb");
     setInputFile("-s", "clustsize.tpr");
-
-    runTest(args);
+    setOutputFile("-mc", ".xvg", XvgMatch());
+    setOutputFile("-nc", ".xvg", XvgMatch());
+    setOutputFile("-ac", ".xvg", XvgMatch());
+    setOutputFile("-hc", ".xvg", XvgMatch());
+    setDatasetTolerance("avclust", gmx::test::relativeToleranceAsFloatingPoint(4, 1e-7));
+    runTest(CommandLine(command));
 }
 
 TEST_F(ClustsizeTest, MolShortCutoff)
 {
-    const char *const command[] = { "clustsize", "-mol", "-cut", "0.3" };
-    CommandLine       args      = CommandLine(command);
+    const char *const command[] = { "clustsize", "-mol", "-cut", "0.3", "-selection", "0" };
 
+    setInputFile("-f", "clustsize.pdb");
     setInputFile("-s", "clustsize.tpr");
-
-    runTest(args);
+    setOutputFile("-mc", ".xvg", XvgMatch());
+    setOutputFile("-nc", ".xvg", XvgMatch());
+    setOutputFile("-ac", ".xvg", XvgMatch());
+    setOutputFile("-hc", ".xvg", XvgMatch());
+    setDatasetTolerance("avclust", gmx::test::relativeToleranceAsFloatingPoint(4, 1e-7));
+    runTest(CommandLine(command));
 }
 
 TEST_F(ClustsizeTest, MolCSize)
 {
-    const char *const command[] = { "clustsize", "-mol", "-nlevels", "6" };
-    CommandLine       args      = CommandLine(command);
+    const char *const command[] = { "clustsize", "-mol", "-selection", "0", "-nlevels", "5", "-nlevelsW", "6" };
 
+    setInputFile("-f", "clustsize.pdb");
+    setInputFile("-s", "clustsize.tpr");
+    setOutputFile("-mc", ".xvg", XvgMatch());
+    setOutputFile("-nc", ".xvg", XvgMatch());
+    setOutputFile("-ac", ".xvg", XvgMatch());
+    setOutputFile("-hc", ".xvg", XvgMatch());
     setOutputFile("-o", ".xpm", ExactTextMatch());
     setOutputFile("-ow", ".xpm", ExactTextMatch());
 
-    setInputFile("-s", "clustsize.tpr");
-
-    runTest(args);
+    runTest(CommandLine(command));
 }
-
-} // namespace
-
-} // namespace
 
 } // namespace
