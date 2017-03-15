@@ -120,61 +120,6 @@ PmeSafePointer pmeInitAtoms(const t_inputrec         *inputRec,
     return pmeSafe;
 }
 
-//! Getting local PME real grid pointer for test I/O
-static real *pmeGetRealGridInternal(const gmx_pme_t *pme)
-{
-    const size_t gridIndex = 0;
-    return pme->fftgrid[gridIndex];
-}
-
-//! Getting local PME real grid dimensions
-static void pmeGetRealGridSizesInternal(const gmx_pme_t      *pme,
-                                        IVec                 &gridSize,
-                                        IVec                 &paddedGridSize)
-{
-    const size_t gridIndex = 0;
-    IVec         gridOffsetUnused;
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
-}
-
-//! Getting local PME complex grid pointer for test I/O
-static t_complex *pmeGetComplexGridInternal(const gmx_pme_t *pme)
-{
-    const size_t gridIndex = 0;
-    return pme->cfftgrid[gridIndex];
-}
-
-//! Getting local PME complex grid dimensions
-static void pmeGetComplexGridSizesInternal(const gmx_pme_t      *pme,
-                                           IVec                 &gridSize,
-                                           IVec                 &paddedGridSize)
-{
-    const size_t gridIndex = 0;
-    IVec         gridOffsetUnused, complexOrderUnused;
-    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[gridIndex], complexOrderUnused, gridSize, gridOffsetUnused, paddedGridSize); //TODO: what about YZX ordering?
-}
-
-//! Getting the PME grid memory buffer and its sizes - template definition
-template<typename ValueType> static void pmeGetGridAndSizesInternal(const gmx_pme_t *, ValueType * &, IVec &, IVec &)
-{
-    GMX_THROW(InternalError("Deleted function call"));
-    // explicitly deleting general template does not compile in clang/icc, see https://llvm.org/bugs/show_bug.cgi?id=17537
-}
-
-//! Getting the PME real grid memory buffer and its sizes
-template<> void pmeGetGridAndSizesInternal<real>(const gmx_pme_t *pme, real * &grid, IVec &gridSize, IVec &paddedGridSize)
-{
-    grid = pmeGetRealGridInternal(pme);
-    pmeGetRealGridSizesInternal(pme, gridSize, paddedGridSize);
-}
-
-//! Getting the PME complex grid memory buffer and its sizes
-template<> void pmeGetGridAndSizesInternal<t_complex>(const gmx_pme_t *pme, t_complex * &grid, IVec &gridSize, IVec &paddedGridSize)
-{
-    grid = pmeGetComplexGridInternal(pme);
-    pmeGetComplexGridSizesInternal(pme, gridSize, paddedGridSize);
-}
-
 //! PME spline calculation and charge spreading
 void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode, // TODO const qualifiers
                                bool computeSplines, bool spreadCharges)
@@ -230,7 +175,8 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
                      PmeSolveAlgorithm method, real cellVolume,
                      GridOrdering gridOrdering, bool computeEnergyAndVirial)
 {
-    t_complex      *h_grid                 = pmeGetComplexGridInternal(pme);
+    const size_t    gridIndex              = 0;
+    t_complex      *h_grid                 = pme->cfftgrid[gridIndex];
     const bool      useLorentzBerthelot    = false;
     const size_t    threadIndex            = 0;
     switch (mode)
@@ -323,8 +269,9 @@ void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
     const size_t                atomCount   = atc->n;
     GMX_RELEASE_ASSERT(atomCount == gridLineIndices.size(), "Mismatch in gridline indices size");
 
-    IVec paddedGridSizeUnused, gridSize;
-    pmeGetRealGridSizesInternal(pme, gridSize, paddedGridSizeUnused);
+    const size_t gridIndex = 0;
+    IVec         paddedGridSizeUnused, gridSize;
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[gridIndex], gridSize, paddedGridSizeUnused);
 
     for (const auto &index : gridLineIndices)
     {
@@ -369,14 +316,11 @@ inline size_t pmeGetGridPlainIndexInternal(const IVec &index, const IVec &padded
 
 //! Setting real or complex grid
 template<typename ValueType>
-static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
+static void pmeSetGridInternal(ValueType *grid, const IVec gridSize, const IVec paddedGridSize,
+                               CodePath mode,
                                GridOrdering gridOrdering,
                                const SparseGridValuesInput<ValueType> &gridValues)
 {
-    IVec       gridSize, paddedGridSize;
-    ValueType *grid;
-    pmeGetGridAndSizesInternal<ValueType>(pme, grid, gridSize, paddedGridSize);
-
     switch (mode)
     {
         case CodePath::CPU:
@@ -401,7 +345,12 @@ static void pmeSetGridInternal(const gmx_pme_t *pme, CodePath mode,
 void pmeSetRealGrid(const gmx_pme_t *pme, CodePath mode,
                     const SparseRealGridValuesInput &gridValues)
 {
-    pmeSetGridInternal<real>(pme, mode, GridOrdering::XYZ, gridValues);
+    const size_t gridIndex = 0;
+    real        *grid      = pme->fftgrid[gridIndex];
+    IVec         gridSize, paddedGridSize;
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[gridIndex], gridSize, paddedGridSize);
+
+    pmeSetGridInternal<real>(grid, gridSize, paddedGridSize, mode, GridOrdering::XYZ, gridValues);
 }
 
 //! Setting complex grid to be used in solve
@@ -409,7 +358,12 @@ void pmeSetComplexGrid(const gmx_pme_t *pme, CodePath mode,
                        GridOrdering gridOrdering,
                        const SparseComplexGridValuesInput &gridValues)
 {
-    pmeSetGridInternal<t_complex>(pme, mode, gridOrdering, gridValues);
+    const size_t gridIndex = 0;
+    t_complex   *grid      = pme->cfftgrid[gridIndex];
+    IVec         gridSize, paddedGridSize, complexOrderUnused;
+    gmx_parallel_3dfft_complex_sizes(pme->pfft_setup[gridIndex], complexOrderUnused, gridSize, paddedGridSize); //TODO: what about YZX ordering?
+
+    pmeSetGridInternal<t_complex>(grid, gridSize, paddedGridSize, mode, gridOrdering, gridValues);
 }
 
 //! Getting the single dimension's spline values or derivatives
@@ -458,11 +412,9 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode)
 
 //! Getting real or complex grid - only non zero values
 template<typename ValueType>
-static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme, CodePath mode, GridOrdering gridOrdering)
+static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const ValueType *grid, const IVec gridSize, const IVec paddedGridSize,
+                                                            CodePath mode, GridOrdering gridOrdering)
 {
-    IVec       gridSize, paddedGridSize;
-    ValueType *grid;
-    pmeGetGridAndSizesInternal<ValueType>(pme, grid, gridSize, paddedGridSize);
     SparseGridValuesOutput<ValueType> gridValues;
     switch (mode)
     {
@@ -496,14 +448,24 @@ static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t *pme
 //! Getting the real grid (spreading output of pmePerformSplineAndSpread())
 SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode)
 {
-    return pmeGetGridInternal<real>(pme, mode, GridOrdering::XYZ);
+    const size_t gridIndex = 0;
+    real        *grid      = pme->fftgrid[gridIndex];
+    IVec         gridSize, paddedGridSize;
+    gmx_parallel_3dfft_real_sizes(pme->pfft_setup[gridIndex], gridSize, paddedGridSize);
+
+    return pmeGetGridInternal<real>(grid, gridSize, paddedGridSize, mode, GridOrdering::XYZ);
 }
 
 //! Getting the complex grid output of pmePerformSolve()
 SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
                                                 GridOrdering gridOrdering)
 {
-    return pmeGetGridInternal<t_complex>(pme, mode, gridOrdering);
+    const size_t gridIndex = 0;
+    t_complex   *grid      = pme->cfftgrid[gridIndex];
+    IVec         gridSize, paddedGridSize, complexOrderUnused;
+    gmx_parallel_3dfft_complex_sizes(pme->pfft_setup[gridIndex], complexOrderUnused, gridSize, paddedGridSize); //TODO: what about YZX ordering?
+
+    return pmeGetGridInternal<t_complex>(grid, gridSize, paddedGridSize, mode, gridOrdering);
 }
 
 //! Getting the reciprocal energy and virial
