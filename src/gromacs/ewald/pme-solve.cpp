@@ -311,7 +311,6 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
     real                    *mhx, *mhy, *mhz, *m2, *denom, *tmp1, *eterm, *m2inv;
     real                     mhxk, mhyk, mhzk, m2k;
     real                     corner_fac;
-    ivec                     complex_order;
     ivec                     local_ndata, local_offset, local_size;
     real                     elfac;
 
@@ -323,7 +322,6 @@ int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_QA],
-                                      complex_order,
                                       local_ndata,
                                       local_offset,
                                       local_size);
@@ -561,7 +559,6 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
     real                     mhxk, mhyk, mhzk, m2k;
     struct pme_solve_work_t *work;
     real                     corner_fac;
-    ivec                     complex_order;
     ivec                     local_ndata, local_offset, local_size;
     nx = pme->nkx;
     ny = pme->nky;
@@ -569,7 +566,6 @@ int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real 
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_C6A],
-                                      complex_order,
                                       local_ndata,
                                       local_offset,
                                       local_size);

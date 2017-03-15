@@ -282,13 +282,13 @@ TEST_F(FFFTest3D, Real5_6_9)
     MPI_Comm   comm[]  = {MPI_COMM_NULL, MPI_COMM_NULL};
     real     * rdata;
     t_complex* cdata;
-    ivec       local_ndata, offset, rsize, csize, complex_order;
+    ivec       local_ndata, offset, rsize, csize;
 
     gmx_parallel_3dfft_init(&fft_, ndata, &rdata, &cdata,
                             comm, TRUE, 1);
 
     gmx_parallel_3dfft_real_limits(fft_, local_ndata, offset, rsize);
-    gmx_parallel_3dfft_complex_limits(fft_, complex_order,
+    gmx_parallel_3dfft_complex_limits(fft_,
                                       local_ndata, offset, csize);
     checker_.checkVector(rsize, "rsize");
     checker_.checkVector(csize, "csize");

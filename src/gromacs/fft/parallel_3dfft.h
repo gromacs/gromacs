@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,20 +90,32 @@ int
 
 
 
-/*! \brief Get direct space grid index limits
+/*! \brief Get direct space grid index limits.
  */
-int
+void
+gmx_parallel_3dfft_real_sizes(gmx_parallel_3dfft_t      pfft_setup,
+                              ivec                      local_ndata,
+                              ivec                      local_size);
+
+/*! \brief Get direct space grid index limits and offset.
+ */
+void
 gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
                                ivec                      local_ndata,
                                ivec                      local_offset,
                                ivec                      local_size);
 
-
-/*! \brief Get reciprocal space grid index limits
+/*! \brief Get reciprocal space grid index limits.
  */
-int
+void
+gmx_parallel_3dfft_complex_sizes(gmx_parallel_3dfft_t      pfft_setup,
+                                 ivec                      local_ndata,
+                                 ivec                      local_size);
+
+/*! \brief Get reciprocal space grid index limits and offset.
+ */
+void
 gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
-                                  ivec                      complex_order,
                                   ivec                      local_ndata,
                                   ivec                      local_offset,
                                   ivec                      local_size);

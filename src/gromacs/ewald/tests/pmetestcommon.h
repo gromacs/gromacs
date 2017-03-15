@@ -91,10 +91,6 @@ typedef SparseGridValuesInput<real> SparseRealGridValuesInput;
 typedef SparseGridValuesInput<t_complex> SparseComplexGridValuesInput;
 //! Non-zero grid values for test output; keys are string representations of the cells' 3d indices (IVec); this allows for better sorting.
 template<typename ValueType>using SparseGridValuesOutput = std::map<std::string, ValueType>;
-//! Non-zero real grid values
-typedef SparseGridValuesOutput<real> SparseRealGridValuesOutput;
-//! Non-zero complex grid values
-typedef SparseGridValuesOutput<t_complex> SparseComplexGridValuesOutput;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
 //! PME code path being tested
@@ -154,11 +150,10 @@ void pmeSetSplineData(const gmx_pme_t *pme, CodePath mode,
 //! Setting gridline indices be used in spread/gather
 void pmeSetGridLineIndices(const gmx_pme_t *pme, CodePath mode,
                            const GridLineIndicesVector &gridLineIndices);
-//! Setting real grid to be used in gather
-void pmeSetRealGrid(const gmx_pme_t *pme, CodePath mode,
-                    const SparseRealGridValuesInput &gridValues);
-void pmeSetComplexGrid(const gmx_pme_t *pme, CodePath mode, GridOrdering gridOrdering,
-                       const SparseComplexGridValuesInput &gridValues);
+//! Setting real or t_complex grid to be used in pmePerformGather() / pmePerformSolve(), respectively.
+template <typename ValueType>
+void pmeSetGrid(const gmx_pme_t *pme, CodePath mode, GridOrdering gridOrdering,
+                const SparseGridValuesInput<ValueType> &gridValues);
 
 // PME state getters
 
@@ -167,11 +162,11 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
                                        PmeSplineDataType type, int dimIndex);
 //! Getting the gridline indices
 GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode);
-//! Getting the real grid (spreading output of pmePerformSplineAndSpread())
-SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode);
-//! Getting the complex grid output of pmePerformSolve()
-SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t *pme, CodePath mode,
-                                                GridOrdering gridOrdering);
+//! Getting the real or t_complex grid (respectively the spreading output of pmePerformSplineAndSpread(), or the solve output of pmePerformSolve())
+template <typename ValueType>
+SparseGridValuesOutput<ValueType> pmeGetGrid(const gmx_pme_t *pme, CodePath mode,
+                                             GridOrdering gridOrdering);
+
 //! Getting the reciprocal energy and virial
 PmeSolveOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t *pme, CodePath mode,
                                                PmeSolveAlgorithm method);
