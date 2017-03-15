@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">clustsize -sel all</String>
+  <String Name="CommandLine">clustsize -sel 'res_com of resname SOL' -cut 0.6</String>
   <OutputData Name="Data">
     <AnalysisData Name="avclust">
       <DataFrame Name="Frame0">
@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">4.8000002</Real>
+            <Real Name="Value">3.5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -18,7 +18,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">4</Real>
+            <Real Name="Value">3.5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -29,75 +29,61 @@
         <DataValues>
           <Int Name="Count">24</Int>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">2</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -126,74 +112,61 @@
         <DataValues>
           <Int Name="Count">24</Int>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">2</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
-            <Bool Name="Present">false</Bool>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -224,7 +197,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -233,7 +206,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">5</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -244,7 +217,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">5</Real>
+            <Real Name="Value">19</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -253,7 +226,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">6</Real>
+            <Real Name="Value">19</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -267,22 +240,22 @@
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">17</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2</Real>
-          </DataValue>
-          <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">3</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -348,22 +321,22 @@
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">17</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">4</Real>
-          </DataValue>
-          <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">1</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">2</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -437,12 +410,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>6.000</Real>
+          <Real>5.000</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>6.000</Real>
+          <Real>5.000</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -459,12 +432,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>5.000</Real>
+          <Real>19.000</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>6.000</Real>
+          <Real>19.000</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -481,12 +454,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>4.800</Real>
+          <Real>3.500</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>4.000</Real>
+          <Real>3.500</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -508,17 +481,17 @@ TYPE xy
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>1.000</Real>
-          <Real>0.000</Real>
+          <Real>17.000</Real>
         </Sequence>
         <Sequence Name="Row2">
           <Int Name="Length">2</Int>
           <Real>2.000</Real>
-          <Real>0.000</Real>
+          <Real>1.000</Real>
         </Sequence>
         <Sequence Name="Row3">
           <Int Name="Length">2</Int>
           <Real>3.000</Real>
-          <Real>3.000</Real>
+          <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row4">
           <Int Name="Length">2</Int>
@@ -528,12 +501,12 @@ TYPE xy
         <Sequence Name="Row5">
           <Int Name="Length">2</Int>
           <Real>5.000</Real>
-          <Real>0.000</Real>
+          <Real>1.000</Real>
         </Sequence>
         <Sequence Name="Row6">
           <Int Name="Length">2</Int>
           <Real>6.000</Real>
-          <Real>2.500</Real>
+          <Real>0.000</Real>
         </Sequence>
         <Sequence Name="Row7">
           <Int Name="Length">2</Int>
