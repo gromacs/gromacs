@@ -243,8 +243,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate everything you want to know about chi and other dihedrals");
     registerModule(manager, &gmx_cluster, "cluster",
                    "Cluster structures");
-    registerModule(manager, &gmx_clustsize, "clustsize",
-                   "Calculate size distributions of atomic clusters");
     registerModule(manager, &gmx_confrms, "confrms",
                    "Fit two structures and calculates the RMSD");
     registerModule(manager, &gmx_covar, "covar",
