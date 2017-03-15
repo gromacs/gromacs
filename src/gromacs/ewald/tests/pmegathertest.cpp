@@ -406,7 +406,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                 PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, inputAtomData.coordinates, inputAtomData.charges, box);
 
                 /* Setting some more inputs */
-                pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
+                pmeSetGrid(pmeSafe.get(), mode.first, GridOrdering::XYZ, nonZeroGridValues);
 
                 pmeSetGridLineIndices(pmeSafe.get(), mode.first, inputAtomData.gridLineIndices);
 
