@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -58,6 +59,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -786,7 +788,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             int mapoffset)
 {
     const char   *libm2p;
-    char          buf[256], *legend;
+    char         *legend;
     t_psdata      out;
     t_psrec       psrec, *psr;
     int           W, H;
@@ -923,19 +925,19 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             /* Print title, if any */
             ps_rgb(out, BLACK);
             ps_strfont(out, psr->titfont, psr->titfontsize);
+            std::string buf;
             if (!mat2 || (std::strcmp(mat[i].title, mat2[i].title) == 0))
             {
-                std::strcpy(buf, mat[i].title);
+                buf = mat[i].title;
             }
             else
             {
-                sprintf(buf, "%s / %s", mat[i].title, mat2[i].title);
+                buf = gmx::formatString("%s / %s", mat[i].title, mat2[i].title);
             }
             ps_ctext(out, x0+w/2, y0+box_height(&(mat[i]), psr)+psr->titfontsize,
-                     buf, eXCenter);
+                     buf.c_str(), eXCenter);
         }
-        sprintf(buf, "Here starts the filling of box #%d", i);
-        ps_comment(out, buf);
+        ps_comment(out, gmx::formatString("Here starts the filling of box #%d", i).c_str());
         for (x = 0; (x < mat[i].nx); x++)
         {
             int nexty;

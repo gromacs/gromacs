@@ -45,6 +45,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
@@ -68,6 +69,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -2487,8 +2489,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     if (strlen(is->deform) > 0 && ndeform != 6)
     {
-        sprintf(warn_buf, "Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform);
-        warning_error(wi, warn_buf);
+        warning_error(wi, gmx::formatString("Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform).c_str());
     }
     for (i = 0; i < 3; i++)
     {
