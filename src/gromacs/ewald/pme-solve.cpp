@@ -156,11 +156,12 @@ static void free_work(struct pme_solve_work_t *work)
 
 void pme_free_all_work(struct pme_solve_work_t **work, int nthread)
 {
-    int thread;
-
-    for (thread = 0; thread < nthread; thread++)
+    if (*work)
     {
-        free_work(&(*work)[thread]);
+        for (int thread = 0; thread < nthread; thread++)
+        {
+            free_work(&(*work)[thread]);
+        }
     }
     sfree(*work);
     *work = nullptr;
