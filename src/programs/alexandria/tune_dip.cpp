@@ -475,39 +475,42 @@ void OPtimization::polData2TuneDip()
     
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {               
-        auto J00  = pd_.getJ00(iChargeDistributionModel_, ai->name());
-        param_.push_back(std::move(J00));
-
-        if (ai->name().compare(fixchi_) != 0)
+    {   
+        if (!ai->isConst())
         {
-            auto Chi0 = pd_.getChi0(iChargeDistributionModel_, ai->name());
-            param_.push_back(std::move(Chi0));
-        }        
-        if (bFitZeta_)
-        {
-            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
-            for (int zz = 0; zz < nzeta; zz++)
+            auto J00  = pd_.getJ00(iChargeDistributionModel_, ai->name());
+            param_.push_back(std::move(J00));
+            
+            if (ai->name().compare(fixchi_) != 0)
             {
-                auto zeta = pd_.getZeta(iChargeDistributionModel_, ai->name(), zz);
-                if (0 != zeta)
+                auto Chi0 = pd_.getChi0(iChargeDistributionModel_, ai->name());
+                param_.push_back(std::move(Chi0));
+            }        
+            if (bFitZeta_)
+            {
+                auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
+                for (int zz = 0; zz < nzeta; zz++)
                 {
-                    param_.push_back(std::move(zeta));
+                    auto zeta = pd_.getZeta(iChargeDistributionModel_, ai->name(), zz);
+                    if (0 != zeta)
+                    {
+                        param_.push_back(std::move(zeta));
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
+                                  ai->name().c_str(), iChargeDistributionModel_);
+                    }
                 }
-                else
-                {
-                    gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
-                              ai->name().c_str(), iChargeDistributionModel_);
-                }
-            }
-        }       
+            } 
+        }      
     }
     if (bOptHfac_)
     {
         param_.push_back(std::move(hfac_));
     }       
 }
-}
+
 
 void OPtimization::tuneDip2PolData()
 {
@@ -519,36 +522,39 @@ void OPtimization::tuneDip2PolData()
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
-        std::string qstr   = pd_.getQstr(iChargeDistributionModel_, ai->name());
-        std::string rowstr = pd_.getRowstr(iChargeDistributionModel_, ai->name());
-        
-        if (qstr.size() == 0 || rowstr.size() == 0)
+        if (!ai->isConst())
         {
-            gmx_fatal(FARGS, "No qstr/rowstr for atom %s in %d model\n",
-                      ai->name().c_str(), iChargeDistributionModel_);
-        }
-        
-        auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
-        GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
-        
-        ei->setJ0(param_[n++]);
-        
-        if (ai->name().compare(fixchi_) != 0)
-        {      
-            ei->setChi0(param_[n++]);           
-        }       
-        if (bFitZeta_)
-        {
-            zstr[0] = '\0';
-            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
-            for (int zz = 0; zz < nzeta; zz++)
+            std::string qstr   = pd_.getQstr(iChargeDistributionModel_, ai->name());
+            std::string rowstr = pd_.getRowstr(iChargeDistributionModel_, ai->name());
+            
+            if (qstr.size() == 0 || rowstr.size() == 0)
             {
-                auto zeta = param_[n++];
-                sprintf(buf, "  %10g", zeta);
-                strcat(zstr, buf);
+                gmx_fatal(FARGS, "No qstr/rowstr for atom %s in %d model\n",
+                          ai->name().c_str(), iChargeDistributionModel_);
             }
             
-            ei->setRowZetaQ(rowstr, zstr, qstr);
+            auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
+            GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
+            
+            ei->setJ0(param_[n++]);
+            
+            if (ai->name().compare(fixchi_) != 0)
+            {      
+                ei->setChi0(param_[n++]);           
+            }       
+            if (bFitZeta_)
+            {
+                zstr[0] = '\0';
+                auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
+                for (int zz = 0; zz < nzeta; zz++)
+                {
+                    auto zeta = param_[n++];
+                    sprintf(buf, "  %10g", zeta);
+                    strcat(zstr, buf);
+                }
+                
+                ei->setRowZetaQ(rowstr, zstr, qstr);
+            }
         }               
     }
     if (bOptHfac_)
@@ -597,31 +603,34 @@ double OPtimization::calcPenalty(AtomIndexIterator ai)
         p += 1e3;
     }
 
-    auto *iCount = indexCount();
-    for (auto aj = iCount->beginIndex(); aj < iCount->endIndex(); ++aj)
-    {       
-        auto aj_elem = pd_.getElem(aj->name());        
-        auto aj_row  = pd_.getRowstr(iChargeDistributionModel_, aj->name());        
-        auto aj_atn  = gmx_atomprop_atomnumber(atomprop_, aj_elem.c_str());
-               
-        if ((ai_row == aj_row) && (ai_atn != aj_atn))
-        {           
-            auto aj_chi = pd_.getChi0(iChargeDistributionModel_, aj->name());
+    auto *ic = indexCount();
+    for (auto aj = ic->beginIndex(); aj < ic->endIndex(); ++aj)
+    {  
+        if (!aj->isConst())
+        {
+            auto aj_elem = pd_.getElem(aj->name());        
+            auto aj_row  = pd_.getRowstr(iChargeDistributionModel_, aj->name());        
+            auto aj_atn  = gmx_atomprop_atomnumber(atomprop_, aj_elem.c_str());
             
-            if (ai_atn > aj_atn)
-            {
-                if (ai_chi < aj_chi)
+            if ((ai_row == aj_row) && (ai_atn != aj_atn))
+            {           
+                auto aj_chi = pd_.getChi0(iChargeDistributionModel_, aj->name());
+                
+                if (ai_atn > aj_atn)
                 {
-                    p += 1e3;
+                    if (ai_chi < aj_chi)
+                    {
+                        p += 1e3;
+                    }
                 }
+                else if (aj_atn > ai_atn) 
+                {
+                    if (aj_chi < ai_chi)
+                    {
+                        p += 1e3;
+                    }
+                }     
             }
-            else if (aj_atn > ai_atn) 
-            {
-                if (aj_chi < ai_chi)
-                {
-                    p += 1e3;
-                }
-            }     
         }
     }    
     return p;
@@ -641,29 +650,32 @@ double OPtimization::objFunction(const double v[])
 
     tuneDip2PolData();
     
-    auto *iCount = indexCount();
-    for (auto ai = iCount->beginIndex(); ai < iCount->endIndex(); ++ai)
+    auto *ic = indexCount();
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
-        auto name = ai->name();
-        auto J00  = param_[n++];
-        bounds   += harmonic(J00, J0_0_, J0_1_);
-        
-        if (strcasecmp(name.c_str(), fixchi_) != 0)
+        if (!ai->isConst())
         {
-            auto Chi0 = param_[n++];
-            bounds   += harmonic(Chi0, Chi0_0_, Chi0_1_);
-        }
-        
-        if (bFitZeta_)
-        {
-            auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
-            for (int zz = 0; zz < nzeta; zz++)
+            auto name = ai->name();
+            auto J00  = param_[n++];
+            bounds   += harmonic(J00, J0_0_, J0_1_);
+            
+            if (strcasecmp(name.c_str(), fixchi_) != 0)
             {
-                auto zeta = param_[n++];
-                bounds += harmonic(zeta, w_0_, w_1_);
+                auto Chi0 = param_[n++];
+                bounds   += harmonic(Chi0, Chi0_0_, Chi0_1_);
             }
-        }       
-        penalty += calcPenalty(ai);
+            
+            if (bFitZeta_)
+            {
+                auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
+                for (int zz = 0; zz < nzeta; zz++)
+                {
+                    auto zeta = param_[n++];
+                    bounds += harmonic(zeta, w_0_, w_1_);
+                }
+            }       
+            penalty += calcPenalty(ai);
+        }
     }
     
     if (bOptHfac_)
@@ -1151,6 +1163,7 @@ void OPtimization::print_results(FILE                   *fp,
     gmx_stats_free(lsq_mu[1]);
     gmx_stats_free(lsq_dip[0]);
     gmx_stats_free(lsq_dip[1]);
+}
 }
 
 int alex_tune_dip(int argc, char *argv[])

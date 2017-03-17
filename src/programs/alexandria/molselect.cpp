@@ -3,14 +3,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "molselect.h"
-
 #include <vector>
-
 #include <strings.h>
 
 #include "gromacs/utility/textreader.h"
 
+#include "molselect.h"
 #include "stringutil.h"
 
 static const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
@@ -37,7 +35,7 @@ void MolSelect::read(const char *fn)
         {
             tmp.erase(tmp.length()-1);
         }
-        std::vector<std::string> ptr = split(tmp, '|');
+        auto ptr = split(tmp, '|');
         if ((ptr.size() == 2) && (ptr[0].length() > 1)
             && (ptr[1].length() > 1))
         {
@@ -62,6 +60,10 @@ void MolSelect::read(const char *fn)
                         ptr[1].c_str(), ptr[0].c_str(), index, fn);
             }
             ims_.push_back(IMolSelect(ptr[0], status, index++));
+        }
+        else
+        {
+            fprintf(stderr, "Invalid selection file\n");
         }
     }
 }
