@@ -209,6 +209,15 @@ Run control
         the step number of the restart frame. :ref:`gmx convert-tpr`
         does this automatically.
 
+.. mdp:: simulation-part
+
+         (0)
+         A simulation can consist of multiple parts, each of which has
+         a part number. This option specifies what that number will
+         be, which helps keep track of parts that are logically the
+         same simulation. This option is generally useful to set only
+         when coping with a crashed simulation where files were lost.
+
 .. mdp:: comm-mode
 
    .. mdp-value:: Linear
