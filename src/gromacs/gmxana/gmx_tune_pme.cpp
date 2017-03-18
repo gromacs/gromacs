@@ -660,17 +660,17 @@ static void check_mdrun_works(gmx_bool    bThreads,
      * gmx_print_version_info() in the GMX_MPI section */
     const char match_mpi[]     = "MPI library:        MPI";
     const char match_mdrun[]   = "Executable: ";
-    const char match_gpu[]     = "GPU support:        enabled";
+    const char match_nogpu[]   = "GPU support:        disabled";
     gmx_bool   bMdrun          = FALSE;
     gmx_bool   bMPI            = FALSE;
-    gmx_bool   bHaveGpuSupport = FALSE;
+    gmx_bool   bHaveGpuSupport = TRUE;
 
     /* Run a small test to see whether mpirun + mdrun work  */
     fprintf(stdout, "Making sure that mdrun can be executed. ");
     if (bThreads)
     {
         snew(command, std::strlen(cmd_mdrun) + std::strlen(cmd_np) + std::strlen(filename) + 50);
-        sprintf(command, "%s%s-version -maxh 0.001 1> %s 2>&1", cmd_mdrun, cmd_np, filename);
+        sprintf(command, "%s%s -version -maxh 0.001 1> %s 2>&1", cmd_mdrun, cmd_np, filename);
     }
     else
     {
@@ -703,9 +703,9 @@ static void check_mdrun_works(gmx_bool    bThreads,
             {
                 bMPI = TRUE;
             }
-            if (str_starts(line, match_gpu) )
+            if (str_starts(line, match_nogpu) )
             {
-                bHaveGpuSupport = TRUE;
+                bHaveGpuSupport = FALSE;
             }
         }
     }

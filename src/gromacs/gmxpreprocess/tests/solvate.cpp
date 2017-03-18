@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,11 @@
 #include "gromacs/gmxpreprocess/solvate.h"
 
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/textreader.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/conftest.h"
+#include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 
@@ -54,14 +57,14 @@ namespace
 {
 
 using gmx::test::CommandLine;
-using gmx::test::NoTextMatch;
+using gmx::test::ConfMatch;
 
 class SolvateTest : public gmx::test::CommandLineTestBase
 {
     public:
         SolvateTest()
         {
-            setOutputFile("-o", "out.gro", NoTextMatch());
+            setOutputFile("-o", "out.gro", ConfMatch());
         }
 
         void runTest(const CommandLine &args)
@@ -70,6 +73,7 @@ class SolvateTest : public gmx::test::CommandLineTestBase
             cmdline.merge(args);
 
             ASSERT_EQ(0, gmx_solvate(cmdline.argc(), cmdline.argv()));
+            checkOutputFiles();
         }
 };
 
@@ -105,6 +109,18 @@ TEST_F(SolvateTest, cs_cp_p_Works)
     std::string modifiableTopFileName = fileManager().getTemporaryFilePath(".top");
     gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
     commandLine().addOption("-p", modifiableTopFileName);
+
+    runTest(CommandLine(cmdline));
+}
+
+TEST_F(SolvateTest, shell_Works)
+{
+    // use default solvent box (-cs without argument)
+    const char *const cmdline[] = {
+        "solvate", "-cs"
+    };
+    setInputFile("-cp", "spc-and-methanol.gro");
+    commandLine().addOption("-shell", 1.0);
 
     runTest(CommandLine(cmdline));
 }

@@ -709,8 +709,12 @@ Running the OpenCL version of mdrun
 -----------------------------------
 
 The current version works with GCN-based AMD GPUs, and NVIDIA CUDA
-GPUs. Make sure that you have the latest drivers installed. The
-minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
+GPUs. Make sure that you have the latest drivers installed. For AMD GPUs,
+Mesa version 17.0 or newer with LLVM 4.0 or newer is supported in addition
+to the proprietary driver. For NVIDIA GPUs, using the proprietary driver is
+required as the open source nouveau driver (available in Mesa) does not
+provide the OpenCL support.
+The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
 Devices from the AMD GCN architectures (all series) and NVIDIA Fermi
