@@ -122,6 +122,7 @@ if (SPHINX_FOUND)
         user-guide/flow.rst
         user-guide/system-preparation.rst
         user-guide/cutoff-schemes.rst
+        user-guide/managing-simulations.rst
         user-guide/mdrun-features.rst
         user-guide/mdrun-performance.rst
         user-guide/mdp-options.rst
