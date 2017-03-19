@@ -99,6 +99,7 @@ static const int min_atoms_per_gpu        = 900;
 const int nthreads_omp_faster_default   =  8;
 const int nthreads_omp_faster_Nehalem   = 12;
 const int nthreads_omp_faster_Intel_AVX = 16;
+const int nthreads_omp_faster_AMD_Ryzen = 16;
 /* For CPU only runs the fastest options are usually MPI or OpenMP only.
  * With one GPU, using MPI only is almost never optimal, so we need to
  * compare running pure OpenMP with combined MPI+OpenMP. This means higher
@@ -139,6 +140,11 @@ static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
     {
         // Intel Nehalem
         nth = nthreads_omp_faster_Nehalem;
+    }
+    else if (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Amd && cpuInfo.family() >= 23)
+    {
+        // AMD Ryzen
+        nth = nthreads_omp_faster_AMD_Ryzen;
     }
     else
     {
