@@ -313,6 +313,10 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
 #endif                                  /* CALC_ENERGIES */
 
+#ifdef EXCLUSION_FORCES
+    const int nonSelfInteraction  = !(nb_sci.shift == CENTRAL & tidxj <= tidxi);
+#endif
+
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
     {
@@ -325,7 +329,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #endif
         {
             /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            if ((tidxj == 0 | tidxj == 4) & (tidxi < NBNXN_GPU_JGROUP_SIZE))
             {
                 cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
             }
@@ -394,10 +398,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
                             /* cutoff & exclusion check */
 #ifdef EXCLUSION_FORCES
-                            if (r2 < rcoulomb_sq *
-                                (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
+                            if ((r2 < rcoulomb_sq) * (nonSelfInteraction | (ci != cj)))
 #else
-                            if (r2 < rcoulomb_sq * int_bit)
+                            if ((r2 < rcoulomb_sq) * int_bit)
 #endif
                             {
                                 /* load the rest of the i-atom parameters */

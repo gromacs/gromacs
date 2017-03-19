@@ -284,6 +284,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #endif                                  /* CALC_ENERGIES */
 
+#ifdef EXCLUSION_FORCES
+    const int nonSelfInteraction = !(nb_sci.shift == CENTRAL & tidxj <= tidxi);
+#endif
+
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
     {
@@ -296,7 +300,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
         {
             /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
+            if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
@@ -359,10 +363,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
                             /* cutoff & exclusion check */
 #ifdef EXCLUSION_FORCES
-                            if (r2 < rcoulomb_sq *
-                                (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
+                            if ((r2 < rcoulomb_sq) * (nonSelfInteraction | (ci != cj)))
 #else
-                            if (r2 < rcoulomb_sq * int_bit)
+                            if ((r2 < rcoulomb_sq) * int_bit)
 #endif
                             {
                                 /* load the rest of the i-atom parameters */
