@@ -46,6 +46,7 @@
  */
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -276,7 +277,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ci = sci * c_numClPerSupercl + tidxj;
         ai = ci * c_clSize + tidxi;
 
-        xqbuf    = xq[ai] + shift_vec[nb_sci.shift];
+        float  *shiftptr = (float *)&shift_vec[nb_sci.shift];
+        xqbuf    = xq[ai] + make_float4(LDG(shiftptr), LDG(shiftptr + 1), LDG(shiftptr + 2), 0.0f);
         xqbuf.w *= nbparam.epsfac;
         xqib[tidxj * c_clSize + tidxi] = xqbuf;
 
