@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -1310,7 +1310,7 @@ position restraint                 & {\ttss position_restraints}    & 1     & 1 
 flat-bottomed position restraint   & {\ttss position_restraints}    & 1     & 2     & $g$, $r$ (nm), $k$ (\kJmolnm{-2})                     &            & \ssecref{fbpositionrestraint} \\
 %restraint potential                & {\tts bonds}                   & 2     & 10    & low, up$_1$, up$_2$ (nm); $k_{dr}$ (\kJmolnm{-2})     &            & \ssecref{} \\
 distance restraint                 & {\ttss distance_restraints}    & 2     & 1     & type; label; low, up$_1$, up$_2$ (nm); weight ()      &            & \ssecref{distancerestraint} \\
-dihedral restraint                 & {\ttss dihedral_restraints}    & 4     & 1     & $\phi_0$ (deg); $\Delta\phi$ (deg); &    all   & \ssecref{dihedralrestraint} \\
+dihedral restraint                 & {\ttss dihedral_restraints}    & 4     & 1     & $\phi_0$ (deg); $\Delta\phi$ (deg); $k_\mathrm{dihr}$ (\kJmolrad{-2}) &    all   & \ssecref{dihedralrestraint} \\
 orientation restraint              & {\ttss orientation_restraints} & 2     & 1     & exp.; label; $\alpha$; $c$ (U nm$^\alpha$); obs. (U); weight (U$^{-1}$) & & \ssecref{orientationrestraint} \\
 angle restraint                    & {\ttss angle_restraints}       & 4     & 1     & $\theta_0$ (deg); $k_c$ (\kJmol); multiplicity        & $\theta,k$ & \ssecref{anglerestraint} \\
 angle restraint (z)                & {\ttss angle_restraints_z}     & 2     & 1     & $\theta_0$ (deg); $k_c$ (\kJmol); multiplicity        & $\theta,k$ & \ssecref{anglerestraint} \\
