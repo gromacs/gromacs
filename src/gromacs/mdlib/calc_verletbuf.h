@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,6 +90,34 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
                              real *rlist);
+
+/* Struct for unique atom type for calculating the energy drift.
+ * The atom displacement depends on mass and constraints.
+ * The energy jump for given distance depend on LJ type and q.
+ */
+struct atom_nonbonded_kinetic_prop_t
+{
+    real     mass;     /* mass */
+    int      type;     /* type (used for LJ parameters) */
+    real     q;        /* charge */
+    gmx_bool bConstr;  /* constrained, if TRUE, use #DOF=2 iso 3 */
+    real     con_mass; /* mass of heaviest atom connected by constraints */
+    real     con_len;  /* constraint length to the heaviest atom */
+};
+
+/* This function computes two components of the estimate of the variance
+ * in the displacement of one atom in a system of two constrained atoms.
+ * Returns in sigma2_2d the variance due to rotation of the constrained
+ * atom around the atom to which it constrained.
+ * Returns in sigma2_3d the variance due to displacement of the COM
+ * of the whole system of the two constrained atoms.
+ *
+ * Only exposed here for testing purposes.
+ */
+void constrained_atom_sigma2(real                                 kT_fac,
+                             const atom_nonbonded_kinetic_prop_t *prop,
+                             real                                *sigma2_2d,
+                             real                                *sigma2_3d);
 
 #ifdef __cplusplus
 }
