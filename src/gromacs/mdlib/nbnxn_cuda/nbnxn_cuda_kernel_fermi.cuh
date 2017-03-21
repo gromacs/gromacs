@@ -46,6 +46,7 @@
  */
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
