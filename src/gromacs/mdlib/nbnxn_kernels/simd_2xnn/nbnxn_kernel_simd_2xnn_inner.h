@@ -440,6 +440,8 @@
     gatherLoadUBySimdIntTranspose<1>(tab_coul_V, ti_S0, &ctabv_S0, &dum_S0);
     gatherLoadUBySimdIntTranspose<1>(tab_coul_F, ti_S2, &ctab0_S2, &ctab1_S2);
     gatherLoadUBySimdIntTranspose<1>(tab_coul_V, ti_S2, &ctabv_S2, &dum_S2);
+    ctab1_S0 = ctab1_S0 - ctab0_S0;
+    ctab1_S2 = ctab1_S2 - ctab0_S2;
 #endif
 #endif
     fsub_S0     = fma(frac_S0, ctab1_S0, ctab0_S0);
