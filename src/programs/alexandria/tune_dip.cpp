@@ -707,7 +707,7 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                           const char *xvgepot, real temperature, 
                           bool bBound)
 {
-    std::vector<double> optx, opts, optm;
+    std::vector<double> optb, opts, optm;
     double              chi2, chi2_min;
     gmx_bool            bMinimum = false;
     
@@ -738,7 +738,7 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
             }
             
             TuneDip.simulate();
-            TuneDip.getBestParam(optx);
+            TuneDip.getBestParam(optb);
             TuneDip.getPsigma(opts);
             TuneDip.getPmean(optm);
 
@@ -747,9 +747,9 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                 bMinimum = true;
                 for (size_t k = 0; k < param_.size(); k++)
                 {
-                    best_[k]   = optx[k];
-                    psigma_[k] = opts[k];
+                    best_[k]   = optb[k];
                     pmean_[k]  = optm[k];
+                    psigma_[k] = opts[k];
                 }
                 chi2_min = chi2;
             }
@@ -762,10 +762,11 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
-                fprintf(fplog, "Average and standard deviation of parameters\n");
+                fprintf(fplog, "Statistics of parameters after optimization\n");
                 for (size_t k = 0; k < param_.size(); k++)
                 {
-                    fprintf(fplog, "%5zu  %10g  %10g\n", k, pmean_[k], psigma_[k]);
+                    fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g\n", 
+                            k, best_[k], pmean_[k], psigma_[k]);
                 }
             }
         }
@@ -928,11 +929,10 @@ void OPtimization::print_results(FILE                   *fp,
                                  real                    quad_toler, 
                                  const gmx_output_env_t *oenv)
 {
-    double        d2 = 0;
-    FILE         *dipc, *muc, *Qc, *hh, *espc;
-    real          rms, sigma, aver, error, qq;
-    int           j, n, nout, mm, nn;
-     
+    int           i = 0, j = 0, n = 0, nout = 0, mm = 0, nn = 0;
+    real          sse = 0, rms = 0, sigma = 0, aver = 0, error = 0, qEEM = 0;
+    FILE         *dipc, *muc, *Qc, *hh, *espc;   
+        
     struct AtomTypeLsq {
         std::string atomtype;
         gmx_stats_t lsq;
@@ -943,7 +943,7 @@ void OPtimization::print_results(FILE                   *fp,
     };
     
     gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp;
-    const char               *eprnm[eprNR] = { "EEM", "ESP" };
+    const char               *eprnm[eprNR] = {"EEM", "ESP"};
     std::vector<AtomTypeLsq>  lsqt;
     
     lsq_quad[0] = gmx_stats_init();
@@ -959,7 +959,7 @@ void OPtimization::print_results(FILE                   *fp,
     {
         if (mol.eSupp_ != eSupportNo)
         {
-            fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n", n+1,
+            fprintf(fp, "Molecule %d: %s Qtot: %d, Multiplicity %d\n", n+1,
                     mol.molProp()->getMolname().c_str(),
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
@@ -1004,33 +1004,41 @@ void OPtimization::print_results(FILE                   *fp,
                 }
             }
 
-            d2 += gmx::square(mol.dip_elec_ - mol.dip_calc_);
+            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
             
             fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
-            for (j = 0; j < mol.topology_->atoms.nr; j++)
+            for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
-                const char *at = *(mol.topology_->atoms.atomtype[j]);
-                auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                              [at](const AtomTypeLsq &atlsq)
-                                              {
-                                                  return atlsq.atomtype.compare(at) == 0;
-                                              });
-                if (k == lsqt.end())
-                {
-                    lsqt.resize(1+lsqt.size());
-                    lsqt[lsqt.size()-1].atomtype.assign(at);
-                    lsqt[lsqt.size()-1].lsq = gmx_stats_init();
-                    k = lsqt.end() - 1;
+                if (mol.topology_->atoms.atom[j].ptype == eptAtom)
+                {               
+                    const char *at = *(mol.topology_->atoms.atomtype[j]);
+                    auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
+                                                  [at](const AtomTypeLsq &atlsq)
+                                                  {
+                                                      return atlsq.atomtype.compare(at) == 0;
+                                                  });                                                 
+                    if (k == lsqt.end())
+                    {
+                        lsqt.resize(1+lsqt.size());
+                        lsqt[lsqt.size()-1].atomtype.assign(at);
+                        lsqt[lsqt.size()-1].lsq = gmx_stats_init();
+                        k = lsqt.end() - 1;
+                    } 
+                                       
+                    qEEM = mol.topology_->atoms.atom[j].q;
+                    gmx_stats_add_point(k->lsq, mol.qESP_[i], qEEM, 0, 0);
+                    
+                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
+                            mol.topology_->atoms.atom[j].atomnumber,
+                            j+1,
+                            *(mol.topology_->atoms.atomtype[j]),
+                            qEEM, 
+                            mol.qESP_[i],
+                            mol.state_->x[j][XX], 
+                            mol.state_->x[j][YY], 
+                            mol.state_->x[j][ZZ]); 
+                    i++;
                 }
-                
-                qq = mol.topology_->atoms.atom[j].q;
-                fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
-                        mol.topology_->atoms.atom[j].atomnumber,
-                        j+1,
-                        *(mol.topology_->atoms.atomtype[j]),
-                        qq, mol.qESP_[j],
-                        mol.state_->x[j][XX], mol.state_->x[j][YY], mol.state_->x[j][ZZ]);
-                gmx_stats_add_point(k->lsq, mol.qESP_[j], qq, 0, 0);
             }
             fprintf(fp, "\n");
             n++;
@@ -1062,7 +1070,7 @@ void OPtimization::print_results(FILE                   *fp,
     }   
     fprintf(fp, "\n");
       
-    std::vector<const char *> atypes;
+    std::vector<const char*> atypes;
     for (const auto &k : lsqt)
     {
         atypes.push_back(k.atomtype.c_str());
@@ -1070,20 +1078,20 @@ void OPtimization::print_results(FILE                   *fp,
     
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
     xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
-    fprintf(fp, "\nDeviations of the charges separated per atomtype:\n");
     
+    fprintf(fp, "\nEEM parameters are optimized for %zu atom types:\n", atypes.size());    
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
-        int   N;
+        int   nbins;
         real *x, *y;
 
-        if (gmx_stats_get_npoints(k->lsq, &N) == estatsOK)
+        if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
-            N = N/4;
-            if (gmx_stats_make_histogram(k->lsq, 0, &N, ehistoY, 0, &x, &y) == estatsOK)
+            fprintf(fp, "%-4d copies for %4s\n", nbins, k->atomtype.c_str());
+            if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
             {
                 fprintf(hh, "@type xy\n");
-                for (int i = 0; i < N; i++)
+                for (int i = 0; i < nbins; i++)
                 {
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
@@ -1091,6 +1099,7 @@ void OPtimization::print_results(FILE                   *fp,
                 free(x);
                 free(y);
             }
+            gmx_stats_free(k->lsq);
         }
     }
     fclose(hh);
@@ -1124,12 +1133,11 @@ void OPtimization::print_results(FILE                   *fp,
 
     fprintf(fp, "hfac = %g\n", hfac_);
     gmx_stats_get_ase(lsq_mu[0], &aver, &sigma, &error);
-    sigma = sqrt(d2/n);
+    sigma = sqrt(sse/n);
     nout  = 0;
     fprintf(fp, "Overview of outliers (> %.3f off)\n", 2*sigma);
     fprintf(fp, "----------------------------------\n");
-    fprintf(fp, "%-20s  %12s  %12s  %12s\n",
-            "Name", "EEM", "QM", "Mu-Deviation (Debye)");
+    fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "EEM", "QM", "Mu-Deviation (Debye)");
             
     for (auto &mol : mymol_)
     {
@@ -1148,8 +1156,7 @@ void OPtimization::print_results(FILE                   *fp,
     }
     if (nout)
     {
-        printf("There were %d outliers. See at the very bottom of the log file\n",
-               nout);
+        printf("There were %d outliers. See at the very bottom of the log file\n", nout);
     }
     else
     {

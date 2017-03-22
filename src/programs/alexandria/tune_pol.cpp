@@ -539,8 +539,8 @@ static int decompose_frag(FILE                             *fplog,
                         da0  += (x_copy[j]-ax);
                         chi2 += gmx::square(x_copy[j]-ax);
                     }
-                    da0 = da0 / nusemol;
-                    a0 += da0;
+                    da0 /= nusemol;
+                    a0  += da0;
                     niter++;
                     printf("iter: %d <pol> = %g, a0 = %g, chi2 = %g\n",
                            niter, poltot/nusemol, a0, chi2/nusemol);
