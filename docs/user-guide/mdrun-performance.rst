@@ -1,10 +1,11 @@
 Getting good performance from mdrun
 ===================================
-The GROMACS build system and the :ref:`gmx mdrun` tool has a lot of built-in
-and configurable intelligence to detect your hardware and make pretty
-effective use of that hardware. For a lot of casual and serious use of
-:ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
-most from your hardware to maximize your scientific quality, read on!
+The GROMACS build system and the :ref:`gmx mdrun` tool has a lot of
+built-in and configurable intelligence to detect your hardware and
+make pretty effective use of that hardware. For a lot of casual and
+serious use of :ref:`gmx mdrun`, the automatic machinery works well
+enough. But to get the most from your simulation setup and hardware to
+maximize your scientific quality, read on!
 
 Hardware background information
 -------------------------------
@@ -533,6 +534,97 @@ parallel hardware.
     of ``-dds`` might need to be adjusted to account for high or low
     spatial inhomogeneity of the system.
 
+mdrun performance checklist
+---------------------------
+
+Many |Gromacs| simulations require a lot of computational resources,
+which can be worth optimizing. Several issues mentioned in the list
+below could lead to a performance difference of a factor of 2 or more,
+so we encourage all users doing large scale simulations to consider
+these.
+
+How to configure the |Gromacs| build
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For details on how to implement these ideas, please see the
+:doc:`/install-guide/index`.
+
+* Don't use double precision unless you're absolutely sure you need
+  it.
+
+* Compile the FFTW library (yourself) following the |Gromacs| advice
+  at :doc:`/install-guide/index#Using FFTW`.
+
+* On x86, use icc or gcc as compiler (and not the PGI or Cray
+  compiler).
+
+* Use the most recent compiler version available.
+
+* Use a modern MPI library, e.g. MVAPICH2 or OpenMPI or your vendor's
+  library.
+
+* If compiling on a cluster head node, make sure that GMX_SIMD is
+  appropriate for the compute nodes, see
+  :doc:`/install-guide/index#SIMD support`.
+
+When running on GPUs,
+
+* the fastest CUDA versions with GROMACS are 5.5, 6.5 and 7.5, and
+
+* you should use a recent CUDA driver.
+
+How to configure your simulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These steps can be implemented when planning your simulation, including
+choosing the style of model physics, preparing the contents of your
+simulation cell, choosing suitable algorithms, and writing the output
+that you need.
+
+* For an approximately spherical solute, use a rhombic dodecahedron
+  unit cell in :ref:`gmx editconf`.
+
+* You can increase the time-step to 4 or 5 fs when using virtual
+  interaction sites (:ref:`gmx pdb2gmx` ``-vsite h``).
+
+* Always use the Verlet :mdp:`cutoff-scheme` for better all-round
+  performance, and particularly to get access to GPU support.
+
+* For massively parallel runs with PME, you might need to try
+  different numbers of PME ranks (:ref:`gmx mdrun` ``-npme``) to
+  achieve best performance. :ref:`gmx tune_pme` can help automate this
+  search.
+
+* For massively parallel MPI runs (and also with :ref:`gmx mdrun`
+  ``-multi``), or with a slow network, global communication can become
+  a bottleneck and you can reduce the frequency with :ref:`gmx mdrun`
+  ``-gcom`` (see detail instructions for `Running mdrun on more than
+  one node`_.
+
+How to find ways to improve performance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Look at the end of the ``md.log`` file to see the overall
+  performance, the cycle counters and wall-clock time for different
+  parts of the MD calculation. The PP/PME load ratio is also printed,
+  with a warning when a lot of performance is lost due to imbalance.
+
+* Adjust the number of PME ranks and/or the cut-off and PME
+  grid-spacing when there is a large PP/PME imbalance. Note that even
+  with a small reported imbalance, the automated PME-tuning might have
+  reduced the initial imbalance. You could still gain performance by
+  changing some mdp parameters or increasing the number of PME ranks.
+
+* If the neighbor searching takes a lot of time, increase
+  :mdp:`nstlist` (with the Verlet cut-off scheme, this automatically
+  adjusts the size of the buffer, to do more non-bonded computation to
+  keep energy drift constant).  If "Comm. energies" takes a lot of
+  time (a note will be printed in the log file), increase
+  nstcalcenergy or use mdrun -gcom.  If all communication takes a lot
+  of time, you might be running on too many cores, or you could try
+  running combined MPI/OpenMP parallelization with 2 or 4 OpenMP
+  threads per MPI process.
+
 Finding out how to run mdrun better
 -----------------------------------
 
@@ -644,7 +736,7 @@ available to date (up to and including Maxwell, compute capability 5.2).
 
 Application clocks can be set using the NVIDIA system managemet tool
 ``nvidia-smi``. If the system permissions allow, :ref:`gmx mdrun` has
-built-in support to set application clocks if built with NVML support. # TODO add ref to relevant section
+built-in support to set application clocks if built with NVML support.
 Note that application clocks are a global setting, hence affect the
 performance of all applications that use the respective GPU(s).
 For this reason, :ref:`gmx mdrun` sets application clocks at initialization
@@ -652,6 +744,8 @@ to the values optimal for |Gromacs| and it restores them before exiting
 to the values found at startup, unless it detects that they were altered
 during its runtime.
 
+TODO add link to relevant NVML section/docs
+ 
 .. _NVIDIA blog article: https://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/
 
 Reducing overheads in GPU accelerated runs
