@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Force">
+    <Int Name="Length">21</Int>
+    <Real>0.21526718459323615</Real>
+    <Real>0.0003716808667329545</Real>
+    <Real>0.002350600653173471</Real>
+    <Real>-7.5801580181993067e-12</Real>
+    <Real>1.8182147468247259e-05</Real>
+    <Real>-1.8182168123243025e-05</Real>
+    <Real>-6.788349939381268e-06</Real>
+    <Real>6.7883870437241681e-06</Real>
+    <Real>7.5519761342894565e-12</Real>
+    <Real>6.7883871063822445e-06</Real>
+    <Real>-6.7883963886777171e-06</Real>
+    <Real>-3.5538534743007455</Real>
+    <Real>-2.0147116960924141</Real>
+    <Real>-2.7052534619589688</Real>
+    <Real>-1.0406811836680903</Real>
+    <Real>-3.9670664424435631</Real>
+    <Real>-0.87907576886885919</Real>
+    <Real>-1.6612940571272135</Real>
+    <Real>-2.6184391877034012</Real>
+    <Real>-1.2743005526817324</Real>
+    <Real>-0.86472524380535309</Real>
+  </Sequence>
+  <Sequence Name="PointBias">
+    <Int Name="Length">21</Int>
+    <Real>-2.725257112402657</Real>
+    <Real>-2.7406945931908386</Real>
+    <Real>-2.8751558597198086</Real>
+    <Real>-3.24068647398042</Real>
+    <Real>-3.546014926511754</Real>
+    <Real>-3.5687884289380034</Real>
+    <Real>-3.4901303729187223</Real>
+    <Real>-3.4970015436590725</Real>
+    <Real>-3.449662168401042</Real>
+    <Real>-3.2125377165120561</Real>
+    <Real>-2.9150586504409142</Real>
+    <Real>-2.796293723590376</Real>
+    <Real>-2.8888308163444121</Real>
+    <Real>-2.9753285198643482</Real>
+    <Real>-2.8869538581554268</Real>
+    <Real>-2.76545229176251</Real>
+    <Real>-2.7283623280584433</Real>
+    <Real>-2.7247454955891737</Real>
+    <Real>-2.7246193286498896</Real>
+    <Real>-2.7246176904526385</Real>
+    <Real>-2.7246176904526385</Real>
+  </Sequence>
+  <Sequence Name="PointLogPmfsum">
+    <Int Name="Length">21</Int>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>4.3399332345512827</Real>
+    <Real>4.1747174006109971</Real>
+    <Real>4.1623670217204172</Real>
+    <Real>4.039659505669408</Real>
+    <Real>4.1446557037857117</Real>
+    <Real>3.9896509587172218</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.9896509549207635</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+  </Sequence>
+</ReferenceData>
