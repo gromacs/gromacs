@@ -737,6 +737,11 @@ static void check_cell_list_space_simple(nbnxn_pairlist_t *nbl,
                            nbl->ncj*sizeof(*nbl->cj),
                            nbl->cj_nalloc*sizeof(*nbl->cj),
                            nbl->alloc, nbl->free);
+
+        nbnxn_realloc_void((void **)&nbl->cjOuter,
+                           nbl->ncj*sizeof(*nbl->cjOuter),
+                           nbl->cj_nalloc*sizeof(*nbl->cjOuter),
+                           nbl->alloc, nbl->free);
     }
 }
 
@@ -2127,6 +2132,11 @@ static void nb_realloc_ci(nbnxn_pairlist_t *nbl, int n)
                        nbl->nci*sizeof(*nbl->ci),
                        nbl->ci_nalloc*sizeof(*nbl->ci),
                        nbl->alloc, nbl->free);
+
+    nbnxn_realloc_void((void **)&nbl->ciOuter,
+                       nbl->nci*sizeof(*nbl->ciOuter),
+                       nbl->ci_nalloc*sizeof(*nbl->ciOuter),
+                       nbl->alloc, nbl->free);
 }
 
 /* Reallocate the super-cell sci list for at least n entries */
@@ -2390,6 +2400,7 @@ static void clear_pairlist(nbnxn_pairlist_t *nbl)
     nbl->ncjInUse      = 0;
     nbl->ncj4          = 0;
     nbl->nci_tot       = 0;
+    nbl->nciOuter      = -1;
     nbl->nexcl         = 1;
 
     nbl->work->ncj_noq = 0;
@@ -4331,6 +4342,12 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         /* Balance the free-energy lists over all the threads */
         balance_fep_lists(nbs, nbl_list);
     }
+
+    /* This is a fresh list, so not pruned, stored using ci and nci.
+     * ciOuter and nciOuter are invalid at this point.
+     */
+    GMX_ASSERT(nbl_list->nbl[0]->nciOuter == -1, "nciOuter should have been set to -1 to signal that it is invalid");
+    nbl_list->havePrunedSimpleList = false;
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
     if (LOCAL_I(iloc))
