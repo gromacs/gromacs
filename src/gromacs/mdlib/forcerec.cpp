@@ -64,6 +64,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -1986,7 +1987,8 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlist           = fr->rlist;
+    ic->rlistOuter      = fr->rlist;
+    ic->rlistInner      = fr->rlist;
 
     /* Lennard-Jones */
     ic->vdwtype         = fr->vdwtype;
@@ -2100,6 +2102,102 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
+// TODO: Move this to a new file, e.g. nbnxn_tuning.cpp
+static void set_pairlist_pruning_parameters(FILE                *fplog,
+                                            const t_inputrec    *ir,
+                                            const gmx_mtop_t    *mtop,
+                                            matrix               box,
+                                            gmx_bool             useRollingPruning,
+                                            interaction_const_t *ic)
+{
+    /* Initialize the parameters to no dynamic list pruning */
+    ic->nstlistPrune = ir->nstlist;
+
+    bool useDynamicPruning = false;
+
+    if (EI_DYNAMICS(ir->eI) && !(EI_MD(ir->eI) && ir->etc == etcNO) &&
+        ir->verletbuf_tol > 0)
+    {
+        // dynamic pruning can on by default
+        useDynamicPruning = true;
+
+        verletbuf_list_setup_t ls;
+        verletbuf_get_list_setup(TRUE, TRUE, &ls);
+
+        /* Note that nstlistPrune can have any value independently of nstlist.
+         * Actually applying rolling pruning is only useful when
+         * nstlistPrune < nstlist -1
+         */
+        char *env                = getenv("GMX_NSTLIST_PRUNE");
+        bool  manualNstlistPrune = (env != NULL);
+
+        if (manualNstlistPrune)
+        {
+            char *end;
+            ic->nstlistPrune = strtol(env, &end, 10);
+            if (!end || (*end != 0) || ic->nstlistPrune < 0)
+            {
+                gmx_fatal(FARGS, "Invalid value passed in GMX_NSTLIST_PRUNE=%s, non-negative integer required (0 to turn off dynamic pruning)", env);
+            }
+
+            if (ic->nstlistPrune == 0)
+            {
+                /* Deactivate rolling pruning */
+                ic->nstlistPrune  = ir->nstlist;
+                useDynamicPruning = false;
+            }
+        }
+        else
+        {
+            static_assert(c_nbnxnGpuRollingListPruningMinLifetime % c_nbnxnGpuRollingListPruningInterval == 0,
+                          "For efficiency reasons, nstlistPrune should be divisible by the rolling pruning interval.");
+
+            // TODO: Use auto-tuning to determine nstlistPrune
+            ic->nstlistPrune  = c_nbnxnGpuRollingListPruningMinLifetime;
+        }
+
+        /* Determine rlistPrune.
+         * When not set by env.var., increase nstlistPrune until we reach a buffer>0.
+         */
+        const real interactionCutoff = std::max(ic->rcoulomb, ic->rvdw);
+        int        tunedNstlistPrune = ic->nstlistPrune;
+        do
+        {
+            /* Rolling pruning is performed on the list for the next step
+             * on the coordinates of the current step, so the list lifetime
+             * is nstlistPrune, unlike the usual nstlist-1.
+             */
+            int listLifetime = tunedNstlistPrune - (useRollingPruning ? 0 : 1);
+            ic->nstlistPrune = tunedNstlistPrune;
+            calc_verlet_buffer_size(mtop, det(box), ir,
+                                    tunedNstlistPrune, listLifetime,
+                                    -1, &ls, NULL,
+                                    &ic->rlistInner);
+
+            /* With rolling pruning, keep nstlistPrune a multiple of the interval */
+            tunedNstlistPrune += useRollingPruning ? c_nbnxnGpuRollingListPruningInterval : 1;
+        }
+        while (!manualNstlistPrune &&
+               tunedNstlistPrune < ir->nstlist &&
+               ic->rlistInner == interactionCutoff);
+
+        // Dynamic pruning disabled until the kernels are present
+        bool dynamicPruningDisabledUntilLater = true;
+        ic->nstlistPrune  = ir->nstlist;
+
+        if (fplog && useDynamicPruning && !dynamicPruningDisabledUntilLater)
+        {
+            fprintf(fplog,
+                    "Using a dual pair-list setup updated with dynamic%s pruning:"
+                    "  outer list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n"
+                    "  inner list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n",
+                    useRollingPruning ? ", rolling" : "",
+                    ir->nstlist, ic->rlistOuter - interactionCutoff, ic->rlistOuter,
+                    ic->nstlistPrune, ic->rlistInner - interactionCutoff, ic->rlistInner);
+        }
+    }
+}
+
 static void init_nb_verlet(FILE                *fp,
                            const gmx::MDLogger &mdlog,
                            nonbonded_verlet_t **nb_verlet,
@@ -2107,7 +2205,9 @@ static void init_nb_verlet(FILE                *fp,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
-                           const char          *nbpu_opt)
+                           const char          *nbpu_opt,
+                           const gmx_mtop_t    *mtop,
+                           matrix               box)
 {
     nonbonded_verlet_t *nbv;
     int                 i;
@@ -2164,6 +2264,8 @@ static void init_nb_verlet(FILE                *fp,
             }
         }
     }
+
+    set_pairlist_pruning_parameters(fp, ir, mtop, box, nbv->bUseGPU, fr->ic);
 
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
@@ -3209,7 +3311,8 @@ void init_forcerec(FILE                *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt,
+                       mtop, box);
     }
 
     if (ir->eDispCorr != edispcNO)
