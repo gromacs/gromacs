@@ -1388,9 +1388,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 stepWithCurrentList < inputrec->nstlist - 1 &&
                 (stepIsEven || DOMAINDECOMP(cr)))
             {
-                // nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
-                //                                  stepIsEven ? eintLocal : eintNonlocal,
-                //                                  fr->ic->nstlistPrune/c_nbnxnGpuRollingListPruningInterval);
+                nbnxn_gpu_launch_kernel_pruneonly(fr->nbv->gpu_nbv,
+                                                  stepIsEven ? eintLocal : eintNonlocal,
+                                                  fr->ic->nstlistPrune/c_nbnxnGpuRollingListPruningInterval);
             }
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
