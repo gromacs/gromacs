@@ -215,9 +215,6 @@ void setupDynamicPairlistPruning(FILE                      *fplog,
                                             userSetNstlistPrune, ic,
                                             listParams);
 
-        // Dynamic pruning disabled until the kernels are present
-        listParams->useDynamicPruning = false;
-
         if (listParams->useDynamicPruning && useGpu)
         {
             GMX_RELEASE_ASSERT(listParams->nstlistPrune % c_nbnxnGpuRollingListPruningInterval == 0, "For efficiency reasons, and correctness of numRollingParts below, nstlistPrune should be divisible by c_nbnxnGpuRollingListPruningInterval");
