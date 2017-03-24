@@ -306,33 +306,39 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
  */
 static const int    nbnxnReferenceNstlist = 10;
 //! The values to try when switching
-const int           nstlist_try[] = { 20, 25, 40 };
+const int           nstlist_try[] = { 20, 25, 40, 50, 80, 100 };
 //! Number of elements in the neighborsearch list trials.
 #define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
 /* Increase nstlist until the non-bonded cost increases more than listfac_ok,
  * but never more than listfac_max.
- * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
- * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
- * Note that both CPU and GPU factors are conservative. Performance should
- * not go down due to this tuning, except with a relatively slow GPU.
- * On the other hand, at medium/high parallelization or with fast GPUs
- * nstlist will not be increased enough to reach optimal performance.
+ * Since we have dynamic pair list pruning, the force kernel cost depends
+ * only very weakly on nstlist. It depends strongly on nstlistPrune.
+ * Increasing nstlist mainly affects the cost of the pair search (down due
+ * lower frequency, up due to larger list) and the list pruning kernel.
+ * We increase nstlist conservatively with regard to kernel performance.
+ * In serial the search cost is not high and thus we don't gain much by
+ * increasing nslist a lot. In parallel the MPI and CPU-GPU communication
+ * volume as well as the communication buffer preparation and reduction time
+ * increases quickly with rlist and thus nslist. Therefore we should avoid
+ * large nstlist, even if that also reduces the domain decomposition cost.
+ * With GPUs we perform the dynamic pruning in a rolling fashion and this
+ * overlaps with the update on the CPU, which allows even larger nstlist.
  */
 /* CPU: pair-search is about a factor 1.5 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_cpu_listfac_ok    = 1.05;
+static const float  nbnxn_cpu_listfac_ok    = 1.3;
 //! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_cpu_listfac_max   = 1.09;
+static const float  nbnxn_cpu_listfac_max   = 1.5;
 /* CPU: pair-search is about a factor 2-3 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_knl_listfac_ok    = 1.22;
+static const float  nbnxn_knl_listfac_ok    = 1.4;
 //! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_knl_listfac_max   = 1.3;
+static const float  nbnxn_knl_listfac_max   = 1.6;
 /* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_gpu_listfac_ok    = 1.20;
+static const float  nbnxn_gpu_listfac_ok    = 1.5;
 //! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_gpu_listfac_max   = 1.30;
+static const float  nbnxn_gpu_listfac_max   = 1.7;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
