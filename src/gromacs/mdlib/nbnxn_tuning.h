@@ -63,19 +63,20 @@ struct t_inputrec;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme
  *
- * \param[in,out] fp       Log file
+ * \param[in,out] fplog    Log file
  * \param[in]     cr       The communication record
  * \param[in]     ir       The input parameter record
- * \param[in]     nstlist_cmdline  The value of nstlist provided on the command line
+ * \param[in]     nstlistOnCmdline  The value of nstlist provided on the command line
  * \param[in]     mtop     The global topology
  * \param[in]     box      The unit cell
- * \param[in]     makeGpuPairList  Tells if we are using a GPU for non-bondeds
+ * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
  * \param[in]     cpuinfo  Information about the CPU(s)
  */
-void increase_nstlist(FILE *fp, t_commrec *cr,
-                      t_inputrec *ir, int nstlist_cmdline,
-                      const gmx_mtop_t *mtop, matrix box,
-                      bool makeGpuPairList, const gmx::CpuInfo &cpuinfo);
+void increaseNstlist(FILE *fplog, t_commrec *cr,
+                     t_inputrec *ir, int nstlistOnCmdline,
+                     const gmx_mtop_t *mtop, matrix box,
+                     bool useOrEmulateGpuForNonbondeds,
+                     const gmx::CpuInfo &cpuinfo);
 
 /*! \brief Set up the dynamic pairlist pruning
  *
