@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,14 +57,16 @@ struct gmx_nbnxn_kernel_timing_data_t
 /*! \internal \brief GPU timings for kernels and H2d/D2H transfers. */
 struct gmx_wallclock_gpu_t
 {
-    struct gmx_nbnxn_kernel_timing_data_t ktime[2][2]; /**< table containing the timings of the four
-                                                          versions of the nonbonded kernels: force-only,
-                                                          force+energy, force+pruning, and force+energy+pruning */
-    double  nb_h2d_t;                                  /**< host to device transfer time in nb calculation  */
-    double  nb_d2h_t;                                  /**< device to host transfer time in nb calculation */
-    int     nb_c;                                      /**< total call count of the nonbonded gpu operations */
-    double  pl_h2d_t;                                  /**< pair search step host to device transfer time */
-    int     pl_h2d_c;                                  /**< pair search step  host to device transfer call count */
+    gmx_nbnxn_kernel_timing_data_t ktime[2][2];      /**< table containing the timings of the four
+                                                        versions of the nonbonded kernels: force-only,
+                                                        force+energy, force+pruning, and force+energy+pruning */
+    gmx_nbnxn_kernel_timing_data_t pruneTime;        /**< table containing the timings of the 1st pass prune-only kernels */
+    gmx_nbnxn_kernel_timing_data_t dynamicPruneTime; /**< table containing the timings of dynamic prune-only kernels */
+    double                         nb_h2d_t;         /**< host to device transfer time in nb calculation  */
+    double                         nb_d2h_t;         /**< device to host transfer time in nb calculation */
+    int                            nb_c;             /**< total call count of the nonbonded gpu operations */
+    double                         pl_h2d_t;         /**< pair search step host to device transfer time */
+    int                            pl_h2d_c;         /**< pair search step  host to device transfer call count */
 };
 
 #ifdef __cplusplus

@@ -62,7 +62,9 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -81,7 +83,8 @@
 /*! \brief Parameters and settings for one PP-PME setup */
 struct pme_setup_t {
     real              rcut_coulomb;    /**< Coulomb cut-off                              */
-    real              rlist;           /**< pair-list cut-off                            */
+    real              rlistOuter;      /**< cut-off for the outer pair-list              */
+    real              rlistInner;      /**< cut-off for the inner pair-list              */
     real              spacing;         /**< (largest) PME grid spacing                   */
     ivec              grid;            /**< the PME grid dimensions                      */
     real              grid_efficiency; /**< ineffiency factor for non-uniform grids <= 1 */
@@ -129,8 +132,10 @@ struct pme_load_balancing_t {
     real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
     real         rcut_vdw;           /**< Vdw cutoff (does not change) */
     real         rcut_coulomb_start; /**< Initial electrostatics cutoff */
-    real         rbuf_coulomb;       /**< the pairlist buffer size */
-    real         rbuf_vdw;           /**< the pairlist buffer size */
+    real         rbufOuter_coulomb;  /**< the outer pairlist buffer size */
+    real         rbufOuter_vdw;      /**< the outer pairlist buffer size */
+    real         rbufInner_coulomb;  /**< the inner pairlist buffer size */
+    real         rbufInner_vdw;      /**< the inner pairlist buffer size */
     matrix       box_start;          /**< the initial simulation box */
     int          n;                  /**< the count of setup as well as the allocation size */
     pme_setup_t *setup;              /**< the PME+cutoff setups */
@@ -161,6 +166,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       const t_inputrec          *ir,
                       matrix                     box,
                       const interaction_const_t *ic,
+                      const NbnxnListParameters *listParams,
                       gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
@@ -177,18 +183,20 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     snew(pme_lb, 1);
 
-    pme_lb->bSepPMERanks  = !(cr->duty & DUTY_PME);
+    pme_lb->bSepPMERanks      = !(cr->duty & DUTY_PME);
 
     /* Initially we turn on balancing directly on based on PP/PME imbalance */
-    pme_lb->bTriggerOnDLB = FALSE;
+    pme_lb->bTriggerOnDLB     = FALSE;
 
     /* Any number of stages >= 2 is supported */
-    pme_lb->nstage        = 2;
+    pme_lb->nstage            = 2;
 
-    pme_lb->cutoff_scheme = ir->cutoff_scheme;
+    pme_lb->cutoff_scheme     = ir->cutoff_scheme;
 
-    pme_lb->rbuf_coulomb  = ic->rlist - ic->rcoulomb;
-    pme_lb->rbuf_vdw      = ic->rlist - ic->rvdw;
+    pme_lb->rbufOuter_coulomb = listParams->rlistOuter - ic->rcoulomb;
+    pme_lb->rbufOuter_vdw     = listParams->rlistOuter - ic->rvdw;
+    pme_lb->rbufInner_coulomb = listParams->rlistInner - ic->rcoulomb;
+    pme_lb->rbufInner_vdw     = listParams->rlistInner - ic->rvdw;
 
     copy_mat(box, pme_lb->box_start);
     if (ir->ePBC == epbcXY && ir->nwall == 2)
@@ -204,7 +212,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->cur                      = 0;
     pme_lb->setup[0].rcut_coulomb    = ic->rcoulomb;
-    pme_lb->setup[0].rlist           = ic->rlist;
+    pme_lb->setup[0].rlistOuter      = listParams->rlistOuter;
+    pme_lb->setup[0].rlistInner      = listParams->rlistInner;
     pme_lb->setup[0].grid[XX]        = ir->nkx;
     pme_lb->setup[0].grid[YY]        = ir->nky;
     pme_lb->setup[0].grid[ZZ]        = ir->nkz;
@@ -356,17 +365,20 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     if (pme_lb->cutoff_scheme == ecutsVERLET)
     {
         /* Never decrease the Coulomb and VdW list buffers */
-        set->rlist        = std::max(set->rcut_coulomb + pme_lb->rbuf_coulomb,
-                                     pme_lb->rcut_vdw + pme_lb->rbuf_vdw);
+        set->rlistOuter  = std::max(set->rcut_coulomb + pme_lb->rbufOuter_coulomb,
+                                    pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw);
+        set->rlistInner  = std::max(set->rcut_coulomb + pme_lb->rbufInner_coulomb,
+                                    pme_lb->rcut_vdw + pme_lb->rbufInner_vdw);
     }
     else
     {
-        tmpr_coulomb          = set->rcut_coulomb + pme_lb->rbuf_coulomb;
-        tmpr_vdw              = pme_lb->rcut_vdw + pme_lb->rbuf_vdw;
-        set->rlist            = std::min(tmpr_coulomb, tmpr_vdw);
+        tmpr_coulomb     = set->rcut_coulomb + pme_lb->rbufOuter_coulomb;
+        tmpr_vdw         = pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw;
+        set->rlistOuter  = std::min(tmpr_coulomb, tmpr_vdw);
+        set->rlistInner  = set->rlistOuter;
     }
 
-    set->spacing      = sp;
+    set->spacing         = sp;
     /* The grid efficiency is the size wrt a grid with uniform x/y/z spacing */
     set->grid_efficiency = 1;
     for (d = 0; d < DIM; d++)
@@ -602,7 +614,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
              * better overal performance can be obtained with a slightly
              * shorter cut-off and better DD load balancing.
              */
-            set_dd_dlb_max_cutoff(cr, pme_lb->setup[pme_lb->fastest].rlist);
+            set_dd_dlb_max_cutoff(cr, pme_lb->setup[pme_lb->fastest].rlistOuter);
         }
     }
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
@@ -644,7 +656,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
             if (OK && ir->ePBC != epbcNONE)
             {
-                OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlist)
+                OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlistOuter)
                       <= max_cutoff2(ir->ePBC, state->box));
                 if (!OK)
                 {
@@ -659,7 +671,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                 if (DOMAINDECOMP(cr))
                 {
                     OK = change_dd_cutoff(cr, state, ir,
-                                          pme_lb->setup[pme_lb->cur].rlist);
+                                          pme_lb->setup[pme_lb->cur].rlistOuter);
                     if (!OK)
                     {
                         /* Failed: do not use this setup */
@@ -731,7 +743,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     if (DOMAINDECOMP(cr) && pme_lb->stage > 0)
     {
-        OK = change_dd_cutoff(cr, state, ir, pme_lb->setup[pme_lb->cur].rlist);
+        OK = change_dd_cutoff(cr, state, ir, pme_lb->setup[pme_lb->cur].rlistOuter);
         if (!OK)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
@@ -766,9 +778,12 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     set = &pme_lb->setup[pme_lb->cur];
 
-    ic->rcoulomb     = set->rcut_coulomb;
-    ic->rlist        = set->rlist;
-    ic->ewaldcoeff_q = set->ewaldcoeff_q;
+    NbnxnListParameters *listParams = nbv->listParams.get();
+
+    ic->rcoulomb           = set->rcut_coulomb;
+    listParams->rlistOuter = set->rlistOuter;
+    listParams->rlistInner = set->rlistInner;
+    ic->ewaldcoeff_q       = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
@@ -794,7 +809,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     /* We always re-initialize the tables whether they are used or not */
     init_interaction_const_tables(nullptr, ic, rtab);
 
-    nbnxn_gpu_pme_loadbal_update_param(nbv, ic);
+    nbnxn_gpu_pme_loadbal_update_param(nbv, ic, listParams);
 
     /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
      * also sharing texture references. To keep the code simple, we don't
@@ -978,7 +993,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(cr, fr->ic->rlist);
+            set_dd_dlb_max_cutoff(cr, fr->nbv->listParams->rlistOuter);
         }
     }
 
@@ -997,7 +1012,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
         fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
         fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
-        fr->rlist         = fr->ic->rlist;
+        fr->rlist         = fr->nbv->listParams->rlistOuter;
         fr->rcoulomb      = fr->ic->rcoulomb;
         fr->rvdw          = fr->ic->rvdw;
 
@@ -1040,7 +1055,7 @@ static void print_pme_loadbal_setting(FILE              *fplog,
     fprintf(fplog,
             "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
             name,
-            setup->rcut_coulomb, setup->rlist,
+            setup->rcut_coulomb, setup->rlistInner,
             setup->grid[XX], setup->grid[YY], setup->grid[ZZ],
             setup->spacing, 1/setup->ewaldcoeff_q);
 }
@@ -1054,7 +1069,7 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
     double     pp_ratio, grid_ratio;
     real       pp_ratio_temporary;
 
-    pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlist / pme_lb->setup[0].rlist;
+    pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlistInner / pme_lb->setup[0].rlistInner;
     pp_ratio           = gmx::power3(pp_ratio_temporary);
     grid_ratio         = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
