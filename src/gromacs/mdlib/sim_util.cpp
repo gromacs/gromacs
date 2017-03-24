@@ -82,6 +82,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_prune.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
@@ -446,7 +447,7 @@ static void do_nb_verlet(t_forcerec *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNE);
-            //nbnxn_kernel_prune(nbvg, fr->shift_vec, fr->ic->rlistInner);
+            nbnxn_kernel_prune(nbvg, fr->shift_vec, fr->ic->rlistInner);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNE);
         }
     }
