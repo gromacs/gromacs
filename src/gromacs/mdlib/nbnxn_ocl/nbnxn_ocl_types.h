@@ -57,12 +57,41 @@
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/gpu_utils/oclutils.h"
 
 /* kernel does #include "gromacs/math/utilities.h" */
 /* Move the actual useful stuff here: */
 
 //! Define 1/sqrt(pi)
 #define M_FLOAT_1_SQRTPI 0.564189583547756f
+
+/** Default value for the prune kernel's NTHREAD_Z,
+ *  the number of warp-pairs processing j's concurrently.
+ *  The macro allows compile-time override.
+ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       4
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    2
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   2
+#else
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#endif
+const int c_oclPruneKernelJ4ConcurrencyAMD     = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD;
+const int c_oclPruneKernelJ4ConcurrencyNVIDIA  = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA;
+const int c_oclPruneKernelJ4ConcurrencyDefault = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT;
+
+static int getOclPruneKernelJ4Concurrency(int vendorId)
+{
+    assert(vendorId < OCL_VENDOR_UNKNOWN);
+    switch (vendorId)
+    {
+        case OCL_VENDOR_AMD:    return c_oclPruneKernelJ4ConcurrencyAMD;     break;
+        case OCL_VENDOR_NVIDIA: return c_oclPruneKernelJ4ConcurrencyNVIDIA;  break;
+        default:                return c_oclPruneKernelJ4ConcurrencyDefault; break;
+    }
+}
 
 
 #ifdef __cplusplus
@@ -98,6 +127,17 @@ enum eelOcl {
  */
 enum evdwOcl {
     evdwOclCUT, evdwOclCUTCOMBGEOM, evdwOclCUTCOMBLB, evdwOclFSWITCH, evdwOclPSWITCH, evdwOclEWALDGEOM, evdwOclEWALDLB, evdwOclNR
+};
+
+/*! \brief Pruning kernel flavors.
+ *
+ * The values correspond to the first call of the pruning post-list generation
+ * and the rolling pruning, respectively.
+ *
+ * TODO: dedupe, it's replicated for CUDA!
+ */
+enum ePruneKind {
+    epruneFirst, epruneRolling, ePruneNR
 };
 
 /*! \internal
@@ -165,6 +205,7 @@ typedef struct cl_nbparam
     float           rvdw_sq;          /**< VdW cut-off squared                               */
     float           rvdw_switch;      /**< VdW switched cut-off                              */
     float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rlistRollingPrune_sq; /**< pruned pair-list cut-off squared xf           */
 
     shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
@@ -204,6 +245,7 @@ typedef struct cl_nbparam_params
     float           rvdw_sq;          /**< VdW cut-off squared                               */
     float           rvdw_switch;      /**< VdW switched cut-off                              */
     float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rlistRollingPrune_sq; /**< pruned pair-list cut-off squared xf           */
 
     shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
@@ -232,13 +274,18 @@ typedef struct cl_plist
     cl_mem           cj4;         /**< 4*j cluster list, contains j cluster number and
                                        index into the i cluster list.
                                        It contains elements of type nbnxn_cj4_t     */
+    int              nimask;      /**< # of 4*j clusters * # of warps               */
+    int              imask_nalloc; /**< allocation size of imask                     */
+    cl_mem           imask;       /**< imask for 2 warps for each 4*j cluster group */
     cl_mem           excl;        /**< atom interaction bits
                                        It contains elements of type nbnxn_excl_t    */
     int              nexcl;       /**< count for excl                               */
     int              excl_nalloc; /**< allocation size of excl                      */
 
-    cl_bool          bDoPrune;    /**< true if pair-list pruning needs to be
-                                       done during the  current step                */
+    /* parameter+variables for normal and rolling pruning */
+    bool             needToPrune;            /**< true for the first kernel pass */
+    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
+    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 }cl_plist_t;
 
 
@@ -262,8 +309,14 @@ typedef struct cl_timers
     cl_event pl_h2d_sci[2];     /**< events for pair-list sci H2D transfers (l/nl, every PS step) */
     cl_event pl_h2d_cj4[2];     /**< events for pair-list cj4 H2D transfers (l/nl, every PS step) */
     cl_event pl_h2d_excl[2];    /**< events for pair-list excl H2D transfers (l/nl, every PS step)*/
+    cl_event pl_h2d_imask[2];   /**< events for pair-list imask H2D transfers (l/nl, every PS step)*/
 
     cl_event nb_k[2];           /**< event for non-bonded kernels (l/nl, every step)              */
+
+    bool didPairlistH2D[2];     /**< tells if we timed a pair-list transfer */
+    cl_event prune_k[2];        /**< event for pruning kernel (every prune step) */
+    bool     didPrune[2];       /**< tells uf we timed pruning this (or previous step for rolling) and that the timings need to be accounted for */
+    bool     didRollingPrune[2];/**< tells uf we timed pruning this (or previous step for rolling) and that the timings need to be accounted for */
 } cl_timers_t;
 
 /*! \internal
@@ -282,6 +335,7 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_noener_prune_ptr[eelOclNR][evdwOclNR];
     cl_kernel           kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
     ///@}
+    cl_kernel           kernel_pruneonly[ePruneNR]; /**< prune kernels, ePruneKind defined the kernel kinds */
 
     bool bPrefetchLjParam; /**< true if prefetching fg i-atom LJ parameters should be used in the kernels */
 
