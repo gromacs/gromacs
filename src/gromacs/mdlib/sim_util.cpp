@@ -111,6 +111,7 @@
 
 #include "nbnxn_gpu.h"
 #include "nbnxn_kernels/nbnxn_kernel_cpu.h"
+#include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -442,7 +443,7 @@ static void do_nb_verlet(t_forcerec *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
-            GMX_RELEASE_ASSERT(false, "The CPU prune kernel will be called here");
+            nbnxn_kernel_cpu_prune(nbvg, fr->shift_vec, nbv->listParams->rlistInner);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
         }
 
