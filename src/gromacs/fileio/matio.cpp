@@ -633,16 +633,6 @@ static void write_xpm_header(FILE *out,
                              gmx_bool bDiscrete)
 {
     fprintf(out,  "/* XPM */\n");
-    try
-    {
-        gmx::BinaryInformationSettings settings;
-        settings.generatedByHeader(true);
-        settings.linePrefix("/* ");
-        settings.lineSuffix(" */");
-        gmx::printBinaryInformation(out, gmx::getProgramContext(),
-                                    settings);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(out,  "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
     fprintf(out,  "/* title:   \"%s\" */\n", title);
     fprintf(out,  "/* legend:  \"%s\" */\n", legend);

@@ -57,6 +57,7 @@
 #include "testutils/integrationtests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
 namespace gmx
@@ -135,6 +136,13 @@ TEST_F(ClustsizeTest, MolDefaultCutoff)
 TEST_F(ClustsizeTest, MolShortCutoff)
 {
     runTest(true, true);
+}
+
+TEST_F(ClustsizeTest, MolCSize)
+{
+    setOutputFile("-o", ".xpm", ExactTextMatch());
+    setOutputFile("-ow", ".xpm", ExactTextMatch());
+    runTest(true, false);
 }
 
 } // namespace
