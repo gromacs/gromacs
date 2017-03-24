@@ -373,8 +373,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
      */
     nstlist_prev = ir->nstlist;
     ir->nstlist  = nbnxnReferenceNstlist;
-    calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, nullptr,
-                            &rlistWithReferenceNstlist);
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
+                            -1, &ls, nullptr, &rlistWithReferenceNstlist);
     ir->nstlist  = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
@@ -398,7 +398,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         }
 
         /* Set the pair-list buffer size in ir */
-        calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, nullptr, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1, -1, &ls, nullptr, &rlist_new);
 
         /* Does rlist fit in the box? */
         bBox = (gmx::square(rlist_new) < max_cutoff2(ir->ePBC, box));
@@ -497,7 +497,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
          */
         verletbuf_get_list_setup(true, makeGpuPairList, &ls);
 
-        calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, nullptr, &rlist_new);
+        calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1, -1, &ls, nullptr, &rlist_new);
 
         if (rlist_new != ir->rlist)
         {

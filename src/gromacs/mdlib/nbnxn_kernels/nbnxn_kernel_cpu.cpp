@@ -97,10 +97,12 @@ static void clearGroupEnergies(nbnxn_atomdata_output_t *out)
  * \param[in,out] vCoulomb        Coulomb energy output buffer
  */
 template <int unrollj> static void
-reduceGroupEnergySimdBuffers(int numGroups, int numGroups_2log,
-                             const real *vVdwSimd, const real *vCoulombSimd,
-                             real * gmx_restrict vVdw,
-                             real * gmx_restrict vCoulomb)
+reduceGroupEnergySimdBuffers(int                       numGroups,
+                             int                       numGroups_2log,
+                             const real * gmx_restrict vVdwSimd,
+                             const real * gmx_restrict vCoulombSimd,
+                             real * gmx_restrict       vVdw,
+                             real * gmx_restrict       vCoulomb)
 {
     // cppcheck-suppress duplicateExpression
     const int unrollj_half     = unrollj/2;
@@ -219,6 +221,8 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
 
     int                nnbl = nbvg->nbl_lists.nnbl;
     nbnxn_pairlist_t **nbl  = nbvg->nbl_lists.nbl;
+
+    GMX_ASSERT(nbl[0]->nci >= 0, "nci<0, which signals an invalid pair-list");
 
     // cppcheck-suppress unreadVariable
     int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);

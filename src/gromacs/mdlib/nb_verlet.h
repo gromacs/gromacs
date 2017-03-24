@@ -54,6 +54,19 @@
  * which in the code is referred to as the NxN algorithms ("nbnxn_" prefix);
  * for details of the algorithm see DOI:10.1016/j.cpc.2013.06.003.
  *
+ * Algorithmically, the non-bonded computation has two different modes:
+ * A "classical" mode: generate a list every nstlist steps containing at least
+ * all atom pairs up to a distance of rlistOuter and compute pair interactions
+ * for all pairs that are within the interaction cut-off.
+ * A "dynamic pruning" mode: generate an "outer-list" up to cut-off rlistOuter
+ * every nstlist steps and prune the outer-list using a cut-off of rlistInner
+ * every nstlistPrune steps to obtain a, smaller, "inner-list". This
+ * results in fewer interaction computations and allows for a larger nstlist.
+ * On a GPU, this dynamic pruning is performed in a rolling fashion, pruning
+ * only a sub-part of the list each (second) step. This way it can often
+ * overlap with integration and constraints on the CPU.
+ * Currently a simple heuristic determines which mode will be used.
+ *
  * TODO: add a summary list and brief descriptions of the different submodules:
  * search, CPU kernels, GPU glue code + kernels.
  *
@@ -84,6 +97,8 @@
 
 #ifndef NB_VERLET_H
 #define NB_VERLET_H
+
+#include <memory>
 
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -166,15 +181,16 @@ typedef struct nonbonded_verlet_group_t {
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 typedef struct nonbonded_verlet_t {
-    nbnxn_search_t           nbs;             /**< n vs n atom pair searching data       */
-    int                      ngrp;            /**< number of interaction groups          */
-    nonbonded_verlet_group_t grp[2];          /**< local and non-local interaction group */
+    std::unique_ptr<NbnxnListParameters> listParams;      /**< Parameters for the search and list pruning setup */
+    nbnxn_search_t                       nbs;             /**< n vs n atom pair searching data       */
+    int                                  ngrp;            /**< number of interaction groups          */
+    nonbonded_verlet_group_t             grp[2];          /**< local and non-local interaction group */
 
-    gmx_bool                 bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
-    bool                     emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
-    gmx_nbnxn_gpu_t         *gpu_nbv;         /**< pointer to GPU nb verlet data     */
-    int                      min_ci_balanced; /**< pair list balancing parameter
-                                                   used for the 8x8x8 GPU kernels    */
+    gmx_bool                             bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
+    bool                                 emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
+    gmx_nbnxn_gpu_t                     *gpu_nbv;         /**< pointer to GPU nb verlet data     */
+    int                                  min_ci_balanced; /**< pair list balancing parameter
+                                                               used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
 
 /*! \brief Getter for bUseGPU */
