@@ -52,11 +52,13 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
 namespace gmx
@@ -76,8 +78,9 @@ class ClustsizeTest : public CommandLineTestBase
             setInputFile("-f", "clustsize.pdb");
         }
 
-        void runTest(bool        mol,
-                     bool        cutoff)
+        void runTest(bool mol,
+                     bool cutoff,
+                     int  nlevels)
         {
             const char *const command[] = { "clustsize" };
             CommandLine       args      = CommandLine(command);
@@ -106,6 +109,10 @@ class ClustsizeTest : public CommandLineTestBase
             {
                 args.addOption("-cut", "0.3");
             }
+            if (nlevels > 0)
+            {
+                args.addOption("-nlevels", gmx::intToString(nlevels).c_str());
+            }
             rootChecker().checkString(args.toString(), "CommandLine");
 
             CommandLine &cmdline = commandLine();
@@ -119,22 +126,29 @@ class ClustsizeTest : public CommandLineTestBase
 
 TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 {
-    runTest(false, false);
+    runTest(false, false, 0);
 }
 
 TEST_F(ClustsizeTest, NoMolShortCutoff)
 {
-    runTest(false, true);
+    runTest(false, true, 0);
 }
 
 TEST_F(ClustsizeTest, MolDefaultCutoff)
 {
-    runTest(true, false);
+    runTest(true, false, 0);
 }
 
 TEST_F(ClustsizeTest, MolShortCutoff)
 {
-    runTest(true, true);
+    runTest(true, true, 0);
+}
+
+TEST_F(ClustsizeTest, MolCSize)
+{
+    setOutputFile("-o", ".xpm", ExactTextMatch());
+    setOutputFile("-ow", ".xpm", ExactTextMatch());
+    runTest(true, false, 6);
 }
 
 } // namespace
