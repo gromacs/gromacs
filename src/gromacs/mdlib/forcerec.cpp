@@ -73,6 +73,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -99,7 +100,6 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "nbnxn_gpu_jit_support.h"
-#include "nbnxn_tuning.h"
 
 const char *egrp_nm[egNR+1] = {
     "Coul-SR", "LJ-SR", "Buck-SR",
