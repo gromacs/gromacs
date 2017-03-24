@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,6 +106,21 @@ typedef struct nonbonded_verlet_t {
     int                      min_ci_balanced; /* pair list balancing parameter
                                                  used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
+
+/* The minimum nstlist for dynamic pair list pruning on a CPU or a GPU.
+ * In most cases going lower than 4 will lead to a too high pruning cost
+ */
+static const int c_nbnxnDynamicListPruningMinLifetime = 4;
+
+/* The interval in steps at which we perform dynamic, rolling pruning on a GPU.
+ * Ideally we should auto-tune this value.
+ * Not considering overheads, 1 would be the ideal value. But 2 seems a reasonabe
+ * compromise that reduces GPU kernel launch overheads and also avoids inefficiency
+ * due to scaling on large GPUs when pruning small workloads.
+ * Note that with domain decomposition we alternate between pruning the local
+ * and non-local pair-lists, so 2 is a convenient value.
+ */
+static const int c_nbnxnGpuRollingListPruningInterval = 2;
 
 /*! \brief Getter for bUseGPU */
 gmx_bool
