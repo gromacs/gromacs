@@ -220,6 +220,8 @@ nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
     int                nnbl = nbvg->nbl_lists.nnbl;
     nbnxn_pairlist_t **nbl  = nbvg->nbl_lists.nbl;
 
+    GMX_ASSERT(nbl[0]->nci >= 0, "nci<0, which signals an invalid pair-list");
+
     // cppcheck-suppress unreadVariable
     int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);
 #pragma omp parallel for schedule(static) num_threads(nthreads)

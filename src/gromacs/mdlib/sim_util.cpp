@@ -409,20 +409,18 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          int clearF,
+                         gmx_int64_t step,
                          t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle)
 {
-    int                        enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
-    nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                   bUsingGpuKernels;
-
     if (!(flags & GMX_FORCE_NONBONDED))
     {
         /* skip non-bonded calculation */
         return;
     }
 
-    nbvg = &fr->nbv->grp[ilocality];
+    nonbonded_verlet_t       *nbv  = fr->nbv;
+    nonbonded_verlet_group_t *nbvg = &nbv->grp[ilocality];
 
     /* GPU kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
@@ -430,12 +428,27 @@ static void do_nb_verlet(t_forcerec *fr,
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    bUsingGpuKernels = (nbvg->kernel_type == nbnxnk8x8x8_GPU);
+    bool bUsingGpuKernels = (nbvg->kernel_type == nbnxnk8x8x8_GPU);
 
     if (!bUsingGpuKernels)
     {
+        /* When dynamic pair-list  pruning is requested, we need to prune
+         * at nstlistPrune steps.
+         */
+        if (nbv->listParams->useDynamicPruning &&
+            (step - nbvg->nbl_lists.outerListCreationStep) % nbv->listParams->nstlistPrune == 0)
+        {
+            /* Prune the pair-list beyond fr->ic->rlistPrune using
+             * the current coordinates of the atoms.
+             */
+            wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNING);
+            GMX_RELEASE_ASSERT(false, "The CPU prune kernel will be called here");
+            wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNING);
+        }
+
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
+
     switch (nbvg->kernel_type)
     {
         case nbnxnk4x4_PlainC:
@@ -454,7 +467,7 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         case nbnxnk8x8x8_GPU:
-            nbnxn_gpu_launch_kernel(fr->nbv->gpu_nbv, nbvg->nbat, flags, ilocality);
+            nbnxn_gpu_launch_kernel(nbv->gpu_nbv, nbvg->nbat, flags, ilocality);
             break;
 
         case nbnxnk8x8x8_PlainC:
@@ -472,7 +485,7 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         default:
-            gmx_incons("Invalid nonbonded kernel type passed!");
+            GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
 
     }
     if (!bUsingGpuKernels)
@@ -480,12 +493,13 @@ static void do_nb_verlet(t_forcerec *fr,
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
+    int enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     if (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
     else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical) ||
-             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(fr->nbv->gpu_nbv)))
+             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(nbv->gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -894,12 +908,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintLocal].nbat,
                             &top->excls,
-                            ic->rlist,
+                            nbv->listParams->rlistOuter,
                             nbv->min_ci_balanced,
                             &nbv->grp[eintLocal].nbl_lists,
                             eintLocal,
                             nbv->grp[eintLocal].kernel_type,
                             nrnb);
+        nbv->grp[eintLocal].nbl_lists.outerListCreationStep = step;
+        if (nbv->listParams->useDynamicPruning && !bUseGPU)
+        {
+            nbnxnPrepareListForDynamicPruning(&nbv->grp[eintLocal].nbl_lists);
+        }
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
 
         if (bUseGPU)
@@ -926,7 +945,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
-                     nrnb, wcycle);
+                     step, nrnb, wcycle);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -964,13 +983,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintNonlocal].nbat,
                                 &top->excls,
-                                ic->rlist,
+                                nbv->listParams->rlistOuter,
                                 nbv->min_ci_balanced,
                                 &nbv->grp[eintNonlocal].nbl_lists,
                                 eintNonlocal,
                                 nbv->grp[eintNonlocal].kernel_type,
                                 nrnb);
-
+            nbv->grp[eintNonlocal].nbl_lists.outerListCreationStep = step;
+            if (nbv->listParams->useDynamicPruning && !bUseGPU)
+            {
+                nbnxnPrepareListForDynamicPruning(&nbv->grp[eintNonlocal].nbl_lists);
+            }
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
             if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_GPU)
@@ -1001,7 +1024,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
-                         nrnb, wcycle);
+                         step, nrnb, wcycle);
             cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
     }
@@ -1128,9 +1151,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (!bUseOrEmulGPU)
     {
-        /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
-                     nrnb, wcycle);
+                     step, nrnb, wcycle);
     }
 
     if (fr->efep != efepNO)
@@ -1164,7 +1186,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
                          bDiffKernels ? enbvClearFYes : enbvClearFNo,
-                         nrnb, wcycle);
+                         step, nrnb, wcycle);
         }
 
         if (!bUseOrEmulGPU)
@@ -1242,7 +1264,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
-                             nrnb, wcycle);
+                             step, nrnb, wcycle);
                 cycles_force += wallcycle_stop(wcycle, ewcFORCE);
             }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1327,6 +1349,27 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
+
+            /* Is dynamic pair-list pruning activated? */
+            if (nbv->listParams->useDynamicPruning)
+            {
+                /* We should not launch the rolling pruning kernel at a search
+                 * step or just before search steps, since that's useless.
+                 * Without domain decomposition we prune at even steps.
+                 * With domain decomposition we alternate local and non-local
+                 * pruning at even and odd steps.
+                 */
+                int  numRollingParts     = nbv->listParams->numRollingParts;
+                GMX_ASSERT(numRollingParts == nbv->listParams->nstlistPrune/2, "Since we alternate local/non-local at even/odd steps, we need numRollingParts<=nstlistPrune/2 for correctness and == for efficiency");
+                int  stepWithCurrentList = step - nbv->grp[eintLocal].nbl_lists.outerListCreationStep;
+                bool stepIsEven          = ((stepWithCurrentList & 1) == 0);
+                if (stepWithCurrentList > 0 &&
+                    stepWithCurrentList < inputrec->nstlist - 1 &&
+                    (stepIsEven || DOMAINDECOMP(cr)))
+                {
+                    GMX_RELEASE_ASSERT(false, "The GPU prune kernel will be called here");
+                }
+            }
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
         else
@@ -1334,7 +1377,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start_nocount(wcycle, ewcFORCE);
             do_nb_verlet(fr, ic, enerd, flags, eintLocal,
                          DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                         nrnb, wcycle);
+                         step, nrnb, wcycle);
             wallcycle_stop(wcycle, ewcFORCE);
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
