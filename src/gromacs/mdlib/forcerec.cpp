@@ -2186,10 +2186,6 @@ static void set_pairlist_pruning_parameters(FILE                *fplog,
             ic->rlistInner   = ic->rlistOuter;
         }
 
-        // Dynamic pruning disabled until the kernels are present
-        ic->nstlistPrune = ir->nstlist;
-        ic->rlistInner   = ic->rlistOuter;
-
         bool useDynamicPruning = (ic->nstlistPrune < ir->nstlist);
 
         if (fplog && useDynamicPruning)
