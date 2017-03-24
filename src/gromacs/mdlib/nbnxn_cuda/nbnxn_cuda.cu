@@ -348,6 +348,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
        call is taken care of later in this function. */
     if (iloc == eintNonlocal && plist->nsci == 0)
     {
+        plist->needToPrune = false;
+
         return;
     }
 
