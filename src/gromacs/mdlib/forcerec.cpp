@@ -99,6 +99,7 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "nbnxn_gpu_jit_support.h"
+#include "nbnxn_tuning.h"
 
 const char *egrp_nm[egNR+1] = {
     "Coul-SR", "LJ-SR", "Buck-SR",
@@ -1986,7 +1987,8 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlist           = fr->rlist;
+    ic->rlistOuter      = fr->rlist;
+    ic->rlistInner      = fr->rlist;
 
     /* Lennard-Jones */
     ic->vdwtype         = fr->vdwtype;
@@ -2107,7 +2109,9 @@ static void init_nb_verlet(FILE                *fp,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
-                           const char          *nbpu_opt)
+                           const char          *nbpu_opt,
+                           const gmx_mtop_t    *mtop,
+                           matrix               box)
 {
     nonbonded_verlet_t *nbv;
     int                 i;
@@ -2164,6 +2168,8 @@ static void init_nb_verlet(FILE                *fp,
             }
         }
     }
+
+    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->bUseGPU, fr->ic);
 
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
@@ -3209,7 +3215,8 @@ void init_forcerec(FILE                *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt,
+                       mtop, box);
     }
 
     if (ir->eDispCorr != edispcNO)
