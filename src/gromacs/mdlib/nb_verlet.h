@@ -54,6 +54,18 @@
  * which in the code is referred to as the NxN algorithms ("nbnxn_" prefix);
  * for details of the algorithm see DOI:10.1016/j.cpc.2013.06.003.
  *
+ * Algorithmically, the non-bonded computation has two different modes:
+ * A "classical" mode: generate a list every nstlist steps containing at least
+ * all atom pairs up to a distance of rlistOuter and compute pair interactions
+ * for all pairs that are within the interaction cut-off.
+ * A "dynamic pruning" mode: generate a list up to rlistOuter every nstlist
+ * steps and prune that list to rlistInner every nstlistPrune steps. This
+ * results in fewer interaction computations and allows for a larger nstlist.
+ * On a GPU, this dynamic pruning is performed in a rolling fashion, pruning
+ * only a sub-part of the list each (second) step. This way it can often
+ * overlap with integration and constraints on the CPU.
+ * Currently a simple heuristic determines which mode will be used.
+ *
  * TODO: add a summary list and brief descriptions of the different submodules:
  * search, CPU kernels, GPU glue code + kernels.
  *
@@ -166,6 +178,7 @@ typedef struct nonbonded_verlet_group_t {
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 typedef struct nonbonded_verlet_t {
+    NbnxnListParameters     *listParams;      /**< Parameters for the search and list pruning setup */
     nbnxn_search_t           nbs;             /**< n vs n atom pair searching data       */
     int                      ngrp;            /**< number of interaction groups          */
     nonbonded_verlet_group_t grp[2];          /**< local and non-local interaction group */
@@ -175,6 +188,23 @@ typedef struct nonbonded_verlet_t {
     int                      min_ci_balanced; /**< pair list balancing parameter
                                                    used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
+
+/*! \brief The minimum nstlist for dynamic pair list pruning.
+ *
+ * In most cases going lower than 4 will lead to a too high pruning cost
+ */
+static const int c_nbnxnDynamicListPruningMinLifetime = 4;
+
+/*! \brief The interval in steps at which we perform dynamic, rolling pruning on a GPU.
+ *
+ * Ideally we should auto-tune this value.
+ * Not considering overheads, 1 would be the ideal value. But 2 seems
+ * a reasonable compromise that reduces GPU kernel launch overheads and
+ * also avoids inefficiency on large GPUs when pruning small lists.
+ * Note that with domain decomposition we alternate between pruning the local
+ * and non-local pair-lists, so 2 is a convenient value.
+ */
+static const int c_nbnxnGpuRollingListPruningInterval = 2;
 
 /*! \brief Getter for bUseGPU */
 gmx_bool
