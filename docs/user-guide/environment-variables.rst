@@ -352,9 +352,11 @@ Performance and Run Control
 ``MDRUN``
         the :ref:`gmx mdrun` command used by :ref:`gmx tune_pme`.
 
-``GMX_NSTLIST``
-        sets the default value for :mdp:`nstlist`, preventing it from being tuned during
-        :ref:`gmx mdrun` startup when using the Verlet cutoff scheme.
+``GMX_NSTLIST_PRUNE``
+        overrides the dynamic pair-list pruning interval chosen heuristically
+        by mdrun. Setting this equal to or larger than the list update interval
+        in mdrun disables dynamic pruning. Note that for optimal performance
+        without dynamic list pruning nstlist should be lowered.
 
 ``GMX_USE_TREEREDUCE``
         use tree reduction for nbnxn force reduction. Potentially faster for large number of
