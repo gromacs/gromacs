@@ -737,6 +737,11 @@ static void check_cell_list_space_simple(nbnxn_pairlist_t *nbl,
                            nbl->ncj*sizeof(*nbl->cj),
                            nbl->cj_nalloc*sizeof(*nbl->cj),
                            nbl->alloc, nbl->free);
+
+        nbnxn_realloc_void((void **)&nbl->cjOuter,
+                           nbl->ncj*sizeof(*nbl->cjOuter),
+                           nbl->cj_nalloc*sizeof(*nbl->cjOuter),
+                           nbl->alloc, nbl->free);
     }
 }
 
@@ -2136,6 +2141,11 @@ static void nb_realloc_ci(nbnxn_pairlist_t *nbl, int n)
                        nbl->nci*sizeof(*nbl->ci),
                        nbl->ci_nalloc*sizeof(*nbl->ci),
                        nbl->alloc, nbl->free);
+
+    nbnxn_realloc_void((void **)&nbl->ciOuter,
+                       nbl->nci*sizeof(*nbl->ciOuter),
+                       nbl->ci_nalloc*sizeof(*nbl->ciOuter),
+                       nbl->alloc, nbl->free);
 }
 
 /* Reallocate the super-cell sci list for at least n entries */
@@ -2399,6 +2409,7 @@ static void clear_pairlist(nbnxn_pairlist_t *nbl)
     nbl->ncjInUse      = 0;
     nbl->ncj4          = 0;
     nbl->nci_tot       = 0;
+    nbl->nciOuter      = -1;
     nbl->nexcl         = 1;
 
     nbl->work->ncj_noq = 0;
@@ -4357,6 +4368,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         balance_fep_lists(nbs, nbl_list);
     }
 
+    /* This is a fresh list, so not pruned, stored using ci and nci.
+     * ciOuter and nciOuter are invalid at this point.
+     */
+    GMX_ASSERT(nbl_list->nbl[0]->nciOuter == -1, "nciOuter should have been set to -1 to signal that it is invalid");
+
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
     if (LOCAL_I(iloc))
     {
@@ -4408,5 +4424,34 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         {
             print_reduction_cost(&nbat->buffer_flags, nbl_list->nnbl);
         }
+    }
+}
+
+void nbnxnPrepareListForDynamicPruning(nbnxn_pairlist_set_t *listSet)
+{
+    /* TODO: Restructure the lists so we have actual outer and inner
+     *       list objects so we can set a single pointer instead of
+     *       swapping several pointers.
+     */
+
+    for (int i = 0; i < listSet->nnbl; i++)
+    {
+        /* The search produced a list in ci/cj.
+         * Swap the list pointers so we get the outer list is ciOuter,cjOuter
+         * and we can prune that to get an inner list in ci/cj.
+         */
+        nbnxn_pairlist_t *list = listSet->nbl[i];
+        list->nciOuter         = list->nci;
+
+        nbnxn_ci_t *ciTmp      = list->ciOuter;
+        list->ciOuter          = list->ci;
+        list->ci               = ciTmp;
+
+        nbnxn_cj_t *cjTmp      = list->cjOuter;
+        list->cjOuter          = list->cj;
+        list->cj               = cjTmp;
+
+        /* Signal that this inner list is currently invalid */
+        list->nci              = -1;
     }
 }

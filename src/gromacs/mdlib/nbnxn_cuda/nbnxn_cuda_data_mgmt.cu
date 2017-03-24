@@ -298,7 +298,8 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 
 /*! Copies all parameters related to the cut-off from ic to nbp */
 static void set_cutoff_parameters(cu_nbparam_t              *nbp,
-                                  const interaction_const_t *ic)
+                                  const interaction_const_t *ic,
+                                  const NbnxnListParameters *listParams)
 {
     nbp->ewald_beta       = ic->ewaldcoeff_q;
     nbp->sh_ewald         = ic->sh_ewald;
@@ -307,7 +308,7 @@ static void set_cutoff_parameters(cu_nbparam_t              *nbp,
     nbp->c_rf             = ic->c_rf;
     nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->rlist_sq         = listParams->rlistOuter * listParams->rlistOuter;
 
     nbp->sh_lj_ewald      = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
@@ -362,6 +363,7 @@ static void initParamLookupTable(float                    * &devPtr,
 /*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t              *nbp,
                          const interaction_const_t *ic,
+                         const NbnxnListParameters *listParams,
                          const nbnxn_atomdata_t    *nbat,
                          const gmx_device_info_t   *dev_info)
 {
@@ -369,7 +371,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 
     ntypes  = nbat->ntype;
 
-    set_cutoff_parameters(nbp, ic);
+    set_cutoff_parameters(nbp, ic, listParams);
 
     /* The kernel code supports LJ combination rules (geometric and LB) for
      * all kernel types, but we only generate useful combination rule kernels.
@@ -477,7 +479,8 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
 void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
-                                        const interaction_const_t   *ic)
+                                        const interaction_const_t   *ic,
+                                        const NbnxnListParameters   *listParams)
 {
     if (!nbv || nbv->grp[0].kernel_type != nbnxnk8x8x8_GPU)
     {
@@ -486,7 +489,7 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     gmx_nbnxn_cuda_t *nb    = nbv->gpu_nbv;
     cu_nbparam_t     *nbp   = nb->nbparam;
 
-    set_cutoff_parameters(nbp, ic);
+    set_cutoff_parameters(nbp, ic, listParams);
 
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  nb->dev_info);
@@ -574,10 +577,11 @@ static void init_timings(gmx_wallclock_gpu_t *t)
 /*! Initializes simulation constant data. */
 static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                                   const interaction_const_t      *ic,
+                                  const NbnxnListParameters      *listParams,
                                   const nonbonded_verlet_group_t *nbv_group)
 {
     init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype);
-    init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_info);
+    init_nbparam(nb->nbparam, ic, listParams, nbv_group[0].nbat, nb->dev_info);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(nb);
@@ -586,6 +590,7 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
 void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const gmx_device_info_t   *deviceInfo,
                     const interaction_const_t *ic,
+                    const NbnxnListParameters *listParams,
                     nonbonded_verlet_group_t  *nbv_grp,
                     int                        /*rank*/,
                     gmx_bool                   bLocalAndNonlocal)
@@ -667,7 +672,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
-    nbnxn_cuda_init_const(nb, ic, nbv_grp);
+    nbnxn_cuda_init_const(nb, ic, listParams, nbv_grp);
 
     *p_nb = nb;
 

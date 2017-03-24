@@ -120,6 +120,7 @@ static const char *wcsn[ewcsNR] =
     "Bonded-FEP F",
     "Restraints F",
     "Listed buffer ops.",
+    "Nonbonded pruning",
     "Nonbonded F",
     "Ewald F correction",
     "NB X buffer ops.",
@@ -890,7 +891,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                 tot_k += gpu_t->ktime[i][j].t;
             }
         }
-        tot_gpu += tot_k;
+        tot_gpu += tot_k + gpu_t->pruneTime.t;
 
         tot_cpu_overlap = wc->wcc[ewcFORCE].c;
         if (wc->wcc[ewcPMEMESH].n > 0)
@@ -918,11 +919,23 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                 }
             }
         }
-
+        if (gpu_t->pruneTime.c)
+        {
+            print_gputimes(fplog, "Pruning kernel", gpu_t->pruneTime.c, gpu_t->pruneTime.t, tot_gpu);
+        }
         print_gputimes(fplog, "F D2H",  gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Total ", gpu_t->nb_c, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);
+        if (gpu_t->dynamicPruneTime.c)
+        {
+            /* We print the dynamic pruning kernel timings after a separator
+             * and avoid adding it to tot_gpu as this is not in the force
+             * overlap. We print the fraction as relative to the rest.
+             */
+            print_gputimes(fplog, "*Dynamic pruning", gpu_t->dynamicPruneTime.c, gpu_t->dynamicPruneTime.t, tot_gpu);
+            fprintf(fplog, "%s\n", hline);
+        }
 
         gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
         if (gpu_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)

@@ -796,6 +796,8 @@ static real md3_force_switch(real p, real rswitch, real rc)
 
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              const t_inputrec *ir,
+                             int               nstlist,
+                             int               list_lifetime,
                              real reference_temperature,
                              const verletbuf_list_setup_t *list_setup,
                              int *n_nonlin_vsite,
@@ -999,7 +1001,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     }
 
     /* Determine the variance of the atomic displacement
-     * over nstlist-1 steps: kT_fac
+     * over list_lifetime steps: kT_fac
      * For inertial dynamics (not Brownian dynamics) the mass factor
      * is not included in kT_fac, it is added later.
      */
@@ -1010,7 +1012,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          * should be negligible (unless nstlist is extremely large, which
          * you wouldn't do anyhow).
          */
-        kT_fac = 2*BOLTZ*reference_temperature*(ir->nstlist-1)*ir->delta_t;
+        kT_fac = 2*BOLTZ*reference_temperature*list_lifetime*ir->delta_t;
         if (ir->bd_fric > 0)
         {
             /* This is directly sigma^2 of the displacement */
@@ -1041,7 +1043,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     }
     else
     {
-        kT_fac = BOLTZ*reference_temperature*gmx::square((ir->nstlist-1)*ir->delta_t);
+        kT_fac = BOLTZ*reference_temperature*gmx::square(list_lifetime*ir->delta_t);
     }
 
     mass_min = att[0].prop.mass;
@@ -1091,7 +1093,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
-        drift /= ir->nstlist*ir->delta_t*mtop->natoms;
+        drift /= nstlist*ir->delta_t*mtop->natoms;
 
         if (debug)
         {
