@@ -83,4 +83,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          int                   nb_kernel_type,
                          t_nrnb               *nrnb);
 
+/* Prepare the list-set produced by the search for dynamic pruning */
+void nbnxnPrepareListForDynamicPruning(nbnxn_pairlist_set_t *listSet);
+
 #endif
