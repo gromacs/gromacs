@@ -50,6 +50,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct NbnxnListParameters;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
@@ -79,6 +80,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       const t_inputrec          *ir,
                       matrix                     box,
                       const interaction_const_t *ic,
+                      const NbnxnListParameters *listParams,
                       gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting);

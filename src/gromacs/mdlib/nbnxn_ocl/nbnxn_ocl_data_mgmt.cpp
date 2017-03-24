@@ -284,7 +284,8 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
 /*! \brief Copies all parameters related to the cut-off from ic to nbp
  */
 static void set_cutoff_parameters(cl_nbparam_t              *nbp,
-                                  const interaction_const_t *ic)
+                                  const interaction_const_t *ic,
+                                  const NbnxnListParameters *listParams)
 {
     nbp->ewald_beta       = ic->ewaldcoeff_q;
     nbp->sh_ewald         = ic->sh_ewald;
@@ -293,7 +294,7 @@ static void set_cutoff_parameters(cl_nbparam_t              *nbp,
     nbp->c_rf             = ic->c_rf;
     nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->rlist_sq         = listParams->rlistOuter * listParams->rlistOuter;
 
     nbp->sh_lj_ewald      = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
@@ -388,6 +389,7 @@ map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t *ic,
  */
 static void init_nbparam(cl_nbparam_t                    *nbp,
                          const interaction_const_t       *ic,
+                         const NbnxnListParameters       *listParams,
                          const nbnxn_atomdata_t          *nbat,
                          const gmx_device_runtime_data_t *runData)
 {
@@ -397,7 +399,7 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
 
     ntypes = nbat->ntype;
 
-    set_cutoff_parameters(nbp, ic);
+    set_cutoff_parameters(nbp, ic, listParams);
 
     map_interaction_types_to_gpu_kernel_flavors(ic,
                                                 nbat->comb_rule,
@@ -494,7 +496,8 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
 
 //! This function is documented in the header file
 void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
-                                        const interaction_const_t   *ic)
+                                        const interaction_const_t   *ic,
+                                        const NbnxnListParameters   *listParams)
 {
     if (!nbv || nbv->grp[0].kernel_type != nbnxnk8x8x8_GPU)
     {
@@ -503,7 +506,7 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     gmx_nbnxn_ocl_t    *nb  = nbv->gpu_nbv;
     cl_nbparam_t       *nbp = nb->nbparam;
 
-    set_cutoff_parameters(nbp, ic);
+    set_cutoff_parameters(nbp, ic, listParams);
 
     nbp->eeltype = nbnxn_gpu_pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw);
 
@@ -678,10 +681,11 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
  */
 static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
                                  const interaction_const_t      *ic,
+                                 const NbnxnListParameters      *listParams,
                                  const nonbonded_verlet_group_t *nbv_group)
 {
     init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype, nb->dev_rundata);
-    init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_rundata);
+    init_nbparam(nb->nbparam, ic, listParams, nbv_group[0].nbat, nb->dev_rundata);
 }
 
 
@@ -689,6 +693,7 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
 void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                     const gmx_device_info_t   *deviceInfo,
                     const interaction_const_t *ic,
+                    const NbnxnListParameters *listParams,
                     nonbonded_verlet_group_t  *nbv_grp,
                     int                        rank,
                     gmx_bool                   bLocalAndNonlocal)
@@ -781,7 +786,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
         init_timings(nb->timings);
     }
 
-    nbnxn_ocl_init_const(nb, ic, nbv_grp);
+    nbnxn_ocl_init_const(nb, ic, listParams, nbv_grp);
 
     /* Enable LJ param manual prefetch for AMD or if we request through env. var.
      * TODO: decide about NVIDIA

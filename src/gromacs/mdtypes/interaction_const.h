@@ -92,9 +92,6 @@ struct interaction_const_t
     /* Coulomb */
     real rcoulomb;
 
-    /* Cut-off */
-    real rlist;
-
     /* PME/Ewald */
     real ewaldcoeff_q;
     real ewaldcoeff_lj;

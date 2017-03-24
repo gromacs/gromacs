@@ -1637,13 +1637,13 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     /* Calculate the buffer size for simple atom vs atoms list */
     ls.cluster_size_i = 1;
     ls.cluster_size_j = 1;
-    calc_verlet_buffer_size(mtop, det(box), ir, buffer_temp,
-                            &ls, &n_nonlin_vsite, &rlist_1x1);
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
+                            buffer_temp, &ls, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
     verletbuf_get_list_setup(FALSE, FALSE, &ls);
-    calc_verlet_buffer_size(mtop, det(box), ir, buffer_temp,
-                            &ls, &n_nonlin_vsite, &ir->rlist);
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
+                            buffer_temp, &ls, &n_nonlin_vsite, &ir->rlist);
 
     if (n_nonlin_vsite > 0)
     {
