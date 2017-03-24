@@ -113,6 +113,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "nbnxn_gpu.h"
+#include "nbnxn_kernels/nbnxn_kernel_prune.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -444,7 +445,7 @@ static void do_nb_verlet(t_forcerec *fr,
              * the current coordinates of the atoms.
              */
             wallcycle_sub_start(wcycle, ewcsNONBONDED_PRUNE);
-            //nbnxn_kernel_prune(nbvg, fr->shift_vec, fr->ic->rlistInner);
+            nbnxn_kernel_prune(nbvg, fr->shift_vec, fr->ic->rlistInner);
             wallcycle_sub_stop(wcycle, ewcsNONBONDED_PRUNE);
         }
 
