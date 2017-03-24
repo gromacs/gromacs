@@ -52,11 +52,13 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
 namespace gmx
@@ -75,66 +77,130 @@ class ClustsizeTest : public CommandLineTestBase
         {
             setInputFile("-f", "clustsize.pdb");
         }
-
-        void runTest(bool        mol,
-                     bool        cutoff)
-        {
-            const char *const command[] = { "clustsize" };
-            CommandLine       args      = CommandLine(command);
-            double            tolerance = 1e-4;
-            test::XvgMatch    xvg;
-
-            setOutputFile("-mc", ".xvg",
-                          xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance)));
-            setOutputFile("-nc", ".xvg",
-                          xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance)));
-            setOutputFile("-ac", ".xvg",
-                          xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance)));
-            setOutputFile("-hc", ".xvg",
-                          xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance)));
-
-            if (mol)
-            {
-                setInputFile("-s", "clustsize.tpr");
-                args.addOption("-mol");
-            }
-            else
-            {
-                setInputFile("-n", "clustsize.ndx");
-            }
-            if (cutoff)
-            {
-                args.addOption("-cut", "0.3");
-            }
-            rootChecker().checkString(args.toString(), "CommandLine");
-
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
-
-            ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
-
-            checkOutputFiles();
-        }
 };
 
 TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 {
-    runTest(false, false);
+    const char *const command[] = { "clustsize" };
+    CommandLine       args      = CommandLine(command);
+    double            tolerance = 1e-4;
+    test::XvgMatch    xvg;
+    test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+
+    setOutputFile("-mc", ".xvg", toler);
+    setOutputFile("-nc", ".xvg", toler);
+    setOutputFile("-ac", ".xvg", toler);
+    setOutputFile("-hc", ".xvg", toler);
+
+    setInputFile("-n", "clustsize.ndx");
+    rootChecker().checkString(args.toString(), "CommandLine");
+
+    CommandLine &cmdline = commandLine();
+    cmdline.merge(args);
+
+    ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
 }
 
 TEST_F(ClustsizeTest, NoMolShortCutoff)
 {
-    runTest(false, true);
+    const char *const command[] = { "clustsize", "-cut", "0.3" };
+    CommandLine       args      = CommandLine(command);
+    double            tolerance = 1e-4;
+    test::XvgMatch    xvg;
+    test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+
+    setOutputFile("-mc", ".xvg", toler);
+    setOutputFile("-nc", ".xvg", toler);
+    setOutputFile("-ac", ".xvg", toler);
+    setOutputFile("-hc", ".xvg", toler);
+
+    setInputFile("-n", "clustsize.ndx");
+    rootChecker().checkString(args.toString(), "CommandLine");
+
+    CommandLine &cmdline = commandLine();
+    cmdline.merge(args);
+
+    ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
 }
 
 TEST_F(ClustsizeTest, MolDefaultCutoff)
 {
-    runTest(true, false);
+    const char *const command[] = { "clustsize", "-mol" };
+    CommandLine       args      = CommandLine(command);
+    double            tolerance = 1e-4;
+    test::XvgMatch    xvg;
+    test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+
+    setOutputFile("-mc", ".xvg", toler);
+    setOutputFile("-nc", ".xvg", toler);
+    setOutputFile("-ac", ".xvg", toler);
+    setOutputFile("-hc", ".xvg", toler);
+
+    setInputFile("-s", "clustsize.tpr");
+    rootChecker().checkString(args.toString(), "CommandLine");
+
+    CommandLine &cmdline = commandLine();
+    cmdline.merge(args);
+
+    ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+
 }
 
 TEST_F(ClustsizeTest, MolShortCutoff)
 {
-    runTest(true, true);
+    const char *const command[] = { "clustsize", "-mol", "-cut", "0.3" };
+    CommandLine       args      = CommandLine(command);
+    double            tolerance = 1e-4;
+    test::XvgMatch    xvg;
+    test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+
+    setOutputFile("-mc", ".xvg", toler);
+    setOutputFile("-nc", ".xvg", toler);
+    setOutputFile("-ac", ".xvg", toler);
+    setOutputFile("-hc", ".xvg", toler);
+
+    setInputFile("-s", "clustsize.tpr");
+    rootChecker().checkString(args.toString(), "CommandLine");
+
+    CommandLine &cmdline = commandLine();
+    cmdline.merge(args);
+
+    ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(ClustsizeTest, MolCSize)
+{
+    const char *const command[] = { "clustsize", "-mol", "-nlevels", "6" };
+    CommandLine       args      = CommandLine(command);
+    double            tolerance = 1e-4;
+    test::XvgMatch    xvg;
+    test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+
+    setOutputFile("-mc", ".xvg", toler);
+    setOutputFile("-nc", ".xvg", toler);
+    setOutputFile("-ac", ".xvg", toler);
+    setOutputFile("-hc", ".xvg", toler);
+
+    setOutputFile("-o", ".xpm", ExactTextMatch());
+    setOutputFile("-ow", ".xpm", ExactTextMatch());
+
+    setInputFile("-s", "clustsize.tpr");
+    rootChecker().checkString(args.toString(), "CommandLine");
+
+    CommandLine &cmdline = commandLine();
+    cmdline.merge(args);
+
+    ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
 }
 
 } // namespace
