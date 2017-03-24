@@ -737,6 +737,11 @@ static void check_cell_list_space_simple(nbnxn_pairlist_t *nbl,
                            nbl->ncj*sizeof(*nbl->cj),
                            nbl->cj_nalloc*sizeof(*nbl->cj),
                            nbl->alloc, nbl->free);
+
+        nbnxn_realloc_void((void **)&nbl->cj0,
+                           nbl->ncj*sizeof(*nbl->cj0),
+                           nbl->cj_nalloc*sizeof(*nbl->cj0),
+                           nbl->alloc, nbl->free);
     }
 }
 
@@ -2126,6 +2131,11 @@ static void nb_realloc_ci(nbnxn_pairlist_t *nbl, int n)
     nbnxn_realloc_void((void **)&nbl->ci,
                        nbl->nci*sizeof(*nbl->ci),
                        nbl->ci_nalloc*sizeof(*nbl->ci),
+                       nbl->alloc, nbl->free);
+
+    nbnxn_realloc_void((void **)&nbl->ci0,
+                       nbl->nci*sizeof(*nbl->ci0),
+                       nbl->ci_nalloc*sizeof(*nbl->ci0),
                        nbl->alloc, nbl->free);
 }
 
@@ -4331,6 +4341,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         /* Balance the free-energy lists over all the threads */
         balance_fep_lists(nbs, nbl_list);
     }
+
+    /* This is a fresh list, so not pruned, stored using ci and nci.
+     * ci0 and nci0 are invalid at this point.
+     */
+    nbl_list->prunedSimpleList = false;
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
     if (LOCAL_I(iloc))
