@@ -294,7 +294,7 @@ static void set_cutoff_parameters(cl_nbparam_t              *nbp,
     nbp->c_rf             = ic->c_rf;
     nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->rlist_sq         = ic->rlistOuter * ic->rlistOuter;
 
     nbp->sh_lj_ewald      = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
