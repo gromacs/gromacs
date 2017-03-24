@@ -309,33 +309,36 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
  */
 static const int    nbnxnReferenceNstlist = 10;
 //! The values to try when switching
-const int           nstlist_try[] = { 20, 25, 40 };
+const int           nstlist_try[] = { 20, 25, 40, 50, 80, 100 };
 //! Number of elements in the neighborsearch list trials.
 #define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
-/* Increase nstlist until the non-bonded cost increases more than listfac_ok,
- * but never more than listfac_max.
- * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
- * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
- * Note that both CPU and GPU factors are conservative. Performance should
- * not go down due to this tuning, except with a relatively slow GPU.
- * On the other hand, at medium/high parallelization or with fast GPUs
- * nstlist will not be increased enough to reach optimal performance.
+/* Increase nstlist until the size of the pair-list increased by
+ * \p c_nbnxnListSizeFactor??? or more, but never more than
+ * \p c_nbnxnListSizeFactor??? + \p c_nbnxnListSizeFactorMargin.
+ * Since we have dynamic pair list pruning, the force kernel cost depends
+ * only very weakly on nstlist. It depends strongly on nstlistPrune.
+ * Increasing nstlist mainly affects the cost of the pair search (down due
+ * to lower frequency, up due to larger list) and the list pruning kernel.
+ * We increase nstlist conservatively with regard to kernel performance.
+ * In serial the search cost is not high and thus we don't gain much by
+ * increasing nstlist a lot. In parallel the MPI and CPU-GPU communication
+ * volume as well as the communication buffer preparation and reduction time
+ * increase quickly with rlist and thus nslist. Therefore we should avoid
+ * large nstlist, even if that also reduces the domain decomposition cost.
+ * With GPUs we perform the dynamic pruning in a rolling fashion and this
+ * overlaps with the update on the CPU, which allows even larger nstlist.
  */
-/* CPU: pair-search is about a factor 1.5 slower than the non-bonded kernel */
-//! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_cpu_listfac_ok    = 1.05;
-//! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_cpu_listfac_max   = 1.09;
-/* CPU: pair-search is about a factor 2-3 slower than the non-bonded kernel */
-//! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_knl_listfac_ok    = 1.22;
-//! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_knl_listfac_max   = 1.3;
-/* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
-//! Max OK performance ratio beween force calc and neighbor searching
-static const float  nbnxn_gpu_listfac_ok    = 1.20;
-//! Too high performance ratio beween force calc and neighbor searching
-static const float  nbnxn_gpu_listfac_max   = 1.30;
+// CPU: pair-search is a factor ~1.5 slower than the non-bonded kernel.
+//! Target pair-list size increase ratio for CPU
+static const float c_nbnxnListSizeFactorCpu      = 1.25;
+// Intel KNL: pair-search is a factor ~2-3 slower than the non-bonded kernel.
+//! Target pair-list size increase ratio for Intel KNL
+static const float c_nbnxnListSizeFactorIntelKnl = 1.4;
+// GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel.
+//! Target pair-list size increase ratio for hybrid CPU-GPU
+static const float c_nbnxnListSizeFactorGPU      = 1.4;
+//! Never increase the size of the pair-list more than the factor above plus this margin
+static const float c_nbnxnListSizeFactorMargin   = 0.1;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
@@ -418,19 +421,18 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 
     if (bGPU)
     {
-        listfac_ok  = nbnxn_gpu_listfac_ok;
-        listfac_max = nbnxn_gpu_listfac_max;
+        listfac_ok  = c_nbnxnListSizeFactorGPU;
     }
+    // TODO: This should check for Xeon Phi using cpuid
     else if (cpuinfo.feature(gmx::CpuInfo::Feature::X86_Avx512ER))
     {
-        listfac_ok  = nbnxn_knl_listfac_ok;
-        listfac_max = nbnxn_knl_listfac_max;
+        listfac_ok  = c_nbnxnListSizeFactorIntelKnl;
     }
     else
     {
-        listfac_ok  = nbnxn_cpu_listfac_ok;
-        listfac_max = nbnxn_cpu_listfac_max;
+        listfac_ok  = c_nbnxnListSizeFactorCpu;
     }
+    listfac_max     = listfac_ok + c_nbnxnListSizeFactorMargin;
 
     nstlist_orig = ir->nstlist;
     if (nstlist_cmdline > 0)
