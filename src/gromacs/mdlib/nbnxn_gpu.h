@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,46 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused               *nb,
                              const struct nbnxn_atomdata_t gmx_unused *nbdata,
                              int gmx_unused                            flags,
                              int gmx_unused                            iloc) GPU_FUNC_TERM
+
+/*! \brief
+ * Launch asynchronously the nonbonded prune-only kernel.
+ *
+ *  The local and non-local list pruning are launched in their separate streams.
+ *
+ *  Notes for future scheduling tuning:
+ *  Currently we schedule the dynamic pruning between two MD steps *after* both local and
+ *  nonlocal force D2H transfers completed. We could launch already after the cpyback
+ *  is launched, but we want to avoid prune kernels (especially in the non-local
+ *  high prio-stream) competing with nonbonded work.
+ *
+ *  However, this is not ideal as this schedule does not expose the available
+ *  concurrency. The dynamic pruning kernel:
+ *    - should be allowed to overlap with any task other than force compute, including
+ *      transfers (F D2H and the next step's x H2D as well as force clearing).
+ *    - we'd prefer to avoid competition with non-bonded force kernels belonging
+ *      to the same rank and ideally other ranks too.
+ *
+ *  In the most general case, the former would require scheduling pruning in a separate
+ *  stream and adding additional event sync points to ensure that force kernels read
+ *  consistent pair list data. This would lead to some overhead (due to extra
+ *  cudaStreamWaitEvent calls, 3-5 us/call) which we might be able to live with.
+ *  The gains from additional overlap might not be significant as long as
+ *  update+constraints anyway takes longer than pruning, but there will still
+ *  be use-cases where more overlap may help (e.g. multiple ranks per GPU,
+ *  no/hbonds only constraints).
+ *  The above second point is harder to address given that multiple ranks will often
+ *  share a GPU. Ranks that complete their nonbondeds sooner can schedule pruning earlier
+ *  and without a third priority level it is difficult to avoid some interference of
+ *  prune kernels with force tasks (in particular preemption of low-prio local force task).
+ *
+ * \param [inout] nb        GPU nonbonded data.
+ * \param [in]    iloc      Interaction locality flag.
+ * \param [in]    numParts  Number of parts the pair list is split into in the rolling kernel.
+ */
+GPU_FUNC_QUALIFIER
+void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t gmx_unused *nb,
+                                       int gmx_unused              iloc,
+                                       int gmx_unused              numParts) GPU_FUNC_TERM
 
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
