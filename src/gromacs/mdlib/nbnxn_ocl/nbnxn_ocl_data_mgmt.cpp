@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -294,7 +294,7 @@ static void set_cutoff_parameters(cl_nbparam_t              *nbp,
     nbp->c_rf             = ic->c_rf;
     nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->rlist_sq         = ic->rlistOuter * ic->rlistOuter;
 
     nbp->sh_lj_ewald      = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
