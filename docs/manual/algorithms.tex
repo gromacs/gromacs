@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -557,6 +557,21 @@ floating operations at once. These non-bonded kernels
 are much faster than the kernels used in the group scheme for most
 types of systems, particularly on newer hardware.
 
+Additionally, when the list buffer is determined automatically as
+described below, we also apply dynamic pair list pruning. The pair list
+can constructed infrequently, but that can lead to a lot of pairs
+in this list that are outside the cut-off range for all or most of
+the life time of this pair list. Such pairs can be pruned out by
+applying a cluster-pair kernel that only determines which clusters
+are in range. Because of the way the non-bonded data is regularized
+in {\gromacs}, this kernel is an order of magnitude faster than
+the search or the interaction kernel. On the GPU this pruning is
+overlapped with the integration on the CPU, so it is free in most
+cases. Therefore we can prune every 4-10 integration steps with
+little overhead and significantly reduce the number of cluster pairs
+in the interaction kernel. This procedure is applied automatically,
+unless the user set the pair-list buffer size manually.
+
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Energy drift and pair-list buffering}
 For a canonical (NVT) ensemble, the average energy error caused by
@@ -574,7 +589,7 @@ a Gaussian $G(x)$
 of zero mean and variance $\sigma^2 = t^2 k_B T/m$. For the distance
 between two particles, the variance changes to $\sigma^2 = \sigma_{12}^2 =
 t^2 k_B T(1/m_1+1/m_2)$. Note that in practice particles usually
-interact with other particles over time $t$ and therefore the real
+interact with (bump into) other particles over time $t$ and therefore the real
 displacement distribution is much narrower.  Given a non-bonded
 interaction cut-off distance of $r_c$ and a pair-list cut-off
 $r_\ell=r_c+r_b$ for $r_b$ the Verlet buffer size, we can then
