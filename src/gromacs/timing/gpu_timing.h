@@ -60,6 +60,8 @@ struct gmx_wallclock_gpu_t
     struct gmx_nbnxn_kernel_timing_data_t ktime[2][2]; /**< table containing the timings of the four
                                                           versions of the nonbonded kernels: force-only,
                                                           force+energy, force+pruning, and force+energy+pruning */
+    struct gmx_nbnxn_kernel_timing_data_t pruneTime; /**< table containing the timings of the 1st pass prune-only kernels */
+    struct gmx_nbnxn_kernel_timing_data_t rollPruneTime; /**< table containing the timings of rolling prune-only kernels */
     double  nb_h2d_t;                                  /**< host to device transfer time in nb calculation  */
     double  nb_d2h_t;                                  /**< device to host transfer time in nb calculation */
     int     nb_c;                                      /**< total call count of the nonbonded gpu operations */

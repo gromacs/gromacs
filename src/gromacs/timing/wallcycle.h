@@ -68,6 +68,7 @@ enum {
     ewcsLISTED_FEP,
     ewcsRESTRAINTS,
     ewcsLISTED_BUF_OPS,
+    ewcsNONBONDED_PRUNE,
     ewcsNONBONDED,
     ewcsEWALD_CORRECTION,
     ewcsNB_X_BUF_OPS,

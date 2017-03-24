@@ -72,6 +72,14 @@ struct interaction_const_t
 {
     int             cutoff_scheme;
 
+    /* Pair-list dynamic pruning interval */
+    int nstlistPrune;
+
+    /* Pair-list cut-off */
+    real rlist;
+    /* Pair-list cut-off for dynamic pruning */
+    real rlistPrune;
+
     /* VdW */
     int                    vdwtype;
     int                    vdw_modifier;
@@ -91,9 +99,6 @@ struct interaction_const_t
 
     /* Coulomb */
     real rcoulomb;
-
-    /* Cut-off */
-    real rlist;
 
     /* PME/Ewald */
     real ewaldcoeff_q;
