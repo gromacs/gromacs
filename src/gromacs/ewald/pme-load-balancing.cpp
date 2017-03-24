@@ -82,6 +82,7 @@
 struct pme_setup_t {
     real              rcut_coulomb;    /**< Coulomb cut-off                              */
     real              rlist;           /**< pair-list cut-off                            */
+    real              rlistPrune;      /**< pair-list GPU pruning cut-off                */
     real              spacing;         /**< (largest) PME grid spacing                   */
     ivec              grid;            /**< the PME grid dimensions                      */
     real              grid_efficiency; /**< ineffiency factor for non-uniform grids <= 1 */
@@ -131,6 +132,8 @@ struct pme_load_balancing_t {
     real         rcut_coulomb_start; /**< Initial electrostatics cutoff */
     real         rbuf_coulomb;       /**< the pairlist buffer size */
     real         rbuf_vdw;           /**< the pairlist buffer size */
+    real         rbufp_coulomb;      /**< the pairlist rolling pruning buffer size */
+    real         rbufp_vdw;          /**< the pairlist rolling pruning buffer size */
     matrix       box_start;          /**< the initial simulation box */
     int          n;                  /**< the count of setup as well as the allocation size */
     pme_setup_t *setup;              /**< the PME+cutoff setups */
@@ -189,6 +192,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->rbuf_coulomb  = ic->rlist - ic->rcoulomb;
     pme_lb->rbuf_vdw      = ic->rlist - ic->rvdw;
+    pme_lb->rbufp_coulomb = ic->rlistPrune - ic->rcoulomb;
+    pme_lb->rbufp_vdw     = ic->rlistPrune - ic->rvdw;
 
     copy_mat(box, pme_lb->box_start);
     if (ir->ePBC == epbcXY && ir->nwall == 2)
@@ -205,6 +210,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     pme_lb->cur                      = 0;
     pme_lb->setup[0].rcut_coulomb    = ic->rcoulomb;
     pme_lb->setup[0].rlist           = ic->rlist;
+    pme_lb->setup[0].rlistPrune      = ic->rlistPrune;
     pme_lb->setup[0].grid[XX]        = ir->nkx;
     pme_lb->setup[0].grid[YY]        = ir->nky;
     pme_lb->setup[0].grid[ZZ]        = ir->nkz;
@@ -359,6 +365,8 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
         /* Never decrease the Coulomb and VdW list buffers */
         set->rlist        = std::max(set->rcut_coulomb + pme_lb->rbuf_coulomb,
                                      pme_lb->rcut_vdw + pme_lb->rbuf_vdw);
+        set->rlistPrune   = std::max(set->rcut_coulomb + pme_lb->rbufp_coulomb,
+                                     pme_lb->rcut_vdw + pme_lb->rbufp_vdw);
     }
     else
     {
@@ -769,6 +777,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     ic->rcoulomb     = set->rcut_coulomb;
     ic->rlist        = set->rlist;
+    ic->rlistPrune   = set->rlistPrune;
     ic->ewaldcoeff_q = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
