@@ -64,6 +64,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -1986,7 +1987,8 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlist           = fr->rlist;
+    ic->rlistOuter      = fr->rlist;
+    ic->rlistInner      = fr->rlist;
 
     /* Lennard-Jones */
     ic->vdwtype         = fr->vdwtype;
@@ -2100,6 +2102,160 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
+// TODO: Move the next 3 functions to a new file, e.g. nbnxn_tuning.cpp
+
+/*! \brief Returns if we can (heuristically) change nstlist and rlist
+ *
+ * \param [in] ir  The input parameter record
+ */
+static bool supportsDynamicPairlistGenerationInterval(const t_inputrec &ir)
+{
+    return
+        ir.cutoff_scheme == ecutsVERLET &&
+        EI_DYNAMICS(ir.eI) &&
+        !(EI_MD(ir.eI) && ir.etc == etcNO) &&
+        ir.verletbuf_tol > 0;
+}
+
+/*! \brief Set the dynamic pairlist pruning parameters in \p ic
+ *
+ * \param[in]     ir         The input parameter record
+ * \param[in]     mtop       The global topology
+ * \param[in]     box        The unit cell
+ * \param[in]     useGpu     Tells if we are using a GPU for non-bondeds
+ * \param[in]     listSetup  The nbnxn pair list setup
+ * \param[in]     userSetNstlistPrune  The user set ic->nstlistPrune (using an env.var.)
+ * \param[in,out] ic         The nonbonded interactions constants
+ */
+static void
+setDynamicPairlistPruningParameters(const t_inputrec             *ir,
+                                    const gmx_mtop_t             *mtop,
+                                    matrix                        box,
+                                    gmx_bool                      useGpu,
+                                    const verletbuf_list_setup_t &listSetup,
+                                    bool                          userSetNstlistPrune,
+                                    interaction_const_t          *ic)
+{
+    /* When nstlistPrune was set by the user, we need to execute one loop
+     * iteration to determine rlistInner.
+     * Otherwise we compute rlistInner and increase nstlist as long as
+     * the we have no pairlist buffer (i.e. rlistInner == cutoff).
+     */
+    const real interactionCutoff = std::max(ic->rcoulomb, ic->rvdw);
+    int        tunedNstlistPrune = ic->nstlistPrune;
+    do
+    {
+        /* Dynamic pruning on the GPU is performed on the list for
+         * the next step on the coordinates of the current step,
+         * so the list lifetime is nstlistPrune (not the usual nstlist-1).
+         */
+        int listLifetime = tunedNstlistPrune - (useGpu ? 0 : 1);
+        ic->nstlistPrune = tunedNstlistPrune;
+        calc_verlet_buffer_size(mtop, det(box), ir,
+                                tunedNstlistPrune, listLifetime,
+                                -1, &listSetup, NULL,
+                                &ic->rlistInner);
+
+        /* On the GPU we apply the dynamic pruning in a rolling fashion
+         * every c_nbnxnGpuRollingListPruningInterval steps,
+         * so keep nstlistPrune a multiple of the interval.
+         */
+        tunedNstlistPrune += useGpu ? c_nbnxnGpuRollingListPruningInterval : 1;
+    }
+    while (!userSetNstlistPrune &&
+           tunedNstlistPrune < ir->nstlist &&
+           ic->rlistInner == interactionCutoff);
+
+    /* With dynamic pruning on the CPU we prune after updating,
+     * so nstlistPrune=nstlist-1 would add useless extra work.
+     * With the GPU there will probably be more overhead than gain
+     * with nstlistPrune=nstlist-1, so we disable dynamic pruning.
+     */
+    if (ic->nstlistPrune >= ir->nstlist - 1)
+    {
+        ic->nstlistPrune = ir->nstlist;
+        ic->rlistInner   = ic->rlistOuter;
+    }
+}
+
+/*! \brief Setup the dynamic pairlist pruning
+ *
+ * \param[in,out] fplog   Log file
+ * \param[in]     ir      The input parameter record
+ * \param[in]     mtop    The global topology
+ * \param[in]     box     The unit cell
+ * \param[in]     useGpu  Tells if we are using a GPU for non-bondeds
+ * \param[in,out] ic      The nonbonded interactions constants
+ */
+static void setupDynamicPairlistPruning(FILE                *fplog,
+                                        const t_inputrec    *ir,
+                                        const gmx_mtop_t    *mtop,
+                                        matrix               box,
+                                        gmx_bool             useGpu,
+                                        interaction_const_t *ic)
+{
+    /* Initialize the parameters to no dynamic list pruning */
+    ic->nstlistPrune = ir->nstlist;
+
+    if (supportsDynamicPairlistGenerationInterval(*ir))
+    {
+        verletbuf_list_setup_t ls;
+        verletbuf_get_list_setup(TRUE, TRUE, &ls);
+
+        /* Note that nstlistPrune can have any value independently of nstlist.
+         * Actually applying rolling pruning is only useful when
+         * nstlistPrune < nstlist -1
+         */
+        char *env                 = getenv("GMX_NSTLIST_PRUNE");
+        bool  userSetNstlistPrune = (env != NULL);
+
+        if (userSetNstlistPrune)
+        {
+            char *end;
+            ic->nstlistPrune = strtol(env, &end, 10);
+            if (!end || (*end != 0) || ic->nstlistPrune < 0)
+            {
+                gmx_fatal(FARGS, "Invalid value passed in GMX_NSTLIST_PRUNE=%s, non-negative integer required (0 to turn off dynamic pruning)", env);
+            }
+
+            if (ic->nstlistPrune == 0)
+            {
+                /* Deactivate dynamic pruning */
+                ic->nstlistPrune = ir->nstlist;
+            }
+        }
+        else
+        {
+            static_assert(c_nbnxnDynamicListPruningMinLifetime % c_nbnxnGpuRollingListPruningInterval == 0,
+                          "c_nbnxnDynamicListPruningMinLifetime sets the starting value for nstlistPrune, which should be divisible by the rolling pruning interval for efficiency reasons.");
+
+            // TODO: Use auto-tuning to determine nstlistPrune
+            ic->nstlistPrune = c_nbnxnDynamicListPruningMinLifetime;
+        }
+
+        setDynamicPairlistPruningParameters(ir, mtop, box, useGpu, ls,
+                                            userSetNstlistPrune, ic);
+
+        // Dynamic pruning disabled until the kernels are present
+        ic->nstlistPrune = ir->nstlist;
+        ic->rlistInner   = ic->rlistOuter;
+
+        bool useDynamicPruning = (ic->nstlistPrune < ir->nstlist);
+
+        if (fplog && useDynamicPruning)
+        {
+            const real interactionCutoff = std::max(ic->rcoulomb, ic->rvdw);
+            fprintf(fplog,
+                    "Using a dual pair-list setup updated with dynamic%s pruning:\n"
+                    "  outer list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n"
+                    "  inner list: updated every %3d steps, buffer %.3f nm, rlist %.3f nm\n",
+                    useGpu ? ", rolling" : "",
+                    ir->nstlist, ic->rlistOuter - interactionCutoff, ic->rlistOuter,
+                    ic->nstlistPrune, ic->rlistInner - interactionCutoff, ic->rlistInner);
+        }
+    }
+}
+
 static void init_nb_verlet(FILE                *fp,
                            const gmx::MDLogger &mdlog,
                            nonbonded_verlet_t **nb_verlet,
@@ -2107,7 +2263,9 @@ static void init_nb_verlet(FILE                *fp,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
-                           const char          *nbpu_opt)
+                           const char          *nbpu_opt,
+                           const gmx_mtop_t    *mtop,
+                           matrix               box)
 {
     nonbonded_verlet_t *nbv;
     int                 i;
@@ -2164,6 +2322,8 @@ static void init_nb_verlet(FILE                *fp,
             }
         }
     }
+
+    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->bUseGPU, fr->ic);
 
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
@@ -3209,7 +3369,8 @@ void init_forcerec(FILE                *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt,
+                       mtop, box);
     }
 
     if (ir->eDispCorr != edispcNO)
