@@ -634,16 +634,6 @@ static void write_xpm_header(FILE *out,
                              gmx_bool bDiscrete)
 {
     fprintf(out,  "/* XPM */\n");
-    try
-    {
-        gmx::BinaryInformationSettings settings;
-        settings.generatedByHeader(true);
-        settings.linePrefix("/* ");
-        settings.lineSuffix(" */");
-        gmx::printBinaryInformation(out, gmx::getProgramContext(),
-                                    settings);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(out,  "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
     fprintf(out,  "/* title:   \"%s\" */\n", title);
     fprintf(out,  "/* legend:  \"%s\" */\n", legend);
@@ -672,7 +662,7 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
                            t_rgb rlo, t_rgb rmid, t_rgb rhi)
 {
     int    i, nmid;
-    real   r, g, b, clev_lo, clev_hi;
+    double r, g, b, clev_lo, clev_hi;
 
     if (*nlevels > NMAP*NMAP)
     {
@@ -706,9 +696,9 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[i % NMAP],
                 (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 ((nmid - i)*lo + i*mid)/clev_lo);
     }
     for (i = 0; (i < (*nlevels-nmid)); i++)
@@ -719,9 +709,9 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
         fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
                 mapper[(i+nmid) % NMAP],
                 (*nlevels <= NMAP) ? ' ' : mapper[(i+nmid)/NMAP],
-                static_cast<unsigned int>(round(255*r)),
-                static_cast<unsigned int>(round(255*g)),
-                static_cast<unsigned int>(round(255*b)),
+                static_cast<unsigned int>(std::round(255*r)),
+                static_cast<unsigned int>(std::round(255*g)),
+                static_cast<unsigned int>(std::round(255*b)),
                 ((*nlevels - 1 - nmid - i)*mid + i*hi)/clev_hi);
     }
 }
