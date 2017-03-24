@@ -2179,10 +2179,6 @@ static void set_pairlist_pruning_parameters(FILE                *fplog,
                tunedNstlistPrune < ir->nstlist &&
                ic->rlistPrune == std::max(ic->rcoulomb, ic->rvdw));
 
-        // Dynamic pruning disabled until the kernels are present
-        useDynamicPruning = false;
-        ic->nstlistPrune  = ir->nstlist;
-
         if (fplog && useDynamicPruning)
         {
             fprintf(fplog, "Will apply %s pruning to the pair list over %d steps with cut-off = %.3f\n",
