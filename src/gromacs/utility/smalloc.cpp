@@ -285,7 +285,7 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
         }
 #endif
 
-        p = gmx::internal::alignedMalloc(nelem*elsize);
+        p = gmx::AlignedAllocationPolicy::malloc(nelem*elsize);
 
         if (p == nullptr)
         {
@@ -310,7 +310,7 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
 /* This routine can NOT be called with any pointer */
 void save_free_aligned(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void *ptr)
 {
-    gmx::internal::alignedFree(ptr);
+    gmx::AlignedAllocationPolicy::free(ptr);
 }
 
 void set_over_alloc_dd(gmx_bool set)

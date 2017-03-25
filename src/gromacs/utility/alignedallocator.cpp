@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 namespace gmx
 {
 
-namespace internal
+namespace
 {
 
 /*! \brief Allocate aligned memory in a fully portable way
@@ -137,10 +137,10 @@ alignedFreeGeneric(void *p)
     }
 }
 
-
+}   // namespace
 
 void *
-alignedMalloc(std::size_t bytes)
+AlignedAllocationPolicy::malloc(std::size_t bytes)
 {
     // For now we always use 128-byte alignment:
     // 1) IBM Power already has cache lines of 128-bytes, and needs it.
@@ -174,14 +174,14 @@ alignedMalloc(std::size_t bytes)
 #elif HAVE__ALIGNED_MALLOC
     p = _aligned_malloc(bytes, alignment);
 #else
-    p = alignedMallocGeneric(bytes, alignment);
+    p = internal::alignedMallocGeneric(bytes, alignment);
 #endif
 
     return p;
 }
 
 void
-alignedFree(void *p)
+AlignedAllocationPolicy::free(void *p)
 {
     if (p)
     {
@@ -192,11 +192,9 @@ alignedFree(void *p)
 #elif HAVE__ALIGNED_MALLOC
         _aligned_free(p);
 #else
-        alignedFreeGeneric(p);
+        internal::alignedFreeGeneric(p);
 #endif
     }
 }
-
-} // namespace internal
 
 } // namespace gmx

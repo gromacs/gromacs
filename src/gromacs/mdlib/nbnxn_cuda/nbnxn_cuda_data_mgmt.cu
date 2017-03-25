@@ -51,7 +51,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_cuda/hostsidebuffers.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -64,6 +63,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "hostsidebuffers.h"
 #include "nbnxn_cuda_types.h"
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */

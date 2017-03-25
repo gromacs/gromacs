@@ -54,13 +54,13 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_cuda/hostsidebuffers.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "hostsidebuffers.h"
 #include "nbnxn_cuda_types.h"
 
 /*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */

@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,53 +32,50 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ * \brief
+ * Implements gmx::GpuHostAllocationPolicy for CUDA.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_utility
+ */
 #include "gmxpre.h"
 
-#include "pme-spline-work.h"
+#include "gpuhostallocator.h"
 
-#include "gromacs/simd/simd.h"
-#include "gromacs/utility/alignedallocator.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
+#include "config.h"
 
-#include "pme-simd.h"
+#include <cstdlib>
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+#include "gromacs/utility/gmxassert.h"
 
-pme_spline_work *make_pme_spline_work(int gmx_unused order)
+
+namespace gmx
 {
-    pme_spline_work *work;
 
-#ifdef PME_SIMD4_SPREAD_GATHER
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH*2];
-    Simd4Real        zero_S;
-    Simd4Real        real_mask_S0, real_mask_S1;
-    int              of, i;
-
-    work = new(gmx::AlignedAllocationPolicy::malloc(sizeof(pme_spline_work)))pme_spline_work;
-
-    zero_S = setZero();
-
-    /* Generate bit masks to mask out the unused grid entries,
-     * as we only operate on order of the 8 grid entries that are
-     * load into 2 SIMD registers.
-     */
-    for (of = 0; of < 2*GMX_SIMD4_WIDTH-(order-1); of++)
+void *
+GpuHostAllocationPolicy::malloc(std::size_t bytes)
+{
+    void *pointer = nullptr;
+    if (bytes != 0)
     {
-        for (i = 0; i < 2*GMX_SIMD4_WIDTH; i++)
+        int         flag = cudaHostAllocDefault;
+        cudaError_t stat = cudaMallocHost(&pointer, bytes, flag);
+        if (stat != cudaSuccess)
         {
-            tmp[i] = (i >= of && i < of+order ? -1.0 : 1.0);
+            pointer = nullptr;
         }
-        real_mask_S0      = load4(tmp);
-        real_mask_S1      = load4(tmp+GMX_SIMD4_WIDTH);
-        work->mask_S0[of] = (real_mask_S0 < zero_S);
-        work->mask_S1[of] = (real_mask_S1 < zero_S);
     }
-#else
-    work = nullptr;
-#endif
-
-    return work;
+    return pointer;
 }
+
+void
+GpuHostAllocationPolicy::free(void *p)
+{
+    if (p)
+    {
+        cudaFreeHost(p);
+    }
+}
+
+} // namespace gmx

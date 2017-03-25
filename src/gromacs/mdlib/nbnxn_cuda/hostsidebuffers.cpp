@@ -44,12 +44,16 @@
 
 #include "hostsidebuffers.h"
 
-#include "gromacs/gpu_utils/pmalloc_cuda.h"
+#include "gromacs/gpu_utils/gpuhostallocator.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
+
+//! Convenience alias.
+template <typename T>
+using GpuHostVector = std::vector<T, GpuHostAllocator<T> >;
 
 /*! \libinternal
  * \brief Manage memory allocation of GPU host-side buffers
@@ -64,52 +68,37 @@ class HostSideBuffers::Impl
 {
     public:
         //! Host-side storage for computed VDW energy.
-        float *vdwEnergy_;
+        GpuHostVector<float> vdwEnergy_;
         //! Host-side storage for computed electrostatic energy.
-        float *electrostaticEnergy_;
+        GpuHostVector<float> electrostaticEnergy_;
         /*! \brief Host-side storage for computed shift forces.
          *
          * \todo Consider using float3 for this, for simplicity and
          * maintainability, once CUDA can compile as C++11. But does
          * that make sense also for whatever OpenCL does?
          */
-        float *shiftForces_;
+        GpuHostVector<float> shiftForces_;
         /*! \brief Constructor.
          *
          * \throws std::bad_alloc if any allocation fails. */
-        Impl() : vdwEnergy_(nullptr),
-                 electrostaticEnergy_(nullptr),
-                 shiftForces_(nullptr)
+        Impl() : vdwEnergy_(1),
+                 electrostaticEnergy_(1),
+                 shiftForces_(SHIFTS * 3)
         {
-            pmalloc((void**)&vdwEnergy_, sizeof(float));
-            if (vdwEnergy_ == nullptr)
-            {
-                throw std::bad_alloc();
-            }
-            pmalloc((void**)&electrostaticEnergy_, sizeof(float));
-            if (electrostaticEnergy_ == nullptr)
-            {
-                throw std::bad_alloc();
-            }
-            pmalloc((void**)&shiftForces_, SHIFTS * 3 * sizeof(float));
-            if (shiftForces_ == nullptr)
-            {
-                throw std::bad_alloc();
-            }
-        }
-        //! Destructor.
-        ~Impl()
-        {
-            pfree(vdwEnergy_);
-            pfree(electrostaticEnergy_);
-            pfree(shiftForces_);
         }
 };
 
+//! Helper function for constructing the views on the storage.
+template <typename T>
+ArrayRef<T> arrayRefFromGpuHostVector(GpuHostVector<T> &v)
+{
+    return arrayRefFromPointers(v.data(), v.data() + v.size());
+}
+
 HostSideBuffers::HostSideBuffers() : impl_(new Impl),
-                                     vdwEnergy_(arrayRefFromArray<float>(impl_->vdwEnergy_, 1)),
-                                     electrostaticEnergy_(arrayRefFromArray<float>(impl_->electrostaticEnergy_, 1)),
-                                     shiftForces_(arrayRefFromArray<float>(impl_->shiftForces_, SHIFTS * 3))
+                                     vdwEnergy_(arrayRefFromGpuHostVector<float>(impl_->vdwEnergy_)),
+                                     electrostaticEnergy_(arrayRefFromGpuHostVector<float>(impl_->electrostaticEnergy_)),
+                                     shiftForces_(arrayRefFromGpuHostVector<float>(impl_->shiftForces_))
 {
 }
 

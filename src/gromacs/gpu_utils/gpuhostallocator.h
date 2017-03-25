@@ -33,17 +33,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- * \brief Declares gmx::AlignedAllocator that is used to make standard
- * library containers compatible with SIMD contents that require
- * aligned load/store.
+ * \brief
+ * Declares gmx::GpuHostAllocator that is used to make standard library
+ * containers that use page-locked memory.
  *
- * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_ALIGNEDALLOCATOR_H
-#define GMX_UTILITY_ALIGNEDALLOCATOR_H
+#ifndef GMX_UTILITY_GPUHOSTALLOCATOR_H
+#define GMX_UTILITY_GPUHOSTALLOCATOR_H
 
 #include <cstddef>
 
@@ -52,56 +51,54 @@
 namespace gmx
 {
 
-/*! \libinternal \brief Policy class for configuring gmx::Allocator, to manage
- * allocations of aligned memory for SIMD code.
+/*! \libinternal
+ * \brief Policy class for configuring gmx::Allocator, to manage
+ * allocations of memory that is locked to pages on the host side and
+ * thus able to be transferred automatically by the CUDA runtime.
  */
-class AlignedAllocationPolicy
+class GpuHostAllocationPolicy
 {
     public:
-        /*! \brief Allocate aligned memory
+        /*! \brief Allocate GPU memory
          *
          *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
          *               0 bytes, which will return a non-null pointer that is properly
-         *               aligned and padded (but that you should not use).
+         *               aligned in page-locked memory (but that you should not use). TODO check this.
          *
          * \return Valid pointer if the allocation worked, otherwise nullptr.
          *
-         * The memory will always be aligned to 128 bytes, which is our
-         * estimate of the longest cache lines on architectures currently in use.
-         * It will also be padded by the same amount at the end of the
-         * area, to help avoid false cache sharing.
+         * The memory will always be TODO
          *
          *  \note Memory allocated with this routine must be released with
-         *        gmx::AlignedAllocationPolicy::free(), and absolutely not the system free().
+         *        gmx::GpuHostAllocationPolicy::free(), and absolutely not the system free().
          */
         static void *
         malloc(std::size_t bytes);
-        /*! \brief Free aligned memory
+        /*! \brief Free GPU memory
          *
-         *  \param p  Memory pointer previously returned from malloc()
+         *  \param p  Memory pointer previously returned from gmx::GpuHostAllocationPolicy::malloc()
          *
          *  \note This routine should only be called with pointers obtained from
-         *        gmx::AlignedAllocationPolicy::malloc(), and absolutely not any
-         *        pointers obtained the system malloc().
+         *        gmx:GpuHostAllocationPolicy::malloc(), and absolutely not any pointers obtained
+         *        the system malloc().
          */
         static void
         free(void *p);
 };
 
-/*! \libinternal \brief Aligned memory allocator.
+/*! \libinternal \brief GPU memory allocator for memory that is page-locked on the host.
  *
  *  \tparam T          Type of objects to allocate
  *
  * This convenience partial specialization can be used for the
  * optional allocator template parameter in standard library
- * containers, which is necessary e.g. to use SIMD aligned load and
- * store operations on data in those containers. The memory will
- * always be aligned according to the behavior of
- * AlignedAllocationPolicy.
+ * containers, which is necessary e.g. to use transfer the data in
+ * those containers between host and device. The memory will always be
+ * aligned according to the behavior of GpuHostAllocationPolicy.
  */
 template <class T>
-using AlignedAllocator = Allocator<T, AlignedAllocationPolicy>;
+using GpuHostAllocator = Allocator<T, GpuHostAllocationPolicy>;
 
 }      // namespace gmx
 
-#endif // GMX_UTILITY_ALIGNEDALLOCATOR_H
+#endif
