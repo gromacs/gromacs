@@ -42,7 +42,7 @@
 #include <cstdlib>
 
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
 void pr_ivec(FILE *fp, int indent, const char *title, const int vec[], int n, gmx_bool bShowNumbers)

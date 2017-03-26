@@ -44,7 +44,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 
 void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
 {

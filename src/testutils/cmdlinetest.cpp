@@ -57,6 +57,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
@@ -159,20 +160,6 @@ void CommandLine::append(const char *arg)
     impl_->argc_ = static_cast<int>(newSize);
 }
 
-namespace
-{
-
-//! Helper function for converting values to strings
-template <typename T>
-std::string value2string(T value)
-{
-    std::stringstream ss;
-    ss << value;
-    return ss.str();
-}
-
-}       // namespace
-
 void CommandLine::addOption(const char *name)
 {
     append(name);
@@ -192,13 +179,13 @@ void CommandLine::addOption(const char *name, const std::string &value)
 void CommandLine::addOption(const char *name, int value)
 {
     append(name);
-    append(value2string(value));
+    append(gmx::toString(value));
 }
 
 void CommandLine::addOption(const char *name, double value)
 {
     append(name);
-    append(value2string(value));
+    append(gmx::toString(value));
 }
 
 void CommandLine::merge(const CommandLine &args)

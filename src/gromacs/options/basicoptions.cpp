@@ -182,7 +182,7 @@ BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
 
 std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 {
-    return formatString("%d", value);
+    return toString(value);
 }
 
 void IntegerOptionStorage::initConverter(ConverterType *converter)
@@ -224,7 +224,7 @@ IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
 
 std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) const
 {
-    return formatString("%" GMX_PRId64, value);
+    return toString(value);
 }
 
 void Int64OptionStorage::initConverter(ConverterType *converter)
@@ -268,7 +268,7 @@ std::string DoubleOptionStorage::typeString() const
 
 std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 {
-    return formatString("%g", value / factor_);
+    return toString(value / factor_);
 }
 
 void DoubleOptionStorage::initConverter(ConverterType *converter)
@@ -361,7 +361,7 @@ std::string FloatOptionStorage::typeString() const
 
 std::string FloatOptionStorage::formatSingleValue(const float &value) const
 {
-    return formatString("%g", value / factor_);
+    return toString(value / factor_);
 }
 
 void FloatOptionStorage::initConverter(ConverterType *converter)

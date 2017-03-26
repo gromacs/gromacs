@@ -96,7 +96,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "nbnxn_gpu_jit_support.h"
 
