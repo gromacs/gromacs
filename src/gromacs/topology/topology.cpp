@@ -49,7 +49,7 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
 const char *gtypes[egcNR+1] = {
