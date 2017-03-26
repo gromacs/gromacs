@@ -5,4 +5,7 @@
   <Object Name="Adjusted">
     <Int64 Name="a">2</Int64>
   </Object>
+  <String Name="Dumped"><![CDATA[
+a                                 = 2
+]]></String>
 </ReferenceData>
