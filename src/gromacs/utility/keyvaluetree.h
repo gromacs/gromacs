@@ -259,15 +259,6 @@ class KeyValueTreeObject
          */
         bool hasDistinctProperties(const KeyValueTreeObject &obj) const;
 
-        /*! \brief
-         * Writes a string representation of the object with given writer.
-         *
-         * The output format is designed to be readable by humans; if some
-         * particular machine-readable format is needed, that should be
-         * implemented outside the generic key-value tree code.
-         */
-        void writeUsing(TextWriter *writer) const;
-
     private:
         //! Keeps the properties by key.
         std::map<std::string, KeyValueTreeValue> valueMap_;
@@ -308,6 +299,17 @@ inline KeyValueTreeObject &KeyValueTreeValue::asObject()
 
 //! \cond libapi
 /*! \brief
+ * Writes a human-readable representation of the tree with given writer.
+ *
+ * The output format is designed to be readable by humans; if some
+ * particular machine-readable format is needed, that should be
+ * implemented outside the generic key-value tree code.
+ *
+ * \ingroup module_utility
+ */
+void dumpKeyValueTree(TextWriter *writer, const KeyValueTreeObject &tree);
+
+/*! \brief
  * Compares two KeyValueTrees and prints any differences.
  *
  * \ingroup module_utility
@@ -317,6 +319,14 @@ void compareKeyValueTrees(TextWriter               *writer,
                           const KeyValueTreeObject &tree2,
                           real                      ftol,
                           real                      abstol);
+
+//! Helper function to format a simple KeyValueTreeValue.
+static inline std::string
+simpleValueToString(const KeyValueTreeValue &value)
+{
+    return simpleValueToString(value.asVariant());
+}
+
 //! \endcond
 
 } // namespace gmx

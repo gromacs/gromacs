@@ -5,4 +5,7 @@
   <Object Name="Adjusted">
     <Bool Name="a">true</Bool>
   </Object>
+  <String Name="Dumped"><![CDATA[
+a                                 = true
+]]></String>
 </ReferenceData>

@@ -52,8 +52,12 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/repeatingsection.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreeserializer.h"
+#include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -231,8 +235,17 @@ class TreeValueSupportTest : public ::testing::Test
             gmx::test::TestReferenceChecker checker(refdata.rootChecker());
             gmx::KeyValueTreeObject         tree(builder_.build());
             checker.checkKeyValueTreeObject(tree, "Input");
+            // Check that adjustment works.
             ASSERT_NO_THROW_GMX(tree = gmx::adjustKeyValueTreeFromOptions(tree, options_));
             checker.checkKeyValueTreeObject(tree, "Adjusted");
+            // Check that assignment works.
+            ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options_, tree, nullptr));
+            {
+                gmx::StringOutputStream stream;
+                gmx::TextWriter         writer(&stream);
+                ASSERT_NO_THROW_GMX(gmx::dumpKeyValueTree(&writer, tree));
+                checker.checkTextBlock(stream.toString(), "Dumped");
+            }
         }
 
         gmx::Options              options_;
