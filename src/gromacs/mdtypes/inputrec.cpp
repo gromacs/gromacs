@@ -1001,7 +1001,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         {
             gmx::TextWriter writer(fp);
             writer.wrapperSettings().setIndent(indent);
-            ir->params->writeUsing(&writer);
+            gmx::dumpKeyValueTree(&writer, *ir->params);
         }
 
         pr_grp_opts(fp, indent, "grpopts", &(ir->opts), bMDPformat);

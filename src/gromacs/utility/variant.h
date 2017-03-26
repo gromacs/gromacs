@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_UTILITY_VARIANT_H
 
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -247,6 +248,18 @@ class Variant
 
         std::unique_ptr<IContent> content_;
 };
+
+//! \cond libapi
+/*! \brief
+ * Converts a Variant value to a string.
+ *
+ * As the name suggests, only some types of "simple" values (such as int) are
+ * supported.  Asserts for unsupported types.
+ *
+ * \ingroup module_utility
+ */
+std::string simpleValueToString(const Variant &value);
+//! \endcond
 
 } // namespace gmx
 

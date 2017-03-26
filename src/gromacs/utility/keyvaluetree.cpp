@@ -41,6 +41,7 @@
 
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -56,21 +57,6 @@ std::vector<std::string> splitPathElements(const std::string &path)
     GMX_ASSERT(!path.empty() && path[0] == '/',
                "Paths to KeyValueTree should start with '/'");
     return splitDelimitedString(path.substr(1), '/');
-}
-
-//! Helper function to format a simple KeyValueTreeValue.
-std::string formatSingleValue(const KeyValueTreeValue &value)
-{
-    if (value.isType<float>())
-    {
-        return formatString("%g", value.cast<float>());
-    }
-    else if (value.isType<double>())
-    {
-        return formatString("%g", value.cast<double>());
-    }
-    GMX_RELEASE_ASSERT(false, "Unknown value type");
-    return std::string();
 }
 
 }   // namespace
@@ -116,9 +102,14 @@ bool KeyValueTreeObject::hasDistinctProperties(const KeyValueTreeObject &obj) co
     return true;
 }
 
-void KeyValueTreeObject::writeUsing(TextWriter *writer) const
+/********************************************************************
+ * Key value tree dump
+ */
+
+//! \cond libapi
+void dumpKeyValueTree(TextWriter *writer, const KeyValueTreeObject &tree)
 {
-    for (const auto &prop : properties())
+    for (const auto &prop : tree.properties())
     {
         const auto &value = prop.value();
         if (value.isObject())
@@ -127,7 +118,7 @@ void KeyValueTreeObject::writeUsing(TextWriter *writer) const
             writer->writeLine(":");
             int oldIndent = writer->wrapperSettings().indent();
             writer->wrapperSettings().setIndent(oldIndent + 2);
-            value.asObject().writeUsing(writer);
+            dumpKeyValueTree(writer, value.asObject());
             writer->wrapperSettings().setIndent(oldIndent);
         }
         else
@@ -143,18 +134,19 @@ void KeyValueTreeObject::writeUsing(TextWriter *writer) const
                     GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
                                        "Arrays of objects not currently implemented");
                     writer->writeString(" ");
-                    writer->writeString(formatSingleValue(elem));
+                    writer->writeString(simpleValueToString(elem));
                 }
                 writer->writeString(" ]");
             }
             else
             {
-                writer->writeString(formatSingleValue(value));
+                writer->writeString(simpleValueToString(value));
             }
             writer->writeLine();
         }
     }
 }
+//! \endcond
 
 /********************************************************************
  * Key value tree comparison
@@ -284,7 +276,7 @@ class CompareHelper
             {
                 return "present";
             }
-            return formatSingleValue(value);
+            return simpleValueToString(value);
         }
 
         KeyValueTreePath  currentPath_;
