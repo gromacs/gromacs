@@ -46,12 +46,12 @@
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/gpu_utils/pmalloc_cuda.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_cuda/hostsidebuffers.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -573,6 +573,11 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
+// TODO Consider refactoring to separate the initialization into at
+// least two phases (e.g. memory allocation, and a collection of
+// preparatory API calls - some of the latter aren't really about
+// "data management"). This would probably reduce duplication with the
+// OpenCL code, and/or localize data structures and symbols better.
 void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const gmx_gpu_info_t      *gpu_info,
                     const gmx_gpu_opt_t       *gpu_opt,
@@ -606,10 +611,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     snew(nb->timers, 1);
     snew(nb->timings, 1);
 
-    /* init nbst */
-    pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
-    pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    nb->hostSideBuffers = new gmx::HostSideBuffers();
 
     init_plist(nb->plist[eintLocal]);
 
@@ -1003,6 +1005,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     sfree(atdat);
     sfree(nbparam);
+    delete nb->hostSideBuffers;
     sfree(plist);
     if (nb->bUseTwoStreams)
     {

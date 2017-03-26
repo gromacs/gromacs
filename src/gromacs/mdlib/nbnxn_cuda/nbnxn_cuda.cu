@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_cuda/hostsidebuffers.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -557,20 +558,22 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     /* only transfer energies in the local stream */
     if (LOCAL_I(iloc))
     {
+        gmx::HostSideBuffers &hostSideBuffers = const_cast<gmx::HostSideBuffers &>(*nb->hostSideBuffers);
+
         /* DtoH fshift */
         if (bCalcFshift)
         {
-            cu_copy_D2H_async(nb->nbst.fshift, adat->fshift,
-                              SHIFTS * sizeof(*nb->nbst.fshift), stream);
+            cu_copy_D2H_async(static_cast<void *>(hostSideBuffers.shiftForces_.data()), adat->fshift,
+                              hostSideBuffers.shiftForces_.size() * sizeof(float), stream);
         }
 
         /* DtoH energies */
         if (bCalcEner)
         {
-            cu_copy_D2H_async(nb->nbst.e_lj, adat->e_lj,
-                              sizeof(*nb->nbst.e_lj), stream);
-            cu_copy_D2H_async(nb->nbst.e_el, adat->e_el,
-                              sizeof(*nb->nbst.e_el), stream);
+            cu_copy_D2H_async(static_cast<void *>(hostSideBuffers.vdwEnergy_.data()), adat->e_lj,
+                              hostSideBuffers.vdwEnergy_.size() * sizeof(float), stream);
+            cu_copy_D2H_async(static_cast<void *>(hostSideBuffers.electrostaticEnergy_.data()), adat->e_el,
+                              hostSideBuffers.electrostaticEnergy_.size() * sizeof(float), stream);
         }
     }
 
@@ -609,7 +612,6 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
     cu_plist_t                 *plist    = nb->plist[iloc];
     cu_timers_t                *timers   = nb->timers;
     struct gmx_wallclock_gpu_t *timings  = nb->timings;
-    nb_staging                  nbst     = nb->nbst;
 
     bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool                        bCalcFshift = flags & GMX_FORCE_VIRIAL;
@@ -671,19 +673,21 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
     /* add up energies and shift forces (only once at local F wait) */
     if (LOCAL_I(iloc))
     {
+        const gmx::HostSideBuffers &hostSideBuffers = *nb->hostSideBuffers;
+
         if (bCalcEner)
         {
-            *e_lj += *nbst.e_lj;
-            *e_el += *nbst.e_el;
+            *e_lj += hostSideBuffers.vdwEnergy_[0];
+            *e_el += hostSideBuffers.electrostaticEnergy_[0];
         }
 
         if (bCalcFshift)
         {
             for (int i = 0; i < SHIFTS; i++)
             {
-                fshift[i][0] += nbst.fshift[i].x;
-                fshift[i][1] += nbst.fshift[i].y;
-                fshift[i][2] += nbst.fshift[i].z;
+                fshift[i][XX] += hostSideBuffers.shiftForces_[i * DIM + XX];
+                fshift[i][YY] += hostSideBuffers.shiftForces_[i * DIM + YY];
+                fshift[i][ZZ] += hostSideBuffers.shiftForces_[i * DIM + ZZ];
             }
         }
     }

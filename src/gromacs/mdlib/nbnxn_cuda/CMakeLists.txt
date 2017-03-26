@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -46,5 +46,10 @@ if(GMX_USE_CUDA)
          nbnxn_cuda_data_mgmt.cu
          nbnxn_cuda_jit_support.cu
          ${NBNXN_CUDA_KERNEL_SOURCES})
-    set(MDLIB_SOURCES ${MDLIB_SOURCES} ${NBNXN_CUDA_SOURCES} PARENT_SCOPE)
+
+     file(GLOB CXX_SOURCES
+         hostsidebuffers.cpp
+         )
+
+     set(MDLIB_SOURCES ${MDLIB_SOURCES} ${CXX_SOURCES} ${NBNXN_CUDA_SOURCES} PARENT_SCOPE)
 endif()

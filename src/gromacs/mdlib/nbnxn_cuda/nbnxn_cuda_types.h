@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,13 @@ static const int c_clSize          = c_nbnxnGpuClusterSize;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+namespace gmx
+{
+
+class HostSideBuffers;
+
+} // namespace
 
 /*! \brief Electrostatic CUDA kernel flavors.
  *
@@ -229,17 +236,20 @@ struct cu_timers
 
 /** \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
+ *
+ * \todo hostSideBuffers can be contained by value when this type
+ * stops being allocated by snew.
  */
 struct gmx_nbnxn_cuda_t
 {
-    struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
-    bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    cu_atomdata_t            *atdat;          /**< atom data                                            */
-    cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
-    cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
-    nb_staging_t              nbst;           /**< staging area where fshift/energies get downloaded    */
+    struct gmx_device_info_t *dev_info;        /**< CUDA device information                              */
+    bool                      bUseTwoStreams;  /**< true if doing both local/non-local NB work on GPU    */
+    cu_atomdata_t            *atdat;           /**< atom data                                            */
+    cu_nbparam_t             *nbparam;         /**< parameters required for the non-bonded calc.         */
+    cu_plist_t               *plist[2];        /**< pair-list data structures (local and non-local)      */
+    gmx::HostSideBuffers     *hostSideBuffers; /**< Manages device-side memory allocations where fshift/energies get downloaded, and provides views to the storage. */
 
-    cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
+    cudaStream_t              stream[2];       /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
