@@ -681,6 +681,13 @@ bool FileIOXdrSerializer::reading() const
     return fio_->bRead;
 }
 
+void FileIOXdrSerializer::doBool(bool *value)
+{
+    gmx_bool v = *value;
+    gmx_fio_do_gmx_bool(fio_, v);
+    *value = v;
+}
+
 void FileIOXdrSerializer::doUChar(unsigned char *value)
 {
     gmx_fio_do_uchar(fio_, *value);

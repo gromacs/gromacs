@@ -240,6 +240,15 @@ class TreeValueSupportTest : public ::testing::Test
             checker.checkKeyValueTreeObject(tree, "Adjusted");
             // Check that assignment works.
             ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options_, tree, nullptr));
+            // Check that serialization works.
+            {
+                std::vector<char>             buffer = serializeTree(tree);
+                gmx::InMemoryDeserializer     deserializer(buffer);
+                gmx::KeyValueTreeObject       output
+                    = gmx::deserializeKeyValueTree(&deserializer);
+                checker.checkKeyValueTreeObject(output, "Adjusted");
+            }
+            // Check that dumping works.
             {
                 gmx::StringOutputStream stream;
                 gmx::TextWriter         writer(&stream);
@@ -250,6 +259,14 @@ class TreeValueSupportTest : public ::testing::Test
 
         gmx::Options              options_;
         gmx::KeyValueTreeBuilder  builder_;
+
+    private:
+        std::vector<char> serializeTree(const gmx::KeyValueTreeObject &tree)
+        {
+            gmx::InMemorySerializer serializer;
+            gmx::serializeKeyValueTree(tree, &serializer);
+            return serializer.finishAndGetBuffer();
+        }
 };
 
 TEST_F(TreeValueSupportTest, SupportsBooleanOption)
