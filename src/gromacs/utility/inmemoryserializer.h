@@ -61,6 +61,7 @@ class InMemorySerializer : public ISerializer
 
         // From ISerializer
         virtual bool reading() const { return false; }
+        virtual void doBool(bool *value);
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
         virtual void doInt64(gmx_int64_t *value);
@@ -82,6 +83,7 @@ class InMemoryDeserializer : public ISerializer
 
         // From ISerializer
         virtual bool reading() const { return true; }
+        virtual void doBool(bool *value);
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
         virtual void doInt64(gmx_int64_t *value);

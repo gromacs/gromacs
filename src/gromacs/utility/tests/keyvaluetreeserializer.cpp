@@ -58,6 +58,10 @@ class RefDataSerializer : public gmx::ISerializer
 
         virtual bool reading() const { return false; }
 
+        virtual void doBool(bool *value)
+        {
+            checker_.checkBoolean(*value, nullptr);
+        }
         virtual void doUChar(unsigned char *value)
         {
             checker_.checkUChar(*value, nullptr);

@@ -113,6 +113,11 @@ std::vector<char> InMemorySerializer::finishAndGetBuffer()
     return std::move(impl_->buffer_);
 }
 
+void InMemorySerializer::doBool(bool *value)
+{
+    impl_->doValue(value);
+}
+
 void InMemorySerializer::doUChar(unsigned char *value)
 {
     impl_->doValue(*value);
@@ -180,6 +185,11 @@ InMemoryDeserializer::InMemoryDeserializer(const std::vector<char> &buffer)
 
 InMemoryDeserializer::~InMemoryDeserializer()
 {
+}
+
+void InMemoryDeserializer::doBool(bool *value)
+{
+    impl_->doValue(value);
 }
 
 void InMemoryDeserializer::doUChar(unsigned char *value)
