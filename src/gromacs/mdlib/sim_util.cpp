@@ -2356,39 +2356,6 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
     }
 }
 
-void do_pbc_first(FILE *fplog, matrix box, t_forcerec *fr,
-                  t_graph *graph, rvec x[])
-{
-    if (fplog)
-    {
-        fprintf(fplog, "Removing pbc first time\n");
-    }
-    calc_shifts(box, fr->shift_vec);
-    if (graph)
-    {
-        mk_mshift(fplog, graph, fr->ePBC, box, x);
-        if (gmx_debug_at)
-        {
-            p_graph(debug, "do_pbc_first 1", graph);
-        }
-        shift_self(graph, box, x);
-        /* By doing an extra mk_mshift the molecules that are broken
-         * because they were e.g. imported from another software
-         * will be made whole again. Such are the healing powers
-         * of GROMACS.
-         */
-        mk_mshift(fplog, graph, fr->ePBC, box, x);
-        if (gmx_debug_at)
-        {
-            p_graph(debug, "do_pbc_first 2", graph);
-        }
-    }
-    if (fplog)
-    {
-        fprintf(fplog, "Done rmpbc\n");
-    }
-}
-
 static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
                             const gmx_mtop_t *mtop, rvec x[],
                             gmx_bool bFirst)
