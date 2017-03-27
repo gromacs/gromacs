@@ -695,18 +695,21 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
 /*! Return the reference to the nbfp texture. */
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
 {
+    assert(!disableCudaTextures);
     return nbfp_texref;
 }
 
 /*! Return the reference to the nbfp_comb texture. */
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref()
 {
+    assert(!disableCudaTextures);
     return nbfp_comb_texref;
 }
 
 /*! Return the reference to the coulomb_tab. */
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref()
 {
+    assert(!disableCudaTextures);
     return coulomb_tab_texref;
 }
 

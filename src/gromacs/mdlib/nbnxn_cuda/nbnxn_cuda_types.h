@@ -46,6 +46,7 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -59,6 +60,16 @@
 static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
 static const int c_clSize          = c_nbnxnGpuClusterSize;
+
+/**@{*/
+/*! True if the use of texture fetch in the CUDA kernels is disabled. */
+#if DISABLE_CUDA_TEXTURES
+static const bool disableCudaTextures = true;
+#else
+static const bool disableCudaTextures = false;
+#endif /* DISABLE_CUDA_TEXTURES */
+/**@}*/
+
 
 #ifdef __cplusplus
 extern "C" {
