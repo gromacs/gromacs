@@ -238,11 +238,15 @@ float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
                                 int                typei,
                                 int                typej)
 {
+#if DISABLE_CUDA_TEXTURES
+    return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
+#else
 #ifdef USE_TEXOBJ
     return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
 #else
     return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
 #endif /* USE_TEXOBJ */
+#endif /* DISABLE_CUDA_TEXTURES */
 }
 
 
@@ -327,6 +331,10 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     float sigma, sigma2, epsilon;
 
     /* sigma and epsilon are scaled to give 6*C6 */
+#if DISABLE_CUDA_TEXTURES
+    sigma   = LDG(&nbparam.nbfp_comb[2*typei    ]) + LDG(&nbparam.nbfp_comb[2*typej    ]);
+    epsilon = LDG(&nbparam.nbfp_comb[2*typei + 1]) + LDG(&nbparam.nbfp_comb[2*typej + 1]);
+#else
 #ifdef USE_TEXOBJ
     sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej    );
     epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej + 1);
@@ -334,6 +342,7 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     sigma   = tex1Dfetch(nbfp_comb_texref, 2*typei    ) + tex1Dfetch(nbfp_comb_texref, 2*typej    );
     epsilon = tex1Dfetch(nbfp_comb_texref, 2*typei + 1) * tex1Dfetch(nbfp_comb_texref, 2*typej + 1);
 #endif /* USE_TEXOBJ */
+#endif /* DISABLE_CUDA_TEXTURES */
     sigma2  = sigma*sigma;
     c6grid  = epsilon*sigma2*sigma2*sigma2;
 
@@ -368,6 +377,11 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
 {
     float2 d;
 
+#if DISABLE_CUDA_TEXTURES
+    /* Can't do 8-byte fetch because some of the addresses will be misaligned. */
+    d.x = LDG(&nbparam.coulomb_tab[index]);
+    d.y = LDG(&nbparam.coulomb_tab[index + 1]);
+#else
 #ifdef USE_TEXOBJ
     d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
     d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
@@ -375,6 +389,7 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
     d.x =  tex1Dfetch(coulomb_tab_texref, index);
     d.y =  tex1Dfetch(coulomb_tab_texref, index + 1);
 #endif // USE_TEXOBJ
+#endif // DISABLE_CUDA_TEXTURES
 
     return d;
 }
@@ -419,6 +434,14 @@ void fetch_c6_c12(float               &c6,
                   const cu_nbparam_t   nbparam,
                   int                  baseIndex)
 {
+#if DISABLE_CUDA_TEXTURES
+    /* Force an 8-byte fetch to save a memory instruction. */
+    float2 *nbfp = (float2 *)nbparam.nbfp;
+    float2  c6c12;
+    c6c12 = LDG(&nbfp[baseIndex]);
+    c6    = c6c12.x;
+    c12   = c6c12.y;
+#else
     /* NOTE: as we always do 8-byte aligned loads, we could
        fetch float2 here too just as above. */
 #ifdef USE_TEXOBJ
@@ -428,6 +451,7 @@ void fetch_c6_c12(float               &c6,
     c6  = tex1Dfetch(nbfp_texref, 2*baseIndex);
     c12 = tex1Dfetch(nbfp_texref, 2*baseIndex + 1);
 #endif
+#endif // DISABLE_CUDA_TEXTURES
 }
 
 
