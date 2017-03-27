@@ -255,6 +255,21 @@ class TreeValueSupportTest : public ::testing::Test
                 ASSERT_NO_THROW_GMX(gmx::dumpKeyValueTree(&writer, tree));
                 checker.checkTextBlock(stream.toString(), "Dumped");
             }
+            // Check that comparison works.
+            {
+                gmx::StringOutputStream stream;
+                gmx::TextWriter         writer(&stream);
+                ASSERT_NO_THROW_GMX(gmx::compareKeyValueTrees(&writer, tree, tree, 0.0, 0.0));
+                checker.checkTextBlock(stream.toString(), "Compared");
+            }
+            // Check that comparison works against an empty tree.
+            {
+                gmx::StringOutputStream stream;
+                gmx::TextWriter         writer(&stream);
+                gmx::KeyValueTreeObject empty;
+                ASSERT_NO_THROW_GMX(gmx::compareKeyValueTrees(&writer, tree, empty, 0.0, 0.0));
+                checker.checkTextBlock(stream.toString(), "ComparedAgainstEmpty");
+            }
         }
 
         gmx::Options              options_;
