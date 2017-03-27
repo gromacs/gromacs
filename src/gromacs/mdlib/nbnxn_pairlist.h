@@ -261,7 +261,6 @@ typedef struct nbnxn_atomdata_t {
     int                      nenergrp;        /* The number of energy groups                        */
     int                      neg_2log;        /* Log2 of nenergrp                                   */
     int                     *energrp;         /* The energy groups per cluster, can be NULL         */
-    gmx_bool                 bDynamicBox;     /* Do we need to update shift_vec every step?    */
     rvec                    *shift_vec;       /* Shift vectors, copied from t_forcerec              */
     int                      xstride;         /* stride for a coordinate in x (usually 3 or 4)      */
     int                      fstride;         /* stride for a coordinate in f (usually 3 or 4)      */

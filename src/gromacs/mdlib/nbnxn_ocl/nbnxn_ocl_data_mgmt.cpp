@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -254,7 +254,6 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
     // TODO: handle errors, check clCreateBuffer flags
     ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, NULL, &cl_error);
     assert(cl_error == CL_SUCCESS);
-    ad->bShiftVecUploaded = false;
 
     /* An element of the fshift device buffer has the same size as one element
        of the host side fshift buffer. */
@@ -922,13 +921,8 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_ocl_t        *nb,
     cl_atomdata_t   *adat  = nb->atdat;
     cl_command_queue ls    = nb->stream[eintLocal];
 
-    /* only if we have a dynamic box */
-    if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
-    {
-        ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 0,
-                           SHIFTS * adat->shift_vec_elem_size, ls, NULL);
-        adat->bShiftVecUploaded = true;
-    }
+    ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 0,
+                       SHIFTS * adat->shift_vec_elem_size, ls, NULL);
 }
 
 //! This function is documented in the header file

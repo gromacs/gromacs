@@ -1122,13 +1122,11 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
-                                  rvec             *shift_vec,
+void nbnxn_atomdata_copy_shiftvec(rvec             *shift_vec,
                                   nbnxn_atomdata_t *nbat)
 {
     int i;
 
-    nbat->bDynamicBox = bDynamicBox;
     for (i = 0; i < SHIFTS; i++)
     {
         copy_rvec(shift_vec[i], nbat->shift_vec[i]);

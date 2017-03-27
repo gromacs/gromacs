@@ -1225,6 +1225,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Initialize the virtual site communication */
         vsite = init_vsite(mtop, cr, FALSE);
 
+        /* TODO Why is this done here, and then done again in do_force_cuts*? */
         calc_shifts(box, fr->shift_vec);
 
         /* With periodic molecules the charge groups should be whole at start up

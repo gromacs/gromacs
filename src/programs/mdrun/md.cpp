@@ -737,6 +737,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* Set the shift vectors.
              * Necessary here when have a static box different from the tpr box.
              */
+            // TODO why is this necessary? bRerunMD sets GMX_FORCE_BOXCHANGED, so the
+            // shifts are always calculated again in do_force_cuts*.
             calc_shifts(rerun_fr.box, fr->shift_vec);
         }
     }
@@ -1062,7 +1064,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
 
         force_flags = (GMX_FORCE_STATECHANGED |
-                       ((inputrecDynamicBox(ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
+                       ((inputrecDynamicBox(ir) || bRerunMD || bFirstStep) ? GMX_FORCE_BOXCHANGED : 0) |
                        GMX_FORCE_ALLFORCES |
                        (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
                        (bCalcEner ? GMX_FORCE_ENERGY : 0) |

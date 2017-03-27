@@ -216,7 +216,6 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     ad->ntypes  = ntypes;
     stat        = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
-    ad->bShiftVecUploaded = false;
 
     stat = cudaMalloc((void**)&ad->fshift, SHIFTS*sizeof(*ad->fshift));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
@@ -732,13 +731,8 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
     cu_atomdata_t *adat  = nb->atdat;
     cudaStream_t   ls    = nb->stream[eintLocal];
 
-    /* only if we have a dynamic box */
-    if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
-    {
-        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec,
-                          SHIFTS * sizeof(*adat->shift_vec), ls);
-        adat->bShiftVecUploaded = true;
-    }
+    cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec,
+                      SHIFTS * sizeof(*adat->shift_vec), ls);
 }
 
 /*! Clears the first natoms_clear elements of the GPU nonbonded force output array. */

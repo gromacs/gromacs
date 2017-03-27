@@ -737,7 +737,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 {
     int                 cg1, i, j;
     double              mu[2*DIM];
-    gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
+    gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM, bBoxChanged;
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
@@ -777,6 +777,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
+    bBoxChanged   = (flags & GMX_FORCE_BOXCHANGED);
 
     if (bStateChanged)
     {
@@ -795,10 +796,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (fr->ePBC != epbcNONE)
     {
-        /* Compute shift vectors every step,
-         * because of pressure coupling or box deformation!
-         */
-        if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
+        /* Compute shift vectors every step, because of pressure
+         * coupling, box deformation, or rerun! */
+        if (bBoxChanged && bStateChanged)
         {
             calc_shifts(box, fr->shift_vec);
         }
@@ -814,8 +814,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
-                                 fr->shift_vec, nbv->grp[0].nbat);
+    if (bBoxChanged)
+    {
+        nbnxn_atomdata_copy_shiftvec(fr->shift_vec, nbv->grp[0].nbat);
+    }
 
 #if GMX_MPI
     if (!(cr->duty & DUTY_PME))
@@ -909,9 +911,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
-        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
-        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+        if (bBoxChanged)
+        {
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
+            nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+        }
     }
 
     /* do local pair search */
@@ -1478,7 +1483,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 {
     int        cg0, cg1, i, j;
     double     mu[2*DIM];
-    gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
+    gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM, bBoxChanged;
     gmx_bool   bDoForces;
     float      cycles_pme, cycles_force;
 
@@ -1507,6 +1512,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     bFillGrid      = (bNS && bStateChanged);
     bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces      = (flags & GMX_FORCE_FORCES);
+    bBoxChanged    = (flags & GMX_FORCE_BOXCHANGED);
 
     if (bStateChanged)
     {
@@ -1528,7 +1534,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
          */
-        if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
+        if (bBoxChanged && bStateChanged)
         {
             calc_shifts(box, fr->shift_vec);
         }

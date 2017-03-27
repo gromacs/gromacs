@@ -96,9 +96,8 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t    *nbat,
                         const t_mdatoms     *mdatoms,
                         const int           *atinfo);
 
-/* Copy the shift vectors to nbat */
-void nbnxn_atomdata_copy_shiftvec(gmx_bool          dynamic_box,
-                                  rvec             *shift_vec,
+/* Copy the shift vectors to nbat. Caller needs do this only if the box has (or might have) changed. */
+void nbnxn_atomdata_copy_shiftvec(rvec             *shift_vec,
                                   nbnxn_atomdata_t *nbat);
 
 /* Copy x to nbat->x.

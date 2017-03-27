@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ GPU_FUNC_QUALIFIER
 void nbnxn_gpu_pme_loadbal_update_param(const struct nonbonded_verlet_t gmx_unused *nbv,
                                         const interaction_const_t gmx_unused       *ic) GPU_FUNC_TERM
 
-/** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
+/** Uploads shift vector to the GPU. Caller needs do this only if the box has (or might have) changed. */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_gpu_t gmx_unused               *nb,
                                const struct nbnxn_atomdata_t gmx_unused *nbatom) GPU_FUNC_TERM
