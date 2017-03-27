@@ -204,29 +204,10 @@ class CompareHelper
                 {
                     GMX_RELEASE_ASSERT(false, "Array comparison not implemented");
                 }
-                else if (value1.isType<double>())
+                else if (!areSimpleValuesOfSameTypeEqual(value1, value2))
                 {
-                    const double v1 = value1.cast<double>();
-                    const double v2 = value2.cast<double>();
-                    if (!equal_double(v1, v2, ftol_, abstol_))
-                    {
-                        writer_->writeString(currentPath_.toString());
-                        writer_->writeLine(formatString(" (%e - %e)", v1, v2));
-                    }
-                }
-                else if (value1.isType<float>())
-                {
-                    const float v1 = value1.cast<float>();
-                    const float v2 = value2.cast<float>();
-                    if (!equal_float(v1, v2, ftol_, abstol_))
-                    {
-                        writer_->writeString(currentPath_.toString());
-                        writer_->writeLine(formatString(" (%e - %e)", v1, v2));
-                    }
-                }
-                else
-                {
-                    GMX_RELEASE_ASSERT(false, "Unknown value type");
+                    writer_->writeString(currentPath_.toString());
+                    writer_->writeLine(formatString(" (%s - %s)", simpleValueToString(value1).c_str(), simpleValueToString(value2).c_str()));
                 }
             }
             else if ((value1.isType<double>() && value2.isType<float>())
@@ -245,6 +226,43 @@ class CompareHelper
             else
             {
                 handleMismatchingTypes(value1, value2);
+            }
+        }
+
+        bool areSimpleValuesOfSameTypeEqual(
+            const KeyValueTreeValue &value1,
+            const KeyValueTreeValue &value2)
+        {
+            GMX_ASSERT(value1.type() == value2.type(),
+                       "Caller should ensure that types are equal");
+            if (value1.isType<bool>())
+            {
+                return value1.cast<bool>() == value2.cast<bool>();
+            }
+            else if (value1.isType<int>())
+            {
+                return value1.cast<int>() == value2.cast<int>();
+            }
+            else if (value1.isType<gmx_int64_t>())
+            {
+                return value1.cast<gmx_int64_t>() == value2.cast<gmx_int64_t>();
+            }
+            else if (value1.isType<double>())
+            {
+                return equal_double(value1.cast<double>(), value2.cast<double>(), ftol_, abstol_);
+            }
+            else if (value1.isType<float>())
+            {
+                return equal_float(value1.cast<float>(), value2.cast<float>(), ftol_, abstol_);
+            }
+            else if (value1.isType<std::string>())
+            {
+                return value1.cast<std::string>() == value2.cast<std::string>();
+            }
+            else
+            {
+                GMX_RELEASE_ASSERT(false, "Unknown value type");
+                return false;
             }
         }
 
