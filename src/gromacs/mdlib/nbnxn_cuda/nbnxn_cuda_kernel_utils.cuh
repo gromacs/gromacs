@@ -42,8 +42,6 @@
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_mdlib
  */
-#include "config.h"
-
 #include <assert.h>
 
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -60,8 +58,8 @@
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
-/* Use texture objects if supported by the target hardware. */
-#if GMX_PTX_ARCH >= 300
+/* Use texture objects if supported by the target hardware (and in host pass). */
+#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define USE_TEXOBJ
 #endif
@@ -78,19 +76,6 @@ static const int    c_fbufStride  = c_clSizeSq;
 
 static const float  c_oneSixth    = 0.16666667f;
 static const float  c_oneTwelveth = 0.08333333f;
-
-/* With multiple compilation units this ensures that texture refs are available
-   in the the kernels' compilation units. */
-#if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
-/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
-extern texture<float, 1, cudaReadModeElementType> nbfp_texref;
-
-/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
-extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
-
-/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
-extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
-#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
@@ -233,17 +218,25 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
 }
 
 
-/*! \brief Fetch C6 grid contribution coefficients and return the product of these. */
+/*! \brief Fetch C6 grid contribution coefficients and return the product of these.
+ *
+ *  Depending on what is supported, it fetches parameters either
+ *  using direct load, texture objects, or texrefs.
+ */
 static __forceinline__ __device__
 float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
                                 int                typei,
                                 int                typej)
 {
+#if DISABLE_CUDA_TEXTURES
+    return LDG(&nbparam.nbfp_comb[2*typei]) * LDG(&nbparam.nbfp_comb[2*typej]);
+#else
 #ifdef USE_TEXOBJ
     return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
 #else
     return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
 #endif /* USE_TEXOBJ */
+#endif /* DISABLE_CUDA_TEXTURES */
 }
 
 
@@ -308,12 +301,23 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
     *E_lj    += c_oneSixth*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
 }
 
-/*! Fetch per-type LJ parameters. */
+/*! Fetch per-type LJ parameters.
+ *
+ *  Depending on what is supported, it fetches parameters either
+ *  using direct load, texture objects, or texrefs.
+ */
 static __forceinline__ __device__
 float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
                               int                type)
 {
     float2 c6c12;
+#if DISABLE_CUDA_TEXTURES
+    /* Force an 8-byte fetch to save a memory instruction. */
+    float2 *nbfp_comb = (float2 *)nbparam.nbfp_comb;
+    c6c12 = LDG(&nbfp_comb[type]);
+#else
+    /* NOTE: as we always do 8-byte aligned loads, we could
+       fetch float2 here too just as above. */
 #ifdef USE_TEXOBJ
     c6c12.x = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type);
     c6c12.y = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type + 1);
@@ -321,6 +325,7 @@ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
     c6c12.x = tex1Dfetch(nbfp_comb_texref, 2*type);
     c6c12.y = tex1Dfetch(nbfp_comb_texref, 2*type + 1);
 #endif /* USE_TEXOBJ */
+#endif /* DISABLE_CUDA_TEXTURES */
 
     return c6c12;
 }
@@ -378,6 +383,8 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
 
 /*! Fetch two consecutive values from the Ewald correction F*r table.
  *
+ *  Depending on what is supported, it fetches parameters either
+ *  using direct load, texture objects, or texrefs.
  */
 static __forceinline__ __device__
 float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
@@ -385,6 +392,11 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
 {
     float2 d;
 
+#if DISABLE_CUDA_TEXTURES
+    /* Can't do 8-byte fetch because some of the addresses will be misaligned. */
+    d.x = LDG(&nbparam.coulomb_tab[index]);
+    d.y = LDG(&nbparam.coulomb_tab[index + 1]);
+#else
 #ifdef USE_TEXOBJ
     d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
     d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
@@ -392,6 +404,7 @@ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
     d.x =  tex1Dfetch(coulomb_tab_texref, index);
     d.y =  tex1Dfetch(coulomb_tab_texref, index + 1);
 #endif // USE_TEXOBJ
+#endif // DISABLE_CUDA_TEXTURES
 
     return d;
 }
@@ -427,6 +440,8 @@ float interpolate_coulomb_force_r(const cu_nbparam_t nbparam,
 
 /*! Fetch C6 and C12 from the parameter table.
  *
+ *  Depending on what is supported, it fetches parameters either
+ *  using direct load, texture objects, or texrefs.
  */
 static __forceinline__ __device__
 void fetch_nbfp_c6_c12(float               &c6,
@@ -434,6 +449,16 @@ void fetch_nbfp_c6_c12(float               &c6,
                        const cu_nbparam_t   nbparam,
                        int                  baseIndex)
 {
+#if DISABLE_CUDA_TEXTURES
+    /* Force an 8-byte fetch to save a memory instruction. */
+    float2 *nbfp = (float2 *)nbparam.nbfp;
+    float2  c6c12;
+    c6c12 = LDG(&nbfp[baseIndex]);
+    c6    = c6c12.x;
+    c12   = c6c12.y;
+#else
+    /* NOTE: as we always do 8-byte aligned loads, we could
+       fetch float2 here too just as above. */
 #ifdef USE_TEXOBJ
     c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex);
     c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex + 1);
@@ -441,6 +466,7 @@ void fetch_nbfp_c6_c12(float               &c6,
     c6  = tex1Dfetch(nbfp_texref, 2*baseIndex);
     c12 = tex1Dfetch(nbfp_texref, 2*baseIndex + 1);
 #endif
+#endif // DISABLE_CUDA_TEXTURES
 }
 
 
@@ -506,7 +532,7 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 /*! Final j-force reduction; this implementation only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if GMX_PTX_ARCH >= 300
+#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
@@ -632,7 +658,7 @@ void reduce_force_i(float *f_buf, float3 *f,
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if GMX_PTX_ARCH >= 300
+#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
@@ -709,7 +735,7 @@ void reduce_energy_pow2(volatile float *buf,
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if GMX_PTX_ARCH >= 300
+#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
