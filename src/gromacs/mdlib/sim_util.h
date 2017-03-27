@@ -50,7 +50,6 @@ struct gmx_localtop_t;
 struct gmx_output_env_t;
 struct gmx_update_t;
 struct nonbonded_verlet_t;
-struct t_graph;
 struct t_mdatoms;
 struct t_nrnb;
 
@@ -61,9 +60,6 @@ class MDLogger;
 }
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
-
-void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
-                  t_graph *graph, rvec x[]);
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
                        const gmx_mtop_t *mtop, rvec x[]);
