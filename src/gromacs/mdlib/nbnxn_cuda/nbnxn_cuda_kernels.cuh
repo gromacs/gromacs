@@ -52,7 +52,7 @@
  *  \ingroup module_mdlib
  */
 
-#if GMX_PTX_ARCH >= 300
+#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 #define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #else
 #define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_fermi.cuh"
