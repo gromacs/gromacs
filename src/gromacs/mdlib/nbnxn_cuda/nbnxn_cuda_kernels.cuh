@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,8 @@
  *  \ingroup module_mdlib
  */
 
-#if GMX_PTX_ARCH >= 300
+/* Use the standard non-Fermi kernel in host pass too (to avoid texref API calls). */
+#if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 #define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #else
 #define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_fermi.cuh"
