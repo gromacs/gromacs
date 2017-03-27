@@ -133,7 +133,6 @@ typedef struct cl_atomdata
     cl_mem      fshift;              /**< float3 buffer with shift forces                */
     size_t      fshift_elem_size;    /**< Size in bytes for one element of fshift buffer */
 
-    int         ntypes;              /**< number of atom types                           */
     cl_mem      atom_types;          /**< int buffer with atom type indices, size natoms */
     cl_mem      lj_comb;             /**< float2 buffer with sqrt(c6),sqrt(c12), size natoms */
 
@@ -169,6 +168,7 @@ typedef struct cl_nbparam
     switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
     /* LJ non-bonded parameters - accessed through texture memory */
+    int                     ntypes;            /**< number of atom types                           */
     cl_mem                  nbfp_climg2d;      /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
     cl_mem                  nbfp_comb_climg2d; /**< nonbonded parameter table per atom type, 2*ntype elements                          */
 

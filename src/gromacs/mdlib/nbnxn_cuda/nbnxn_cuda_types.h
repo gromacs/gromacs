@@ -136,7 +136,6 @@ struct cu_atomdata
 
     float3  *fshift;            /**< shift forces                                 */
 
-    int      ntypes;            /**< number of atom types                         */
     int     *atom_types;        /**< atom type indices, size natoms               */
     float2  *lj_comb;           /**< sqrt(c6),sqrt(c12) size natoms               */
 
@@ -171,6 +170,7 @@ struct cu_nbparam
     switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
     /* LJ non-bonded parameters - accessed through texture memory */
+    int                  ntypes;           /**< number of atom types                                                               */
     float               *nbfp;             /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
     cudaTextureObject_t  nbfp_texobj;      /**< texture object bound to nbfp                                                       */
     float               *nbfp_comb;        /**< nonbonded parameter table per atom type, 2*ntype elements                          */

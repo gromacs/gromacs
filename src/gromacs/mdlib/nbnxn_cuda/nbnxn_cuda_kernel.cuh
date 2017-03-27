@@ -166,7 +166,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     const nbnxn_excl_t *excl        = plist.excl;
 #ifndef LJ_COMB
     const int          *atom_types  = atdat.atom_types;
-    int                 ntypes      = atdat.ntypes;
+    int                 ntypes      = nbparam.ntypes;
 #else
     const float2       *lj_comb     = atdat.lj_comb;
     float2              ljcp_i, ljcp_j;

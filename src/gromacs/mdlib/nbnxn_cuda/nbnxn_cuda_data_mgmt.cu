@@ -209,11 +209,10 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
 
 /*! Initializes the atomdata structure first time, it only gets filled at
     pair-search. */
-static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
+static void init_atomdata_first(cu_atomdata_t *ad)
 {
     cudaError_t stat;
 
-    ad->ntypes  = ntypes;
     stat        = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
 
@@ -354,9 +353,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
                          const nbnxn_atomdata_t    *nbat,
                          const gmx_device_info_t   *dev_info)
 {
-    int         ntypes;
-
-    ntypes  = nbat->ntype;
+    nbp->ntypes = nbat->ntype;
 
     set_cutoff_parameters(nbp, ic);
 
@@ -451,7 +448,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     {
         initParamLookupTable(nbp->nbfp, nbp->nbfp_texobj,
                              &nbnxn_cuda_get_nbfp_texref(),
-                             nbat->nbfp, 2*ntypes*ntypes, dev_info);
+                             nbat->nbfp, 2*nbp->ntypes*nbp->ntypes, dev_info);
     }
 
     /* set up LJ-PME parameter lookup table */
@@ -459,7 +456,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     {
         initParamLookupTable(nbp->nbfp_comb, nbp->nbfp_comb_texobj,
                              &nbnxn_cuda_get_nbfp_comb_texref(),
-                             nbat->nbfp_comb, 2*ntypes, dev_info);
+                             nbat->nbfp_comb, 2*nbp->ntypes, dev_info);
     }
 }
 
@@ -565,7 +562,7 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
                                   const interaction_const_t      *ic,
                                   const nonbonded_verlet_group_t *nbv_group)
 {
-    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype);
+    init_atomdata_first(nb->atdat);
     init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_info);
 
     /* clear energy and shift force outputs */
@@ -982,7 +979,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     cu_free_buffered(atdat->f, &atdat->natoms, &atdat->nalloc);
     cu_free_buffered(atdat->xq);
-    cu_free_buffered(atdat->atom_types, &atdat->ntypes);
+    cu_free_buffered(atdat->atom_types);
     cu_free_buffered(atdat->lj_comb);
 
     cu_free_buffered(plist->sci, &plist->nsci, &plist->sci_nalloc);

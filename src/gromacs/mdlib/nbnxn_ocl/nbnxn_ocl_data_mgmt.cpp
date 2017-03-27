@@ -241,11 +241,9 @@ static void init_ewald_coulomb_force_table(const interaction_const_t       *ic,
 /*! \brief Initializes the atomdata structure first time, it only gets filled at
     pair-search.
  */
-static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtime_data_t *runData)
+static void init_atomdata_first(cl_atomdata_t *ad, gmx_device_runtime_data_t *runData)
 {
     cl_int cl_error;
-
-    ad->ntypes  = ntypes;
 
     /* An element of the shift_vec device buffer has the same size as one element
        of the host side shift_vec buffer. */
@@ -391,11 +389,11 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
                          const nbnxn_atomdata_t          *nbat,
                          const gmx_device_runtime_data_t *runData)
 {
-    int         ntypes, nnbfp, nnbfp_comb;
+    int         nnbfp, nnbfp_comb;
     cl_int      cl_error;
 
 
-    ntypes = nbat->ntype;
+    nbp->ntypes = nbat->ntype;
 
     set_cutoff_parameters(nbp, ic);
 
@@ -442,8 +440,8 @@ static void init_nbparam(cl_nbparam_t                    *nbp,
         // TODO: handle errors
     }
 
-    nnbfp      = 2*ntypes*ntypes;
-    nnbfp_comb = 2*ntypes;
+    nnbfp      = 2*nbp->ntypes*nbp->ntypes;
+    nnbfp_comb = 2*nbp->ntypes;
 
     {
         /* Switched from using textures to using buffers */
@@ -680,7 +678,7 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
                                  const interaction_const_t      *ic,
                                  const nonbonded_verlet_group_t *nbv_group)
 {
-    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype, nb->dev_rundata);
+    init_atomdata_first(nb->atdat, nb->dev_rundata);
     init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_rundata);
 }
 
