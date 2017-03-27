@@ -67,6 +67,7 @@ class ISerializer
         virtual bool reading() const = 0;
         //! \brief Serialize values of different types.
         ///@{
+        virtual void doBool(bool *value)           = 0;
         virtual void doUChar(unsigned char *value) = 0;
         virtual void doInt(int *value)             = 0;
         virtual void doInt64(gmx_int64_t *value)   = 0;

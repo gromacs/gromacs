@@ -145,6 +145,7 @@ class FileIOXdrSerializer : public ISerializer
 
         virtual bool reading() const;
 
+        virtual void doBool(bool *value);
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
         virtual void doInt64(gmx_int64_t *value);

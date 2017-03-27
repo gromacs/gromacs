@@ -153,6 +153,21 @@ struct SerializationTraits<std::string>
 };
 
 template <>
+struct SerializationTraits<bool>
+{
+    static void serialize(bool value, ISerializer *serializer)
+    {
+        serializer->doBool(&value);
+    }
+    static void deserialize(KeyValueTreeValueBuilder *builder, ISerializer *serializer)
+    {
+        bool value;
+        serializer->doBool(&value);
+        builder->setValue<bool>(value);
+    }
+};
+
+template <>
 struct SerializationTraits<int>
 {
     static void serialize(int value, ISerializer *serializer)
@@ -236,6 +251,7 @@ void ValueSerializer::initSerializers()
         SERIALIZER('O', KeyValueTreeObject),
         SERIALIZER('A', KeyValueTreeArray),
         SERIALIZER('s', std::string),
+        SERIALIZER('b', bool),
         SERIALIZER('i', int),
         SERIALIZER('l', gmx_int64_t),
         SERIALIZER('f', float),
