@@ -52,6 +52,7 @@
  */
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 
 #include "nbnxn_cuda_types.h"
@@ -90,6 +91,7 @@ extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
+
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__
@@ -230,6 +232,21 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
     *E_lj   *= sw;
 }
 
+
+/*! \brief Fetch C6 grid contribution coefficients and return the product of these. */
+static __forceinline__ __device__
+float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam,
+                                int                typei,
+                                int                typej)
+{
+#ifdef USE_TEXOBJ
+    return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
+#else
+    return tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
+#endif /* USE_TEXOBJ */
+}
+
+
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
  */
@@ -245,11 +262,7 @@ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
 
-#ifdef USE_TEXOBJ
-    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
+    c6grid = calculate_lj_ewald_c6grid(nbparam, typei, typej);
 
     /* Recalculate inv_r6 without exclusion mask */
     inv_r6_nm = inv_r2*inv_r2*inv_r2;
@@ -260,6 +273,7 @@ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
     /* Subtract the grid force from the total LJ force */
     *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
 }
+
 
 /*! Calculate LJ-PME grid force + energy contribution with
  *  geometric combination rule.
@@ -278,11 +292,7 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
-#ifdef USE_TEXOBJ
-    c6grid    = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej);
-#else
-    c6grid    = tex1Dfetch(nbfp_comb_texref, 2*typei) * tex1Dfetch(nbfp_comb_texref, 2*typej);
-#endif /* USE_TEXOBJ */
+    c6grid = calculate_lj_ewald_c6grid(nbparam, typei, typej);
 
     /* Recalculate inv_r6 without exclusion mask */
     inv_r6_nm = inv_r2*inv_r2*inv_r2;
@@ -297,6 +307,24 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
     sh_mask   = nbparam.sh_lj_ewald*int_bit;
     *E_lj    += c_oneSixth*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
 }
+
+/*! Fetch per-type LJ parameters. */
+static __forceinline__ __device__
+float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam,
+                              int                type)
+{
+    float2 c6c12;
+#ifdef USE_TEXOBJ
+    c6c12.x = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type);
+    c6c12.y = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*type + 1);
+#else
+    c6c12.x = tex1Dfetch(nbfp_comb_texref, 2*type);
+    c6c12.y = tex1Dfetch(nbfp_comb_texref, 2*type + 1);
+#endif /* USE_TEXOBJ */
+
+    return c6c12;
+}
+
 
 /*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
  *  Lorentz-Berthelot combination rule.
@@ -319,13 +347,12 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     float sigma, sigma2, epsilon;
 
     /* sigma and epsilon are scaled to give 6*C6 */
-#ifdef USE_TEXOBJ
-    sigma   = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei    ) + tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej    );
-    epsilon = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typei + 1) * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2*typej + 1);
-#else
-    sigma   = tex1Dfetch(nbfp_comb_texref, 2*typei    ) + tex1Dfetch(nbfp_comb_texref, 2*typej    );
-    epsilon = tex1Dfetch(nbfp_comb_texref, 2*typei + 1) * tex1Dfetch(nbfp_comb_texref, 2*typej + 1);
-#endif /* USE_TEXOBJ */
+    float2 c6c12_i = fetch_nbfp_comb_c6_c12(nbparam, typei);
+    float2 c6c12_j = fetch_nbfp_comb_c6_c12(nbparam, typej);
+
+    sigma   = c6c12_i.x + c6c12_j.x;
+    epsilon = c6c12_i.y * c6c12_j.y;
+
     sigma2  = sigma*sigma;
     c6grid  = epsilon*sigma2*sigma2*sigma2;
 
@@ -348,33 +375,74 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
     }
 }
 
-/*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
- *  Original idea: from the OpenMM project
+
+/*! Fetch two consecutive values from the Ewald correction F*r table.
+ *
  */
 static __forceinline__ __device__
-float interpolate_coulomb_force_r(float r, float scale)
+float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam,
+                             int                index)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float2 d;
 
-    return fract1 * tex1Dfetch(coulomb_tab_texref, index)
-           + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
+#ifdef USE_TEXOBJ
+    d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
+    d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
+#else
+    d.x =  tex1Dfetch(coulomb_tab_texref, index);
+    d.y =  tex1Dfetch(coulomb_tab_texref, index + 1);
+#endif // USE_TEXOBJ
+
+    return d;
 }
 
+/*! Linear interpolation using exactly two FMA operations.
+ *
+ *  Implements numeric equivalent of: (1-t)*d0 + t*d1
+ *  Note that CUDA does not have fnms, otherwise we'd use
+ *  fma(t, d1, fnms(t, d0, d0)
+ *  but input modifiers are designed for this and are fast.
+ */
+template <typename T>
+__forceinline__ __host__ __device__
+T lerp(T d0, T d1, T t)
+{
+    return fma(t, d1, fma(-t, d0, d0));
+}
+
+/*! Interpolate Ewald coulomb force correction using the F*r table.
+ */
 static __forceinline__ __device__
-float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
-                                  float r, float scale)
+float interpolate_coulomb_force_r(const cu_nbparam_t nbparam,
+                                  float              r)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float  normalized = nbparam.coulomb_tab_scale * r;
+    int    index      = (int) normalized;
+    float  fraction   = normalized - index;
 
-    return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
-           fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+    float2 d01 = fetch_coulomb_force_r(nbparam, index);
+
+    return lerp(d01.x, d01.y, fraction);
 }
+
+/*! Fetch C6 and C12 from the parameter table.
+ *
+ */
+static __forceinline__ __device__
+void fetch_nbfp_c6_c12(float               &c6,
+                       float               &c12,
+                       const cu_nbparam_t   nbparam,
+                       int                  baseIndex)
+{
+#ifdef USE_TEXOBJ
+    c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex);
+    c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2*baseIndex + 1);
+#else
+    c6  = tex1Dfetch(nbfp_texref, 2*baseIndex);
+    c12 = tex1Dfetch(nbfp_texref, 2*baseIndex + 1);
+#endif
+}
+
 
 /*! Calculate analytical Ewald correction term. */
 static __forceinline__ __device__
