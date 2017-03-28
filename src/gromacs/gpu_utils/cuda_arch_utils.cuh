@@ -70,4 +70,29 @@ static const int warp_size_log2 = 5;
 #define DISABLE_CUDA_TEXTURES 0
 #endif
 
+/* CUDA architecture technical characteristics. Needs macros because it is used
+ * in the __launch_bounds__ function qualifiers and might need it in preprocessor
+ * conditionals.
+ *
+ */
+#if GMX_PTX_ARCH > 0
+    #if   GMX_PTX_ARCH <= 210  // CC 2.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   8
+        #define GMX_CUDA_MAX_THREADS_PER_MP  1536
+    #elif GMX_PTX_ARCH <= 370  // CC 3.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   16
+        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
+    #else // CC 5.x, 6.x
+        /* Note that this final branch covers all future architectures (current gen
+         * is 6.x as of writing), hence assuming that these *currently defined* upper
+         * limits will not be lowered.
+         */
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   32
+        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
+    #endif
+#else
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   0
+        #define GMX_CUDA_MAX_THREADS_PER_MP  0
+#endif
+
 #endif /* CUDA_ARCH_UTILS_CUH_ */
