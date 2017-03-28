@@ -54,6 +54,19 @@
 #include "gromacs/timing/gpu_timing.h"
 
 
+/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
+ *
+ *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#endif
+/*! \brief Default for the prune kernel's j4 processing concurrency.
+ *
+ *  Initialized using the #GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro which allows compile-time override.
+ */
+const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
+
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
 /*! \brief number of clusters per supercluster. */
@@ -155,26 +168,27 @@ struct cu_atomdata
 struct cu_nbparam
 {
 
-    int             eeltype;          /**< type of electrostatics, takes values from #eelCu */
-    int             vdwtype;          /**< type of VdW impl., takes values from #evdwCu     */
+    int             eeltype;              /**< type of electrostatics, takes values from #eelCu */
+    int             vdwtype;              /**< type of VdW impl., takes values from #evdwCu     */
 
-    float           epsfac;           /**< charge multiplication factor                      */
-    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
-    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
-    float           ewald_beta;       /**< Ewald/PME parameter                               */
-    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
-    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+    float           epsfac;               /**< charge multiplication factor                      */
+    float           c_rf;                 /**< Reaction-field/plain cutoff electrostatics const. */
+    float           two_k_rf;             /**< Reaction-field electrostatics constant            */
+    float           ewald_beta;           /**< Ewald/PME parameter                               */
+    float           sh_ewald;             /**< Ewald/PME correction term substracted from the direct-space potential */
+    float           sh_lj_ewald;          /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float           ewaldcoeff_lj;        /**< LJ-Ewald/PME coefficient                          */
 
-    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+    float           rcoulomb_sq;          /**< Coulomb cut-off squared                           */
 
-    float           rvdw_sq;          /**< VdW cut-off squared                               */
-    float           rvdw_switch;      /**< VdW switched cut-off                              */
-    float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rvdw_sq;              /**< VdW cut-off squared                               */
+    float           rvdw_switch;          /**< VdW switched cut-off                              */
+    float           rlistOuter_sq;        /**< Full, outer pair-list cut-off squared             */
+    float           rlistInner_sq;        /**< Inner, dynamic pruned pair-list cut-off squared   */
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    shift_consts_t  dispersion_shift;     /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;      /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;           /**< VdW switch constants                     */
 
     /* LJ non-bonded parameters - accessed through texture memory */
     float               *nbfp;             /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
@@ -194,22 +208,28 @@ struct cu_nbparam
  */
 struct cu_plist
 {
-    int              na_c;        /**< number of atoms per cluster                  */
+    int              na_c;         /**< number of atoms per cluster                  */
 
-    int              nsci;        /**< size of sci, # of i clusters in the list     */
-    int              sci_nalloc;  /**< allocation size of sci                       */
-    nbnxn_sci_t     *sci;         /**< list of i-cluster ("super-clusters")         */
+    int              nsci;         /**< size of sci, # of i clusters in the list     */
+    int              sci_nalloc;   /**< allocation size of sci                       */
+    nbnxn_sci_t     *sci;          /**< list of i-cluster ("super-clusters")         */
 
-    int              ncj4;        /**< total # of 4*j clusters                      */
-    int              cj4_nalloc;  /**< allocation size of cj4                       */
-    nbnxn_cj4_t     *cj4;         /**< 4*j cluster list, contains j cluster number
-                                       and index into the i cluster list            */
-    nbnxn_excl_t    *excl;        /**< atom interaction bits                        */
-    int              nexcl;       /**< count for excl                               */
-    int              excl_nalloc; /**< allocation size of excl                      */
+    int              ncj4;         /**< total # of 4*j clusters                      */
+    int              cj4_nalloc;   /**< allocation size of cj4                       */
+    nbnxn_cj4_t     *cj4;          /**< 4*j cluster list, contains j cluster number
+                                        and index into the i cluster list            */
+    int              nimask;       /**< # of 4*j clusters * # of warps               */
+    int              imask_nalloc; /**< allocation size of imask                     */
+    unsigned int    *imask;        /**< imask for 2 warps for each 4*j cluster group */
+    nbnxn_excl_t    *excl;         /**< atom interaction bits                        */
+    int              nexcl;        /**< count for excl                               */
+    int              excl_nalloc;  /**< allocation size of excl                      */
 
-    bool             bDoPrune;    /**< true if pair-list pruning needs to be
-                                       done during the  current step                */
+    /* parameter+variables for normal and rolling pruning */
+    bool             needToPrune;            /**< true if initial (non-rolling) pair-list pruning needs to be
+                                                -                                                 done during the current step     */
+    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
+    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 };
 
 /** \internal
@@ -220,16 +240,23 @@ struct cu_plist
  */
 struct cu_timers
 {
-    cudaEvent_t start_atdat;     /**< start event for atom data transfer (every PS step)             */
-    cudaEvent_t stop_atdat;      /**< stop event for atom data transfer (every PS step)              */
-    cudaEvent_t start_nb_h2d[2]; /**< start events for x/q H2D transfers (l/nl, every step)          */
-    cudaEvent_t stop_nb_h2d[2];  /**< stop events for x/q H2D transfers (l/nl, every step)           */
-    cudaEvent_t start_nb_d2h[2]; /**< start events for f D2H transfer (l/nl, every step)             */
-    cudaEvent_t stop_nb_d2h[2];  /**< stop events for f D2H transfer (l/nl, every step)              */
-    cudaEvent_t start_pl_h2d[2]; /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t stop_pl_h2d[2];  /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t start_nb_k[2];   /**< start event for non-bonded kernels (l/nl, every step)          */
-    cudaEvent_t stop_nb_k[2];    /**< stop event non-bonded kernels (l/nl, every step)               */
+    cudaEvent_t start_atdat;             /**< start event for atom data transfer (every PS step)             */
+    cudaEvent_t stop_atdat;              /**< stop event for atom data transfer (every PS step)              */
+    cudaEvent_t start_nb_h2d[2];         /**< start events for x/q H2D transfers (l/nl, every step)          */
+    cudaEvent_t stop_nb_h2d[2];          /**< stop events for x/q H2D transfers (l/nl, every step)           */
+    cudaEvent_t start_nb_d2h[2];         /**< start events for f D2H transfer (l/nl, every step)             */
+    cudaEvent_t stop_nb_d2h[2];          /**< stop events for f D2H transfer (l/nl, every step)              */
+    cudaEvent_t start_pl_h2d[2];         /**< start events for pair-list H2D transfers (l/nl, every PS step) */
+    cudaEvent_t stop_pl_h2d[2];          /**< start events for pair-list H2D transfers (l/nl, every PS step) */
+    bool        didPairlistH2D[2];       /**< true when a pair-list transfer has been done at this step      */
+    cudaEvent_t start_nb_k[2];           /**< start event for non-bonded kernels (l/nl, every step)          */
+    cudaEvent_t stop_nb_k[2];            /**< stop event non-bonded kernels (l/nl, every step)               */
+    cudaEvent_t start_prune_k[2];        /**< start event for the 1st pass list pruning kernel (l/nl, every PS step)   */
+    cudaEvent_t stop_prune_k[2];         /**< stop event for the 1st pass list pruning kernel (l/nl, every PS step)   */
+    bool        didPrune[2];             /**< true when we timed pruning and the timings need to be accounted for */
+    cudaEvent_t start_rollingPrune_k[2]; /**< start event for rolling pruning kernels (l/nl, frequency depends on chunk size)   */
+    cudaEvent_t stop_rollingPrune_k[2];  /**< stop event for rolling pruning kernels (l/nl, frequency depends on chunk size)   */
+    bool        didRollingPrune[2];      /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
 };
 
 /** \internal
