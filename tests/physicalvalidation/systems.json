@@ -1,0 +1,94 @@
+[
+  {
+    "dir": "int_water_md_verlet_none_pme_pme",
+    "tests": [
+      {"test": "integrator", "args": "-n 3 -t 0.25"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "int_water_md_verlet_none_pme_switch",
+    "tests": [
+      {"test": "integrator", "args": "-n 3 -t 0.25"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "int_water_md-vv_verlet_none_pme_pme",
+    "tests": [
+      {"test": "integrator", "args": "-n 2 -t 0.25"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "int_water_md-vv_verlet_none_pme_switch",
+    "tests": [
+      {"test": "integrator", "args": "-n 2 -t 0.25"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_argon_md_verlet_pme_vr",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 5"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_argon_md_verlet_pme_vr_pr",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 5 --dpress 100"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_argon_md-vv_verlet_pme_nh_mttk",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 5 --dpress 100"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_argon_md-vv_verlet_pme_vr",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 5"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_water_md_verlet_settle_pme_vr",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 10"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_water_md_verlet_settle_pme_vr_pr",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 10 --dpress 100"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_water_md-vv_verlet_none_pme_nh_mttk",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 10 --dpress 100"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  },
+  {
+    "dir": "ens_water_md-vv_verlet_settle_pme_vr",
+    "tests": [
+      {"test": "ensemble", "args": "--dtemp 10"},
+      {"test": "kin_mb", "args": "-t 0.05"}
+    ],
+    "grompp_args": "-maxwarn 5"
+  }
+]
