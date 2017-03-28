@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,5 +57,28 @@
  */
 static const int warp_size      = 32;
 static const int warp_size_log2 = 5;
+
+/* CUDA architecture technical characteristics. Needs macros because it is used
+ * in the __launch_bounds__ function qualifiers.
+ *
+ * Note that the final #else branch covers al future architectures (current gen
+ * is 6.x as of writing), hence assuming that these *currently defined* upper
+ * limits will not be lowered.
+ */
+#if GMX_PTX_ARCH > 0
+    #if   GMX_PTX_ARCH <= 210  // CC 2.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   8
+        #define GMX_CUDA_MAX_WARPS_PER_MP    48
+        #define GMX_CUDA_MAX_THREADS_PER_MP  1536
+    #elif GMX_PTX_ARCH <= 370  // CC 3.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   16
+        #define GMX_CUDA_MAX_WARPS_PER_MP    64
+        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
+    #else // CC 5.x, 6.x
+        #define GMX_CUDA_MAX_BLOCKS_PER_MP   32
+        #define GMX_CUDA_MAX_WARPS_PER_MP    64
+        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
+    #endif
+#endif
 
 #endif /* CUDA_ARCH_UTILS_CUH_ */
