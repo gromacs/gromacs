@@ -98,6 +98,9 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
+
+/* Prune-only kernels */
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_pruneonly.cuh"
 #undef FUNCTION_DECLARATION_ONLY
 
 /* Now generate the function definitions if we are using a single compilation unit. */
@@ -106,6 +109,7 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_prune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_noprune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_prune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_pruneonly.cu"
 #else
 /* Prevent compilation in multiple compilation unit mode for CC 2.x. Although we have
  * build-time checks to prevent this, the user could manually tweaks nvcc flags
@@ -115,7 +119,6 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #error Due to an CUDA compiler bug, the CUDA non-bonded module can not be compiled with multiple compilation units for CC 2.x devices. If you have changed the nvcc flags manually, either use the GMX_CUDA_TARGET_* variables instead or set GMX_CUDA_NB_SINGLE_COMPILATION_UNIT=ON CMake option.
 #endif
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
-
 
 
 /*! Nonbonded kernel function pointer type */
@@ -260,8 +263,8 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                      
     return res;
 }
 
-/*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t gmx_unused *dinfo, const cu_nbparam_t *nbp)
+/*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
+static inline int calc_shmem_required_nonbonded(const int num_threads_z, gmx_device_info_t gmx_unused *dinfo, const cu_nbparam_t *nbp)
 {
     int shmem;
 
@@ -348,6 +351,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
        call is taken care of later in this function. */
     if (iloc == eintNonlocal && plist->nsci == 0)
     {
+        plist->haveFreshList = false;
+
         return;
     }
 
@@ -397,6 +402,15 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
+    if (plist->haveFreshList && (flags & GMX_FORCE_DYN_PRUNING))
+    {
+        /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
+           (TODO: ATM that's the way the timing accounting can distinguish between
+           separate prune kernel and combined force+prune, maybe we need a better way?).
+         */
+        nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
+    }
+
     if (plist->nsci == 0)
     {
         /* Don't launch an empty local kernel (not allowed with CUDA) */
@@ -414,7 +428,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     nb_kernel = select_nbnxn_kernel(nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    plist->bDoPrune || always_prune,
+                                    (plist->haveFreshList && !nb->timers->didPrune[iloc]) || always_prune,
                                     nb->dev_info);
 
     /* Kernel launch config:
@@ -430,11 +444,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
     dim_block = dim3(c_clSize, c_clSize, num_threads_z);
     dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required(num_threads_z, nb->dev_info, nbp);
+    shmem     = calc_shmem_required_nonbonded(num_threads_z, nb->dev_info, nbp);
 
     if (debug)
     {
-        fprintf(debug, "GPU launch configuration:\n\tThread block: %ux%ux%u\n\t"
+        fprintf(debug, "Non-bonded GPU launch configuration:\n\tThread block: %ux%ux%u\n\t"
                 "\tGrid: %ux%u\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
@@ -464,6 +478,170 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     if (bDoTime)
     {
         stat = cudaEventRecord(t->stop_nb_k[iloc], stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
+
+#if (defined(WIN32) || defined( _WIN32 ))
+    /* Windows: force flushing WDDM queue */
+    stat = cudaStreamQuery(stream);
+#endif
+}
+
+/*! Calculates the amount of shared memory required by the CUDA kernel in use. */
+static inline int calc_shmem_required_prune(const int num_threads_z)
+{
+    int shmem;
+
+    /* i-atom x in shared memory */
+    shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
+    /* cj in shared memory, for each warp separately */
+    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+
+    return shmem;
+}
+
+void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
+                                       int                     iloc,
+                                       int                     numParts)
+{
+    cudaError_t          stat;
+
+    cu_atomdata_t       *adat    = nb->atdat;
+    cu_nbparam_t        *nbp     = nb->nbparam;
+    cu_plist_t          *plist   = nb->plist[iloc];
+    cu_timers_t         *t       = nb->timers;
+    cudaStream_t         stream  = nb->stream[iloc];
+
+    bool                 bDoTime = nb->bDoTime;
+
+    if (plist->haveFreshList)
+    {
+        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+
+        /* Set rollingPruningNumParts to signal that it is not set */
+        plist->rollingPruningNumParts = 0;
+        plist->rollingPruningPart     = 0;
+    }
+    else
+    {
+        if (plist->rollingPruningNumParts == 0)
+        {
+            plist->rollingPruningNumParts = numParts;
+        }
+        else
+        {
+            GMX_ASSERT(numParts == plist->rollingPruningNumParts, "It is not allowed to change numParts in between list generation steps");
+        }
+    }
+
+    /* Use a local variable for part and update in plist, so we can return here
+     * without duplicating the part increment code.
+     */
+    int part = plist->rollingPruningPart;
+
+    plist->rollingPruningPart++;
+    if (plist->rollingPruningPart >= plist->rollingPruningNumParts)
+    {
+        plist->rollingPruningPart = 0;
+    }
+
+    /* Compute the number of list entries to prune in this pass */
+    int numSciInPart = (plist->nsci - part)/numParts;
+
+    /* Don't launch the kernel if there is no work to do (not allowed with CUDA) */
+    if (numSciInPart <= 0)
+    {
+        plist->haveFreshList = false;
+
+        return;
+    }
+
+    cudaEvent_t startEvent, stopEvent;
+    if (bDoTime)
+    {
+        startEvent = (plist->haveFreshList ? t->start_prune_k[iloc] : t->start_rollingPrune_k[iloc]);
+        stopEvent  = (plist->haveFreshList ? t->stop_prune_k[iloc]  : t->stop_rollingPrune_k[iloc]);
+    }
+
+    /* beginning of timed prune calculation section */
+    if (bDoTime)
+    {
+        stat = cudaEventRecord(startEvent, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
+
+    /* Kernel launch config:
+     * - The thread block dimensions match the size of i-clusters, j-clusters,
+     *   and j-cluster concurrency, in x, y, and z, respectively.
+     * - The 1D block-grid contains as many blocks as super-clusters.
+     */
+    int  num_threads_z  = c_cudaPruneKernelJ4Concurrency;
+    int  nblock         = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
+    dim3 dim_block      = dim3(c_clSize, c_clSize, num_threads_z);
+    dim3 dim_grid       = dim3(nblock, 1, 1);
+    int  shmem          = calc_shmem_required_prune(num_threads_z);
+
+    if (debug)
+    {
+        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tThread block: %dx%dx%d\n\t"
+                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %d\n",
+                dim_block.x, dim_block.y, dim_block.z,
+                dim_grid.x, dim_grid.y, numSciInPart*c_numClPerSupercl,
+                c_numClPerSupercl, plist->na_c,
+                shmem);
+    }
+
+    if (bUseCudaLaunchKernel)
+    {
+        gmx_unused void* kernel_args[5];
+        kernel_args[0] = adat;
+        kernel_args[1] = nbp;
+        kernel_args[2] = plist;
+        kernel_args[3] = &numParts;
+        kernel_args[4] = &part;
+
+#if GMX_CUDA_VERSION >= 7000
+        if (plist->haveFreshList)
+        {
+            cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<true>, dim_grid, dim_block, kernel_args, shmem, stream);
+        }
+        else
+        {
+            cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<false>, dim_grid, dim_block, kernel_args, shmem, stream);
+        }
+#endif
+    }
+    else
+    {
+        if (plist->haveFreshList)
+        {
+            nbnxn_kernel_prune_cuda<true><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
+        }
+        else
+        {
+            nbnxn_kernel_prune_cuda<false><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
+        }
+    }
+    CU_LAUNCH_ERR("k_pruneonly");
+
+    /* TODO: consider a more elegant way to track which kernel has been called
+       (combined or separate 1st pass prune, rolling prune). */
+    if (plist->haveFreshList)
+    {
+        plist->haveFreshList         = false;
+        /* Mark that pruning has been done */
+        nb->timers->didPrune[iloc] = true;
+    }
+    else
+    {
+        /* Mark that rolling pruning has been done */
+        nb->timers->didRollingPrune[iloc] = true;
+    }
+
+    if (bDoTime)
+    {
+        stat = cudaEventRecord(stopEvent, stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
@@ -581,6 +759,43 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 }
 
+/*! \brief Count pruning kernel time if either kernel has been triggered
+ *
+ *  We do the accounting for either of the two pruning kernel flavors:
+ *   - 1st pass prune: ran during the current step (prior to the force kernel);
+ *   - rolling prune:  ran at the end of the previous step (prior to the current step H2D xq);
+ *
+ * Note that the resetting of cu_timers_t::didPrune and cu_timers_t::didRollingPrune should happen
+ * after calling this function.
+ *
+ * \param[in] timers      structs with CUDA timer objects
+ * \param[inout] timings  GPU task timing data
+ * \param[in] iloc        interaction locality
+ */
+static void countPruneKernelTime(const cu_timers_t   *timers,
+                                 gmx_wallclock_gpu_t *timings,
+                                 const int            iloc)
+{
+    // We might have not done any pruning (e.g. if we skipped with empty domains).
+    if (!timers->didPrune[iloc] && !timers->didRollingPrune[iloc])
+    {
+        return;
+    }
+
+    if (timers->didPrune[iloc])
+    {
+        timings->pruneTime.c++;
+        timings->pruneTime.t += cu_event_elapsed(timers->start_prune_k[iloc],
+                                                 timers->stop_prune_k[iloc]);
+    }
+    if (timers->didRollingPrune[iloc])
+    {
+        timings->rollPruneTime.c++;
+        timings->rollPruneTime.t += cu_event_elapsed(timers->start_rollingPrune_k[iloc],
+                                                     timers->stop_rollingPrune_k[iloc]);
+    }
+}
+
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
                             int flags, int aloc,
                             real *e_lj, real *e_el, rvec *fshift)
@@ -617,79 +832,91 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* Launch wait/update timers & counters, unless doing the non-local phase
-       when there is not actually work to do. This is consistent with
-       nbnxn_cuda_launch_kernel.
+    /* Launch wait/update timers & counters and do reduction into staging buffers
+       BUT skip it when during the non-local phase there was actually no work to do.
+       This is consistent with nbnxn_gpu_launch_kernel.
 
        NOTE: if timing with multiple GPUs (streams) becomes possible, the
        counters could end up being inconsistent due to not being incremented
        on some of the nodes! */
-    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
+    if (!(iloc == eintNonlocal && nb->plist[iloc]->nsci == 0))
     {
-        return;
-    }
+        stat = cudaStreamSynchronize(nb->stream[iloc]);
+        CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
 
-    stat = cudaStreamSynchronize(nb->stream[iloc]);
-    CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
+        /* timing data accumulation */
+        if (nb->bDoTime)
+        {
+            /* only increase counter once (at local F wait) */
+            if (LOCAL_I(iloc))
+            {
+                timings->nb_c++;
+                timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
+            }
 
-    /* timing data accumulation */
-    if (nb->bDoTime)
-    {
-        /* only increase counter once (at local F wait) */
+            /* kernel timings */
+            timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t +=
+                cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
+
+            /* X/q H2D and F D2H timings */
+            timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],
+                                                  timers->stop_nb_h2d[iloc]);
+            timings->nb_d2h_t += cu_event_elapsed(timers->start_nb_d2h[iloc],
+                                                  timers->stop_nb_d2h[iloc]);
+
+            /* Count the pruning kernel times for both cases:1st pass (at search step)
+               and rolling pruning (if called at the previous step).
+               We do the accounting here as this is the only sync point where we
+               know (without checking or additional sync-ing) that prune tasks in
+               in the current stream have completed (having just blocking-waited
+               for the force D2H). */
+            countPruneKernelTime(timers, timings, iloc);
+
+            /* only count atdat and pair-list H2D at pair-search step */
+            if (timers->didPairlistH2D[iloc])
+            {
+                /* atdat transfer timing (add only once, at local F wait) */
+                if (LOCAL_A(aloc))
+                {
+                    timings->pl_h2d_c++;
+                    timings->pl_h2d_t += cu_event_elapsed(timers->start_atdat,
+                                                          timers->stop_atdat);
+                }
+
+                timings->pl_h2d_t += cu_event_elapsed(timers->start_pl_h2d[iloc],
+                                                      timers->stop_pl_h2d[iloc]);
+
+                /* Clear the timing flag for the next step */
+                timers->didPairlistH2D[iloc] = false;
+            }
+        }
+
+        /* add up energies and shift forces (only once at local F wait) */
         if (LOCAL_I(iloc))
         {
-            timings->nb_c++;
-            timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
-        }
-
-        /* kernel timings */
-        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
-            cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
-
-        /* X/q H2D and F D2H timings */
-        timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],
-                                              timers->stop_nb_h2d[iloc]);
-        timings->nb_d2h_t += cu_event_elapsed(timers->start_nb_d2h[iloc],
-                                              timers->stop_nb_d2h[iloc]);
-
-        /* only count atdat and pair-list H2D at pair-search step */
-        if (plist->bDoPrune)
-        {
-            /* atdat transfer timing (add only once, at local F wait) */
-            if (LOCAL_A(aloc))
+            if (bCalcEner)
             {
-                timings->pl_h2d_c++;
-                timings->pl_h2d_t += cu_event_elapsed(timers->start_atdat,
-                                                      timers->stop_atdat);
+                *e_lj += *nbst.e_lj;
+                *e_el += *nbst.e_el;
             }
 
-            timings->pl_h2d_t += cu_event_elapsed(timers->start_pl_h2d[iloc],
-                                                  timers->stop_pl_h2d[iloc]);
-        }
-    }
-
-    /* add up energies and shift forces (only once at local F wait) */
-    if (LOCAL_I(iloc))
-    {
-        if (bCalcEner)
-        {
-            *e_lj += *nbst.e_lj;
-            *e_el += *nbst.e_el;
-        }
-
-        if (bCalcFshift)
-        {
-            for (int i = 0; i < SHIFTS; i++)
+            if (bCalcFshift)
             {
-                fshift[i][0] += nbst.fshift[i].x;
-                fshift[i][1] += nbst.fshift[i].y;
-                fshift[i][2] += nbst.fshift[i].z;
+                for (int i = 0; i < SHIFTS; i++)
+                {
+                    fshift[i][0] += nbst.fshift[i].x;
+                    fshift[i][1] += nbst.fshift[i].y;
+                    fshift[i][2] += nbst.fshift[i].z;
+                }
             }
         }
     }
 
-    /* turn off pruning (doesn't matter if this is pair-search step or not) */
-    plist->bDoPrune = false;
+    /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
+    timers->didPrune[iloc] = timers->didRollingPrune[iloc] = false;
+
+    /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
+    plist->haveFreshList = false;
 }
 
 /*! Return the reference to the nbfp texture. */
