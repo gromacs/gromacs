@@ -293,14 +293,15 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 static void set_cutoff_parameters(cu_nbparam_t              *nbp,
                                   const interaction_const_t *ic)
 {
-    nbp->ewald_beta       = ic->ewaldcoeff_q;
-    nbp->sh_ewald         = ic->sh_ewald;
-    nbp->epsfac           = ic->epsfac;
-    nbp->two_k_rf         = 2.0 * ic->k_rf;
-    nbp->c_rf             = ic->c_rf;
-    nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
-    nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->ewald_beta           = ic->ewaldcoeff_q;
+    nbp->sh_ewald             = ic->sh_ewald;
+    nbp->epsfac               = ic->epsfac;
+    nbp->two_k_rf             = 2.0 * ic->k_rf;
+    nbp->c_rf                 = ic->c_rf;
+    nbp->rvdw_sq              = ic->rvdw * ic->rvdw;
+    nbp->rcoulomb_sq          = ic->rcoulomb * ic->rcoulomb;
+    nbp->rlist_sq             = ic->rlist * ic->rlist;
+    nbp->rlistRollingPrune_sq = ic->rlistPrune * ic->rlistPrune;
 
     nbp->sh_lj_ewald      = ic->sh_lj_ewald;
     nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
@@ -489,19 +490,22 @@ static void init_plist(cu_plist_t *pl)
 {
     /* initialize to NULL pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
-    pl->sci     = NULL;
-    pl->cj4     = NULL;
-    pl->excl    = NULL;
+    pl->sci      = NULL;
+    pl->cj4      = NULL;
+    pl->imask    = NULL;
+    pl->excl     = NULL;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
-    pl->na_c        = -1;
-    pl->nsci        = -1;
-    pl->sci_nalloc  = -1;
-    pl->ncj4        = -1;
-    pl->cj4_nalloc  = -1;
-    pl->nexcl       = -1;
-    pl->excl_nalloc = -1;
-    pl->bDoPrune    = false;
+    pl->na_c         = -1;
+    pl->nsci         = -1;
+    pl->sci_nalloc   = -1;
+    pl->ncj4         = -1;
+    pl->cj4_nalloc   = -1;
+    pl->nimask       = -1;
+    pl->imask_nalloc = -1;
+    pl->nexcl        = -1;
+    pl->excl_nalloc  = -1;
+    pl->needToPrune  = false;
 }
 
 /*! Initializes the timer data structure. */
@@ -523,6 +527,11 @@ static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
         stat = cudaEventCreateWithFlags(&(t->stop_nb_k[i]), eventflags);
         CU_RET_ERR(stat, "cudaEventCreate on stop_nb_k failed");
 
+        stat = cudaEventCreateWithFlags(&(t->start_prune_k[i]), eventflags);
+        CU_RET_ERR(stat, "cudaEventCreate on start_prune_k failed");
+        stat = cudaEventCreateWithFlags(&(t->stop_prune_k[i]), eventflags);
+        CU_RET_ERR(stat, "cudaEventCreate on stop_prune_k failed");
+
 
         stat = cudaEventCreateWithFlags(&(t->start_pl_h2d[i]), eventflags);
         CU_RET_ERR(stat, "cudaEventCreate on start_pl_h2d failed");
@@ -538,6 +547,10 @@ static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
         CU_RET_ERR(stat, "cudaEventCreate on start_nb_d2h failed");
         stat = cudaEventCreateWithFlags(&(t->stop_nb_d2h[i]), eventflags);
         CU_RET_ERR(stat, "cudaEventCreate on stop_nb_d2h failed");
+
+        t->didPairlistH2D[i]  = false;
+        t->didPrune[i]        = false;
+        t->didRollingPrune[i] = false;
     }
 }
 
@@ -559,6 +572,10 @@ static void init_timings(gmx_wallclock_gpu_t *t)
             t->ktime[i][j].c = 0;
         }
     }
+    t->pruneTime.c     = 0;
+    t->pruneTime.t     = 0.0;
+    t->rollPruneTime.c = 0;
+    t->rollPruneTime.t = 0.0;
 }
 
 /*! Initializes simulation constant data. */
@@ -699,6 +716,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
     {
         stat = cudaEventRecord(nb->timers->start_pl_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
+        nb->timers->didPairlistH2D[iloc] = true;
     }
 
     cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
@@ -709,6 +727,12 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
     cu_realloc_buffered((void **)&d_plist->cj4, h_plist->cj4, sizeof(*d_plist->cj4),
                         &d_plist->ncj4, &d_plist->cj4_nalloc,
                         h_plist->ncj4,
+                        stream, true);
+
+    /* this call only allocates space on the device (no data is transferred) */
+    cu_realloc_buffered((void **)&d_plist->imask, NULL, sizeof(*d_plist->imask),
+                        &d_plist->nimask, &d_plist->imask_nalloc,
+                        h_plist->ncj4*c_nbnxnGpuClusterpairSplit,
                         stream, true);
 
     cu_realloc_buffered((void **)&d_plist->excl, h_plist->excl, sizeof(*d_plist->excl),
@@ -722,8 +746,8 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    /* need to prune the pair list during the next step */
-    d_plist->bDoPrune = true;
+    /* the next use of thist list we be the first one, so we need to prune */
+    d_plist->needToPrune = true;
 }
 
 void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
@@ -924,6 +948,11 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
             stat = cudaEventDestroy(timers->stop_nb_k[i]);
             CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_k");
 
+            stat = cudaEventDestroy(timers->start_prune_k[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_prune_k");
+            stat = cudaEventDestroy(timers->stop_prune_k[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_prune_k");
+
             stat = cudaEventDestroy(timers->start_pl_h2d[i]);
             CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_pl_h2d");
             stat = cudaEventDestroy(timers->stop_pl_h2d[i]);
@@ -993,11 +1022,13 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     cu_free_buffered(plist->sci, &plist->nsci, &plist->sci_nalloc);
     cu_free_buffered(plist->cj4, &plist->ncj4, &plist->cj4_nalloc);
+    cu_free_buffered(plist->imask, &plist->nimask, &plist->imask_nalloc);
     cu_free_buffered(plist->excl, &plist->nexcl, &plist->excl_nalloc);
     if (nb->bUseTwoStreams)
     {
         cu_free_buffered(plist_nl->sci, &plist_nl->nsci, &plist_nl->sci_nalloc);
         cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
+        cu_free_buffered(plist_nl->imask, &plist_nl->nimask, &plist_nl->imask_nalloc);
         cu_free_buffered(plist_nl->excl, &plist_nl->nexcl, &plist->excl_nalloc);
     }
 
