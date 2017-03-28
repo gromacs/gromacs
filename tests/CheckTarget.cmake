@@ -34,6 +34,7 @@
 
 # "tests" target builds all the separate test binaries.
 add_custom_target(tests)
+
 # "run-ctest" is an internal target that actually runs the tests.
 # This is necessary to be able to add separate targets that execute as part
 # of 'make check', but are ensured to be executed after the actual tests.
@@ -42,26 +43,90 @@ add_custom_target(run-ctest
                   COMMENT "Running all tests"
                   USES_TERMINAL VERBATIM)
 add_dependencies(run-ctest tests)
-# "check" target builds and runs all tests.
-add_custom_target(check DEPENDS run-ctest)
+# "check-all" target builds and runs all tests.
+add_custom_target(check-all DEPENDS run-ctest)
 
-# Global property for collecting notices to show at the end of the "check"
-# target.
+# "run-ctest-nophys" is an internal target that actually runs the tests.
+# It replicates the behavior of "run-ctest" and 'make check'
+# before physical validation tests were added.
+add_custom_target(run-ctest-nophys
+                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -E physvaltests
+                  COMMENT "Running all tests except physical validation"
+                  USES_TERMINAL VERBATIM)
+add_dependencies(run-ctest-nophys tests)
+# "check" target builds and runs all tests except physical validation.
+add_custom_target(check DEPENDS run-ctest-nophys)
+
+# "run-ctest-phys" is an internal target that actually runs the tests.
+# It only runs the physical validation tests.
+add_custom_target(run-ctest-phys
+                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R physvaltests
+                  COMMENT "Running physical validation tests"
+                  USES_TERMINAL VERBATIM)
+# "check-phys" target runs only physical validation tests
+add_custom_target(check-phys DEPENDS run-ctest-phys)
+
+# Global property for collecting notices to show at the end of the targets.
+# Expanded to avoid to show messages about physical validation when only
+# the other tests are ran, and vice-versa.
 set_property(GLOBAL PROPERTY GMX_TESTS_NOTICE)
+set_property(GLOBAL PROPERTY GMX_TESTS_NOTICE_NOPHYS)
+set_property(GLOBAL PROPERTY GMX_TESTS_NOTICE_PHYS)
 
-function (gmx_add_missing_tests_notice TEXT)
+# Original function separated into two adding to the different properties.
+function (gmx_add_missing_tests_notice_nophys TEXT)
     set_property(GLOBAL APPEND PROPERTY GMX_TESTS_NOTICE ${TEXT})
+    set_property(GLOBAL APPEND PROPERTY GMX_TESTS_NOTICE_NOPHYS ${TEXT})
+endfunction()
+function (gmx_add_missing_tests_notice_phys TEXT)
+    set_property(GLOBAL APPEND PROPERTY GMX_TESTS_NOTICE ${TEXT})
+    set_property(GLOBAL APPEND PROPERTY GMX_TESTS_NOTICE_PHYS ${TEXT})
 endfunction()
 
+# Original function expanded to handle different targets / properties,
+# and added a check to avoid the target being added if no notices are
+# to be displayed.
 function (gmx_create_missing_tests_notice_target)
     get_property(_text GLOBAL PROPERTY GMX_TESTS_NOTICE)
     set(_cmds)
     foreach (_line ${_text})
         list(APPEND _cmds COMMAND ${CMAKE_COMMAND} -E echo "NOTE: ${_line}")
     endforeach()
-    add_custom_target(missing-tests-notice
-        ${_cmds}
-        DEPENDS run-ctest
-        COMMENT "Some tests not available" VERBATIM)
-    add_dependencies(check missing-tests-notice)
+    list(LENGTH _cmds n)
+    # checking whether any messages should be displayed
+    if(${n})
+        add_custom_target(missing-tests-notice
+                ${_cmds}
+                DEPENDS run-ctest
+                COMMENT "Some tests not available" VERBATIM)
+        add_dependencies(check-all missing-tests-notice)
+    endif()
+    get_property(_text GLOBAL PROPERTY GMX_TESTS_NOTICE_NOPHYS)
+    set(_cmds)
+    foreach (_line ${_text})
+        list(APPEND _cmds COMMAND ${CMAKE_COMMAND} -E echo "NOTE: ${_line}")
+    endforeach()
+    list(LENGTH _cmds n)
+    # checking whether any messages should be displayed
+    if(${n})
+        add_custom_target(missing-tests-notice-nophys
+                ${_cmds}
+                DEPENDS run-ctest-nophys
+                COMMENT "Some tests not available" VERBATIM)
+        add_dependencies(check missing-tests-notice-nophys)
+    endif()
+    get_property(_text GLOBAL PROPERTY GMX_TESTS_NOTICE_PHYS)
+    set(_cmds)
+    foreach (_line ${_text})
+        list(APPEND _cmds COMMAND ${CMAKE_COMMAND} -E echo "NOTE: ${_line}")
+    endforeach()
+    list(LENGTH _cmds n)
+    # checking whether any messages should be displayed
+    if(${n})
+        add_custom_target(missing-tests-notice-phys
+                ${_cmds}
+                DEPENDS run-ctest-phys
+                COMMENT "Some tests not available" VERBATIM)
+        add_dependencies(check-phys missing-tests-notice-phys)
+    endif()
 endfunction()
