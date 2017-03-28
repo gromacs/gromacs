@@ -1,0 +1,9 @@
+nsteps                   = 500000
+dt                       = 0.002
+integrator               = md-vv
+cutoff-scheme            = verlet
+coulombtype              = PME
+tcoupl                   = v-rescale
+tc-grps                  = system
+ref-t                    = 298.15
+tau-t                    = 0.1
