@@ -1,0 +1,51 @@
+; Derived from parsing of runfiles/alat.top.orig
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               3               yes             0.5     0.5
+; comb-rule 3 is square-root sigma, the OPLSAA version
+
+[ atomtypes ]
+ opls_111  OW      15.99940     0.000       A    3.12171e-01  7.94960e-01
+ opls_112  HW       1.00800     0.000       A    0.00000e-01  0.00000e-01
+
+[ moleculetype ]
+; molname       nrexcl
+SOL             1
+
+[ atoms ]
+1     opls_111  1       SOL              OW             1       -0.834
+2     opls_112  1       SOL             HW1             1        0.417
+3     opls_112  1       SOL             HW2             1        0.417
+
+[ bonds ] 
+; i     j       funct   length  force.c.
+1       2       1       0.09572     345000
+1       3       1       0.09572     345000
+2       3       1       0.15139     345000 
+
+[ angles ]
+; i     j       k       funct   angle   force.c.
+2       1       3       1       104.52  628.02
+
+;[ settles ]
+; i     j       funct   length
+;1       1       0.09572 0.15139
+
+;[ constraints ]
+; i     j       funct   length 
+;1       2       1       0.09572
+;1       3       1       0.09572
+;2       3       1       0.15139
+
+; added by mrshirts 6/9/03
+[ exclusions ]
+1 2 3
+2 1 3
+3 1 2
+
+[ system ]
+Pure Water
+
+[ molecules ]
+; Compound             #mols
+SOL               900
