@@ -68,16 +68,18 @@
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
-static const int    c_clSizeLog2  = 3;
+static const int      c_clSizeLog2  = 3;
 /*! \brief Square of cluster size. */
-static const int    c_clSizeSq    = c_clSize*c_clSize;
+static const int      c_clSizeSq    = c_clSize*c_clSize;
 /*! \brief j-cluster size after split (4 in the current implementation). */
-static const int    c_splitClSize = c_clSize/c_nbnxnGpuClusterpairSplit;
+static const int      c_splitClSize = c_clSize/c_nbnxnGpuClusterpairSplit;
 /*! \brief Stride in the force accumualation buffer */
-static const int    c_fbufStride  = c_clSizeSq;
+static const int      c_fbufStride  = c_clSizeSq;
+/*! \brief i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
+static const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
-static const float  c_oneSixth    = 0.16666667f;
-static const float  c_oneTwelveth = 0.08333333f;
+static const float    c_oneSixth    = 0.16666667f;
+static const float    c_oneTwelveth = 0.08333333f;
 
 /* With multiple compilation units this ensures that texture refs are available
    in the the kernels' compilation units. */
