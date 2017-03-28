@@ -177,7 +177,7 @@ class MyMol
         matrix                    box_;
         real                      dip_exp_, mu_elec2_, dip_err_, dip_weight_, dip_calc_, dip_esp_, dip_elec_, chieq_;
         real                      Hform_, Emol_, Ecalc_, OptEcalc_, Force2_, OptForce2_;
-        tensor                    Q_elec_, Q_calc_, Q_esp_;
+        tensor                    Q_elec_, Q_calc_, Q_esp_, alpha_elec_, alpha_calc_;
         eSupport                  eSupp_;
         t_state                  *state_;
         t_forcerec               *fr_;
@@ -240,7 +240,7 @@ class MyMol
          * \param[in]  cr
          * \param[out] isoPol   Isotropic polarizability
          */
-        std::vector<double> CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
+        void CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
 
         /*! \brief
          * Generate atomic partial charges

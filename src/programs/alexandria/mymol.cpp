@@ -1986,17 +1986,16 @@ void MyMol::CalcQPol(const Poldata &pd, rvec mu)
     sig_pol_        = sqrt(sptot/topology_->atoms.nr);
 }
 
-std::vector<double> MyMol::CalcPolarizability(double     efield,
-                                              t_commrec *cr,
-                                              FILE      *fplog)
+void MyMol::CalcPolarizability(double     efield,
+                               t_commrec *cr,
+                               FILE      *fplog)
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field(DIM, 0);
-    std::vector<double> pols;
     MyForceProvider    *myforce;
     rvec                mu_ref, mu_tot;
     
-    myforce          = new MyForceProvider;
+    myforce                            = new MyForceProvider;
     fr_->forceBufferNoVirialSummation  = new PaddedRVecVector; 
     fr_->forceBufferNoVirialSummation->resize(f_.size());     
     fr_->efield      = myforce; 
@@ -2010,10 +2009,9 @@ std::vector<double> MyMol::CalcPolarizability(double     efield,
         myforce->setField(field);
         computeForces(fplog, cr);
         CalcDipole(mu_tot);
-        pols.push_back((((mu_tot[m]-mu_ref[m]))/efield)*(POLFAC));
+        alpha_calc_[m][m] = ((mu_tot[m]-mu_ref[m])/efield)*(POLFAC);
         field[m] = 0.0;
     }
-    return pols;
 }
 
 static void put_in_box(int natom, matrix box, rvec x[], real dbox)
@@ -2401,7 +2399,6 @@ void MyMol::PrintTopology(FILE                   *fp,
     char                     buf[256];
     double                   vec[DIM];
     double                   value, error, T;    
-    tensor                   polar;
     std::string              myref, mylot;
     rvec                     mu;
 
@@ -2427,27 +2424,27 @@ void MyMol::PrintTopology(FILE                   *fp,
     
     printmol.nr = 1;
     
-    snprintf(buf, sizeof(buf), "Total Mass   = %.3f Da", molProp()->getMass());
+    snprintf(buf, sizeof(buf), "Total Mass = %.3f Da", molProp()->getMass());
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Reference_Enthalpy   = %.3f kJ/mol", ref_enthalpy_);
+    snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f kJ/mol", ref_enthalpy_);
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Polarizability = %.3f +/- %.3f A^3", polarizability_, sig_pol_);
     commercials.push_back(buf);
     
     if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
                               (char *)"electronic", &value, &error,
-                              &T, myref, mylot, vec, polar))
+                              &T, myref, mylot, vec, alpha_elec_))
     {
-        snprintf(buf, sizeof(buf), "Alpha from %s X= %.3f  Y= %.3f  Z= %.3f A^3", 
-                 lot, polar[XX][XX], polar[YY][YY], polar[ZZ][ZZ]);
+        snprintf(buf, sizeof(buf), "Polarizabilities from %s XX= %.3f  YY= %.3f  ZZ= %.3f A^3", 
+                 lot, alpha_elec_[XX][XX], alpha_elec_[YY][YY], alpha_elec_[ZZ][ZZ]);
         commercials.push_back(buf);
     }
       
     if (efield > 0 && nullptr != cr)
     {
-        auto alphas = CalcPolarizability(efield, cr, fp);
-        snprintf(buf, sizeof(buf), "Alpha from Alexandria X= %.3f  Y= %.3f  Z= %.3f A^3", 
-                 alphas[XX], alphas[YY], alphas[ZZ]);
+        CalcPolarizability(efield, cr, fp);
+        snprintf(buf, sizeof(buf), "Polarizabilities from Alexandria XX= %.3f  YY= %.3f  ZZ= %.3f A^3", 
+                 alpha_calc_[XX][XX], alpha_calc_[YY][YY], alpha_calc_[ZZ][ZZ]);
         commercials.push_back(buf);
     }
     
@@ -2587,7 +2584,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     double       value, Hatom, ZPE;
     double       T = -1, error; 
     double       vec[DIM];
-    tensor       quadrupole;
+    tensor       quadrupole, polar;
     std::string  myref, mylot;
     int          ia, natom = 0;
     
@@ -2648,7 +2645,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     
     double q[natom];
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "", (char *)"ESP", &value, &error, &T,
+                              (char *)mylot.c_str(), "", 
+                              (char *)"ESP", &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
         int   i, j;
@@ -2704,7 +2702,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 }
             }
         }
-
         if (bZPE)
         {
 
@@ -2722,12 +2719,26 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 }
             }
         }
-
         if (ia < topology_->atoms.nr)
         {
             imm = immNoData;
         }
     }
+    
+    if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, 
+                              lot, "", (char *)"electronic", 
+                              &value, &error, &T, myref, mylot, 
+                              vec, polar))
+    {
+        for (m = 0; m < DIM; m++)
+        {
+            for (n = 0; n < DIM; n++)
+            {
+                alpha_elec_[m][n] = polar[m][n];
+            }
+        }
+    }
+    
     return imm;
 }
 

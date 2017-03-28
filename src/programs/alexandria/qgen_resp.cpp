@@ -101,7 +101,10 @@ void QgenResp::updateAtomCharges(t_atoms  *atoms)
     
     for (size_t i = 0; i < ra_.size(); i++)
     {
-        ra_[i].setQ(atoms->atom[i].q);
+        if (!ra_[i].fixedQ())
+        {
+            ra_[i].setQ(atoms->atom[i].q);
+        }
     }
 }
 

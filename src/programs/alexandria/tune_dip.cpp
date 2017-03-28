@@ -159,10 +159,12 @@ class OPtimization : public MolDip
                            const char             *dipcorr,
                            const char             *mucorr, 
                            const char             *Qcorr,
-                           const char             *espcorr, 
+                           const char             *espcorr,
+                           const char             *alphacorr, 
                            real                    dip_toler, 
                            real                    quad_toler, 
-                           const gmx_output_env_t *oenv);
+                           const gmx_output_env_t *oenv,
+                           bool                    bPolar);
         
         void print_dipole(FILE  *fp, 
                           MyMol *mol, 
@@ -183,10 +185,6 @@ class OPtimization : public MolDip
         void tuneDip2PolData();
         
         void InitOpt(real factor);
-        
-        void split_shell_charges(gmx_mtop_t *mtop,
-                                 t_idef     *idef,
-                                 t_topology *topology);
                                  
         void calcDeviation();
     
@@ -201,60 +199,6 @@ class OPtimization : public MolDip
                     const char *xvgepot, real temperature, 
                     bool bBound);
 };
-
-void OPtimization::split_shell_charges(gmx_mtop_t *mtop,
-                                       t_idef     *idef,
-                                       t_topology *topology)
-{
-    int                     k, ai, aj;
-    real                    q, Z;
-    gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    t_atom                 *atom_i, *atom_j;
-    int                     at_global;
-
-    for (k = 0; k < idef->il[F_POLARIZATION].nr; )
-    {
-        k++; // Skip over the type.
-        ai = idef->il[F_POLARIZATION].iatoms[k++];
-        aj = idef->il[F_POLARIZATION].iatoms[k++];
-
-        atom_i = &topology->atoms.atom[ai];
-        atom_j = &topology->atoms.atom[aj];
-
-        if ((atom_i->ptype == eptAtom) &&
-            (atom_j->ptype == eptShell))
-        {
-            q         = atom_i->q;
-            Z         = atom_i->atomnumber;
-            atom_i->q = Z;
-            atom_j->q = q-Z;
-        }
-        else if ((atom_j->ptype == eptAtom) &&
-                 (atom_i->ptype == eptShell))
-        {
-            q         = atom_j->q;
-            Z         = atom_j->atomnumber;
-            atom_j->q = Z;
-            atom_i->q = q-Z;
-        }
-        else
-        {
-            gmx_incons("Polarization entry does not have one atom and one shell");
-        }
-    }
-    q     = 0;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
-    {
-        q += atom->q;
-    }
-    Z = std::lround(q);
-    if (fabs(q-Z) > 1e-3)
-    {
-        gmx_fatal(FARGS, "Total charge in molecule is not zero, but %f", q-Z);
-    }
-}
 
 void OPtimization::addEspPoint()
 {
@@ -370,6 +314,7 @@ void OPtimization::calcDeviation()
                     
                 }               
                 mymol.computeForces(nullptr, cr_);
+                mymol.CalcPolarizability(1, cr_, nullptr);
             }
                         
             qtot = 0;            
@@ -925,24 +870,29 @@ void OPtimization::print_results(FILE                   *fp,
                                  const char             *MuCorr, 
                                  const char             *Qcorr,
                                  const char             *EspCorr, 
+                                 const char             *alphaCorr,
                                  real                    dip_toler, 
                                  real                    quad_toler, 
-                                 const gmx_output_env_t *oenv)
+                                 const gmx_output_env_t *oenv,
+                                 bool                    bPolar)
 {
-    int           i = 0, j = 0, n = 0, nout = 0, mm = 0, nn = 0;
-    real          sse = 0, rms = 0, sigma = 0, aver = 0, error = 0, qEEM = 0;
-    FILE         *dipc, *muc, *Qc, *hh, *espc;   
+    int           i    = 0, j     = 0, n     = 0;
+    int           nout = 0, mm    = 0, nn    = 0;
+    real          sse  = 0, rms   = 0, sigma = 0;
+    real          aver = 0, error = 0, qEEM  = 0;
+    
+    FILE          *dipc, *muc,  *Qc;
+    FILE          *hh,   *espc, *alphac;   
         
     struct AtomTypeLsq {
         std::string atomtype;
         gmx_stats_t lsq;
-    };
-    
+    };    
     enum {
         eprEEM, eprESP, eprNR
     };
     
-    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp;
+    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp, lsq_alpha;
     const char               *eprnm[eprNR] = {"EEM", "ESP"};
     std::vector<AtomTypeLsq>  lsqt;
     
@@ -953,7 +903,17 @@ void OPtimization::print_results(FILE                   *fp,
     lsq_mu[0]   = gmx_stats_init();
     lsq_mu[1]   = gmx_stats_init();
     lsq_esp     = gmx_stats_init();
+    lsq_alpha   = gmx_stats_init();
     n           = 0;
+    
+    auto *ic = indexCount();
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    {
+        AtomTypeLsq k;
+        k.atomtype.assign(ai->name());
+        k.lsq = gmx_stats_init();
+        lsqt.push_back(std::move(k));
+    }
         
     for (auto &mol: mymol_)
     {
@@ -1006,6 +966,14 @@ void OPtimization::print_results(FILE                   *fp,
 
             sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
             
+            if(bPolar)
+            {
+                for (mm = 0; mm < DIM; mm++)
+                {
+                    gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
+                }
+            }
+            
             fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
@@ -1017,17 +985,16 @@ void OPtimization::print_results(FILE                   *fp,
                                                   {
                                                       return atlsq.atomtype.compare(at) == 0;
                                                   });                                                 
-                    if (k == lsqt.end())
+                    if (k != lsqt.end())
                     {
-                        lsqt.resize(1+lsqt.size());
-                        lsqt[lsqt.size()-1].atomtype.assign(at);
-                        lsqt[lsqt.size()-1].lsq = gmx_stats_init();
-                        k = lsqt.end() - 1;
+                        qEEM = mol.topology_->atoms.atom[j].q;
+                        if(nullptr != mol.shellfc_)
+                        {
+                            qEEM += mol.topology_->atoms.atom[j+1].q;
+                        }
+                        gmx_stats_add_point(k->lsq, mol.qESP_[i], qEEM, 0, 0);
                     } 
-                                       
-                    qEEM = mol.topology_->atoms.atom[j].q;
-                    gmx_stats_add_point(k->lsq, mol.qESP_[i], qEEM, 0, 0);
-                    
+                                                          
                     fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                             mol.topology_->atoms.atom[j].atomnumber,
                             j+1,
@@ -1084,7 +1051,6 @@ void OPtimization::print_results(FILE                   *fp,
     {
         int   nbins;
         real *x, *y;
-
         if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
             fprintf(fp, "%-4d copies for %4s\n", nbins, k->atomtype.c_str());
@@ -1096,11 +1062,11 @@ void OPtimization::print_results(FILE                   *fp,
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
                 fprintf(hh, "&\n");
-                free(x);
-                free(y);
             }
-            gmx_stats_free(k->lsq);
+            free(x);
+            free(y);
         }
+        gmx_stats_free(k->lsq);
     }
     fclose(hh);
     fprintf(fp, "\n");
@@ -1129,6 +1095,13 @@ void OPtimization::print_results(FILE                   *fp,
         xvgr_symbolize(espc, 1, eprnm, oenv);
         print_lsq_set(espc, lsq_esp);
         fclose(espc);
+    }    
+    if (bPolar)
+    {
+        alphac = xvgropen(alphaCorr, "Isotropic Polarizability (A^3)", "QM", "EEM", oenv);
+        xvgr_symbolize(alphac, 1, eprnm, oenv);
+        print_lsq_set(alphac, lsq_alpha);
+        fclose(alphac);
     }
 
     fprintf(fp, "hfac = %g\n", hfac_);
@@ -1164,6 +1137,7 @@ void OPtimization::print_results(FILE                   *fp,
     }
     
     gmx_stats_free(lsq_esp);
+    gmx_stats_free(lsq_alpha);
     gmx_stats_free(lsq_quad[0]);
     gmx_stats_free(lsq_quad[1]);
     gmx_stats_free(lsq_mu[0]);
@@ -1214,19 +1188,20 @@ int alex_tune_dip(int argc, char *argv[])
     };
 
     t_filenm                    fnm[] = {
-        { efDAT, "-f",         "allmols",     ffREAD  },
-        { efDAT, "-d",         "gentop",      ffOPTRD },
-        { efDAT, "-o",         "tunedip",     ffWRITE },
-        { efDAT, "-sel",       "molselect",   ffREAD  },
-        { efXVG, "-table",     "table",       ffOPTRD },
-        { efLOG, "-g",         "charges",     ffWRITE },
-        { efXVG, "-qhisto",    "q_histo",     ffWRITE },
+        { efDAT, "-f",         "allmols",       ffREAD  },
+        { efDAT, "-d",         "gentop",        ffOPTRD },
+        { efDAT, "-o",         "tunedip",       ffWRITE },
+        { efDAT, "-sel",       "molselect",     ffREAD  },
+        { efXVG, "-table",     "table",         ffOPTRD },
+        { efLOG, "-g",         "charges",       ffWRITE },
+        { efXVG, "-qhisto",    "q_histo",       ffWRITE },
         { efXVG, "-dipcorr",   "dip_corr",      ffWRITE },
-        { efXVG, "-mucorr",    "mu_corr",     ffWRITE },
-        { efXVG, "-thetacorr", "theta_corr",  ffWRITE },
-        { efXVG, "-espcorr",   "esp_corr",    ffWRITE },
-        { efXVG, "-conv",      "param-conv",  ffWRITE },
-        { efXVG, "-epot",      "param-epot",  ffWRITE }
+        { efXVG, "-mucorr",    "mu_corr",       ffWRITE },
+        { efXVG, "-thetacorr", "theta_corr",    ffWRITE },
+        { efXVG, "-espcorr",   "esp_corr",      ffWRITE },
+        { efXVG, "-alphacorr", "alpha_corr",    ffWRITE },
+        { efXVG, "-conv",      "param-conv",    ffWRITE },
+        { efXVG, "-epot",      "param-epot",    ffWRITE }
     };
     
     const  int                  NFILE         = asize(fnm);
@@ -1487,9 +1462,11 @@ int alex_tune_dip(int argc, char *argv[])
                           opt2fn("-mucorr",    NFILE, fnm),
                           opt2fn("-thetacorr", NFILE, fnm), 
                           opt2fn("-espcorr",   NFILE, fnm),
+                          opt2fn("-alphacorr",   NFILE, fnm),
                           dip_toler, 
                           quad_toler, 
-                          oenv);
+                          oenv,
+                          bPolar);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
         done_filenms(NFILE, fnm);
