@@ -53,6 +53,15 @@
 #include "gromacs/timing/gpu_timing.h"
 
 
+/** Default value for the prune kernel's NTHREAD_Z,
+ *  the number of warp-pairs processing j's concurrently.
+ *  The macro allows compile-time override.
+ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#endif
+const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
+
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
 /*! \brief number of clusters per supercluster. */
@@ -166,6 +175,7 @@ struct cu_nbparam
     float           rvdw_sq;          /**< VdW cut-off squared                               */
     float           rvdw_switch;      /**< VdW switched cut-off                              */
     float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rlistRollingPrune_sq; /**< pruned pair-list cut-off squared xf                 */
 
     shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
@@ -199,12 +209,18 @@ struct cu_plist
     int              cj4_nalloc;  /**< allocation size of cj4                       */
     nbnxn_cj4_t     *cj4;         /**< 4*j cluster list, contains j cluster number
                                        and index into the i cluster list            */
+    int              nimask;      /**< # of 4*j clusters * # of warps               */
+    int              imask_nalloc; /**< allocation size of imask                     */
+    unsigned int    *imask;       /**< imask for 2 warps for each 4*j cluster group */
     nbnxn_excl_t    *excl;        /**< atom interaction bits                        */
     int              nexcl;       /**< count for excl                               */
     int              excl_nalloc; /**< allocation size of excl                      */
 
-    bool             bDoPrune;    /**< true if pair-list pruning needs to be
-                                       done during the  current step                */
+    /* parameter+variables for normal and rolling pruning */
+    bool             needToPrune;            /**< true if initial (non-rolling) pair-list pruning needs to be
+-                                                 done during the current step     */
+    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
+    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 };
 
 /** \internal
@@ -215,16 +231,21 @@ struct cu_plist
  */
 struct cu_timers
 {
-    cudaEvent_t start_atdat;     /**< start event for atom data transfer (every PS step)             */
-    cudaEvent_t stop_atdat;      /**< stop event for atom data transfer (every PS step)              */
-    cudaEvent_t start_nb_h2d[2]; /**< start events for x/q H2D transfers (l/nl, every step)          */
-    cudaEvent_t stop_nb_h2d[2];  /**< stop events for x/q H2D transfers (l/nl, every step)           */
-    cudaEvent_t start_nb_d2h[2]; /**< start events for f D2H transfer (l/nl, every step)             */
-    cudaEvent_t stop_nb_d2h[2];  /**< stop events for f D2H transfer (l/nl, every step)              */
-    cudaEvent_t start_pl_h2d[2]; /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t stop_pl_h2d[2];  /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t start_nb_k[2];   /**< start event for non-bonded kernels (l/nl, every step)          */
-    cudaEvent_t stop_nb_k[2];    /**< stop event non-bonded kernels (l/nl, every step)               */
+    cudaEvent_t start_atdat;       /**< start event for atom data transfer (every PS step)             */
+    cudaEvent_t stop_atdat;        /**< stop event for atom data transfer (every PS step)              */
+    cudaEvent_t start_nb_h2d[2];   /**< start events for x/q H2D transfers (l/nl, every step)          */
+    cudaEvent_t stop_nb_h2d[2];    /**< stop events for x/q H2D transfers (l/nl, every step)           */
+    cudaEvent_t start_nb_d2h[2];   /**< start events for f D2H transfer (l/nl, every step)             */
+    cudaEvent_t stop_nb_d2h[2];    /**< stop events for f D2H transfer (l/nl, every step)              */
+    cudaEvent_t start_pl_h2d[2];   /**< start events for pair-list H2D transfers (l/nl, every PS step) */
+    cudaEvent_t stop_pl_h2d[2];    /**< start events for pair-list H2D transfers (l/nl, every PS step) */
+    bool        didPairlistH2D[2]; /**< true when a pair-list transfer has been done at this step      */
+    cudaEvent_t start_nb_k[2];     /**< start event for non-bonded kernels (l/nl, every step)          */
+    cudaEvent_t stop_nb_k[2];      /**< stop event non-bonded kernels (l/nl, every step)               */
+    cudaEvent_t start_prune_k[2];  /**< start event for pair-list pruning kernels (l/nl, frequency depends on chunk size)   */
+    cudaEvent_t stop_prune_k[2];   /**< stop event for pair-list pruning kernels (l/nl, frequency depends on chunk size)   */
+    bool        didPrune[2];       /**< true when we timed pruning and the timings need to be accounted for */
+    bool        didRollingPrune[2];/**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
 };
 
 /** \internal

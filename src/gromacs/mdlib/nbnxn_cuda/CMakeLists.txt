@@ -38,7 +38,8 @@ if(GMX_USE_CUDA)
                 nbnxn_cuda_kernel_F_noprune.cu
                 nbnxn_cuda_kernel_F_prune.cu
                 nbnxn_cuda_kernel_VF_noprune.cu
-                nbnxn_cuda_kernel_VF_prune.cu)
+                nbnxn_cuda_kernel_VF_prune.cu
+                nbnxn_cuda_kernel_pruneonly.cu)
     endif()
 
     file(GLOB NBNXN_CUDA_SOURCES
