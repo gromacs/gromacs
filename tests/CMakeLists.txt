@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017 by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,7 @@ if(REGRESSIONTEST_PATH)
     # gmxtests target builds all binaries required for running gmxtest
     add_custom_target(gmxtests DEPENDS gmx)
     add_dependencies(run-ctest gmxtests)
+    add_dependencies(run-ctest-nophys gmxtests)
 
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)
@@ -175,6 +176,150 @@ if(REGRESSIONTEST_PATH)
     endforeach()
 else()
     gmx_add_missing_tests_notice("Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON.")
+endif()
+
+
+#
+# Physical validation tests are opt-in via -DGMX_PHYSICAL_VALIDATION=ON
+#
+if(GMX_PHYSICAL_VALIDATION)
+    # physical validation suite is distributed with the source
+    set(PHYSVALTEST_SOURCE_PATH
+            "${CMAKE_CURRENT_SOURCE_DIR}/physicalvalidation")
+    #       CACHE PATH "Source directory containing physical validation tests.")
+    if(NOT EXISTS ${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py)
+        message(FATAL_ERROR
+            "GMX_PHYSICAL_VALIDATION set, but physical validation script not found in ${PHYSVALTEST_SOURCE_PATH}.")
+    endif()
+
+    if(CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY)
+        # The following comment is copied from regression tests:
+        #     Cross-compiling toolchains require us to compile both front-end and
+        #     back-end binaries to run gmxtest.pl.
+        #     Testing an mdrun-only builds require supporting binaries from a full build
+        # TODO: Look into the details of this.
+        # For now, turn it off - our python-gmx interface is probably not that stable for special cases anyway
+        message(WARNING
+                "With cross-compiling, multi-configuration generators (e.g. Visual Studio), or with mdrun-only builds,\
+                running physical validation tests from build system is not supported.\
+                Please run physicalvalidation.py directly.")
+        set(GMX_PHYSICAL_VALIDATION OFF CACHE BOOL
+                "With cross-compiling or multi-configuration generators, running physical validation tests from build\
+                system is not supported." FORCE)
+
+    else()
+        #
+        # Making sure gmx is built before running physical validation tests
+        #
+        add_dependencies(run-ctest-phys gmx)
+        add_dependencies(run-ctest gmx)
+
+        #
+        # Determine arguments passed to physicalvalidation.py
+        #
+        set(PARGS "")
+        if(GMX_DOUBLE)
+            list(APPEND PARGS --double)
+        endif()
+        list(APPEND PARGS --wd ${CMAKE_CURRENT_BINARY_DIR}/physicalvalidation)
+
+        # TODO: Handle MPI in physicalvalidation.py
+        #
+        # if(GMX_LIB_MPI AND NOT MPIEXEC) # find_program failed
+        #     message(WARNING
+        #         "Please set MPIEXEC. Otherwise mpirun is assumed for running tests.")
+        # endif()
+        # if(GMX_LIB_MPI)
+        #     set(GMX_TEST_NUMBER_PROCS 8 CACHE STRING "Number of processors used for testing")
+        #     mark_as_advanced(GMX_TEST_NUMBER_PROCS)
+        #     list(APPEND ARGS -np ${GMX_TEST_NUMBER_PROCS})
+        #     if(MPIEXEC)
+        #         list(APPEND ARGS -mpirun ${MPIEXEC})
+        #     endif()
+        #     #We should use MPIEXEC_NUMPROC_FLAG but gmxtest.pl doesn't let us pass it
+        # endif()
+        if(GMX_LIB_MPI)
+            message(FATAL_ERROR
+                "Physical validation using MPI not supported.")
+        endif()
+
+        if(GMX_BINARY_SUFFIX)
+            list(APPEND PARGS --suffix ${GMX_BINARY_SUFFIX})
+        endif()
+
+        #
+        # Give possibility to add args via cache
+        #
+        set(PHYSVALTEST_EXTRA_ARGS "" CACHE STRING
+            "Extra arguments passed to phystest")
+        mark_as_advanced(PHYSVALTEST_EXTRA_ARGS)
+        list(APPEND PARGS ${PHYSVALTEST_EXTRA_ARGS})
+
+        #
+        # The following lines are directly copied from regression tests.
+        # They seem to be applicable to physical validation tests as well.
+        #
+        if(GMX_NATIVE_WINDOWS)
+            set(PATH_SEPARATOR "\\;")
+            #replacing \ with / shouldn't be neccessary. But otherwise "..\bin\;c:\.."
+            #gets turned into "...\bin\\c:\.." don't know why and don't have a better
+            #workaround. This workaround doesn't hurt.
+            string(REPLACE "\\" "/" PATH "$ENV{PATH}")
+            #protect ; (don't treat as list)
+            string(REPLACE ";" "\\;" PATH "${PATH}")
+        else()
+            set(PATH_SEPARATOR ":")
+            set(PATH "$ENV{PATH}")
+        endif()
+
+        foreach(FOLDER bin lib) #lib folders might be needed for
+                                #e.g. DLLs. For GMX paths native ("\") is needed for GMXLIB detection
+            file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/${FOLDER}" DIR)
+            set(PATH "${DIR}${PATH_SEPARATOR}${PATH}")
+        endforeach()
+        #
+        # End copied from regression tests.
+        #
+
+        #
+        # TODO: Switch to python >= 3.3. For now, use 2.7 for compatibility with rest of build system.
+        #
+        # ${PYTHON_EXECUTABLE} can only be set for one version per build system.
+        # Currently, the following files set 2.7 explicitly:
+        # * cmake/CheckTarget.cmake
+        # * docs/CMakeList.txt
+        # Parts of the documentation rely on python scripts.
+        # These need to be ported to be able to make the move to python 3.
+        #
+        if (NOT PYTHON_EXECUTABLE)
+            message(FATAL_ERROR
+                    "Python not found. Physical validation relies on python >= 3.3 (python 2.7 supported, but\
+                    deprecated). Install python, set PYTHON_EXECUTABLE to the python location, or set\
+                    GMX_PHYSCIAL_VALIDATION=OFF to disable the physical validation tests.")
+        endif()
+        #
+        foreach(module numpy) # add further modules if necessary
+            find_python_module(${module})
+            string(TOUPPER ${module} module_upper)
+            if(NOT PYTHONMODULE_${module_upper})
+                message(FATAL_ERROR
+                        "Python module ${module} not found. Physical validation relies on ${module}. Make sure\
+                        ${module} can be found by PYTHON_EXECUTABLE, or set GMX_PHYSCIAL_VALIDATION=OFF to disable\
+                        the physical validation tests.")
+            endif()
+        endforeach()
+
+        #
+        # Hook in our own tests
+        #
+        foreach(subtest pass integratorconvergence)
+            add_test(NAME physicalvalidationtests/${subtest}
+                    COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" ${subtest} ${PARGS})
+            set_tests_properties(physicalvalidationtests/${subtest} PROPERTIES
+                    ENVIRONMENT "PATH=${PATH}"
+                    LABELS "PhysicalValidationTest")
+        endforeach()
+    endif()
 endif()
 
 gmx_create_missing_tests_notice_target()
