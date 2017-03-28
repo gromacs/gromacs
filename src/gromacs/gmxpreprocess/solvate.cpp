@@ -74,18 +74,15 @@ typedef struct {
     int   res0;
 } t_moltypes;
 
-static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
+static void sort_molecule(t_atoms *atoms, std::vector<RVec> *x,
                           std::vector<RVec> *v)
 {
     int         atnr, i, j, moltp = 0, nrmoltypes, resi_o, resi_n, resnr;
     t_moltypes *moltypes;
-    t_atoms    *atoms, *newatoms;
 
     fprintf(stderr, "Sorting configuration\n");
 
-    atoms = *atoms_solvt;
-
-    /* copy each residue from *atoms to a molecule in *molecule */
+    /* copy each residue from atoms to a molecule in *molecule */
     moltypes   = NULL;
     nrmoltypes = 0;
     for (i = 0; i < atoms->nr; i++)
@@ -152,10 +149,11 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         }
 
         /* now put them there: */
+        t_atoms *newatoms;
         snew(newatoms, 1);
         init_t_atoms(newatoms, atoms->nr, FALSE);
         newatoms->nres = atoms->nres;
-        snew(newatoms->resinfo, atoms->nres);
+        srenew(newatoms->resinfo, atoms->nres);
         std::vector<RVec> newx(x->size());
         std::vector<RVec> newv(v->size());
 
@@ -208,8 +206,8 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         sfree(atoms->atomname);
         sfree(atoms->resinfo);
         sfree(atoms->atom);
-        sfree(atoms);
-        *atoms_solvt = newatoms;
+        *atoms = *newatoms;
+        sfree(newatoms);
         std::swap(*x, newx);
         std::swap(*v, newv);
     }
@@ -374,11 +372,13 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
     sfree(atoms->atom);
     sfree(atoms->atomname);
     sfree(atoms->resinfo);
+    sfree(atoms->pdbinfo);
     atoms->nr       = newAtoms.nr;
     atoms->nres     = newAtoms.nres;
     atoms->atom     = newAtoms.atom;
     atoms->atomname = newAtoms.atomname;
     atoms->resinfo  = newAtoms.resinfo;
+    atoms->pdbinfo  = newAtoms.pdbinfo;
 
     newX.resize(atoms->nr);
     std::swap(*x, newX);
@@ -700,7 +700,7 @@ static void add_solv(const char *fn, t_topology *top,
     }
 
     /* Sort the solvent mixture, not the protein... */
-    sort_molecule(&atoms_solvt, &x_solvt, &v_solvt);
+    sort_molecule(atoms_solvt, &x_solvt, &v_solvt);
 
     // Merge the two configurations.
     x->insert(x->end(), x_solvt.begin(), x_solvt.end());
