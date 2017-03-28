@@ -153,7 +153,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
 #endif
 #ifdef PRUNE_NBL
-    float rlist_sq              = nbparam.rlist_sq;
+    float rlistOuter_sq         = nbparam.rlistOuter_sq;
 #endif
 
 #ifdef CALC_ENERGIES
@@ -355,7 +355,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (!__any(r2 < rlist_sq))
+                            if (!__any(r2 < rlistOuter_sq))
                             {
                                 imask &= ~mask_ji;
                             }
@@ -458,7 +458,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef VDW_CUTOFF_CHECK
                                 /* Separate VDW cut-off check to enable twin-range cut-offs
-                                 * (rvdw < rcoulomb <= rlist)
+                                 * (rvdw < rcoulomb <= rlistOuter)
                                  */
                                 vdw_in_range  = (r2 < rvdw_sq) ? 1.0f : 0.0f;
                                 F_invr       *= vdw_in_range;
