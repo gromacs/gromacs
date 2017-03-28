@@ -315,6 +315,12 @@ option(GMX_BUILD_SHARED_EXE
     ON)
 mark_as_advanced(GMX_BUILD_SHARED_EXE)
 
+option(GMX_PHYSICAL_VALIDATION
+       "Include physical validation tests in ctest environment. These can then be called using 'make check-phys' or
+       'make check-all'. Warning: Running the physical validation tests takes significantly more time than other tests!"
+       OFF)
+mark_as_advanced(GMX_PHYSICAL_VALIDATION)
+
 ######################################################################
 # Detect OpenMP support
 ######################################################################
