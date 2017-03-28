@@ -86,7 +86,7 @@
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
     - #threads  = NTHREAD_Z * c_clSize^2
-    - shmem     = see nbnxn_cuda.cu:calc_shmem_required()
+    - shmem     = see nbnxn_cuda.cu:calc_shmem_required_nonbonded()
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
@@ -191,7 +191,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
 #endif
 #ifdef PRUNE_NBL
-    float rlist_sq              = nbparam.rlist_sq;
+    float rlist_sq              = nbparam.rlistOuter_sq;
 #endif
 
 #ifdef CALC_ENERGIES
