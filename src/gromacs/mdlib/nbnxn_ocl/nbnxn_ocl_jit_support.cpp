@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -196,18 +196,22 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
          * files outside the nbnxn_ocl as macros, to avoid including those files
          * in the JIT compilation that happens at runtime.
          */
+
         extraDefines += gmx::formatString(
-                    " -DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_MIN_RSQ=%s %s",
-                    CENTRAL,                                 /* Defined in ishift.h */
-                    c_nbnxnGpuNumClusterPerSupercluster,     /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuClusterSize,                   /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuJgroupSize,                    /* Defined in nbnxn_pairlist.h */
-                    STRINGIFY_MACRO(NBNXN_MIN_RSQ)           /* Defined in nbnxn_consts.h */
-                                                             /* NBNXN_MIN_RSQ passed as string to avoid
-                                                                floating point representation problems with sprintf */
+                    " -DCENTRAL=%d "
+                    "-DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d "
+                    "-DGMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY=%d "
+                    "-DNBNXN_MIN_RSQ=%s %s",
+                    CENTRAL,                                                /* Defined in ishift.h */
+                    c_nbnxnGpuNumClusterPerSupercluster,                    /* Defined in nbnxn_pairlist.h */
+                    c_nbnxnGpuClusterSize,                                  /* Defined in nbnxn_pairlist.h */
+                    c_nbnxnGpuJgroupSize,                                   /* Defined in nbnxn_pairlist.h */
+                    getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e), /* In nbnxn_ocl_types.h  */
+                    STRINGIFY_MACRO(NBNXN_MIN_RSQ)                          /* Defined in nbnxn_consts.h */
+                                                                            /* NBNXN_MIN_RSQ passed as string to avoid
+                                                                                floating point representation problems with sprintf */
                     , (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
                     );
-
 
         try
         {
