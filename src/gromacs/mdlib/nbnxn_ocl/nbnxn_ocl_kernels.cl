@@ -39,6 +39,12 @@ zero_e_fshift(__global float *fshift,__global float *e_lj,__global float *e_el,c
     }
 }
 
+/* Generate pruning kernels. */
+#define HAVE_FRESH_LIST 1
+#include "nbnxn_ocl_kernel_pruneonly.clh"
+#undef HAVE_FRESH_LIST
+#include "nbnxn_ocl_kernel_pruneonly.clh"
+
 #if defined GMX_OCL_FASTGEN
     #define FLAVOR_LEVEL_GENERATOR "nbnxn_ocl_kernels_fastgen.clh"
 #elif defined GMX_OCL_FASTGEN_ADD_TWINCUT

@@ -287,22 +287,23 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
 static void set_cutoff_parameters(cl_nbparam_t              *nbp,
                                   const interaction_const_t *ic)
 {
-    nbp->ewald_beta       = ic->ewaldcoeff_q;
-    nbp->sh_ewald         = ic->sh_ewald;
-    nbp->epsfac           = ic->epsfac;
-    nbp->two_k_rf         = 2.0 * ic->k_rf;
-    nbp->c_rf             = ic->c_rf;
-    nbp->rvdw_sq          = ic->rvdw * ic->rvdw;
-    nbp->rcoulomb_sq      = ic->rcoulomb * ic->rcoulomb;
-    nbp->rlist_sq         = ic->rlist * ic->rlist;
+    nbp->ewald_beta           = ic->ewaldcoeff_q;
+    nbp->sh_ewald             = ic->sh_ewald;
+    nbp->epsfac               = ic->epsfac;
+    nbp->two_k_rf             = 2.0 * ic->k_rf;
+    nbp->c_rf                 = ic->c_rf;
+    nbp->rvdw_sq              = ic->rvdw * ic->rvdw;
+    nbp->rcoulomb_sq          = ic->rcoulomb * ic->rcoulomb;
+    nbp->rlist_sq             = ic->rlist * ic->rlist;
+    nbp->rlistRollingPrune_sq = ic->rlistPrune * ic->rlistPrune;
 
-    nbp->sh_lj_ewald      = ic->sh_lj_ewald;
-    nbp->ewaldcoeff_lj    = ic->ewaldcoeff_lj;
+    nbp->sh_lj_ewald          = ic->sh_lj_ewald;
+    nbp->ewaldcoeff_lj        = ic->ewaldcoeff_lj;
 
-    nbp->rvdw_switch      = ic->rvdw_switch;
-    nbp->dispersion_shift = ic->dispersion_shift;
-    nbp->repulsion_shift  = ic->repulsion_shift;
-    nbp->vdw_switch       = ic->vdw_switch;
+    nbp->rvdw_switch          = ic->rvdw_switch;
+    nbp->dispersion_shift     = ic->dispersion_shift;
+    nbp->repulsion_shift      = ic->repulsion_shift;
+    nbp->vdw_switch           = ic->vdw_switch;
 }
 
 /*! \brief Returns the kinds of electrostatics and Vdw OpenCL
@@ -519,24 +520,33 @@ static void init_plist(cl_plist_t *pl)
        need reallocation in nbnxn_gpu_init_pairlist */
     pl->sci     = NULL;
     pl->cj4     = NULL;
+    pl->imask   = NULL;
     pl->excl    = NULL;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
-    pl->na_c        = -1;
-    pl->nsci        = -1;
-    pl->sci_nalloc  = -1;
-    pl->ncj4        = -1;
-    pl->cj4_nalloc  = -1;
-    pl->nexcl       = -1;
-    pl->excl_nalloc = -1;
-    pl->bDoPrune    = false;
+    pl->na_c         = -1;
+    pl->nsci         = -1;
+    pl->sci_nalloc   = -1;
+    pl->ncj4         = -1;
+    pl->cj4_nalloc   = -1;
+    pl->nimask       = -1;
+    pl->imask_nalloc = -1;
+    pl->nexcl        = -1;
+    pl->excl_nalloc  = -1;
+    pl->needToPrune  = false;
 }
 
 /*! \brief Initializes the timer data structure.
  */
-static void init_timers(cl_timers_t gmx_unused *t, bool gmx_unused bUseTwoStreams)
+static void init_timers(cl_timers_t *t,
+                        bool         bUseTwoStreams)
 {
-    /* Nothing to initialize for OpenCL */
+    for (int i = 0; i <= (bUseTwoStreams ? 1 : 0); i++)
+    {
+        t->didPairlistH2D[i]  = false;
+        t->didPrune[i]        = false;
+        t->didRollingPrune[i] = false;
+    }
 }
 
 /*! \brief Initializes the timings data structure.
@@ -558,6 +568,11 @@ static void init_timings(gmx_wallclock_gpu_t *t)
             t->ktime[i][j].c = 0;
         }
     }
+
+    t->pruneTime.c = 0;
+    t->pruneTime.t = 0.0;
+    t->rollPruneTime.c = 0;
+    t->rollPruneTime.t = 0.0;
 }
 
 /*! \brief Creates context for OpenCL GPU given by \p mygpu
@@ -660,10 +675,20 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
 {
     /* Init to 0 main kernel arrays */
     /* They will be later on initialized in select_nbnxn_kernel */
+    // TODO: consider always creating all variants of the kernels here so that there is no
+    // need for late call to clCreateKernel -- if that gives any advantage?
     memset(nb->kernel_ener_noprune_ptr, 0, sizeof(nb->kernel_ener_noprune_ptr));
     memset(nb->kernel_ener_prune_ptr, 0, sizeof(nb->kernel_ener_prune_ptr));
     memset(nb->kernel_noener_noprune_ptr, 0, sizeof(nb->kernel_noener_noprune_ptr));
     memset(nb->kernel_noener_prune_ptr, 0, sizeof(nb->kernel_noener_prune_ptr));
+
+    /* Init pruning kernels
+     *
+     * TODO: we could avoid creating kernels if rolling pruning is turned off,
+     * but ATM that depends on force flags not passed into the initialization.
+     */
+    nb->kernel_pruneonly[epruneFirst]   = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_opencl");
+    nb->kernel_pruneonly[epruneRolling] = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rollprune_opencl");
 
     /* Init auxiliary kernels */
     nb->kernel_memset_f      = nbnxn_gpu_create_kernel(nb, "memset_f");
@@ -893,6 +918,11 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
         }
     }
 
+    if (nb->bDoTime)
+    {
+        nb->timers->didPairlistH2D[iloc] = true;
+    }
+
     ocl_realloc_buffered(&d_plist->sci, h_plist->sci, sizeof(nbnxn_sci_t),
                          &d_plist->nsci, &d_plist->sci_nalloc,
                          h_plist->nsci,
@@ -905,6 +935,13 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
                          nb->dev_rundata->context,
                          stream, true, &(nb->timers->pl_h2d_cj4[iloc]));
 
+    /* this call only allocates space on the device (no data is transferred) */
+    ocl_realloc_buffered(&d_plist->imask, NULL, sizeof(unsigned int),
+                         &d_plist->nimask, &d_plist->imask_nalloc,
+                         h_plist->ncj4*c_nbnxnGpuClusterpairSplit,
+                         nb->dev_rundata->context,
+                         stream, true, &(nb->timers->pl_h2d_imask[iloc]));
+
     ocl_realloc_buffered(&d_plist->excl, h_plist->excl, sizeof(nbnxn_excl_t),
                          &d_plist->nexcl, &d_plist->excl_nalloc,
                          h_plist->nexcl,
@@ -912,7 +949,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_ocl_t        *nb,
                          stream, true, &(nb->timers->pl_h2d_excl[iloc]));
 
     /* need to prune the pair list during the next step */
-    d_plist->bDoPrune = true;
+    d_plist->needToPrune = true;
 }
 
 //! This function is documented in the header file
@@ -1119,12 +1156,14 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     /* Free plist */
     free_ocl_buffer(&(nb->plist[eintLocal]->sci));
     free_ocl_buffer(&(nb->plist[eintLocal]->cj4));
+    free_ocl_buffer(&(nb->plist[eintLocal]->imask));
     free_ocl_buffer(&(nb->plist[eintLocal]->excl));
     sfree(nb->plist[eintLocal]);
     if (nb->bUseTwoStreams)
     {
         free_ocl_buffer(&(nb->plist[eintNonlocal]->sci));
         free_ocl_buffer(&(nb->plist[eintNonlocal]->cj4));
+        free_ocl_buffer(&(nb->plist[eintNonlocal]->imask));
         free_ocl_buffer(&(nb->plist[eintNonlocal]->excl));
         sfree(nb->plist[eintNonlocal]);
     }
