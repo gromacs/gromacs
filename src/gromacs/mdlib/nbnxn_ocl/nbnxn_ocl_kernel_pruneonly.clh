@@ -1,0 +1,258 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/*! \internal \file
+ *  \brief OpenCL pruning kernel.
+ *
+ *  OpenCL 1.2 support is expected; tested on AMD GCN and NVIDIA CC >3.0.
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+
+#include "nbnxn_ocl_kernel_utils.clh"
+
+/* Note: the AMD compiler testing was done with (fglrx 15.12) performs best with wg
+ * size 256 (this is an artificial compiler limitation). The compiler is also
+ * sensitive to tidx/widx declaration and warp_any initialization.
+ * With the current tweaks the regular prune kenel achieves 90%, the rolling 100%
+ * occupancy with both Fiji and Hawaii.
+ * TODO: if the wg size limit is removed in an upcoming AMD compiler the NTHREAD_Z=4
+ * should be revisited.
+ *
+ */
+#define NTHREAD_Z GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+
+#if !defined _AMD_SOURCE_ && ! defined _NVIDIA_SOURCE_
+    #error "The pruning kernel has not been tested on arch with execution width <32."
+#endif
+
+__attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
+#ifdef HAVE_FRESH_LIST
+    __kernel void nbnxn_kernel_prune_opencl
+#else
+    __kernel void nbnxn_kernel_prune_rolling_opencl
+#endif
+(
+ cl_nbparam_params_t              nbparam_params,
+ const __global float4 *restrict  xq,
+ const __global float *restrict   shift_vec,
+ const __global nbnxn_sci_t      *pl_sci,
+ __global nbnxn_cj4_t            *pl_cj4,
+#if !defined HAVE_FRESH_LIST
+ const
+#endif
+ __global unsigned int *restrict  prePrunedImask,
+ int                              numParts,
+ int                              part,
+ __local  float4                 *xib
+)
+{
+    /* convenience variables */
+    cl_nbparam_params_t *nbparam = &nbparam_params;
+
+    float rlistOuter_sq = nbparam->rlistOuter_sq;
+    float rlistInner_sq = nbparam->rlistInner_sq;
+
+    /* thread/block/warp id-s */
+    unsigned int tidxi  = get_local_id(0);
+    unsigned int tidxj  = get_local_id(1);
+    unsigned int tidx   = get_local_id(1) * get_local_size(0) + get_local_id(0);
+#if NTHREAD_Z == 1
+    unsigned int tidxz  = 0;
+#else
+    unsigned int tidxz  = get_local_id(2);
+#endif
+    unsigned int bidx   = get_group_id(0);
+    unsigned int widx   = tidx / WARP_SIZE;
+
+#ifdef HAVE_FRESH_LIST
+    const bool haveFreshList = true;
+#else
+    const bool haveFreshList = false;
+#endif
+
+    // TODO move these consts to utils and unify their use with the nonbonded kernels
+    const int c_numClPerSupercl    = NCL_PER_SUPERCL;
+    const int c_clSize             = CL_SIZE;
+    const int c_nbnxnGpuJgroupSize = NBNXN_GPU_JGROUP_SIZE;
+
+    // TODO pass this value at compile-time as a macro
+    const int c_nbnxnGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
+
+    /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
+    const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
+
+    /* shmem buffer for i cj pre-loading */
+    #define LOCAL_OFFSET xib + c_numClPerSupercl * c_clSize
+    __local int *cjs       = (((__local int *)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
+    #undef LOCAL_OFFSET
+    /* Offset calculated using xib because cjs depends on on tidxz! */
+    #define LOCAL_OFFSET (((__local int *)(xib + c_numClPerSupercl * c_clSize)) + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
+
+    /* Local buffer used to implement __any warp vote function from CUDA.
+       volatile is used to avoid compiler optimizations for AMD builds. */
+    volatile __local uint *warp_any = (__local uint*)(LOCAL_OFFSET);
+    #undef LOCAL_OFFSET
+
+    unsigned int warpVoteSlot = NTHREAD_Z*tidxz + widx;
+    /* Initialise warp vote.*/
+    if(tidx == 0 || tidx == 32)
+    {
+        warp_any[warpVoteSlot] = 0;
+    }
+
+    nbnxn_sci_t nb_sci      = pl_sci[bidx*numParts + part];  /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
+    int         sci         = nb_sci.sci;           /* super-cluster */
+    int         cij4_start  = nb_sci.cj4_ind_start; /* first ...*/
+    int         cij4_end    = nb_sci.cj4_ind_end;   /* and last index of j clusters */
+
+    if (tidxz == 0)
+    {
+        /* Pre-load i-atom x and q into shared memory */
+        int ci = sci * c_numClPerSupercl + tidxj;
+        int ai = ci * c_clSize + tidxi;
+
+        /* We don't need q, but using float4 in shmem avoids bank conflicts */
+        float4 tmp = xq[ai];
+        float4 xi  = tmp + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+        xib[tidxj * c_clSize + tidxi] = xi;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+
+    /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
+    for (int j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
+    {
+        unsigned int imaskFull, imaskCheck, imaskNew;
+
+        if (haveFreshList)
+        {
+            /* Read the mask from the list transferred from the CPU */
+            imaskFull  = pl_cj4[j4].imei[widx].imask;
+            /* We attempt to prune all pairs present in the original list */
+            imaskCheck = imaskFull;
+            imaskNew   = 0;
+        }
+        else
+        {
+            /* Read the mask from the "warp-pruned" by rlistOuter mask array */
+            imaskFull  = prePrunedImask[j4*c_nbnxnGpuClusterpairSplit + widx];
+            /* Read the old rolling pruned mask, use as a base for new */
+            imaskNew   = pl_cj4[j4].imei[widx].imask;
+            /* We only need to check pairs with different mask */
+            imaskCheck = (imaskNew ^ imaskFull);
+        }
+
+        if (imaskCheck)
+        {
+            /* Pre-load cj into shared memory on both warps separately */
+            if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
+            {
+                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
+            }
+
+#pragma unroll 4
+            for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+            {
+                if (imaskCheck & (superClInteractionMask << (jm * c_numClPerSupercl)))
+                {
+                    unsigned int mask_ji = (1U << (jm * c_numClPerSupercl));
+
+                    int cj      = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize];
+                    int aj      = cj * c_clSize + tidxj;
+
+                    /* load j atom data */
+                    float4 tmp  = xq[aj];
+                    float3 xj   = (float3)(tmp.xyz);
+
+#pragma unroll 8
+                    for (int i = 0; i < c_numClPerSupercl; i++)
+                    {
+                        if (imaskCheck & mask_ji)
+                        {
+                            /* load i-cluster coordinates from shmem */
+                            float4 xi = xib[i * c_clSize + tidxi];
+
+                            /* distance between i and j atoms */
+                            float3 rv = (float3)(xi.xyz) - xj;
+                            float  r2 = norm2(rv);
+
+                            if (haveFreshList)
+                            {
+                                /* If _none_ of the atoms pairs are in cutoff range,
+                                   the bit corresponding to the current
+                                   cluster-pair in imask gets set to 0. */
+                                if (r2 < rlistOuter_sq)
+                                {
+                                    warp_any[warpVoteSlot] = 1;
+                                }
+                                if (!warp_any[warpVoteSlot])
+                                {
+                                    imaskFull &= ~mask_ji;
+                                }
+                                warp_any[warpVoteSlot] = 0;
+                            }
+                            /* If any atom pair is within range, set the bit
+                               corresponding to the current cluster-pair. */
+                            if (r2 < rlistInner_sq)
+                            {
+                                warp_any[warpVoteSlot] = 1;
+                            }
+                            if (warp_any[warpVoteSlot])
+                            {
+                                imaskNew |= mask_ji;
+                            }
+                            warp_any[warpVoteSlot] = 0;
+                        }
+
+                        /* shift the mask bit by 1 */
+                        mask_ji += mask_ji;
+                    }
+                }
+            }
+
+#ifdef HAVE_FRESH_LIST
+            {
+                 /* copy the list pruned to rlistOuter to a separate buffer */
+                 prePrunedImask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+            }
+#endif
+            /* update the imask with only the pairs up to rlistInner */
+            pl_cj4[j4].imei[widx].imask = imaskNew;
+        }
+    }
+}
