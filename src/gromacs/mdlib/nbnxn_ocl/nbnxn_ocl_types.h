@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,12 +57,52 @@
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/gpu_utils/oclutils.h"
 
 /* kernel does #include "gromacs/math/utilities.h" */
 /* Move the actual useful stuff here: */
 
 //! Define 1/sqrt(pi)
 #define M_FLOAT_1_SQRTPI 0.564189583547756f
+
+/*! \brief Macros definining platform-dependent defaults for the prune kernel's j4 processing concurrency.
+ *
+ *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ */
+/*! @{ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       4
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    2
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   2
+#else
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD       GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA    GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT   GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#endif
+/*! @} */
+/*! Constants for platform-dependent defaults for the prune kernel's j4 processing concurrency.
+ *
+ *  Initialized using macros that can be overridden at compile-time (using GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY).
+ */
+/*! @{ */
+const int c_oclPruneKernelJ4ConcurrencyAMD     = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_AMD;
+const int c_oclPruneKernelJ4ConcurrencyNVIDIA  = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_NVIDIA;
+const int c_oclPruneKernelJ4ConcurrencyDefault = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT;
+/*! @} */
+
+/*! \brief Returns the j4 processing concurrency parameter for the vendor \vendorId
+ *  \param vendorId takes values from ocl_vendor_id_t.
+ */
+static inline int getOclPruneKernelJ4Concurrency(int vendorId)
+{
+    assert(vendorId < OCL_VENDOR_UNKNOWN);
+    switch (vendorId)
+    {
+        case OCL_VENDOR_AMD:    return c_oclPruneKernelJ4ConcurrencyAMD;     break;
+        case OCL_VENDOR_NVIDIA: return c_oclPruneKernelJ4ConcurrencyNVIDIA;  break;
+        default:                return c_oclPruneKernelJ4ConcurrencyDefault; break;
+    }
+}
 
 
 #ifdef __cplusplus
@@ -98,6 +138,15 @@ enum eelOcl {
  */
 enum evdwOcl {
     evdwOclCUT, evdwOclCUTCOMBGEOM, evdwOclCUTCOMBLB, evdwOclFSWITCH, evdwOclPSWITCH, evdwOclEWALDGEOM, evdwOclEWALDLB, evdwOclNR
+};
+
+/*! \brief Pruning kernel flavors.
+ *
+ * The values correspond to the first call of the pruning post-list generation
+ * and the rolling pruning, respectively.
+ */
+enum ePruneKind {
+    epruneFirst, epruneRolling, ePruneNR
 };
 
 /*! \internal
@@ -149,26 +198,27 @@ typedef struct cl_atomdata
 typedef struct cl_nbparam
 {
 
-    int             eeltype;          /**< type of electrostatics, takes values from #eelOcl */
-    int             vdwtype;          /**< type of VdW impl., takes values from #evdwOcl     */
+    int             eeltype;              /**< type of electrostatics, takes values from #eelOcl */
+    int             vdwtype;              /**< type of VdW impl., takes values from #evdwOcl     */
 
-    float           epsfac;           /**< charge multiplication factor                      */
-    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
-    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
-    float           ewald_beta;       /**< Ewald/PME parameter                               */
-    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
-    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+    float           epsfac;               /**< charge multiplication factor                      */
+    float           c_rf;                 /**< Reaction-field/plain cutoff electrostatics const. */
+    float           two_k_rf;             /**< Reaction-field electrostatics constant            */
+    float           ewald_beta;           /**< Ewald/PME parameter                               */
+    float           sh_ewald;             /**< Ewald/PME correction term substracted from the direct-space potential */
+    float           sh_lj_ewald;          /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float           ewaldcoeff_lj;        /**< LJ-Ewald/PME coefficient                          */
 
-    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+    float           rcoulomb_sq;          /**< Coulomb cut-off squared                           */
 
-    float           rvdw_sq;          /**< VdW cut-off squared                               */
-    float           rvdw_switch;      /**< VdW switched cut-off                              */
-    float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rvdw_sq;              /**< VdW cut-off squared                               */
+    float           rvdw_switch;          /**< VdW switched cut-off                              */
+    float           rlist_sq;             /**< pair-list cut-off squared                         */
+    float           rlistRollingPrune_sq; /**< pruned pair-list cut-off squared xf           */
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    shift_consts_t  dispersion_shift;     /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;      /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;           /**< VdW switch constants                     */
 
     /* LJ non-bonded parameters - accessed through texture memory */
     cl_mem                  nbfp_climg2d;      /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
@@ -188,26 +238,27 @@ typedef struct cl_nbparam
 typedef struct cl_nbparam_params
 {
 
-    int             eeltype;          /**< type of electrostatics, takes values from #eelCu */
-    int             vdwtype;          /**< type of VdW impl., takes values from #evdwCu     */
+    int             eeltype;              /**< type of electrostatics, takes values from #eelCu */
+    int             vdwtype;              /**< type of VdW impl., takes values from #evdwCu     */
 
-    float           epsfac;           /**< charge multiplication factor                      */
-    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
-    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
-    float           ewald_beta;       /**< Ewald/PME parameter                               */
-    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
-    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+    float           epsfac;               /**< charge multiplication factor                      */
+    float           c_rf;                 /**< Reaction-field/plain cutoff electrostatics const. */
+    float           two_k_rf;             /**< Reaction-field electrostatics constant            */
+    float           ewald_beta;           /**< Ewald/PME parameter                               */
+    float           sh_ewald;             /**< Ewald/PME correction term substracted from the direct-space potential */
+    float           sh_lj_ewald;          /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float           ewaldcoeff_lj;        /**< LJ-Ewald/PME coefficient                          */
 
-    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+    float           rcoulomb_sq;          /**< Coulomb cut-off squared                           */
 
-    float           rvdw_sq;          /**< VdW cut-off squared                               */
-    float           rvdw_switch;      /**< VdW switched cut-off                              */
-    float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rvdw_sq;              /**< VdW cut-off squared                               */
+    float           rvdw_switch;          /**< VdW switched cut-off                              */
+    float           rlist_sq;             /**< pair-list cut-off squared                         */
+    float           rlistRollingPrune_sq; /**< pruned pair-list cut-off squared xf           */
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    shift_consts_t  dispersion_shift;     /**< VdW shift dispersion constants           */
+    shift_consts_t  repulsion_shift;      /**< VdW shift repulsion constants            */
+    switch_consts_t vdw_switch;           /**< VdW switch constants                     */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
     int                    coulomb_tab_size;   /**< table size (s.t. it fits in texture cache) */
@@ -220,25 +271,30 @@ typedef struct cl_nbparam_params
  */
 typedef struct cl_plist
 {
-    int              na_c;        /**< number of atoms per cluster                  */
+    int              na_c;         /**< number of atoms per cluster                  */
 
-    int              nsci;        /**< size of sci, # of i clusters in the list     */
-    int              sci_nalloc;  /**< allocation size of sci                       */
-    cl_mem           sci;         /**< list of i-cluster ("super-clusters").
-                                       It contains elements of type nbnxn_sci_t     */
+    int              nsci;         /**< size of sci, # of i clusters in the list     */
+    int              sci_nalloc;   /**< allocation size of sci                       */
+    cl_mem           sci;          /**< list of i-cluster ("super-clusters").
+                                        It contains elements of type nbnxn_sci_t     */
 
-    int              ncj4;        /**< total # of 4*j clusters                      */
-    int              cj4_nalloc;  /**< allocation size of cj4                       */
-    cl_mem           cj4;         /**< 4*j cluster list, contains j cluster number and
-                                       index into the i cluster list.
-                                       It contains elements of type nbnxn_cj4_t     */
-    cl_mem           excl;        /**< atom interaction bits
-                                       It contains elements of type nbnxn_excl_t    */
-    int              nexcl;       /**< count for excl                               */
-    int              excl_nalloc; /**< allocation size of excl                      */
+    int              ncj4;         /**< total # of 4*j clusters                      */
+    int              cj4_nalloc;   /**< allocation size of cj4                       */
+    cl_mem           cj4;          /**< 4*j cluster list, contains j cluster number and
+                                        index into the i cluster list.
+                                        It contains elements of type nbnxn_cj4_t     */
+    int              nimask;       /**< # of 4*j clusters * # of warps               */
+    int              imask_nalloc; /**< allocation size of imask                     */
+    cl_mem           imask;        /**< imask for 2 warps for each 4*j cluster group */
+    cl_mem           excl;         /**< atom interaction bits
+                                        It contains elements of type nbnxn_excl_t    */
+    int              nexcl;        /**< count for excl                               */
+    int              excl_nalloc;  /**< allocation size of excl                      */
 
-    cl_bool          bDoPrune;    /**< true if pair-list pruning needs to be
-                                       done during the  current step                */
+    /* parameter+variables for normal and rolling pruning */
+    bool             needToPrune;            /**< true for the first kernel pass */
+    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
+    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
 }cl_plist_t;
 
 
@@ -250,20 +306,26 @@ typedef struct cl_plist
  */
 typedef struct cl_timers
 {
-    cl_event atdat;             /**< event for atom data transfer (every PS step)                 */
+    cl_event atdat;              /**< event for atom data transfer (every PS step)                 */
 
-    cl_event nb_h2d[2];         /**< events for x/q H2D transfers (l/nl, every step)              */
+    cl_event nb_h2d[2];          /**< events for x/q H2D transfers (l/nl, every step)              */
 
-    cl_event nb_d2h_f[2];       /**< events for f D2H transfer (l/nl, every step)                 */
-    cl_event nb_d2h_fshift[2];  /**< events for fshift D2H transfer (l/nl, every step)            */
-    cl_event nb_d2h_e_el[2];    /**< events for e_el D2H transfer (l/nl, every step)              */
-    cl_event nb_d2h_e_lj[2];    /**< events for e_lj D2H transfer (l/nl, every step)              */
+    cl_event nb_d2h_f[2];        /**< events for f D2H transfer (l/nl, every step)                 */
+    cl_event nb_d2h_fshift[2];   /**< events for fshift D2H transfer (l/nl, every step)            */
+    cl_event nb_d2h_e_el[2];     /**< events for e_el D2H transfer (l/nl, every step)              */
+    cl_event nb_d2h_e_lj[2];     /**< events for e_lj D2H transfer (l/nl, every step)              */
 
-    cl_event pl_h2d_sci[2];     /**< events for pair-list sci H2D transfers (l/nl, every PS step) */
-    cl_event pl_h2d_cj4[2];     /**< events for pair-list cj4 H2D transfers (l/nl, every PS step) */
-    cl_event pl_h2d_excl[2];    /**< events for pair-list excl H2D transfers (l/nl, every PS step)*/
+    cl_event pl_h2d_sci[2];      /**< events for pair-list sci H2D transfers (l/nl, every PS step) */
+    cl_event pl_h2d_cj4[2];      /**< events for pair-list cj4 H2D transfers (l/nl, every PS step) */
+    cl_event pl_h2d_excl[2];     /**< events for pair-list excl H2D transfers (l/nl, every PS step)*/
+    cl_event pl_h2d_imask[2];    /**< events for pair-list imask H2D transfers (l/nl, every PS step)*/
 
-    cl_event nb_k[2];           /**< event for non-bonded kernels (l/nl, every step)              */
+    cl_event nb_k[2];            /**< event for non-bonded kernels (l/nl, every step)              */
+
+    bool     didPairlistH2D[2];  /**< tells if we timed a pair-list transfer */
+    cl_event prune_k[2];         /**< event for pruning kernel (every prune step) */
+    bool     didPrune[2];        /**< tells uf we timed pruning this (or previous step for rolling) and that the timings need to be accounted for */
+    bool     didRollingPrune[2]; /**< tells uf we timed pruning this (or previous step for rolling) and that the timings need to be accounted for */
 } cl_timers_t;
 
 /*! \internal
@@ -282,8 +344,9 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_noener_prune_ptr[eelOclNR][evdwOclNR];
     cl_kernel           kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
     ///@}
+    cl_kernel           kernel_pruneonly[ePruneNR]; /**< prune kernels, ePruneKind defined the kernel kinds */
 
-    bool bPrefetchLjParam; /**< true if prefetching fg i-atom LJ parameters should be used in the kernels */
+    bool                bPrefetchLjParam;           /**< true if prefetching fg i-atom LJ parameters should be used in the kernels */
 
     /**< auxiliary kernels implementing memset-like functions */
     ///@{
