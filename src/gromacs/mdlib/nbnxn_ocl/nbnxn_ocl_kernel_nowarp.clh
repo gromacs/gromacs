@@ -161,7 +161,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     float beta3                 = nbparam->ewald_beta*nbparam->ewald_beta*nbparam->ewald_beta;
 #endif
 #ifdef PRUNE_NBL
-    float rlist_sq              = nbparam->rlist_sq;
+    float rlist_sq              = nbparam->rlistOuter_sq;
 #endif
 
 #ifdef CALC_ENERGIES
