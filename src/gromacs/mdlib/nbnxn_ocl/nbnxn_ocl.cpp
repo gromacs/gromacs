@@ -40,6 +40,23 @@
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_mdlib
+ *
+ *  TODO (psz):
+ *  - Add a static const cl_uint c_pruneKernelWorkDim / c_nbnxnKernelWorkDim = 3;
+ *  - Rework the copying of OCL data structures done before every invocation of both
+ *    nb and prune kernels (using fillin_ocl_structures); also consider at the same
+ *    time calling clSetKernelArg only on the updated parameters (if tracking changed
+ *    parameters is feasible);
+ *  - Consider using the event_wait_list argument to clEnqueueNDRangeKernel to mark
+ *    dependencies on the kernel launched: e.g. the non-local nb kernel's dependency
+ *    on the misc_ops_and_local_H2D_done event could be bvetter expressed this way.
+ *
+ *  - Consider extracting common sections of the OpenCL and CUDA nbnxn logic, e.g:
+ *    - in nbnxn_gpu_launch_kernel_pruneonly() the pre- and post-kernel launch logic
+ *      is identical in the two implementations, so a 3-way split might allow sharing
+ *      code;
+ *    -
+ *
  */
 #include "gmxpre.h"
 
@@ -191,6 +208,24 @@ static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
     { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl"      }
 };
 
+/*! \brief Return a pointer to the prune kernel version to be executed at the current invocation. */
+static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[],
+                                          bool      needToPrune)
+{
+    cl_kernel  *kernelPtr;
+
+    if (needToPrune)
+    {
+        kernelPtr = &(kernel_pruneonly[epruneFirst]);
+    }
+    else
+    {
+        kernelPtr = &(kernel_pruneonly[epruneRolling]);
+    }
+    // TODO: consider creating the prune kernel object here to avoid a
+    // clCreateKernel for the rolling prune kernel if this is not needed.
+    return *kernelPtr;
+}
 
 /*! \brief Return a pointer to the kernel version to be executed at the current step.
  *  OpenCL kernel objects are cached in nb. If the requested kernel is not
@@ -284,28 +319,31 @@ static inline int calc_shmem_required(int  vdwType,
  *  The device can't use the same data structures as the host for two main reasons:
  *  - OpenCL restrictions (pointers are not accepted inside data structures)
  *  - some host side fields are not needed for the OpenCL kernels.
+ *
+ *  This function is called before the launch of both nbnxn and prune kernels.
  */
 static void fillin_ocl_structures(cl_nbparam_t        *nbp,
                                   cl_nbparam_params_t *nbparams_params)
 {
-    nbparams_params->coulomb_tab_scale = nbp->coulomb_tab_scale;
-    nbparams_params->coulomb_tab_size  = nbp->coulomb_tab_size;
-    nbparams_params->c_rf              = nbp->c_rf;
-    nbparams_params->dispersion_shift  = nbp->dispersion_shift;
-    nbparams_params->eeltype           = nbp->eeltype;
-    nbparams_params->epsfac            = nbp->epsfac;
-    nbparams_params->ewaldcoeff_lj     = nbp->ewaldcoeff_lj;
-    nbparams_params->ewald_beta        = nbp->ewald_beta;
-    nbparams_params->rcoulomb_sq       = nbp->rcoulomb_sq;
-    nbparams_params->repulsion_shift   = nbp->repulsion_shift;
-    nbparams_params->rlist_sq          = nbp->rlist_sq;
-    nbparams_params->rvdw_sq           = nbp->rvdw_sq;
-    nbparams_params->rvdw_switch       = nbp->rvdw_switch;
-    nbparams_params->sh_ewald          = nbp->sh_ewald;
-    nbparams_params->sh_lj_ewald       = nbp->sh_lj_ewald;
-    nbparams_params->two_k_rf          = nbp->two_k_rf;
-    nbparams_params->vdwtype           = nbp->vdwtype;
-    nbparams_params->vdw_switch        = nbp->vdw_switch;
+    nbparams_params->coulomb_tab_scale    = nbp->coulomb_tab_scale;
+    nbparams_params->coulomb_tab_size     = nbp->coulomb_tab_size;
+    nbparams_params->c_rf                 = nbp->c_rf;
+    nbparams_params->dispersion_shift     = nbp->dispersion_shift;
+    nbparams_params->eeltype              = nbp->eeltype;
+    nbparams_params->epsfac               = nbp->epsfac;
+    nbparams_params->ewaldcoeff_lj        = nbp->ewaldcoeff_lj;
+    nbparams_params->ewald_beta           = nbp->ewald_beta;
+    nbparams_params->rcoulomb_sq          = nbp->rcoulomb_sq;
+    nbparams_params->repulsion_shift      = nbp->repulsion_shift;
+    nbparams_params->rlist_sq             = nbp->rlist_sq;
+    nbparams_params->rvdw_sq              = nbp->rvdw_sq;
+    nbparams_params->rlistRollingPrune_sq = nbp->rlistRollingPrune_sq;
+    nbparams_params->rvdw_switch          = nbp->rvdw_switch;
+    nbparams_params->sh_ewald             = nbp->sh_ewald;
+    nbparams_params->sh_lj_ewald          = nbp->sh_lj_ewald;
+    nbparams_params->two_k_rf             = nbp->two_k_rf;
+    nbparams_params->vdwtype              = nbp->vdwtype;
+    nbparams_params->vdw_switch           = nbp->vdw_switch;
 }
 
 /*! \brief Waits for the commands associated with the input event to finish.
@@ -495,6 +533,12 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         }
     }
 
+    if (plist->needToPrune && (flags & GMX_FORCE_DYN_PRUNING))
+    {
+        /* Prunes for rlist and rlistprune, sets plist->needToPrune=false */
+        nbnxn_gpu_launch_kernel_pruneonly(nb, iloc, 1);
+    }
+
     if (plist->nsci == 0)
     {
         /* Don't launch an empty local kernel (is not allowed with OpenCL).
@@ -510,7 +554,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
                                     nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    plist->bDoPrune || always_prune);
+                                    (plist->needToPrune && !nb->timers->didPrune[iloc]) || always_prune);
 
     /* kernel launch config */
     local_work_size[0] = c_clSize;
@@ -549,7 +593,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 #endif
     if (debug)
     {
-        fprintf(debug, "GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
+        fprintf(debug, "Non-bonded GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
                 (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*c_numClPerSupercl,
@@ -654,6 +698,176 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     }
 #endif
 }
+
+
+/*! \brief Count pruning kernel time if it's been triggered
+ *
+ * \param[in] timers      structs with CUDA timer objects
+ * \param[inout] timings  GPU task timing data
+ * \param[in] iloc        interaction locality
+ */
+static void countPruneKernelTime(cl_timers_t         *timers,
+                                 gmx_wallclock_gpu_t *timings,
+                                 const int            iloc)
+{
+    if (!timers->didPrune[iloc] && !timers->didRollingPrune[iloc])
+    {
+        return;
+    }
+    // Both pruning kernel flavors can't have been timed
+    assert(timers->didPrune[iloc] != timers->didRollingPrune[iloc]);
+
+    double kernelTime = ocl_event_elapsed_ms(timers->prune_k + iloc);
+
+    if (timers->didPrune[iloc])
+    {
+        timings->pruneTime.c++;
+        timings->pruneTime.t += kernelTime;
+    }
+
+    if (timers->didRollingPrune[iloc])
+    {
+        timings->rollPruneTime.c++;
+        timings->rollPruneTime.t += kernelTime;
+    }
+}
+
+/*! Calculates the amount of shared memory required by the CUDA kernel in use. */
+static inline int calc_shmem_required_pruneonly(const int num_threads_z)
+{
+    int shmem;
+
+    /* i-atom x in shared memory */
+    shmem  = c_numClPerSupercl * c_clSize * sizeof(float)*4;
+    /* cj in shared memory, for each warp separately */
+    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    /* Warp vote, requires one uint per warp/32 threads per block.. */
+    shmem += sizeof(cl_uint) * 2*num_threads_z;
+
+    return shmem;
+}
+
+void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
+                                       int                    iloc,
+                                       int                    numParts)
+{
+    cl_int               cl_error;
+    size_t               local_work_size[3], global_work_size[3];
+
+    cl_atomdata_t       *adat    = nb->atdat;
+    cl_nbparam_t        *nbp     = nb->nbparam;
+    cl_plist_t          *plist   = nb->plist[iloc];
+    cl_timers_t         *t       = nb->timers;
+    cl_command_queue     stream  = nb->stream[iloc];
+    bool                 bDoTime = nb->bDoTime;
+
+    cl_uint              arg_no;
+    cl_nbparam_params_t  nbparams_params;
+
+
+    if (plist->needToPrune)
+    {
+        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+
+        /* Set rollingPruningNumParts to signal that it is not set */
+        plist->rollingPruningNumParts = 0;
+        plist->rollingPruningPart     = 0;
+    }
+    else
+    {
+        if (plist->rollingPruningNumParts == 0)
+        {
+            plist->rollingPruningNumParts = numParts;
+        }
+        else
+        {
+            GMX_ASSERT(numParts == plist->rollingPruningNumParts, "It is not allowed to change numParts in between list generation steps");
+        }
+    }
+
+    /* Use a local variable for part and update in plist, so we can return here
+     * without duplicating the part increment code.
+     */
+    int part = plist->rollingPruningPart;
+
+    plist->rollingPruningPart++;
+    if (plist->rollingPruningPart >= plist->rollingPruningNumParts)
+    {
+        plist->rollingPruningPart = 0;
+    }
+
+    /* Don't launch the kernel if there is no work to do (not allowed with CUDA) */
+    if (plist->nsci <= part)
+    {
+        return;
+    }
+
+    /* Kernel launch config:
+     * - The thread block dimensions match the size of i-clusters, j-clusters,
+     *   and j-cluster concurrency, in x, y, and z, respectively.
+     * - The 1D block-grid contains as many blocks as super-clusters.
+     */
+    int       numSciInPart  = (plist->nsci - part)/numParts;
+    int       num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e);
+    cl_kernel pruneKernel   = selectPruneKernel(nb->kernel_pruneonly, plist->needToPrune);
+
+    /* kernel launch config */
+    local_work_size[0] = c_clSize;
+    local_work_size[1] = c_clSize;
+    local_work_size[2] = num_threads_z;
+
+    global_work_size[0] = numSciInPart * local_work_size[0];
+    global_work_size[1] = 1 * local_work_size[1];
+    global_work_size[2] = 1 * local_work_size[2];
+
+    validate_global_work_size(global_work_size, 3, nb->dev_info);
+ 
+    int shmem = calc_shmem_required_pruneonly(num_threads_z);
+
+    if (debug)
+    {
+        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
+                "\tGlobal work size: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %d\n",
+                (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
+                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*c_numClPerSupercl,
+                c_numClPerSupercl, plist->na_c, shmem);
+    }
+
+    fillin_ocl_structures(nbp, &nbparams_params);
+
+    arg_no   = 0;
+    cl_error = CL_SUCCESS;
+
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(nbparams_params), &(nbparams_params));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(adat->xq));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(adat->shift_vec));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(plist->sci));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(plist->cj4));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(cl_mem), &(plist->imask));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(int), &(numParts));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, sizeof(int), &(part));
+    cl_error |= clSetKernelArg(pruneKernel, arg_no++, shmem, NULL);
+    assert(cl_error == CL_SUCCESS);
+
+    cl_error = clEnqueueNDRangeKernel(stream, pruneKernel, 3,
+                                      NULL, global_work_size, local_work_size,
+                                      0, NULL, bDoTime ? &(t->prune_k[iloc]) : NULL);
+    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
+
+    if (plist->needToPrune)
+    {
+        plist->needToPrune         = false;
+        /* Mark that pruning has been done */
+        nb->timers->didPrune[iloc] = true;
+    }
+    else
+    {
+        /* Mark that rolling pruning has been done */
+        nb->timers->didRollingPrune[iloc] = true;
+    }
+}
+
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
@@ -838,12 +1052,12 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         if (LOCAL_I(iloc))
         {
             timings->nb_c++;
-            timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
+            timings->ktime[plist->needToPrune ? 1 : 0][bCalcEner ? 1 : 0].c += 1;
         }
 
         /* kernel timings */
 
-        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
+        timings->ktime[plist->needToPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
             ocl_event_elapsed_ms(timers->nb_k + iloc);
 
         /* X/q H2D and F D2H timings */
@@ -854,7 +1068,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_lj   + iloc);
 
         /* only count atdat and pair-list H2D at pair-search step */
-        if (plist->bDoPrune)
+        if (timers->didPairlistH2D[iloc])
         {
             /* atdat transfer timing (add only once, at local F wait) */
             if (LOCAL_A(aloc))
@@ -868,7 +1082,19 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
                 ocl_event_elapsed_ms(timers->pl_h2d_cj4     + iloc) +
                 ocl_event_elapsed_ms(timers->pl_h2d_excl    + iloc);
 
+            /* Clear the timing flag for the next step */
+            timers->didPairlistH2D[iloc] = false;
         }
+        /* Count the pruning kernel times for bo`h cases as this is
+           the only point where we know without checking or sync-ing
+           that tasks the prune tasks in both streams have completed
+           (due to having waiting for the force D2H).
+           - 1st pass: accounting for the kernel run during the current step;
+           - rolling:  accounting for the kernel run at the previous step.
+           */
+        countPruneKernelTime(timers, timings, iloc);
+        /* Clear both pruning flags instead checking which one to set. */
+        timers->didPrune[iloc] = timers->didRollingPrune[iloc] = false;
     }
 
     /* add up energies and shift forces (only once at local F wait) */
@@ -891,8 +1117,11 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         }
     }
 
-    /* turn off pruning (doesn't matter if this is pair-search step or not) */
-    plist->bDoPrune = false;
+    /* turn off pruning (doesn't matter if this is pair-search step or not)
+     * FIXME: consider doing this once regardless of whether separate prune
+     *        kernels are used or not.
+     */
+    plist->needToPrune = false;
 
 }
 
