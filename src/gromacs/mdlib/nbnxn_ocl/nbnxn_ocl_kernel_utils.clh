@@ -112,7 +112,8 @@ typedef struct cl_nbparam_params
 
     float           rvdw_sq;          /**< VdW cut-off squared                               */
     float           rvdw_switch;      /**< VdW switched cut-off                              */
-    float           rlist_sq;         /**< pair-list cut-off squared                         */
+    float           rlistOuter_sq;    /**< Full, outer pair-list cut-off squared             */
+    float           rlistInner_sq;    /**< Inner, dynamic pruned pair-list cut-off squared  XXX: this is only needed in the pruning kernels, but for now we also pass it to the nonbondeds */
 
     shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
