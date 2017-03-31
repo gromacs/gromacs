@@ -34,19 +34,22 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in integrationtests.h.
+ * Implements classes in stdiohelper.h.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
 #include "gmxpre.h"
 
-#include "integrationtests.h"
+#include "stdiohelper.h"
 
-#include <stdio.h>
+#include <cerrno>
+#include <cstdio>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textwriter.h"
+
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -54,21 +57,13 @@ namespace test
 {
 
 /********************************************************************
- * IntegrationTestFixture
+ * StdioTestHelper
  */
 
-IntegrationTestFixture::IntegrationTestFixture()
-{
-}
-
-IntegrationTestFixture::~IntegrationTestFixture()
-{
-}
-
 void
-IntegrationTestFixture::redirectStringToStdin(const char* theString)
+StdioTestHelper::redirectStringToStdin(const char *theString)
 {
-    std::string fakeStdin("fake-stdin");
+    const std::string fakeStdin = fileManager_.getTemporaryFilePath(".stdin");
     gmx::TextWriter::writeFileFromString(fakeStdin, theString);
     if (nullptr == std::freopen(fakeStdin.c_str(), "r", stdin))
     {
