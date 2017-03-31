@@ -105,3 +105,98 @@ void done_frame(t_trxframe *frame)
     sfree(frame->v);
     sfree(frame->f);
 }
+
+void gmx::trajectory::trxframe_deleter(t_trxframe* f)
+{
+    // Must only free memory allocated.
+    if (f->bX)
+    {
+        sfree(f->x);
+    }
+    if (f->bV)
+    {
+        sfree(f->v);
+    }
+    if (f->bF)
+    {
+        sfree(f->f);
+    }
+    if (f->bTitle)
+    {
+        delete f->title;
+    }
+    if (f->atoms)
+    {
+        done_atom(f->atoms);
+        delete f->atoms;
+    }
+    if (f->bIndex)
+    {
+        sfree(f->index);
+    }
+    delete f;
+};
+
+std::unique_ptr<t_trxframe, void(*)(t_trxframe*)> gmx::trajectory::trxframe_copy(const t_trxframe &frame)
+{
+    // Copy construct the trajectory frame struct.
+    // std::make_unique not available until C++14, but we probably want a
+    // custom deleter anyway.
+    std::unique_ptr<t_trxframe, void(*)(t_trxframe*)> frame_copy(nullptr, &trxframe_deleter);
+    frame_copy.reset(new t_trxframe(frame));
+
+    // Allocate memory and copy the available member arrays.
+    // Allow for addition of non-default copy constructor with
+    // deep copy by checking whether arrays are distinct non-null addresses.
+    // Note that struct t_trxframe definition is in trajectoryframe.h and there is no other documented interface to member data
+    if (frame.bX && frame.x && (!frame_copy->x || frame_copy->x == frame.x))
+    {
+        // allocate new memory and perform copy
+        snew(frame_copy->x, frame.natoms);
+        for (auto i(0); i < frame.natoms; ++i)
+        {
+            std::copy(std::begin(frame.x[i]), std::end(frame.x[i]), frame_copy->x[i]);
+        }
+        frame_copy->bX = true;
+    }
+    else
+    {
+        frame_copy->bX = false;
+    }
+
+    if (frame.bV && frame.v && (!frame_copy->v || frame.v == frame_copy->v))
+    {
+        snew(frame_copy->v, frame.natoms);
+        for (auto i(0); i < frame.natoms; ++i)
+        {
+            std::copy(std::begin(frame.v[i]), std::end(frame.v[i]), frame_copy->v[i]);
+        }
+        frame_copy->bV = true;
+    }
+    else
+    {
+        frame_copy->bV = false;
+    }
+
+    if (frame.bF && frame.f && (!frame_copy->f || frame.f == frame_copy->f))
+    {
+        snew(frame_copy->f, frame.natoms);
+        for (auto i(0); i < frame.natoms; ++i)
+        {
+            std::copy(std::begin(frame.f[i]), std::end(frame.f[i]), frame_copy->f[i]);
+        }
+        frame_copy->bF = true;
+    }
+    else
+    {
+        frame_copy->bF = false;
+    }
+    // TODO: this is not a complete copy... missing atoms, title, index.
+    frame_copy->bTitle = false;
+    frame_copy->bAtoms = false;
+    frame_copy->bIndex = false;
+    // Does matrix have copy constructor and deleter? Defer for now...
+    frame_copy->bBox = false;
+
+    return frame_copy;
+}
