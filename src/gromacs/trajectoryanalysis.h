@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -273,6 +273,8 @@
  * \brief
  * Public API convenience header for trajectory analysis framework
  *
+ * Declares gmx::trajectoryanalysis namespace
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
@@ -291,5 +293,18 @@
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
+/*! \brief Trajectory Analysis Framework
+ *
+ * Contains runners, modules, and data structures
+ * \ingroup module_trajectoryanalysis
+ */
+namespace trajectoryanalysis
+{
+
+} // end namespace trajectoryanalysis
+} // end namespace gmx
 
 #endif
