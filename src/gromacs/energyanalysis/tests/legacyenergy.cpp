@@ -49,13 +49,11 @@
 #include <string>
 
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/utility/filestream.h"
-#include "gromacs/utility/path.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
-#include "testutils/refdata.h"
+#include "testutils/stdiohelper.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
 namespace gmx
@@ -65,34 +63,22 @@ namespace test
 namespace
 {
 
-class DhdlTest : public IntegrationTestFixture
+class DhdlTest : public CommandLineTestBase
 {
     public:
-        DhdlTest() : data_(), checker_(data_.rootChecker()) {}
-
         void runTest()
         {
-            CommandLine caller;
-            caller.append("energy");
+            auto &cmdline = commandLine();
+            cmdline.append("energy");
 
-            caller.addOption("-s", fileManager_.getInputFilePath("dhdl.tpr"));
-            caller.addOption("-f", fileManager_.getInputFilePath("dhdl.edr"));
+            setInputFile("-s", "dhdl.tpr");
+            setInputFile("-f", "dhdl.edr");
+            setOutputFile("-odh", "dhdl.xvg", XvgMatch());
 
-            std::string xvgFileName = fileManager_.getTemporaryFilePath("dhdl.xvg");
-            caller.addOption("-odh", xvgFileName);
+            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
-            EXPECT_EQ(0, gmx_energy(caller.argc(), caller.argv()));
-
-            EXPECT_TRUE(Path::exists(xvgFileName));
-            TextInputFile    xvgFile(xvgFileName);
-            XvgMatchSettings settings;
-            auto             outputFilesChecker = checker_.checkCompound("OutputFiles", "Files");
-            auto             fileChecker        = outputFilesChecker.checkCompound("File", "-o");
-            checkXvgFile(&xvgFile, &fileChecker, settings);
+            checkOutputFiles();
         }
-
-        TestReferenceData    data_;
-        TestReferenceChecker checker_;
 };
 
 TEST_F(DhdlTest, ExtractDhdl)
@@ -100,34 +86,23 @@ TEST_F(DhdlTest, ExtractDhdl)
     runTest();
 }
 
-class EnergyTest : public IntegrationTestFixture
+class EnergyTest : public CommandLineTestBase
 {
     public:
-        EnergyTest() : data_(), checker_(data_.rootChecker()) {}
-
         void runTest(const char *stringForStdin)
         {
-            CommandLine caller;
-            caller.append("energy");
+            auto &cmdline = commandLine();
+            cmdline.append("energy");
 
-            caller.addOption("-f", fileManager_.getInputFilePath("ener.edr"));
+            setInputFile("-f", "ener.edr");
+            setOutputFile("-o", "energy.xvg", XvgMatch());
 
-            std::string xvgFileName = fileManager_.getTemporaryFilePath("energy.xvg");
-            caller.addOption("-o", xvgFileName);
+            StdioTestHelper stdioHelper(&fileManager());
+            stdioHelper.redirectStringToStdin(stringForStdin);
+            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
-            redirectStringToStdin(stringForStdin);
-            EXPECT_EQ(0, gmx_energy(caller.argc(), caller.argv()));
-
-            EXPECT_TRUE(Path::exists(xvgFileName));
-            TextInputFile    xvgFile(xvgFileName);
-            XvgMatchSettings settings;
-            auto             outputFilesChecker = checker_.checkCompound("OutputFiles", "Files");
-            auto             fileChecker        = outputFilesChecker.checkCompound("File", "-o");
-            checkXvgFile(&xvgFile, &fileChecker, settings);
+            checkOutputFiles();
         }
-
-        TestReferenceData    data_;
-        TestReferenceChecker checker_;
 };
 
 TEST_F(EnergyTest, ExtractEnergy)
@@ -145,86 +120,52 @@ TEST_F(EnergyTest, ExtractEnergyMixed)
     runTest("Pressu\n7\nbox-z\nvol\n");
 }
 
-class ViscosityTest : public IntegrationTestFixture
+class ViscosityTest : public CommandLineTestBase
 {
     public:
-        ViscosityTest() : data_(), checker_(data_.rootChecker()) {}
-
-        std::string addFileToTest(CommandLine *caller,
-                                  const char  *optionName,
-                                  const char  *outputFileName)
+        void runTest()
         {
-            std::string xvgFileName = fileManager_.getTemporaryFilePath(outputFileName);
-            caller->addOption(optionName, xvgFileName);
-            return xvgFileName;
-        }
-
-        void runTest(const char *optionName,
-                     const char *outputFileName)
-        {
-            CommandLine caller;
-            caller.append("energy");
-
-            caller.addOption("-f", fileManager_.getInputFilePath("ener.edr"));
-            caller.addOption("-vis", fileManager_.getTemporaryFilePath("visco.xvg"));
-
-            std::string xvgFileNameToTest;
+            auto &cmdline = commandLine();
+            setInputFile("-f", "ener.edr");
+            setOutputFile("-vis", "visco.xvg", NoTextMatch());
+            setOutputFile("-o", "energy.xvg", NoTextMatch());
 
             /* -vis can write a lot of non-conditional output files,
                 so we use temporary paths to clean up files that are
                 not the ones being tested in this test */
-            if (0 == std::strcmp(optionName, "-evisco"))
+            if (!cmdline.contains("-evisco"))
             {
-                xvgFileNameToTest = addFileToTest(&caller, optionName, outputFileName);
+                setOutputFile("-evisco", "evisco.xvg", NoTextMatch());
             }
-            else
+            if (!cmdline.contains("-eviscoi"))
             {
-                caller.addOption("-evisco", fileManager_.getTemporaryFilePath("evisco"));
+                setOutputFile("-eviscoi", "eviscoi.xvg", NoTextMatch());
             }
-            if (0 == std::strcmp(optionName, "-eviscoi"))
+            if (!cmdline.contains("-corr"))
             {
-                xvgFileNameToTest = addFileToTest(&caller, optionName, outputFileName);
-            }
-            else
-            {
-                caller.addOption("-eviscoi", fileManager_.getTemporaryFilePath("eviscoi"));
-            }
-            if (0 == std::strcmp(optionName, "-corr"))
-            {
-                xvgFileNameToTest = addFileToTest(&caller, optionName, outputFileName);
-            }
-            else
-            {
-                caller.addOption("-corr", fileManager_.getTemporaryFilePath("enecorr"));
+                setOutputFile("-corr", "corr.xvg", NoTextMatch());
             }
 
-            caller.addOption("-o", fileManager_.getTemporaryFilePath("energy"));
+            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
-            EXPECT_EQ(0, gmx_energy(caller.argc(), caller.argv()));
-
-            EXPECT_TRUE(Path::exists(xvgFileNameToTest));
-            TextInputFile    xvgFile(xvgFileNameToTest);
-            XvgMatchSettings settings;
-            settings.tolerance = relativeToleranceAsFloatingPoint(1e-4, 1e-5);
-            auto             outputFilesChecker = checker_.checkCompound("OutputFiles", "Files");
-            auto             fileChecker        = outputFilesChecker.checkCompound("File", "-o");
-            checkXvgFile(&xvgFile, &fileChecker, settings);
+            checkOutputFiles();
         }
-
-        TestReferenceData    data_;
-        TestReferenceChecker checker_;
 };
 
 TEST_F(ViscosityTest, EinsteinViscosity)
 {
-    runTest("-evisco", "evisco.xvg");
+    auto tolerance = relativeToleranceAsFloatingPoint(1e-4, 1e-5);
+    setOutputFile("-evisco", "evisco.xvg", XvgMatch().tolerance(tolerance));
+    runTest();
 }
 
 TEST_F(ViscosityTest, EinsteinViscosityIntegral)
 {
-    runTest("-eviscoi", "eviscoi.xvg");
+    auto tolerance = relativeToleranceAsFloatingPoint(1e-4, 1e-5);
+    setOutputFile("-eviscoi", "eviscoi.xvg", XvgMatch().tolerance(tolerance));
+    runTest();
 }
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

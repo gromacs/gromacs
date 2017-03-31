@@ -41,13 +41,13 @@ include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     conftest.cpp
-    integrationtests.cpp
     interactivetest.cpp
     loggertest.cpp
     mpi-printer.cpp
     mpitest.cpp
     refdata.cpp
     refdata-xml.cpp
+    stdiohelper.cpp
     stringtest.cpp
     testasserts.cpp
     testfilemanager.cpp

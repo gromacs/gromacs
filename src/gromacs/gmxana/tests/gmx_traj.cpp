@@ -45,38 +45,29 @@
 #include "gromacs/gmxana/gmx_ana.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
+#include "testutils/stdiohelper.h"
+#include "testutils/textblockmatchers.h"
 
 namespace
 {
 
-class GmxTraj : public gmx::test::IntegrationTestFixture,
+class GmxTraj : public gmx::test::CommandLineTestBase,
                 public ::testing::WithParamInterface<const char *>
 {
     public:
-        GmxTraj() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
-                    xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
+        void runTest(const char *fileName)
         {
+            auto &cmdline = commandLine();
+            cmdline.append("traj");
+            setInputFile("-s", "spc2.gro");
+            setInputFile("-f", fileName);
+            setOutputFile("-ox", "spc2.xvg", gmx::test::NoTextMatch());
+
+            gmx::test::StdioTestHelper stdioHelper(&fileManager());
+            stdioHelper.redirectStringToStdin("0\n");
+
+            ASSERT_EQ(0, gmx_traj(cmdline.argc(), cmdline.argv()));
         }
-
-        int runTest(const char *fileName)
-        {
-            gmx::test::CommandLine caller;
-            caller.append("traj");
-
-            caller.addOption("-s",  groFileName);
-            caller.addOption("-ox", xvgFileName);
-
-            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
-            caller.addOption("-f", inputTrajectoryFileName);
-
-            redirectStringToStdin("0\n");
-
-            return gmx_traj(caller.argc(), caller.argv());
-        }
-
-        std::string groFileName;
-        std::string xvgFileName;
 };
 
 /* TODO These tests are actually not very effective, because gmx-traj
