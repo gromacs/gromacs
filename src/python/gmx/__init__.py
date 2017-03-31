@@ -1,7 +1,8 @@
+#!/usr/bin/env/python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,15 +33,37 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    trajectoryframe.cpp
-    )
+"""
+Provide Python access to trajectory files via the
+Trajectory Analysis Framework.
 
-gmx_install_headers(
-    energy.h
-    trajectoryframe.h
-    )
+Example usage:
 
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+   import gmx
+
+   # Create the Python proxy to the caching gmx::TrajectoryAnalysisModule object.
+   mytraj = gmx.io.TrajectoryFile(filename, 'r')
+
+   # Implicitly create the Runner object and get an iterator based on selection.
+   frames = mytraj.select(...)
+
+   # Iterating on the module advances the Runner.
+   # Since the Python interpreter is explicitly asking for data,
+   # the runner must now be initialized and begin execution.
+   # mytraj.runner.initialize(context, options)
+   # mytraj.runner.next()
+   next(frames)
+
+   # Subsequent iterations only need to step the runner and return a frame.
+   for frame in frames:
+       # do some stuff
+
+   # The generator yielding frames has finished, so the runner has been released.
+   # The module caching the frames still exists and could still be accessed or
+   # given to a new runner with a new selection.
+   for frame in mytraj.select(...):
+       # do some other stuff
+"""
+
+import io
+import core
