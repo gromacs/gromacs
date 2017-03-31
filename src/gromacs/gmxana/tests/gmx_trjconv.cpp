@@ -45,37 +45,34 @@
 #include "gromacs/gmxana/gmx_ana.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
+#include "testutils/stdiohelper.h"
+#include "testutils/textblockmatchers.h"
 
 namespace
 {
 
-class TrjconvWithIndexGroupSubset : public gmx::test::IntegrationTestFixture,
+class TrjconvWithIndexGroupSubset : public gmx::test::CommandLineTestBase,
                                     public ::testing::WithParamInterface<const char *>
 {
     public:
-        int runTest(const char *fileName)
+        void runTest(const char *fileName)
         {
-            gmx::test::CommandLine caller;
-            caller.append("trjconv");
+            auto &cmdline = commandLine();
+            cmdline.append("trjconv");
 
-            caller.addOption("-s", fileManager_.getInputFilePath("spc2.gro"));
+            setInputFile("-s", "spc2.gro");
+            setInputFile("-f", fileName);
+            setInputFile("-n", "spc2.ndx");
+            setOutputFile("-o", "spc-traj.tng", gmx::test::NoTextMatch());
 
-            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
-            caller.addOption("-f", inputTrajectoryFileName);
-
-            std::string ndxFileName = fileManager_.getInputFilePath("spc2.ndx");
-            caller.addOption("-n", ndxFileName);
-
-            caller.addOption("-o", fileManager_.getTemporaryFilePath("spc-traj.tng"));
-
-            redirectStringToStdin("SecondWaterMolecule\n");
+            gmx::test::StdioTestHelper stdioHelper(&fileManager());
+            stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
             /* TODO Ideally, we would then check that the output file
                has only 3 of the 6 atoms (which it does), but the
                infrastructure for doing that automatically is still
                being built. This would also fix the TODO below. */
-            return gmx_trjconv(caller.argc(), caller.argv());
+            ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
         }
 };
 /* TODO These tests are actually not very effective, because trjconv
