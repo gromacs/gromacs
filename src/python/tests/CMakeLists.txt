@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,15 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    trajectoryframe.cpp
-    )
+#gmx_add_unit_test(PythonApiUnitTests trajectoryanalysis-test
+#
+#                  $<TARGET_OBJECTS:analysisdata-test-shared>)
 
-gmx_install_headers(
-    energy.h
-    trajectoryframe.h
-    )
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+#add_executable(test_pywrappers ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
+#target_link_libraries(test_pywrappers core ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})

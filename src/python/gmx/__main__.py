@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,15 +33,44 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    trajectoryframe.cpp
-    )
+"""
+Provides the gmx.__main__() method for the gmx package main module.
+Defines behavior when module is invoked as a script or with
+``python -m gmx``
+"""
 
-gmx_install_headers(
-    energy.h
-    trajectoryframe.h
-    )
+import numpy
 
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+from .io import TrajectoryFile
+
+# Create the Python proxy to the caching gmx::TrajectoryAnalysisModule object.
+filename = 'em-vac.trr'
+mytraj = TrajectoryFile(filename, 'r')
+
+# Implicitly create the Runner object and get an iterator based on selection.
+#frames = mytraj.select(...)
+
+# Iterating on the module advances the Runner.
+# Since the Python interpreter is explicitly asking for data,
+# the runner must now be initialized and begin execution.
+# mytraj.runner.initialize(context, options)
+# mytraj.runner.next()
+frames = mytraj.select('not implemented')
+try:
+    frame = next(frames)
+    print(frame)
+    print(frame.x)
+    print("{} atoms in frame".format(frame.x.N))
+    print(numpy.array(frame.x, copy=False))
+except StopIteration:
+    print("no frames")
+
+# Subsequent iterations only need to step the runner and return a frame.
+for frame in frames:
+    print(frame)
+
+# The generator yielding frames has finished, so the runner has been released.
+# The module caching the frames still exists and could still be accessed or
+# given to a new runner with a new selection.
+#for frame in mytraj.select(...):
+#   # do some other stuff
