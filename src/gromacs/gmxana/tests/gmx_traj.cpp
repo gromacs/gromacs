@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,48 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \internal \file
  * \brief
- * Tests for the mdrun -rerun functionality
+ * Tests for gmx traj.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
 #include "config.h"
 
-#include <gtest/gtest.h>
-
-#include "gromacs/options/filenameoption.h"
+#include "gromacs/gmxana/gmx_ana.h"
 
 #include "testutils/cmdlinetest.h"
-
-#include "moduletest.h"
+#include "testutils/integrationtests.h"
 
 namespace
 {
 
-//! Test fixture for mdrun -rerun
-class MdrunRerun : public gmx::test::MdrunTestFixture,
-                   public ::testing::WithParamInterface<const char *>
+class GmxTraj : public gmx::test::IntegrationTestFixture,
+                public ::testing::WithParamInterface<const char *>
 {
+    public:
+        GmxTraj() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
+                    xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
+        {
+        }
+
+        int runTest(const char *fileName)
+        {
+            gmx::test::CommandLine caller;
+            caller.append("traj");
+
+            caller.addOption("-s",  groFileName);
+            caller.addOption("-ox", xvgFileName);
+
+            std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
+            caller.addOption("-f", inputTrajectoryFileName);
+
+            redirectStringToStdin("0\n");
+
+            return gmx_traj(caller.argc(), caller.argv());
+        }
+
+        std::string groFileName;
+        std::string xvgFileName;
 };
 
-/* Among other things, this test ensures mdrun can read a trajectory. */
-TEST_P(MdrunRerun, WithDifferentInputFormats)
+/* TODO These tests are actually not very effective, because gmx-traj
+ * can only return 0 or exit via gmx_fatal() (which currently also
+ * exits the test binary). So, "no XDR/TNG support in the binary"
+ * leads to the reading test appearing to pass. Still, no fatal error
+ * and no segfault is useful information while modifying such code. */
+
+TEST_P(GmxTraj, WithDifferentInputFormats)
 {
-    runner_.useEmptyMdpFile();
-    runner_.useTopGroAndNdxFromDatabase("spc2");
-    EXPECT_EQ(0, runner_.callGrompp());
-
-    std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
-
-    ::gmx::test::CommandLine rerunCaller;
-    rerunCaller.append("mdrun");
-    rerunCaller.addOption("-rerun", rerunFileName);
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    runTest(GetParam());
 }
 
 /*! \brief Helper array of input files present in the source repo
@@ -81,27 +95,17 @@ TEST_P(MdrunRerun, WithDifferentInputFormats)
  * molecules, which were generated via trjconv from the .gro
  * version. */
 const char *const trajectoryFileNames[] = {
-    "../../../gromacs/gmxana/tests/spc2-traj.trr",
+    "spc2-traj.trr",
 #if GMX_USE_TNG
-    "../../../gromacs/gmxana/tests/spc2-traj.tng",
+    "spc2-traj.tng",
 #endif
-    "../../../gromacs/gmxana/tests/spc2-traj.xtc",
-    "../../../gromacs/gmxana/tests/spc2-traj.gro",
-    "../../../gromacs/gmxana/tests/spc2-traj.pdb",
-    "../../../gromacs/gmxana/tests/spc2-traj.g96"
+    "spc2-traj.xtc",
+    "spc2-traj.gro",
+    "spc2-traj.pdb",
+    "spc2-traj.g96"
 };
-// TODO later. Find a better way to manage this file database and
-// these string arrays that index it
 
-INSTANTIATE_TEST_CASE_P(NoFatalErrorFrom,
-                        MdrunRerun,
-                            ::testing::ValuesIn(trajectoryFileNames));
-
-/*! \todo Add other tests for mdrun -rerun, e.g.
- *
- * - RerunReproducesRunWhenRunOnlyWroteEnergiesOnNeighborSearchSteps
- *   (e.g. do such a run, do a rerun, call gmxcheck)
- * - TpiExitsNormally (since it uses the -rerun machinery)
- */
+INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
+                        GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
 
 } // namespace
