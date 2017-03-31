@@ -1,7 +1,8 @@
+#!/usr/bin/env/python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,15 +33,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_libgromacs_sources(
-    trajectoryframe.cpp
-    )
+"""Provide Python access to Gromacs
 
-gmx_install_headers(
-    energy.h
-    trajectoryframe.h
-    )
+The gmx Python module provides an interface suitable for scripting Gromacs
+workflows, interactive use, or connectivity to external Python-based APIs.
+When using the module to control Gromacs tools or to build Gromacs toolchains,
 
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+
+"""
+
+import io
+import core
