@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <OutputFiles Name="Files">
-    <File Name="-o">
+    <File Name="-evisco">
       <XvgLegend Name="Legend">
         <String Name="XvgLegend"><![CDATA[
 title "Shear viscosity using Einstein relation"
@@ -126,5 +126,9 @@ TYPE xy
         </Sequence>
       </XvgData>
     </File>
+    <File Name="-vis"></File>
+    <File Name="-o"></File>
+    <File Name="-eviscoi"></File>
+    <File Name="-corr"></File>
   </OutputFiles>
 </ReferenceData>

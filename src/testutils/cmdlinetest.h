@@ -183,6 +183,9 @@ class CommandLine
         //! Returns the command line formatted as a single string.
         std::string toString() const;
 
+        //! Whether the command line contains the given option.
+        bool contains(const char *name) const;
+
     private:
         class Impl;
 

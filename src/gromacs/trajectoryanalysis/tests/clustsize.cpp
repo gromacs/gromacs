@@ -54,7 +54,6 @@
 #include "gromacs/utility/path.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/xvgtest.h"

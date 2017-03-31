@@ -227,6 +227,18 @@ std::string CommandLine::toString() const
     return CommandLineProgramContext(argc(), argv()).commandLine();
 }
 
+bool CommandLine::contains(const char *name) const
+{
+    for (int i = 0; i < impl_->argc_; ++i)
+    {
+        if (std::strcmp(arg(i), name) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 /********************************************************************
  * CommandLineTestHelper::Impl
  */
