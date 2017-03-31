@@ -24,6 +24,7 @@ For background on algorithms and implementations, see the
    cutoff-schemes
    mdrun-features
    mdrun-performance
+   managing-simulations
    mdp-options
    file-formats
    cmdline
