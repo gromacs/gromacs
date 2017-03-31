@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,11 +73,14 @@
  *    See \ref page_refdata for more details.
  *  - gmx::test::CommandLine and related classes (in cmdlinetest.h) provide
  *    utilities for constructing command line argument arrays for use in tests
- *    that invoke actual commands.
+ *    that invoke actual commands.  The same header also provides
+ *    gmx::test::CommandLineTestHelper and gmx::test::CommandLineTestBase
+ *    for easily creating tests that execute essentially full command-line
+ *    programs, including checking the output files produced.
  *  - gmx::test::StringTestBase provides a test fixture for tests that need to
  *    test long strings for correctness.
- *  - gmx::test::IntegrationTestFixture provides a test fixture for tests that
- *    execute legacy code where `stdin` reading etc. cannot be easily mocked.
+ *  - gmx::test::StdioTestHelper provides a helper class for tests that need to
+ *    execute legacy code where `stdin` reading cannot be easily mocked.
  *
  * Additionally, testinit.h and mpi-printer.h, and their corresponding source
  * files, provide functionality that is not visible on the API level: they
