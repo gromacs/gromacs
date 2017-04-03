@@ -413,11 +413,7 @@ static int decompose_frag(FILE                             *fplog,
                 }
             }
             pi->checkUse(mindata);
-            if (!pi->bUse())
-            {
-                pi = ptypes.erase(pi);
-            }
-            else
+            if (pi->bUse())
             {
                 if (nullptr != debug)
                 {
@@ -426,6 +422,10 @@ static int decompose_frag(FILE                             *fplog,
                             pi->nCopies());
                 }
                 pi++;
+            }
+            else
+            {            
+                pi = ptypes.erase(pi);
             }
         }
     }
@@ -476,7 +476,7 @@ static int decompose_frag(FILE                             *fplog,
     std::random_device              rd;
     std::mt19937                    gen(rd());
     std::uniform_int_distribution<> dis(0, nusemol-1);
-    for (int kk = 0; (kk < nBootStrap); kk++)
+    for (int kk = 0; kk < nBootStrap; kk++)
     {
         fprintf(stderr, "\rBootStrap %d", 1+kk);
         ata    = alloc_matrix(ptypes.size(), ptypes.size());
@@ -485,12 +485,12 @@ static int decompose_frag(FILE                             *fplog,
         double            **at_copy = alloc_matrix(ptypes.size(), nusemol);
         std::vector<double> x_copy;
         x_copy.resize(nusemol);
-        for (int ii = 0; (ii < nusemol); ii++)
+        for (int ii = 0; ii < nusemol; ii++)
         {
             // Pick random molecule uu out of stack
             int uu = dis(gen);
 
-            for (size_t jj = 0; (jj < ptypes.size()); jj++)
+            for (size_t jj = 0; jj < ptypes.size(); jj++)
             {
                 // Make row ii equal to uu in the original matrix
                 a_copy[ii][jj] = at_copy[jj][ii] = a[uu][jj];
@@ -509,18 +509,18 @@ static int decompose_frag(FILE                             *fplog,
             a0 = 0;
             do
             {
-                for (size_t i = 0; (i < ptypes.size()); i++)
+                for (size_t i = 0; i < ptypes.size(); i++)
                 {
                     atx[i] = 0;
-                    for (j = 0; (j < nusemol); j++)
+                    for (j = 0; j < nusemol; j++)
                     {
                         atx[i] += at_copy[i][j]*(x_copy[j]-a0);
                     }
                 }
-                for (size_t i = 0; (i < ptypes.size()); i++)
+                for (size_t i = 0; i < ptypes.size(); i++)
                 {
                     fpp[i] = 0;
-                    for (size_t j = 0; (j < ptypes.size()); j++)
+                    for (size_t j = 0; j < ptypes.size(); j++)
                     {
                         fpp[i] += ata[i][j]*atx[j];
                     }
@@ -529,10 +529,10 @@ static int decompose_frag(FILE                             *fplog,
                 chi2 = 0;
                 if (bZero)
                 {
-                    for (j = 0; (j < nusemol); j++)
+                    for (j = 0; j < nusemol; j++)
                     {
                         ax = a0;
-                        for (size_t i = 0; (i < ptypes.size()); i++)
+                        for (size_t i = 0; i < ptypes.size(); i++)
                         {
                             ax += fpp[i]*a_copy[j][i];
                         }
@@ -547,7 +547,8 @@ static int decompose_frag(FILE                             *fplog,
                 }
             }
             while (bZero && (fabs(da0) > 1e-5) && (niter < 1000));
-            for (size_t i = 0; (i < ptypes.size()); i++)
+            
+            for (size_t i = 0; i < ptypes.size(); i++)
             {
                 gmx_stats_add_point_ydy(ptypes[i].stats(), fpp[i], 0);
             }
@@ -557,49 +558,60 @@ static int decompose_frag(FILE                             *fplog,
         free_matrix(ata);
     }
     fprintf(stderr, "\n");
-    FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);
+    
+    FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);       
+    
+    std::vector<std::string> leg;
+    for (auto p = ptypes.begin(); p < ptypes.end(); ++p)
     {
-        std::vector<const char *> legend;
-        for (auto i = ptypes.begin(); (i < ptypes.end()); ++i)
-        {
-            legend.push_back(i->name().c_str());
-        }
-        xvgr_legend(xp, ptypes.size(), &legend[0], oenv);
+        leg.push_back(p->name());
     }
-
-    for (auto i = ptypes.begin(); (i < ptypes.end()); ++i)
+    std::vector<const char*> legend;
+    for (auto l = leg.begin(); l < leg.end(); ++l)
     {
-        int  result1, result2;
+        legend.push_back(l->c_str());
+    }
+    xvgr_legend(xp, legend.size(), legend.data(), oenv);
+
+    for (auto i = ptypes.begin(); i < ptypes.end(); ++i)
+    {
         real aver, sigma;
-        // Extract data from statistics
-        if ((estatsOK == (result1 = gmx_stats_get_average(i->stats(), &aver))) &&
-            (estatsOK == (result2 = gmx_stats_get_sigma(i->stats(), &sigma))))
+        if ((estatsOK == gmx_stats_get_average(i->stats(), &aver)) &&
+            (estatsOK == gmx_stats_get_sigma(i->stats(), &sigma)))
         {
-            pd.setPtypePolarizability( i->name().c_str(), aver, sigma);
-            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", i->name().c_str(), aver, sigma);
             int   nbins = 1+sqrt(nBootStrap);
-            real *my_x, *my_y;
-            gmx_stats_make_histogram(i->stats(), 0, &nbins, ehistoY, 1, &my_x, &my_y);
-            fprintf(xp, "@type xy\n");
-            for (int ll = 0; (ll < nbins); ll++)
+            real *x, *y;           
+            pd.setPtypePolarizability(i->name().c_str(), aver, sigma);
+            fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", i->name().c_str(), aver, sigma);           
+            if (estatsOK == gmx_stats_make_histogram(i->stats(), 0, &nbins, ehistoY, 1, &x, &y))
             {
-                fprintf(xp, "%.3f  %.3f\n", my_x[ll], my_y[ll]);
+                fprintf(xp, "@type xy\n");
+                for (int ll = 0; ll < nbins; ll++)
+                {
+                    fprintf(xp, "%.3f  %.3f\n", x[ll], y[ll]);
+                }
+                fprintf(xp, "&\n");
             }
-            fprintf(xp, "&\n");
-            free(my_x);
-            free(my_y);
+            else
+            {
+                fprintf(stderr, "Could not make histogram for %s\n",
+                        i->name().c_str());
+            }
+            free(x);
+            free(y);
         }
         else
         {
             fprintf(stderr, "Could not determine polarizability for %s\n",
                     i->name().c_str());
         }
+        gmx_stats_free(i->stats());
     }
     fclose(xp);
     if (bZero)
     {
         const char *null = (const char *)"0";
-        pd.addPtype( null, nullptr, null, a0, 0);
+        pd.addPtype(null, nullptr, null, a0, 0);
     }
     free_matrix(a);
     free_matrix(at);
