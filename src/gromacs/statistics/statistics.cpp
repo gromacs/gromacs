@@ -678,14 +678,6 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     {
         *nb = nbins;
     }
-    for (int i = 0; (i < nbins); i++)
-    {
-        if (nindex[i] > 0)
-        {
-            (*y)[i] /= nindex[i];
-        }
-    }
-
     sfree(nindex);
 
     return estatsOK;
