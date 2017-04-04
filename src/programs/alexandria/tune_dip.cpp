@@ -1054,7 +1054,7 @@ void OPtimization::print_results(FILE                   *fp,
         if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
             fprintf(fp, "%-4d copies for %4s\n", nbins, k->atomtype.c_str());
-            if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoX, 1, &x, &y) == estatsOK)
+            if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
             {
                 fprintf(hh, "@type xy\n");
                 for (int i = 0; i < nbins; i++)
