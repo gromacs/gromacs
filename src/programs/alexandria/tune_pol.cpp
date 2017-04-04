@@ -198,7 +198,7 @@ static void dump_csv(const alexandria::Poldata        &pd,
     for (auto mpi = mp.begin(); mpi < mp.end(); mpi++, j++)
     {
         iMolSelect ims = gms.status(mpi->getIupac());
-        if (imsTrain == ims)
+        if (imsIgnore != ims)
         {
             auto mci = mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());            
             fprintf(csv, "\"%d %s\",\"%s\",", nn, mpi->getMolname().c_str(), mpi->formula().c_str());
@@ -306,7 +306,7 @@ static int decompose_frag(FILE                             *fplog,
             auto mci        = mpi->SearchMolecularComposition(alex);
 
             bool bHaveComposition = mci != mpi->EndMolecularComposition();
-            bool bUseMol          = ((imsTrain == ims) && bPol && (pol > 0) &&
+            bool bUseMol          = ((imsIgnore != ims) && bPol && (pol > 0) &&
                                      bHaveComposition);
             if (nullptr != fplog)
             {

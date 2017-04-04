@@ -57,6 +57,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -610,10 +611,9 @@ int alex_bastat(int argc, char *argv[])
     int                              nfiles;
     char                           **fns;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm,
-                           sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, 
+                           asize(pa), pa, asize(desc), desc, 
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -629,8 +629,7 @@ int alex_bastat(int argc, char *argv[])
 
     MolSelect gms;
     gms.read(opt2fn("-sel", NFILE, fnm));
-    printf("There are %d molecules in the training group\n",
-           gms.count(imsTrain));
+    printf("There are %d molecules.\n", (gms.count(imsTrain) + gms.count(imsTest)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
@@ -654,7 +653,7 @@ int alex_bastat(int argc, char *argv[])
 
     for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if (gms.status(mpi->getIupac()) == imsTrain)
+        if (gms.status(mpi->getIupac()) != imsIgnore)
         {
             alexandria::MyMol mmi;
             int               i;
