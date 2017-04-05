@@ -104,6 +104,7 @@
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
@@ -5110,16 +5111,42 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
     {
         float imbalance = comm->load_max*numPpRanks/comm->load_sum - 1;
         lossFraction    = dd_force_imb_perf_loss(dd);
-        fprintf(stderr, "\n");
-        sprintf(buf,
-                " Load balancing based on %d %% of the MD step time\n"
-                " Average load imbalance: %.1f %%\n"
-                " Part of the total run time spent waiting due to load imbalance: %.1f %%\n",
-                static_cast<int>(dd_force_load_fraction(dd)*100 + 0.5),
-                imbalance*100,
-                lossFraction*100);
-        fprintf(fplog, "%s", buf);
-        fprintf(stderr, "%s", buf);
+
+        std::string msg         = "\n";
+        std::string dlbStateStr = "";
+
+        switch (dd->comm->dlbState)
+        {
+            case edlbsOffForever:
+                dlbStateStr = "permanently off due to user-input or performance loss observed";
+                break;
+            case edlbsOffCanTurnOn:
+                dlbStateStr = "off as no significant imbalance measured";
+                break;
+            case edlbsOffTemporarilyLocked:
+                dlbStateStr = "off temporarily (due to internal lock)";
+                break;
+            case edlbsOnCanTurnOff:
+                dlbStateStr = "on as significant imbalance measured";
+                break;
+            case edlbsOnForever:
+                dlbStateStr = "permanently on per user-request";
+                break;
+            default:
+                GMX_ASSERT(false, "Undocumented DLB state");
+        }
+
+        msg += " At the end of the run DLB was " + dlbStateStr + "\n";
+        msg += gmx::formatString(
+                    " Load balance computed based on %d %% of the MD step time\n"
+                    " Average load imbalance: %.1f %%\n"
+                    " Part of the total run time spent waiting due to load imbalance: %.1f %%\n",
+                    static_cast<int>(dd_force_load_fraction(dd)*100 + 0.5),
+                    imbalance*100,
+                    lossFraction*100);
+
+        fprintf(fplog, "%s", msg.c_str());
+        fprintf(stderr, "%s", msg.c_str());
     }
 
     /* Print during what percentage of steps the  load balancing was limited */
