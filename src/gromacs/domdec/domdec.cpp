@@ -5121,16 +5121,45 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
     {
         float imbalance = comm->load_max*numPpRanks/comm->load_sum - 1;
         lossFraction    = dd_force_imb_perf_loss(dd);
-        fprintf(stderr, "\n");
-        sprintf(buf,
-                " Load balancing based on %d %% of the MD step time\n"
-                " Average load imbalance: %.1f %%\n"
-                " Part of the total run time spent waiting due to load imbalance: %.1f %%\n",
-                static_cast<int>(dd_force_load_fraction(dd)*100 + 0.5),
-                imbalance*100,
-                lossFraction*100);
-        fprintf(fplog, "%s", buf);
-        fprintf(stderr, "%s", buf);
+
+        std::string msg         = "\n Dynamic load balancing report:\n";
+        std::string dlbStateStr = "";
+
+        switch (dd->comm->dlbState)
+        {
+            case edlbsOffUser:
+                dlbStateStr = "DLB was off during the run per user request.";
+                break;
+            case edlbsOffForever:
+                /* Currectly this can happen due to performance loss observed, cell size
+                 * limitations or incompatibility with other settings observed during
+                 * determineInitialDlbState(). */
+                dlbStateStr = "DLB got disabled because it was unsuitable to use.";
+                break;
+            case edlbsOffCanTurnOn:
+                dlbStateStr = "DLB was off during the run due to low measured imbalance.";
+                break;
+            case edlbsOffTemporarilyLocked:
+                dlbStateStr = "DLB was locked at the end of the run due to unfinished PP-PME balancing.";
+                break;
+            case edlbsOnCanTurnOff:
+                dlbStateStr = "DLB was turned on during the run due to measured imbalance.";
+                break;
+            case edlbsOnUser:
+                dlbStateStr = "DLB was permanently on during the run per user request.";
+                break;
+            default:
+                GMX_ASSERT(false, "Undocumented DLB state");
+        }
+
+        msg += " " + dlbStateStr + "\n";
+        msg += gmx::formatString(" Average load imbalance: %.1f%%.\n", imbalance*100);
+        msg += gmx::formatString(" The balanceable part of the MD step is %d%%, load imbalance is computed from this.\n",
+                                 static_cast<int>(dd_force_load_fraction(dd)*100 + 0.5));
+        msg += gmx::formatString(" Part of the total run time spent waiting due to load imbalance: %.1f%%.\n",
+                                 lossFraction*100);
+        fprintf(fplog, "%s", msg.c_str());
+        fprintf(stderr, "%s", msg.c_str());
     }
 
     /* Print during what percentage of steps the  load balancing was limited */
