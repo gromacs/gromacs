@@ -568,38 +568,6 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger  &mdlog,
 #endif
 }
 
-/* Return 0 if none of the GPU (per node) are shared among ranks.
- *
- * Sharing GPUs among multiple ranks is possible when the user passes
- * GPU IDs. Here we check for sharing and return a non-zero value when
- * this is detected. Note that the return value represents the number of
- * PP rank pairs that share a device.
- */
-/*
-   int gmx_count_gpu_dev_shared(const GpuTaskManger &gpuTasks)
-   {
-    // FIXME for multiple GPU tasks per rank
-    int      same_count    = 0;
-    int      ngpu          = gpu_opt->n_dev_use;
-
-    if (gpu_opt->bUserSet)
-    {
-        int      i, j;
-
-        for (i = 0; i < ngpu - 1; i++)
-        {
-            for (j = i + 1; j < ngpu; j++)
-            {
-                same_count      += (gpu_opt->dev_use[i] ==
-                                    gpu_opt->dev_use[j]);
-            }
-        }
-    }
-
-    return same_count;
-   }
- */
-
 static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
 #if GMX_LIB_MPI
