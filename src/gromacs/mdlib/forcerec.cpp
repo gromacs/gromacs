@@ -2794,7 +2794,7 @@ void init_forcerec(FILE                *fp,
         fr->forceBufferForDirectVirialContributions = new std::vector<gmx::RVec>;
     }
 
-    fr->forceBufferIntermediate = new std::vector<gmx::RVec>; //TODO add proper conditionals
+    fr->forceBufferIntermediate = new PaddedRVecVector; //TODO add proper conditionals
 
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))

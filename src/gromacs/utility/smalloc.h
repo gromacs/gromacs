@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -175,6 +175,22 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
 void *save_calloc_aligned(const char *name, const char *file, int line,
                           size_t nelem, size_t elsize, size_t alignment);
 /*! \brief
+ * \Gromacs wrapper for allocating zero-initialized page-boundary aligned memory.
+ *
+ * \param[in] name   Variable name identifying the allocation.
+ * \param[in] file   Source code file where the allocation originates from.
+ * \param[in] line   Source code line where the allocation originates from.
+ * \param[in] nelem  Number of elements to allocate.
+ * \param[in] elsize Number of bytes per element.
+ * \returns   Pointer to the allocated space, aligned at page boundary.
+ *
+ * This should generally be called through snew_aligned_page(), not directly.
+ *
+ * The returned pointer should only be freed with a call to save_free_aligned().
+ */
+void *save_calloc_aligned_page(const char *name, const char *file, int line,
+                               size_t nelem, size_t elsize);
+/*! \brief
  * \Gromacs wrapper for freeing aligned memory.
  *
  * \param[in] name   Variable name identifying the deallocation.
@@ -262,6 +278,17 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
 #endif
     ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
 }
+/** C++ helper for snew_aligned_page(). */
+template <typename T> static inline
+void gmx_snew_aligned_page_impl(const char *name, const char *file, int line,
+                                T * &ptr, size_t nelem)
+{
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value, "snew_aligned_page() called on C++ type");
+#endif
+    ptr = (T *)save_calloc_aligned_page(name, file, line, nelem, sizeof(T));
+}
+
 /** C++ helper for sfree(). */
 template <typename T> static inline
 void gmx_sfree_impl(const char *name, const char *file, int line, T *ptr)
@@ -369,6 +396,8 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
     gmx_smalloc_impl(#ptr, __FILE__, __LINE__, (ptr), (size))
 #define snew_aligned(ptr, nelem, alignment) \
     gmx_snew_aligned_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem), alignment)
+#define snew_aligned_page(ptr, nelem) \
+    gmx_snew_aligned_page_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem))
 #define sfree(ptr) \
     gmx_sfree_impl(#ptr, __FILE__, __LINE__, (ptr))
 #define sfree_aligned(ptr) \
@@ -385,6 +414,8 @@ void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr
     (ptr) = save_malloc(#ptr, __FILE__, __LINE__, size)
 #define snew_aligned(ptr, nelem, alignment) \
     (ptr) = save_calloc_aligned(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)), alignment)
+#define snew_aligned_page(ptr, nelem) \
+    (ptr) = save_calloc_aligned_page(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)))
 #define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
 #define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
 

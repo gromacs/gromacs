@@ -47,14 +47,43 @@
 /* The rest */
 #include "pme.h"
 
+#include <set>
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/pmalloc_cuda.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme.cuh"
 #include "pme-3dfft.cuh"
 #include "pme-grid.h"
+
+static std::set<void *> pageLockedPointers;
+
+static inline bool isAligned(const void *ptr, size_t bytes)
+{
+    return (uintptr_t)ptr % bytes == 0;
+}
+
+static void pme_gpu_make_sure_memory_is_pinned(void *h_ptr, size_t bytes)
+{
+    if (!pageLockedPointers.count(h_ptr))
+    {
+        const std::size_t pageSize = gmx::PageAlignedAllocationPolicy::alignment();
+        GMX_ASSERT(isAligned(h_ptr, pageSize), "Host pointer passed to pme_gpu_make_sure_memory_is_pinned not page-aligned!");
+        cudaError_t       stat = cudaHostRegister(h_ptr, bytes, cudaHostRegisterDefault);
+        if (stat == cudaErrorHostMemoryAlreadyRegistered)
+        {
+            cudaGetLastError(); // suppress "Already mapped" message
+        }
+        else
+        {
+            CU_RET_ERR(stat, "Could not pin the PME GPU memory");
+        }
+        pageLockedPointers.insert(h_ptr);
+    }
+}
 
 int pme_gpu_get_atom_data_alignment(const PmeGpu *pmeGPU)
 {
@@ -155,6 +184,7 @@ void pme_gpu_copy_input_forces(const PmeGpu *pmeGPU, const float *h_forces)
     GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
     GMX_ASSERT(forcesSize > 0, "Bad number of atoms in PME GPU");
+    pme_gpu_make_sure_memory_is_pinned((void *)h_forces, forcesSize);
     cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_forces, const_cast<float *>(h_forces), forcesSize, pmeGPU->archSpecific->pmeStream);
 }
 
@@ -163,6 +193,7 @@ void pme_gpu_copy_output_forces(const PmeGpu *pmeGPU, float *h_forces)
     GMX_ASSERT(h_forces, "nullptr host forces pointer in PME GPU");
     const size_t forcesSize   = DIM * pmeGPU->kernelParams->atoms.nAtoms * sizeof(float);
     GMX_ASSERT(forcesSize > 0, "Bad number of atoms in PME GPU");
+    pme_gpu_make_sure_memory_is_pinned((void *)h_forces, forcesSize);
     cu_copy_D2H_async(h_forces, pmeGPU->kernelParams->atoms.d_forces, forcesSize, pmeGPU->archSpecific->pmeStream);
 }
 
@@ -191,6 +222,7 @@ void pme_gpu_copy_input_coordinates(const PmeGpu *pmeGPU, const rvec *h_coordina
     GMX_RELEASE_ASSERT(false, "Only single precision is supported");
     GMX_UNUSED_VALUE(h_coordinates);
 #else
+    pme_gpu_make_sure_memory_is_pinned((void *)h_coordinates, pmeGPU->kernelParams->atoms.nAtoms * sizeof(rvec));
     cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_coordinates, const_cast<rvec *>(h_coordinates),
                       pmeGPU->kernelParams->atoms.nAtoms * sizeof(rvec), pmeGPU->archSpecific->pmeStream);
 #endif
@@ -209,6 +241,7 @@ void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu *pmeGPU, const flo
     cu_realloc_buffered((void **)&pmeGPU->kernelParams->atoms.d_coefficients, nullptr, sizeof(float),
                         &pmeGPU->archSpecific->coefficientsSize, &pmeGPU->archSpecific->coefficientsSizeAlloc,
                         newCoefficientsSize, pmeGPU->archSpecific->pmeStream, true);
+    pme_gpu_make_sure_memory_is_pinned((void *)h_coefficients, newCoefficientsSize * sizeof(float));
     cu_copy_H2D_async(pmeGPU->kernelParams->atoms.d_coefficients, const_cast<float *>(h_coefficients),
                       pmeGPU->kernelParams->atoms.nAtoms * sizeof(float), pmeGPU->archSpecific->pmeStream);
     if (c_usePadding)
@@ -376,12 +409,14 @@ void pme_gpu_free_fract_shifts(const PmeGpu *pmeGPU)
 void pme_gpu_copy_input_gather_grid(const PmeGpu *pmeGpu, float *h_grid)
 {
     const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
+    pme_gpu_make_sure_memory_is_pinned(h_grid, gridSize);
     cu_copy_H2D_async(pmeGpu->kernelParams->grid.d_realGrid, h_grid, gridSize, pmeGpu->archSpecific->pmeStream);
 }
 
 void pme_gpu_copy_output_spread_grid(const PmeGpu *pmeGpu, float *h_grid)
 {
     const size_t gridSize = pmeGpu->archSpecific->realGridSize * sizeof(float);
+    pme_gpu_make_sure_memory_is_pinned(h_grid, gridSize);
     cu_copy_D2H_async(h_grid, pmeGpu->kernelParams->grid.d_realGrid, gridSize, pmeGpu->archSpecific->pmeStream);
     cudaError_t  stat = cudaEventRecord(pmeGpu->archSpecific->syncSpreadGridD2H, pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME spread grid sync event record failure");
