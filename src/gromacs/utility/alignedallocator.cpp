@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,9 @@
 #    include <malloc.h>
 #elif HAVE_XMMINTRIN_H
 #    include <xmmintrin.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #include "gromacs/utility/gmxassert.h"
@@ -155,7 +158,24 @@ alignedMalloc(std::size_t bytes)
     // So, for now we're semi-lazy and just align to 128 bytes!
     //
     // TODO LINCS code is copying this assumption independently (for now)
+
+// FIXME for now we assume unconditional page-boundary alignment if _SC_PAGESIZE
+// is available
+#ifdef _SC_PAGESIZE
+    std::size_t pageSize = (size_t)(sysconf(_SC_PAGESIZE));
+#else
+    std::size_t pageSize = 4096; // a wild guess
+#endif
+
+    // at the moment we aling everything on page boundary to be able to page-lock later
+    // with CUDA
+    const bool  allocatePageAlignment = true;
+
     std::size_t alignment = 128;
+    if (allocatePageAlignment)
+    {
+        alignment = pageSize;
+    }
 
     void   *    p;
 
