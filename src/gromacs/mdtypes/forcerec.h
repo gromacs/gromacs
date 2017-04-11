@@ -296,7 +296,7 @@ struct t_forcerec {
     /* This buffer is currently only used for storing the PME GPU output until reduction.
      * TODO: Pagelock/pin it
      * TODO: Replace the pointer by an object once we got rid of C */
-    std::vector<gmx::RVec>  *forceBufferIntermediate;
+    PaddedRVecVector        *forceBufferIntermediate;
 #else
     void                    *forceBufferForDirectVirialContributions_dummy;
     void                    *forceBufferIntermediate_dummy;

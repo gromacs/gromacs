@@ -262,11 +262,12 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
                   "Cannot allocate aligned memory with alignment of zero!\n(called from file %s, line %d)", file, line);
     }
 
-    size_t alignmentSize = gmx::AlignedAllocationPolicy::alignment();
-    if (alignment > alignmentSize)
+    std::size_t pageAlignmentSize = gmx::PageAlignedAllocationPolicy::alignment();
+    std::size_t alignmentSize     = gmx::AlignedAllocationPolicy::alignment();
+    if (alignment > pageAlignmentSize)
     {
         gmx_fatal(errno, __FILE__, __LINE__,
-                  "Cannot allocate aligned memory with alignment > %u bytes\n(called from file %s, line %d)", alignmentSize, file, line);
+                  "Cannot allocate aligned memory with alignment > %u bytes\n(called from file %s, line %d)", pageAlignmentSize, file, line);
     }
 
 
@@ -284,8 +285,14 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
                    nelem*elsize/1048576.0, name, file, line, rank);
         }
 #endif
-
-        p = gmx::AlignedAllocationPolicy::malloc(nelem*elsize);
+        if (alignment > alignmentSize)
+        {
+            p = gmx::PageAlignedAllocationPolicy::malloc(nelem*elsize);
+        }
+        else
+        {
+            p = gmx::AlignedAllocationPolicy::malloc(nelem*elsize);
+        }
 
         if (p == nullptr)
         {
@@ -305,6 +312,14 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
         memset(aligned, 0, (size_t)(nelem * elsize));
     }
     return aligned;
+}
+
+
+void *save_calloc_aligned_page(const char *name, const char *file, int line,
+                               size_t nelem, size_t elsize)
+{
+    const std::size_t pageSize = gmx::PageAlignedAllocationPolicy::alignment();
+    return save_calloc_aligned(name, file, line, nelem, elsize, pageSize);
 }
 
 /* This routine can NOT be called with any pointer */
