@@ -62,7 +62,7 @@ namespace gmx
  *       to be public API applied in Change-Id: Ifb8dacf, needed to use
  *       AlginedAllocationPolicy here, when replacing std::vector here.
  */
-using PaddedRVecVector = std::vector < gmx::RVec, gmx::Allocator < gmx::RVec, AlignedAllocationPolicy > >;
+using PaddedRVecVector = std::vector < gmx::RVec, gmx::Allocator < gmx::RVec, PageAlignedAllocationPolicy > >;
 
 /*! \brief Returns the padded size for PaddedRVecVector given the number of atoms
  *
