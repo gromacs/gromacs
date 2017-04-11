@@ -161,7 +161,8 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         gmx::AlignedAllocationPolicy::free(md->invmass);
         md->invmass = new(gmx::AlignedAllocationPolicy::malloc((md->nalloc + GMX_REAL_MAX_SIMD_WIDTH)*sizeof(*md->invmass)))real;
         srenew(md->invMassPerDim, md->nalloc);
-        srenew(md->chargeA, md->nalloc);
+        sfree_aligned(md->chargeA);
+        snew_aligned_page(md->chargeA, md->nalloc);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {
