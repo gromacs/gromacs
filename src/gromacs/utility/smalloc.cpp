@@ -43,6 +43,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
@@ -262,12 +265,15 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
                   "Cannot allocate aligned memory with alignment of zero!\n(called from file %s, line %d)", file, line);
     }
 
-    // Our new alignedMalloc always returns 128-byte aligned memory.
-    if (alignment > 128)
-    {
+    /*
+       // Our new alignedMalloc always returns 128-byte aligned memory.
+       //      This is not true in this code, page-boundary alignment is used by default!
+       if (alignment > 128)
+       {
         gmx_fatal(errno, __FILE__, __LINE__,
                   "Cannot allocate aligned memory with alignment > 128 bytes\n(called from file %s, line %d)", file, line);
-    }
+       }
+     */
 
 
     if (nelem == 0 || elsize == 0)
@@ -305,6 +311,19 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
         memset(aligned, 0, (size_t)(nelem * elsize));
     }
     return aligned;
+}
+
+
+void *save_calloc_aligned_page(const char *name, const char *file, int line,
+                               size_t nelem, size_t elsize)
+{
+#ifdef _SC_PAGESIZE
+    std::size_t pageSize = (size_t)(sysconf(_SC_PAGESIZE));
+#else
+    std::size_t pageSize = 4096; // a wild guess
+#endif
+
+    return save_calloc_aligned(name, file, line, nelem, elsize, pageSize);
 }
 
 /* This routine can NOT be called with any pointer */
