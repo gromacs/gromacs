@@ -43,6 +43,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
@@ -262,13 +265,12 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
                   "Cannot allocate aligned memory with alignment of zero!\n(called from file %s, line %d)", file, line);
     }
 
-    size_t alignmentSize = gmx::AlignedAllocationPolicy::alignment();
+    size_t alignmentSize = gmx::PageAlignedAllocationPolicy::alignment();
     if (alignment > alignmentSize)
     {
         gmx_fatal(errno, __FILE__, __LINE__,
                   "Cannot allocate aligned memory with alignment > %u bytes\n(called from file %s, line %d)", alignmentSize, file, line);
     }
-
 
     if (nelem == 0 || elsize == 0)
     {
@@ -285,7 +287,7 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
         }
 #endif
 
-        p = gmx::AlignedAllocationPolicy::malloc(nelem*elsize);
+        p = gmx::PageAlignedAllocationPolicy::malloc(nelem*elsize);
 
         if (p == nullptr)
         {
@@ -305,6 +307,14 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
         memset(aligned, 0, (size_t)(nelem * elsize));
     }
     return aligned;
+}
+
+
+void *save_calloc_aligned_page(const char *name, const char *file, int line,
+                               size_t nelem, size_t elsize)
+{
+    const std::size_t pageSize = gmx::PageAlignedAllocationPolicy::alignment();
+    return save_calloc_aligned(name, file, line, nelem, elsize, pageSize);
 }
 
 /* This routine can NOT be called with any pointer */

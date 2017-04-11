@@ -104,7 +104,7 @@ class AlignedAllocationPolicy
  * AlignedAllocationPolicy.
  */
 template <class T>
-using AlignedAllocator = Allocator<T, AlignedAllocationPolicy>;
+using AlignedAllocator = Allocator<T, AlignedAllocationPolicy>; //TODO hack this?
 
 
 /*! \brief Return the memory page size on this system
