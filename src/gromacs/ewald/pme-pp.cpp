@@ -525,7 +525,8 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                 pme_pp->nalloc = over_alloc_dd(nat);
                 if (cnb.flags & PP_PME_CHARGE)
                 {
-                    srenew(pme_pp->chargeA, pme_pp->nalloc);
+                    sfree_aligned(pme_pp->chargeA);
+                    snew_aligned_page(pme_pp->chargeA, pme_pp->nalloc);
                 }
                 if (cnb.flags & PP_PME_CHARGEB)
                 {
@@ -547,8 +548,10 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                 {
                     srenew(pme_pp->sigmaB, pme_pp->nalloc);
                 }
-                srenew(pme_pp->x, pme_pp->nalloc);
-                srenew(pme_pp->f, pme_pp->nalloc);
+                sfree_aligned(pme_pp->x);
+                snew_aligned_page(pme_pp->x, pme_pp->nalloc);
+                sfree_aligned(pme_pp->f);
+                snew_aligned_page(pme_pp->f, pme_pp->nalloc);
             }
 
             /* maxshift is sent when the charges are sent */

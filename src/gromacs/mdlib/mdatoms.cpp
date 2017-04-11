@@ -150,7 +150,8 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         srenew(md->massT, md->nalloc);
         srenew(md->invmass, md->nalloc);
         srenew(md->invMassPerDim, md->nalloc);
-        srenew(md->chargeA, md->nalloc);
+        sfree_aligned(md->chargeA);
+        snew_aligned_page(md->chargeA, md->nalloc);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {
