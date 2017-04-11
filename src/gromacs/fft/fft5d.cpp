@@ -414,7 +414,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags&FFT5D_NOMALLOC))
     {
-        snew_aligned(lin, lsize, 32);
+        snew_aligned_page(lin, lsize);
         snew_aligned(lout, lsize, 32);
         if (nthreads > 1)
         {

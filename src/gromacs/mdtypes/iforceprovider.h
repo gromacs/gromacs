@@ -46,6 +46,7 @@
 #define GMX_MDTYPES_IFORCEPROVIDER_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/classhelpers.h"
 
 struct t_commrec;

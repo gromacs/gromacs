@@ -1464,12 +1464,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     if (bDoForces)
     {
         /* Collect forces from modules */
-        gmx::ArrayRef<gmx::RVec> fNoVirSum;
+        gmx::ArrayRef<RVec> fNoVirSum;
         if (fr->bF_NoVirSum)
         {
-            fNoVirSum = *fr->f_novirsum;
+            fNoVirSum = gmx::ArrayRef<RVec>::fromArray(fr->f_novirsum->data(), fr->f_novirsum->size());
         }
-        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
+        gmx::ArrayRef<RVec> forces = gmx::ArrayRef<RVec>::fromArray(force->data(), force->size());
+        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, forces, fNoVirSum);
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=f later.
@@ -1828,12 +1829,13 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     if (bDoForces)
     {
         /* Collect forces from modules */
-        gmx::ArrayRef<gmx::RVec> fNoVirSum;
+        gmx::ArrayRef<RVec> fNoVirSum;
         if (fr->bF_NoVirSum)
         {
-            fNoVirSum = *fr->f_novirsum;
+            fNoVirSum = gmx::ArrayRef<RVec>::fromArray(fr->f_novirsum->data(), fr->f_novirsum->size());
         }
-        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
+        gmx::ArrayRef<RVec> forces = gmx::ArrayRef<RVec>::fromArray(force->data(), force->size());
+        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, forces, fNoVirSum);
 
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
