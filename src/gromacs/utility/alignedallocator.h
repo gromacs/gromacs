@@ -239,7 +239,7 @@ class AlignedAllocator
          */
         template<class T2>
         bool
-        operator==(const AlignedAllocator<T2> &gmx_unused rhs) const { return std::is_same<T, T2>::value; GMX_UNUSED_VALUE(rhs); }
+        operator==(const AlignedAllocator<T2> &) const {return std::is_same<T, T2>::value; }
 
         /*! \brief Return true if two allocators are different
          *

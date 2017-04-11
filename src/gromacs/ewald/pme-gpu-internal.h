@@ -643,5 +643,16 @@ void pme_gpu_destroy(pme_gpu_t *pmeGPU);
 void pme_gpu_reinit_atoms(pme_gpu_t        *pmeGPU,
                           const int         nAtoms,
                           const real       *coefficients);
+/*! \libinternal \brief
+ * Makes sure that the memory is aligned by 4096 and pagelocked.
+ * A temporary hack to make the PME CUDA copies non-blocking.
+ * Should be done during the allocation instead, if done the proper way.
+ *
+ * \param[in] h_ptr   The host buffer pointer.
+ * \param[in] bytes   The buffer's size in bytes.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_make_sure_memory_is_pinned(void **CUDA_FUNC_ARGUMENT(h_ptr),
+                                                            size_t CUDA_FUNC_ARGUMENT(bytes)) CUDA_FUNC_TERM
+
 
 #endif
