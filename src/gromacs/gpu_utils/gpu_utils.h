@@ -107,6 +107,24 @@ bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
               gmx_device_info_t *GPU_FUNC_ARGUMENT(gpuInfo),
               std::string *GPU_FUNC_ARGUMENT(result_str)) GPU_FUNC_TERM_WITH_RETURN(false)
 
+/*! \brief Switches to the given GPU context/device.
+ * This function is currently used as a way to use different GPUs for PP and GPU tasks of the same rank.
+ * With current limitations (no PME decomposition) it boils down to 3 calls per step on the critical path
+ * (PME up to gather, NB (local only as we have a single rank simulation), PME gather).
+ * The other non-critical calls are needed for zeroing the GPU memory at the end of the step, initialization, etc.
+ * It is currently called only when the context switching is definitely required,
+ * and performs it unconditionally, so add new calls to this with care!
+ * The reason for switching contexts instead of having separate ranks for each GPU task
+ * is tMPI communication time (we don't use shared memory - and we could).
+ * Another way the need for this function could also go away entirley is having
+ * a separate persistent thread for each GPU task.
+ *
+ * \todo Should this have an OpenCL implementation?
+ * \param[in]      gpuInfo      Information of the GPU context to switch to.
+ */
+CUDA_FUNC_QUALIFIER
+void switch_gpu_context(const gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo)) CUDA_FUNC_TERM
+
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
  * The context is explicitly destroyed and therefore all data uploaded to the GPU

@@ -693,7 +693,8 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
                     int                        rank,
-                    gmx_bool                   bLocalAndNonlocal)
+                    gmx_bool                   bLocalAndNonlocal,
+                    bool gmx_unused            multipleContexts)
 {
     gmx_nbnxn_ocl_t            *nb;
     cl_int                      cl_error;
@@ -715,7 +716,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
         snew(nb->plist[eintNonlocal], 1);
     }
 
-    nb->bUseTwoStreams = bLocalAndNonlocal;
+    nb->bUseTwoStreams   = bLocalAndNonlocal;
 
     snew(nb->timers, 1);
     snew(nb->timings, 1);

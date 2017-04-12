@@ -579,7 +579,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
                     int                        /*rank*/,
-                    gmx_bool                   bLocalAndNonlocal)
+                    gmx_bool                   bLocalAndNonlocal,
+                    bool                       multipleContexts)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
@@ -598,7 +599,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
         snew(nb->plist[eintNonlocal], 1);
     }
 
-    nb->bUseTwoStreams = bLocalAndNonlocal;
+    nb->bUseTwoStreams   = bLocalAndNonlocal;
+    nb->multipleContexts = multipleContexts;
 
     snew(nb->timers, 1);
     snew(nb->timings, 1);
@@ -647,6 +649,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     nb->bDoTime = (!nb->bUseTwoStreams &&
                    (getenv("GMX_DISABLE_CUDA_TIMING") == NULL) &&
                    (getenv("GMX_DISABLE_GPU_TIMING") == NULL));
+    // TODO maybe add multipleContexts check here and in PME?
 
     if (nb->bDoTime)
     {
@@ -746,7 +749,7 @@ static void nbnxn_cuda_clear_f(gmx_nbnxn_cuda_t *nb, int natoms_clear)
     cudaStream_t   ls    = nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
+    CU_RET_ERR(stat, "cudaMemsetAsync on f failed");
 }
 
 /*! Clears nonbonded shift force output array and energy outputs on the GPU. */
@@ -757,15 +760,20 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb)
     cudaStream_t   ls    = nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
+    CU_RET_ERR(stat, "cudaMemsetAsync on fshift failed");
     stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
+    CU_RET_ERR(stat, "cudaMemsetAsync on e_lj failed");
     stat = cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
+    CU_RET_ERR(stat, "cudaMemsetAsync on e_el failed");
 }
 
 void nbnxn_gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
 {
+    if (nb->multipleContexts)
+    {
+        switch_gpu_context(nb->dev_info);
+    }
+
     nbnxn_cuda_clear_f(nb, nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were
        used in the current step */
@@ -785,6 +793,11 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     cu_timers_t   *timers    = nb->timers;
     cu_atomdata_t *d_atdat   = nb->atdat;
     cudaStream_t   ls        = nb->stream[eintLocal];
+
+    if (nb->multipleContexts)
+    {
+        switch_gpu_context(nb->dev_info);
+    }
 
     natoms    = nbat->natoms;
     realloced = false;
@@ -1027,6 +1040,9 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
     {
         init_timings(nbv->gpu_nbv->timings);
     }
+
+    switch_gpu_context(nbv->gpu_nbv->dev_info);
+    resetGpuProfiler();
 }
 
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)

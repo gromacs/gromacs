@@ -91,7 +91,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  bool bPMEGPU,
                  pme_gpu_t *pmeGPU,
                  gmx_device_info_t *gpuInfo,
-                 const gmx::MDLogger &mdlog);
+                 const gmx::MDLogger &mdlog,
+                 bool multipleContexts);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t *pme);

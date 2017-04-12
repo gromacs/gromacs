@@ -125,6 +125,10 @@ void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box)
 
 void pme_gpu_start_step(pme_gpu_t *pmeGPU, const matrix box, const rvec *h_coordinates)
 {
+    if (pmeGPU->settings.multipleContexts)
+    {
+        switch_gpu_context(pmeGPU->deviceInfo);
+    }
     pme_gpu_copy_input_coordinates(pmeGPU, h_coordinates);
     pme_gpu_update_input_box(pmeGPU, box);
 }
@@ -143,6 +147,7 @@ void pme_gpu_reinit_step(const pme_gpu_t *pmeGPU)
 void pme_gpu_finish_step(const pme_gpu_t *pmeGPU, const bool bCalcF, const bool bCalcEnerVir)
 {
     /* Needed for copy back as well as timing events */
+
     pme_gpu_synchronize(pmeGPU);
 
     if (bCalcF)
@@ -281,11 +286,12 @@ bool pme_gpu_check_restrictions(const gmx_pme_t *pme,
 /*! \libinternal \brief
  * Initializes the PME GPU data at the beginning of the run.
  *
- * \param[in,out] pme       The PME structure.
- * \param[in,out] gpuInfo   The GPU information structure.
- * \param[in]     mdlog     The logger.
+ * \param[in,out] pme                The PME structure.
+ * \param[in,out] gpuInfo            The GPU information structure.
+ * \param[in]     mdlog              The logger.
+ * \param[in]     multipleContexts   Tells whether there are multiple GPU contexts in use on the rank.
  */
-void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog)
+void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog, bool multipleContexts)
 {
     std::string errorString;
     pme->useGPU = pme_gpu_check_restrictions(pme, &errorString);
@@ -307,6 +313,7 @@ void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogge
     pmeGPU->settings.performGPUSolve = true;
     /* FIXME: CPU gather with GPU spread has got to be broken as well due to different theta/dtheta layout. */
     pmeGPU->settings.performGPUGather = true;
+    pmeGPU->settings.multipleContexts = multipleContexts;
 
     pme_gpu_set_testing(pmeGPU, false);
 
@@ -388,7 +395,7 @@ void pme_gpu_transform_spline_atom_data(const pme_gpu_t *pmeGPU, const pme_atomc
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog)
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog, bool multipleContexts)
 {
     if (!pme_gpu_active(pme))
     {
@@ -398,10 +405,14 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo, mdlog);
+        pme_gpu_init(pme, gpuInfo, mdlog, multipleContexts);
     }
     else
     {
+        if (pme->gpu->settings.multipleContexts)
+        {
+            switch_gpu_context(pme->gpu->deviceInfo);
+        }
         /* After this call nothing in the GPU code should refer to the gmx_pme_t *pme itself - until the next pme_gpu_reinit */
         pme_gpu_copy_common_data_from(pme);
     }
@@ -412,6 +423,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
 
 void pme_gpu_destroy(pme_gpu_t *pmeGPU)
 {
+    switch_gpu_context(pmeGPU->deviceInfo);
     /* Free lots of data */
     pme_gpu_free_energy_virial(pmeGPU);
     pme_gpu_free_bspline_values(pmeGPU);
@@ -426,7 +438,6 @@ void pme_gpu_destroy(pme_gpu_t *pmeGPU)
     pme_gpu_destroy_3dfft(pmeGPU);
     pme_gpu_destroy_sync_events(pmeGPU);
     pme_gpu_destroy_timings(pmeGPU);
-
     /* Free the GPU-framework specific data last */
     pme_gpu_destroy_specific(pmeGPU);
 

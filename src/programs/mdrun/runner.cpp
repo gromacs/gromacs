@@ -1309,6 +1309,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         membed = init_membed(fplog, nfile, fnm, mtop, inputrec, state, cr, &cpt_period);
     }
 
+    //TODO just count number of unique GPU IDs instead
+    const bool multipleContexts = (gpuTasks.gpuInfo(GpuTask::NB) && gpuTasks.gpuInfo(GpuTask::PME) &&
+                                   (gpuTasks.gpuId(GpuTask::NB) != gpuTasks.gpuId(GpuTask::PME)));
+
     snew(nrnb, 1);
     if (cr->duty & DUTY_PP)
     {
@@ -1326,7 +1330,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       nbpu_opt,
                       FALSE,
                       pforce,
-                      gpuTasks.gpuInfo(GpuTask::NB));
+                      gpuTasks.gpuInfo(GpuTask::NB),
+                      multipleContexts);
 
         /* Initialize QM-MM */
         if (fr->bQMMM)
@@ -1443,7 +1448,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme,
-                                      useGpuPME, nullptr, gpuTasks.gpuInfo(GpuTask::PME), mdlog);
+                                      useGpuPME, nullptr, gpuTasks.gpuInfo(GpuTask::PME), mdlog, multipleContexts);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)

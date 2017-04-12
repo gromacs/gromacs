@@ -180,11 +180,6 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
         pme_gpu_reset_timings(pme);
     }
 
-    if (use_GPU(nbv) || pme_gpu_task_enabled(pme))
-    {
-        resetGpuProfiler();
-    }
-
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
     if (DOMAINDECOMP(cr))

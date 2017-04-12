@@ -44,8 +44,8 @@
 #include "pme-timings.cuh"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "pme.cuh"
 
@@ -191,4 +191,7 @@ void pme_gpu_reset_timings(const pme_gpu_t *pmeGPU)
             pmeGPU->archSpecific->timingEvents[i].reset();
         }
     }
+
+    switch_gpu_context(pmeGPU->deviceInfo);
+    resetGpuProfiler();
 }

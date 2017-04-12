@@ -353,10 +353,11 @@ GpuContextsMap GpuTaskAssignmentManager::selectTasksGpus()
     if (tasksToAssign_.count(GpuTask::NB) > 0)
     {
         gpuContextsByTask[GpuTask::NB] = getGpuContext(gpuIndex);
+        gpuIndex++;
     }
     if (tasksToAssign_.count(GpuTask::PME) > 0)
     {
-        gpuContextsByTask[GpuTask::PME] = getGpuContext(gpuIndex); // always single GPU per rank (possibly for both tasks) for now!
+        gpuContextsByTask[GpuTask::PME] = getGpuContext(gpuIndex);
     }
     return gpuContextsByTask;
 }
@@ -382,6 +383,17 @@ int GpuTaskManager::gpuId(GpuTask task) const
 size_t GpuTaskManager::rankGpuTasksCount() const
 {
     return gpuContextsByTasks_.size();
+}
+
+std::set<gmx_device_info_t *> GpuTaskManager::rankGpuInfos() const
+{
+    std::set<gmx_device_info_t *> rankGpuInfos;
+    for (const auto &it : gpuContextsByTasks_)
+    {
+        rankGpuInfos.insert(it.second.gpuInfo_);
+    }
+    GMX_ASSERT(rankGpuInfos.find(nullptr) == rankGpuInfos.end(), "Empty GPU info");
+    return rankGpuInfos;
 }
 
 GpuTaskManager createGpuAssignment(const gmx::MDLogger &mdlog, const t_commrec *cr,
