@@ -353,10 +353,11 @@ GpuContextsMap GpuTaskAssignmentManager::selectTasksGpus()
     if (tasksToAssign_.count(GpuTask::NB) > 0)
     {
         gpuContextsByTask[GpuTask::NB] = getGpuContext(gpuIndex);
+        gpuIndex++;
     }
     if (tasksToAssign_.count(GpuTask::PME) > 0)
     {
-        gpuContextsByTask[GpuTask::PME] = getGpuContext(gpuIndex); // always single GPU per rank (possibly for both tasks) for now!
+        gpuContextsByTask[GpuTask::PME] = getGpuContext(gpuIndex);
     }
     return gpuContextsByTask;
 }

@@ -48,6 +48,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/pmalloc_cuda.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -462,6 +463,11 @@ void pme_gpu_init_specific(pme_gpu_t *pmeGPU)
     /* Allocate the target-specific structures */
     pmeGPU->archSpecific.reset(new pme_gpu_specific_t());
     pmeGPU->kernelParams.reset(new pme_gpu_kernel_params_t());
+
+    if (pmeGPU->settings.multipleContexts)
+    {
+        activate_gpu(pmeGPU->deviceInfo);
+    }
 
     pmeGPU->archSpecific->performOutOfPlaceFFT = true;
     /* This should give better performance, according to the cuFFT documentation.

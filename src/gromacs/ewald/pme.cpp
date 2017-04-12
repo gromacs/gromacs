@@ -528,7 +528,8 @@ int gmx_pme_init(struct gmx_pme_t   **pmedata,
                  bool                 bPMEGPU,
                  pme_gpu_t           *pmeGPU,
                  gmx_device_info_t   *gpuInfo,
-                 const gmx::MDLogger &mdlog)
+                 const gmx::MDLogger &mdlog,
+                 bool                 multipleContexts)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -858,7 +859,7 @@ int gmx_pme_init(struct gmx_pme_t   **pmedata,
     pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
 
-    pme_gpu_reinit(pme.get(), gpuInfo, mdlog);
+    pme_gpu_reinit(pme.get(), gpuInfo, mdlog, multipleContexts);
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
@@ -911,7 +912,8 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
         // TODO: when PME is an object, it should take reference to mdlog on construction and save it.
         ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
                            &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
-                           pme_src->nthread, pme_gpu_active(pme_src), pme_src->gpu, nullptr, dummyLogger);
+                           pme_src->nthread, pme_gpu_active(pme_src), pme_src->gpu, nullptr, dummyLogger,
+                           pme_src->gpu ? pme_src->gpu->settings.multipleContexts : false);
         //TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

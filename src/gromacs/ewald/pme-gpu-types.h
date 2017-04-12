@@ -241,6 +241,8 @@ struct pme_gpu_settings_t
     bool copyAllOutputs;
     /*! \brief Various computation flags for the curent step, corresponding to the GMX_PME_ flags in pme.h. */
     int  stepFlags;
+    /*! \brief A boolean which tells if multiple GPU contexts are used by the rank */
+    bool multipleContexts;
 };
 
 /*! \internal \brief

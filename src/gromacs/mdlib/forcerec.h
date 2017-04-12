@@ -129,7 +129,8 @@ void init_forcerec(FILE                *fplog,
                    const char          *nbpu_opt,
                    gmx_bool             bNoSolvOpt,
                    real                 print_force,
-                   gmx_device_info_t   *gpuInfo);
+                   gmx_device_info_t   *gpuInfo,
+                   bool                 multipleContexts);
 
 /*! \brief Divide exclusions over threads
  *
