@@ -634,12 +634,13 @@ void pme_gpu_transform_spline_atom_data(const pme_gpu_t *pmeGPU, const pme_atomc
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
  *
- * \param[in,out] pme       The PME structure.
- * \param[in,out] gpuInfo   The GPU information structure.
- * \param[in]     mdlog     The logger.
+ * \param[in,out] pme                The PME structure.
+ * \param[in,out] gpuInfo            The GPU information structure.
+ * \param[in]     mdlog              The logger.
+ * \param[in]     multipleContexts   Tells whether there are multiple GPU contexts in use on the rank.
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog);
+void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog, bool multipleContexts);
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.

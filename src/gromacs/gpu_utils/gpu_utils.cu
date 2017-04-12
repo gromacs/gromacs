@@ -465,6 +465,12 @@ bool init_gpu(const gmx::MDLogger &mdlog, gmx_device_info_t *gpuInfo, std::strin
     return (stat == cudaSuccess);
 }
 
+void switch_gpu_context(const gmx_device_info_t *gpuInfo)
+{
+    assert(gpuInfo);
+    CU_RET_ERR(cudaSetDevice(gpuInfo->id), "Failed to switch the GPU context");
+}
+
 bool free_cuda_gpu(const gmx_device_info_t *gpuInfo, std::string *result_str)
 {
     cudaError_t  stat;

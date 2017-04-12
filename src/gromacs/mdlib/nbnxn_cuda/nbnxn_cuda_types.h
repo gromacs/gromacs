@@ -232,14 +232,15 @@ struct cu_timers
  */
 struct gmx_nbnxn_cuda_t
 {
-    struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
-    bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    cu_atomdata_t            *atdat;          /**< atom data                                            */
-    cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
-    cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
-    nb_staging_t              nbst;           /**< staging area where fshift/energies get downloaded    */
+    struct gmx_device_info_t *dev_info;         /**< CUDA device information                              */
+    bool                      bUseTwoStreams;   /**< true if doing both local/non-local NB work on GPU    */
+    bool                      multipleContexts; /**< true if other GPU tasks on the rank use other GPUs   */
+    cu_atomdata_t            *atdat;            /**< atom data                                            */
+    cu_nbparam_t             *nbparam;          /**< parameters required for the non-bonded calc.         */
+    cu_plist_t               *plist[2];         /**< pair-list data structures (local and non-local)      */
+    nb_staging_t              nbst;             /**< staging area where fshift/energies get downloaded    */
 
-    cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
+    cudaStream_t              stream[2];        /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
