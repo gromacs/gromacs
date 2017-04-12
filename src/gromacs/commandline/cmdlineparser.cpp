@@ -202,6 +202,16 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 errors.addCurrentExceptionAsNested();
             }
         }
+        // In this funtion we only separate command-line options from
+        // option arguments. Thus the only check we can do is that the first
+        // argument to the binary is a GROMACS command line option.
+        else if (i == 1)
+        {
+            std::string message =
+                "Expected a command-line option (starting with '-'), not '" + std::string(arg) + "'";
+            GMX_THROW(InvalidInputError(message));
+        }
+
         // Remove recognized options if applicable.
         if (!bInOption && impl_->bSkipUnknown_)
         {
