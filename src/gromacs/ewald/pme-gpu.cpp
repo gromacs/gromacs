@@ -46,6 +46,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -235,6 +236,12 @@ void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
     if (!pme_gpu_performs_gather(pme->gpu))
     {
         return;
+    }
+
+    if (pme->gpu->settings.multipleContexts)
+    {
+        activate_gpu(pme->gpu->deviceInfo);
+        //TODO this lives on a different level from pme_gpu_start_step() - not nice
     }
 
     wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_PME);

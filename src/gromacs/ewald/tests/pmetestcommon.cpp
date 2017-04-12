@@ -103,7 +103,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
 
     const MDLogger       dummyLogger;
     gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec, atomCount, false, false, true,
-                 ewaldCoeff_q, ewaldCoeff_lj, 1, useGpu, nullptr, gpuInfo, dummyLogger);
+                 ewaldCoeff_q, ewaldCoeff_lj, 1, useGpu, nullptr, gpuInfo, dummyLogger, false);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
