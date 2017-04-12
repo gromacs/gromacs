@@ -50,8 +50,8 @@
 #include <limits>
 #endif
 
-
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -317,6 +317,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                              int                     flags,
                              int                     iloc)
 {
+    if (nb->multipleContexts)
+    {
+        activate_gpu(nb->dev_info);
+    }
+
     cudaError_t          stat;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* CUDA kernel launch-related stuff */
@@ -585,6 +590,11 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
                             int flags, int aloc,
                             real *e_lj, real *e_el, rvec *fshift)
 {
+    if (nb->multipleContexts) //?
+    {
+        ;                     //activate_gpu(nb->dev_info);
+    }
+
     /* NOTE:  only implemented for single-precision at this time */
     cudaError_t stat;
     int         iloc = -1;

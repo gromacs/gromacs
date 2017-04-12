@@ -113,6 +113,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]     bNoSolvOpt  Do not use solvent optimization
  * \param[in]     print_force Print forces for atoms with force >= print_force
  * \param[in,out] gpuInfo     GPU information for the NB initialization
+ * \param[in]     multipleContexts   A boolean which tells whether multiple GPU contexts are used by the rank
  */
 void init_forcerec(FILE                *fplog,
                    const gmx::MDLogger &mdlog,
@@ -129,7 +130,8 @@ void init_forcerec(FILE                *fplog,
                    const char          *nbpu_opt,
                    gmx_bool             bNoSolvOpt,
                    real                 print_force,
-                   gmx_device_info_t   *gpuInfo);
+                   gmx_device_info_t   *gpuInfo,
+                   bool                 multipleContexts);
 
 /*! \brief Divide exclusions over threads
  *

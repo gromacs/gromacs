@@ -107,6 +107,14 @@ bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
               gmx_device_info_t *GPU_FUNC_ARGUMENT(gpuInfo),
               std::string *GPU_FUNC_ARGUMENT(result_str)) GPU_FUNC_TERM_WITH_RETURN(false)
 
+/*! \brief Activates the given GPU context.
+ *
+ * \todo Should this have an OpenCL implementation?
+ * \param[in]      gpuInfo      Information of the GPU context to activate.
+ */
+CUDA_FUNC_QUALIFIER
+void activate_gpu(const gmx_device_info_t *CUDA_FUNC_ARGUMENT(gpuInfo)) CUDA_FUNC_TERM
+
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
  * The context is explicitly destroyed and therefore all data uploaded to the GPU
