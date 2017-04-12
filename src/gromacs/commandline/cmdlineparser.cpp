@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include "cmdlineparser.h"
 
 #include <cstdlib>
+#include <cstring>
 
 #include <string>
 #include <vector>
@@ -202,11 +203,25 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 errors.addCurrentExceptionAsNested();
             }
         }
-        // Remove recognized options if applicable.
-        if (!bInOption && impl_->bSkipUnknown_)
+
+        // Remove recognized options if applicable or complain about the first
+        // argument being an unknown option
+        if (!bInOption)
         {
-            argv[newi] = argv[i];
-            ++newi;
+            if (impl_->bSkipUnknown_)
+            {
+                argv[newi] = argv[i];
+                ++newi;
+            }
+            // In this funtion we only separate command-line options from
+            // option arguments. Thus the only check we can do is that the first
+            // argument to the binary is a GROMACS command line option.
+            else if (i == 1 && strncmp(argv[0], "help", 4) != 0)
+            {
+                std::string message =
+                    "Expected a command-line option after '" + std::string(argv[0]) + "' (starting with '-'), not '" + std::string(arg) + "'";
+                GMX_THROW(InvalidInputError(message));
+            }
         }
     }
     // Update the argc count if argv was modified.
