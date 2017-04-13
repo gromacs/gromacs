@@ -111,9 +111,6 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
 
 /* The following three routines are for PME/PP node splitting in pme_pp.c */
 
-/*! \brief Abstract type for PME <-> PP communication */
-typedef struct gmx_pme_pp *gmx_pme_pp_t;
-
 /* Temporary suppression until these structs become opaque and don't live in
  * a header that is included by other headers. Also, until then I have no
  * idea what some of the names mean. */
@@ -376,70 +373,7 @@ void gmx_pme_check_restrictions(int pme_order,
                                 gmx_bool bFatal,
                                 gmx_bool *bValidSettings);
 
-/*! \brief Initialize the PME-only side of the PME <-> PP communication */
-gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
-
 /*! \brief Tell our PME-only node to switch to a new grid size */
 void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
-
-/*! \brief Return values for gmx_pme_recv_q_x */
-enum {
-    pmerecvqxX,            /* calculate PME mesh interactions for new x    */
-    pmerecvqxFINISH,       /* the simulation should finish, we should quit */
-    pmerecvqxSWITCHGRID,   /* change the PME grid size                     */
-    pmerecvqxRESETCOUNTERS /* reset the cycle and flop counters            */
-};
-
-/*! \brief Called by PME-only ranks to receive coefficients and coordinates
- *
- * \param[in,out] pme_pp    PME-PP communication structure.
- * \param[out] natoms       Number of received atoms.
- * \param[out] chargeA      State A charges, if received.
- * \param[out] chargeB      State B charges, if received.
- * \param[out] sqrt_c6A     State A coefficients, if received.
- * \param[out] sqrt_c6B     State B coefficients, if received.
- * \param[out] sigmaA     State A coefficients, if received.
- * \param[out] sigmaB     State B coefficients, if received.
- * \param[out] box        System box, if received.
- * \param[out] x        Atoms' coordinates, if received.
- * \param[out] f        Atoms' PME forces, if received.
- * \param[out] maxshift_x        Maximum shift in X direction, if received.
- * \param[out] maxshift_y        Maximum shift in Y direction, if received.
- * \param[out] lambda_q         Free-energy lambda for electrostatics, if received.
- * \param[out] lambda_lj         Free-energy lambda for Lennard-Jones, if received.
- * \param[out] bEnerVir          Set to true if this is an energy/virial calculation step, otherwise set to false.
- * \param[out] step              MD integration step number.
- * \param[out] grid_size         PME grid size, if received.
- * \param[out] ewaldcoeff_q         Ewald cut-off parameter for electrostatics, if received.
- * \param[out] ewaldcoeff_lj         Ewald cut-off parameter for Lennard-Jones, if received.
- * \param[out] atomSetChanged    Set to true only if the local domain atom data (charges/coefficients)
- *                               has been received (after DD) and should be reinitialized. Otherwise not changed.
- *
- * \retval pmerecvqxX             All parameters were set, chargeA and chargeB can be NULL.
- * \retval pmerecvqxFINISH        No parameters were set.
- * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
- * \retval pmerecvqxRESETCOUNTERS *step was set.
- */
-int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
-                               int *natoms,
-                               real **chargeA, real **chargeB,
-                               real **sqrt_c6A, real **sqrt_c6B,
-                               real **sigmaA, real **sigmaB,
-                               matrix box, rvec **x, rvec **f,
-                               int *maxshift_x, int *maxshift_y,
-                               real *lambda_q, real *lambda_lj,
-                               gmx_bool *bEnerVir,
-                               gmx_int64_t *step,
-                               ivec grid_size,
-                               real *ewaldcoeff_q,
-                               real *ewaldcoeff_lj,
-                               bool *atomSetChanged);
-
-/*! \brief Send the PME mesh force, virial and energy to the PP-only nodes */
-void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
-                                 rvec *f, matrix vir_q, real energy_q,
-                                 matrix vir_lj, real energy_lj,
-                                 real dvdlambda_q, real dvdlambda_lj,
-                                 float cycles);
 
 #endif
