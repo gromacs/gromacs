@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1203,24 +1203,21 @@ pmeForceCorrection(SimdFloat z2)
     const SimdFloat  FD1(0.50736591960530292870f);
     const SimdFloat  FD0(1.0f);
 
-    SimdFloat        z4;
-    SimdFloat        polyFN0, polyFN1, polyFD0, polyFD1;
+    SimdFloat        polyFN0, polyFD0;
 
-    z4             = z2 * z2;
-
-    polyFD0        = fma(FD4, z4, FD2);
-    polyFD1        = fma(FD3, z4, FD1);
-    polyFD0        = fma(polyFD0, z4, FD0);
-    polyFD0        = fma(polyFD1, z2, polyFD0);
+    polyFD0        = fma(FD4, z2, FD3);
+    polyFD0        = fma(polyFD0, z2, FD2);
+    polyFD0        = fma(polyFD0, z2, FD1);
+    polyFD0        = fma(polyFD0, z2, FD0);
 
     polyFD0        = inv(polyFD0);
 
-    polyFN0        = fma(FN6, z4, FN4);
-    polyFN1        = fma(FN5, z4, FN3);
-    polyFN0        = fma(polyFN0, z4, FN2);
-    polyFN1        = fma(polyFN1, z4, FN1);
-    polyFN0        = fma(polyFN0, z4, FN0);
-    polyFN0        = fma(polyFN1, z2, polyFN0);
+    polyFN0        = fma(FN6, z2, FN5);
+    polyFN0        = fma(polyFN0, z2, FN4);
+    polyFN0        = fma(polyFN0, z2, FN3);
+    polyFN0        = fma(polyFN0, z2, FN2);
+    polyFN0        = fma(polyFN0, z2, FN1);
+    polyFN0        = fma(polyFN0, z2, FN0);
 
     return polyFN0 * polyFD0;
 }
