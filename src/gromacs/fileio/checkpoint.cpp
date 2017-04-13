@@ -443,6 +443,7 @@ static bool_t listXdrVector(XDR *xd, StatePart part, int ecpt, int nf, int xdrTy
 //! \brief Convert a double array, typed char*, to float
 static void convertArrayRealPrecision(const char *c, float *v, int n)
 {
+    // cppcheck-suppress invalidPointerCast
     const double *d = reinterpret_cast<const double *>(c);
     for (int i = 0; i < n; i++)
     {
@@ -453,6 +454,7 @@ static void convertArrayRealPrecision(const char *c, float *v, int n)
 //! \brief Convert a float array, typed char*, to double
 static void convertArrayRealPrecision(const char *c, double *v, int n)
 {
+    // cppcheck-suppress invalidPointerCast
     const float *f = reinterpret_cast<const float *>(c);
     for (int i = 0; i < n; i++)
     {
