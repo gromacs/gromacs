@@ -59,12 +59,15 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
@@ -84,6 +87,61 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
+#include "pme-pp-communication.h"
+
+/*! \brief Master PP-PME communication data structure */
+struct gmx_pme_pp {
+#if GMX_MPI
+    MPI_Comm     mpi_comm_mysim; /**< MPI communicator for this simulation */
+#endif
+    int          nnode;          /**< The number of PP node to communicate with  */
+    int         *node;           /**< The PP node ranks                          */
+    int          node_peer;      /**< The peer PP node rank                      */
+    int         *nat;            /**< The number of atom for each PP node        */
+    //@{
+    /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
+    real        *chargeA;
+    real        *chargeB;
+    real        *sqrt_c6A;
+    real        *sqrt_c6B;
+    real        *sigmaA;
+    real        *sigmaB;
+    //@}
+    rvec        *x;             /**< Vector of atom coordinates to transfer to PME ranks */
+    rvec        *f;             /**< Vector of atom forces received from PME ranks */
+    int          nalloc;        /**< Allocation size of transfer vectors (>= \p nat) */
+#if GMX_MPI
+    //@{
+    /**< Vectors of MPI objects used in non-blocking communication between multiple PP ranks per PME rank */
+    MPI_Request *req;
+    MPI_Status  *stat;
+    //@}
+#endif
+};
+
+/*! \brief Initialize the PME-only side of the PME <-> PP communication */
+static gmx_pme_pp *gmx_pme_pp_init(t_commrec *cr)
+{
+    struct gmx_pme_pp *pme_pp;
+
+    snew(pme_pp, 1);
+
+#if GMX_MPI
+    int rank;
+
+    pme_pp->mpi_comm_mysim = cr->mpi_comm_mysim;
+    MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
+    get_pme_ddnodes(cr, rank, &pme_pp->nnode, &pme_pp->node, &pme_pp->node_peer);
+    snew(pme_pp->nat, pme_pp->nnode);
+    snew(pme_pp->req, eCommType_NR*pme_pp->nnode);
+    snew(pme_pp->stat, eCommType_NR*pme_pp->nnode);
+    pme_pp->nalloc       = 0;
+#else
+    GMX_UNUSED_VALUE(cr);
+#endif
+
+    return pme_pp;
+}
 
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
@@ -144,6 +202,327 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
     *pme_ret = (*pmedata)[ind];
 }
 
+/*! \brief Called by PME-only ranks to receive coefficients and coordinates
+ *
+ * \param[in,out] pme_pp    PME-PP communication structure.
+ * \param[out] natoms       Number of received atoms.
+ * \param[out] box        System box, if received.
+ * \param[out] maxshift_x        Maximum shift in X direction, if received.
+ * \param[out] maxshift_y        Maximum shift in Y direction, if received.
+ * \param[out] lambda_q         Free-energy lambda for electrostatics, if received.
+ * \param[out] lambda_lj         Free-energy lambda for Lennard-Jones, if received.
+ * \param[out] bEnerVir          Set to true if this is an energy/virial calculation step, otherwise set to false.
+ * \param[out] step              MD integration step number.
+ * \param[out] grid_size         PME grid size, if received.
+ * \param[out] ewaldcoeff_q         Ewald cut-off parameter for electrostatics, if received.
+ * \param[out] ewaldcoeff_lj         Ewald cut-off parameter for Lennard-Jones, if received.
+ * \param[out] atomSetChanged    Set to true only if the local domain atom data (charges/coefficients)
+ *                               has been received (after DD) and should be reinitialized. Otherwise not changed.
+ *
+ * \retval pmerecvqxX             All parameters were set, chargeA and chargeB can be NULL.
+ * \retval pmerecvqxFINISH        No parameters were set.
+ * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
+ * \retval pmerecvqxRESETCOUNTERS *step was set.
+ */
+static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
+                                      int               *natoms,
+                                      matrix             box,
+                                      int               *maxshift_x,
+                                      int               *maxshift_y,
+                                      real              *lambda_q,
+                                      real              *lambda_lj,
+                                      gmx_bool          *bEnerVir,
+                                      gmx_int64_t       *step,
+                                      ivec               grid_size,
+                                      real              *ewaldcoeff_q,
+                                      real              *ewaldcoeff_lj,
+                                      bool              *atomSetChanged)
+{
+    int status = -1;
+    int nat    = 0;
+
+#if GMX_MPI
+    unsigned int flags    = 0;
+    int          messages = 0;
+
+    do
+    {
+        gmx_pme_comm_n_box_t cnb;
+        cnb.flags = 0;
+
+        /* Receive the send count, box and time step from the peer PP node */
+        MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE,
+                 pme_pp->node_peer, eCommType_CNB,
+                 pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
+
+        /* We accumulate all received flags */
+        flags |= cnb.flags;
+
+        *step  = cnb.step;
+
+        if (debug)
+        {
+            fprintf(debug, "PME only rank receiving:%s%s%s%s%s\n",
+                    (cnb.flags & PP_PME_CHARGE)        ? " charges" : "",
+                    (cnb.flags & PP_PME_COORD )        ? " coordinates" : "",
+                    (cnb.flags & PP_PME_FINISH)        ? " finish" : "",
+                    (cnb.flags & PP_PME_SWITCHGRID)    ? " switch grid" : "",
+                    (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
+        }
+
+        if (cnb.flags & PP_PME_FINISH)
+        {
+            status = pmerecvqxFINISH;
+        }
+
+        if (cnb.flags & PP_PME_SWITCHGRID)
+        {
+            /* Special case, receive the new parameters and return */
+            copy_ivec(cnb.grid_size, grid_size);
+            *ewaldcoeff_q  = cnb.ewaldcoeff_q;
+            *ewaldcoeff_lj = cnb.ewaldcoeff_lj;
+
+            status         = pmerecvqxSWITCHGRID;
+        }
+
+        if (cnb.flags & PP_PME_RESETCOUNTERS)
+        {
+            /* Special case, receive the step (set above) and return */
+            status = pmerecvqxRESETCOUNTERS;
+        }
+
+        if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
+        {
+            *atomSetChanged = true;
+
+            /* Receive the send counts from the other PP nodes */
+            for (int sender = 0; sender < pme_pp->nnode; sender++)
+            {
+                if (pme_pp->node[sender] == pme_pp->node_peer)
+                {
+                    pme_pp->nat[sender] = cnb.natoms;
+                }
+                else
+                {
+                    MPI_Irecv(&(pme_pp->nat[sender]), sizeof(pme_pp->nat[0]),
+                              MPI_BYTE,
+                              pme_pp->node[sender], eCommType_CNB,
+                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                }
+            }
+            MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+            messages = 0;
+
+            nat = 0;
+            for (int sender = 0; sender < pme_pp->nnode; sender++)
+            {
+                nat += pme_pp->nat[sender];
+            }
+
+            if (nat > pme_pp->nalloc)
+            {
+                pme_pp->nalloc = over_alloc_dd(nat);
+                if (cnb.flags & PP_PME_CHARGE)
+                {
+                    srenew(pme_pp->chargeA, pme_pp->nalloc);
+                }
+                if (cnb.flags & PP_PME_CHARGEB)
+                {
+                    srenew(pme_pp->chargeB, pme_pp->nalloc);
+                }
+                if (cnb.flags & PP_PME_SQRTC6)
+                {
+                    srenew(pme_pp->sqrt_c6A, pme_pp->nalloc);
+                }
+                if (cnb.flags & PP_PME_SQRTC6B)
+                {
+                    srenew(pme_pp->sqrt_c6B, pme_pp->nalloc);
+                }
+                if (cnb.flags & PP_PME_SIGMA)
+                {
+                    srenew(pme_pp->sigmaA, pme_pp->nalloc);
+                }
+                if (cnb.flags & PP_PME_SIGMAB)
+                {
+                    srenew(pme_pp->sigmaB, pme_pp->nalloc);
+                }
+                srenew(pme_pp->x, pme_pp->nalloc);
+                srenew(pme_pp->f, pme_pp->nalloc);
+            }
+
+            /* maxshift is sent when the charges are sent */
+            *maxshift_x = cnb.maxshift_x;
+            *maxshift_y = cnb.maxshift_y;
+
+            /* Receive the charges in place */
+            for (int q = 0; q < eCommType_NR; q++)
+            {
+                real *charge_pp;
+
+                if (!(cnb.flags & (PP_PME_CHARGE<<q)))
+                {
+                    continue;
+                }
+                switch (q)
+                {
+                    case eCommType_ChargeA: charge_pp = pme_pp->chargeA;  break;
+                    case eCommType_ChargeB: charge_pp = pme_pp->chargeB;  break;
+                    case eCommType_SQRTC6A: charge_pp = pme_pp->sqrt_c6A; break;
+                    case eCommType_SQRTC6B: charge_pp = pme_pp->sqrt_c6B; break;
+                    case eCommType_SigmaA:  charge_pp = pme_pp->sigmaA;   break;
+                    case eCommType_SigmaB:  charge_pp = pme_pp->sigmaB;   break;
+                    default: gmx_incons("Wrong eCommType");
+                }
+                nat = 0;
+                for (int sender = 0; sender < pme_pp->nnode; sender++)
+                {
+                    if (pme_pp->nat[sender] > 0)
+                    {
+                        MPI_Irecv(charge_pp+nat,
+                                  pme_pp->nat[sender]*sizeof(real),
+                                  MPI_BYTE,
+                                  pme_pp->node[sender], q,
+                                  pme_pp->mpi_comm_mysim,
+                                  &pme_pp->req[messages++]);
+                        nat += pme_pp->nat[sender];
+                        if (debug)
+                        {
+                            fprintf(debug, "Received from PP rank %d: %d %s\n",
+                                    pme_pp->node[sender], pme_pp->nat[sender],
+                                    (q == eCommType_ChargeA ||
+                                     q == eCommType_ChargeB) ? "charges" : "params");
+                        }
+                    }
+                }
+            }
+        }
+
+        if (cnb.flags & PP_PME_COORD)
+        {
+            /* The box, FE flag and lambda are sent along with the coordinates
+             *  */
+            copy_mat(cnb.box, box);
+            *lambda_q       = cnb.lambda_q;
+            *lambda_lj      = cnb.lambda_lj;
+            *bEnerVir       = (cnb.flags & PP_PME_ENER_VIR);
+            *step           = cnb.step;
+
+            /* Receive the coordinates in place */
+            nat = 0;
+            for (int sender = 0; sender < pme_pp->nnode; sender++)
+            {
+                if (pme_pp->nat[sender] > 0)
+                {
+                    MPI_Irecv(pme_pp->x[nat], pme_pp->nat[sender]*sizeof(rvec),
+                              MPI_BYTE,
+                              pme_pp->node[sender], eCommType_COORD,
+                              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                    nat += pme_pp->nat[sender];
+                    if (debug)
+                    {
+                        fprintf(debug, "Received from PP rank %d: %d "
+                                "coordinates\n",
+                                pme_pp->node[sender], pme_pp->nat[sender]);
+                    }
+                }
+            }
+
+            status = pmerecvqxX;
+        }
+
+        /* Wait for the coordinates and/or charges to arrive */
+        MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+        messages = 0;
+    }
+    while (status == -1);
+#else
+    GMX_UNUSED_VALUE(pme_pp);
+    GMX_UNUSED_VALUE(box);
+    GMX_UNUSED_VALUE(maxshift_x);
+    GMX_UNUSED_VALUE(maxshift_y);
+    GMX_UNUSED_VALUE(lambda_q);
+    GMX_UNUSED_VALUE(lambda_lj);
+    GMX_UNUSED_VALUE(bEnerVir);
+    GMX_UNUSED_VALUE(step);
+    GMX_UNUSED_VALUE(grid_size);
+    GMX_UNUSED_VALUE(ewaldcoeff_q);
+    GMX_UNUSED_VALUE(ewaldcoeff_lj);
+    GMX_UNUSED_VALUE(atomSetChanged);
+
+    status = pmerecvqxX;
+#endif
+
+    if (status == pmerecvqxX)
+    {
+        *natoms   = nat;
+    }
+
+    return status;
+}
+
+/*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
+static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
+                                        matrix vir_q, real energy_q,
+                                        matrix vir_lj, real energy_lj,
+                                        real dvdlambda_q, real dvdlambda_lj,
+                                        float cycles)
+{
+#if GMX_MPI
+    gmx_pme_comm_vir_ene_t cve;
+    int                    messages, ind_start, ind_end;
+    cve.cycles = cycles;
+
+    /* Now the evaluated forces have to be transferred to the PP nodes */
+    messages = 0;
+    ind_end  = 0;
+    for (int receiver = 0; receiver < pme_pp->nnode; receiver++)
+    {
+        ind_start = ind_end;
+        ind_end   = ind_start + pme_pp->nat[receiver];
+        if (MPI_Isend(pme_pp->f[ind_start], (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
+                      pme_pp->node[receiver], 0,
+                      pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
+        {
+            gmx_comm("MPI_Isend failed in do_pmeonly");
+        }
+    }
+
+    /* send virial and energy to our last PP node */
+    copy_mat(vir_q, cve.vir_q);
+    copy_mat(vir_lj, cve.vir_lj);
+    cve.energy_q     = energy_q;
+    cve.energy_lj    = energy_lj;
+    cve.dvdlambda_q  = dvdlambda_q;
+    cve.dvdlambda_lj = dvdlambda_lj;
+    /* check for the signals to send back to a PP node */
+    cve.stop_cond = gmx_get_stop_condition();
+
+    cve.cycles = cycles;
+
+    if (debug)
+    {
+        fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n",
+                pme_pp->node_peer);
+    }
+    MPI_Isend(&cve, sizeof(cve), MPI_BYTE,
+              pme_pp->node_peer, 1,
+              pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+
+    /* Wait for the forces to arrive */
+    MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+#else
+    gmx_call("MPI not enabled");
+    GMX_UNUSED_VALUE(pme_pp);
+    GMX_UNUSED_VALUE(vir_q);
+    GMX_UNUSED_VALUE(energy_q);
+    GMX_UNUSED_VALUE(vir_lj);
+    GMX_UNUSED_VALUE(energy_lj);
+    GMX_UNUSED_VALUE(dvdlambda_q);
+    GMX_UNUSED_VALUE(dvdlambda_lj);
+    GMX_UNUSED_VALUE(cycles);
+#endif
+}
+
 int gmx_pmeonly(struct gmx_pme_t *pme,
                 t_commrec *cr,    t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
@@ -152,14 +531,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 {
     int                npmedata;
     struct gmx_pme_t **pmedata;
-    gmx_pme_pp_t       pme_pp;
+    gmx_pme_pp        *pme_pp;
     int                ret;
-    int                natoms;
+    int                natoms = 0;
     matrix             box;
-    rvec              *x_pp       = nullptr, *f_pp = nullptr;
-    real              *chargeA    = nullptr, *chargeB = nullptr;
-    real              *c6A        = nullptr, *c6B = nullptr;
-    real              *sigmaA     = nullptr, *sigmaB = nullptr;
     real               lambda_q   = 0;
     real               lambda_lj  = 0;
     int                maxshift_x = 0, maxshift_y = 0;
@@ -167,7 +542,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     matrix             vir_q, vir_lj;
     float              cycles;
     int                count;
-    gmx_bool           bEnerVir;
+    gmx_bool           bEnerVir = FALSE;
     gmx_int64_t        step;
     ivec               grid_switch;
 
@@ -188,13 +563,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         {
             /* Domain decomposition */
             bool atomSetChanged = false;
-            real ewaldcoeff_q, ewaldcoeff_lj;
+            real ewaldcoeff_q   = 0, ewaldcoeff_lj = 0;
             ret = gmx_pme_recv_coeffs_coords(pme_pp,
                                              &natoms,
-                                             &chargeA, &chargeB,
-                                             &c6A, &c6B,
-                                             &sigmaA, &sigmaB,
-                                             box, &x_pp, &f_pp,
+                                             box,
                                              &maxshift_x, &maxshift_y,
                                              &lambda_q, &lambda_lj,
                                              &bEnerVir,
@@ -212,7 +584,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
             if (atomSetChanged)
             {
-                gmx_pme_reinit_atoms(pme, natoms, chargeA);
+                gmx_pme_reinit_atoms(pme, natoms, pme_pp->chargeA);
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -242,8 +614,14 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         clear_mat(vir_q);
         clear_mat(vir_lj);
 
-        gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
-                   chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
+        // TODO Make a struct of array refs onto these per-atom fields
+        // of pme_pp (maybe box, energy and virial, too; and likewise
+        // from mdatoms for the other call to gmx_pme_do), so we have
+        // fewer lines of code and less parameter passing.
+        gmx_pme_do(pme, 0, natoms, pme_pp->x, pme_pp->f,
+                   pme_pp->chargeA, pme_pp->chargeB,
+                   pme_pp->sqrt_c6A, pme_pp->sqrt_c6B,
+                   pme_pp->sigmaA, pme_pp->sigmaB, box,
                    cr, maxshift_x, maxshift_y, mynrnb, wcycle,
                    vir_q, vir_lj,
                    &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
@@ -252,7 +630,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
         gmx_pme_send_force_vir_ener(pme_pp,
-                                    f_pp, vir_q, energy_q, vir_lj, energy_lj,
+                                    vir_q, energy_q, vir_lj, energy_lj,
                                     dvdlambda_q, dvdlambda_lj, cycles);
 
         count++;
