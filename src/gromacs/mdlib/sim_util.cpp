@@ -293,7 +293,6 @@ static void pme_receive_force_ener(t_commrec      *cr,
                                    gmx_enerdata_t *enerd,
                                    t_forcerec     *fr)
 {
-    real   e_q, e_lj, dvdl_q, dvdl_lj;
     float  cycles_ppdpme, cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, ewcPPDURINGPME);
@@ -303,15 +302,8 @@ static void pme_receive_force_ener(t_commrec      *cr,
      * forces, virial and energy from the PME nodes here.
      */
     wallcycle_start(wcycle, ewcPP_PMEWAITRECVF);
-    dvdl_q  = 0;
-    dvdl_lj = 0;
-    gmx_pme_receive_f(cr, as_rvec_array(fr->f_novirsum->data()), fr->vir_el_recip, &e_q,
-                      fr->vir_lj_recip, &e_lj, &dvdl_q, &dvdl_lj,
-                      &cycles_seppme);
-    enerd->term[F_COUL_RECIP] += e_q;
-    enerd->term[F_LJ_RECIP]   += e_lj;
-    enerd->dvdl_lin[efptCOUL] += dvdl_q;
-    enerd->dvdl_lin[efptVDW]  += dvdl_lj;
+    gmx_pme_receive_f(cr, as_rvec_array(fr->f_novirsum->data()), fr->vir_el_recip,
+                      fr->vir_lj_recip, enerd, &cycles_seppme);
 
     if (wcycle)
     {

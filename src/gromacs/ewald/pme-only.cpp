@@ -122,7 +122,7 @@ struct gmx_pme_pp {
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
 static gmx_pme_pp *gmx_pme_pp_init(t_commrec *cr)
 {
-    struct gmx_pme_pp *pme_pp;
+    gmx_pme_pp *pme_pp;
 
     snew(pme_pp, 1);
 
@@ -164,8 +164,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
 
 
 static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
-                               ivec grid_size,
-                               real ewaldcoeff_q, real ewaldcoeff_lj,
+                               const gmx_pme_comm_n_box_t *cnb,
                                t_commrec *cr, t_inputrec *ir,
                                struct gmx_pme_t **pme_ret)
 {
@@ -176,16 +175,16 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
     while (ind < *npmedata)
     {
         pme = (*pmedata)[ind];
-        if (pme->nkx == grid_size[XX] &&
-            pme->nky == grid_size[YY] &&
-            pme->nkz == grid_size[ZZ])
+        if (pme->nkx == cnb->grid_size[XX] &&
+            pme->nky == cnb->grid_size[YY] &&
+            pme->nkz == cnb->grid_size[ZZ])
         {
             /* Here we have found an existing PME data structure that suits us.
              * However, in the GPU case, we have to reinitialize it - there's only one GPU structure.
              * This should not cause actual GPU reallocations, at least (the allocated buffers are never shrunk).
              * So, just some grid size updates in the GPU kernel parameters.
              */
-            gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+            gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, cnb->grid_size, cnb->ewaldcoeff_q, cnb->ewaldcoeff_lj);
             *pme_ret = pme;
             return;
         }
@@ -197,7 +196,7 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
     srenew(*pmedata, *npmedata);
 
     /* Generate a new PME data structure, copying part of the old pointers */
-    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, cnb->grid_size, cnb->ewaldcoeff_q, cnb->ewaldcoeff_lj);
 
     *pme_ret = (*pmedata)[ind];
 }
@@ -205,17 +204,9 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
  *
  * \param[in,out] pme_pp    PME-PP communication structure.
- * \param[out] natoms       Number of received atoms.
- * \param[out] box        System box, if received.
- * \param[out] maxshift_x        Maximum shift in X direction, if received.
- * \param[out] maxshift_y        Maximum shift in Y direction, if received.
- * \param[out] lambda_q         Free-energy lambda for electrostatics, if received.
- * \param[out] lambda_lj         Free-energy lambda for Lennard-Jones, if received.
+ * \param[out] natoms       Number of received atoms from all PP ranks.
+ * \param[out] cnb               Data received along with either charges or coordinates.
  * \param[out] bEnerVir          Set to true if this is an energy/virial calculation step, otherwise set to false.
- * \param[out] step              MD integration step number.
- * \param[out] grid_size         PME grid size, if received.
- * \param[out] ewaldcoeff_q         Ewald cut-off parameter for electrostatics, if received.
- * \param[out] ewaldcoeff_lj         Ewald cut-off parameter for Lennard-Jones, if received.
  * \param[out] atomSetChanged    Set to true only if the local domain atom data (charges/coefficients)
  *                               has been received (after DD) and should be reinitialized. Otherwise not changed.
  *
@@ -224,74 +215,53 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
  * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
  * \retval pmerecvqxRESETCOUNTERS *step was set.
  */
-static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
-                                      int               *natoms,
-                                      matrix             box,
-                                      int               *maxshift_x,
-                                      int               *maxshift_y,
-                                      real              *lambda_q,
-                                      real              *lambda_lj,
-                                      gmx_bool          *bEnerVir,
-                                      gmx_int64_t       *step,
-                                      ivec               grid_size,
-                                      real              *ewaldcoeff_q,
-                                      real              *ewaldcoeff_lj,
-                                      bool              *atomSetChanged)
+static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
+                                      int                  *natoms,
+                                      gmx_pme_comm_n_box_t *cnb,
+                                      gmx_bool             *bEnerVir,
+                                      bool                 *atomSetChanged)
 {
     int status = -1;
     int nat    = 0;
 
 #if GMX_MPI
-    unsigned int flags    = 0;
     int          messages = 0;
 
     do
     {
-        gmx_pme_comm_n_box_t cnb;
-        cnb.flags = 0;
 
         /* Receive the send count, box and time step from the peer PP node */
-        MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE,
+        MPI_Recv(cnb, sizeof(cnb), MPI_BYTE,
                  pme_pp->node_peer, eCommType_CNB,
                  pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
-
-        /* We accumulate all received flags */
-        flags |= cnb.flags;
-
-        *step  = cnb.step;
 
         if (debug)
         {
             fprintf(debug, "PME only rank receiving:%s%s%s%s%s\n",
-                    (cnb.flags & PP_PME_CHARGE)        ? " charges" : "",
-                    (cnb.flags & PP_PME_COORD )        ? " coordinates" : "",
-                    (cnb.flags & PP_PME_FINISH)        ? " finish" : "",
-                    (cnb.flags & PP_PME_SWITCHGRID)    ? " switch grid" : "",
-                    (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
+                    (cnb->flags & PP_PME_CHARGE)        ? " charges" : "",
+                    (cnb->flags & PP_PME_COORD )        ? " coordinates" : "",
+                    (cnb->flags & PP_PME_FINISH)        ? " finish" : "",
+                    (cnb->flags & PP_PME_SWITCHGRID)    ? " switch grid" : "",
+                    (cnb->flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
         }
 
-        if (cnb.flags & PP_PME_FINISH)
+        if (cnb->flags & PP_PME_FINISH)
         {
             status = pmerecvqxFINISH;
         }
 
-        if (cnb.flags & PP_PME_SWITCHGRID)
+        if (cnb->flags & PP_PME_SWITCHGRID)
         {
-            /* Special case, receive the new parameters and return */
-            copy_ivec(cnb.grid_size, grid_size);
-            *ewaldcoeff_q  = cnb.ewaldcoeff_q;
-            *ewaldcoeff_lj = cnb.ewaldcoeff_lj;
-
             status         = pmerecvqxSWITCHGRID;
         }
 
-        if (cnb.flags & PP_PME_RESETCOUNTERS)
+        if (cnb->flags & PP_PME_RESETCOUNTERS)
         {
             /* Special case, receive the step (set above) and return */
             status = pmerecvqxRESETCOUNTERS;
         }
 
-        if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
+        if (cnb->flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
         {
             *atomSetChanged = true;
 
@@ -300,7 +270,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             {
                 if (pme_pp->node[sender] == pme_pp->node_peer)
                 {
-                    pme_pp->nat[sender] = cnb.natoms;
+                    pme_pp->nat[sender] = cnb->natoms;
                 }
                 else
                 {
@@ -322,27 +292,27 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             if (nat > pme_pp->nalloc)
             {
                 pme_pp->nalloc = over_alloc_dd(nat);
-                if (cnb.flags & PP_PME_CHARGE)
+                if (cnb->flags & PP_PME_CHARGE)
                 {
                     srenew(pme_pp->chargeA, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_CHARGEB)
+                if (cnb->flags & PP_PME_CHARGEB)
                 {
                     srenew(pme_pp->chargeB, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_SQRTC6)
+                if (cnb->flags & PP_PME_SQRTC6)
                 {
                     srenew(pme_pp->sqrt_c6A, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_SQRTC6B)
+                if (cnb->flags & PP_PME_SQRTC6B)
                 {
                     srenew(pme_pp->sqrt_c6B, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_SIGMA)
+                if (cnb->flags & PP_PME_SIGMA)
                 {
                     srenew(pme_pp->sigmaA, pme_pp->nalloc);
                 }
-                if (cnb.flags & PP_PME_SIGMAB)
+                if (cnb->flags & PP_PME_SIGMAB)
                 {
                     srenew(pme_pp->sigmaB, pme_pp->nalloc);
                 }
@@ -350,16 +320,12 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
                 srenew(pme_pp->f, pme_pp->nalloc);
             }
 
-            /* maxshift is sent when the charges are sent */
-            *maxshift_x = cnb.maxshift_x;
-            *maxshift_y = cnb.maxshift_y;
-
             /* Receive the charges in place */
             for (int q = 0; q < eCommType_NR; q++)
             {
                 real *charge_pp;
 
-                if (!(cnb.flags & (PP_PME_CHARGE<<q)))
+                if (!(cnb->flags & (PP_PME_CHARGE<<q)))
                 {
                     continue;
                 }
@@ -397,15 +363,9 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
             }
         }
 
-        if (cnb.flags & PP_PME_COORD)
+        if (cnb->flags & PP_PME_COORD)
         {
-            /* The box, FE flag and lambda are sent along with the coordinates
-             *  */
-            copy_mat(cnb.box, box);
-            *lambda_q       = cnb.lambda_q;
-            *lambda_lj      = cnb.lambda_lj;
-            *bEnerVir       = (cnb.flags & PP_PME_ENER_VIR);
-            *step           = cnb.step;
+            *bEnerVir       = (cnb->flags & PP_PME_ENER_VIR);
 
             /* Receive the coordinates in place */
             nat = 0;
@@ -437,16 +397,8 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
     while (status == -1);
 #else
     GMX_UNUSED_VALUE(pme_pp);
-    GMX_UNUSED_VALUE(box);
-    GMX_UNUSED_VALUE(maxshift_x);
-    GMX_UNUSED_VALUE(maxshift_y);
-    GMX_UNUSED_VALUE(lambda_q);
-    GMX_UNUSED_VALUE(lambda_lj);
+    GMX_UNUSED_VALUE(cnb);
     GMX_UNUSED_VALUE(bEnerVir);
-    GMX_UNUSED_VALUE(step);
-    GMX_UNUSED_VALUE(grid_size);
-    GMX_UNUSED_VALUE(ewaldcoeff_q);
-    GMX_UNUSED_VALUE(ewaldcoeff_lj);
     GMX_UNUSED_VALUE(atomSetChanged);
 
     status = pmerecvqxX;
@@ -461,16 +413,11 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp        *pme_pp,
 }
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
-                                        matrix vir_q, real energy_q,
-                                        matrix vir_lj, real energy_lj,
-                                        real dvdlambda_q, real dvdlambda_lj,
-                                        float cycles)
+static void gmx_pme_send_force_vir_ener(gmx_pme_pp                   *pme_pp,
+                                        const gmx_pme_comm_vir_ene_t *cve)
 {
 #if GMX_MPI
-    gmx_pme_comm_vir_ene_t cve;
-    int                    messages, ind_start, ind_end;
-    cve.cycles = cycles;
+    int messages, ind_start, ind_end;
 
     /* Now the evaluated forces have to be transferred to the PP nodes */
     messages = 0;
@@ -487,24 +434,12 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
         }
     }
 
-    /* send virial and energy to our last PP node */
-    copy_mat(vir_q, cve.vir_q);
-    copy_mat(vir_lj, cve.vir_lj);
-    cve.energy_q     = energy_q;
-    cve.energy_lj    = energy_lj;
-    cve.dvdlambda_q  = dvdlambda_q;
-    cve.dvdlambda_lj = dvdlambda_lj;
-    /* check for the signals to send back to a PP node */
-    cve.stop_cond = gmx_get_stop_condition();
-
-    cve.cycles = cycles;
-
     if (debug)
     {
         fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n",
                 pme_pp->node_peer);
     }
-    MPI_Isend(&cve, sizeof(cve), MPI_BYTE,
+    MPI_Isend(cve, sizeof(cve), MPI_BYTE,
               pme_pp->node_peer, 1,
               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
 
@@ -513,13 +448,7 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp *pme_pp,
 #else
     gmx_call("MPI not enabled");
     GMX_UNUSED_VALUE(pme_pp);
-    GMX_UNUSED_VALUE(vir_q);
-    GMX_UNUSED_VALUE(energy_q);
-    GMX_UNUSED_VALUE(vir_lj);
-    GMX_UNUSED_VALUE(energy_lj);
-    GMX_UNUSED_VALUE(dvdlambda_q);
-    GMX_UNUSED_VALUE(dvdlambda_lj);
-    GMX_UNUSED_VALUE(cycles);
+    GMX_UNUSED_VALUE(cve);
 #endif
 }
 
@@ -534,17 +463,8 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     gmx_pme_pp        *pme_pp;
     int                ret;
     int                natoms = 0;
-    matrix             box;
-    real               lambda_q   = 0;
-    real               lambda_lj  = 0;
-    int                maxshift_x = 0, maxshift_y = 0;
-    real               energy_q, energy_lj, dvdlambda_q, dvdlambda_lj;
-    matrix             vir_q, vir_lj;
-    float              cycles;
     int                count;
     gmx_bool           bEnerVir = FALSE;
-    gmx_int64_t        step;
-    ivec               grid_switch;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */
     npmedata = 1;
@@ -559,27 +479,21 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     do /****** this is a quasi-loop over time steps! */
     {
         /* The reason for having a loop here is PME grid tuning/switching */
+        gmx_pme_comm_n_box_t cnb;
         do
         {
             /* Domain decomposition */
             bool atomSetChanged = false;
-            real ewaldcoeff_q   = 0, ewaldcoeff_lj = 0;
             ret = gmx_pme_recv_coeffs_coords(pme_pp,
                                              &natoms,
-                                             box,
-                                             &maxshift_x, &maxshift_y,
-                                             &lambda_q, &lambda_lj,
+                                             &cnb,
                                              &bEnerVir,
-                                             &step,
-                                             grid_switch,
-                                             &ewaldcoeff_q,
-                                             &ewaldcoeff_lj,
                                              &atomSetChanged);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
-                /* Switch the PME grid to grid_switch */
-                gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, ewaldcoeff_q, ewaldcoeff_lj, cr, ir, &pme);
+                /* Switch the PME grid to the new one */
+                gmx_pmeonly_switch(&npmedata, &pmedata, &cnb, cr, ir, &pme);
             }
 
             if (atomSetChanged)
@@ -590,7 +504,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, ir, step);
+                reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, ir, cnb.step);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -609,29 +523,29 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
         wallcycle_start(wcycle, ewcPMEMESH);
 
-        dvdlambda_q  = 0;
-        dvdlambda_lj = 0;
-        clear_mat(vir_q);
-        clear_mat(vir_lj);
+        gmx_pme_comm_vir_ene_t cve;
 
         // TODO Make a struct of array refs onto these per-atom fields
-        // of pme_pp (maybe box, energy and virial, too; and likewise
+        // of pme_pp (maybe things from cnb, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
         gmx_pme_do(pme, 0, natoms, pme_pp->x, pme_pp->f,
                    pme_pp->chargeA, pme_pp->chargeB,
                    pme_pp->sqrt_c6A, pme_pp->sqrt_c6B,
-                   pme_pp->sigmaA, pme_pp->sigmaB, box,
-                   cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                   vir_q, vir_lj,
-                   &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
+                   pme_pp->sigmaA, pme_pp->sigmaB, cnb.box,
+                   cr, cnb.maxshift_x, cnb.maxshift_y, mynrnb, wcycle,
+                   cve.vir_q, cve.vir_lj,
+                   &cve.energy_q, &cve.energy_lj,
+                   cnb.lambda_q, cnb.lambda_lj,
+                   &cve.dvdlambda_q, &cve.dvdlambda_lj,
                    GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
 
-        cycles = wallcycle_stop(wcycle, ewcPMEMESH);
+        cve.cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
-        gmx_pme_send_force_vir_ener(pme_pp,
-                                    vir_q, energy_q, vir_lj, energy_lj,
-                                    dvdlambda_q, dvdlambda_lj, cycles);
+        /* check for the signals to send back to a PP node */
+        cve.stop_cond = gmx_get_stop_condition();
+
+        gmx_pme_send_force_vir_ener(pme_pp, &cve);
 
         count++;
     } /***** end of quasi-loop, we stop with the break above */
