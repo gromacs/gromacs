@@ -104,7 +104,7 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    t_commrec *        cr,
                    struct gmx_pme_t * pme_src,
                    const t_inputrec * ir,
-                   ivec               grid_size,
+                   const ivec         grid_size,
                    real               ewaldcoeff_q,
                    real               ewaldcoeff_lj);
 

@@ -93,13 +93,13 @@ enum {
  */
 struct gmx_pme_comm_n_box_t
 {
-    int             natoms;     /**< Number of atoms */
-    matrix          box;        /**< Box */
-    int             maxshift_x; /**< Maximum shift in x direction */
-    int             maxshift_y; /**< Maximum shift in y direction */
-    real            lambda_q;   /**< Free-energy lambda for electrostatics */
-    real            lambda_lj;  /**< Free-energy lambda for Lennard-Jones */
-    unsigned int    flags;      /**< Control flags */
+    int             natoms;     /**< Number of atoms communicated by this PME-PP pair. */
+    matrix          box;        /**< Box, sent along with coordinates. */
+    int             maxshift_x; /**< Maximum shift in x direction, sent along with charges. */
+    int             maxshift_y; /**< Maximum shift in y direction, sent along with charges. */
+    real            lambda_q;   /**< Free-energy lambda for electrostatics, sent along with coordinates. */
+    real            lambda_lj;  /**< Free-energy lambda for Lennard-Jones, sent along with coordinates. */
+    unsigned int    flags;      /**< Control flags, sent along with coordinates. */
     gmx_int64_t     step;       /**< MD integration step number */
     //@{
     /*! \brief Used in PME grid tuning */
@@ -107,6 +107,14 @@ struct gmx_pme_comm_n_box_t
     real            ewaldcoeff_q;
     real            ewaldcoeff_lj;
     //@}
+    //! Default constructor, zeroes everything.
+    gmx_pme_comm_n_box_t() :
+        natoms(0), box(), maxshift_x(0), maxshift_y(0), lambda_q(0), lambda_lj(0),
+        flags(0), step(0), grid_size(), ewaldcoeff_q(0), ewaldcoeff_lj(0)
+    {
+        clear_mat(box);
+        clear_ivec(grid_size);
+    }
 };
 
 /*! \internal
@@ -128,4 +136,12 @@ struct gmx_pme_comm_vir_ene_t
     //@}
     float           cycles;     /**< Counter of CPU cycles used */
     gmx_stop_cond_t stop_cond;  /**< Flag used in responding to an external signal to terminate */
+    //! Default constructor, zeroes everything.
+    gmx_pme_comm_vir_ene_t() :
+        vir_q(), vir_lj(), energy_q(0), energy_lj(0),
+        dvdlambda_q(0), dvdlambda_lj(0), cycles(0), stop_cond(gmx_stop_cond_none)
+    {
+        clear_mat(vir_q);
+        clear_mat(vir_lj);
+    }
 };
