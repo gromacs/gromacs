@@ -223,7 +223,7 @@ int gmx_vanhove(int argc, char *argv[])
 
     /* clean up */
     sfree(x);
-    close_trj(status);
+    close_trx(status);
 
     fprintf(stderr, "Read %d frames\n", nfr);
 

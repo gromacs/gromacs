@@ -342,7 +342,7 @@ int gmx_sans(int argc, char *argv[])
         sfree(sqframecurrent);
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     /* normalize histo */
     normalize_probability(pr->grn, pr->gr);

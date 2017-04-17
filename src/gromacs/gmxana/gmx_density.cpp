@@ -300,7 +300,7 @@ void calc_electron_density(const char *fn, int **index, int gnx[],
     gmx_rmpbc_done(gpbc);
 
     /*********** done with status file **********/
-    close_trj(status);
+    close_trx(status);
 
 /* slDensity now contains the total number of electrons per slice, summed
    over all frames. Now divide by nr_frames and volume of slice
@@ -449,7 +449,7 @@ void calc_density(const char *fn, int **index, int gnx[],
     gmx_rmpbc_done(gpbc);
 
     /*********** done with status file **********/
-    close_trj(status);
+    close_trx(status);
 
     /* slDensity now contains the total mass per slice, summed over all
        frames. Now divide by nr_frames and volume of slice

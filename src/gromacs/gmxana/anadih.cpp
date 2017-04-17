@@ -1001,7 +1001,7 @@ void read_ang_dih(const char *trj_fn,
         teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     sfree(x);
     sfree(angles[cur]);
