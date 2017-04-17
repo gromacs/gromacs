@@ -74,15 +74,25 @@ class MDLogger;
 GPU_FUNC_QUALIFIER
 int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FUNC_ARGUMENT(err_str)) GPU_FUNC_TERM_WITH_RETURN(-1)
 
-/*! \brief Return compatibility status of GPU with given \c index.
+/*! \brief Return whether the GPU with given \c index is compatible, ie suitable for use.
  *
  * \param[in]   gpu_info    pointer to structure holding GPU information
  * \param[in]   index       index of GPU to ask about
- * \returns                 A e_gpu_detect_res_t value describing the status
+ * \returns                 Whether the GPU is compatible.
  */
 GPU_FUNC_QUALIFIER
-int getGpuCompatibilityStatus(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
-                              int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN(-1)
+bool isGpuCompatible(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+                     int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN(false)
+
+/*! \brief Return a string describing how compatible the GPU with given \c index is.
+ *
+ * \param[in]   gpu_info    pointer to structure holding GPU information
+ * \param[in]   index       index of GPU to ask about
+ * \returns                 A null-terminated C string describing the compatibility status, useful for error messages.
+ */
+GPU_FUNC_QUALIFIER
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+                                           int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN("")
 
 /*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
  *

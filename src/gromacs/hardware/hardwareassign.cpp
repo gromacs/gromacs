@@ -189,13 +189,12 @@ static bool checkGpuSelection(const gmx_gpu_info_t *gpu_info,
         GMX_ASSERT(gpu_opt->dev_use, "Invalid gpu_opt->dev_use");
 
         int id     = gpu_opt->dev_use[i];
-        int status = getGpuCompatibilityStatus(gpu_info, id);
-        if (status != egpuCompatible)
+        if (!isGpuCompatible(gpu_info, id))
         {
             allOK    = false;
             message += gmx::formatString("    GPU #%d: %s\n",
                                          id,
-                                         gpu_detect_res_str[status]);
+                                         getGpuCompatibilityDescription(gpu_info, id));
         }
     }
     if (!allOK && errorMessage)
@@ -226,7 +225,7 @@ static void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
     for (int i = 0; i < gpu_info->n_dev; i++)
     {
         GMX_ASSERT(gpu_info->gpu_dev, "Invalid gpu_info->gpu_dev");
-        if (getGpuCompatibilityStatus(gpu_info, i) == egpuCompatible)
+        if (isGpuCompatible(gpu_info, i))
         {
             gpu_opt->dev_compatible[gpu_opt->n_dev_compatible] = i;
             gpu_opt->n_dev_compatible++;

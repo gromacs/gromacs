@@ -121,6 +121,8 @@ static const bool multiGpuSupport[] = {
 };
 static const bool bMultiGpuPerNodeSupported = multiGpuSupport[GMX_GPU];
 
+// TODO If/when we unify CUDA and OpenCL support code, this should
+// move to a single place in gpu_utils.
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
 const char * const gpu_detect_res_str[egpuNR] =
 {

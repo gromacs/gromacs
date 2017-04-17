@@ -343,12 +343,25 @@ void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 }
 
 //! This function is documented in the header file
-int getGpuCompatibilityStatus(const gmx_gpu_info_t *gpu_info,
-                              int                   index)
+bool isGpuCompatible(const gmx_gpu_info_t *gpu_info,
+                     int                   index)
 {
     assert(gpu_info);
 
-    return (index >= gpu_info->n_dev) ? egpuNonexistent : gpu_info->gpu_dev[index].stat;
+    return (index >= gpu_info->n_dev ?
+            false :
+            gpu_info->gpu_dev[index].stat == egpuCompatible);
+}
+
+//! This function is documented in the header file
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t *gpu_info,
+                                           int                   index)
+{
+    assert(gpu_info);
+
+    return (index >= gpu_info->n_dev ?
+            gpu_detect_res_str[egpuNonexistent] :
+            gpu_detect_res_str[gpu_info->gpu_dev[index].stat]);
 }
 
 //! This function is documented in the header file
