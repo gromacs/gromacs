@@ -60,6 +60,8 @@
 
 #include <stdio.h>
 
+#include <vector>
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
@@ -119,9 +121,8 @@ void dd_get_constraint_range(const gmx_domdec_t *dd,
 void get_pme_nnodes(const struct gmx_domdec_t *dd,
                     int *npmenodes_x, int *npmenodes_y);
 
-/*! \brief Returns the set of DD nodes that communicate with pme node cr->nodeid */
-void get_pme_ddnodes(struct t_commrec *cr, int pmenodeid,
-                     int *nmy_ddnodes, int **my_ddnodes, int *node_peer);
+/*! \brief Returns the set of DD ranks that communicate with PME rank cr->nodeid */
+std::vector<int> find_ddranks_for_pme_rank(t_commrec *cr, int pmerankid);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim x */
 int dd_pme_maxshift_x(const gmx_domdec_t *dd);
