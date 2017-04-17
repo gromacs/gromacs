@@ -828,7 +828,7 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
         gmx_rmpbc_done(gpbc);
     }
 
-    close_trj(status);
+    close_trx(status);
 
     return natoms;
 }

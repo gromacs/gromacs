@@ -806,7 +806,7 @@ int gmx_rmsdist(int argc, char *argv[])
 
     xvgrclose(fp);
 
-    close_trj(status);
+    close_trx(status);
 
     calc_rms(isize, teller, dtot, dtot2, rms, &rmsmax, rmsc, &rmscmax, mean, &meanmax);
     fprintf(stderr, "rmsmax = %g, rmscmax = %g\n", rmsmax, rmscmax);

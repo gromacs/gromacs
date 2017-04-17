@@ -360,7 +360,7 @@ int gmx_spol(int argc, char *argv[])
 
     /* clean up */
     sfree(x);
-    close_trj(status);
+    close_trx(status);
 
     fprintf(stderr, "Average number of molecules within %g nm is %.1f\n",
             rmax, static_cast<real>(ntot)/nf);

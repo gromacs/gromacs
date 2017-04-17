@@ -633,6 +633,10 @@ void close_trx(t_trxstatus *status)
 #if GMX_USE_PLUGINS
     sfree(status->vmdplugin);
 #endif
+    /* The memory in status->xframe is lost here,
+     * but the read_first_x/read_next_x functions are deprecated anyhow.
+     * read_first_frame/read_next_frame and close_trx should be used.
+     */
     sfree(status);
 }
 
@@ -839,12 +843,10 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 break;
             case efG96:
             {
-                t_symtab *symtab;
-                snew(symtab, 1);
-                open_symtab(symtab);
+                GMX_RELEASE_ASSERT(fr->atoms == nullptr, "Reading g96 format with atoms requires a valid symbol table");
+                t_symtab *symtab = nullptr;
                 read_g96_conf(gmx_fio_getfp(status->fio), nullptr, fr,
                               symtab, status->persistent_line);
-                free_symtab(symtab);
                 bRet = (fr->natoms > 0);
                 break;
             }
@@ -974,11 +976,9 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                 /* allocate the persistent line */
                 snew((*status)->persistent_line, STRLEN+1);
             }
-            t_symtab *symtab;
-            snew(symtab, 1);
-            open_symtab(symtab);
+            GMX_RELEASE_ASSERT(fr->atoms == nullptr, "Reading g96 format with atoms requires a valid symbol table");
+            t_symtab *symtab = nullptr;
             read_g96_conf(gmx_fio_getfp(fio), fn, fr, symtab, (*status)->persistent_line);
-            free_symtab(symtab);
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
             if (flags & (TRX_READ_X | TRX_NEED_X))
@@ -1090,6 +1090,42 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     return (fr->natoms > 0);
 }
 
+void clean_up_after_final_frame(const t_trxstatus *status, t_trxframe *fr)
+{
+    clear_trxframe(fr, FALSE);
+
+    int ftp;
+    if (status->tng)
+    {
+        /* Special treatment for TNG files */
+        ftp = efTNG;
+    }
+    else
+    {
+        ftp = gmx_fio_getftp(status->fio);
+    }
+    switch (ftp)
+    {
+        case efTRR:
+            break;
+        case efCPT:
+            break;
+        case efG96:
+            sfree(const_cast<char *>(fr->title));
+            break;
+        case efXTC:
+            break;
+        case efTNG:
+            break;
+        case efPDB:
+            break;
+        case efGRO:
+            break;
+        default:
+            break;
+    }
+}
+
 /***** C O O R D I N A T E   S T U F F *****/
 
 int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const char *fn,
@@ -1120,25 +1156,6 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
     copy_mat(status->xframe->box, box);
 
     return bRet;
-}
-
-void close_trj(t_trxstatus *status)
-{
-    if (status == nullptr)
-    {
-        return;
-    }
-    gmx_tng_close(&status->tng);
-    if (status->fio)
-    {
-        gmx_fio_close(status->fio);
-    }
-
-    /* The memory in status->xframe is lost here,
-     * but the read_first_x/read_next_x functions are deprecated anyhow.
-     * read_first_frame/read_next_frame and close_trx should be used.
-     */
-    sfree(status);
 }
 
 void rewind_trj(t_trxstatus *status)

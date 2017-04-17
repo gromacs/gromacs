@@ -3156,7 +3156,7 @@ int gmx_hbond(int argc, char *argv[])
 
     free_grid(ngrid, &grid);
 
-    close_trj(status);
+    close_trx(status);
 
     if (donor_properties)
     {

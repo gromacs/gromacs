@@ -209,7 +209,7 @@ int gmx_rotacf(int argc, char *argv[])
         teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     fprintf(stderr, "\nDone with trajectory\n");
 
     gmx_rmpbc_done(gpbc);

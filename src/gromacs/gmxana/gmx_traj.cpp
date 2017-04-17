@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -63,6 +64,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/unique_cptr.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, int *index,
                            gmx_bool bDim[], const char *sffmt)
@@ -818,12 +820,13 @@ int gmx_traj(int argc, char *argv[])
     }
 
     flags = 0;
+    std::string label(output_env_get_xvgr_tlabel(oenv));
     if (bOX)
     {
         flags = flags | TRX_READ_X;
         outx  = xvgropen(opt2fn("-ox", NFILE, fnm),
                          bCom ? "Center of mass" : "Coordinate",
-                         output_env_get_xvgr_tlabel(oenv), "Coordinate (nm)", oenv);
+                         label.c_str(), "Coordinate (nm)", oenv);
         make_legend(outx, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOXT)
@@ -836,21 +839,21 @@ int gmx_traj(int argc, char *argv[])
         flags = flags | TRX_READ_V;
         outv  = xvgropen(opt2fn("-ov", NFILE, fnm),
                          bCom ? "Center of mass velocity" : "Velocity",
-                         output_env_get_xvgr_tlabel(oenv), "Velocity (nm/ps)", oenv);
+                         label.c_str(), "Velocity (nm/ps)", oenv);
         make_legend(outv, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOF)
     {
         flags = flags | TRX_READ_F;
         outf  = xvgropen(opt2fn("-of", NFILE, fnm), "Force",
-                         output_env_get_xvgr_tlabel(oenv), "Force (kJ mol\\S-1\\N nm\\S-1\\N)",
+                         label.c_str(), "Force (kJ mol\\S-1\\N nm\\S-1\\N)",
                          oenv);
         make_legend(outf, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOB)
     {
         outb = xvgropen(opt2fn("-ob", NFILE, fnm), "Box vector elements",
-                        output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
+                        label.c_str(), "(nm)", oenv);
 
         xvgr_legend(outb, 6, box_leg, oenv);
     }
@@ -862,7 +865,7 @@ int gmx_traj(int argc, char *argv[])
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_V;
         outt      = xvgropen(opt2fn("-ot", NFILE, fnm), "Temperature",
-                             output_env_get_xvgr_tlabel(oenv), "(K)", oenv);
+                             label.get(), "(K)", oenv);
         make_legend(outt, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bEKT)
@@ -873,7 +876,7 @@ int gmx_traj(int argc, char *argv[])
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_V;
         outekt    = xvgropen(opt2fn("-ekt", NFILE, fnm), "Center of mass translation",
-                             output_env_get_xvgr_tlabel(oenv), "Energy (kJ mol\\S-1\\N)", oenv);
+                             label.c_str(), "Energy (kJ mol\\S-1\\N)", oenv);
         make_legend(outekt, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bEKR)
@@ -884,7 +887,7 @@ int gmx_traj(int argc, char *argv[])
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_X | TRX_READ_V;
         outekr    = xvgropen(opt2fn("-ekr", NFILE, fnm), "Center of mass rotation",
-                             output_env_get_xvgr_tlabel(oenv), "Energy (kJ mol\\S-1\\N)", oenv);
+                             label.c_str(), "Energy (kJ mol\\S-1\\N)", oenv);
         make_legend(outekr, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bVD)
@@ -1052,6 +1055,7 @@ int gmx_traj(int argc, char *argv[])
 
     }
     while (read_next_frame(oenv, status, &fr));
+    clean_up_after_final_frame(status, &fr);
 
     if (gpbc != nullptr)
     {
@@ -1059,7 +1063,7 @@ int gmx_traj(int argc, char *argv[])
     }
 
     /* clean up a bit */
-    close_trj(status);
+    close_trx(status);
 
     if (bOX)
     {
@@ -1135,6 +1139,29 @@ int gmx_traj(int argc, char *argv[])
 
     /* view it */
     view_all(oenv, NFILE, fnm);
+
+    done_top(&top);
+    // Free index and isize only if they are distinct from index0 and isize0
+    if (bMol)
+    {
+        for (int i = 0; i < ngroups; i++)
+        {
+            sfree(index[i]);
+        }
+        sfree(index);
+        sfree(isize);
+    }
+    for (int i = 0; i < ngroups; i++)
+    {
+        sfree(index0[i]);
+        sfree(grpname[i]);
+    }
+    sfree(index0);
+    sfree(isize0);
+    sfree(grpname);
+    done_filenms(NFILE, fnm);
+    done_frame(&fr);
+    output_env_done(oenv);
 
     return 0;
 }

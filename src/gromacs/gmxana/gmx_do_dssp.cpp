@@ -685,7 +685,7 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
-    close_trj(status);
+    close_trx(status);
     if (fTArea)
     {
         xvgrclose(fTArea);

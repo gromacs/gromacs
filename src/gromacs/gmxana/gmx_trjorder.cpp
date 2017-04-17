@@ -366,7 +366,7 @@ int gmx_trjorder(int argc, char *argv[])
         }
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     if (out)
     {
         close_trx(out);
