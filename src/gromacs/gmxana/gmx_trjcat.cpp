@@ -129,7 +129,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
             timestep[i] = 0;
         }
 
-        close_trj(status);
+        close_trx(status);
         if (fr.bX)
         {
             sfree(fr.x);
@@ -699,7 +699,7 @@ int gmx_trjcat(int argc, char *argv[])
                 }
                 lastTimeSet     = TRUE;
                 bKeepLastAppend = TRUE;
-                close_trj(status);
+                close_trx(status);
                 trxout = open_trx(out_file, "a");
             }
             else if (bOverwrite)
@@ -735,7 +735,7 @@ int gmx_trjcat(int argc, char *argv[])
                 lasttime    = fr.time;
                 lastTimeSet = TRUE;
                 fpos        = gmx_fio_ftell(stfio);
-                close_trj(status);
+                close_trx(status);
                 trxout = open_trx(out_file, "r+");
                 if (gmx_fio_seek(trx_get_fileio(trxout), fpos))
                 {
@@ -911,7 +911,7 @@ int gmx_trjcat(int argc, char *argv[])
             }
             while (read_next_frame(oenv, status, &fr));
 
-            close_trj(status);
+            close_trx(status);
         }
         if (trxout)
         {

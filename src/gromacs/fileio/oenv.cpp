@@ -131,7 +131,7 @@ const char *output_env_get_time_unit(const gmx_output_env_t *oenv)
     return time_units_str[oenv->time_unit];
 }
 
-const char *output_env_get_time_label(const gmx_output_env_t *oenv)
+char *output_env_get_time_label(const gmx_output_env_t *oenv)
 {
     char *label;
     snew(label, 20);
@@ -142,7 +142,7 @@ const char *output_env_get_time_label(const gmx_output_env_t *oenv)
     return label;
 }
 
-const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
+char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
 {
     char *label;
     snew(label, 20);

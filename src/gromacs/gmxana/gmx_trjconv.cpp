@@ -871,8 +871,8 @@ int gmx_trjconv(int argc, char *argv[])
     int               ePBC  = -1;
     t_atoms          *atoms = nullptr, useatoms;
     matrix            top_box;
-    int              *index, *cindex;
-    char             *grpnm;
+    int              *index = nullptr, *cindex = nullptr;
+    char             *grpnm = nullptr;
     int              *frindex, nrfri;
     char             *frname;
     int               ifit, my_clust = -1;
@@ -923,7 +923,6 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     top_file = ftp2fn(efTPS, NFILE, fnm);
-    init_top(&top);
 
     /* Check command line */
     in_file = opt2fn("-f", NFILE, fnm);
@@ -1181,7 +1180,7 @@ int gmx_trjconv(int argc, char *argv[])
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(trxin);
+            close_trx(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1884,6 +1883,7 @@ int gmx_trjconv(int argc, char *argv[])
                 bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
             }
             while (!(bTDump && bDumpFrame) && bHaveNextFrame);
+            clean_up_after_final_frame(trxin, &fr);
         }
 
         if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
@@ -1893,7 +1893,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(trxin);
+        close_trx(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
@@ -1922,8 +1922,19 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     sfree(mtop);
+    done_top(&top);
+    sfree(xp);
+    sfree(xmem);
+    sfree(vmem);
+    sfree(fmem);
+    sfree(grpnm);
+    sfree(index);
+    sfree(cindex);
+    done_filenms(NFILE, fnm);
+    done_frame(&fr);
 
     do_view(oenv, out_file, nullptr);
 
+    output_env_done(oenv);
     return 0;
 }
