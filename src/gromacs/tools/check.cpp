@@ -177,7 +177,7 @@ static void comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *
             {
                 fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn[1-i], fn[i]);
             }
-            close_trj(status[i]);
+            close_trx(status[i]);
         }
     }
     if (!b[0] && !b[1])
@@ -494,7 +494,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
 
     fprintf(stderr, "\n");
 
-    close_trj(status);
+    close_trx(status);
 
     fprintf(stderr, "\nItem        #frames");
     if (bShowTimestep)

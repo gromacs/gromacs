@@ -75,10 +75,6 @@ void rd_index(const char *statfile, int ngrps, int isize[],
  * the dimension of the isize and grpnames arrays are ngrps.
  */
 
-void rd_index_nrs(char *statfile, int ngrps, int isize[],
-                  int *index[], char *grpnames[], int grpnr[]);
-/* the same but also reads the number of the selected group*/
-
 void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
                int isize[], int *index[], char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it

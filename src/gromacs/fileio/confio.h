@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ void readConfAndTopology(const char *infile,
  * their presence is signaled with the \p haveMass flag in t_atoms of \p top.
  *
  * \param[in]     infile        Input file name
- * \param[out]    top           The topology, either complete or only atom data
+ * \param[out]    top           The topology, either complete or only atom data. Caller is responsible for calling done_top().
  * \param[out]    ePBC          Enum reporting the type of PBC
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL

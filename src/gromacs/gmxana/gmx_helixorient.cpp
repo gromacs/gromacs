@@ -480,7 +480,7 @@ int gmx_helixorient(int argc, char *argv[])
     gmx_ffclose(fptheta2);
     gmx_ffclose(fptheta3);
 
-    close_trj(status);
+    close_trx(status);
 
     return 0;
 }

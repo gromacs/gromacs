@@ -75,6 +75,8 @@ void close_symtab(t_symtab *symtab);
 /* Undoes the effect of open_symtab(), after invoking this function,
  * no value can be added to the symbol table, only values can be
  * retrieved using get_symtab().
+ *
+ * Note that this does no work.
  */
 
 void free_symtab(t_symtab *symtab);

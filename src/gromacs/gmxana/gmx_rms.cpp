@@ -722,7 +722,7 @@ int gmx_rms(int argc, char *argv[])
         }
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     if (bFile2)
     {
@@ -790,7 +790,7 @@ int gmx_rms(int argc, char *argv[])
             }
         }
         while (read_next_x(oenv, status, &t, x, box));
-        close_trj(status);
+        close_trx(status);
     }
     else
     {
