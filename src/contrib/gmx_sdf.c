@@ -539,7 +539,7 @@ structure if needed */
   gmx_rmpbc_done(gpbc);
 
 
-  close_trj(status);
+  close_trx(status);
   
   sfree(x);
 

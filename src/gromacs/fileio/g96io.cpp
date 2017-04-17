@@ -48,6 +48,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #define CHAR_SHIFT 24
@@ -65,6 +66,10 @@ static int read_g96_pos(char line[], t_symtab *symtab,
 
     nwanted = fr->natoms;
 
+    if (fr->atoms != nullptr)
+    {
+        GMX_RELEASE_ASSERT(symtab != nullptr, "Reading a conformation from a g96 format with atom data requires a valid symbol table");
+    }
     atoms = fr->atoms;
     if (atoms != nullptr)
     {
