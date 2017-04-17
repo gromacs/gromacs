@@ -284,7 +284,7 @@ int gmx_genconf(int argc, char *argv[])
     }
     if (bTRX)
     {
-        close_trj(status);
+        close_trx(status);
     }
 
     /* make box bigger */
