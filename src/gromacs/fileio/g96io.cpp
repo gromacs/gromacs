@@ -48,6 +48,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #define CHAR_SHIFT 24
@@ -65,6 +66,10 @@ static int read_g96_pos(char line[], t_symtab *symtab,
 
     nwanted = fr->natoms;
 
+    if (fr->atoms != nullptr)
+    {
+        GMX_RELEASE_ASSERT(symtab != nullptr, "Reading a conformation from a g96 format with atom data requires a valid symbol table");
+    }
     atoms = fr->atoms;
     if (atoms != nullptr)
     {
@@ -223,7 +228,7 @@ static int read_g96_vel(char line[], FILE *fp, const char *infile,
     return natoms;
 }
 
-int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
+int read_g96_conf(FILE *fp, const char *infile, char **name, t_trxframe *fr,
                   t_symtab *symtab, char *line)
 {
     gmx_bool   bAtStart, bTime, bAtoms, bPos, bVel, bBox, bEnd, bFinished;
@@ -238,14 +243,15 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
 
     if (bAtStart)
     {
-        while (!fr->bTitle && fgets2(line, STRLEN, fp))
+        bool foundTitle = false;
+        while (!foundTitle && fgets2(line, STRLEN, fp))
         {
-            fr->bTitle = (std::strcmp(line, "TITLE") == 0);
+            foundTitle = (std::strcmp(line, "TITLE") == 0);
         }
-        if (fr->title == nullptr)
+        fgets2(line, STRLEN, fp);
+        if (name != nullptr)
         {
-            fgets2(line, STRLEN, fp);
-            fr->title = gmx_strdup(line);
+            *name = gmx_strdup(line);
         }
         bEnd = FALSE;
         while (!bEnd && fgets2(line, STRLEN, fp))
@@ -344,7 +350,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
     return natoms;
 }
 
-void write_g96_conf(FILE *out, const t_trxframe *fr,
+void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr,
                     int nindex, const int *index)
 {
     t_atoms *atoms;
@@ -361,10 +367,7 @@ void write_g96_conf(FILE *out, const t_trxframe *fr,
         nout = fr->natoms;
     }
 
-    if (fr->bTitle)
-    {
-        fprintf(out, "TITLE\n%s\nEND\n", fr->title);
-    }
+    fprintf(out, "TITLE\n%s\nEND\n", title);
     if (fr->bStep || fr->bTime)
     {
         /* Officially the time format is %15.9, which is not enough for 10 ns */

@@ -345,7 +345,7 @@ int gmx_mdmat(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
     if (bFrames)
     {

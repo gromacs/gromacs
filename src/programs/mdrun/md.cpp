@@ -1807,7 +1807,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     if (bRerunMD && MASTER(cr))
     {
-        close_trj(status);
+        close_trx(status);
     }
 
     if (!(cr->duty & DUTY_PME))

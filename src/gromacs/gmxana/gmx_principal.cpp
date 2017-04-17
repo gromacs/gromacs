@@ -179,7 +179,7 @@ int gmx_principal(int argc, char *argv[])
 
     gmx_rmpbc_done(gpbc);
 
-    close_trj(status);
+    close_trx(status);
 
     xvgrclose(axis1);
     xvgrclose(axis2);

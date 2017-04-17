@@ -2544,7 +2544,6 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     read_checkpoint_data(fp, &simulation_part, &step, &t, &state, nullptr, nullptr);
 
     fr->natoms  = state.natoms;
-    fr->bTitle  = FALSE;
     fr->bStep   = TRUE;
     fr->step    = gmx_int64_to_int(step,
                                    "conversion of checkpoint to trajectory");

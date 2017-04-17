@@ -556,7 +556,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     }
     while (read_next_x(oenv, status, &t, x0, box));
 
-    close_trj(status);
+    close_trx(status);
     xvgrclose(dist);
     if (num)
     {

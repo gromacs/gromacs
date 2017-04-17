@@ -282,7 +282,6 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
 {
     fr->not_ok    = 0;
-    fr->bTitle    = FALSE;
     fr->bStep     = FALSE;
     fr->bTime     = FALSE;
     fr->bLambda   = FALSE;
@@ -297,7 +296,6 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
     {
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
-        fr->title     = nullptr;
         fr->step      = 0;
         fr->time      = 0;
         fr->lambda    = 0;
@@ -432,7 +430,8 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             }
             break;
         case efG96:
-            write_g96_conf(gmx_fio_getfp(status->fio), fr, nind, ind);
+            sprintf(title, "frame t= %.3f", fr->time);
+            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, nind, ind);
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe_indexed can not write %s",
@@ -584,7 +583,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             }
             break;
         case efG96:
-            write_g96_conf(gmx_fio_getfp(status->fio), fr, -1, nullptr);
+            write_g96_conf(gmx_fio_getfp(status->fio), title, fr, -1, nullptr);
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe can not write %s",
@@ -633,6 +632,10 @@ void close_trx(t_trxstatus *status)
 #if GMX_USE_PLUGINS
     sfree(status->vmdplugin);
 #endif
+    /* The memory in status->xframe is lost here,
+     * but the read_first_x/read_next_x functions are deprecated anyhow.
+     * read_first_frame/read_next_frame and close_trx should be used.
+     */
     sfree(status);
 }
 
@@ -839,12 +842,9 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 break;
             case efG96:
             {
-                t_symtab *symtab;
-                snew(symtab, 1);
-                open_symtab(symtab);
-                read_g96_conf(gmx_fio_getfp(status->fio), nullptr, fr,
+                t_symtab *symtab = nullptr;
+                read_g96_conf(gmx_fio_getfp(status->fio), nullptr, nullptr, fr,
                               symtab, status->persistent_line);
-                free_symtab(symtab);
                 bRet = (fr->natoms > 0);
                 break;
             }
@@ -974,11 +974,8 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                 /* allocate the persistent line */
                 snew((*status)->persistent_line, STRLEN+1);
             }
-            t_symtab *symtab;
-            snew(symtab, 1);
-            open_symtab(symtab);
-            read_g96_conf(gmx_fio_getfp(fio), fn, fr, symtab, (*status)->persistent_line);
-            free_symtab(symtab);
+            t_symtab *symtab = nullptr;
+            read_g96_conf(gmx_fio_getfp(fio), fn, nullptr, fr, symtab, (*status)->persistent_line);
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
             if (flags & (TRX_READ_X | TRX_NEED_X))
@@ -1120,25 +1117,6 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
     copy_mat(status->xframe->box, box);
 
     return bRet;
-}
-
-void close_trj(t_trxstatus *status)
-{
-    if (status == nullptr)
-    {
-        return;
-    }
-    gmx_tng_close(&status->tng);
-    if (status->fio)
-    {
-        gmx_fio_close(status->fio);
-    }
-
-    /* The memory in status->xframe is lost here,
-     * but the read_first_x/read_next_x functions are deprecated anyhow.
-     * read_first_frame/read_next_frame and close_trx should be used.
-     */
-    sfree(status);
 }
 
 void rewind_trj(t_trxstatus *status)
