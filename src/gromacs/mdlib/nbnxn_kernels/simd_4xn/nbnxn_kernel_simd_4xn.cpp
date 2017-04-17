@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -276,7 +276,7 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                coulkt, vdwkt = 0;
-    int                nb, nthreads;
+    int                nb, nthreads gmx_unused;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
