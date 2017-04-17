@@ -80,8 +80,6 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
-            fr.bTitle = TRUE;
-            fr.title  = title;
             fr.natoms = atoms->nr;
             fr.bAtoms = TRUE;
             fr.atoms  = const_cast<t_atoms *>(atoms);
@@ -95,7 +93,7 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
             out = gmx_fio_fopen(outfile, "w");
-            write_g96_conf(out, &fr, nindex, index);
+            write_g96_conf(out, title, &fr, nindex, index);
             gmx_fio_fclose(out);
             break;
         case efPDB:
@@ -134,8 +132,6 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
-            fr.bTitle = TRUE;
-            fr.title  = title;
             fr.natoms = atoms->nr;
             fr.bAtoms = TRUE;
             fr.atoms  = const_cast<t_atoms *>(atoms); // TODO check
@@ -149,7 +145,7 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
             out = gmx_fio_fopen(outfile, "w");
-            write_g96_conf(out, &fr, -1, nullptr);
+            write_g96_conf(out, title, &fr, -1, nullptr);
             gmx_fio_fclose(out);
             break;
         case efPDB:
@@ -218,14 +214,12 @@ static void get_stx_coordnum(const char *infile, int *natoms)
         case efG96:
         {
             in        = gmx_fio_fopen(infile, "r");
-            fr.title  = nullptr;
             fr.natoms = -1;
             fr.atoms  = nullptr;
             fr.x      = nullptr;
             fr.v      = nullptr;
             fr.f      = nullptr;
-            *natoms   = read_g96_conf(in, infile, &fr, nullptr, g96_line);
-            sfree(const_cast<char *>(fr.title));
+            *natoms   = read_g96_conf(in, infile, nullptr, &fr, nullptr, g96_line);
             gmx_fio_fclose(in);
             break;
         }
@@ -305,7 +299,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
 }
 
 static void read_stx_conf(const char *infile,
-                          t_symtab *symtab, char ***name, t_atoms *atoms,
+                          t_symtab *symtab, char **name, t_atoms *atoms,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
@@ -334,18 +328,15 @@ static void read_stx_conf(const char *infile,
             gmx_gro_read_conf(infile, symtab, name, atoms, x, v, box);
             break;
         case efG96:
-            fr.title  = nullptr;
             fr.natoms = atoms->nr;
             fr.atoms  = atoms;
             fr.x      = x;
             fr.v      = v;
             fr.f      = nullptr;
             in        = gmx_fio_fopen(infile, "r");
-            read_g96_conf(in, infile, &fr, symtab, g96_line);
+            read_g96_conf(in, infile, name, &fr, symtab, g96_line);
             gmx_fio_fclose(in);
             copy_mat(fr.box, box);
-            *name     = put_symtab(symtab, fr.title);
-            sfree(const_cast<char *>(fr.title));
             break;
         case efPDB:
         case efBRK:
@@ -361,7 +352,7 @@ static void read_stx_conf(const char *infile,
 }
 
 static void readConfAndAtoms(const char *infile,
-                             t_symtab *symtab, char ***name, t_atoms *atoms,
+                             t_symtab *symtab, char **name, t_atoms *atoms,
                              int *ePBC,
                              rvec **x, rvec **v, matrix box)
 {
@@ -428,7 +419,7 @@ void readConfAndTopology(const char *infile,
     else
     {
         t_symtab   symtab;
-        char     **name;
+        char      *name;
         t_atoms    atoms;
 
         open_symtab(&symtab);
@@ -436,7 +427,8 @@ void readConfAndTopology(const char *infile,
         readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
 
         init_mtop(mtop);
-        convertAtomsToMtop(&symtab, name, &atoms, mtop);
+        convertAtomsToMtop(&symtab, put_symtab(&symtab, name), &atoms, mtop);
+        sfree(name);
     }
 }
 

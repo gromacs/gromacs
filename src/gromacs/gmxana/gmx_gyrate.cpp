@@ -375,7 +375,7 @@ int gmx_gyrate(int argc, char *argv[])
         j++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     if (nz == 0)
     {
         gmx_rmpbc_done(gpbc);

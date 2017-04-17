@@ -264,7 +264,7 @@ static void density_in_time (const char *fn, int **index, int gnx[], real bw, re
 
     /*Free memory we no longer need and exit.*/
     gmx_rmpbc_done(gpbc);
-    close_trj(status);
+    close_trx(status);
 
     if (0)
     {

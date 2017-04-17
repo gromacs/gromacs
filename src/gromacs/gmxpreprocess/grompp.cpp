@@ -787,7 +787,7 @@ static void cont_status(const char *slog, const char *ener,
             {
                 clear_rvec(state->v[i]);
             }
-            close_trj(fp);
+            close_trx(fp);
             /* Search for a frame without velocities */
             bReadVel = FALSE;
             read_first_frame(oenv, &fp, slog, &fr, TRX_NEED_X);
@@ -810,7 +810,7 @@ static void cont_status(const char *slog, const char *ener,
         copy_state(slog, &fr, bReadVel, state, &use_time);
     }
 
-    close_trj(fp);
+    close_trx(fp);
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit

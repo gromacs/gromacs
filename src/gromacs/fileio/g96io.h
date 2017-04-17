@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ extern "C" {
 struct t_symtab;
 struct t_trxframe;
 
-int read_g96_conf(FILE *fp, const char *infile, struct t_trxframe *fr,
+int read_g96_conf(FILE *fp, const char *infile, char **name, struct t_trxframe *fr,
                   struct t_symtab *symtab, char *line);
 /* read a Gromos96 coordinate or trajectory file,                       *
  * returns the number of atoms                                          *
@@ -56,9 +56,13 @@ int read_g96_conf(FILE *fp, const char *infile, struct t_trxframe *fr,
  * nwanted is the number of wanted coordinates,                         *
  * set this to -1 if you want to know the number of atoms in the file   *
  * title, atoms, x, v can all be NULL, in which case they won't be read *
- * line holds the previous line for trajectory reading                  */
+ * line holds the previous line for trajectory reading                  *
+ *
+ * symtab only needs to be valid if fr->atoms is valid
+ *
+ * If name is not nullptr, gmx_strdup the first g96 title string into it. */
 
-void write_g96_conf(FILE *out, const t_trxframe *fr, int nindex, const int *index);
+void write_g96_conf(FILE *out, const char *title, const t_trxframe *fr, int nindex, const int *index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
 

@@ -368,7 +368,7 @@ int gmx_sorient(int argc, char *argv[])
 
     /* clean up */
     sfree(x);
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
 
     /* Add the bin for the exact maximum to the previous bin */

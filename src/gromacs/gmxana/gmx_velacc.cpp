@@ -343,7 +343,7 @@ int gmx_velacc(int argc, char *argv[])
     }
     while (read_next_frame(oenv, status, &fr));
 
-    close_trj(status);
+    close_trx(status);
 
     if (counter >= 4)
     {
