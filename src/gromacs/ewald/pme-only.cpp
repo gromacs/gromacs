@@ -67,6 +67,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <numeric>
+#include <vector>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
@@ -92,56 +95,37 @@
 /*! \brief Master PP-PME communication data structure */
 struct gmx_pme_pp {
 #if GMX_MPI
-    MPI_Comm     mpi_comm_mysim; /**< MPI communicator for this simulation */
+    MPI_Comm         mpi_comm_mysim; /**< MPI communicator for this simulation */
 #endif
-    int          nnode;          /**< The number of PP node to communicate with  */
-    int         *node;           /**< The PP node ranks                          */
-    int          node_peer;      /**< The peer PP node rank                      */
-    int         *nat;            /**< The number of atom for each PP node        */
+    std::vector<int> rank;           /**< The PP rank ids                            */
+    int              rank_peer;      /**< The peer PP rank (ie the last one)         */
+    std::vector<int> nat;            /**< The number of atom for each PP rank        */
     //@{
     /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
-    real        *chargeA;
-    real        *chargeB;
-    real        *sqrt_c6A;
-    real        *sqrt_c6B;
-    real        *sigmaA;
-    real        *sigmaB;
+    std::vector<real>      chargeA;
+    std::vector<real>      chargeB;
+    std::vector<real>      sqrt_c6A;
+    std::vector<real>      sqrt_c6B;
+    std::vector<real>      sigmaA;
+    std::vector<real>      sigmaB;
     //@}
-    rvec        *x;             /**< Vector of atom coordinates to transfer to PME ranks */
-    rvec        *f;             /**< Vector of atom forces received from PME ranks */
-    int          nalloc;        /**< Allocation size of transfer vectors (>= \p nat) */
+    std::vector<gmx::RVec> x;   /**< Vector of atom coordinates to transfer to PME ranks */
+    std::vector<gmx::RVec> f;   /**< Vector of atom forces received from PME ranks */
 #if GMX_MPI
     //@{
     /**< Vectors of MPI objects used in non-blocking communication between multiple PP ranks per PME rank */
-    MPI_Request *req;
-    MPI_Status  *stat;
+    std::vector<MPI_Request> req;
+    std::vector<MPI_Status>  stat;
     //@}
+    //! Real constructor (only needed and useful in the MPI case).
+    gmx_pme_pp(MPI_Comm mysim, std::vector<int> pp_ranks) :
+        mpi_comm_mysim(mysim), rank(std::move(pp_ranks)), rank_peer(rank.back()),
+        nat(rank.size()), chargeA(), chargeB(),
+        sqrt_c6A(), sqrt_c6B(), sigmaA(), sigmaB(), x(), f(),
+        req(rank.size()), stat(rank.size()) {}
 #endif
+    gmx_pme_pp() = default;
 };
-
-/*! \brief Initialize the PME-only side of the PME <-> PP communication */
-static gmx_pme_pp *gmx_pme_pp_init(t_commrec *cr)
-{
-    gmx_pme_pp *pme_pp;
-
-    snew(pme_pp, 1);
-
-#if GMX_MPI
-    int rank;
-
-    pme_pp->mpi_comm_mysim = cr->mpi_comm_mysim;
-    MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
-    get_pme_ddnodes(cr, rank, &pme_pp->nnode, &pme_pp->node, &pme_pp->node_peer);
-    snew(pme_pp->nat, pme_pp->nnode);
-    snew(pme_pp->req, eCommType_NR*pme_pp->nnode);
-    snew(pme_pp->stat, eCommType_NR*pme_pp->nnode);
-    pme_pp->nalloc       = 0;
-#else
-    GMX_UNUSED_VALUE(cr);
-#endif
-
-    return pme_pp;
-}
 
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
@@ -230,9 +214,9 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
     do
     {
 
-        /* Receive the send count, box and time step from the peer PP node */
+        /* Receive the send count, box and time step from the peer PP rank */
         MPI_Recv(cnb, sizeof(cnb), MPI_BYTE,
-                 pme_pp->node_peer, eCommType_CNB,
+                 pme_pp->rank_peer, eCommType_CNB,
                  pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
 
         if (debug)
@@ -265,10 +249,10 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
         {
             *atomSetChanged = true;
 
-            /* Receive the send counts from the other PP nodes */
-            for (int sender = 0; sender < pme_pp->nnode; sender++)
+            /* Receive the send counts from the other PP ranks */
+            for (std::size_t sender = 0; sender < pme_pp->rank.size(); sender++)
             {
-                if (pme_pp->node[sender] == pme_pp->node_peer)
+                if (pme_pp->rank[sender] == pme_pp->rank_peer)
                 {
                     pme_pp->nat[sender] = cnb->natoms;
                 }
@@ -276,49 +260,41 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
                 {
                     MPI_Irecv(&(pme_pp->nat[sender]), sizeof(pme_pp->nat[0]),
                               MPI_BYTE,
-                              pme_pp->node[sender], eCommType_CNB,
+                              pme_pp->rank[sender], eCommType_CNB,
                               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
                 }
             }
-            MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+            MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
             messages = 0;
 
-            nat = 0;
-            for (int sender = 0; sender < pme_pp->nnode; sender++)
-            {
-                nat += pme_pp->nat[sender];
-            }
+            nat = std::accumulate(pme_pp->nat.begin(), pme_pp->nat.end(), 0);
 
-            if (nat > pme_pp->nalloc)
+            if (cnb->flags & PP_PME_CHARGE)
             {
-                pme_pp->nalloc = over_alloc_dd(nat);
-                if (cnb->flags & PP_PME_CHARGE)
-                {
-                    srenew(pme_pp->chargeA, pme_pp->nalloc);
-                }
-                if (cnb->flags & PP_PME_CHARGEB)
-                {
-                    srenew(pme_pp->chargeB, pme_pp->nalloc);
-                }
-                if (cnb->flags & PP_PME_SQRTC6)
-                {
-                    srenew(pme_pp->sqrt_c6A, pme_pp->nalloc);
-                }
-                if (cnb->flags & PP_PME_SQRTC6B)
-                {
-                    srenew(pme_pp->sqrt_c6B, pme_pp->nalloc);
-                }
-                if (cnb->flags & PP_PME_SIGMA)
-                {
-                    srenew(pme_pp->sigmaA, pme_pp->nalloc);
-                }
-                if (cnb->flags & PP_PME_SIGMAB)
-                {
-                    srenew(pme_pp->sigmaB, pme_pp->nalloc);
-                }
-                srenew(pme_pp->x, pme_pp->nalloc);
-                srenew(pme_pp->f, pme_pp->nalloc);
+                pme_pp->chargeA.resize(nat);
             }
+            if (cnb->flags & PP_PME_CHARGEB)
+            {
+                pme_pp->chargeB.resize(nat);
+            }
+            if (cnb->flags & PP_PME_SQRTC6)
+            {
+                pme_pp->sqrt_c6A.resize(nat);
+            }
+            if (cnb->flags & PP_PME_SQRTC6B)
+            {
+                pme_pp->sqrt_c6B.resize(nat);
+            }
+            if (cnb->flags & PP_PME_SIGMA)
+            {
+                pme_pp->sigmaA.resize(nat);
+            }
+            if (cnb->flags & PP_PME_SIGMAB)
+            {
+                pme_pp->sigmaB.resize(nat);
+            }
+            pme_pp->x.resize(nat);
+            pme_pp->f.resize(nat);
 
             /* Receive the charges in place */
             for (int q = 0; q < eCommType_NR; q++)
@@ -331,30 +307,30 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
                 }
                 switch (q)
                 {
-                    case eCommType_ChargeA: charge_pp = pme_pp->chargeA;  break;
-                    case eCommType_ChargeB: charge_pp = pme_pp->chargeB;  break;
-                    case eCommType_SQRTC6A: charge_pp = pme_pp->sqrt_c6A; break;
-                    case eCommType_SQRTC6B: charge_pp = pme_pp->sqrt_c6B; break;
-                    case eCommType_SigmaA:  charge_pp = pme_pp->sigmaA;   break;
-                    case eCommType_SigmaB:  charge_pp = pme_pp->sigmaB;   break;
+                    case eCommType_ChargeA: charge_pp = pme_pp->chargeA.data();  break;
+                    case eCommType_ChargeB: charge_pp = pme_pp->chargeB.data();  break;
+                    case eCommType_SQRTC6A: charge_pp = pme_pp->sqrt_c6A.data(); break;
+                    case eCommType_SQRTC6B: charge_pp = pme_pp->sqrt_c6B.data(); break;
+                    case eCommType_SigmaA:  charge_pp = pme_pp->sigmaA.data();   break;
+                    case eCommType_SigmaB:  charge_pp = pme_pp->sigmaB.data();   break;
                     default: gmx_incons("Wrong eCommType");
                 }
                 nat = 0;
-                for (int sender = 0; sender < pme_pp->nnode; sender++)
+                for (std::size_t sender = 0; sender < pme_pp->rank.size(); sender++)
                 {
                     if (pme_pp->nat[sender] > 0)
                     {
                         MPI_Irecv(charge_pp+nat,
                                   pme_pp->nat[sender]*sizeof(real),
                                   MPI_BYTE,
-                                  pme_pp->node[sender], q,
+                                  pme_pp->rank[sender], q,
                                   pme_pp->mpi_comm_mysim,
                                   &pme_pp->req[messages++]);
                         nat += pme_pp->nat[sender];
                         if (debug)
                         {
                             fprintf(debug, "Received from PP rank %d: %d %s\n",
-                                    pme_pp->node[sender], pme_pp->nat[sender],
+                                    pme_pp->rank[sender], pme_pp->nat[sender],
                                     (q == eCommType_ChargeA ||
                                      q == eCommType_ChargeB) ? "charges" : "params");
                         }
@@ -369,20 +345,20 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
 
             /* Receive the coordinates in place */
             nat = 0;
-            for (int sender = 0; sender < pme_pp->nnode; sender++)
+            for (std::size_t sender = 0; sender < pme_pp->rank.size(); sender++)
             {
                 if (pme_pp->nat[sender] > 0)
                 {
                     MPI_Irecv(pme_pp->x[nat], pme_pp->nat[sender]*sizeof(rvec),
                               MPI_BYTE,
-                              pme_pp->node[sender], eCommType_COORD,
+                              pme_pp->rank[sender], eCommType_COORD,
                               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
                     nat += pme_pp->nat[sender];
                     if (debug)
                     {
                         fprintf(debug, "Received from PP rank %d: %d "
                                 "coordinates\n",
-                                pme_pp->node[sender], pme_pp->nat[sender]);
+                                pme_pp->rank[sender], pme_pp->nat[sender]);
                     }
                 }
             }
@@ -391,7 +367,7 @@ static int gmx_pme_recv_coeffs_coords(gmx_pme_pp           *pme_pp,
         }
 
         /* Wait for the coordinates and/or charges to arrive */
-        MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+        MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
         messages = 0;
     }
     while (status == -1);
@@ -419,15 +395,15 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp                   *pme_pp,
 #if GMX_MPI
     int messages, ind_start, ind_end;
 
-    /* Now the evaluated forces have to be transferred to the PP nodes */
+    /* Now the evaluated forces have to be transferred to the PP ranks */
     messages = 0;
     ind_end  = 0;
-    for (int receiver = 0; receiver < pme_pp->nnode; receiver++)
+    for (std::size_t receiver = 0; receiver < pme_pp->rank.size(); receiver++)
     {
         ind_start = ind_end;
         ind_end   = ind_start + pme_pp->nat[receiver];
         if (MPI_Isend(pme_pp->f[ind_start], (ind_end-ind_start)*sizeof(rvec), MPI_BYTE,
-                      pme_pp->node[receiver], 0,
+                      pme_pp->rank[receiver], 0,
                       pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]) != 0)
         {
             gmx_comm("MPI_Isend failed in do_pmeonly");
@@ -437,15 +413,15 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp                   *pme_pp,
     if (debug)
     {
         fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n",
-                pme_pp->node_peer);
+                pme_pp->rank_peer);
     }
     // Sending is logically const, but the MPI call needs a non-const pointer.
     MPI_Isend(const_cast<gmx_pme_comm_vir_ene_t *>(cve), sizeof(cve), MPI_BYTE,
-              pme_pp->node_peer, 1,
+              pme_pp->rank_peer, 1,
               pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
 
     /* Wait for the forces to arrive */
-    MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
+    MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
 #else
     gmx_call("MPI not enabled");
     GMX_UNUSED_VALUE(pme_pp);
@@ -461,7 +437,6 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 {
     int                npmedata;
     struct gmx_pme_t **pmedata;
-    gmx_pme_pp        *pme_pp;
     int                ret;
     int                natoms = 0;
     int                count;
@@ -472,7 +447,13 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     snew(pmedata, npmedata);
     pmedata[0] = pme;
 
-    pme_pp = gmx_pme_pp_init(cr);
+    gmx_pme_pp pme_pp;
+#if GMX_MPI
+    int        pme_rank;
+
+    MPI_Comm_rank(cr->mpi_comm_mygroup, &pme_rank);
+    pme_pp = gmx_pme_pp(cr->mpi_comm_mysim, find_ddranks_for_pme_rank(cr, pme_rank));
+#endif
 
     init_nrnb(mynrnb);
 
@@ -485,7 +466,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         {
             /* Domain decomposition */
             bool atomSetChanged = false;
-            ret = gmx_pme_recv_coeffs_coords(pme_pp,
+            ret = gmx_pme_recv_coeffs_coords(&pme_pp,
                                              &natoms,
                                              &cnb,
                                              &bEnerVir,
@@ -499,7 +480,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
             if (atomSetChanged)
             {
-                gmx_pme_reinit_atoms(pme, natoms, pme_pp->chargeA);
+                gmx_pme_reinit_atoms(pme, natoms, pme_pp.chargeA.data());
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -530,10 +511,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         // of pme_pp (maybe things from cnb, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
-        gmx_pme_do(pme, 0, natoms, pme_pp->x, pme_pp->f,
-                   pme_pp->chargeA, pme_pp->chargeB,
-                   pme_pp->sqrt_c6A, pme_pp->sqrt_c6B,
-                   pme_pp->sigmaA, pme_pp->sigmaB, cnb.box,
+        gmx_pme_do(pme, 0, natoms, as_rvec_array(pme_pp.x.data()), as_rvec_array(pme_pp.f.data()),
+                   pme_pp.chargeA.data(), pme_pp.chargeB.data(),
+                   pme_pp.sqrt_c6A.data(), pme_pp.sqrt_c6B.data(),
+                   pme_pp.sigmaA.data(), pme_pp.sigmaB.data(), cnb.box,
                    cr, cnb.maxshift_x, cnb.maxshift_y, mynrnb, wcycle,
                    cve.vir_q, cve.vir_lj,
                    &cve.energy_q, &cve.energy_lj,
@@ -543,10 +524,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 
         cve.cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
-        /* check for the signals to send back to a PP node */
+        /* check for the signals to send back to a PP rank */
         cve.stop_cond = gmx_get_stop_condition();
 
-        gmx_pme_send_force_vir_ener(pme_pp, &cve);
+        gmx_pme_send_force_vir_ener(&pme_pp, &cve);
 
         count++;
     } /***** end of quasi-loop, we stop with the break above */
