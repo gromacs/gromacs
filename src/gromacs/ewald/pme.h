@@ -59,6 +59,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_enerdata_t;
 struct t_commrec;
 struct t_inputrec;
 struct pme_gpu_t;
@@ -166,12 +167,10 @@ void gmx_pme_send_finish(struct t_commrec *cr);
 /*! \brief Tell our PME-only node to reset all cycle and flop counters */
 void gmx_pme_send_resetcounters(struct t_commrec *cr, gmx_int64_t step);
 
-/*! \brief PP nodes receive the long range forces from the PME nodes */
-void gmx_pme_receive_f(struct t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
-                       matrix vir_lj, real *energy_lj,
-                       real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles);
+/*! \brief PP ranks receive the long range forces, energy, virial and cycle count from the PME rank. */
+void gmx_pme_receive_f(t_commrec *cr,
+                       rvec f[], matrix vir_q, matrix vir_lj,
+                       gmx_enerdata_t *enerd, float *pme_cycles);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).

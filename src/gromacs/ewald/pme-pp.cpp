@@ -58,6 +58,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -118,7 +119,7 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, unsigned int flags,
         /* Peer PP node: communicate all data */
         if (dd->cnb == nullptr)
         {
-            snew(dd->cnb, 1);
+            dd->cnb = new gmx_pme_comm_n_box_t;
         }
         cnb = dd->cnb;
 
@@ -299,15 +300,10 @@ void gmx_pme_send_resetcounters(t_commrec gmx_unused *cr, gmx_int64_t gmx_unused
 #endif
 }
 
-/*! \brief Receive virial and energy from PME rank */
-static void receive_virial_energy(t_commrec *cr,
-                                  matrix vir_q, real *energy_q,
-                                  matrix vir_lj, real *energy_lj,
-                                  real *dvdlambda_q, real *dvdlambda_lj,
-                                  float *pme_cycles)
+/*! \brief Receive virial, energy, cycle counts and signals from PME rank */
+static void receive_virial_energy(t_commrec              *cr,
+                                  gmx_pme_comm_vir_ene_t *cve)
 {
-    gmx_pme_comm_vir_ene_t cve;
-
     if (cr->dd->pme_receive_vir_ener)
     {
         if (debug)
@@ -317,38 +313,18 @@ static void receive_virial_energy(t_commrec *cr,
                     cr->sim_nodeid, cr->dd->pme_nodeid);
         }
 #if GMX_MPI
-        MPI_Recv(&cve, sizeof(cve), MPI_BYTE, cr->dd->pme_nodeid, 1, cr->mpi_comm_mysim,
+        MPI_Recv(cve, sizeof(cve), MPI_BYTE, cr->dd->pme_nodeid, 1, cr->mpi_comm_mysim,
                  MPI_STATUS_IGNORE);
 #else
-        memset(&cve, 0, sizeof(cve));
+        GMX_UNUSED_VALUE(cve);
 #endif
-
-        m_add(vir_q, cve.vir_q, vir_q);
-        m_add(vir_lj, cve.vir_lj, vir_lj);
-        *energy_q      = cve.energy_q;
-        *energy_lj     = cve.energy_lj;
-        *dvdlambda_q  += cve.dvdlambda_q;
-        *dvdlambda_lj += cve.dvdlambda_lj;
-        *pme_cycles    = cve.cycles;
-
-        if (cve.stop_cond != gmx_stop_cond_none)
-        {
-            gmx_set_stop_condition(cve.stop_cond);
-        }
-    }
-    else
-    {
-        *energy_q   = 0;
-        *energy_lj  = 0;
-        *pme_cycles = 0;
     }
 }
 
+// TODO rename this, it does not just receive forces.
 void gmx_pme_receive_f(t_commrec *cr,
-                       rvec f[], matrix vir_q, real *energy_q,
-                       matrix vir_lj, real *energy_lj,
-                       real *dvdlambda_q, real *dvdlambda_lj,
-                       float *pme_cycles)
+                       rvec f[], matrix vir_q, matrix vir_lj,
+                       gmx_enerdata_t *enerd, float *pme_cycles)
 {
 #ifdef GMX_PME_DELAYED_WAIT
     /* Wait for the x request to finish */
@@ -392,5 +368,22 @@ void gmx_pme_receive_f(t_commrec *cr,
         }
     }
 
-    receive_virial_energy(cr, vir_q, energy_q, vir_lj, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
+    gmx_pme_comm_vir_ene_t cve;
+
+    receive_virial_energy(cr, &cve);
+
+    m_add(vir_q, cve.vir_q, vir_q);
+    m_add(vir_lj, cve.vir_lj, vir_lj);
+
+    enerd->term[F_COUL_RECIP] += cve.energy_q;
+    enerd->term[F_LJ_RECIP]   += cve.energy_lj;
+    enerd->dvdl_lin[efptCOUL] += cve.dvdlambda_q;
+    enerd->dvdl_lin[efptVDW]  += cve.dvdlambda_lj;
+
+    *pme_cycles += cve.cycles;
+
+    if (cve.stop_cond != gmx_stop_cond_none)
+    {
+        gmx_set_stop_condition(cve.stop_cond);
+    }
 }
