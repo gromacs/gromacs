@@ -366,7 +366,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
 
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     sfree(grpname);
     sfree(index);

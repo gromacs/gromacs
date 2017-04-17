@@ -430,7 +430,7 @@ int main(int argc,char *argv[])
     gmx_ffclose(fo);
     gmx_ffclose(frc);
     fprintf(stderr,"\n");
-    close_trj(status);
+    close_trx(status);
     if (trxout != NULL) {
 	close_trx(trxout);
     }

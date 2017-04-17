@@ -55,8 +55,6 @@ typedef struct t_trxframe
     int             not_ok;    /* integrity flags                  */
     gmx_bool        bDouble;   /* Double precision?                */
     int             natoms;    /* number of atoms (atoms, x, v, f, index) */
-    gmx_bool        bTitle;
-    const char     *title;     /* title of the frame            */
     gmx_bool        bStep;
     gmx_int64_t     step;      /* MD step number                   */
     gmx_bool        bTime;

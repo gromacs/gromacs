@@ -400,7 +400,7 @@ int gmx_rmsf(int argc, char *argv[])
         teller++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     if (bFit)
     {

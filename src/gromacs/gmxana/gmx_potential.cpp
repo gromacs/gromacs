@@ -228,7 +228,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
     gmx_rmpbc_done(gpbc);
 
     /*********** done with status file **********/
-    close_trj(status);
+    close_trx(status);
 
     /* slCharge now contains the total charge per slice, summed over all
        frames. Now divide by nr_frames and integrate twice

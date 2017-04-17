@@ -60,6 +60,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/unique_cptr.h"
 
 static const char *modeToVerb(char mode)
 {
@@ -1306,13 +1307,15 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     }
     fr->natoms = numberOfAtoms;
 
-    if (!gmx_get_tng_data_block_types_of_next_frame(input,
-                                                    fr->step,
-                                                    numRequestedIds,
-                                                    requestedIds,
-                                                    &frameNumber,
-                                                    &nBlocks,
-                                                    &blockIds))
+    bool nextFrameExists = gmx_get_tng_data_block_types_of_next_frame(input,
+                                                                      fr->step,
+                                                                      numRequestedIds,
+                                                                      requestedIds,
+                                                                      &frameNumber,
+                                                                      &nBlocks,
+                                                                      &blockIds);
+    gmx::unique_cptr<gmx_int64_t, gmx::free_wrapper> blockIdsGuard(blockIds);
+    if (!nextFrameExists)
     {
         return FALSE;
     }
@@ -1452,6 +1455,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     fr->time  = frameTime / PICO;
     fr->bTime = TRUE;
 
+    // TODO This does not leak, but is not exception safe.
     /* values must be freed before leaving this function */
     sfree(values);
 

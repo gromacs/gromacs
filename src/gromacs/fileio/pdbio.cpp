@@ -1024,13 +1024,16 @@ void get_pdb_coordnum(FILE *in, int *natoms)
 }
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_symtab *symtab, char ***name, t_atoms *atoms,
+                       t_symtab *symtab, char **name, t_atoms *atoms,
                        rvec x[], int *ePBC, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];
     read_pdbfile(in, title, nullptr, atoms, symtab, x, ePBC, box, TRUE, nullptr);
-    *name = put_symtab(symtab, title);
+    if (name != nullptr)
+    {
+        *name = gmx_strdup(title);
+    }
     gmx_fio_fclose(in);
 }
 

@@ -308,14 +308,17 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
 }
 
 void gmx_gro_read_conf(const char *infile,
-                       t_symtab *symtab, char ***name, t_atoms *atoms,
+                       t_symtab *symtab, char **name, t_atoms *atoms,
                        rvec x[], rvec *v, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     int   ndec;
     char  title[STRLEN];
     get_w_conf(in, infile, title, symtab, atoms, &ndec, x, v, box);
-    *name = put_symtab(symtab, title);
+    if (name != nullptr)
+    {
+        *name = gmx_strdup(title);
+    }
     gmx_fio_fclose(in);
 }
 
@@ -359,8 +362,6 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     {
         fr->prec *= 10;
     }
-    fr->title  = title;
-    fr->bTitle = TRUE;
     fr->bX     = TRUE;
     fr->bBox   = TRUE;
 
@@ -401,8 +402,6 @@ int gro_first_x_or_v(FILE *status, t_trxframe *fr)
     get_coordnum_fp(status, title, &fr->natoms);
     frewind(status);
     fprintf(stderr, " '%s', %d atoms.\n", title, fr->natoms);
-    fr->bTitle = TRUE;
-    fr->title  = title;
     if (fr->natoms == 0)
     {
         gmx_file("No coordinates in gro file");
