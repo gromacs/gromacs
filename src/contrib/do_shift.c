@@ -179,7 +179,7 @@ int main(int argc,char *argv[])
       nframe++;
     }
   } while(read_next_x(status,&t,natoms,x,box));
-  close_trj(status);
+  close_trx(status);
   gmx_ffclose(out);
   
   gmx_thanx(stderr);

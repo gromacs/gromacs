@@ -274,7 +274,7 @@ int gmx_helix(int argc, char *argv[])
 
     gmx_rmpbc_done(gpbc);
 
-    close_trj(status);
+    close_trx(status);
 
     for (i = 0; (i < nres); i++)
     {

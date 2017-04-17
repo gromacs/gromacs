@@ -369,7 +369,7 @@ int gmx_densmap(int argc, char *argv[])
         nfr++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
 
     /* normalize gridpoints */
     maxgrid = 0;
