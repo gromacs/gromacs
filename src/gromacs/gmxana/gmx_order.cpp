@@ -319,7 +319,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         nframes++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
 
     sfree(grpname);
@@ -846,7 +846,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, 
     nout   = nslices*ngrps;
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_NEED_X);
 
-    close_trj(status);
+    close_trx(status);
     frout        = fr;
     frout.natoms = nout;
     frout.bF     = FALSE;

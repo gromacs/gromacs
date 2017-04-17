@@ -839,7 +839,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     }   /* End of the loop  */
     walltime_accounting_end(walltime_accounting);
 
-    close_trj(status);
+    close_trx(status);
 
     if (fp_tpi != nullptr)
     {

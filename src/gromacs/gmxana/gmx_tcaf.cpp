@@ -480,7 +480,7 @@ int gmx_tcaf(int argc, char *argv[])
         nframes++;
     }
     while (read_next_frame(oenv, status, &fr));
-    close_trj(status);
+    close_trx(status);
 
     dt = (t1-t0)/(nframes-1);
 

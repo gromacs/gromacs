@@ -1059,7 +1059,7 @@ int gmx_traj(int argc, char *argv[])
     }
 
     /* clean up a bit */
-    close_trj(status);
+    close_trx(status);
 
     if (bOX)
     {
@@ -1135,6 +1135,26 @@ int gmx_traj(int argc, char *argv[])
 
     /* view it */
     view_all(oenv, NFILE, fnm);
+
+    done_top(&top);
+    // Free index and isize only if they are distinct from index0 and isize0
+    if (bMol)
+    {
+        for (int i = 0; i < ngroups; i++)
+        {
+            sfree(index[i]);
+        }
+        sfree(index);
+        sfree(isize);
+    }
+    for (int i = 0; i < ngroups; i++)
+    {
+        sfree(index0[i]);
+    }
+    sfree(index0);
+    sfree(isize0);
+    sfree(grpname);
+    done_filenms(NFILE, fnm);
 
     return 0;
 }

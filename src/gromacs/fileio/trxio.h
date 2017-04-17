@@ -133,7 +133,7 @@ void write_tng_frame(t_trxstatus        *status,
 
 void close_trx(t_trxstatus *status);
 /* Close trajectory file as opened with read_first_x, read_first_frame
- * or open_trx. Identical to close_trj.
+ * or open_trx.
  * Also frees memory in the structure.
  */
 
@@ -225,11 +225,6 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
- */
-
-void close_trj(t_trxstatus *status);
-/* Close trajectory file as opened with read_first_x, read_first_frame
- * or open_trx. Identical to close_trx.
  */
 
 void rewind_trj(t_trxstatus *status);

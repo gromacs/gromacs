@@ -286,7 +286,7 @@ int gmx_covar(int argc, char *argv[])
         }
     }
     while (read_next_x(oenv, status, &t, xread, box));
-    close_trj(status);
+    close_trx(status);
 
     inv_nframes = 1.0/nframes0;
     for (i = 0; i < natoms; i++)
@@ -353,7 +353,7 @@ int gmx_covar(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, xread, box) &&
            (bRef || nframes < nframes0));
-    close_trj(status);
+    close_trx(status);
     gmx_rmpbc_done(gpbc);
 
     fprintf(stderr, "Read %d frames\n", nframes);

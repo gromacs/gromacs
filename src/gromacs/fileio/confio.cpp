@@ -434,6 +434,7 @@ void readConfAndTopology(const char *infile,
         open_symtab(&symtab);
 
         readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
+        close_symtab(&symtab);
 
         init_mtop(mtop);
         convertAtomsToMtop(&symtab, name, &atoms, mtop);

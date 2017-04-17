@@ -917,7 +917,7 @@ int gmx_disre(int argc, char *argv[])
         j++;
     }
     while (read_next_x(oenv, status, &t, x, box));
-    close_trj(status);
+    close_trx(status);
     if (ir->ePBC != epbcNONE)
     {
         gmx_rmpbc_done(gpbc);

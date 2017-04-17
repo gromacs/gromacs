@@ -633,6 +633,10 @@ void close_trx(t_trxstatus *status)
 #if GMX_USE_PLUGINS
     sfree(status->vmdplugin);
 #endif
+    /* The memory in status->xframe is lost here,
+     * but the read_first_x/read_next_x functions are deprecated anyhow.
+     * read_first_frame/read_next_frame and close_trx should be used.
+     */
     sfree(status);
 }
 
@@ -1120,25 +1124,6 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
     copy_mat(status->xframe->box, box);
 
     return bRet;
-}
-
-void close_trj(t_trxstatus *status)
-{
-    if (status == nullptr)
-    {
-        return;
-    }
-    gmx_tng_close(&status->tng);
-    if (status->fio)
-    {
-        gmx_fio_close(status->fio);
-    }
-
-    /* The memory in status->xframe is lost here,
-     * but the read_first_x/read_next_x functions are deprecated anyhow.
-     * read_first_frame/read_next_frame and close_trx should be used.
-     */
-    sfree(status);
 }
 
 void rewind_trj(t_trxstatus *status)

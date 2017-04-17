@@ -1181,7 +1181,7 @@ int gmx_trjconv(int argc, char *argv[])
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(trxin);
+            close_trx(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1893,7 +1893,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(trxin);
+        close_trx(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
@@ -1922,6 +1922,12 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     sfree(mtop);
+    done_top(&top);
+    sfree(xp);
+    sfree(xmem);
+    sfree(vmem);
+    sfree(fmem);
+    done_filenms(NFILE, fnm);
 
     do_view(oenv, out_file, nullptr);
 
