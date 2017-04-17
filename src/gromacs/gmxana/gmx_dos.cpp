@@ -398,7 +398,7 @@ int gmx_dos(int argc, char *argv[])
     }
     while (read_next_frame(oenv, status, &fr));
 
-    close_trj(status);
+    close_trx(status);
 
     if (nframes < min_frames)
     {

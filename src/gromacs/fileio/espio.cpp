@@ -164,7 +164,7 @@ static const char *const esp_prop[espNR] = {
 };
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char ***name, t_atoms *atoms,
+                            t_symtab *symtab, char **name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box)
 {
     FILE     *fp;
@@ -174,8 +174,11 @@ void gmx_espresso_read_conf(const char *infile,
     double    d;
     gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
 
-    // No title reading implemented for espresso files
-    *name = put_symtab(symtab, "");
+    if (name != nullptr)
+    {
+        // No title reading implemented for espresso files
+        *name = gmx_strdup("");
+    }
 
     clear_mat(box);
 

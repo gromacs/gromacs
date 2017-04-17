@@ -226,7 +226,7 @@ int gmx_saltbr(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
-    close_trj(status);
+    close_trx(status);
 
     if (bSep)
     {

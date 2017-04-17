@@ -51,10 +51,6 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     fprintf(fp, "\n");
     cmp_int(fp, "not_ok", -1, fr1->not_ok, fr2->not_ok);
     cmp_int(fp, "natoms", -1, fr1->natoms, fr2->natoms);
-    if (cmp_bool(fp, "bTitle", -1, fr1->bTitle, fr2->bTitle))
-    {
-        cmp_str(fp, "title", -1, fr1->title, fr2->title);
-    }
     if (cmp_bool(fp, "bStep", -1, fr1->bStep, fr2->bStep))
     {
         cmp_int(fp, "step", -1, fr1->step, fr2->step);

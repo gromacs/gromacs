@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,8 +44,11 @@ struct t_atoms;
 struct t_symtab;
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char ***name, t_atoms *atoms,
+                            t_symtab *symtab, char **name, t_atoms *atoms,
                             rvec x[], rvec *v, matrix box);
+/* If name is not nullptr, gmx_strdup the title string into
+ * it. Reading a title from espresso format is not , so this will
+ * always be an empty string. */
 
 int get_espresso_coordnum(const char *infile);
 

@@ -1337,7 +1337,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
 
     if (!bMU)
     {
-        close_trj(status);
+        close_trx(status);
     }
 
     xvgrclose(outmtot);

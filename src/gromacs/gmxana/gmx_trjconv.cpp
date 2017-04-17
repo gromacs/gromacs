@@ -871,8 +871,8 @@ int gmx_trjconv(int argc, char *argv[])
     int               ePBC  = -1;
     t_atoms          *atoms = nullptr, useatoms;
     matrix            top_box;
-    int              *index, *cindex;
-    char             *grpnm;
+    int              *index = nullptr, *cindex = nullptr;
+    char             *grpnm = nullptr;
     int              *frindex, nrfri;
     char             *frname;
     int               ifit, my_clust = -1;
@@ -923,7 +923,6 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     top_file = ftp2fn(efTPS, NFILE, fnm);
-    init_top(&top);
 
     /* Check command line */
     in_file = opt2fn("-f", NFILE, fnm);
@@ -1181,7 +1180,7 @@ int gmx_trjconv(int argc, char *argv[])
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(trxin);
+            close_trx(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1831,10 +1830,10 @@ int gmx_trjconv(int argc, char *argv[])
                                                       frout.ePBC, frout.box, ' ', model_nr, gc, TRUE);
                                         break;
                                     case efG96:
-                                        frout.title = title;
+                                        const char *outputTitle = "";
                                         if (bSeparate || bTDump)
                                         {
-                                            frout.bTitle = TRUE;
+                                            outputTitle = title;
                                             if (bTPS)
                                             {
                                                 frout.bAtoms = TRUE;
@@ -1845,12 +1844,15 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         else
                                         {
-                                            frout.bTitle = (outframe == 0);
+                                            if (outframe == 0)
+                                            {
+                                                outputTitle = title;
+                                            }
                                             frout.bAtoms = FALSE;
                                             frout.bStep  = TRUE;
                                             frout.bTime  = TRUE;
                                         }
-                                        write_g96_conf(out, &frout, -1, nullptr);
+                                        write_g96_conf(out, outputTitle, &frout, -1, nullptr);
                                 }
                                 if (bSeparate || bSplitHere)
                                 {
@@ -1884,6 +1886,7 @@ int gmx_trjconv(int argc, char *argv[])
                 bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
             }
             while (!(bTDump && bDumpFrame) && bHaveNextFrame);
+            clear_trxframe(&fr, FALSE);
         }
 
         if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
@@ -1893,7 +1896,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(trxin);
+        close_trx(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
@@ -1922,8 +1925,19 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     sfree(mtop);
+    done_top(&top);
+    sfree(xp);
+    sfree(xmem);
+    sfree(vmem);
+    sfree(fmem);
+    sfree(grpnm);
+    sfree(index);
+    sfree(cindex);
+    done_filenms(NFILE, fnm);
+    done_frame(&fr);
 
     do_view(oenv, out_file, nullptr);
 
+    output_env_done(oenv);
     return 0;
 }
