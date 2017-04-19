@@ -68,6 +68,12 @@ void Poldata::setFilename(const std::string &fn2)
     filename_ = fn2;
 }
 
+/*
+ *-+-+-+-+-+-+-+-+-+-+-+
+ * Atom STUFF
+ *-+-+-+-+-+-+-+-+-+-+-+
+ */
+
 void Poldata::addAtype(const std::string &elem,
                        const std::string &desc,
                        const std::string &atype,

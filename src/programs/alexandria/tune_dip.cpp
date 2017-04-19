@@ -481,11 +481,13 @@ void OPtimization::tuneDip2PolData()
             auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
             GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
             
-            ei->setJ0(param_[n++]);
+            ei->setJ0(param_[n]);
+            ei->setJ0_sigma(psigma_[n++]);
             
             if (ai->name().compare(fixchi_) != 0)
             {      
-                ei->setChi0(param_[n++]);           
+                ei->setChi0(param_[n]); 
+                ei->setChi0_sigma(psigma_[n++]);          
             }       
             if (bFitZeta_)
             {

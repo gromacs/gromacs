@@ -767,11 +767,13 @@ class Eemprops
     
         Eemprops(ChargeDistributionModel eqdModel,
                  const std::string      &name,
-                 const std::string      &zetastr,
-                 const std::string      &qstr,
                  const std::string      &rowstr,
+                 const std::string      &zetastr,
+                 const std::string      &qstr,                
                  double                  J0,
-                 double                  chi0);
+                 double                  J0_sigma,
+                 double                  chi0,
+                 double                  chi0_sigma);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
 
@@ -786,8 +788,12 @@ class Eemprops
         const char *getRowstr() const { return rowstr_.c_str(); }
 
         double getJ0() const { return J0_; }
+        
+        double getJ0_sigma()const { return J0_sigma_; }
 
         double getChi0() const { return chi0_; }
+        
+        double getChi0_sigma() const { return chi0_sigma_; }
 
         void setEqdModel(ChargeDistributionModel eqdModel) { eqdModel_ = eqdModel; }
 
@@ -798,8 +804,12 @@ class Eemprops
                          const std::string &qstr);
 
         void setJ0(double J0) { J0_ = J0; }
+        
+        void setJ0_sigma(double J0_sigma) { J0_sigma_ = J0_sigma;}
 
         void setChi0(double chi0) { chi0_ = chi0; }
+        
+        void setChi0_sigma(double chi0_sigma) { chi0_sigma_ = chi0_sigma;}
 
         double getZeta(int index) const { return rzq_[index].zeta(); }
 
@@ -824,7 +834,9 @@ class Eemprops
         std::string             zetastr_;
         std::string             qstr_;
         double                  J0_;
+        double                  J0_sigma_;
         double                  chi0_;
+        double                  chi0_sigma_;
         std::vector<RowZetaQ>   rzq_;
 };
 

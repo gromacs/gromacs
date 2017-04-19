@@ -86,14 +86,15 @@ const char *xmltypes[] = {
 enum {
     exmlGENTOP, exmlREFERENCE,
     exmlATOMTYPES, exmlATOMTYPE,
-    exmlGT_FORCEFIELD, exmlPOLAR_UNIT, exmlCOMB_RULE, exmlNEXCL,
+    exmlGT_FORCEFIELD, exmlPOLAR_UNIT, 
+    exmlCOMB_RULE, exmlNEXCL,
     exmlFUDGEQQ, exmlFUDGELJ,
     exmlPOLTYPES, exmlPOLTYPE, exmlPTYPE,
     exmlELEM, exmlNAME, exmlDESC,
     exmlATYPE, exmlMILLER, exmlVALENCE, exmlBOSQUE,
-    exmlBTYPE,
-    exmlNEIGHBORS, exmlAROMATIC,
-    exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS, exmlEREF,
+    exmlBTYPE, exmlNEIGHBORS, exmlAROMATIC,
+    exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, 
+    exmlSIGPOL, exmlVDWPARAMS, exmlEREF,
     exmlFUNCTION, exmlINTERACTION,
     exmlATOM1, exmlATOM2, exmlATOM3, exmlATOM4,
     exmlSIGMA, exmlBONDORDER, exmlPARAMS,
@@ -108,21 +109,24 @@ enum {
     exmlATOMNUMBER, exmlTAU_AHC, exmlALPHA_AHP,
     exmlSYMMETRIC_CHARGES, exmlSYM_CHARGE,
     exmlCENTRAL, exmlATTACHED, exmlNUMATTACH,
-    exmlEEMPROPS, exmlEEMPROP, exmlMODEL, exmlJ0, exmlCHI0, exmlZETA, exmlROW,
-    exmlEEMPROP_REF, exmlEPREF, exmlCHARGES,
+    exmlEEMPROPS, exmlEEMPROP, exmlMODEL, 
+    exmlJ0, exmlJ0_SIGMA, exmlCHI0, exmlCHI0_SIGMA, 
+    exmlZETA, exmlROW, exmlEEMPROP_REF, 
+    exmlEPREF, exmlCHARGES,
     exmlNR
 };
 
 const char * exml_names[exmlNR] = {
     "gentop", "reference",
-    "atomtypes", "atomtype", "forcefield", "polarizability_unit", "combination_rule", "nexclusions",
+    "atomtypes", "atomtype", "forcefield", 
+    "polarizability_unit", "combination_rule", "nexclusions",
     "fudgeQQ", "fudgeLJ",
     "poltypes", "poltype", "ptype",
     "elem", "name", "description",
     "atype", "miller", "valence", "bosque",
-    "btype",
-    "neighbors", "aromatic",
-    "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams", "ref_enthalpy",
+    "btype", "neighbors", "aromatic",
+    "geometry", "numbonds", "polarizability", 
+    "sigma_pol", "vdwparams", "ref_enthalpy",
     "function", "interaction",
     "atom1", "atom2", "atom3", "atom4",
     "sigma", "bondorder", "params",
@@ -137,7 +141,8 @@ const char * exml_names[exmlNR] = {
     "atomnumber", "tau_ahc", "alpha_ahp",
     "symmetric_charges", "sym_charge",
     "central", "attached", "numattach",
-    "eemprops", "eemprop", "model", "jaa", "chi", "zeta", "row",
+    "eemprops", "eemprop", "model", 
+    "jaa", "jaa_sigma", "chi", "chi_sigma", "zeta", "row",
     "eemprop_ref", "epref", "charge"
 };
 
@@ -405,9 +410,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlEEMPROP:
-            if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlNAME]) &&
-                NN(xbuf[exmlCHI0])  && NN(xbuf[exmlJ0]) &&
-                NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES]) &&
+            if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlNAME])       &&
+                NN(xbuf[exmlJ0])    && NN(xbuf[exmlJ0_SIGMA])   &&
+                NN(xbuf[exmlCHI0])  && NN(xbuf[exmlCHI0_SIGMA]) &&
+                NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES])    &&
                 NN(xbuf[exmlROW]))
             {
                 Eemprops eep(name2eemtype(xbuf[exmlMODEL]),
@@ -416,7 +422,9 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                              xbuf[exmlZETA],
                              xbuf[exmlCHARGES],
                              my_atof(xbuf[exmlJ0].c_str()),
-                             my_atof(xbuf[exmlCHI0].c_str()) );
+                             my_atof(xbuf[exmlJ0_SIGMA].c_str()),
+                             my_atof(xbuf[exmlCHI0].c_str()),
+                             my_atof(xbuf[exmlCHI0_SIGMA].c_str()));
                 pd.addEemprops(eep);
             }
             break;
@@ -746,8 +754,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     }
 
     child = add_xml_child(parent, exml_names[exmlEEMPROPS]);
-
-    for (auto eep = pd.BeginEemprops();
+    for (auto eep = pd.BeginEemprops(); 
          eep != pd.EndEemprops(); eep++)
     {
         ChargeDistributionModel model = eep->getEqdModel();
@@ -756,11 +763,14 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_char(grandchild, exml_names[exmlMODEL], getEemtypeName(model));
         add_xml_char(grandchild, exml_names[exmlNAME], eep->getName());
         add_xml_double(grandchild, exml_names[exmlJ0], eep->getJ0());
+        add_xml_double(grandchild, exml_names[exmlJ0_SIGMA], eep->getJ0_sigma());
         add_xml_double(grandchild, exml_names[exmlCHI0], eep->getChi0());
+        add_xml_double(grandchild, exml_names[exmlCHI0_SIGMA], eep->getChi0_sigma());
         add_xml_char(grandchild, exml_names[exmlZETA], eep->getZetastr());
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr());
     }
+    
     for (auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);

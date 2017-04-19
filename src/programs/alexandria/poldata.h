@@ -60,16 +60,61 @@ class Poldata
 
         Poldata() {};
 
+        /*! \brief
+         * Set the file name gentop.dat
+         *
+         */
         void  setFilename(const std::string &fn2);
-
+        
+        /*! \brief
+         * Set the force field 
+         */
+        void setForceField(const std::string &forcefield)
+        {
+            alexandriaForcefield_ = forcefield;
+        }
+        
+        /*! \brief
+         * Set the potential energy function for VDW interaction.
+         * The VDW potentials supported by Alexandria are LJ, Buckingham, and Wang_Buckingham.
+         *
+         * \param[in] func  The name of the VDW potential function
+         */       
         void  setVdwFunction(const std::string &func);
-
-        void  addPtype(const std::string &ptype,
-                       const std::string &miller,
-                       const std::string &bosque,
-                       double             polarizability,
-                       double             sigPol);
-
+        
+        /*! \brief
+         * Set the combination rule
+         *
+         */
+        void setCombinationRule(const std::string &func);
+        
+        /*! \brief
+         * Set the number of exclusion
+         */
+        void setNexcl(int nexcl) { nexcl_ = nexcl; }
+        
+        /*! \brief
+         * Set the scaling factor for 1-4 electrostatic interaction
+         */
+        void setFudgeQQ(double fudgeQQ) { fudgeQQ_ = fudgeQQ; }
+        
+        /*! \brief
+         * Set the scaling factor for 1-4 LJ interaction
+         */
+        void setFudgeLJ(double fudgeLJ) { fudgeLJ_ = fudgeLJ; }
+        
+        /*! \brief
+         * Add the atom types used in Alexandria FF
+         *
+         *\param[in] elem          The element of the atom type
+         *\param[in] desc          The description of the atom type
+         *\param[in] atype         The atom type defined for this element in Alexandria FF
+         *\param[in] ptype         The polarizability type defined for this element in Alexandria FF
+         *\param[in] btype         The bond type defined for elem in Alexandria FF
+         *\param[in] vdwparams     The VDW parameters for elem in Alexandria FF. The number of VDW parameters is 2 for LJ and 3 for 
+         *                         Buckingham and Wang_Buckingham potentials
+         *\param[in] ref_enthalpy  The reference enthalpy for elem
+         */
         void  addAtype(const std::string &elem,
                        const std::string &desc,
                        const std::string &atype,
@@ -77,16 +122,46 @@ class Poldata
                        const std::string &btype,
                        std::string       &vdwparams,
                        const std::string &ref_enthalpy);
+                       
+        /*! \brief
+         *  Add the polarizability types
+         *
+         *\param[in] ptype           The name specifying the polarizability type in Alexandria FF
+         *\param[in] miller          Miller polarizability type
+         *\param[in] bosque          Bosque polarizability type
+         *\param[in] polarizability  The calulated value of polarizability
+         *\param[in] sigPol          The uncertainty of the calculated polarizability
+         */
+        void  addPtype(const std::string &ptype,
+                       const std::string &miller,
+                       const std::string &bosque,
+                       double             polarizability,
+                       double             sigPol);
 
+        
+
+        /*! \brief
+         * Set the value and the associated error for the given poltype
+         *
+         *\param[in] ptype            Polarizabilty type
+         *\param[in] polarizability   The value of polarizabilty
+         *\param[in] sigPol           The error
+         */
         bool setPtypePolarizability(const std::string &ptype,
                                     double             polarizability,
                                     double             sigPol);
 
+        /*! \brief
+         * Set the unit of polarizability.
+         */
         void setPolarUnit(const std::string &polarUnit)
         {
             alexandriaPolarUnit_ = polarUnit;
         }
 
+        /*! \brief
+         * Set the reference polarizability value. 
+         */
         void setPolarRef(const std::string &polarRef)
         {
             alexandriaPolarRef_ = polarRef;
@@ -94,18 +169,9 @@ class Poldata
 
         const std::string &getForceField() const { return alexandriaForcefield_; }
 
-        void setForceField(const std::string &forcefield)
-        {
-            alexandriaForcefield_ = forcefield;
-        }
-
         int getVdwFtype() const { return gtVdwFtype_; }
 
-        void setNexcl(int nexcl) { nexcl_ = nexcl; }
-
-        int getNexcl() const { return nexcl_; }
-
-        void setFudgeQQ(double fudgeQQ) { fudgeQQ_ = fudgeQQ; }
+        int getNexcl() const { return nexcl_; }      
 
         size_t getNatypes() const { return alexandria_.size(); }
 
@@ -113,19 +179,16 @@ class Poldata
 
         double getFudgeQQ() const { return fudgeQQ_; }
 
-        void setFudgeLJ(double fudgeLJ) { fudgeLJ_ = fudgeLJ; }
-
         double getFudgeLJ() const { return fudgeLJ_; }
 
+        /*! \brief
+         * Return the reference enthalpy for the given atom type 
+         * 
+         *\param[in] atype Atom type
+         *\param[ou] Href  Reference enthalpy
+         */
         bool getAtypeRefEnthalpy(const std::string &atype,
                                  double            *Href) const;
-
-        /*! \brief
-         * Set the combination rule
-         *
-         */
-        void setCombinationRule(const std::string &func);
-
 
         /*! \brief
          * Return the combination rule
@@ -133,6 +196,9 @@ class Poldata
          */
         const std::string &getCombinationRule() const { return gtCombinationRule_; }
 
+        /*! \brief
+         * Return the combination rule.
+         */
         int  getCombRule() const { return gtCombRule_; }
 
         std::string  getGeometry(std::string gtBrule);
@@ -310,7 +376,9 @@ class Poldata
             ref     = millerRef_;
         }
 
-        //! Convert poltype to miller name. Return true if found
+        /*! \brief
+         * Convert poltype to miller name. Return true if found
+         */
         bool ptypeToMiller(const std::string &ptype,
                            std::string       &mil_type) const;
 
@@ -343,7 +411,9 @@ class Poldata
             ref       = bosqueRef_;
         }
 
-        //! Convert poltype to bosque name or nullptr if not found
+        /*! \brief
+         * Convert poltype to bosque name.  Return true if found.
+         */
         bool ptypeToBosque(const std::string &ptype,
                            std::string       &bosque) const;
 

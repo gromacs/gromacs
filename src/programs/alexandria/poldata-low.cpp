@@ -740,7 +740,9 @@ Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
                    const std::string        &zetastr,
                    const std::string        &qstr,
                    double                    J0,
-                   double                    chi0)
+                   double                    J0_sigma,
+                   double                    chi0,
+                   double                    chi0_sigma)
     :
       eqdModel_(eqdModel),
       name_(name),
@@ -748,7 +750,9 @@ Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
       zetastr_(zetastr),
       qstr_(qstr),
       J0_(J0),
-      chi0_(chi0)
+      J0_sigma_(J0_sigma),
+      chi0_(chi0),
+      chi0_sigma_(chi0_sigma)
 {
     setRowZetaQ(rowstr, zetastr, qstr);
 }
@@ -765,7 +769,9 @@ CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, zetastr_.c_str());
         gmx_send_str(cr, dest, qstr_.c_str());
         gmx_send_double(cr, dest, J0_);
+        gmx_send_double(cr, dest, J0_sigma_);
         gmx_send_double(cr, dest, chi0_);
+        gmx_send_double(cr, dest, chi0_sigma_);
         gmx_send_int(cr, dest, rzq_.size());
         
         for (auto &rzq : rzq_)
@@ -791,14 +797,16 @@ CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        eqdModel_ = name2eemtype(gmx_recv_str(cr, src));
-        name_     = gmx_recv_str(cr, src);
-        rowstr_   = gmx_recv_str(cr, src);
-        zetastr_  = gmx_recv_str(cr, src);
-        qstr_     = gmx_recv_str(cr, src);
-        J0_       = gmx_recv_double(cr, src);
-        chi0_     = gmx_recv_double(cr, src);
-        nrzq      = gmx_recv_int(cr, src);
+        eqdModel_   = name2eemtype(gmx_recv_str(cr, src));
+        name_       = gmx_recv_str(cr, src);
+        rowstr_     = gmx_recv_str(cr, src);
+        zetastr_    = gmx_recv_str(cr, src);
+        qstr_       = gmx_recv_str(cr, src);
+        J0_         = gmx_recv_double(cr, src);
+        J0_sigma_   = gmx_recv_double(cr, src);
+        chi0_       = gmx_recv_double(cr, src);
+        chi0_sigma_ = gmx_recv_double(cr, src);
+        nrzq        = gmx_recv_int(cr, src);
         
         rzq_.clear();
         for (size_t n = 0; n < nrzq; n++)
