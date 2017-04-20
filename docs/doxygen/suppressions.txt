@@ -40,10 +40,8 @@ src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: includes "config.h" unneces
 src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: should include "config.h"
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.cpp: warning: includes "config.h" unnecessarily
-src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "config.h"
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "nbnxn_simd.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning: should include "nbnxn_simd.h"
 
 # Temporary while we change the SIMD implementation
