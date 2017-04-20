@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_output_env_t;
-struct t_filenm;
 
 /*! \brief Abstract type for essential dynamics
  *
@@ -61,10 +59,12 @@ struct t_filenm;
 typedef struct gmx_edsam *gmx_edsam_t;
 
 struct edsamstate_t;
-struct t_commrec;
-struct t_inputrec;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
+struct gmx_output_env_t;
+struct t_commrec;
+struct t_filenm;
+struct t_inputrec;
 
 /*! \brief Applies essential dynamics constrains as defined in the .edi input file.
  *
