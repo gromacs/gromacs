@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #ifndef GMX_LISTED_FORCES_BONDED_H
 #define GMX_LISTED_FORCES_BONDED_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -59,11 +59,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-struct gmx_wallcycle;
 struct t_graph;
 struct t_pbc;
 
@@ -164,9 +160,5 @@ void
                        int gmx_unused *global_atom_index);
 
 //! \endcond
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
