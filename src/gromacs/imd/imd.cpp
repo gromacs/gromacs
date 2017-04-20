@@ -1499,6 +1499,10 @@ void init_IMD(t_inputrec             *ir,
 }
 
 
+/*! \brief Is IMD required in this time step?
+ *
+ * See imd.h header file for details.
+ */
 gmx_bool do_IMD(gmx_bool        bIMD,
                 gmx_int64_t     step,
                 t_commrec      *cr,
@@ -1625,6 +1629,10 @@ void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
 }
 
 
+/*! \brief Send positions and energies to the client.
+ *
+ * See imd.h header file for details.
+ */
 void IMD_send_positions(t_IMD *imd)
 {
 #ifdef GMX_IMD
@@ -1652,6 +1660,10 @@ void IMD_send_positions(t_IMD *imd)
 }
 
 
+/*! \brief Calls IMD_prepare_energies() and then IMD_send_positions().
+ *
+ * See imd.h header file for details.
+ */
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
                                       t_IMD *imd, gmx_enerdata_t *enerd,
                                       gmx_int64_t step, gmx_bool bHaveNewEnergies,
@@ -1683,6 +1695,11 @@ int IMD_get_step(t_gmx_IMD *IMDsetup)
     return IMDsetup->nstimd;
 }
 
+
+/*! \brief Add external forces from a running interactive molecular dynamics session.
+ *
+ * See imd.h header file for details.
+ */
 void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, t_commrec *cr, rvec *f,
                       gmx_wallcycle_t wcycle)
 {

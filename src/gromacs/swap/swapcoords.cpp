@@ -58,6 +58,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -1985,6 +1986,10 @@ static void apply_modified_positions(
 }
 
 
+/*! \brief "Computational Electrophysiology" main routine within MD loop.
+ *
+ * See swapcoords.h header file for details.
+ */
 gmx_bool do_swapcoords(
         t_commrec        *cr,
         gmx_int64_t       step,
