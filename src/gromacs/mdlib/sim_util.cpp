@@ -82,9 +82,6 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
-#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
-#include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -113,6 +110,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "nbnxn_gpu.h"
+#include "nbnxn_kernels/nbnxn_kernel_cpu.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -441,8 +439,10 @@ static void do_nb_verlet(t_forcerec *fr,
     switch (nbvg->kernel_type)
     {
         case nbnxnk4x4_PlainC:
-            nbnxn_kernel_ref(&nbvg->nbl_lists,
-                             nbvg->nbat, ic,
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+            nbnxn_kernel_cpu(nbvg,
+                             ic,
                              fr->shift_vec,
                              flags,
                              clearF,
@@ -451,33 +451,6 @@ static void do_nb_verlet(t_forcerec *fr,
                              fr->bBHAM ?
                              enerd->grpp.ener[egBHAMSR] :
                              enerd->grpp.ener[egLJSR]);
-            break;
-
-        case nbnxnk4xN_SIMD_4xN:
-            nbnxn_kernel_simd_4xn(&nbvg->nbl_lists,
-                                  nbvg->nbat, ic,
-                                  nbvg->ewald_excl,
-                                  fr->shift_vec,
-                                  flags,
-                                  clearF,
-                                  fr->fshift[0],
-                                  enerd->grpp.ener[egCOULSR],
-                                  fr->bBHAM ?
-                                  enerd->grpp.ener[egBHAMSR] :
-                                  enerd->grpp.ener[egLJSR]);
-            break;
-        case nbnxnk4xN_SIMD_2xNN:
-            nbnxn_kernel_simd_2xnn(&nbvg->nbl_lists,
-                                   nbvg->nbat, ic,
-                                   nbvg->ewald_excl,
-                                   fr->shift_vec,
-                                   flags,
-                                   clearF,
-                                   fr->fshift[0],
-                                   enerd->grpp.ener[egCOULSR],
-                                   fr->bBHAM ?
-                                   enerd->grpp.ener[egBHAMSR] :
-                                   enerd->grpp.ener[egLJSR]);
             break;
 
         case nbnxnk8x8x8_GPU:
