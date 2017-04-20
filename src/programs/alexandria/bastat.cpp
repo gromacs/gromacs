@@ -103,18 +103,19 @@ static void sort_dihs(std::vector<t_dih> &dih)
     std::sort(dih.begin(), dih.end(),
               [](const t_dih &a, const t_dih &b)
               {
-                  int d = a.a1.compare(b.a1);
-                  if (0 == d)
+                  if (a.a1 == b.a1)
                   {
-                      if ((d = a.a2.compare(b.a2)) == 0)
+                      if (a.a2 == b.a2)
                       {
-                          if ((d = a.a3.compare(b.a3)) == 0)
+                          if (a.a3 == b.a3)
                           {
-                              return a.a4.compare(b.a4);
+                              return (a.a4 < b.a4);
                           }
+                          return (a.a3 < b.a3);
                       }
+                      return (a.a2 < b.a2);
                   }
-                  return d;
+                  return (a.a1 < b.a1);
               });
 }
 
@@ -123,28 +124,24 @@ static void sort_bonds(t_bonds *b)
     std::sort(b->bond.begin(), b->bond.end(),
               [](const t_bond &a, const t_bond &b)
               {
-                  int d = a.a1.compare(b.a1);
-                  if (d == 0)
+                  if (a.a1 == b.a1)
                   {
-                      if ((d = a.a2.compare(b.a2)) == 0)
-                      {
-                          d = a.order-b.order;
-                      }
+                      return (a.a2 < b.a2);
                   }
-                  return d;
+                  return (a.a1 < b.a1);
               });
     std::sort(b->angle.begin(), b->angle.end(),
               [](const t_angle &a, const t_angle &b)
               {
-                  int d = a.a1.compare(b.a1);
-                  if (0 == d)
+                  if (a.a1 == b.a1)
                   {
-                      if ((d = a.a2.compare(b.a2)) == 0)
+                      if (a.a2 == b.a2)
                       {
-                          return a.a3.compare(b.a3);
+                          return (a.a3 < b.a3);
                       }
+                      return (a.a2 < b.a2);
                   }
-                  return d;
+                  return (a.a1 < b.a1);
               });
     sort_dihs(b->dih);
     sort_dihs(b->imp);
