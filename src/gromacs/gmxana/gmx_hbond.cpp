@@ -3364,7 +3364,7 @@ int gmx_hbond(int argc, char *argv[])
                 sprintf(mat.title, bContact ? "Contact Existence Map" :
                         "Hydrogen Bond Existence Map");
                 sprintf(mat.legend, bContact ? "Contacts" : "Hydrogen Bonds");
-                sprintf(mat.label_x, "%s", output_env_get_xvgr_tlabel(oenv));
+                sprintf(mat.label_x, "%s", output_env_get_xvgr_tlabel(oenv).c_str());
                 sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
                 mat.bDiscrete = TRUE;
                 mat.nmap      = 2;

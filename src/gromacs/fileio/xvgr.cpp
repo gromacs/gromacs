@@ -65,7 +65,7 @@ gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t *oenv)
     return (xvg_format == exvgXMGRACE || xvg_format == exvgXMGR);
 }
 
-static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
+static char *xvgrstr(const std::string &gmx, const gmx_output_env_t *oenv,
                      char *buf, int buflen)
 {
     /* Supported greek letter names and corresponding xmgrace/xmgr symbols */
@@ -86,7 +86,7 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
         /* Check with the largest string we have ("lambda"), add one for \0 */
         if (b + 6 + 1 >= buflen)
         {
-            gmx_fatal(FARGS, "Output buffer length in xvgstr (%d) too small to process xvg input string '%s'", buflen, gmx);
+            gmx_fatal(FARGS, "Output buffer length in xvgstr (%d) too small to process xvg input string '%s'", buflen, gmx.c_str());
         }
         if (gmx[g] == '\\')
         {
@@ -177,7 +177,7 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                 /* Check for special symbol */
                 i = 0;
                 while (sym[i] != nullptr &&
-                       gmx_strncasecmp(sym[i], gmx+g, std::strlen(sym[i])) != 0)
+                       gmx_strncasecmp(sym[i], &gmx[g], std::strlen(sym[i])) != 0)
                 {
                     i++;
                 }
@@ -197,7 +197,7 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                             sprintf(buf+b, "%s%c%s", "\\8", c, "\\4");
                             break;
                         default:
-                            std::strncat(buf+b, gmx+g, std::strlen(sym[i]));
+                            std::strncat(buf+b, &gmx[g], std::strlen(sym[i]));
                             b += std::strlen(sym[i]);
                             if (gmx[g+std::strlen(sym[i])] != ' ')
                             {
@@ -231,8 +231,8 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
     return buf;
 }
 
-void xvgr_header(FILE *fp, const char *title, const char *xaxis,
-                 const char *yaxis, int exvg_graph_type,
+void xvgr_header(FILE *fp, const char *title, const std::string &xaxis,
+                 const std::string &yaxis, int exvg_graph_type,
                  const gmx_output_env_t *oenv)
 {
     char buf[STRLEN];
@@ -280,8 +280,8 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
     }
 }
 
-FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
-                    const char *yaxis, int exvg_graph_type,
+FILE *xvgropen_type(const char *fn, const char *title, const std::string &xaxis,
+                    const std::string &yaxis, int exvg_graph_type,
                     const gmx_output_env_t *oenv)
 {
     FILE  *fp;
@@ -293,8 +293,8 @@ FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
     return fp;
 }
 
-FILE *xvgropen(const char *fn, const char *title, const char *xaxis,
-               const char *yaxis, const gmx_output_env_t *oenv)
+FILE *xvgropen(const char *fn, const char *title, const std::string &xaxis,
+               const std::string &yaxis, const gmx_output_env_t *oenv)
 {
     return xvgropen_type(fn, title, xaxis, yaxis, exvggtXNY, oenv);
 }
