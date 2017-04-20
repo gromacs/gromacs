@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,48 +37,11 @@
  * kernel type 4xn.
  */
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/utility/real.h"
 
-/*! \brief Run-time dispatcher for nbnxn kernel functions. */
-void
-nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t       *nbl_list,
-                      const nbnxn_atomdata_t     *nbat,
-                      const interaction_const_t  *ic,
-                      int                         ewald_excl,
-                      rvec                       *shift_vec,
-                      int                         force_flags,
-                      int                         clearF,
-                      real                       *fshift,
-                      real                       *Vc,
-                      real                       *Vvdw);
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 
-/* Need an #include guard so that sim_util.c can include all
- * such files. */
-#ifndef _nbnxn_kernel_simd_include_h
-#define _nbnxn_kernel_simd_include_h
-/*! \brief Typedefs for declaring kernel functions. */
-typedef void (nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f,
-                             real                       *fshift,
-                             real                       *Vvdw,
-                             real                       *Vc);
-typedef nbk_func_ener *p_nbk_func_ener;
-
-typedef void (nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
-                               const nbnxn_atomdata_t     *nbat,
-                               const interaction_const_t  *ic,
-                               rvec                       *shift_vec,
-                               real                       *f,
-                               real                       *fshift);
-typedef nbk_func_noener *p_nbk_func_noener;
-#endif
-
+/* Declare all the different kernel functions.
+ */
 nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJCombGeom_VgrpF_4xn;
 nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJCombLB_VgrpF_4xn;
 nbk_func_ener         nbnxn_kernel_ElecRF_VdwLJ_VgrpF_4xn;
@@ -171,3 +134,146 @@ nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_4xn;
 nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_F_4xn;
 nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_F_4xn;
 nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_4xn;
+
+
+
+#ifdef INCLUDE_KERNELFUNCTION_TABLES
+
+/* Declare and define the kernel function pointer lookup tables.
+ * The minor index of the array goes over both the LJ combination rules,
+ * which is only supported by plain cut-off, and the LJ switch/PME functions.
+ */
+p_nbk_func_noener nbnxn_kernel_noener_simd_4xn[coulktNR][vdwktNR] =
+{
+    {
+        nbnxn_kernel_ElecRF_VdwLJCombGeom_F_4xn,
+        nbnxn_kernel_ElecRF_VdwLJCombLB_F_4xn,
+        nbnxn_kernel_ElecRF_VdwLJ_F_4xn,
+        nbnxn_kernel_ElecRF_VdwLJFSw_F_4xn,
+        nbnxn_kernel_ElecRF_VdwLJPSw_F_4xn,
+        nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_4xn,
+    },
+    {
+        nbnxn_kernel_ElecQSTab_VdwLJCombGeom_F_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJCombLB_F_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJ_F_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJFSw_F_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJPSw_F_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_F_4xn,
+    },
+    {
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_F_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_F_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_F_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_F_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_4xn,
+    },
+    {
+        nbnxn_kernel_ElecEw_VdwLJCombGeom_F_4xn,
+        nbnxn_kernel_ElecEw_VdwLJCombLB_F_4xn,
+        nbnxn_kernel_ElecEw_VdwLJ_F_4xn,
+        nbnxn_kernel_ElecEw_VdwLJFSw_F_4xn,
+        nbnxn_kernel_ElecEw_VdwLJPSw_F_4xn,
+        nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_4xn,
+    },
+    {
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_F_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_F_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_4xn,
+    },
+};
+
+p_nbk_func_ener nbnxn_kernel_ener_simd_4xn[coulktNR][vdwktNR] =
+{
+    {
+        nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJCombLB_VF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJ_VF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJFSw_VF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJPSw_VF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecQSTab_VdwLJCombGeom_VF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJCombLB_VF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJ_VF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJFSw_VF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJPSw_VF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_VF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_VF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_VF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJCombLB_VF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJ_VF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJFSw_VF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJPSw_VF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_VF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_4xn,
+    },
+};
+
+p_nbk_func_ener nbnxn_kernel_energrp_simd_4xn[coulktNR][vdwktNR] =
+{
+    {
+        nbnxn_kernel_ElecRF_VdwLJCombGeom_VgrpF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJCombLB_VgrpF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJ_VgrpF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJFSw_VgrpF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJPSw_VgrpF_4xn,
+        nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VgrpF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecQSTab_VdwLJCombGeom_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJCombLB_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJFSw_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJPSw_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VgrpF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombGeom_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJCombLB_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJFSw_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJPSw_VgrpF_4xn,
+        nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecEw_VdwLJCombGeom_VgrpF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJCombLB_VgrpF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJ_VgrpF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJFSw_VgrpF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJPSw_VgrpF_4xn,
+        nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VgrpF_4xn,
+    },
+    {
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VgrpF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VgrpF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJ_VgrpF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_VgrpF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_VgrpF_4xn,
+        nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VgrpF_4xn,
+    },
+};
+
+
+#endif /* INCLUDE_KERNELFUNCTION_TABLES */
