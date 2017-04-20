@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,12 +37,10 @@
 #ifndef GMX_FILEIO_OENV_H
 #define GMX_FILEIO_OENV_H
 
+#include <string>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_output_env_t;
 
@@ -77,14 +75,14 @@ void output_env_done(gmx_output_env_t *oenv);
 int output_env_get_verbosity(const gmx_output_env_t *oenv);
 /* return the verbosity */
 
-const char *output_env_get_time_unit(const gmx_output_env_t *oenv);
+std::string output_env_get_time_unit(const gmx_output_env_t *oenv);
 /* return time unit (e.g. ps or ns) */
 
-const char *output_env_get_time_label(const gmx_output_env_t *oenv);
+std::string output_env_get_time_label(const gmx_output_env_t *oenv);
 /* return time unit label (e.g. "Time (ps)") */
 
-const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv);
-/* retrun x-axis time label for xmgr */
+std::string output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv);
+/* return x-axis time label for xmgr */
 
 real output_env_get_time_factor(const gmx_output_env_t *oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
@@ -109,9 +107,6 @@ xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv);
  */
 const char *output_env_get_program_display_name(const gmx_output_env_t *oenv);
 
-#ifdef __cplusplus
-}
-
 namespace gmx
 {
 class IProgramContext;
@@ -131,7 +126,5 @@ void output_env_init(gmx_output_env_t **oenvp,
  */
 const gmx::IProgramContext &
 output_env_get_program_context(const gmx_output_env_t *oenv);
-
-#endif
 
 #endif

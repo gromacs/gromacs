@@ -599,7 +599,7 @@ int gmx_covar(int argc, char *argv[])
     fprintf(out, "Working directory: %s\n\n", str);
 
     fprintf(out, "Read %d frames from %s (time %g to %g %s)\n", nframes, trxfile,
-            output_env_conv_time(oenv, tstart), output_env_conv_time(oenv, tend), output_env_get_time_unit(oenv));
+            output_env_conv_time(oenv, tstart), output_env_conv_time(oenv, tend), output_env_get_time_unit(oenv).c_str());
     if (bFit)
     {
         fprintf(out, "Read reference structure for fit from %s\n", fitfile);

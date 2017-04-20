@@ -1124,7 +1124,7 @@ int gmx_rms(int argc, char *argv[])
     else
     {
         sprintf(buf, "%s with frame %g %s ago", whatxvgname[ewhat],
-                time[prev*freq]-time[0], output_env_get_time_label(oenv));
+                time[prev*freq]-time[0], output_env_get_time_label(oenv).c_str());
     }
     fp = xvgropen(opt2fn("-o", NFILE, fnm), buf, output_env_get_xvgr_tlabel(oenv),
                   whatxvglabel[ewhat], oenv);

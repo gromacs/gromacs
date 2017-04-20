@@ -65,6 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
 static gmx_inline
@@ -1412,7 +1413,7 @@ int gmx_cluster(int argc, char *argv[])
     int               *index = nullptr, *fitidx = nullptr, *outidx = nullptr;
     char              *grpname;
     real               rmsd, **d1, **d2, *time = nullptr, time_invfac, *mass = nullptr;
-    char               buf[STRLEN], buf1[80], title[STRLEN];
+    char               buf[STRLEN], buf1[80];
     gmx_bool           bAnalyze, bUseRmsdCut, bJP_RMSD = FALSE, bReadMat, bReadTraj, bPBC = TRUE;
 
     int                method, ncluster = 0;
@@ -1529,7 +1530,7 @@ int gmx_cluster(int argc, char *argv[])
     {
         fprintf(stderr,
                 "\nWarning: assuming the time unit in %s is %s\n",
-                opt2fn("-dm", NFILE, fnm), output_env_get_time_unit(oenv));
+                opt2fn("-dm", NFILE, fnm), output_env_get_time_unit(oenv).c_str());
     }
     if (trx_out_fn && !bReadTraj)
     {
@@ -1937,19 +1938,19 @@ int gmx_cluster(int argc, char *argv[])
     }
     else
     {
-        sprintf(buf, "Time (%s)", output_env_get_time_unit(oenv));
-        sprintf(title, "RMS%sDeviation / Cluster Index",
-                bRMSdist ? " Distance " : " ");
+        auto timeLabel = output_env_get_time_label(oenv);
+        auto title     = gmx::formatString("RMS%sDeviation / Cluster Index",
+                                           bRMSdist ? " Distance " : " ");
         if (minstruct > 1)
         {
-            write_xpm_split(fp, 0, title, "RMSD (nm)", buf, buf,
+            write_xpm_split(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel,
                             nf, nf, time, time, rms->mat, 0.0, rms->maxrms, &nlevels,
                             rlo_top, rhi_top, 0.0, ncluster,
                             &ncluster, TRUE, rlo_bot, rhi_bot);
         }
         else
         {
-            write_xpm(fp, 0, title, "RMSD (nm)", buf, buf,
+            write_xpm(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel,
                       nf, nf, time, time, rms->mat, 0.0, rms->maxrms,
                       rlo_top, rhi_top, &nlevels);
         }
@@ -1959,9 +1960,9 @@ int gmx_cluster(int argc, char *argv[])
     if (nullptr != orig)
     {
         fp = opt2FILE("-om", NFILE, fnm, "w");
-        sprintf(buf, "Time (%s)", output_env_get_time_unit(oenv));
-        sprintf(title, "RMS%sDeviation", bRMSdist ? " Distance " : " ");
-        write_xpm(fp, 0, title, "RMSD (nm)", buf, buf,
+        auto timeLabel = output_env_get_time_label(oenv);
+        auto title     = gmx::formatString("RMS%sDeviation", bRMSdist ? " Distance " : " ");
+        write_xpm(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel,
                   nf, nf, time, time, orig->mat, 0.0, orig->maxrms,
                   rlo_top, rhi_top, &nlevels);
         gmx_ffclose(fp);

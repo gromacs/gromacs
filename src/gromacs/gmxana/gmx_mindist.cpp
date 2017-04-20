@@ -212,7 +212,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
     fprintf(stdout,
             "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
             "between atoms %d and %d\n",
-            rmint, output_env_conv_time(oenv, tmint), output_env_get_time_unit(oenv),
+            rmint, output_env_conv_time(oenv, tmint), output_env_get_time_unit(oenv).c_str(),
             index[ind_mini]+1, index[ind_minj]+1);
 }
 

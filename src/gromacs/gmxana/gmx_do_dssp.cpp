@@ -147,7 +147,7 @@ static int strip_dssp(char *dsspfile, int nres,
 
         sprintf(mat->title, "Secondary structure");
         mat->legend[0] = 0;
-        sprintf(mat->label_x, "%s", output_env_get_time_label(oenv));
+        sprintf(mat->label_x, "%s", output_env_get_time_label(oenv).c_str());
         sprintf(mat->label_y, "Residue");
         mat->bDiscrete = TRUE;
         mat->ny        = nr;

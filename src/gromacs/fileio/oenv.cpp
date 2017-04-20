@@ -41,6 +41,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 struct gmx_output_env_t
 {
@@ -126,31 +127,21 @@ int output_env_get_verbosity(const gmx_output_env_t *oenv)
     return oenv->verbosity;
 }
 
-const char *output_env_get_time_unit(const gmx_output_env_t *oenv)
+std::string output_env_get_time_unit(const gmx_output_env_t *oenv)
 {
     return time_units_str[oenv->time_unit];
 }
 
-const char *output_env_get_time_label(const gmx_output_env_t *oenv)
+std::string output_env_get_time_label(const gmx_output_env_t *oenv)
 {
-    char *label;
-    snew(label, 20);
-
-    sprintf(label, "Time (%s)", time_units_str[oenv->time_unit] ?
-            time_units_str[oenv->time_unit] : "ps");
-
-    return label;
+    return gmx::formatString("Time (%s)", time_units_str[oenv->time_unit] ?
+                             time_units_str[oenv->time_unit] : "ps");
 }
 
-const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
+std::string output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
 {
-    char *label;
-    snew(label, 20);
-
-    sprintf(label, "Time (%s)", time_units_xvgr[oenv->time_unit] ?
-            time_units_xvgr[oenv->time_unit] : "ps");
-
-    return label;
+    return gmx::formatString("Time (%s)", time_units_xvgr[oenv->time_unit] ?
+                             time_units_xvgr[oenv->time_unit] : "ps");
 }
 
 real output_env_get_time_factor(const gmx_output_env_t *oenv)
