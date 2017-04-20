@@ -1507,7 +1507,7 @@ gmx_bool do_IMD(gmx_bool        bIMD,
                 rvec            x[],
                 t_inputrec     *ir,
                 double          t,
-                gmx_wallcycle_t wcycle)
+                gmx_wallcycle  *wcycle)
 {
     gmx_bool         imdstep = FALSE;
     t_gmx_IMD_setup *IMDsetup;
@@ -1655,7 +1655,7 @@ void IMD_send_positions(t_IMD *imd)
 void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
                                       t_IMD *imd, gmx_enerdata_t *enerd,
                                       gmx_int64_t step, gmx_bool bHaveNewEnergies,
-                                      gmx_wallcycle_t wcycle)
+                                      gmx_wallcycle *wcycle)
 {
     if (bIMD)
     {
@@ -1683,8 +1683,9 @@ int IMD_get_step(t_gmx_IMD *IMDsetup)
     return IMDsetup->nstimd;
 }
 
+
 void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, t_commrec *cr, rvec *f,
-                      gmx_wallcycle_t wcycle)
+                      gmx_wallcycle *wcycle)
 {
     int              i, j;
     int              locndx;

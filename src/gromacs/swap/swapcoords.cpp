@@ -58,6 +58,7 @@
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -1990,7 +1991,7 @@ gmx_bool do_swapcoords(
         gmx_int64_t       step,
         double            t,
         t_inputrec       *ir,
-        gmx_wallcycle_t   wcycle,
+        gmx_wallcycle    *wcycle,
         rvec              x[],
         matrix            box,
         gmx_bool          bVerbose,
