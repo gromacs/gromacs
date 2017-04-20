@@ -39,12 +39,10 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_output_env_t;
 
@@ -99,23 +97,23 @@ enum {
     exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
 };
 
-void xvgr_header(FILE *fp, const char *title, const char *xaxis,
-                 const char *yaxis, int exvg_graph_type,
+void xvgr_header(FILE *fp, const char *title, const std::string &xaxis,
+                 const std::string &yaxis, int exvg_graph_type,
                  const struct gmx_output_env_t *oenv);
 /* In most cases you want to use xvgropen_type, which does the same thing
  * but takes a filename and opens it.
  */
 
-FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
-                    const char *yaxis, int exvg_graph_type,
+FILE *xvgropen_type(const char *fn, const char *title, const std::string &xaxis,
+                    const std::string &yaxis, int exvg_graph_type,
                     const struct gmx_output_env_t *oenv);
 /* Open a file, and write a title, and axis-labels in Xvgr format
  * or write nothing when oenv specifies so.
  * The xvgr graph type enum is defined above.
  */
 
-FILE *xvgropen(const char *fn, const char *title, const char *xaxis,
-               const char *yaxis, const struct gmx_output_env_t *oenv);
+FILE *xvgropen(const char *fn, const char *title, const std::string &xaxis,
+               const std::string &yaxis, const struct gmx_output_env_t *oenv);
 /* Calls xvgropen_type with graph type xvggtXNY. */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
@@ -189,8 +187,4 @@ real **read_xvg_time(const char *fn,
                      gmx_bool bTE, real te,
                      int nsets_in, int *nset, int *nval,
                      real *dt, real **t);
-#ifdef __cplusplus
-}
-#endif
-
 #endif

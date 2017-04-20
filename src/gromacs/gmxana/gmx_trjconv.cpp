@@ -1591,7 +1591,7 @@ int gmx_trjconv(int argc, char *argv[])
                     if (bTDump)
                     {
                         fprintf(stderr, "\nDumping frame at t= %g %s\n",
-                                output_env_conv_time(oenv, frout_time), output_env_get_time_unit(oenv));
+                                output_env_conv_time(oenv, frout_time), output_env_get_time_unit(oenv).c_str());
                     }
 
                     /* check for writing at each delta_t */

@@ -40,6 +40,8 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/fileio/rgb.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -125,8 +127,8 @@ void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */
 
 void write_xpm3(FILE *out, unsigned int flags,
-                const char *title, const char *legend,
-                const char *label_x, const char *label_y,
+                const std::string &title, const std::string &legend,
+                const std::string &label_x, const std::string &label_y,
                 int n_x, int n_y, real axis_x[], real axis_y[],
                 real *mat[], real lo, real mid, real hi,
                 t_rgb rlo, t_rgb rmid, t_rgb rhi, int *nlevels);
@@ -134,8 +136,8 @@ void write_xpm3(FILE *out, unsigned int flags,
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
 void write_xpm_split(FILE *out, unsigned int flags,
-                     const char *title, const char *legend,
-                     const char *label_x, const char *label_y,
+                     const std::string &title, const std::string &legend,
+                     const std::string &label_x, const std::string &label_y,
                      int n_x, int n_y, real axis_x[], real axis_y[],
                      real *mat[],
                      real lo_top, real hi_top, int *nlevel_top,
@@ -150,8 +152,8 @@ void write_xpm_split(FILE *out, unsigned int flags,
  */
 
 void write_xpm(FILE *out, unsigned int flags,
-               const char *title, const char *legend,
-               const char *label_x, const char *label_y,
+               const std::string &title, const std::string &legend,
+               const std::string &label_x, const std::string &label_y,
                int n_x, int n_y, real t_x[], real t_y[],
                real *mat[], real lo, real hi,
                t_rgb rlo, t_rgb rhi, int *nlevels);

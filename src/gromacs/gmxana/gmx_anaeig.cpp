@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -147,7 +148,7 @@ static real tick_spacing(real range, int minticks)
 
 static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
                               const char *title, const char *subtitle,
-                              const char *xlabel, const char **ylabel,
+                              const std::string &xlabel, const char **ylabel,
                               int n, real *x, real **y, real ***sy,
                               real scale_x, gmx_bool bZero, gmx_bool bSplit,
                               const gmx_output_env_t *oenv)
@@ -223,7 +224,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             }
             if (g == ngraphs-1)
             {
-                fprintf(out, "@ xaxis  label \"%s\"\n", xlabel);
+                fprintf(out, "@ xaxis  label \"%s\"\n", xlabel.c_str());
             }
             else
             {

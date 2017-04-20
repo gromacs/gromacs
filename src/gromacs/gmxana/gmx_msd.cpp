@@ -185,9 +185,9 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
     if (DD)
     {
         fprintf(out, "# MSD gathered over %g %s with %d restarts\n",
-                msdtime, output_env_get_time_unit(oenv), curr->nrestart);
+                msdtime, output_env_get_time_unit(oenv).c_str(), curr->nrestart);
         fprintf(out, "# Diffusion constants fitted from time %g to %g %s\n",
-                beginfit, endfit, output_env_get_time_unit(oenv));
+                beginfit, endfit, output_env_get_time_unit(oenv).c_str());
         for (i = 0; i < curr->ngrp; i++)
         {
             fprintf(out, "# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
@@ -819,9 +819,9 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
     while (read_next_x(oenv, status, &t, x[cur], box));
     fprintf(stderr, "\nUsed %d restart points spaced %g %s over %g %s\n\n",
             curr->nrestart,
-            output_env_conv_time(oenv, dt), output_env_get_time_unit(oenv),
+            output_env_conv_time(oenv, dt), output_env_get_time_unit(oenv).c_str(),
             output_env_conv_time(oenv, curr->time[curr->nframes-1]),
-            output_env_get_time_unit(oenv) );
+            output_env_get_time_unit(oenv).c_str() );
 
     if (bMol)
     {
@@ -977,7 +977,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
         }
     }
     fprintf(stdout, "Fitting from %g to %g %s\n\n", beginfit, endfit,
-            output_env_get_time_unit(oenv));
+            output_env_get_time_unit(oenv).c_str());
 
     N = i1-i0;
     if (N <= 2)
