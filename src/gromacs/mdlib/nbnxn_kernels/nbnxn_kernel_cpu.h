@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,23 +33,37 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
-
-/* Declare all the different kernel functions.
+/*! \libinternal \file
+ *
+ * \brief
+ * Declares the nbnxn pair interaction kernel dispatcher.
+ *
+ * \author Berk Hess <hess@kth.se>
  */
-{0}
 
-#ifdef INCLUDE_KERNELFUNCTION_TABLES
+#ifndef _nbnxn_kernel_cpu_h
+#define _nbnxn_kernel_cpu_h
 
-/* Declare and define the kernel function pointer lookup tables.
- * The minor index of the array goes over both the LJ combination rules,
- * which is only supported by plain cut-off, and the LJ switch/PME functions.
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+
+struct interaction_const_t;
+struct nonbonded_verlet_group_t;
+
+/*! \brief Dispatches the non-bonded N versus M atom cluster CPU kernels.
+ *
+ * OpenMP parallelization is performed within this function.
+ * Energy reduction, but not force and shift force reduction, is performed
+ * within this function.
  */
-p_nbk_func_noener nbnxn_kernel_noener_simd_{1}[coulktNR][vdwktNR] =
-{2}
-p_nbk_func_ener nbnxn_kernel_ener_simd_{1}[coulktNR][vdwktNR] =
-{3}
-p_nbk_func_ener nbnxn_kernel_energrp_simd_{1}[coulktNR][vdwktNR] =
-{4}
+void
+nbnxn_kernel_cpu(nonbonded_verlet_group_t  *nbvg,
+                 const interaction_const_t *ic,
+                 rvec                      *shift_vec,
+                 int                        force_flags,
+                 int                        clearF,
+                 real                      *fshift,
+                 real                      *Vc,
+                 real                      *Vvdw);
 
-#endif /* INCLUDE_KERNELFUNCTION_TABLES */
+#endif

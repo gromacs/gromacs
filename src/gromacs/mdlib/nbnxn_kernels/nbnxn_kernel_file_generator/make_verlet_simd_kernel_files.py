@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,7 @@
 # are:
 #
 #   A single header file that declares all the kernel functions for
-#   this nbnxn kernel structure type, including the function that does
-#   the dispatch via the function pointer table.
-#
-#   A single C kernel dispatcher file that defines the function that
-#   decides at run time which kernel to call.
+#   this nbnxn kernel structure type and a function pointer table.
 #
 #   Many C kernel files, each defining a single kernel function. These
 #   functions can take a noticeable time to compile, and should tend
@@ -151,13 +147,11 @@ VerletKernelTypeDict = {
     },
 }
 
-KernelDispatcherTemplate = read_kernel_template("nbnxn_kernel_simd_template.cpp.pre")
 KernelsHeaderTemplate = read_kernel_template("nbnxn_kernel_simd_template.h.pre")
 
-# For each Verlet kernel type, write three kinds of files:
-#   a header file defining the functions for all the kernels,
-#   a code file containing the kernel function lookup table and
-#     the kernel dispatcher function
+# For each Verlet kernel type, write two kinds of files:
+#   a header file defining the functions for all the kernels and
+#     the kernel function lookup table
 #   for each kernel, a file defining the single C function for that kernel
 for type in VerletKernelTypeDict:
     DirName = "../simd_{0}".format(type)
@@ -210,26 +204,11 @@ for type in VerletKernelTypeDict:
     with open('{0}/{1}'.format(DirName,KernelsHeaderFileName),'w') as fp:
         fp.write(FileHeader.format(type))
         fp.write(KernelsHeaderTemplate
-                 .format(KernelsName,
-                         " " * (len(KernelsName) + 1),
-                         KernelDeclarations))
-
-    # Write the file defining the kernel dispatcher
-    # function for this type
-    with open('{0}/{1}'.format(DirName,"{0}.cpp".format(KernelsName,type)),'w') as fp:
-        fp.write(FileHeader.format(type))
-        fp.write(KernelDispatcherTemplate
-                 .format(VerletKernelTypeDict[type]['Define'],
-                         VerletKernelTypeDict[type]['WidthSetup'],
-                         VerletKernelTypeDict[type]['WidthCheck'],
-                         VerletKernelTypeDict[type]['UnrollSize'],
-                         KernelsHeaderFileName,
-                         KernelsName,
-                         ' ' * (len(KernelsName)+1),
+                 .format(KernelDeclarations,
+                         type,
                          KernelFunctionLookupTable['F'],
                          KernelFunctionLookupTable['VF'],
-                         KernelFunctionLookupTable['VgrpF'],
-                     )
+                         KernelFunctionLookupTable['VgrpF'])
              )
 
 sys.exit()
