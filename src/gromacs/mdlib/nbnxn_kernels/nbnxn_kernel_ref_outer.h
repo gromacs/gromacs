@@ -79,7 +79,7 @@
 #error "No VdW type defined"
 #endif
 
-static void
+void
 #ifndef CALC_ENERGIES
 NBK_FUNC_NAME(_F)
 #else
@@ -95,11 +95,8 @@ NBK_FUNC_NAME(_VgrpF)
  const nbnxn_atomdata_t     *nbat,
  const interaction_const_t  *ic,
  rvec                       *shift_vec,
- real                       *f
-#ifdef CALC_SHIFTFORCES
- ,
- real                       *fshift
-#endif
+ real                       *f,
+ real gmx_unused            *fshift
 #ifdef CALC_ENERGIES
  ,
  real                       *Vvdw,
