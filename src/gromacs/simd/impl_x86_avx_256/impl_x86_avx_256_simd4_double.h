@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -258,7 +258,7 @@ trunc(Simd4Double x)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 dotProduct(Simd4Double a, Simd4Double b)
 {
     __m128d tmp1, tmp2;
@@ -361,15 +361,15 @@ blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 reduce(Simd4Double a)
 {
     __m128d a0, a1;
-    // test with shuffle & add as an alternative to hadd later
-    a.simdInternal_ = _mm256_hadd_pd(a.simdInternal_, a.simdInternal_);
+    a.simdInternal_ = _mm256_add_pd(a.simdInternal_, _mm256_permute_pd(a.simdInternal_, 0b0101 ));
     a0              = _mm256_castpd256_pd128(a.simdInternal_);
     a1              = _mm256_extractf128_pd(a.simdInternal_, 0x1);
     a0              = _mm_add_sd(a0, a1);
+
     return *reinterpret_cast<double *>(&a0);
 }
 
