@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -336,8 +336,9 @@ log(SimdFloat x)
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
+    // bounds: Clamp numbers that would lead to an IEEE fp exponent reaching +-127.
+    const SimdFloat  argMax(127.0f);
+    const SimdFloat  argMin(-127.0f);
     const SimdFloat  CC6(0.0001534581200287996416911311f);
     const SimdFloat  CC5(0.001339993121934088894618990f);
     const SimdFloat  CC4(0.009618488957115180159497841f);
@@ -351,10 +352,10 @@ exp2(SimdFloat x)
     SimdFloat        p;
     SimdFBool        m;
 
+    x         = min(x, argMax);
+    m         = argMin < x;
     fexppart  = ldexp(one, cvtR2I(x));
     intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
     x         = x - intpart;
 
     p         = fma(CC6, x, CC5);
@@ -364,6 +365,8 @@ exp2(SimdFloat x)
     p         = fma(p, x, CC1);
     p         = fma(p, x, one);
     x         = p * fexppart;
+    x         = selectByMask(x, m);
+
     return x;
 }
 #endif
@@ -382,8 +385,9 @@ static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
     const SimdFloat  argscale(1.44269504088896341f);
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
+    // bounds: Clamp numbers that would lead to an IEEE fp exponent reaching +-127.
+    const SimdFloat  argMax(127.0f/1.44269504088896341f);
+    const SimdFloat  argMin(-127.0f/1.44269504088896341f);
     const SimdFloat  invargscale0(-0.693145751953125f);
     const SimdFloat  invargscale1(-1.428606765330187045e-06f);
     const SimdFloat  CC4(0.00136324646882712841033936f);
@@ -397,11 +401,11 @@ exp(SimdFloat x)
     SimdFloat        y, p;
     SimdFBool        m;
 
+    x         = min(x, argMax);
     y         = x * argscale;
+    m         = argMin < x;
     fexppart  = ldexp(one, cvtR2I(y));
     intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
     x         = fma(invargscale0, intpart, x);
@@ -413,6 +417,8 @@ exp(SimdFloat x)
     p         = fma(p, x, CC0);
     p         = fma(x*x, p, x);
     x         = fma(p, fexppart, fexppart);
+    x         = selectByMask(x, m);
+
     return x;
 }
 #endif
@@ -1609,7 +1615,9 @@ log(SimdDouble x)
 static inline SimdDouble gmx_simdcall
 exp2(SimdDouble x)
 {
-    const SimdDouble  arglimit(1022.0);
+    // bounds: Clamp numbers that would lead to an IEEE fp exponent reaching +-1023.
+    const SimdDouble  argMax(1023.0/1.44269504088896341);
+    const SimdDouble  argMin(-1023.0/1.44269504088896341);
     const SimdDouble  CE11(4.435280790452730022081181e-10);
     const SimdDouble  CE10(7.074105630863314448024247e-09);
     const SimdDouble  CE9(1.017819803432096698472621e-07);
@@ -1628,10 +1636,10 @@ exp2(SimdDouble x)
     SimdDouble        p;
     SimdDBool         m;
 
+    x         = min(x, argMax);
+    m         = argMin < x;
     fexppart  = ldexp(one, cvtR2I(x));
     intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
     x         = x - intpart;
 
     p         = fma(CE11, x, CE10);
@@ -1646,6 +1654,8 @@ exp2(SimdDouble x)
     p         = fma(p, x, CE1);
     p         = fma(p, x, one);
     x         = p * fexppart;
+    x         = selectByMask(x, m);
+
     return x;
 }
 #endif
@@ -1664,7 +1674,9 @@ static inline SimdDouble gmx_simdcall
 exp(SimdDouble x)
 {
     const SimdDouble  argscale(1.44269504088896340735992468100);
-    const SimdDouble  arglimit(1022.0);
+    // bounds: Clamp numbers that would lead to an IEEE fp exponent reaching +-1023.
+    const SimdDouble  argMax(1023.0/1.44269504088896341);
+    const SimdDouble  argMin(-1023.0/1.44269504088896341);
     const SimdDouble  invargscale0(-0.69314718055966295651160180568695068359375);
     const SimdDouble  invargscale1(-2.8235290563031577122588448175013436025525412068e-13);
     const SimdDouble  CE12(2.078375306791423699350304e-09);
@@ -1684,11 +1696,11 @@ exp(SimdDouble x)
     SimdDouble        y, p;
     SimdDBool         m;
 
+    x         = min(x, argMax);
     y         = x * argscale;
+    m         = argMin < x;
     fexppart  = ldexp(one, cvtR2I(y));
     intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
     x         = fma(invargscale0, intpart, x);
@@ -1706,6 +1718,7 @@ exp(SimdDouble x)
     p         = fma(p, x, CE2);
     p         = fma(p, x * x, x);
     x         = fma(p, fexppart, fexppart);
+    x         = selectByMask(x, m);
 
     return x;
 }
@@ -2884,8 +2897,9 @@ logSingleAccuracy(SimdDouble x)
 static inline SimdDouble gmx_simdcall
 exp2SingleAccuracy(SimdDouble x)
 {
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdDouble  arglimit = SimdDouble(126.0);
+    // bounds: Clamp numbers that would lead to an IEEE fp exponent reaching +-1023.
+    const SimdDouble  argMax(1023.0);
+    const SimdDouble  argMin(-1023.0);
     const SimdDouble  CC6(0.0001534581200287996416911311);
     const SimdDouble  CC5(0.001339993121934088894618990);
     const SimdDouble  CC4(0.009618488957115180159497841);
@@ -2899,9 +2913,10 @@ exp2SingleAccuracy(SimdDouble x)
     SimdDBool         valuemask;
     SimdDInt32        ix;
 
+    x         = min(x, argMax);
+    valuemask = argMin < x;
     ix        = cvtR2I(x);
     intpart   = round(x);
-    valuemask = (abs(x) <= arglimit);
     x         = x - intpart;
 
     p         = fma(CC6, x, CC5);
@@ -2925,8 +2940,9 @@ static inline SimdDouble gmx_simdcall
 expSingleAccuracy(SimdDouble x)
 {
     const SimdDouble  argscale(1.44269504088896341);
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127
-    const SimdDouble  arglimit(126.0);
+    // bounds: Clamp numbers that would lead to an IEEE fp exponent reaching +-1023.
+    const SimdDouble  argMax(1023.0/1.44269504088896341);
+    const SimdDouble  argMin(-1023.0/1.44269504088896341);
     const SimdDouble  invargscale(-0.69314718055994528623);
     const SimdDouble  CC4(0.00136324646882712841033936);
     const SimdDouble  CC3(0.00836596917361021041870117);
@@ -2939,10 +2955,11 @@ expSingleAccuracy(SimdDouble x)
     SimdDBool         valuemask;
     SimdDInt32        iy;
 
+    x         = min(x, argMax);
+    valuemask = argMin < x;
     y         = x * argscale;
     iy        = cvtR2I(y);
     intpart   = round(y);        // use same rounding algorithm here
-    valuemask = (abs(y) <= arglimit);
 
     // Extended precision arithmetics not needed since
     // we have double precision and only need single accuracy.
