@@ -2,13 +2,13 @@
 /lib
 *~
 #*
-*.pyc
-*.o
 *.a
-*.exe
-*.lib
 *.cache
+*.exe
 *.gch
+*.lib
+*.o
+*.pyc
 Makefile
 lib*.pc
 .project
