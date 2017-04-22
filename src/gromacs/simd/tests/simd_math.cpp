@@ -256,8 +256,16 @@ TEST_F(SimdMathTest, invsqrtPair)
 
 TEST_F(SimdMathTest, sqrt)
 {
-    // Just make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, 2, 3), sqrt(setSimdRealFrom3R(0, 4, 9)));
+    // Make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, std::sqrt(3), 2), sqrt(setSimdRealFrom3R(0, 3, 4)));
+
+#if GMX_DOUBLE
+    // Test arguments in the problematic range 0 < x <= GMX_FLOAT_MIN
+    double x0 = GMX_FLOAT_MIN;
+    double x1 = GMX_FLOAT_MIN*0.5;
+    double x2 = GMX_DOUBLE_MIN;
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::sqrt(x0), 0, 0), sqrt(setSimdRealFrom3R(x0, x1, x2)));
+#endif
 }
 
 /*! \brief Function wrapper to evaluate reference 1/x */
@@ -541,7 +549,7 @@ TEST_F(SimdMathTest, sqrtSingleAccuracy)
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
     // Just make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, 2, 3), sqrtSingleAccuracy(setSimdRealFrom3R(0, 4, 9)));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, std::sqrt(3), 2), sqrtSingleAccuracy(setSimdRealFrom3R(0, 3, 4)));
 }
 
 TEST_F(SimdMathTest, invSingleAccuracy)
