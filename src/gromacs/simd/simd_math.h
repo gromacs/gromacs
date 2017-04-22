@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1543,12 +1543,14 @@ maskzInv(SimdDouble x, SimdDBool m)
  *
  *  \param x Argument that must be >=0.
  *  \return sqrt(x). If x=0, the result will correctly be set to 0.
+ *          if x>0 && x<float_min, the result will incorrectly be set to 0.
  *          The result is undefined if the input value is negative.
  */
 static inline SimdDouble gmx_simdcall
 sqrt(SimdDouble x)
 {
-    return x * maskzInvsqrt(x, setZero() < x);
+    // As we might use a float version of rsqrt, we mask out small values
+    return x * maskzInvsqrt(x, SimdDouble(GMX_FLOAT_MIN) <= x);
 }
 
 #if !GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE
@@ -2826,13 +2828,13 @@ maskzInvSingleAccuracy(SimdDouble x, SimdDBool m)
 /*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, single accuracy.
  *
  *  \param x Argument that must be >=0.
- *  \return sqrt(x). If x=0, the result will correctly be set to 0.
+ *  \return sqrt(x). If x<float_min, the result will correctly be set to 0.
  *          The result is undefined if the input value is negative.
  */
 static inline SimdDouble gmx_simdcall
 sqrtSingleAccuracy(SimdDouble x)
 {
-    return x * maskzInvsqrtSingleAccuracy(x, setZero() < x);
+    return x * maskzInvsqrtSingleAccuracy(x, SimdDouble(GMX_FLOAT_MIN) <= x);
 }
 
 /*! \brief SIMD log(x). Double precision SIMD data, single accuracy.
