@@ -4,6 +4,7 @@
 #*
 *.a
 *.cache
+*.DS_Store
 *.exe
 *.gch
 *.lib
