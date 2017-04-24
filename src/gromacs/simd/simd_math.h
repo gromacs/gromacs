@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -331,13 +331,14 @@ log(SimdFloat x)
 /*! \brief SIMD float 2^x.
  *
  * \param x Argument.
- * \result 2^x. Undefined if input argument caused overflow.
+ * \result 2^x.
  */
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
+    // Clamping the exponent within +-127 produces the correct under/overflow behavior
+    const SimdFloat  expMax(127.0f);
+    const SimdFloat  expMin(-127.0f);
     const SimdFloat  CC6(0.0001534581200287996416911311f);
     const SimdFloat  CC5(0.001339993121934088894618990f);
     const SimdFloat  CC4(0.009618488957115180159497841f);
@@ -348,13 +349,12 @@ exp2(SimdFloat x)
 
     SimdFloat        intpart;
     SimdFloat        fexppart;
-    SimdFloat        p;
-    SimdFBool        m;
+    SimdFloat        y, p;
 
-    fexppart  = ldexp(one, cvtR2I(x));
-    intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
+    y         = min(x, expMax);
+    y         = max(y, expMin);
+    fexppart  = ldexp(one, cvtR2I(y));
+    intpart   = round(y);
     x         = x - intpart;
 
     p         = fma(CC6, x, CC5);
@@ -375,15 +375,15 @@ exp2(SimdFloat x)
  * extended precision arithmetics to improve accuracy.
  *
  * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow,
- * which can happen if abs(x) \> 7e13.
+ * \result exp(x).
  */
 static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
     const SimdFloat  argscale(1.44269504088896341f);
-    // Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127.
-    const SimdFloat  arglimit(126.0f);
+    // Clamping the exponent within +-127 produces the correct under/overflow behavior
+    const SimdFloat  expMax(127.0f);
+    const SimdFloat  expMin(-127.0f);
     const SimdFloat  invargscale0(-0.693145751953125f);
     const SimdFloat  invargscale1(-1.428606765330187045e-06f);
     const SimdFloat  CC4(0.00136324646882712841033936f);
@@ -395,13 +395,12 @@ exp(SimdFloat x)
     SimdFloat        fexppart;
     SimdFloat        intpart;
     SimdFloat        y, p;
-    SimdFBool        m;
 
     y         = x * argscale;
+    y         = min(y, expMax);
+    y         = max(y, expMin);
     fexppart  = ldexp(one, cvtR2I(y));
     intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
     x         = fma(invargscale0, intpart, x);
@@ -1604,12 +1603,14 @@ log(SimdDouble x)
 /*! \brief SIMD double 2^x.
  *
  * \param x Argument.
- * \result 2^x. Undefined if input argument caused overflow.
+ * \result 2^x.
  */
 static inline SimdDouble gmx_simdcall
 exp2(SimdDouble x)
 {
-    const SimdDouble  arglimit(1022.0);
+    // Clamping the exponent within +-1023 produces the correct under/overflow behavior
+    const SimdDouble  expMax(1023.0);
+    const SimdDouble  expMin(-1023.0);
     const SimdDouble  CE11(4.435280790452730022081181e-10);
     const SimdDouble  CE10(7.074105630863314448024247e-09);
     const SimdDouble  CE9(1.017819803432096698472621e-07);
@@ -1625,13 +1626,12 @@ exp2(SimdDouble x)
 
     SimdDouble        intpart;
     SimdDouble        fexppart;
-    SimdDouble        p;
-    SimdDBool         m;
+    SimdDouble        y, p;
 
-    fexppart  = ldexp(one, cvtR2I(x));
-    intpart   = round(x);
-    m         = abs(x) <= arglimit;
-    fexppart  = selectByMask(fexppart, m);
+    y         = min(x, expMax);
+    y         = max(y, expMin);
+    fexppart  = ldexp(one, cvtR2I(y));
+    intpart   = round(y);
     x         = x - intpart;
 
     p         = fma(CE11, x, CE10);
@@ -1657,14 +1657,15 @@ exp2(SimdDouble x)
  * extended precision arithmetics to improve accuracy.
  *
  * \param x Argument.
- * \result exp(x). Undefined if input argument caused overflow,
- * which can happen if abs(x) \> 7e13.
+ * \result exp(x).
  */
 static inline SimdDouble gmx_simdcall
 exp(SimdDouble x)
 {
     const SimdDouble  argscale(1.44269504088896340735992468100);
-    const SimdDouble  arglimit(1022.0);
+    // Clamping the exponent within +-1023 produces the correct under/overflow behavior
+    const SimdDouble  expMax(1023.0);
+    const SimdDouble  expMin(-1023.0);
     const SimdDouble  invargscale0(-0.69314718055966295651160180568695068359375);
     const SimdDouble  invargscale1(-2.8235290563031577122588448175013436025525412068e-13);
     const SimdDouble  CE12(2.078375306791423699350304e-09);
@@ -1682,13 +1683,12 @@ exp(SimdDouble x)
     SimdDouble        fexppart;
     SimdDouble        intpart;
     SimdDouble        y, p;
-    SimdDBool         m;
 
     y         = x * argscale;
+    y         = min(y, expMax);
+    y         = max(y, expMin);
     fexppart  = ldexp(one, cvtR2I(y));
     intpart   = round(y);
-    m         = (abs(y) <= arglimit);
-    fexppart  = selectByMask(fexppart, m);
 
     // Extended precision arithmetics
     x         = fma(invargscale0, intpart, x);
