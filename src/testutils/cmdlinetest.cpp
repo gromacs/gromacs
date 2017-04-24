@@ -55,7 +55,6 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
@@ -63,9 +62,9 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "testutils/filematchers.h"
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
-#include "testutils/textblockmatchers.h"
 
 namespace gmx
 {
@@ -249,27 +248,14 @@ class CommandLineTestHelper::Impl
         struct OutputFileInfo
         {
             OutputFileInfo(const char *option, const std::string &path,
-                           TextBlockMatcherPointer matcher)
+                           FileMatcherPointer matcher)
                 : option(option), path(path), matcher(move(matcher))
             {
-            }
-            OutputFileInfo(OutputFileInfo &&other)
-                : option(std::move(other.option)), path(std::move(other.path)),
-                  matcher(std::move(other.matcher))
-            {
-            }
-
-            OutputFileInfo &operator=(OutputFileInfo &&other)
-            {
-                option  = std::move(other.option);
-                path    = std::move(other.path);
-                matcher = std::move(other.matcher);
-                return *this;
             }
 
             std::string              option;
             std::string              path;
-            TextBlockMatcherPointer  matcher;
+            FileMatcherPointer       matcher;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -355,6 +341,13 @@ void CommandLineTestHelper::setOutputFile(
         CommandLine *args, const char *option, const char *filename,
         const ITextBlockMatcherSettings &matcher)
 {
+    setOutputFile(args, option, filename, TextFileMatch(matcher));
+}
+
+void CommandLineTestHelper::setOutputFile(
+        CommandLine *args, const char *option, const char *filename,
+        const IFileMatcherSettings &matcher)
+{
     std::string suffix(filename);
     if (startsWith(filename, "."))
     {
@@ -362,7 +355,7 @@ void CommandLineTestHelper::setOutputFile(
     }
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(suffix);
     args->addOption(option, fullFilename);
-    impl_->outputFiles_.emplace_back(option, fullFilename, matcher.createMatcher());
+    impl_->outputFiles_.emplace_back(option, fullFilename, matcher.createFileMatcher());
 }
 
 void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
@@ -372,15 +365,11 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
         TestReferenceChecker                 outputChecker(
                 checker.checkCompound("OutputFiles", "Files"));
         Impl::OutputFileList::const_iterator outfile;
-        for (outfile = impl_->outputFiles_.begin();
-             outfile != impl_->outputFiles_.end();
-             ++outfile)
+        for (const auto &outfile : impl_->outputFiles_)
         {
             TestReferenceChecker fileChecker(
-                    outputChecker.checkCompound("File", outfile->option.c_str()));
-            TextInputFile        stream(outfile->path);
-            outfile->matcher->checkStream(&stream, &fileChecker);
-            stream.close();
+                    outputChecker.checkCompound("File", outfile.option.c_str()));
+            outfile.matcher->checkFile(outfile.path, &fileChecker);
         }
     }
 }
@@ -440,6 +429,13 @@ void CommandLineTestBase::setInputFileContents(
 void CommandLineTestBase::setOutputFile(
         const char *option, const char *filename,
         const ITextBlockMatcherSettings &matcher)
+{
+    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
+}
+
+void CommandLineTestBase::setOutputFile(
+        const char *option, const char *filename,
+        const IFileMatcherSettings &matcher)
 {
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
 }
