@@ -46,6 +46,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -65,7 +66,7 @@ static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
     {
         changed = 0;
         strncpy(buf, *(atoms->atomname[i]), sizeof(buf));
-        while ((ptr = strchr(buf, ' ')) != NULL)
+        while ((ptr = strchr(buf, ' ')) != nullptr)
         {
             *ptr    = '_';
             changed = 1;
@@ -140,7 +141,7 @@ int alex_gentop(int argc, char *argv[])
         { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR }
     };
 
-#define NFILE sizeof(fnm)/sizeof(fnm[0])
+    const  int                       NFILE          = asize(fnm);
 
     static int                       maxpot         = 0;
     static int                       seed           = 0;
@@ -326,10 +327,8 @@ int alex_gentop(int argc, char *argv[])
           "The magnitude of the external electeric field to calculate polarizability tensor." },
     };
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm,
-                           sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc,
-                           sizeof(bugs)/sizeof(bugs[0]), bugs, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -490,13 +489,13 @@ int alex_gentop(int argc, char *argv[])
             mymol.GenerateCube(iChargeDistributionModel,
                                pd,
                                spacing,
-                               opt2fn_null("-ref", NFILE, fnm),
-                               opt2fn_null("-pc", NFILE, fnm),
-                               opt2fn_null("-pdbdiff", NFILE, fnm),
-                               opt2fn_null("-pot", NFILE, fnm),
-                               opt2fn_null("-rho", NFILE, fnm),
-                               opt2fn_null("-his", NFILE, fnm),
-                               opt2fn_null("-diff", NFILE, fnm),
+                               opt2fn_null("-ref",      NFILE, fnm),
+                               opt2fn_null("-pc",       NFILE, fnm),
+                               opt2fn_null("-pdbdiff",  NFILE, fnm),
+                               opt2fn_null("-pot",      NFILE, fnm),
+                               opt2fn_null("-rho",      NFILE, fnm),
+                               opt2fn_null("-his",      NFILE, fnm),
+                               opt2fn_null("-diff",     NFILE, fnm),
                                opt2fn_null("-diffhist", NFILE, fnm),
                                oenv);
         }

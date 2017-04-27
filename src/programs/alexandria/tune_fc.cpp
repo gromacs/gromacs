@@ -1948,6 +1948,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     static int            nrun          = 1;
     static int            maxiter       = 100; 
+    static int            mindata       = 1;
     static int            reinit        = 0;
     static int            seed          = 0;
     static int            compress      = 0;
@@ -2003,6 +2004,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Do optimization in multiple simulation" },
         { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
+        { "-mindata", FALSE, etINT, {&mindata},
+          "Minimum number of data points to optimize a polarizability value" },
         { "-nprint",  FALSE, etINT, {&nprint},
           "How often to print the parameters during the simulation" },
         { "-temp",    FALSE, etREAL, {&temperature},
@@ -2137,7 +2140,7 @@ int alex_tune_fc(int argc, char *argv[])
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi,
              bOptHfac, hfac, bPolar, bFitZeta, 
-             hwinfo, bfullTensor);
+             hwinfo, bfullTensor, mindata);
 
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),

@@ -34,7 +34,8 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author  David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
 #include <cctype>
@@ -982,30 +983,33 @@ void OPtimization::print_results(FILE                   *fp,
                 if (mol.topology_->atoms.atom[j].ptype == eptAtom)
                 {               
                     const char *at = *(mol.topology_->atoms.atomtype[j]);
-                    auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
-                                                  [at](const AtomTypeLsq &atlsq)
-                                                  {
-                                                      return atlsq.atomtype.compare(at) == 0;
-                                                  });                                                 
-                    if (k != lsqt.end())
+                    if(indexCount_.isOptimized(at))
                     {
-                        qEEM = mol.topology_->atoms.atom[j].q;
-                        if(nullptr != mol.shellfc_)
+                        auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
+                                                      [at](const AtomTypeLsq &atlsq)
+                                                      {
+                                                          return atlsq.atomtype.compare(at) == 0;
+                                                      });                                                 
+                        if (k != lsqt.end())
                         {
-                            qEEM += mol.topology_->atoms.atom[j+1].q;
-                        }
-                        gmx_stats_add_point(k->lsq, mol.qESP_[i], qEEM, 0, 0);
-                    } 
-                                                          
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
-                            mol.topology_->atoms.atom[j].atomnumber,
-                            j+1,
-                            *(mol.topology_->atoms.atomtype[j]),
-                            qEEM, 
-                            mol.qESP_[i],
-                            mol.state_->x[j][XX], 
-                            mol.state_->x[j][YY], 
-                            mol.state_->x[j][ZZ]); 
+                            qEEM = mol.topology_->atoms.atom[j].q;
+                            if(nullptr != mol.shellfc_)
+                            {
+                                qEEM += mol.topology_->atoms.atom[j+1].q;
+                            }
+                            gmx_stats_add_point(k->lsq, mol.qESP_[i], qEEM, 0, 0);
+                        } 
+                        
+                        fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
+                                mol.topology_->atoms.atom[j].atomnumber,
+                                j+1,
+                                *(mol.topology_->atoms.atomtype[j]),
+                                qEEM, 
+                                mol.qESP_[i],
+                                mol.state_->x[j][XX], 
+                                mol.state_->x[j][YY], 
+                                mol.state_->x[j][ZZ]); 
+                    }
                     i++;
                 }
             }
@@ -1019,9 +1023,9 @@ void OPtimization::print_results(FILE                   *fp,
     fprintf(fp, "ESP points are %s in EEM Parametrization.\n",  (bESP_ ? "used" : "not used"));
     fprintf(fp, "\n");
     
-    print_stats(fp, (char *)"Dipoles", lsq_mu[0], true, (char *)"QM", (char *)"EEM");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[0], false, (char *)"QM", (char *)"EEM");
-    print_stats(fp, (char *)"Quadrupoles", lsq_quad[0], false, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Dipoles",       lsq_mu[0],   true,  (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Dipole Moment", lsq_dip[0],  false, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[0], false, (char *)"QM", (char *)"EEM");
 
     if (bESP_ || (!bESP_ && iChargeGenerationAlgorithm_ == eqgEEM))
     {
@@ -1029,9 +1033,9 @@ void OPtimization::print_results(FILE                   *fp,
     }        
     fprintf(fp, "\n");
 
-    print_stats(fp, (char *)"Dipoles", lsq_mu[1], true, (char *)"QM", (char *)"ESP");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[1], false, (char *)"QM", (char *)"ESP");
-    print_stats(fp, (char *)"Quadrupoles", lsq_quad[1], false, (char *)"QM", (char *)"ESP");
+    print_stats(fp, (char *)"Dipoles",       lsq_mu[1],   true,  (char *)"QM", (char *)"ESP");
+    print_stats(fp, (char *)"Dipole Moment", lsq_dip[1],  false, (char *)"QM", (char *)"ESP");
+    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[1], false, (char *)"QM", (char *)"ESP");
     
     if (!bESP_ && iChargeGenerationAlgorithm_ == eqgESP)
     {
@@ -1052,9 +1056,9 @@ void OPtimization::print_results(FILE                   *fp,
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   nbins;
-        real *x, *y;
         if (gmx_stats_get_npoints(k->lsq, &nbins) == estatsOK)
         {
+            real *x, *y;
             fprintf(fp, "%-4d copies for %4s\n", nbins, k->atomtype.c_str());
             if (gmx_stats_make_histogram(k->lsq, 0, &nbins, ehistoY, 1, &x, &y) == estatsOK)
             {
@@ -1064,9 +1068,10 @@ void OPtimization::print_results(FILE                   *fp,
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
                 fprintf(hh, "&\n");
+                
+                free(x);
+                free(y);
             }
-            free(x);
-            free(y);
         }
         gmx_stats_free(k->lsq);
     }
@@ -1212,6 +1217,7 @@ int alex_tune_dip(int argc, char *argv[])
     static int                  nprint        = 10;
     static int                  maxiter       = 100;
     static int                  reinit        = 0;
+    static int                  mindata       = 3;
     static int                  seed          = -1;
     static real                 tol           = 1e-3;
     static real                 stol          = 1e-6;
@@ -1264,6 +1270,8 @@ int alex_tune_dip(int argc, char *argv[])
           "Tolerance for convergence in optimization" },
         { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
+        { "-mindata", FALSE, etINT, {&mindata},
+          "Minimum number of data points to optimize a polarizability value" },
         { "-nprint",  FALSE, etINT, {&nprint},
           "How often to print the parameters during the simulation" },
         { "-reinit", FALSE, etINT, {&reinit},
@@ -1422,7 +1430,7 @@ int alex_tune_dip(int argc, char *argv[])
              J0_1, Chi0_1, w_1, fc_bound, 
              fc_mu, fc_quad, fc_charge,
              fc_esp, 1, 1, fixchi, bOptHfac, hfac, 
-             bPolar, bFitZeta, hwinfo, bfullTensor);
+             bPolar, bFitZeta, hwinfo, bfullTensor, mindata);
             
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
@@ -1464,7 +1472,7 @@ int alex_tune_dip(int argc, char *argv[])
                           opt2fn("-mucorr",    NFILE, fnm),
                           opt2fn("-thetacorr", NFILE, fnm), 
                           opt2fn("-espcorr",   NFILE, fnm),
-                          opt2fn("-alphacorr",   NFILE, fnm),
+                          opt2fn("-alphacorr", NFILE, fnm),
                           dip_toler, 
                           quad_toler, 
                           oenv,

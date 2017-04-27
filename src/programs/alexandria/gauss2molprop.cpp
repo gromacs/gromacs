@@ -51,6 +51,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
@@ -104,16 +105,16 @@ int alex_gauss2molprop(int argc, char *argv[])
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
     };
+    
     gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
     alexandria::Poldata              pd;
     std::vector<alexandria::MolProp> mp;
-    char **fns = NULL;
+    char **fns = nullptr;
     int    i, nfn;
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm,
-                           sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, 
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -141,8 +142,8 @@ int alex_gauss2molprop(int argc, char *argv[])
     printf("Succesfully read %d molprops from %d Gaussian files.\n",
            (int)mp.size(), nfn);
     alexandria::MolSelect gms;
-    MolPropSort(mp, MPSA_MOLNAME, NULL, gms);
-    merge_doubles(mp, NULL, TRUE);
+    MolPropSort(mp, MPSA_MOLNAME, nullptr, gms);
+    merge_doubles(mp, nullptr, TRUE);
     if (mp.size() > 0)
     {
         MolPropWrite(opt2fn("-o", NFILE, fnm), mp, (int)compress);

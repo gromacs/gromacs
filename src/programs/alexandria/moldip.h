@@ -125,6 +125,8 @@ class IndexCount
         void decrementName(const std::string &name);
 
         int count(const std::string &name);
+        
+        bool isOptimized(const std::string &name);
 
         std::vector<AtomIndex>::iterator beginIndex() { return atomIndex_.begin(); }
 
@@ -152,7 +154,7 @@ class MolDip
         bool                            bDone_, bFinal_, bGaussianBug_;
         bool                            bFitZeta_, bfullTensor_;
         std::vector<alexandria::MyMol>  mymol_;
-        int                             nmol_support_;
+        int                             nmol_support_, mindata_;
         ChargeDistributionModel         iChargeDistributionModel_;
         ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
         IndexCount                      indexCount_;
@@ -188,7 +190,7 @@ class MolDip
                   real fc_esp, real fc_epot, real fc_force, char *fixchi,
                   gmx_bool bOptHfac, real hfac,
                   gmx_bool bPol, gmx_bool bFitZeta, 
-                  gmx_hw_info_t *hwinfo, gmx_bool bfullTensor);
+                  gmx_hw_info_t *hwinfo, gmx_bool bfullTensor, int mindata);
 
         void Read(FILE *fp, const char *fn, const char *pd_fn,
                   gmx_bool bZero, char *opt_elem, char *const_elem,

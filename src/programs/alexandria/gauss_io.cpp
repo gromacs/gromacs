@@ -136,7 +136,7 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     }
     if (!g98f.is_open())
     {
-        gmx_fatal(FARGS, "Can not open file %s for reading", g98);
+        gmx_fatal(FARGS, "Cannot open file %s for reading", g98);
     }
 
     // Read from g98f
@@ -508,7 +508,9 @@ static void gmx_molprop_read_babel(const char          *g98,
         alexandria::MolecularPolarizability mdp("electronic",
                                                 unit2string(eg2cAngstrom3),
                                                 0.0,
-                                                mm[0], mm[4], mm[8], mm[1], mm[2], mm[5], alpha, 0);
+                                                mm[0], mm[4], mm[8], 
+                                                mm[1], mm[2], mm[5], 
+                                                alpha, 0);
         mpt.LastExperiment()->AddPolar(mdp);
     }
 

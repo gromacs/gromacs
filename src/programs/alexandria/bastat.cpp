@@ -186,7 +186,7 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     }
     gmx_stats_add_point(b->lsq, 0, blen, 0, 0);
     b->histo[index]++;
-    if (NULL != fplog)
+    if (nullptr != fplog)
     {
         fprintf(fplog, "%s bond-%s-%s-%d %g\n", molname,
                 a1.c_str(), a2.c_str(), order, blen);
@@ -235,7 +235,7 @@ void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
     }
     gmx_stats_add_point(a->lsq, 0, refValue, 0, 0);
     a->histo[index]++;
-    if (NULL != fplog)
+    if (nullptr != fplog)
     {
         fprintf(fplog, "%s angle-%s-%s-%s %g\n", molname,
                 a1.c_str(), a2.c_str(), a3.c_str(), refValue);
@@ -306,7 +306,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
             ddd.a2.assign(a3);
             ddd.a1.assign(a4);
         }
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "NEWDIH  %5s  %5s  %5s  %5s\n",
                     a1.c_str(), a2.c_str(), a3.c_str(), a4.c_str());
@@ -318,7 +318,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     }
     gmx_stats_add_point(d->lsq, 0, angle, 0, 0);
     d->histo[index]++;
-    if (NULL != fplog)
+    if (nullptr != fplog)
     {
         fprintf(fplog, "%s dihedral-%s-%s-%s-%s %g\n", molname,
                 d->a1.c_str(), d->a2.c_str(), d->a3.c_str(), d->a4.c_str(), angle);

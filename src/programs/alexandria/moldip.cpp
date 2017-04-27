@@ -138,9 +138,7 @@ static void make_index_count(IndexCount               *ic,
     {
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
-            auto ai = ic->findName(eep->getName());
             if ((eep->getEqdModel() == iDistributionModel) &&
-                (ai != ic->endIndex()) && !ai->isConst() &&
                 pd.haveEemSupport(iDistributionModel, eep->getName(), false))
             {
                 ic->addName(eep->getName(), false);
@@ -202,6 +200,20 @@ void IndexCount::incrementName(const std::string &name)
     ai->increment();
 }
 
+bool IndexCount::isOptimized(const std::string &name)
+{
+    bool isObtimized = false;
+    auto ai = findName(name);
+    if (ai != atomIndex_.end())
+    {
+        if (!ai->isConst())
+        {
+            isObtimized = true;
+        }
+    }    
+    return isObtimized;
+}
+
 void IndexCount::decrementName(const std::string &name)
 {
     auto ai = findName(name);
@@ -227,16 +239,16 @@ int IndexCount::cleanIndex(int   minimum_data,
 {
     int nremove = 0;
 
-    for (auto i = atomIndex_.begin(); i < atomIndex_.end(); ++i)
+    for (auto ai = atomIndex_.begin(); ai < atomIndex_.end(); ++ai)
     {
-        if (!i->isConst() && (i->count() < minimum_data))
+        if (!ai->isConst() && (ai->count() < minimum_data))
         {
             if (fp)
             {
                 fprintf(fp, "Not enough support in data set for optimizing %s\n",
-                        i->name().c_str());
+                        ai->name().c_str());
             }
-            i = atomIndex_.erase(i);
+            ai = atomIndex_.erase(ai);
             nremove++;
         }
     }
@@ -305,7 +317,8 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   gmx_bool bOptHfac, real hfac,
                   gmx_bool bPol, gmx_bool bFitZeta, 
                   gmx_hw_info_t *hwinfo,
-                  gmx_bool bfullTensor)
+                  gmx_bool bfullTensor,
+                  int      mindata)
 {
     cr_                         = cr;
     bQM_                        = bQM;
@@ -336,6 +349,7 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     bPol_                       = bPol;
     hwinfo_                     = hwinfo;
     bfullTensor_                = bfullTensor;
+    mindata_                    = mindata;
 }
 
 void MolDip::Read(FILE            *fp,
@@ -629,6 +643,12 @@ void MolDip::Read(FILE            *fp,
             fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
         }
     }
+    
+    if (bCheckSupport && MASTER(cr_))
+    {                     
+        indexCount_.cleanIndex(mindata_, fp);
+    }
+    
     nmol_support_ = mymol_.size();
     if (nmol_support_ == 0)
     {

@@ -252,77 +252,6 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-/*
- * Make Linear Angles, Improper Dihedrals, and Virtual Sites
- */
-void MyMol::MakeSpecialInteractions(const Poldata &pd,
-                                    bool           bUseVsites)
-{
-    std::vector < std::vector < unsigned int> > bonds;
-    std::vector<int> nbonds;
-    t_pbc            pbc;
-    real             th_toler = 175;
-    real             ph_toler = 5;
-
-    rvec *x = as_rvec_array(state_->x.data());
-    
-    clear_mat(box_);
-    set_pbc(&pbc, epbcNONE, box_);
-
-    bonds.resize(topology_->atoms.nr);
-    for (auto bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
-    {
-        // Store bonds bidirectionally to get the number correct
-        bonds[bi->getAi() - 1].push_back(bi->getAj() - 1);
-        bonds[bi->getAj() - 1].push_back(bi->getAi() - 1);
-    }
-    nbonds.resize(topology_->atoms.nr);
-    for (int i = 0; (i < topology_->atoms.nr); i++)
-    {
-        nbonds[i] = bonds[i].size();
-    }
-    for (int i = 0; (i < topology_->atoms.nr); i++)
-    {
-        /* Now test initial geometry */
-        if ((bonds[i].size() == 2) &&
-            is_linear(x[i], x[bonds[i][0]], x[bonds[i][1]],
-                      &pbc, th_toler))
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "found linear angle %s-%s-%s in %s\n",
-                        *topology_->atoms.atomtype[bonds[i][0]],
-                        *topology_->atoms.atomtype[i],
-                        *topology_->atoms.atomtype[bonds[i][1]],
-                        molProp()->getMolname().c_str());
-            }
-            gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
-        }
-        else if ((bonds[i].size() == 3) &&
-                 is_planar(x[i], x[bonds[i][0]],
-                           x[bonds[i][1]], x[bonds[i][2]],
-                           &pbc, ph_toler))
-        {
-            if (nullptr != debug)
-            {
-                fprintf(debug, "found planar group %s-%s-%s-%s in %s\n",
-                        *topology_->atoms.atomtype[i],
-                        *topology_->atoms.atomtype[bonds[i][0]],
-                        *topology_->atoms.atomtype[bonds[i][1]],
-                        *topology_->atoms.atomtype[bonds[i][2]],
-                        molProp()->getMolname().c_str());
-            }
-            gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
-                           &nbonds[0]);
-        }
-    }
-    int anr = topology_->atoms.nr;
-
-    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x,
-                         plist_, symtab_, atype_, &excls_);
-    bHaveVSites_ = (topology_->atoms.nr > anr);
-}
-
 static void cp_plist(t_params                  *plist,
                      int                        ftype,
                      InteractionType            itype,
@@ -344,111 +273,6 @@ static void cp_plist(t_params                  *plist,
             pw.addParam(plist->param[i]);
         }
         plist_.push_back(pw);
-    }
-}
-
-/*
- * Make Harmonic Angles, Proper Dihedrals, and 14 Pairs.
- * This needs the bonds to be F_BONDS.
- */
-void MyMol::MakeAngles(bool bPairs,
-                       bool bDihs)
-{
-    t_nextnb                            nnb;
-    t_restp                             rtp;
-    t_params                            plist[F_NRE];
-
-    init_plist(plist);
-    for (auto &pw : plist_)
-    {
-        if (F_BONDS == pw.getFtype())
-        {
-            pr_alloc(pw.nParam(), &(plist[F_BONDS]));
-            int i = 0;
-            for (auto pi = pw.beginParam(); (pi < pw.endParam()); ++pi)
-            {
-                for (int j = 0; j < MAXATOMLIST; j++)
-                {
-                    plist[F_BONDS].param[i].a[j] = pi->a[j];
-                }
-                for (int j = 0; j < MAXFORCEPARAM; j++)
-                {
-                    plist[F_BONDS].param[i].c[j] = pi->c[j];
-                }
-                i++;
-            }
-            plist[F_BONDS].nr = i;
-            break;
-        }
-    }
-    /* Make Harmonic Angles and Proper Dihedrals */
-    snew(excls_, topology_->atoms.nr);
-    init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
-    gen_nnb(&nnb, plist);
-
-    print_nnb(&nnb, "NNB");
-    rtp.bKeepAllGeneratedDihedrals    = bDihs;
-    rtp.bRemoveDihedralIfWithImproper = bDihs;
-    rtp.bGenerateHH14Interactions     = bPairs;
-    rtp.nrexcl                        = nexcl_;
-
-    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, nullptr, false);
-
-    t_blocka *EXCL;
-    snew(EXCL, 1);
-    generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
-    for (int i = 0; (i < EXCL->nr); i++)
-    {
-        int ne = EXCL->index[i+1]-EXCL->index[i];
-        srenew(excls_[i].e, ne);
-        excls_[i].nr = 0;
-        for (int j = EXCL->index[i]; (j < EXCL->index[i+1]); j++)
-        {
-            if (EXCL->a[j] != i)
-            {
-                excls_[i].e[excls_[i].nr++] = EXCL->a[j];
-            }
-        }
-        // Set the rest of the memory to zero
-        for (int j = excls_[i].nr; j < ne; j++)
-        {
-            excls_[i].e[j] = 0;
-        }
-    }
-    done_blocka(EXCL);
-    sfree(EXCL);
-    if (nullptr != debug)
-    {
-        for (int i = 0; i < topology_->atoms.nr; i++)
-        {
-            fprintf(debug, "excl %d", i);
-            for (int j = 0; j < excls_[i].nr; j++)
-            {
-                fprintf(debug, "  %2d", excls_[i].e[j]);
-            }
-            fprintf(debug, "\n");
-        }
-    }
-    done_nnb(&nnb);
-
-    cp_plist(&plist[F_ANGLES], F_ANGLES, eitANGLES, plist_);
-
-    if (bDihs)
-    {
-        cp_plist(&plist[F_PDIHS], F_PDIHS, eitPROPER_DIHEDRALS, plist_);
-    }
-
-    if (bPairs)
-    {
-        cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
-    }
-
-    for (int i = 0; i < F_NRE; i++)
-    {
-        if (plist[i].nr > 0)
-        {
-            sfree(plist[i].param);
-        }
     }
 }
 
@@ -1014,6 +838,35 @@ void mtop_update_cgs(gmx_mtop_t *mtop)
     }
 }
 
+
+
+MyMol::MyMol() : gvt_(egvtALL)
+{
+    bHaveShells_       = false;
+    bHaveVSites_       = false;
+    cgnr_              = nullptr;
+    immAtoms_          = immOK;
+    immTopology_       = immOK;
+    immCharges_        = immOK;
+    shellfc_           = nullptr;
+    snew(symtab_, 1);
+    open_symtab(symtab_);
+    atype_ = init_atomtype();
+    clear_mat(box_);
+    mtop_       = nullptr;
+    fr_         = nullptr;
+    ltop_       = nullptr;
+    mdatoms_    = nullptr;
+    mp_         = new MolProp;
+    state_      = new t_state;
+    state_->flags |= (1<<estX);
+    state_->flags |= (1<<estV);
+    state_->flags |= (1<<estCGP);
+    snew(enerd_, 1);
+    snew(fcd_, 1);
+    init_enerdata(1, 0, enerd_);
+}
+
 bool MyMol::IsSymmetric(real toler)
 {
     int       i, j, m;
@@ -1072,33 +925,180 @@ bool MyMol::IsSymmetric(real toler)
     return bSymmAll;
 }
 
-
-
-MyMol::MyMol() : gvt_(egvtALL)
+/*
+ * Make Linear Angles, Improper Dihedrals, and Virtual Sites
+ */
+void MyMol::MakeSpecialInteractions(const Poldata &pd,
+                                    bool           bUseVsites)
 {
-    bHaveShells_       = false;
-    bHaveVSites_       = false;
-    cgnr_              = nullptr;
-    immAtoms_          = immOK;
-    immTopology_       = immOK;
-    immCharges_        = immOK;
-    shellfc_           = nullptr;
-    snew(symtab_, 1);
-    open_symtab(symtab_);
-    atype_ = init_atomtype();
+    std::vector < std::vector < unsigned int> > bonds;
+    std::vector<int> nbonds;
+    t_pbc            pbc;
+    real             th_toler = 175;
+    real             ph_toler = 5;
+
+    rvec *x = as_rvec_array(state_->x.data());
+    
     clear_mat(box_);
-    mtop_       = nullptr;
-    fr_         = nullptr;
-    ltop_       = nullptr;
-    mdatoms_    = nullptr;
-    mp_         = new MolProp;
-    state_      = new t_state;
-    state_->flags |= (1<<estX);
-    state_->flags |= (1<<estV);
-    state_->flags |= (1<<estCGP);
-    snew(enerd_, 1);
-    snew(fcd_, 1);
-    init_enerdata(1, 0, enerd_);
+    set_pbc(&pbc, epbcNONE, box_);
+
+    bonds.resize(topology_->atoms.nr);
+    for (auto bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
+    {
+        // Store bonds bidirectionally to get the number correct
+        bonds[bi->getAi() - 1].push_back(bi->getAj() - 1);
+        bonds[bi->getAj() - 1].push_back(bi->getAi() - 1);
+    }
+    nbonds.resize(topology_->atoms.nr);
+    for (int i = 0; (i < topology_->atoms.nr); i++)
+    {
+        nbonds[i] = bonds[i].size();
+    }
+    for (int i = 0; (i < topology_->atoms.nr); i++)
+    {
+        /* Now test initial geometry */
+        if ((bonds[i].size() == 2) &&
+            is_linear(x[i], x[bonds[i][0]], x[bonds[i][1]],
+                      &pbc, th_toler))
+        {
+            if (nullptr != debug)
+            {
+                fprintf(debug, "found linear angle %s-%s-%s in %s\n",
+                        *topology_->atoms.atomtype[bonds[i][0]],
+                        *topology_->atoms.atomtype[i],
+                        *topology_->atoms.atomtype[bonds[i][1]],
+                        molProp()->getMolname().c_str());
+            }
+            gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
+        }
+        else if ((bonds[i].size() == 3) &&
+                 is_planar(x[i], x[bonds[i][0]],
+                           x[bonds[i][1]], x[bonds[i][2]],
+                           &pbc, ph_toler))
+        {
+            if (nullptr != debug)
+            {
+                fprintf(debug, "found planar group %s-%s-%s-%s in %s\n",
+                        *topology_->atoms.atomtype[i],
+                        *topology_->atoms.atomtype[bonds[i][0]],
+                        *topology_->atoms.atomtype[bonds[i][1]],
+                        *topology_->atoms.atomtype[bonds[i][2]],
+                        molProp()->getMolname().c_str());
+            }
+            gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
+                           &nbonds[0]);
+        }
+    }
+    int anr = topology_->atoms.nr;
+
+    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x,
+                         plist_, symtab_, atype_, &excls_);
+    bHaveVSites_ = (topology_->atoms.nr > anr);
+}
+
+/*
+ * Make Harmonic Angles, Proper Dihedrals, and 14 Pairs.
+ * This needs the bonds to be F_BONDS.
+ */
+void MyMol::MakeAngles(bool bPairs,
+                       bool bDihs)
+{
+    t_nextnb                            nnb;
+    t_restp                             rtp;
+    t_params                            plist[F_NRE];
+
+    init_plist(plist);
+    for (auto &pw : plist_)
+    {
+        if (F_BONDS == pw.getFtype())
+        {
+            pr_alloc(pw.nParam(), &(plist[F_BONDS]));
+            int i = 0;
+            for (auto pi = pw.beginParam(); (pi < pw.endParam()); ++pi)
+            {
+                for (int j = 0; j < MAXATOMLIST; j++)
+                {
+                    plist[F_BONDS].param[i].a[j] = pi->a[j];
+                }
+                for (int j = 0; j < MAXFORCEPARAM; j++)
+                {
+                    plist[F_BONDS].param[i].c[j] = pi->c[j];
+                }
+                i++;
+            }
+            plist[F_BONDS].nr = i;
+            break;
+        }
+    }
+    /* Make Harmonic Angles and Proper Dihedrals */
+    snew(excls_, topology_->atoms.nr);
+    init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
+    gen_nnb(&nnb, plist);
+
+    print_nnb(&nnb, "NNB");
+    rtp.bKeepAllGeneratedDihedrals    = bDihs;
+    rtp.bRemoveDihedralIfWithImproper = bDihs;
+    rtp.bGenerateHH14Interactions     = bPairs;
+    rtp.nrexcl                        = nexcl_;
+
+    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, nullptr, false);
+
+    t_blocka *EXCL;
+    snew(EXCL, 1);
+    generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
+    for (int i = 0; (i < EXCL->nr); i++)
+    {
+        int ne = EXCL->index[i+1]-EXCL->index[i];
+        srenew(excls_[i].e, ne);
+        excls_[i].nr = 0;
+        for (int j = EXCL->index[i]; (j < EXCL->index[i+1]); j++)
+        {
+            if (EXCL->a[j] != i)
+            {
+                excls_[i].e[excls_[i].nr++] = EXCL->a[j];
+            }
+        }
+        // Set the rest of the memory to zero
+        for (int j = excls_[i].nr; j < ne; j++)
+        {
+            excls_[i].e[j] = 0;
+        }
+    }
+    done_blocka(EXCL);
+    sfree(EXCL);
+    if (nullptr != debug)
+    {
+        for (int i = 0; i < topology_->atoms.nr; i++)
+        {
+            fprintf(debug, "excl %d", i);
+            for (int j = 0; j < excls_[i].nr; j++)
+            {
+                fprintf(debug, "  %2d", excls_[i].e[j]);
+            }
+            fprintf(debug, "\n");
+        }
+    }
+    done_nnb(&nnb);
+
+    cp_plist(&plist[F_ANGLES], F_ANGLES, eitANGLES, plist_);
+
+    if (bDihs)
+    {
+        cp_plist(&plist[F_PDIHS], F_PDIHS, eitPROPER_DIHEDRALS, plist_);
+    }
+
+    if (bPairs)
+    {
+        cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
+    }
+
+    for (int i = 0; i < F_NRE; i++)
+    {
+        if (plist[i].nr > 0)
+        {
+            sfree(plist[i].param);
+        }
+    }
 }
 
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
@@ -1949,7 +1949,7 @@ void MyMol::CalcQuadrupole()
         {
             Q_calc_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
         }
-        Q_calc_[XX][YY] += dfac*3*(state_->x[i][XX]-coq_[XX])*(state_->x[i][YY]-coq_[YY]);
+        Q_calc_[XX][YY] += dfac*3*(state_->x[i][XX]-coq_[YY])*(state_->x[i][YY]-coq_[YY]);
         Q_calc_[XX][ZZ] += dfac*3*(state_->x[i][XX]-coq_[XX])*(state_->x[i][ZZ]-coq_[ZZ]);
         Q_calc_[YY][ZZ] += dfac*3*(state_->x[i][YY]-coq_[YY])*(state_->x[i][ZZ]-coq_[ZZ]);
     }
