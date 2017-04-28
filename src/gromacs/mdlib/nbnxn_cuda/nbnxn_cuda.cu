@@ -133,6 +133,7 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
    -- only for benchmarking purposes */
 static const bool bUseCudaLaunchKernel =
     (GMX_CUDA_VERSION >= 7000) && (getenv("GMX_DISABLE_CUDALAUNCH") == NULL);
+static const bool bDisableInPlacePrune = (getenv("GMX_DISABLE_INPLACE_PRUNE") != NULL);
 
 /* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
 static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
@@ -402,7 +403,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    if (plist->haveFreshList && (flags & GMX_FORCE_DYN_PRUNING))
+    if (plist->haveFreshList && nb->separatePruneKernel)//(flags & GMX_FORCE_DYN_PRUNING))
     {
         /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
            (TODO: ATM that's the way the timing accounting can distinguish between
@@ -424,6 +425,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
+    if (plist->haveFreshList)
+    {
+        GMX_RELEASE_ASSERT( (nb->timers->didPrune[iloc]) == (nb->separatePruneKernel), "BLAH");
+    }
     /* get the pointer to the kernel flavor we need to use */
     nb_kernel = select_nbnxn_kernel(nbp->eeltype,
                                     nbp->vdwtype,
@@ -513,6 +518,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
     cudaStream_t         stream  = nb->stream[iloc];
 
     bool                 bDoTime = nb->bDoTime;
+    bool                 pruneInPlace;
 
     if (plist->haveFreshList)
     {
@@ -521,6 +527,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
         /* Set rollingPruningNumParts to signal that it is not set */
         plist->rollingPruningNumParts = 0;
         plist->rollingPruningPart     = 0;
+
+        pruneInPlace = !plist->useRollingPruninig;
     }
     else
     {
@@ -532,6 +540,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
         {
             GMX_ASSERT(numParts == plist->rollingPruningNumParts, "It is not allowed to change numParts in between list generation steps");
         }
+
+        pruneInPlace = false;
     }
 
     /* Use a local variable for part and update in plist, so we can return here
@@ -604,11 +614,19 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
 #if GMX_CUDA_VERSION >= 7000
         if (plist->haveFreshList)
         {
-            cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<true>, dim_grid, dim_block, kernel_args, shmem, stream);
+            if (pruneInPlace && !bDisableInPlacePrune)
+            {
+                cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<true, true>, dim_grid, dim_block, kernel_args, shmem, stream);
+            }
+            else
+            {
+                cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<true, false>, dim_grid, dim_block, kernel_args, shmem, stream);
+            }
         }
         else
         {
-            cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<false>, dim_grid, dim_block, kernel_args, shmem, stream);
+            assert(!pruneInPlace);
+            cudaLaunchKernel((void *)nbnxn_kernel_prune_cuda<false, false>, dim_grid, dim_block, kernel_args, shmem, stream);
         }
 #endif
     }
@@ -616,11 +634,19 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t       *nb,
     {
         if (plist->haveFreshList)
         {
-            nbnxn_kernel_prune_cuda<true><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
+            if (pruneInPlace && !bDisableInPlacePrune)
+            {
+                nbnxn_kernel_prune_cuda<true, true><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
+            }
+            else
+            {
+                nbnxn_kernel_prune_cuda<true, false><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
+            }
         }
         else
         {
-            nbnxn_kernel_prune_cuda<false><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
+            assert(!pruneInPlace);
+            nbnxn_kernel_prune_cuda<false, false><<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, numParts, part);
         }
     }
     CU_LAUNCH_ERR("k_pruneonly");

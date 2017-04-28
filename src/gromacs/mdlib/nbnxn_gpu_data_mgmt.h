@@ -68,7 +68,8 @@ void nbnxn_gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
                     int gmx_unused                          my_gpu_index,
                     int gmx_unused                          rank,
                     /* true if both local and non-local are done on GPU */
-                    gmx_bool gmx_unused                     bLocalAndNonlocal) GPU_FUNC_TERM
+                    gmx_bool gmx_unused                     bLocalAndNonlocal,
+                    bool gmx_unused                         useDynamicPruning) GPU_FUNC_TERM
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER

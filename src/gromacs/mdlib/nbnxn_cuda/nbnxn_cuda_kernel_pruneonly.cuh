@@ -100,7 +100,7 @@
  *
  *   Each thread calculates an i-j atom distance..
  */
-template <bool haveFreshList>
+template <bool haveFreshList, bool pruneInPlace>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
                                         const cu_nbparam_t  nbparam,
@@ -222,11 +222,14 @@ __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
                             {
                                 imaskFull &= ~mask_ji;
                             }
-                            /* If any atom pair is within range, set the bit
-                               corresponding to the current cluster-pair. */
-                            if (__any(r2 < rlistInner_sq))
+                            if (!pruneInPlace)
                             {
-                                imaskNew |= mask_ji;
+                                /* If any atom pair is within range, set the bit
+                                   corresponding to the current cluster-pair. */
+                                if (__any(r2 < rlistInner_sq))
+                                {
+                                    imaskNew |= mask_ji;
+                                }
                             }
                         }
 
@@ -236,13 +239,20 @@ __global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
                 }
             }
 
-            if (haveFreshList)
+            if (!pruneInPlace)
             {
-                /* copy the list pruned to rlistOuter to a separate buffer */
-                plist.imask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                if (haveFreshList)
+                {
+                    /* copy the list pruned to rlistOuter to a separate buffer */
+                    plist.imask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                }
+                /* update the imask with only the pairs up to rlistInner */
+                plist.cj4[j4].imei[widx].imask = imaskNew;
             }
-            /* update the imask with only the pairs up to rlistInner */
-            plist.cj4[j4].imei[widx].imask = imaskNew;
+            else
+            {
+                plist.cj4[j4].imei[widx].imask = imaskFull;
+            }
         }
     }
 }

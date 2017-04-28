@@ -612,7 +612,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     nonbonded_verlet_group_t  *nbv_grp,
                     int                        my_gpu_index,
                     int                        /*rank*/,
-                    gmx_bool                   bLocalAndNonlocal)
+                    gmx_bool                   bLocalAndNonlocal,
+                    bool                       useDynamicPruning)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
@@ -644,6 +645,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
+    nb->plist[eintLocal]->useRollingPruninig = useDynamicPruning;
 
     /* set device info, just point it to the right GPU among the detected ones */
     nb->dev_info = &gpu_info->gpu_dev[get_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
@@ -667,6 +669,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                                             cudaStreamDefault,
                                             highest_priority);
         CU_RET_ERR(stat, "cudaStreamCreateWithPriority on stream[eintNonlocal] failed");
+
+        nb->plist[eintNonlocal]->useRollingPruninig = useDynamicPruning;
     }
 
     /* init events for sychronization (timing disabled for performance reasons!) */
@@ -682,6 +686,13 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     nb->bDoTime = (!nb->bUseTwoStreams &&
                    (getenv("GMX_DISABLE_CUDA_TIMING") == NULL) &&
                    (getenv("GMX_DISABLE_GPU_TIMING") == NULL));
+
+    /* By default run the separate prune kernel, switch back to the combined Force + prune if requested. */
+    nb->separatePruneKernel = (getenv("GMX_NBNXN_DISABLE_SEPARATE_PRUNING") == NULL);
+    if (!nb->separatePruneKernel && useDynamicPruning)
+    {
+        gmx_fatal(FARGS, "Can't use combined F+prune kernel with rolling pruning!");
+    }
 
     if (nb->bDoTime)
     {

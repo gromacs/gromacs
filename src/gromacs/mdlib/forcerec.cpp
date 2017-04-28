@@ -2340,6 +2340,8 @@ static void init_nb_verlet(FILE                *fp,
 
     if (nbv->bUseGPU)
     {
+        bool useDynamicPruning = (fr->ic->nstlistPrune < ir->nstlist);
+
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         nbnxn_gpu_init(&nbv->gpu_nbv,
@@ -2349,7 +2351,8 @@ static void init_nb_verlet(FILE                *fp,
                        nbv->grp,
                        cr->rank_pp_intranode,
                        cr->nodeid,
-                       (nbv->ngrp > 1) && !bHybridGPURun);
+                       (nbv->ngrp > 1) && !bHybridGPURun,
+                       useDynamicPruning);
 
         /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
          * also sharing texture references. To keep the code simple, we don't
