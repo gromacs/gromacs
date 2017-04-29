@@ -687,8 +687,9 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
      * TODO: we could avoid creating kernels if rolling pruning is turned off,
      * but ATM that depends on force flags not passed into the initialization.
      */
-    nb->kernel_pruneonly[epruneFirst]   = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_opencl");
-    nb->kernel_pruneonly[epruneRolling] = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
+    nb->kernel_pruneonly[epruneFirstInPlace]      = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_inplace_opencl");
+    nb->kernel_pruneonly[epruneFirstOutOfPlace]   = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_outofplace_opencl");
+    nb->kernel_pruneonly[epruneRolling]           = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
 
     /* Init auxiliary kernels */
     nb->kernel_memset_f      = nbnxn_gpu_create_kernel(nb, "memset_f");
@@ -719,7 +720,9 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                     nonbonded_verlet_group_t  *nbv_grp,
                     int                        my_gpu_index,
                     int                        rank,
-                    gmx_bool                   bLocalAndNonlocal)
+                    gmx_bool                   bLocalAndNonlocal,
+                    bool                       useDynamicPruning)
+
 {
     gmx_nbnxn_ocl_t            *nb;
     cl_int                      cl_error;
@@ -761,6 +764,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     ocl_pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
+    nb->plist[eintLocal]->useRollingPruninig = useDynamicPruning;
 
     /* OpenCL timing disabled if GMX_DISABLE_OCL_TIMING is defined. */
     /* TODO deprecate the first env var in the 2017 release. */
@@ -803,6 +807,15 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                       cl_error);
             return;
         }
+
+        nb->plist[eintNonlocal]->useRollingPruninig = useDynamicPruning;
+    }
+
+    /* By default run the separate prune kernel, switch back to the combined Force + prune if requested. */
+    nb->separatePruneKernel = (getenv("GMX_NBNXN_DISABLE_SEPARATE_PRUNING") == NULL);
+    if (!nb->separatePruneKernel && useDynamicPruning)
+    {
+        gmx_fatal(FARGS, "Can't use combined F+prune kernel with rolling pruning!");
     }
 
     if (nb->bDoTime)

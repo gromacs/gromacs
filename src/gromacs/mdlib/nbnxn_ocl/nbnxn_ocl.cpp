@@ -101,6 +101,8 @@ static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 static const int c_clSize          = c_nbnxnGpuClusterSize;
 //@}
 
+static const bool bDisableInPlacePrune = (getenv("GMX_DISABLE_INPLACE_PRUNE") != NULL);
+
 /*! \brief Always/never run the energy/pruning kernels -- only for benchmarking purposes */
 //@{
 static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
@@ -214,13 +216,21 @@ static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
  * \param[in] firstPrunePass    true if the first pruning pass is being executed
  */
 static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[],
-                                          bool      firstPrunePass)
+                                          bool      firstPrunePass,
+                                          bool      pruneInPlace)
 {
     cl_kernel  *kernelPtr;
 
     if (firstPrunePass)
     {
-        kernelPtr = &(kernel_pruneonly[epruneFirst]);
+        if (pruneInPlace && !bDisableInPlacePrune)
+        {
+            kernelPtr = &(kernel_pruneonly[epruneFirstInPlace]);
+        }
+        else
+        {
+            kernelPtr = &(kernel_pruneonly[epruneFirstOutOfPlace]);
+        }
     }
     else
     {
@@ -539,7 +549,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         }
     }
 
-    if (plist->haveFreshList && (flags & GMX_FORCE_DYN_PRUNING))
+    if (plist->haveFreshList && nb->separatePruneKernel) //(flags & GMX_FORCE_DYN_PRUNING))
     {
         /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
            (that's the way the timing accounting can distinguish between
@@ -558,6 +568,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     /* beginning of timed nonbonded calculation section */
 
+    if (plist->haveFreshList)
+    {
+        GMX_RELEASE_ASSERT( (nb->timers->didPrune[iloc]) == (nb->separatePruneKernel), "BLAH");
+    }
     /* get the pointer to the kernel flavor we need to use */
     nb_kernel = select_nbnxn_kernel(nb,
                                     nbp->eeltype,
@@ -743,6 +757,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     cl_timers_t         *t       = nb->timers;
     cl_command_queue     stream  = nb->stream[iloc];
     bool                 bDoTime = nb->bDoTime;
+    bool                 pruneInPlace;
 
     if (plist->haveFreshList)
     {
@@ -751,6 +766,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
         /* Set rollingPruningNumParts to signal that it is not set */
         plist->rollingPruningNumParts = 0;
         plist->rollingPruningPart     = 0;
+
+        pruneInPlace = !plist->useRollingPruninig;
     }
     else
     {
@@ -762,6 +779,8 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
         {
             GMX_ASSERT(numParts == plist->rollingPruningNumParts, "It is not allowed to change numParts in between list generation steps");
         }
+
+        pruneInPlace = false;
     }
 
     /* Use a local variable for part and update in plist, so we can return here
@@ -792,7 +811,7 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int       num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e);
-    cl_kernel pruneKernel   = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
+    cl_kernel pruneKernel   = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList, pruneInPlace);
 
     /* kernel launch config */
     size_t  local_work_size[3], global_work_size[3];

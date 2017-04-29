@@ -146,7 +146,7 @@ enum evdwOcl {
  * and the rolling pruning, respectively.
  */
 enum ePruneKind {
-    epruneFirst, epruneRolling, ePruneNR
+    epruneFirstInPlace, epruneFirstOutOfPlace, epruneRolling, ePruneNR
 };
 
 /*! \internal
@@ -292,6 +292,7 @@ typedef struct cl_plist
     int              excl_nalloc;  /**< allocation size of excl                      */
 
     /* parameter+variables for normal and rolling pruning */
+    bool             useRollingPruninig;     /**< true if we're using dual list with dynamic rolling pruning */    
     bool             haveFreshList;          /**< true after search, indictes that initial pruning with outer prunning is needed */
     int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
     int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
@@ -378,6 +379,8 @@ struct gmx_nbnxn_ocl_t
                                              (e.g. f buffer 0-ing, local x/q H2D) */
 
     cl_bool                     bDoTime;  /**< True if event-based timing is enabled.                     */
+    bool                        separatePruneKernel; /**< true if separate, prune-only kernel is used for the initial list pruning
+                                                          (even if rlistInner == rlistOuter); can't be true with rolling pruning. */
     cl_timers_t                *timers;   /**< OpenCL event-based timers.                                 */
     struct gmx_wallclock_gpu_t *timings;  /**< Timing data.                                               */
 };

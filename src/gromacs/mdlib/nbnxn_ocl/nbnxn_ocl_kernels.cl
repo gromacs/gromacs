@@ -76,6 +76,9 @@ zero_e_fshift(__global float *fshift,__global float *e_lj,__global float *e_el,c
 /* Generate pruning kernels. */
 #define HAVE_FRESH_LIST 1
 #include "nbnxn_ocl_kernel_pruneonly.clh"
+#define PRUNE_IN_PLACE
+#include "nbnxn_ocl_kernel_pruneonly.clh"
+#undef PRUNE_IN_PLACE
 #undef HAVE_FRESH_LIST
 #include "nbnxn_ocl_kernel_pruneonly.clh"
 

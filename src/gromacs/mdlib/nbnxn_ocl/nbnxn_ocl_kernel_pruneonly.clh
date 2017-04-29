@@ -61,8 +61,15 @@
 
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef HAVE_FRESH_LIST
-    __kernel void nbnxn_kernel_prune_opencl
+#ifdef PRUNE_IN_PLACE
+    __kernel void nbnxn_kernel_prune_inplace_opencl
 #else
+    __kernel void nbnxn_kernel_prune_outofplace_opencl
+#endif /* PRUNE_IN_PLACE */
+#else
+#ifdef PRUNE_IN_PLACE
+#error "In-place rolling pruning not supported!"
+#endif
     __kernel void nbnxn_kernel_prune_rolling_opencl
 #endif
 (
@@ -102,6 +109,11 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
     const bool haveFreshList = true;
 #else
     const bool haveFreshList = false;
+#endif
+#ifdef PRUNE_IN_PLACE
+    const bool pruneInPlace = true;
+#else
+    const bool pruneInPlace = false;
 #endif
 
     // TODO move these consts to utils and unify their use with the nonbonded kernels
@@ -226,17 +238,21 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
                                 }
                                 warp_any[warpVoteSlot] = 0;
                             }
-                            /* If any atom pair is within range, set the bit
-                               corresponding to the current cluster-pair. */
-                            if (r2 < rlistInner_sq)
+
+                            if (!pruneInPlace)
                             {
-                                warp_any[warpVoteSlot] = 1;
+                                /* If any atom pair is within range, set the bit
+                                   corresponding to the current cluster-pair. */
+                                if (r2 < rlistInner_sq)
+                                {
+                                    warp_any[warpVoteSlot] = 1;
+                                }
+                                if (warp_any[warpVoteSlot])
+                                {
+                                    imaskNew |= mask_ji;
+                                }
+                                warp_any[warpVoteSlot] = 0;
                             }
-                            if (warp_any[warpVoteSlot])
-                            {
-                                imaskNew |= mask_ji;
-                            }
-                            warp_any[warpVoteSlot] = 0;
                         }
 
                         /* shift the mask bit by 1 */
@@ -245,14 +261,21 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
                 }
             }
 
-#ifdef HAVE_FRESH_LIST
+            if (!pruneInPlace)
             {
-                 /* copy the list pruned to rlistOuter to a separate buffer */
-                 prePrunedImask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
-            }
+#ifdef HAVE_FRESH_LIST
+                {
+                    /* copy the list pruned to rlistOuter to a separate buffer */
+                    prePrunedImask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                }
 #endif
-            /* update the imask with only the pairs up to rlistInner */
-            pl_cj4[j4].imei[widx].imask = imaskNew;
+                /* update the imask with only the pairs up to rlistInner */
+                pl_cj4[j4].imei[widx].imask = imaskNew;
+            }
+            else
+            {
+                pl_cj4[j4].imei[widx].imask = imaskFull;
+            }
         }
     }
 }
