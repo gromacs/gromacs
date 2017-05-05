@@ -1885,7 +1885,18 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
             if (aa[i] == aa[j])
             {
                 sprintf(errbuf, "Duplicate atom index (%d) in %s", aa[i], dir2str(d));
-                warning(wi, errbuf);
+                if (ftype == F_ANGRES)
+                {
+                    /* Since the angle restraints uses 2 pairs of atoms to
+                     * defines an angle between vectors, it can be useful
+                     * to use one atom twice, so we only issue a note here.
+                     */
+                    warning_note(wi, errbuf);
+                }
+                else
+                {
+                    warning_error(wi, errbuf);
+                }
             }
         }
     }
@@ -2222,7 +2233,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
             if (aa[i] == aa[j])
             {
                 sprintf(errbuf, "Duplicate atom index (%d) in %s", aa[i], dir2str(d));
-                warning(wi, errbuf);
+                warning_error(wi, errbuf);
             }
         }
     }
