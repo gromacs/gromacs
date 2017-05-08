@@ -29,6 +29,10 @@ clang-3.4 npme=1 nranks=2 mpi
 # Test SSE2 SIMD
 gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
 
+# Test on ARM v7
+# Test ARM_NEON SIMD
+gcc-4.8 simd=ARM_NEON
+
 # TODO
 # Re-enable Phi build
 # Test without TNG support
