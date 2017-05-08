@@ -2,6 +2,10 @@
 # intent behind that configuration, so that we can correctly judge
 # whether to preserve that during maintenance decisions.
 
+# Test on ARM v7
+# Test ARM_NEON SIMD
+gcc-4.8 simd=ARM_NEON release-with-debug-info
+
 # Test the mdrun-only build
 # TODO In combination with gmx from another build, arrange to run regressiontests
 clang-3.7 double mpi no-openmp fftpack mdrun-only
