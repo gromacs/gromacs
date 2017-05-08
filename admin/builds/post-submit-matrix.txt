@@ -2,6 +2,10 @@
 # intent behind that configuration, so that we can correctly judge
 # whether to preserve that during maintenance decisions.
 
+# Test on ARM v7
+# Test ARM_NEON SIMD
+gcc-4.8 simd=ARM_NEON release-with-debug-info
+
 # Test the mdrun-only build
 # TODO In combination with gmx from another build, arrange to run regressiontests
 clang-3.7 double mpi no-openmp fftpack mdrun-only
@@ -39,4 +43,4 @@ gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
 # Test own-fftw build (from local copy of the file)
 # Test mdrun -tunepme (e.g. with relaxed tolerances, for now)
 # Consider testing of other CMake option paths
-# Consider adding our ARM dev boards as slaves to improve cross-platform portability testing.
+# Consider adding our ARMv8 dev board as slaves to test ARM_NEON_ASIMD too.
