@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -268,7 +268,7 @@ trunc(Simd4Double x)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 dotProduct(Simd4Double a, Simd4Double b)
 {
     return _mm512_mask_reduce_add_pd(_mm512_int2mask(7),
@@ -382,7 +382,7 @@ blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 reduce(Simd4Double a)
 {
     return _mm512_mask_reduce_add_pd(_mm512_int2mask(0xF), a.simdInternal_);
