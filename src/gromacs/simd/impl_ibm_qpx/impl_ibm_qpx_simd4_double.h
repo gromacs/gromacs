@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -226,7 +226,7 @@ trunc(Simd4Double x)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 dotProduct(Simd4Double a, Simd4Double b)
 {
     vector4double dp_sh0 = vec_mul(a.simdInternal_, b.simdInternal_);
