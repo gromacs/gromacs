@@ -287,9 +287,10 @@ or similar before running CMake including setting
 If you need to customize this further, use
 
 ::
-    -DGMX_FFT_LIBRARY=mkl
-    -DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so"
-    -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"
+
+    cmake -DGMX_FFT_LIBRARY=mkl \
+          -DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so" \
+          -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"
 
 The full list and order(!) of libraries you require are found in Intel's MKL documentation for your system.
 
