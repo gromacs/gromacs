@@ -90,7 +90,7 @@ QgenResp::QgenResp()
 
 void QgenResp::updateAtomCoords(const PaddedRVecVector x)
 {
-    for (size_t i = 0; (i < ra_.size()); i++)
+    for (size_t i = 0; i < ra_.size(); i++)
     {
         ra_[i].setX(x[i]);
     }
@@ -122,7 +122,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     ra_.clear();
     
     // First add all the resp atom types
-    for (int i = 0; (i < atoms->nr); i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
         // THIS is a hack
         bool hasShell = ((i < atoms->nr-1) &&

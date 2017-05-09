@@ -207,12 +207,12 @@ void OPtimization::addEspPoint()
     {
         if (mymol.eSupp_ == eSupportLocal)
         {
-            mymol.gr_.setChargeDistributionModel(iChargeDistributionModel_);
-            mymol.gr_.setAtomWeight(watoms_);
-            mymol.gr_.setAtomInfo(&mymol.topology_->atoms, pd_, mymol.state_->x, mymol.molProp()->getCharge());
-            mymol.gr_.setAtomSymmetry(mymol.symmetric_charges_);
-            mymol.gr_.setMolecularCharge(mymol.molProp()->getCharge());
-            mymol.gr_.summary(debug);
+            mymol.Qgresp_.setChargeDistributionModel(iChargeDistributionModel_);
+            mymol.Qgresp_.setAtomWeight(watoms_);
+            mymol.Qgresp_.setAtomInfo(&mymol.topology_->atoms, pd_, mymol.state_->x, mymol.molProp()->getCharge());
+            mymol.Qgresp_.setAtomSymmetry(mymol.symmetric_charges_);
+            mymol.Qgresp_.setMolecularCharge(mymol.molProp()->getCharge());
+            mymol.Qgresp_.summary(debug);
             
             auto ci = mymol.molProp()->getLotPropType(lot_, MPO_POTENTIAL, nullptr);
             if (ci != mymol.molProp()->EndExperiment())
@@ -220,7 +220,7 @@ void OPtimization::addEspPoint()
                 size_t iesp = 0;
                 for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
                 {
-                    if (mymol.gr_.myWeight(iesp) == 0)
+                    if (mymol.Qgresp_.myWeight(iesp) == 0)
                     {
                         continue;
                     }
@@ -236,15 +236,15 @@ void OPtimization::addEspPoint()
                         gmx_fatal(FARGS, "No such potential unit '%s' for potential",
                                   epi->getVunit().c_str());
                     }
-                    mymol.gr_.addEspPoint(convert2gmx(epi->getX(), xu),
-                                          convert2gmx(epi->getY(), xu),
-                                          convert2gmx(epi->getZ(), xu),
-                                          convert2gmx(epi->getV(), vu));
+                    mymol.Qgresp_.addEspPoint(convert2gmx(epi->getX(), xu),
+                                              convert2gmx(epi->getY(), xu),
+                                              convert2gmx(epi->getZ(), xu),
+                                              convert2gmx(epi->getV(), vu));
                 }
                 if (debug)
                 {
                     fprintf(debug, "Added %d ESP points to the RESP structure.\n",
-                            static_cast<int>(mymol.gr_.nEsp()));
+                            static_cast<int>(mymol.Qgresp_.nEsp()));
                 }
             }
         }
@@ -262,11 +262,11 @@ void OPtimization::setEEM()
             {
                 bHaveShells = true;
             }         
-            mymol.Qge_.setInfo(pd_, &(mymol.topology_->atoms), 
-                               iChargeDistributionModel_,
-                               hfac_,
-                               mymol.molProp()->getCharge(),
-                               bHaveShells);
+            mymol.Qgeem_.setInfo(pd_, &(mymol.topology_->atoms), 
+                                 iChargeDistributionModel_,
+                                 hfac_,
+                                 mymol.molProp()->getCharge(),
+                                 bHaveShells);
         }
     }
 }
@@ -274,7 +274,7 @@ void OPtimization::setEEM()
 void OPtimization::calcDeviation()
 {
     int    j;
-    double qtot        = 0;
+    double qtot = 0;
 
     if (PAR(cr_))
     {
@@ -300,18 +300,19 @@ void OPtimization::calcDeviation()
         {    
             
             double chieq = 0;
-            mymol.Qge_.generateChargesSm(debug,
-                                         pd_, &(mymol.topology_->atoms),
-                                         &chieq,
-                                         mymol.state_->x);
+            mymol.Qgeem_.generateChargesSm(debug,
+                                           pd_, 
+                                           &(mymol.topology_->atoms),
+                                           &chieq,
+                                           mymol.state_->x);
             mymol.chieq_ = chieq;
             
             if (nullptr != mymol.shellfc_)
             {                
-                for (int i = 0; i < mymol.mtop_->natoms; i++)
+                for (j = 0; j < mymol.topology_->atoms.nr; j++)
                 {
-                    mymol.mtop_->moltype[0].atoms.atom[i].q = 
-                        mymol.mtop_->moltype[0].atoms.atom[i].qB = mymol.topology_->atoms.atom[i].q;     
+                    mymol.mtop_->moltype[0].atoms.atom[j].q = 
+                        mymol.mtop_->moltype[0].atoms.atom[j].qB = mymol.topology_->atoms.atom[j].q;     
                     
                 }               
                 mymol.computeForces(nullptr, cr_);
@@ -324,7 +325,7 @@ void OPtimization::calcDeviation()
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
                 auto qq     = mymol.topology_->atoms.atom[j].q;
                 qtot       += qq;
-                if (mymol.topology_->atoms.atom[j].ptype != eptShell)
+                if (mymol.topology_->atoms.atom[j].ptype == eptAtom)
                 {
                     if (((qq < 0) && (atomnr == 1)) ||
                         ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
@@ -348,11 +349,11 @@ void OPtimization::calcDeviation()
                 
                 if (nullptr != mymol.shellfc_)
                 {
-                    mymol.gr_.updateAtomCoords(mymol.state_->x);
+                    mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
                 }
-                mymol.gr_.updateAtomCharges(&mymol.topology_->atoms);
-                mymol.gr_.calcPot();
-                ener_[ermsESP] += convert2gmx(mymol.gr_.getRms(&wtot, &rrms), eg2cHartree_e);               
+                mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
+                mymol.Qgresp_.calcPot();
+                ener_[ermsESP] += convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);               
             }
             
             mymol.CalcDipole(mymol.mu_calc_);
@@ -938,8 +939,8 @@ void OPtimization::print_results(FILE                   *fp,
             rms = mol.espRms();
             fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);           
                         
-            auto nEsp     = mol.gr_.nEsp();
-            auto EspPoint = mol.gr_.espPoint();
+            auto nEsp     = mol.Qgresp_.nEsp();
+            auto EspPoint = mol.Qgresp_.espPoint();
             for (size_t i = 0; i < nEsp; i++)
             {
                 gmx_stats_add_point(lsq_esp, EspPoint[i].v(), EspPoint[i].vCalc(), 0, 0);
