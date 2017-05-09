@@ -34,9 +34,9 @@ gcc-6.1 double
 # Test without OpenMP
 clang-3.4 double no-openmp fftpack
 
-# Test newer clang
+# Test newest clang at time of release
 # Test with AddressSanitizer
-clang-3.8 no-openmp asan
+clang-4 openmp asan
 
 # Test oldest supported MSVC on Windows
 # Test newest supported MSVC on Windows
@@ -65,10 +65,7 @@ gcc-5.2 openmp opencl amdappsdk-3.0
 
 # TODO
 # Add testing for support for cmake 3.8 for release-2017, e.g. to bs_mic and a CUDA slave (for the new CUDA support)
-# Add testing for support for clang 4.0 for release-2017, and move e.g. ASAN build to it, e.g. to bs_nix-amd
 # Add testing for support for gcc 7 for release-2017, e.g. to bs_mac
-# Add OpenMP support to a clang build
-# Add OpenMP support to ASAN build
 # Test hwloc support
 # Test newest supported LTS Ubuntu
 # Migrate ThreadSanitizer test off GPU build slave
