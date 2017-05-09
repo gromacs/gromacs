@@ -258,7 +258,7 @@ trunc(Simd4Double x)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 dotProduct(Simd4Double a, Simd4Double b)
 {
     __m128d tmp1, tmp2;
@@ -364,7 +364,7 @@ blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 reduce(Simd4Double a)
 {
     __m128d a0, a1;

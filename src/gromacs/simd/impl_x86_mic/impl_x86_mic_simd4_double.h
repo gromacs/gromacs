@@ -268,7 +268,7 @@ trunc(Simd4Double x)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 dotProduct(Simd4Double a, Simd4Double b)
 {
     return _mm512_mask_reduce_add_pd(_mm512_int2mask(7),
@@ -382,7 +382,7 @@ blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 reduce(Simd4Double a)
 {
     return _mm512_mask_reduce_add_pd(_mm512_int2mask(0xF), a.simdInternal_);

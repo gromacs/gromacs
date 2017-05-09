@@ -226,7 +226,7 @@ trunc(Simd4Double x)
     };
 }
 
-static inline float gmx_simdcall
+static inline double gmx_simdcall
 dotProduct(Simd4Double a, Simd4Double b)
 {
     vector4double dp_sh0 = vec_mul(a.simdInternal_, b.simdInternal_);
