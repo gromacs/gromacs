@@ -54,6 +54,10 @@ import os.path
 import re
 import sys
 
+# py2 / py3 compatibility
+# cmp() does not exist in py3 - this is equivalent
+cmp = lambda x, y: (x > y) - (x < y)
+
 class IncludeGroup(object):
 
     """Enumeration type for grouping includes."""
@@ -69,6 +73,30 @@ class IncludeGroup(object):
     def __cmp__(self, other):
         """Order include groups in the desired order."""
         return cmp(self._value, other._value)
+
+    def __eq__(self, other):
+        """Order include groups in the desired order."""
+        return self._value == other._value
+
+    def __ne__(self, other):
+        """Order include groups in the desired order."""
+        return self._value != other._value
+
+    def __lt__(self, other):
+        """Order include groups in the desired order."""
+        return self._value < other._value
+
+    def __le__(self, other):
+        """Order include groups in the desired order."""
+        return self._value <= other._value
+
+    def __gt__(self, other):
+        """Order include groups in the desired order."""
+        return self._value > other._value
+
+    def __ge__(self, other):
+        """Order include groups in the desired order."""
+        return self._value >= other._value
 
 # gmxpre.h is always first
 IncludeGroup.pre = IncludeGroup(0)
@@ -276,7 +304,7 @@ class IncludeSorter(object):
         Returns a new list of lines for the block.
         If anything is changed, self._changed is set to True, and the caller
         can check that."""
-        includes = map(self._sortmethod.get_sortable_object, block.get_includes())
+        includes = list(map(self._sortmethod.get_sortable_object, block.get_includes()))
         includes.sort()
         result = []
         prev = None
