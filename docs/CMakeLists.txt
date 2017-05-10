@@ -63,6 +63,7 @@ if (DEFINED PYTHON_EXECUTABLE)
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(PythonInterp 2.7)
+# find_package(PythonInterp 3.3)
 find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
