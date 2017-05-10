@@ -19,6 +19,8 @@
 # minor modifications by Berk Hess
 
 
+from __future__ import division
+from __future__ import print_function
 from string import atoi, split
 
 GROMOS_FILE   = 'mtb43a1.dat'
@@ -83,13 +85,13 @@ def findbonds(atomnumber):
     ext.sort()
 
     for i in ext:
-        excl.append(`i`)
+        excl.append(repr(i))
 
     return excl
 
 
 #### general class to unravel a gromos topology file
-class Cin:
+class Cin(object):
    def __init__(self, filename):
        f=open(filename)
        self.G = open(filename).readlines()
@@ -123,7 +125,7 @@ class Cin:
        for i in range(len(list)):
                 if list[i] == string:
                    return i
-       print >> sys.stderr "Could not find string",string,"in list of length",len(list)
+       print("Could not find string",string,"in list of length",len(list), file=sys.stderr)
        return -1
 
 #--------------------------#
@@ -157,7 +159,7 @@ class Cin:
        while cntr < self.natom - self.nlin:
            i = i + 1
            line = split(res[ind+i])		# get next line
-           noflo = (atoi(line[6])-1)/8		# if MAE > 8 cont. on next line
+           noflo = (int(line[6])-1)//8		# if MAE > 8 cont. on next line
            if noflo < 0: noflo = 0
            for j in range(noflo):
                i = i + 1
@@ -244,9 +246,9 @@ f.mkres()				# put all residues into list (f.all)
 start = 0; stop = 92
 
 " The rtp header "
-print "[ bondedtypes ]"
-print "; bonds  angles  dihedrals  impropers"
-print "    2       2          1          2"
+print("[ bondedtypes ]")
+print("; bonds  angles  dihedrals  impropers")
+print("    2       2          1          2")
 
 
 for resnum in range(start,stop):	# loop through all residues
@@ -270,32 +272,32 @@ for resnum in range(start,stop):	# loop through all residues
 
 #####
     # atoms
-    print ""
-    print "[",f.residue[0],"]"
-    print " [ atoms ]"
+    print("")
+    print("[",f.residue[0],"]")
+    print(" [ atoms ]")
     chargegroup = 0
     for j in range(f.natom - f.nlin):
       try:
         atomtype = atoi(f.atoms [j][2]) - 1
         atomfield = typelines[atomtype][0]
-        print "%5s %5s %11s %5s" % \
-                  (f.atoms [j][1],atomfield,f.atoms [j][4],chargegroup)
+        print("%5s %5s %11s %5s" % \
+                  (f.atoms [j][1],atomfield,f.atoms [j][4],chargegroup))
         chargegroup = chargegroup + atoi(f.atoms[j][5])
       except:
-        print j
+        print(j)
 
 #####
     # trailing atoms
     for j in range(f.nlin):
         atomtype = atoi(f.atomtr [j][2]) - 1
         atomfield = typelines[atomtype][0]
-        print "%5s %5s %11s %5s" % \
-                  (f.atomtr[j][1],atomfield,f.atomtr[j][4][:-2],chargegroup)
+        print("%5s %5s %11s %5s" % \
+                  (f.atomtr[j][1],atomfield,f.atomtr[j][4][:-2],chargegroup))
         chargegroup = chargegroup + atoi(f.atomtr[j][5])
     
 #####
     # bonds
-    print " [ bonds ]"
+    print(" [ bonds ]")
     for j in range(f.nb):
         t1 = atoi(f.bonds [j][0])
         t2 = atoi(f.bonds [j][1])
@@ -303,8 +305,8 @@ for resnum in range(start,stop):	# loop through all residues
 	if t1 >= 1  and t2 >= 1:
             t1 = translate(t1)
             t2 = translate(t2)
-            print "%5s %5s    gb_%-5s" % \
-                  (t1, t2, f.bonds[j][2])
+            print("%5s %5s    gb_%-5s" % \
+                  (t1, t2, f.bonds[j][2]))
 
 #####
     # exclusions
@@ -321,14 +323,14 @@ for resnum in range(start,stop):	# loop through all residues
                 t1 = translate(t1)
                 t2 = atoi(f.atoms[j][0])
                 t2 = translate(t2)
-                if ne == 0:  print " [ exclusions ]\n;  ai    aj"
-                print "%5s %5s" % (t2,t1)
+                if ne == 0:  print(" [ exclusions ]\n;  ai    aj")
+                print("%5s %5s" % (t2,t1))
                 ne = ne + 1
 
 #####
     # angles
-    print " [ angles ]"
-    print ";  ai    aj    ak   gromos type"
+    print(" [ angles ]")
+    print(";  ai    aj    ak   gromos type")
     for j in range(f.nba):
         t1 = atoi(f.ba [j][0])
         t2 = atoi(f.ba [j][1])
@@ -337,13 +339,13 @@ for resnum in range(start,stop):	# loop through all residues
             t1 = translate(t1)
             t2 = translate(t2)
             t3 = translate(t3)
-            print "%5s %5s %5s     ga_%-5s" % \
-                  (t1,t2,t3,f.ba[j][3])
+            print("%5s %5s %5s     ga_%-5s" % \
+                  (t1,t2,t3,f.ba[j][3]))
 
 #####
     # improper dihedrals
-    print " [ impropers ]"
-    print ";  ai    aj    ak    al   gromos type"
+    print(" [ impropers ]")
+    print(";  ai    aj    ak    al   gromos type")
     for j in range(f.nida):
         t1 = atoi(f.ida [j][0])
         t2 = atoi(f.ida [j][1])
@@ -354,13 +356,13 @@ for resnum in range(start,stop):	# loop through all residues
             t2 = translate(t2)
             t3 = translate(t3)
             t4 = translate(t4)
-            print "%5s %5s %5s %5s     gi_%-5s" % \
-                  (t1,t2,t3,t4,f.ida[j][4])
+            print("%5s %5s %5s %5s     gi_%-5s" % \
+                  (t1,t2,t3,t4,f.ida[j][4]))
 
 #####
     # dihedrals
-    print " [ dihedrals ]"
-    print ";  ai    aj    ak    al   gromos type"
+    print(" [ dihedrals ]")
+    print(";  ai    aj    ak    al   gromos type")
     for j in range(f.nda):
         t1 = atoi(f.da [j][0])
         t2 = atoi(f.da [j][1])
@@ -371,5 +373,5 @@ for resnum in range(start,stop):	# loop through all residues
             t2 = translate(t2)
             t3 = translate(t3)
             t4 = translate(t4)
-            print "%5s %5s %5s %5s     gd_%-5s" % \
-                  (t1,t2,t3,t4,f.da[j][4])
+            print("%5s %5s %5s %5s     gd_%-5s" % \
+                  (t1,t2,t3,t4,f.da[j][4]))

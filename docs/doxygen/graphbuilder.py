@@ -58,9 +58,11 @@ The produced graphs are documented in doxygen.md.
 
 import os.path
 import re
+import functools
 
 from gmxtree import DocType
 
+@functools.total_ordering
 class EdgeType(object):
 
     """Enumeration type for edge types in include dependency graphs."""
@@ -81,9 +83,17 @@ class EdgeType(object):
         """Return string representation for the edge type (for debugging)."""
         return self._names[self._value]
 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         """Order edge types in the order of increasing coupling."""
-        return cmp(self._value, other._value)
+        return self._value == other._value
+
+    def __lt__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        if other._value is None:
+            return False
+        if self._value is None:
+            return True
+        return self._value < other._value
 
 # Tests depend on test
 EdgeType.test = EdgeType(0)
@@ -276,8 +286,8 @@ class Graph(object):
                     edgesto[edge._fromnode].merge_edge(edge)
             else:
                 newedges.append(edge)
-        newedges.extend(edgesfrom.values())
-        newedges.extend(edgesto.values())
+        newedges.extend(list(edgesfrom.values()))
+        newedges.extend(list(edgesto.values()))
         self._edges = newedges
 
     def collapse_node(self, node):
@@ -402,7 +412,7 @@ class GraphBuilder(object):
         are in the list of nodes.
         """
         edges = []
-        for fileobj in filenodes.iterkeys():
+        for fileobj in filenodes.keys():
             for includedfile in fileobj.get_includes():
                 otherfile = includedfile.get_file()
                 if otherfile and otherfile in filenodes:
@@ -453,7 +463,7 @@ class GraphBuilder(object):
         dependency are in the list of nodes.
         """
         edges = []
-        for moduleobj in modulenodes.iterkeys():
+        for moduleobj in modulenodes.keys():
             for dep in moduleobj.get_dependencies():
                 othermodule = dep.get_other_module()
                 if othermodule and othermodule in modulenodes:

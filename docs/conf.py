@@ -50,7 +50,8 @@ import datetime
 import os
 import sys
 
-execfile('conf-vars.py')
+#execfile('conf-vars.py')
+exec(compile(open('conf-vars.py').read(), 'conf-vars.py', 'exec'))
 sys.path.append(gmx_sphinx_extension_path)
 if releng_path and os.path.isdir(releng_path):
     sys.path.append(releng_path)
@@ -309,7 +310,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-execfile('conf-man.py')
+#execfile('conf-man.py')
+exec(compile(open('conf-man.py').read(), 'conf-man.py', 'exec'))
+
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
