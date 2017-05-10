@@ -59,6 +59,10 @@ The produced graphs are documented in doxygen.md.
 import os.path
 import re
 
+# py2 / py3 compatibility
+# cmp() does not exist in py3 - this is equivalent
+cmp = lambda x, y: (x > y) - (x < y)
+
 from gmxtree import DocType
 
 class EdgeType(object):
@@ -84,6 +88,31 @@ class EdgeType(object):
     def __cmp__(self, other):
         """Order edge types in the order of increasing coupling."""
         return cmp(self._value, other._value)
+
+    def __eq__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value == other._value
+
+    def __ne__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value != other._value
+
+    def __lt__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value < other._value
+
+    def __le__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value <= other._value
+
+    def __gt__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value > other._value
+
+    def __ge__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value >= other._value
+
 
 # Tests depend on test
 EdgeType.test = EdgeType(0)
@@ -276,8 +305,8 @@ class Graph(object):
                     edgesto[edge._fromnode].merge_edge(edge)
             else:
                 newedges.append(edge)
-        newedges.extend(edgesfrom.values())
-        newedges.extend(edgesto.values())
+        newedges.extend(list(edgesfrom.values()))
+        newedges.extend(list(edgesto.values()))
         self._edges = newedges
 
     def collapse_node(self, node):
@@ -402,7 +431,7 @@ class GraphBuilder(object):
         are in the list of nodes.
         """
         edges = []
-        for fileobj in filenodes.iterkeys():
+        for fileobj in filenodes.keys():
             for includedfile in fileobj.get_includes():
                 otherfile = includedfile.get_file()
                 if otherfile and otherfile in filenodes:
@@ -453,7 +482,7 @@ class GraphBuilder(object):
         dependency are in the list of nodes.
         """
         edges = []
-        for moduleobj in modulenodes.iterkeys():
+        for moduleobj in modulenodes.keys():
             for dep in moduleobj.get_dependencies():
                 othermodule = dep.get_other_module()
                 if othermodule and othermodule in modulenodes:
