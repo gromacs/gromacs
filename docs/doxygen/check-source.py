@@ -238,6 +238,14 @@ def check_cycles(graph, reporter):
     a cycle is only reported if the target of the back edge is still active
     in the search, i.e., all edges from it have not yet been traversed.
     """
+    # Python 2 / python 3 compatibility without additional dependencies
+    # or resorting to (potentially slow) range in python 2
+    # TODO: Once py2 compatibility is not required anymore, delete and replace
+    #       xrange with range on line `for index in xrange(len(currlist)):`
+    try:
+        xrange
+    except NameError:
+        xrange = range
     # The DFS stack; next node is always popped from the end.
     # Stores (node, edge) pairs.
     # edge is None for start nodes and for post-order processing.

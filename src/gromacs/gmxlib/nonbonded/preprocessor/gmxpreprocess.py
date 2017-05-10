@@ -140,6 +140,10 @@ import types
 import re
 import pprint
 
+# py2 / py3 compatibility
+# cmp() does not exist in py3 - this is equivalent
+cmp = lambda(x, y): (x > y) - (x < y)
+
 
 
 #---- exceptions
@@ -200,15 +204,15 @@ _commentGroups = {
 
 #---- internal logging facility
 
-class _Logger:
-    DEBUG, INFO, WARN, ERROR, CRITICAL = range(5)
+class _Logger(object):
+    DEBUG, INFO, WARN, ERROR, CRITICAL = list(range(5))
     def __init__(self, name, level=None, streamOrFileName=sys.stderr):
         self._name = name
         if level is None:
             self.level = self.WARN
         else:
             self.level = level
-        if type(streamOrFileName) == types.StringType:
+        if type(streamOrFileName) == bytes:
             self.stream = open(streamOrFileName, 'w')
             self._opennedStream = 1
         else:
@@ -289,7 +293,7 @@ def _evaluate(expr, defines):
 
     try:
         rv = eval(expr, {'defined':lambda v: v in defines}, defines)
-    except Exception, ex:
+    except Exception as ex:
         msg = str(ex)
         if msg.startswith("name '") and msg.endswith("' is not defined"):
             # A common error (at least this is presumed:) is to have
@@ -420,16 +424,16 @@ def gmxpreprocess(infile, outfile=sys.stdout, defines={},
             lines[i+1] = ''    # keep an empty line to avoid screwing up line numbers
 
     fin.close()
-    if type(outfile) in types.StringTypes:
+    if type(outfile) in (str,):
         if force and os.path.exists(outfile):
-            os.chmod(outfile, 0777)
+            os.chmod(outfile, 0o777)
             os.remove(outfile)
         fout = open(outfile, 'w')
     else:
         fout = outfile
 
     defines['__FILE__'] = infile
-    SKIP, EMIT = range(2) # states
+    SKIP, EMIT = list(range(2)) # states
     states = [(EMIT,   # a state is (<emit-or-skip-lines-in-this-section>,
                0,      #             <have-emitted-in-this-if-block>,
                0)]     #             <have-seen-'else'-in-this-if-block>)
@@ -754,7 +758,7 @@ _gDefaultContentTypes = """
     Text                .kkf  # Keybinding schemes files
 """
 
-class ContentTypesRegistry:
+class ContentTypesRegistry(object):
     """A class that handles determining the filetype of a given path.
 
     Usage:
@@ -833,7 +837,7 @@ class ContentTypesRegistry:
         basename = os.path.basename(path)
         contentType = None
         # Try to determine from the path.
-        if not contentType and self.filenameMap.has_key(basename):
+        if not contentType and basename in self.filenameMap:
             contentType = self.filenameMap[basename]
             log.debug("Content type of '%s' is '%s' (determined from full "\
                       "path).", path, contentType)
@@ -843,13 +847,13 @@ class ContentTypesRegistry:
             if sys.platform.startswith("win"):
                 # Suffix patterns are case-insensitive on Windows.
                 suffix = suffix.lower()
-            if self.suffixMap.has_key(suffix):
+            if suffix in self.suffixMap:
                 contentType = self.suffixMap[suffix]
                 log.debug("Content type of '%s' is '%s' (determined from "\
                           "suffix '%s').", path, contentType, suffix)
         # Try to determine from the registered set of regex patterns.
         if not contentType:
-            for regex, ctype in self.regexMap.items():
+            for regex, ctype in list(self.regexMap.items()):
                 if regex.search(basename):
                     contentType = ctype
                     log.debug("Content type of '%s' is '%s' (matches regex '%s')",
@@ -902,7 +906,7 @@ def main(argv):
         optlist, args = getopt.getopt(argv[1:], 'hVvo:D:fkI:sc:',
             ['help', 'version', 'verbose', 'force', 'keep-lines',
              'no-substitute', 'content-types-path='])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         sys.stderr.write("gmxpreprocess: error: %s. Your invocation was: %s\n"\
                          % (msg, argv))
         sys.stderr.write("See 'gmxpreprocess --help'.\n")
@@ -957,7 +961,7 @@ def main(argv):
         contentTypesRegistry = ContentTypesRegistry(contentTypesPaths)
         gmxpreprocess(infile, outfile, defines, force, keepLines, includePath,
                    substitute, contentTypesRegistry=contentTypesRegistry)
-    except PreprocessError, ex:
+    except PreprocessError as ex:
         if log.isDebugEnabled():
             import traceback
             traceback.print_exc(file=sys.stderr)

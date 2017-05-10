@@ -35,6 +35,10 @@
 
 import sys
 
+# py2 / py3 compatibility
+# cmp() does not exist in py3 - this is equivalent
+cmp = lambda x, y: (x > y) - (x < y)
+
 from fnmatch import fnmatch
 
 """Central issue reporting implementation.
@@ -61,7 +65,7 @@ class Location(object):
         self.filename = filename
         self.line = line
 
-    def __nonzero__(self):
+    def __bool__(self):
         """Make empty locations False in boolean context."""
         return self.filename is not None
 
@@ -80,6 +84,40 @@ class Location(object):
         if not self.filename or result != 0:
             return result
         return cmp(self.line, other.line)
+
+    def __eq__(self, other):
+        """Sort locations based on file name and line number."""
+        result = self.filename == other.filename
+        if not self.filename or not result:
+            return result
+        return self.line == other.line
+
+    def __ne__(self, other):
+        """Sort locations based on file name and line number."""
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        """Sort locations based on file name and line number."""
+        result = self.filename < other.filename
+        if not self.filename or self.filename != other.filename:
+            return result
+        return self.line < other.line
+
+    def __le__(self, other):
+        """Sort locations based on file name and line number."""
+        return self.__eq__(other) or self.__lt__(other)
+
+    def __gt__(self, other):
+        """Sort locations based on file name and line number."""
+        result = self.filename > other.filename
+        if not self.filename or self.filename != other.filename:
+            return result
+        return self.line > other.line
+
+    def __ge__(self, other):
+        """Sort locations based on file name and line number."""
+        return self.__eq__(other) or self.__gt__(other)
+
 
 class Message(object):
 
@@ -112,6 +150,31 @@ class Message(object):
     def __cmp__(self, other):
         """Sort messages based on file name and line number."""
         return cmp(self.location, other.location)
+
+    def __eq__(self, other):
+        """Sort messages based on file name and line number."""
+        return self.location == other.location
+
+    def __ne__(self, other):
+        """Sort messages based on file name and line number."""
+        return self.location != other.location
+
+    def __lt__(self, other):
+        """Sort messages based on file name and line number."""
+        return self.location < other.location
+
+    def __le__(self, other):
+        """Sort messages based on file name and line number."""
+        return self.location <= other.location
+
+    def __gt__(self, other):
+        """Sort messages based on file name and line number."""
+        return self.location > other.location
+
+    def __ge__(self, other):
+        """Sort messages based on file name and line number."""
+        return self.location >= other.location
+
 
 class Filter(object):
 
