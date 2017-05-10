@@ -33,6 +33,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+from __future__ import division
+from __future__ import print_function
 import sys
 import os
 sys.path.append("../preprocessor")
@@ -408,7 +410,7 @@ def SetDefines(KernelElec,KernelElecMod,KernelVdw,KernelVdwMod,KernelGeom,Kernel
 
 def PrintStatistics(ratio):
     ratio = 100.0*ratio
-    print '\rGenerating %s nonbonded kernels... %5.1f%%' % (Arch,ratio),
+    print('\rGenerating %s nonbonded kernels... %5.1f%%' % (Arch,ratio), end=' ')
     sys.stdout.flush()
 
 
