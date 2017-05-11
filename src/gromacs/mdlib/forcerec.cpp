@@ -3264,24 +3264,27 @@ void free_gpu_resources(const t_forcerec     *fr,
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
         /* stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
+    }
 
-        /* With tMPI we need to wait for all ranks to finish deallocation before
-         * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
-         * GPU and context.
-         *
-         * This is not a concern in OpenCL where we use one context per rank which
-         * is freed in nbnxn_gpu_free().
-         *
-         * Note: as only PP ranks need to free GPU resources, so it is safe to
-         * not call the barrier on PME ranks.
-         */
+    /* With tMPI we need to wait for all ranks to finish deallocation before
+     * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
+     * GPU and context.
+     *
+     * This is not a concern in OpenCL where we use one context per rank which
+     * is freed in nbnxn_gpu_free().
+     *
+     * Note: it is safe to not call the barrier on the ranks which do not use GPU,
+     * but it is easier and more futureproof to call it on the whole node.
+     */
 #if GMX_THREAD_MPI
-        if (PAR(cr))
-        {
-            gmx_barrier(cr);
-        }
+    if (PAR(cr))
+    {
+        gmx_barrier_physical_node(cr);
+    }
 #endif  /* GMX_THREAD_MPI */
 
+    if (bIsPPrankUsingGPU)
+    {
         /* uninitialize GPU (by destroying the context) */
         if (!free_cuda_gpu(cr->rank_pp_intranode, gpu_err_str, gpu_info, gpu_opt))
         {
