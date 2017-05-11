@@ -69,6 +69,10 @@ void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
 
     cr->nnodes           = gmx_node_num();
     cr->nodeid           = gmx_node_rank();
+    if (PAR(cr) || MULTISIM(cr))
+    {
+        MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(), cr->nodeid, &cr->mpi_comm_physicalnode);
+    }
     cr->sim_nodeid       = cr->nodeid;
     cr->mpi_comm_mysim   = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = MPI_COMM_WORLD;
@@ -344,6 +348,15 @@ void gmx_barrier(const t_commrec gmx_unused *cr)
     gmx_call("gmx_barrier");
 #else
     MPI_Barrier(cr->mpi_comm_mygroup);
+#endif
+}
+
+void gmx_barrier_physical_node(const t_commrec gmx_unused *cr)
+{
+#if !GMX_MPI
+    gmx_call("gmx_barrier_physical_node");
+#else
+    MPI_Barrier(cr->mpi_comm_physicalnode);
 #endif
 }
 

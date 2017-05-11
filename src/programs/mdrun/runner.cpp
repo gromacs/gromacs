@@ -1454,6 +1454,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     done_ed(&ed);
 
+#if GMX_MPI
+    if (PAR(cr) || MULTISIM(cr))
+    {
+        MPI_Comm_free(&cr->mpi_comm_physicalnode);
+    }
+#endif
+
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to
