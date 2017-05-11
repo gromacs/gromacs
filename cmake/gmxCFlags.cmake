@@ -174,7 +174,7 @@ macro (gmx_c_flags)
                 GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd411 -wd593 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd11074 -wd11076" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
-            GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14 -static-intel" GMXC_CFLAGS_RELEASE)
+            GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_DEBUG "-O0" GMXC_CFLAGS_DEBUG) #icc defaults to -O2 even with -g
             GMX_TEST_CFLAG(CFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CFLAGS_RELWITHASSERT)
         else()
@@ -209,7 +209,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1
 #2282: unrecognized GCC pragma
                 GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd411 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14 -static-intel" GMXC_CXXFLAGS_RELEASE)
+            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
             GMX_TEST_CXXFLAG(CXXFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CXXFLAGS_RELWITHASSERT)
         else()
