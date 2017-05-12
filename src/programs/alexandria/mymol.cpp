@@ -34,7 +34,8 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author  Mohammad Mehdi Ghahremanpour
+ * \author  David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
 #include "mymol.h"
@@ -865,6 +866,7 @@ MyMol::MyMol() : gvt_(egvtALL)
     snew(enerd_, 1);
     snew(fcd_, 1);
     init_enerdata(1, 0, enerd_);
+    init_nrnb(&nrnb_);
 }
 
 bool MyMol::IsSymmetric(real toler)
@@ -1771,6 +1773,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     fr_->hwinfo = hwinfo;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
+    wcycle_    = wallcycle_init(debug, 0, cr);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
     
@@ -1784,11 +1787,8 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
 void MyMol::computeForces(FILE *fplog, t_commrec *cr)
 {
     tensor          force_vir;
-    t_nrnb          my_nrnb;
-    gmx_wallcycle_t wcycle = wallcycle_init(debug, 0, cr);
     double          t      = 0;
     
-    init_nrnb(&my_nrnb);
     clear_mat (force_vir);
 
     for (int i = 0; i < mtop_->natoms; i++)
@@ -1813,7 +1813,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
                             ltop_, nullptr, enerd_,
                             fcd_, state_,
                             &f_, force_vir, mdatoms_,
-                            &my_nrnb, wcycle, nullptr,
+                            &nrnb_, wcycle_, nullptr,
                             &(mtop_->groups),
                             shellfc_, fr_, false, t, nullptr,
                             nullptr);
@@ -1823,7 +1823,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {   
         unsigned long flags = ~0;
         do_force(fplog, cr, inputrec_, 0,
-                 &my_nrnb, wcycle, ltop_,
+                 &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
                  box_, &state_->x, nullptr,
                  &f_, force_vir, mdatoms_,

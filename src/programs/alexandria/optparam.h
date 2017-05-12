@@ -83,8 +83,12 @@ class OptParam
 
         ~OptParam() {};
 
-        void Init(const char *xvgconv, const char *xvgepot, const gmx_output_env_t *oenv, real seed,
-                  real step, int maxiter, int nprint, real temperature, gmx_bool bBound);
+        void Init(const char *xvgconv, 
+                  const char *xvgepot, 
+                  const gmx_output_env_t *oenv, 
+                  real seed, real step, int maxiter, 
+                  int nprint, real temperature, 
+                  gmx_bool bBound);
 
         /*! \brief
          * Set the seed number to get a random number based on the uniform distribution
@@ -295,7 +299,6 @@ void Bayes<T>::simulate()
             storeParam = param_[j];
             changeParam(j, uniform(gen));
             currEval        = func_(param_.data());
-            //printf("OptParam: %g\n", currEval);
             deltaEval       = currEval-prevEval;
             randProbability = uniform(gen);
             mcProbability   = exp(-beta_*deltaEval);

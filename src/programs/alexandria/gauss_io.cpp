@@ -196,7 +196,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     int                      bondid;
 
     OpenBabel::OBConversion *conv = read_babel(g98, &mol);
-    if (NULL == conv)
+    if (nullptr == conv)
     {
         fprintf(stderr, "Failed reading %s\n", g98);
         return;
@@ -207,7 +207,9 @@ static void gmx_molprop_read_babel(const char          *g98,
     // Now extract classification info.
     if (conv->SetOutFormat("fpt"))
     {
-        const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
+        const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", 
+                                     "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", 
+                                     "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
 
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
@@ -540,7 +542,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
 #endif
 
-void ReadGauss(const char          *g98,
+void ReadGauss(const char          *g09,
                alexandria::MolProp &mp,
                const char          *molnm,
                const char          *iupac,
@@ -552,7 +554,7 @@ void ReadGauss(const char          *g98,
                const char          *jobtype)
 {
 #if HAVE_LIBOPENBABEL2
-    gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,
+    gmx_molprop_read_babel(g09, mp, molnm, iupac, conf, basis,
                            maxpot, nsymm, forcefield,
                            alexandria::string2jobType(jobtype));
 #else

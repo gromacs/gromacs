@@ -61,8 +61,12 @@ namespace alexandria
 
 OptParam::OptParam(){};
 
-void OptParam::Init(const char *xvgconv, const char *xvgepot, const gmx_output_env_t *oenv, real seed,
-                    real step, int maxiter, int nprint, real temperature, gmx_bool bBound)
+void OptParam::Init(const char *xvgconv, 
+                    const char *xvgepot, 
+                    const gmx_output_env_t *oenv, 
+                    real seed, real step, int maxiter, 
+                    int nprint, real temperature, 
+                    gmx_bool bBound)
 {
     xvgconv_     = xvgconv;
     xvgepot_     = xvgepot;

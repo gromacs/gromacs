@@ -34,7 +34,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
+ * \author  Mohammad Mehdi Ghahremanpour
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
@@ -113,8 +113,8 @@ int alex_gentop(int argc, char *argv[])
     };
     gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    gmx_bool                         bTOP;
-    char                             forcefield[STRLEN], ffdir[STRLEN];
+    char                             forcefield[STRLEN];
+    char                             ffdir[STRLEN];
     char                             ffname[STRLEN];
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator      mpi;
@@ -123,7 +123,7 @@ int alex_gentop(int argc, char *argv[])
 
     t_filenm                         fnm[] = {
         { efSTX, "-f",        "conf",      ffOPTRD },
-        { efTOP, "-o",        "out",       ffOPTWR },
+        { efTOP, "-p",        "out",       ffOPTWR },
         { efITP, "-oi",       "out",       ffOPTWR },
         { efSTO, "-c",        "out",       ffWRITE },
         { efLOG, "-g03",      "gauss",     ffRDMULT},
@@ -179,9 +179,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bPolar         = false;
     static gmx_bool                  bRemoveDih     = false;
     static gmx_bool                  bQsym          = false;
-    static gmx_bool                  bAXpRESP       = false;
     static gmx_bool                  bCONECT        = false;
-    static gmx_bool                  bRandZeta      = false;
     static gmx_bool                  bFitCube       = false;
     static gmx_bool                  bParam         = false;
     static gmx_bool                  bITP           = false;
@@ -192,6 +190,9 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bGenVSites     = false;
     static gmx_bool                  bDihedral      = false;
     static gmx_bool                  b13            = false;
+    static gmx_bool                  bLOG           = false;
+    static gmx_bool                  bFTX           = false;
+    static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bZatype        = true;
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bRound         = true;
@@ -256,8 +257,6 @@ int alex_gentop(int argc, char *argv[])
           "Spacing of grid points for computing the potential (not used when a reference file is read)." },
         { "-dbox", FALSE, etREAL, {&dbox},
           "HIDDENExtra space around the molecule when generating an ESP output file with the [TT]-pot[tt] option. The strange default value corresponds to 0.7 a.u. that is sometimes used in other programs." },
-        { "-axpresp", FALSE, etBOOL, {&bAXpRESP},
-          "Turn on RESP features for AXp fitting" },
         { "-qweight", FALSE, etREAL, {&qweight},
           "Restraining force constant for the RESP algorithm (AXp only, and with [TT]-axpresp[tt])." },
         { "-bhyper", FALSE, etREAL, {&bhyper},
@@ -278,8 +277,6 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENUse the same zeta for each atom with the same atomtype in a molecule when fitting gaussian or Slater charges to the ESP" },
         { "-decrzeta", FALSE, etREAL, {&rDecrZeta},
           "HIDDENGenerate decreasing zeta with increasing row numbers for atoms that have multiple distributed charges. In this manner the 1S electrons are closer to the nucleus than 2S electrons and so on. If this number is < 0, nothing is done, otherwise a penalty is imposed in fitting if the Z2-Z1 < this number." },
-        { "-randzeta", FALSE, etBOOL, {&bRandZeta},
-          "HIDDENUse random zeta values within the zmin zmax interval when optimizing against Gaussian ESP data. If FALSE the initial values from the gentop.dat file will be used." },
         { "-randq", FALSE, etBOOL, {&bRandQ},
           "HIDDENUse random charges to start with when optimizing against Gaussian ESP data. Makes the optimization non-deterministic." },
         { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
@@ -336,8 +333,7 @@ int alex_gentop(int argc, char *argv[])
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
-              forcefield, sizeof(forcefield),
-              ffdir, sizeof(ffdir));
+              forcefield, sizeof(forcefield), ffdir, sizeof(ffdir));
 
     if (strlen(forcefield) > 0)
     {
@@ -351,17 +347,6 @@ int alex_gentop(int argc, char *argv[])
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
-    bTOP = true;
-
-    if (!bRandZeta)
-    {
-        maxcycle = 1;
-    }
-
-    if (!bTOP)
-    {
-        gmx_fatal(FARGS, "Specify at least one output file");
-    }
 
     if ((btol < 0) || (btol > 1))
     {
@@ -372,7 +357,6 @@ int alex_gentop(int argc, char *argv[])
         gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
     }
 
-    /* Check command line options of type enum */
     eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
@@ -421,21 +405,40 @@ int alex_gentop(int argc, char *argv[])
     else
     {
         char **fns = nullptr;
-        int    i, nfn;
+        int    i, nfn = 0;
         
         if (strlen(molnm) == 0)
         {
-            molnm = (char *)"XXX";
+            molnm = (char *)"MOL";
         }
         
-        nfn = ftp2fns(&fns, efLOG, NFILE, fnm);
-               
-        for (i = 0; (i < nfn); i++)
+        bLOG = opt2bSet("-g03", NFILE, fnm);
+        if (bLOG)
         {
-            alexandria::MolProp  mp;
-            ReadGauss(fns[i], mp, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd.getForceField().c_str(), jobtype);
-            mps.push_back(mp);
+            nfn = ftp2fns(&fns, efLOG, NFILE, fnm);
+        }
+        else
+        {
+            bFTX = opt2bSet("-f", NFILE, fnm);
+            if (bFTX)
+            {
+                nfn = ftp2fns(&fns, efSTX, NFILE, fnm);
+            }
+        }
+        
+        if (nfn == 0)
+        {
+            for (i = 0; i < nfn; i++)
+            {
+                alexandria::MolProp  mp;
+                ReadGauss(fns[i], mp, molnm, iupac, conf, basis,
+                          maxpot, nsymm, pd.getForceField().c_str(), jobtype);
+                mps.push_back(mp);
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "No input file has been specified");
         }
     }
 
@@ -461,8 +464,10 @@ int alex_gentop(int argc, char *argv[])
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
 
-    imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
-                                 bGenVSites, bPairs, bDihedral, bPolar, tabfn);
+    imm = mymol.GenerateTopology(aps, pd, lot, 
+                                 iChargeDistributionModel,
+                                 bGenVSites, bPairs, 
+                                 bDihedral, bPolar, tabfn);
 
     gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
 
@@ -485,7 +490,7 @@ int alex_gentop(int argc, char *argv[])
     if (immOK == imm)
     {
         fprintf(stderr, "Fix me: GenerateCube is broken\n");
-        if (0)
+        if (bCUBE)
         {
             mymol.GenerateCube(iChargeDistributionModel,
                                pd,
@@ -509,13 +514,10 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        if (bTOP)
-        {
-            mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
-                                ftp2fn(efTOP, NFILE, fnm),
-                                iChargeDistributionModel, bVerbose,
-                                pd, aps, cr, efield, lot);
-        }
+        mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
+                            ftp2fn(efTOP, NFILE, fnm),
+                            iChargeDistributionModel, bVerbose,
+                            pd, aps, cr, efield, lot);
 
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
     }

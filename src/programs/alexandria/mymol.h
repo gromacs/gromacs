@@ -42,6 +42,8 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -198,6 +200,8 @@ class MyMol
         t_mdatoms                *mdatoms_;
         t_topology               *topology_;
         t_fcdata                 *fcd_;
+        t_nrnb                   nrnb_;
+        gmx_wallcycle_t          wcycle_;
 
         /*! \brief
          * Constructor
