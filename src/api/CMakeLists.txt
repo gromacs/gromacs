@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,43 +32,50 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-######################################
-# Output compiler and CFLAGS used
-######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_USE_CUDA)
-    GMX_SET_CUDA_NVCC_FLAGS()
-    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
+set(GMX_API_MAJOR 0)
+set(GMX_API_MINOR 0)
+set(GMX_API_RELEASE 0)
+
+###############################
+# New public C++ API components
+###############################
+add_subdirectory(cpp)
+
+###############
+# Python module
+###############
+option(GMX_PYTHON_MODULE "Build Gromacs Python module" ON)
+if (GMX_PYTHON_MODULE)
+    find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs REQUIRED)
+    # Double-check we found Python.h...
+    MESSAGE(STATUS "Checking for headers required for Python C++ extensions.")
+    set(CMAKE_REQUIRED_INCLUDES "${PYTHON_INCLUDE_DIRS}")
+    MESSAGE(STATUS "Looking in ${PYTHON_INCLUDE_DIRS}")
+    CHECK_INCLUDE_FILE(Python.h FOUND_PYTHON_H)
+
+    check_cxx_source_compiles(
+      "#include <Python.h>
+    int main(void) {
+    return 0;
+    }" PYTHON_H)
+
+    set(CMAKE_REQUIRED_INCLUDES)
+    IF(${PYTHON_H})
+    ELSE()
+      MESSAGE(FATAL_ERROR "No Python.h?")
+    ENDIF()
+
+    add_subdirectory(python)
 endif()
 
-configure_file(config.h.cmakein config.h)
-configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
-configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
-
-if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/gmock-1.7.0)
-    endif()
-    include(testutils/TestMacros.cmake)
-    add_subdirectory(testutils)
-endif()
-
-add_subdirectory(gromacs)
-add_subdirectory(programs)
-
-if (NOT GMX_FAHCORE)
-    add_subdirectory(contrib)
-endif()
-
-# Activate targets for new C++ API components, Python interface, and docs.
-option(GMX_API "Experimental external interfaces" OFF)
-# Make sure this stays fairly hidden
-mark_as_advanced(GMX_API)
-if (GMX_API)
-    add_subdirectory(api)
+##############################################
+# Sphinx documentation for external interfaces
+##############################################
+# TODO: enforce sphinx associated with consistent Python library version.
+# E.g. SPHINX_EXECUTABLE
+unset(Sphinx_FOUND)
+find_package(Sphinx 1.3 COMPONENTS pygments)
+if(Sphinx_FOUND)
+    add_subdirectory(docs)
 endif()
