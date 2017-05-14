@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-build_options = ['clang-3.8', 'clang-static-analyzer-3.8']
+build_options = ['clang-4', 'clang-static-analyzer-4']
 
 def do_build(context):
     cmake_opts = {
