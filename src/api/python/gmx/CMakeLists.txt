@@ -32,6 +32,25 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+
+# Build the C++ extension
+
+# Set the rpath of the
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+pybind11_add_module(core gmx_core.cpp data.cpp options.cpp runner.cpp trajectory.cpp)
+target_link_libraries(core PRIVATE libgromacs)
+target_include_directories(core INTERFACE ${PYTHON_INCLUDE_DIRS})
+
+# use, i.e. don't skip the full RPATH for the build tree
+set_target_properties(core PROPERTIES SKIP_BUILD_RPATH FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set_target_properties(core PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
+set_target_properties(core PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+set_target_properties(core PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # Install target should copy Python source files into lib/python{version}/gmx
 # and properly install core.so into same.
 
@@ -43,6 +62,8 @@ set(PYGMX_INSTALL_DIR ${LIB_INSTALL_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_
 install(DIRECTORY "gmx" DESTINATION ${PYGMX_INSTALL_DIR})
 install(CODE "MESSAGE(\"Python module installed to ${CMAKE_INSTALL_PREFIX}/${PYGMX_INSTALL_DIR}.
 You will need to update your PYTHONPATH environment variable for python to find it.\")")
+# The compiled core module is a submodule of the 'gmx' package.
+install(TARGETS core DESTINATION ${PYGMX_INSTALL_DIR}/gmx)
 
 # TODO:
 # Allow build and installation via setuptools from files configured by CMake.
@@ -59,14 +80,6 @@ You will need to update your PYTHONPATH environment variable for python to find 
 #    "${CMAKE_BINARY_DIR}/setup.py"
 #)
 
-# For the moment, just stick the C++ extension in gmx where it will be installed.
-# Disable until cpp API bits are restructured.
-#add_subdirectory(gmx)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-# Get variables for Sphinx documentation building
 set(gmx_pygmx "${CMAKE_CURRENT_SOURCE_DIR}" )
-#get_property(gmx_pycore TARGET core PROPERTY LIBRARY_OUTPUT_DIRECTORY)
+#set(gmx_pycore "${LIBRARY_OUTPUT_DIRECTORY}")
+get_property(gmx_pycore TARGET core PROPERTY LIBRARY_OUTPUT_DIRECTORY)

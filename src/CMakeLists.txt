@@ -70,5 +70,14 @@ option(GMX_API "Experimental external interfaces" OFF)
 # Make sure this stays fairly hidden
 mark_as_advanced(GMX_API)
 if (GMX_API)
+    option(GMX_PYTHON_MODULE "Build Gromacs Python module" ON)
+    if (GMX_PYTHON_MODULE)
+        # One long-term option would be to require pip (or Py 3.4+)
+        # and exclusively satisfy dependencies, build, and install with distutils
+        message(STATUS "Getting pybind")
+        execute_process(COMMAND git submodule update --init
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        add_subdirectory(external/pybind11)
+    endif()
     add_subdirectory(api)
 endif()

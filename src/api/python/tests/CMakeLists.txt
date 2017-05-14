@@ -32,53 +32,20 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(GMX_API_MAJOR 0)
-set(GMX_API_MINOR 0)
-set(GMX_API_RELEASE 0)
+# There is not yet a build target for running these Python unit tests.
+# For the moment, running them directly works fine with
+# ``PYTHONPATH=/path/to/module python -m unittest test_something``.
+# Note that the trailing ``py`` is removed because the name is interpreted
+# as a module. We can rely on sphinx.ext.doctest for a lot, but I
+# think it is more important to have Python tests work from distutils
+# than from CMake, but I'm deferring the topic for now.
+#
+# We can do some testing on the C++ code for the Python bindings, but
+# we might want to just test the bindings from Python.
 
-###############################
-# New public C++ API components
-###############################
-add_subdirectory(cpp)
+#gmx_add_unit_test(PythonApiUnitTests trajectoryanalysis-test
+#
+#                  $<TARGET_OBJECTS:analysisdata-test-shared>)
 
-###############
-# Python module
-###############
-option(GMX_PYTHON_MODULE "Build Gromacs Python module" ON)
-if (GMX_PYTHON_MODULE)
-    find_package(PythonInterp REQUIRED)
-    find_package(PythonLibs REQUIRED)
-    # Double-check we found Python.h...
-    MESSAGE(STATUS "Checking for headers required for Python C++ extensions.")
-    set(CMAKE_REQUIRED_INCLUDES "${PYTHON_INCLUDE_DIRS}")
-    MESSAGE(STATUS "Looking in ${PYTHON_INCLUDE_DIRS}")
-    CHECK_INCLUDE_FILE(Python.h FOUND_PYTHON_H)
-
-    check_cxx_source_compiles(
-      "#include <Python.h>
-    int main(void) {
-    return 0;
-    }" PYTHON_H)
-
-    set(CMAKE_REQUIRED_INCLUDES)
-    IF(${PYTHON_H})
-    ELSE()
-      MESSAGE(FATAL_ERROR "No Python.h?")
-    ENDIF()
-
-    # TODO: get this from gromacs...
-    set(PYBIND11_CPP_STANDARD "-std=c++11")
-    # Note: pybind11 submodule must be in place (see git docs) TODO: check
-    add_subdirectory(python)
-endif()
-
-##############################################
-# Sphinx documentation for external interfaces
-##############################################
-# TODO: enforce sphinx associated with consistent Python library version.
-# E.g. SPHINX_EXECUTABLE
-unset(Sphinx_FOUND)
-find_package(Sphinx 1.3 COMPONENTS pygments)
-if(Sphinx_FOUND)
-    add_subdirectory(docs)
-endif()
+#add_executable(test_pywrappers ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
+#target_link_libraries(test_pywrappers core ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
