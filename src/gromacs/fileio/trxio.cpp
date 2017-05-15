@@ -935,7 +935,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
 int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                      const char *fn, t_trxframe *fr, int flags)
 {
-    t_fileio      *fio;
+    t_fileio      *fio = nullptr;
     gmx_bool       bFirst, bOK;
     int            ftp   = fn2ftp(fn);
 
