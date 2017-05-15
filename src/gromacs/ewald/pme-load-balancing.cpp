@@ -295,7 +295,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     real         fac, sp;
     real         tmpr_coulomb, tmpr_vdw;
     int          d;
-    gmx_bool     grid_ok;
+    bool         grid_ok;
 
     /* Try to add a new setup with next larger cut-off to the list */
     pme_lb->n++;
@@ -334,12 +334,11 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
          * This means we can't use pme_order or less grid lines
          * per PME rank along x, which is not a strong restriction.
          */
-        gmx_pme_check_restrictions(pme_order,
-                                   set->grid[XX], set->grid[YY], set->grid[ZZ],
-                                   npmeranks_x,
-                                   TRUE,
-                                   FALSE,
-                                   &grid_ok);
+        grid_ok = gmx_pme_check_restrictions(pme_order,
+                                             set->grid[XX], set->grid[YY], set->grid[ZZ],
+                                             npmeranks_x,
+                                             true,
+                                             false);
     }
     while (sp <= 1.001*pme_lb->setup[pme_lb->cur].spacing || !grid_ok);
 

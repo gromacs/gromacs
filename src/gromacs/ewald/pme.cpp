@@ -445,19 +445,17 @@ int minimalPmeGridSize(int pmeOrder)
     return minimalSize;
 }
 
-void gmx_pme_check_restrictions(int pme_order,
+bool gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
                                 int nnodes_major,
-                                gmx_bool bUseThreads,
-                                gmx_bool bFatal,
-                                gmx_bool *bValidSettings)
+                                bool useThreads,
+                                bool errorsAreFatal)
 {
     if (pme_order > PME_ORDER_MAX)
     {
-        if (!bFatal)
+        if (!errorsAreFatal)
         {
-            *bValidSettings = FALSE;
-            return;
+            return false;
         }
 
         std::string message = gmx::formatString(
@@ -471,10 +469,9 @@ void gmx_pme_check_restrictions(int pme_order,
         nky < minGridSize ||
         nkz < minGridSize)
     {
-        if (!bFatal)
+        if (!errorsAreFatal)
         {
-            *bValidSettings = FALSE;
-            return;
+            return false;
         }
         std::string message = gmx::formatString(
                     "The PME grid sizes need to be >= 2*(pme_order-1) (%d)",
@@ -485,24 +482,18 @@ void gmx_pme_check_restrictions(int pme_order,
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
      * We only allow multiple communication pulses in dim 1, not in dim 0.
      */
-    if (bUseThreads && (nkx < nnodes_major*pme_order &&
-                        nkx != nnodes_major*(pme_order - 1)))
+    if (useThreads && (nkx < nnodes_major*pme_order &&
+                       nkx != nnodes_major*(pme_order - 1)))
     {
-        if (!bFatal)
+        if (!errorsAreFatal)
         {
-            *bValidSettings = FALSE;
-            return;
+            return false;
         }
         gmx_fatal(FARGS, "The number of PME grid lines per rank along x is %g. But when using OpenMP threads, the number of grid lines per rank along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use fewer ranks along x (and possibly more along y and/or z) by specifying -dd manually.",
                   nkx/(double)nnodes_major, pme_order);
     }
 
-    if (bValidSettings != nullptr)
-    {
-        *bValidSettings = TRUE;
-    }
-
-    return;
+    return true;
 }
 
 /*! \brief Round \p enumerator */
@@ -678,8 +669,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                                pme->nkx, pme->nky, pme->nkz,
                                pme->nnodes_major,
                                pme->bUseThreads,
-                               TRUE,
-                               nullptr);
+                               true);
 
     if (pme->nnodes > 1)
     {
