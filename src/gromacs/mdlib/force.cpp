@@ -583,7 +583,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             pr_rvecs(debug, 0, "vir_lj_recip after corr", fr->vir_lj_recip, DIM);
         }
     }
-    else
+    else if (!EEL_FMM(fr->eeltype))
     {
         /* Is there a reaction-field exclusion correction needed?
          * With the Verlet scheme, exclusion forces are calculated

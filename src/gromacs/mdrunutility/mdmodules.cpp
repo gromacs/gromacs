@@ -39,6 +39,7 @@
 #include <memory>
 
 #include "gromacs/applied-forces/electricfield.h"
+#include "gromacs/fmm/fmm.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -58,7 +59,8 @@ class MDModules::Impl : public IMDOutputProvider
     public:
 
         Impl()
-            : field_(createElectricFieldModule())
+            : field_(createElectricFieldModule()),
+              fmm_(createFastMultipoleModule())
         {
         }
 
@@ -67,6 +69,10 @@ class MDModules::Impl : public IMDOutputProvider
             // Create a section for applied-forces modules
             auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
             field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+
+            // Fast multipole method related options
+            fmm_->mdpOptionProvider()->initMdpOptions(options);
+
             // In future, other sections would also go here.
         }
 
@@ -82,6 +88,7 @@ class MDModules::Impl : public IMDOutputProvider
         }
 
         std::unique_ptr<IMDModule>      field_;
+        std::unique_ptr<IMDModule>      fmm_;
         std::unique_ptr<ForceProviders> forceProviders_;
 };
 
@@ -99,6 +106,7 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     // embed the necessary prefix (and similarly for other groupings
     // of modules). For now, electric-field embeds this itself.
     impl_->field_->mdpOptionProvider()->initMdpTransform(rules);
+    impl_->fmm_->mdpOptionProvider()->initMdpTransform(rules);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
@@ -128,12 +136,18 @@ IMDOutputProvider *MDModules::outputProvider()
     return impl_.get();
 }
 
-ForceProviders *MDModules::initForceProviders()
+ForceProviders *MDModules::initForceProviders(const t_inputrec *ir, const gmx_mtop_t *mtop)
 {
     GMX_RELEASE_ASSERT(impl_->forceProviders_ == nullptr,
                        "Force providers initialized multiple times");
+
+    // Fill the options struct with data needed by some force providers
+    ForceProviderInitOptions initOptions(ir ? ir->ePBC : -1, ir ? ir->coulombtype : -1, mtop); // temporary!
+
     impl_->forceProviders_.reset(new ForceProviders);
-    impl_->field_->initForceProviders(impl_->forceProviders_.get());
+    impl_->field_->initForceProviders(impl_->forceProviders_.get(), &initOptions);
+    impl_->fmm_->initForceProviders(impl_->forceProviders_.get(), &initOptions);
+
     return impl_->forceProviders_.get();
 }
 

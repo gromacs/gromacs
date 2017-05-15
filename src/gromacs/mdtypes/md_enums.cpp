@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ const char *eel_names[eelNR+1] = {
     "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User",
     "Generalized-Born", "Reaction-Field-nec", "Encad-shift",
     "PME-User", "PME-Switch", "PME-User-Switch",
-    "Reaction-Field-zero", nullptr
+    "Reaction-Field-zero", "FMM", nullptr
 };
 
 const char *eewg_names[eewgNR+1] = {
