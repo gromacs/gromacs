@@ -1,0 +1,7 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-by: Roland Schulz <roland.schulz@intel.com>
+Submitted-at: Mon, 15 May 2017 16:35:58 +0200
+Reviewed-on: https://gerrit.gromacs.org/6636
+Project: gromacs
+Branch: refs/heads/release-2016
