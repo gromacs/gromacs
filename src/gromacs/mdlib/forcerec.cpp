@@ -2544,6 +2544,12 @@ void init_forcerec(FILE                *fp,
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
             break;
 
+        case eelFMM:
+            // Electrostatic kernel to be used depends on whether FMM does everything, or just the far field part
+            // The FMSolvr FMM library does far+near field, therefore the GMX kernel should be switched off here:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_NONE;
+            break;
+
         default:
             gmx_fatal(FARGS, "Unsupported electrostatic interaction: %s", eel_names[fr->eeltype]);
             break;
