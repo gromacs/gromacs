@@ -18,30 +18,34 @@
 # Test older gcc
 # Test oldest supported CUDA
 # Test oldest supported Ubuntu
-# Test X11 build
 # Test MPI with CUDA
 # Test MPMD PME with library MPI
-gcc-4.8 gpu cuda-6.5 mpi npme=1 nranks=2 openmp x11
+# Test cmake FindCUDA functionality introduced in 3.8
+gcc-4.8 gpu cuda-6.5 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
+# Test cmake version from before new FindCUDA support (in 3.8)
 # Test SIMD implementation of pair search for GPU code-path
-gcc-5 gpu cuda-8.0 thread-mpi openmp release simd=avx2_256
+gcc-5 gpu cuda-8.0 thread-mpi openmp cmake-3.6.1 release simd=avx2_256
 
 # Test with ThreadSanitizer (without OpenMP, because of Redmine #1850)
-# Test AVX2_256 SIMD
 # Test fftpack fallback
-gcc-4.9 tsan fftpack simd=avx2_256
+gcc-7 tsan no-openmp fftpack
 
 # Test newest gcc at time of release
-# Test on MacOS (because gcc-6 is only available there)
-gcc-6 double
+gcc-7 mpi
 
+# Test on MacOS (because gcc-6 is only available there)
+# Test X11 build
+gcc-6 double x11
+
+# Test oldest supported cmake
 # Test older clang
 # Test double precision
 # Test without OpenMP
 # Test thread-MPI
-clang-3.4 double thread-mpi no-openmp fftpack
+clang-3.4 double thread-mpi no-openmp fftpack cmake-3.4.3
 
 # Test newest clang at time of release
 # Test with AddressSanitizer (without OpenMP, see below)
@@ -59,26 +63,21 @@ icc-16.0 msvc-2015 fftpack
 # Test MKL
 # Test without any MPI
 # Test on CentOS (because icc-16.0 is only available there)
-icc-16.0 no-thread-mpi openmp mkl cmake-3.6.1 simd=avx_256
-
-# Test oldest supported cmake
-# Test AVX_128_FMA SIMD
-gcc-5 mpi openmp simd=avx_128_fma cmake-3.4.3
+icc-16.0 no-thread-mpi openmp mkl cmake-3.8.1 simd=avx_256
 
 # Test NVIDIA OpenCL
 # Test MPI + OpenCL
-gcc-4.8 openmp opencl cuda-7.5 mpi release
+# Test AVX2_256 SIMD
+gcc-4.8 openmp opencl cuda-7.5 mpi release simd=avx2_256
 
 # Test AMD OpenCL
-gcc-5 openmp opencl amdappsdk-3.0
+# Test AVX_128_FMA SIMD
+gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
 
 # TODO
-# Add testing for support for cmake 3.8 for release-2017, e.g. to bs_mic and a CUDA slave (for the new CUDA support)
-# Add testing for support for gcc 7 for release-2017, e.g. to bs_mac
 # Add OpenMP support to a clang build, e.g. on a CUDA slave
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc support
 # Test newest supported LTS Ubuntu
-# Migrate ThreadSanitizer test off GPU build slave
 # Explore adding openmp to ThreadSanitizer configuration, perhaps can avoid Redmine #1850 if done differently
 # Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161
