@@ -1248,7 +1248,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr                 = mk_forcerec();
         fr->hwinfo         = hwinfo;
         fr->gpu_opt        = &hw_opt->gpu_opt;
-        fr->forceProviders = mdModules.initForceProviders();
+        fr->forceProviders = mdModules.initForceProviders(inputrec, mtop);
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
