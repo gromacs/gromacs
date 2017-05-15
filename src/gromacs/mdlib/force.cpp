@@ -61,6 +61,7 @@
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -581,6 +582,18 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             fprintf(debug, "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
                     Vlr_lj, Vcorr_lj, enerd->term[F_LJ_RECIP]);
             pr_rvecs(debug, 0, "vir_lj_recip after corr", fr->vir_lj_recip, DIM);
+        }
+    }
+    else if (EEL_FMM(fr->eeltype) )
+    {
+        // Calculate electrostatics with a Fast Multipole Method
+        auto             coulombEnergy = 0.;
+        PaddedRVecVector f_fmm;                         // temporary for now
+        fr->fmm->calculateForces(cr, md, box, 0.0, x, &f_fmm, &coulombEnergy);
+        enerd->grpp.ener[egCOULSR][0] += coulombEnergy; // For now, add the FMM Coulomb energy to group with index 0.
+        for (int i = 0; i < md->homenr; ++i)            // Add the local FMM forces to the forcefield forces.
+        {                                               // This loop can be moved into calculateForces()
+            rvec_inc(f[i], f_fmm.at(i));                //   once f is a PaddedRVecVector
         }
     }
     else

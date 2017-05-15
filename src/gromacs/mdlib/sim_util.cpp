@@ -1390,7 +1390,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Compute forces due to electric field */
         if (fr->efield != nullptr)
         {
-            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
+            fr->efield->calculateForces(cr, mdatoms, box, t, nullptr, fr->f_novirsum, nullptr);
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
@@ -1748,7 +1748,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* Compute forces due to electric field */
         if (fr->efield != nullptr)
         {
-            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
+            fr->efield->calculateForces(cr, mdatoms, box, t, nullptr, fr->f_novirsum, nullptr);
         }
 
         /* Communicate the forces */
