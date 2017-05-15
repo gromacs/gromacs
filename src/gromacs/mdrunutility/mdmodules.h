@@ -46,7 +46,7 @@
 #include "gromacs/utility/classhelpers.h"
 
 struct ForceProviders;
-
+struct gmx_mtop_t;
 struct t_inputrec;
 
 namespace gmx
@@ -142,7 +142,7 @@ class MDModules
         /*! \brief
          * Returns an object for computing forces from the modules.
          */
-        ForceProviders *initForceProviders();
+        ForceProviders *initForceProviders(const t_inputrec *ir, const gmx_mtop_t *mtop);
 
     private:
         class Impl;
