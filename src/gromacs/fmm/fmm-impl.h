@@ -32,51 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \libinternal \file
- * \brief
- * Declares gmx::IMDModule.
  *
- * See \ref page_mdmodules for an overview of this and associated interfaces.
+ * \brief
+ * Common interface that the implementations of the Fast Multipole Methods (FMM) can use.
+ *
+ * \author Carsten Kutzner <ckutzne@gwdg.de>
  *
  * \inlibraryapi
- * \ingroup module_mdtypes
+ * \ingroup module_fmm
  */
-#ifndef GMX_MDTYPES_IMDMODULE_H
-#define GMX_MDTYPES_IMDMODULE_H
+#ifndef GMX_FMM_FMM_IMPL_H
+#define GMX_FMM_FMM_IMPL_H
 
-struct ForceProviders;
+#include <memory>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
+
+struct fmmInputParameters;
 struct gmx_mtop_t;
+struct t_commrec;
 struct t_inputrec;
 
 namespace gmx
 {
 
-class IMDOutputProvider;
-class IMdpOptionProvider;
-
-/*! \libinternal \brief
- * Extension module for \Gromacs simulations.
- *
- * The methods that return other interfaces can in the future return null for
- * those interfaces that the module does not need to implement, but currently
- * the callers are not prepared to generically handle various cases.
- *
- * \inlibraryapi
- * \ingroup module_mdtypes
+/*! \brief
+ *  Identification string that can be prepended to FMM-related output
  */
-class IMDModule
+constexpr char fmmStr[] = "FMM:";
+
+
+class FmmImpl
 {
     public:
-        virtual ~IMDModule() {}
+        virtual void calculateForcesAndEnergies(const t_commrec *cr,
+                                                const matrix     box,
+                                                const real      *q,
+                                                const rvec      *x,
+                                                ArrayRef<RVec>   force,
+                                                double          *coulombEnergy) = 0;
 
-        //! Returns an interface for handling mdp input (and tpr I/O).
-        virtual IMdpOptionProvider *mdpOptionProvider() = 0;
-        //! Returns an interface for handling output files during simulation.
-        virtual IMDOutputProvider *outputProvider()     = 0;
-        //! Initializes force providers from this module.
-        virtual void initForceProviders(ForceProviders *forceProviders, const t_inputrec *ir, const gmx_mtop_t *mtop) = 0;
+        virtual ~FmmImpl() { };
 };
 
-} // namespace gmx
+/*! \brief
+ * Creates an instance of a specific FMM implementation (e.g., FmSolvr, GPU-FMM, or ExaFMM)
+ *
+ * Which FMM is instantiated depends on how the FMM implementation class is defined in the source
+ * file that includes this header. The underlying FMM implementation class should be derived as
+ * "class SpecificFmmImpl final : public FmmImpl" from the FmmImpl interface defined here.
+ */
+std::unique_ptr<FmmImpl> createFmmImpl(const t_inputrec *ir, const fmmInputParameters *fmmParameters, const gmx_mtop_t *mtop);
 
-#endif
+}      // namespace gmx
+
+#endif // GMX_FMM_FMM_IMPL_H
