@@ -8,7 +8,7 @@ clang-3.7 double mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
 # TODO Add double to this configuration if/when Carsten stablizes essentialdynamics tests
-gcc-5.2 npme=1 nranks=2 no-openmp fftpack simd=avx_128_fma release
+gcc-5 npme=1 nranks=2 no-openmp fftpack simd=avx_128_fma release
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
