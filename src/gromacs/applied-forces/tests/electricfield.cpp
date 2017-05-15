@@ -110,8 +110,8 @@ class ElectricFieldTest : public ::testing::Test
 
             t_commrec  *cr       = init_commrec();
             t_forcerec *forcerec = mk_forcerec();
-            module.forceProvider()->initForcerec(forcerec);
-            forcerec->efield->calculateForces(cr, &md, &f, 0);
+            module.forceProvider()->initForcerec(forcerec, nullptr);
+            forcerec->efield->calculateForces(cr, &md, nullptr, nullptr, nullptr, &f, nullptr, 0);
             done_commrec(cr);
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
             sfree(forcerec);

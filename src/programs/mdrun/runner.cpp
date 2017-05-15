@@ -93,6 +93,7 @@
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -1333,7 +1334,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             }
         }
     }
-
 
     if (EI_DYNAMICS(inputrec->eI))
     {
