@@ -439,6 +439,7 @@ struct t_forcerec {
     struct ewald_corr_thread_t *ewc_t;
 
     struct IForceProvider      *efield;
+    struct IForceProvider      *fmm;         // fast multipole method for Coulomb electrostatics
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

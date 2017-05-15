@@ -45,7 +45,9 @@
 #define GMX_MDTYPES_IFORCEPROVIDER_H
 
 #include "gromacs/math/paddedvector.h"
+#include "gromacs/utility/fatalerror.h"
 
+struct gmx_mtop_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
@@ -70,7 +72,8 @@ struct IForceProvider
         /*! \brief
          * Sets relevant options in the forcerec structure.
          *
-         * \param[inout] fr The forcerec structure
+         * \param[inout] fr    The forcerec structure
+         * \param[in]    mtop  The topology information
          *
          * \todo
          * This should be replaced by a method that returns a set of
@@ -78,20 +81,26 @@ struct IForceProvider
          * instance is returned), and forcerec should be initialized based on
          * that.
          */
-        virtual void initForcerec(t_forcerec *fr) = 0;
+        virtual void initForcerec(t_forcerec *fr, const gmx_mtop_t *mtop) = 0;
 
         /*! \brief
          * Computes forces.
          *
          * \param[in]    cr      Communication record for parallel operations
          * \param[in]    mdatoms Atom information
-         * \param[inout] force   The forces
+         * \param[in]    box     The simulation box vectors.
          * \param[in]    t       The actual time in the simulation (ps)
+         * \param[in]    x       Array of the atomic positions.
+         * \param[inout] force   The forces
+         * \param[out]   energy  The potential energy.
          */
         virtual void calculateForces(const t_commrec  *cr,
                                      const t_mdatoms  *mdatoms,
+                                     const matrix      box,
+                                     const double      t,
+                                     const rvec       *x,
                                      PaddedRVecVector *force,
-                                     double            t) = 0;
+                                     double           *energy) = 0;
 
     protected:
         ~IForceProvider() {}
