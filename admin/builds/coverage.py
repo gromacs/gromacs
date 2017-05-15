@@ -34,7 +34,7 @@
 
 import os.path
 
-build_options = ['gcc-6.1', 'gcov-6.1']
+build_options = ['gcc-6', 'gcov-6']
 extra_projects = [Project.REGRESSIONTESTS]
 
 def do_build(context):
