@@ -1,0 +1,190 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2017, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/*! \internal \file
+   \brief
+   Tests that check whether \Gromacs can use the underlying FMM implementation
+
+   \author Carsten Kutzner <ckutzne@gwdg.de>
+   \author R. Thomas Ullmann <tullman@gwdg.de>
+
+   \ingroup module_fmm
+ */
+
+#include "gmxpre.h"
+
+#include "gromacs/fmm/fmm.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/units.h"
+#include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdrunutility/mdmodules.h"
+#include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringcompare.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/testasserts.h"
+
+
+namespace
+{
+
+/* \brief Test whether we get the correct Coulomb energy and forces  for a simple geometric arrangement
+ *
+ */
+class FmmInterfaceTest : public ::testing::Test
+{
+    public:
+        FmmInterfaceTest() {}
+
+        /*! \brief
+         * Tests whether FMM yields correct results for a simple two-charge system.
+         *
+         * We put some values into the energy and forces that are passed to the FMM to also
+         * make sure that the FMM does not simply overwrite these values but adds to them.
+         *
+         * \param[in]    ePBC            Type of periodic boundary condition
+         * \param[in]    expectedEnergy  Expected value of the Coulomb energy for this charge configuration
+         * \param[in]    expectedForce   Expected value of the Coulomb force in x-direction (others are zero)
+         */
+        void twoChargesANanometerApart(int ePBC, gmx_unused double expectedEnergy, gmx_unused double expectedForce);
+
+};
+
+
+void FmmInterfaceTest::twoChargesANanometerApart(int ePBC, gmx_unused double expectedEnergy, gmx_unused double expectedForce)
+{
+    // Prepare MDP input
+    gmx::KeyValueTreeBuilder     mdpValues;
+    mdpValues.rootObject().addValue("fmm-precision", gmx::formatString("0.001"));
+    gmx::KeyValueTreeTransformer transform;
+    transform.rules()->addRule()
+        .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+
+    gmx::MDModules module;
+    module.initMdpTransform(transform.rules());
+    auto           result = transform.transform(mdpValues.build(), nullptr);
+    module.assignOptionsToModules(result.object(), nullptr);
+
+    // Prepare variables needed for the test
+    t_mdatoms          *md         = new t_mdatoms;
+    md->homenr                     = 2;
+    md->chargeA                    = new real[md->homenr];
+    md->chargeA[0]                 =  1;
+    md->chargeA[1]                 = -1;
+
+    PaddedRVecVector   preFmmforces = { { 1, 2, 3 }, { 4, 5, 6 } };             // offset to check that GROMACS energy and forces are not overwritten by FMM
+    PaddedRVecVector   forces       = preFmmforces;
+    PaddedRVecVector   positions    = { { 1.0, 1.5, 1.5 }, { 2.0, 1.5, 1.5 } }; // Na, Cl from the NaCl.gro test systems in programs/mdrun/tests
+    t_commrec         *cr           = init_commrec();
+    t_forcerec        *forcerec     = mk_forcerec();
+    forcerec->eeltype               = eelFMM;
+    forcerec->ePBC                  = ePBC;
+    gmx_mtop_t         mtop;
+    init_mtop(&mtop);
+    mtop.natoms                     = 2;
+
+    // Initialize the FMM
+    module.forceProvider()->initForcerec(forcerec, &mtop);
+
+    // Call the FMM
+    double           preFmmEnergy   = 123.456;  // offset to check that GROMACS energy and forces are not overwritten by FMM
+    double           energy         = preFmmEnergy;
+    matrix           box            = { { 3.0, 0.0, 0.0 }, { 0.0, 3.0, 0.0 }, { 0.0, 0.0, 3.0 } };
+
+    forcerec->fmm->calculateForces(cr, md, box, 0.0, as_rvec_array(positions.data()), &forces, &energy);
+
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            forces[i][j] -= preFmmforces[i][j];
+        }
+    }
+
+    // Check Coulomb energy:
+    energy -= preFmmEnergy;
+    EXPECT_NEAR(expectedEnergy, energy, 5e-5);
+    // Check Coulomb forces:
+    double forceTolerance = 0.0005;
+    EXPECT_NEAR(-expectedForce, forces[0][XX], forceTolerance);
+    EXPECT_NEAR(   0.0, forces[0][YY], forceTolerance);
+    EXPECT_NEAR(   0.0, forces[0][ZZ], forceTolerance);
+
+    EXPECT_NEAR(+expectedForce, forces[1][XX], forceTolerance);
+    EXPECT_NEAR(   0.0, forces[1][YY], forceTolerance);
+    EXPECT_NEAR(   0.0, forces[1][ZZ], forceTolerance);
+
+    // Clean up
+    done_commrec(cr);
+    sfree(forcerec);
+    delete [] md->chargeA;
+    delete md;
+}
+
+
+/*! \brief Note that this test is only useful when some FMM is actually compiled in.
+ *
+ */
+void printNoFmmAvailable()
+{
+    fprintf(stderr,  "GROMACS compiled without FMM - nothing to test!\n");
+}
+
+
+TEST_F(FmmInterfaceTest, OpenBoundaries)
+{
+#ifdef GMX_WITH_FMM
+    twoChargesANanometerApart(epbcNONE, -ONE_4PI_EPS0, -ONE_4PI_EPS0);
+#else
+    printNoFmmAvailable();
+#endif
+}
+
+TEST_F(FmmInterfaceTest, PeriodicBoundaries)
+{
+#ifdef GMX_WITH_FMM
+    twoChargesANanometerApart(epbcXYZ, -151.5503252, -109.858909);
+#else
+    printNoFmmAvailable();
+#endif
+}
+
+} // namespace

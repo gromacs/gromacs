@@ -177,12 +177,15 @@ class ElectricField final : public IMDModule,
         void finishOutput() override;
 
         // From IForceProvider
-        void initForcerec(t_forcerec *fr) override;
+        void initForcerec(t_forcerec *fr, const gmx_mtop_t *mtop) override;
         //! \copydoc IForceProvider::calculateForces()
         void calculateForces(const t_commrec  *cr,
                              const t_mdatoms  *mdatoms,
+                             const matrix      box,
+                             double            t,
+                             const rvec       *x,
                              PaddedRVecVector *force,
-                             double            t) override;
+                             double           *energy) override;
 
     private:
         //! Return whether or not to apply a field
@@ -357,7 +360,7 @@ void ElectricField::finishOutput()
     }
 }
 
-void ElectricField::initForcerec(t_forcerec *fr)
+void ElectricField::initForcerec(t_forcerec *fr, gmx_unused const gmx_mtop_t *mtop)
 {
     if (isActive())
     {
@@ -384,10 +387,13 @@ void ElectricField::printComponents(double t) const
             field(XX, t), field(YY, t), field(ZZ, t));
 }
 
-void ElectricField::calculateForces(const t_commrec  *cr,
-                                    const t_mdatoms  *mdatoms,
-                                    PaddedRVecVector *force,
-                                    double            t)
+void ElectricField::calculateForces(const t_commrec         *cr,
+                                    const t_mdatoms         *mdatoms,
+                                    gmx_unused const matrix  box,
+                                    gmx_unused double        t,
+                                    gmx_unused const rvec   *x,
+                                    PaddedRVecVector        *force,
+                                    gmx_unused double       *energy)
 {
     if (isActive())
     {
