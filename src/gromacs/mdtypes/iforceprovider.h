@@ -48,6 +48,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/classhelpers.h"
 
+struct gmx_enerdata_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
@@ -83,13 +84,15 @@ class IForceProvider
          * \param[in]    t       The actual time in the simulation (ps)
          * \param[in]    x       The coordinates
          * \param[inout] force   The forces
+         * \param[inout] enerd   Energy terms and groups
          */
         virtual void calculateForces(const t_commrec          *cr,
                                      const t_mdatoms          *mdatoms,
                                      const matrix              box,
                                      double                    t,
                                      const rvec               *x,
-                                     gmx::ArrayRef<gmx::RVec>  force) = 0;
+                                     gmx::ArrayRef<gmx::RVec>  force,
+                                     gmx_enerdata_t           *enerd) = 0;
 
     protected:
         ~IForceProvider() {}
@@ -126,13 +129,14 @@ struct ForceProviders
         bool hasForcesWithoutVirialContribution() const;
 
         //! Computes forces.
-        void calculateForces(const t_commrec          *cr,
-                             const t_mdatoms          *mdatoms,
-                             const matrix              box,
-                             double                    t,
-                             const rvec               *x,
-                             gmx::ArrayRef<gmx::RVec>  force,
-                             gmx::ArrayRef<gmx::RVec>  f_novirsum) const;
+        void calculateForces(const t_commrec           *cr,
+                             const t_mdatoms           *mdatoms,
+                             const matrix               box,
+                             double                     t,
+                             const rvec                *x,
+                             gmx::ArrayRef<gmx::RVec>   force,
+                             gmx::ArrayRef<gmx::RVec>   f_novirsum,
+                             gmx_enerdata_t            *enerd) const;
 
     private:
         class Impl;

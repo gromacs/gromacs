@@ -80,20 +80,21 @@ bool ForceProviders::hasForcesWithoutVirialContribution() const
     return !impl_->withoutVirialContribution_.empty();
 }
 
-void ForceProviders::calculateForces(const t_commrec          *cr,
-                                     const t_mdatoms          *mdatoms,
-                                     const matrix              box,
-                                     double                    t,
-                                     const rvec               *x,
-                                     gmx::ArrayRef<gmx::RVec>  force,
-                                     gmx::ArrayRef<gmx::RVec>  f_novirsum) const
+void ForceProviders::calculateForces(const t_commrec           *cr,
+                                     const t_mdatoms           *mdatoms,
+                                     const matrix               box,
+                                     double                     t,
+                                     const rvec                *x,
+                                     gmx::ArrayRef<gmx::RVec>   force,
+                                     gmx::ArrayRef<gmx::RVec>   f_novirsum,
+                                     gmx_enerdata_t            *enerd) const
 {
     for (auto provider : impl_->withVirialContribution_)
     {
-        provider->calculateForces(cr, mdatoms, box, t, x, force);
+        provider->calculateForces(cr, mdatoms, box, t, x, force, enerd);
     }
     for (auto provider : impl_->withoutVirialContribution_)
     {
-        provider->calculateForces(cr, mdatoms, box, t, x, f_novirsum);
+        provider->calculateForces(cr, mdatoms, box, t, x, f_novirsum, enerd);
     }
 }
