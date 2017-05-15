@@ -165,7 +165,7 @@ class ElectricField final : public IMDModule,
         // From IMDModule
         IMdpOptionProvider *mdpOptionProvider() override { return this; }
         IMDOutputProvider *outputProvider() override { return this; }
-        void initForceProviders(ForceProviders *forceProviders) override
+        void initForceProviders(ForceProviders *forceProviders, gmx_unused const t_inputrec *ir, gmx_unused const gmx_mtop_t *mtop) override
         {
             if (isActive())
             {
@@ -189,7 +189,8 @@ class ElectricField final : public IMDModule,
                              const matrix      box,
                              double            t,
                              const rvec       *x,
-                             ArrayRef<RVec>    force) override;
+                             ArrayRef<RVec>    force,
+                             gmx_enerdata_t   *enerd) override;
 
     private:
         //! Return whether or not to apply a field
@@ -387,7 +388,8 @@ void ElectricField::calculateForces(const t_commrec  *cr,
                                     const matrix      /* box */,
                                     double            t,
                                     const rvec        * /* x */,
-                                    ArrayRef<RVec>    force)
+                                    ArrayRef<RVec>    force,
+                                    gmx_enerdata_t    * /* energy */)
 {
     if (isActive())
     {

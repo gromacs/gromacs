@@ -1393,7 +1393,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             fNoVirSum = *fr->f_novirsum;
         }
-        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
+        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum, enerd);
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=f later.
@@ -1753,7 +1753,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             fNoVirSum = *fr->f_novirsum;
         }
-        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
+        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum, enerd);
 
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
