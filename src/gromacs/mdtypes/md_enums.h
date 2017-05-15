@@ -168,7 +168,9 @@ extern const char *eintmod_names[eintmodNR+1];
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
-    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH,
+    eelFMM,
+    eelRF_ZERO, eelNR,
 };
 //! String corresponding to Coulomb treatment
 extern const char *eel_names[eelNR+1];

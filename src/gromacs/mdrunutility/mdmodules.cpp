@@ -39,6 +39,7 @@
 #include <memory>
 
 #include "gromacs/applied-forces/electricfield.h"
+#include "gromacs/fmm/fmm.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -58,7 +59,8 @@ class MDModules::Impl : public IMDOutputProvider, public IForceProvider
     public:
 
         Impl()
-            : field_(createElectricFieldModule())
+            : field_(createElectricFieldModule()),
+              fmm_(createFastMultipoleModule())
         {
         }
 
@@ -67,6 +69,11 @@ class MDModules::Impl : public IMDOutputProvider, public IForceProvider
             // Create a section for applied-forces modules
             auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
             field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+
+            // Create a section for FMM input
+            auto fastMultipoleOptions = options->addSection(OptionSection(nameOfFmmOptionsSection));
+            fmm_->mdpOptionProvider()->initMdpOptions(&fastMultipoleOptions);
+
             // In future, other sections would also go here.
         }
 
@@ -85,6 +92,7 @@ class MDModules::Impl : public IMDOutputProvider, public IForceProvider
         virtual void initForcerec(t_forcerec *fr)
         {
             field_->forceProvider()->initForcerec(fr);
+            fmm_->forceProvider()->initForcerec(fr);
         }
         virtual void calculateForces(const t_commrec  * /*cr*/,
                                      const t_mdatoms  * /*mdatoms*/,
@@ -95,6 +103,7 @@ class MDModules::Impl : public IMDOutputProvider, public IForceProvider
         }
 
         std::unique_ptr<IMDModule> field_;
+        std::unique_ptr<IMDModule> fmm_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -111,6 +120,7 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     // embed the necessary prefix (and similarly for other groupings
     // of modules). For now, electric-field embeds this itself.
     impl_->field_->mdpOptionProvider()->initMdpTransform(rules);
+    impl_->fmm_->mdpOptionProvider()->initMdpTransform(rules);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
