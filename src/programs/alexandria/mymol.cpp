@@ -1343,8 +1343,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         MakeSpecialInteractions(pd, bUseVsites);
 
         updatePlist(pd, plist_, topology_);
-
-        snew(mtop_, 1);
     }
     if (immOK == imm)
     {
@@ -1371,6 +1369,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (imm == immOK)
     {
+        snew(mtop_, 1);
+        
         char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
 
         do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn);
@@ -1384,6 +1384,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (nullptr == ltop_ && imm == immOK)
     {
         ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+        ltop_->idef.nthreads = 1;
     }
 
     return imm;
@@ -1773,6 +1774,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     fr_->hwinfo = hwinfo;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
+    setup_bonded_threading(fr_, &ltop_->idef);
     wcycle_    = wallcycle_init(debug, 0, cr);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
@@ -1787,7 +1789,9 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
 void MyMol::computeForces(FILE *fplog, t_commrec *cr)
 {
     tensor          force_vir;
-    double          t      = 0;
+    unsigned long   force_flags = ~0;
+    double          t           = 0;
+    
     
     clear_mat (force_vir);
 
@@ -1799,17 +1803,14 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
         }
     }
-
-    ltop_->idef.nthreads = 1;
-    setup_bonded_threading(fr_, &ltop_->idef);
-
+    
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
         
         relax_shell_flexcon(fplog, cr, false, 0,
-                            inputrec_, true, ~0,
+                            inputrec_, true, force_flags,
                             ltop_, nullptr, enerd_,
                             fcd_, state_,
                             &f_, force_vir, mdatoms_,
@@ -1821,7 +1822,6 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     }
     else
     {   
-        unsigned long flags = ~0;
         do_force(fplog, cr, inputrec_, 0,
                  &nrnb_, wcycle_, ltop_,
                  &(mtop_->groups),
@@ -1831,7 +1831,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
                  state_->lambda, nullptr,
                  fr_, nullptr, nullptr, t,
                  nullptr, false,
-                 flags);
+                 force_flags);
     }
 }
 
