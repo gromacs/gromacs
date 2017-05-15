@@ -69,6 +69,21 @@ enum {
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
 int minimalPmeGridSize(int pmeOrder);
 
+/*! \brief Check restrictions on pme_order and the PME grid nkx,nky,nkz.
+ *
+ * With errorsAreFatal=true, an exception or fatal error is generated
+ * on violation of restrictions.
+ * With errorsAreFatal=false, false is returned on violation of restrictions.
+ * When all restrictions are obeyed, true is returned.
+ * Argument useThreads tells if any MPI rank doing PME uses more than 1 threads.
+ * If at calling useThreads is unknown, pass true for conservative checking.
+ */
+bool gmx_pme_check_restrictions(int pme_order,
+                                int nkx, int nky, int nkz,
+                                int nnodes_major,
+                                bool useThreads,
+                                bool errorsAreFatal);
+
 /*! \brief Initialize \p pmedata
  *
  * \returns  0 indicates all well, non zero is an error code.
