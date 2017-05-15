@@ -1390,7 +1390,15 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Compute forces due to electric field */
         if (fr->efield != nullptr)
         {
-            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
+            fr->efield->calculateForces(cr, mdatoms, box, t, nullptr, fr->f_novirsum, nullptr);
+        }
+
+        /* Compute Coulomb forces with a Fast Multipole Method */
+        if (fr->fmm != nullptr)
+        {
+            auto coulombEnergy = .0d;
+            fr->fmm->calculateForces(cr, mdatoms, box, t, x, force, &coulombEnergy);
+            enerd->grpp.ener[egCOULSR][0] += coulombEnergy;   // For now, add the FMM Coulomb energy to group with index 0
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
@@ -1748,7 +1756,15 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* Compute forces due to electric field */
         if (fr->efield != nullptr)
         {
-            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
+            fr->efield->calculateForces(cr, mdatoms, box, t, nullptr, fr->f_novirsum, nullptr);
+        }
+
+        /* Compute Coulomb forces with a Fast Multipole Method */
+        if (fr->fmm != nullptr)
+        {
+            auto coulombEnergy = .0d;
+            fr->fmm->calculateForces(cr, mdatoms, box, t, x, force, &coulombEnergy);
+            enerd->grpp.ener[egCOULSR][0] += coulombEnergy;   // For now, add the FMM Coulomb energy to group with index 0
         }
 
         /* Communicate the forces */
