@@ -530,16 +530,25 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 
     if (confout != nullptr && MASTER(cr))
     {
+        GMX_RELEASE_ASSERT(bX, "The code below assumes that (with domain decomposition), x is collected to state_global in the call above.");
+        /* With domain decomposition the call above collected the state->s.x
+         * into state_global->x. Without DD we copy the local state pointer.
+         */
+        if (!DOMAINDECOMP(cr))
+        {
+            state_global = &state->s;
+        }
+
         if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
         {
             /* Make molecules whole only for confout writing */
-            do_pbc_mtop(fplog, ir->ePBC, state_global->box, top_global,
+            do_pbc_mtop(fplog, ir->ePBC, state->s.box, top_global,
                         as_rvec_array(state_global->x.data()));
         }
 
         write_sto_conf_mtop(confout,
                             *top_global->name, top_global,
-                            as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state_global->box);
+                            as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state->s.box);
     }
 }
 
