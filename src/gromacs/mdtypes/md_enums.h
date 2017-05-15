@@ -168,7 +168,8 @@ extern const char *eintmod_names[eintmodNR+1];
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
-    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH,
+    eelRF_ZERO, eelFMM, eelNR
 };
 //! String corresponding to Coulomb treatment
 extern const char *eel_names[eelNR+1];
@@ -189,6 +190,8 @@ extern const char *eewg_names[eewgNR+1];
 #define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
 //! Macro telling us whether we use PME or full Ewald
 #define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == eelEWALD)
+//! Macro telling us whether we use FMM
+#define EEL_FMM(e) ((e) == eelFMM)
 //! Macro telling us whether we use full electrostatics of any sort
 #define EEL_FULL(e) (EEL_PME_EWALD(e) || (e) == eelPOISSON)
 //! Macro telling us whether we use user defined electrostatics
