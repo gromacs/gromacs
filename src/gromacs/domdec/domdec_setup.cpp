@@ -51,6 +51,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -425,6 +426,28 @@ static float comm_cost_est(real limit, real cutoff,
             /* Will we use 1D or 2D PME decomposition? */
             npme[XX] = (npme_tot % nc[XX] == 0) ? nc[XX] : npme_tot;
             npme[YY] = npme_tot/npme[XX];
+        }
+    }
+
+    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    {
+        /* Check the PME grid restrictions.
+         * Currently these can only be invalid here with too few grid lines
+         * along the x dimension per rank doing PME.
+         */
+        int npme_x = (npme_tot > 1 ? npme[XX] : nc[XX]);
+
+        /* Currently we don't have the OpenMP thread count available here.
+         * But with threads we have only tighter restrictions and it's
+         * probably better anyhow to avoid settings where we need to reduce
+         * grid lines over multiple ranks, as the thread check will do.
+         */
+        bool useThreads     = true;
+        bool errorsAreFatal = false;
+        if (!gmx_pme_check_restrictions(ir->pme_order, ir->nkx, ir->nky, ir->nkz,
+                                        npme_x, useThreads, errorsAreFatal))
+        {
+            return -1;
         }
     }
 
