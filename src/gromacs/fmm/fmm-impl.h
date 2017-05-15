@@ -32,63 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \libinternal \file
- * \brief
- * Declares gmx::IMDModule.
  *
- * See \ref page_mdmodules for an overview of this and associated interfaces.
+ * \brief
+ * Common interface that the implementations of the Fast Multipole Methods (FMM) can use.
+ *
+ * \author Carsten Kutzner <ckutzne@gwdg.de>
  *
  * \inlibraryapi
- * \ingroup module_mdtypes
+ * \ingroup module_fmm
  */
-#ifndef GMX_MDTYPES_IMDMODULE_H
-#define GMX_MDTYPES_IMDMODULE_H
+#ifndef GMX_FMM_FMM_IMPL_H
+#define GMX_FMM_FMM_IMPL_H
 
-struct ForceProviders;
-struct gmx_mtop_t;
-struct t_inputrec;
+#include <memory>
+
+#include "gromacs/fmm/fmm.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/utility/arrayref.h"
+
+struct t_commrec;
 
 namespace gmx
 {
 
-class IMDOutputProvider;
-class IMdpOptionProvider;
+struct ForceProviderInitOptions;
+struct fmmInputParameters;
+class FmmImpl;
 
-
-/* Temporary structure with data that some force providers need during init */
-struct ForceProviderInitOptions
-{
-    const int         ePBC;             /* Type of periodic boundary conditions    */
-    const int         coulombtype;      /* Type of electrostatics treatment        */
-    const gmx_mtop_t *mtop;             /* Global, complete system topology struct */
-
-    ForceProviderInitOptions(int ePBC, int coulombtype, const gmx_mtop_t *mtop) : ePBC(ePBC), coulombtype(coulombtype), mtop(mtop) { }
-};
-
-
-/*! \libinternal \brief
- * Extension module for \Gromacs simulations.
+/*! \brief
+ * Creates an instance of a specific FMM implementation (e.g., FmSolvr, GPU-FMM, or ExaFMM)
  *
- * The methods that return other interfaces can in the future return null for
- * those interfaces that the module does not need to implement, but currently
- * the callers are not prepared to generically handle various cases.
- *
- * \inlibraryapi
- * \ingroup module_mdtypes
+ * Any underlying FMM needs to implement the methods in fmm-impl.h. The FMM implementation
+ * class should be derived from IForceProvider as "class FmmImpl final : public IForceProvider"
  */
-class IMDModule
+std::unique_ptr<FmmImpl> createFmmImpl(const fmmInputParameters *fmmParameters, const ForceProviderInitOptions *options);
+
+
+class FmmImpl : public IForceProvider
 {
     public:
-        virtual ~IMDModule() {}
+        FmmImpl(gmx_unused const fmmInputParameters       *fmmParameters,
+                gmx_unused const ForceProviderInitOptions *options) { };
 
-        //! Returns an interface for handling mdp input (and tpr I/O).
-        virtual IMdpOptionProvider *mdpOptionProvider() = 0;
-        //! Returns an interface for handling output files during simulation.
-        virtual IMDOutputProvider *outputProvider()     = 0;
-        //! Initializes force providers from this module.
-        virtual void initForceProviders(ForceProviders *forceProviders, ForceProviderInitOptions *options) = 0;
+        void calculateForces(gmx_unused const t_commrec *cr,
+                             gmx_unused const t_mdatoms *mdatoms,
+                             gmx_unused const matrix     box,
+                             gmx_unused double           t,
+                             gmx_unused const rvec      *x,
+                             gmx_unused ForceWithVirial *forceWithVirial,
+                             gmx_unused gmx_enerdata_t  *enerd) override { };
+        ~FmmImpl() { };
 };
 
-} // namespace gmx
+}      // namespace gmx
 
-#endif
+#endif // GMX_FMM_FMM_IMPL_H

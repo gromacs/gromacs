@@ -341,5 +341,13 @@ userreal4                = 0
 electric-field-x         = 0 0 0 0
 electric-field-y         = 0 0 0 0
 electric-field-z         = 3.7 7.5 0 0
+; Parameters for the FMM electrostatics (in case coulombtype = FMM is chosen)
+; For the fmsolvr FMM, only fmm-precision should be specified,
+; all other parameters will be automatically optimized for performance.
+; For fmm-precision &lt;= 0, the provided values for order, depth, and separation will be used.
+fmm-precision            = 0.001
+fmm-multipole-order      = -1
+fmm-tree-depth           = -1
+fmm-separation           = -1
 </String>
 </ReferenceData>

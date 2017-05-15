@@ -48,6 +48,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/classhelpers.h"
 
+struct gmx_enerdata_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
@@ -89,13 +90,15 @@ class IForceProvider
          * \param[in]    t                The actual time in the simulation (ps)
          * \param[in]    x                The coordinates
          * \param[inout] forceWithVirial  The forces and virial
+         * \param[inout] enerd            Energy terms and groups
          */
         virtual void calculateForces(const t_commrec          *cr,
                                      const t_mdatoms          *mdatoms,
                                      const matrix              box,
                                      double                    t,
                                      const rvec               *x,
-                                     gmx::ForceWithVirial     *forceWithVirial) = 0;
+                                     gmx::ForceWithVirial     *forceWithVirial,
+                                     gmx_enerdata_t           *enerd) = 0;
 
     protected:
         ~IForceProvider() {}
@@ -133,7 +136,8 @@ struct ForceProviders
                              const matrix              box,
                              double                    t,
                              const rvec               *x,
-                             gmx::ForceWithVirial     *forceWithVirial) const;
+                             gmx::ForceWithVirial     *forceWithVirial,
+                             gmx_enerdata_t           *enerd) const;
 
     private:
         class Impl;

@@ -105,7 +105,7 @@ class ElectricFieldTest : public ::testing::Test
             gmx::assignOptionsFromKeyValueTree(&moduleOptions, result.object(), nullptr);
 
             ForceProviders forceProviders;
-            module->initForceProviders(&forceProviders);
+            module->initForceProviders(&forceProviders, nullptr);
 
             t_mdatoms            md;
             PaddedRVecVector     f = { { 0, 0, 0 } };
@@ -115,7 +115,7 @@ class ElectricFieldTest : public ::testing::Test
             md.chargeA[0] = 1;
 
             t_commrec  *cr = init_commrec();
-            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr, &forceWithVirial);
+            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr, &forceWithVirial, nullptr);
             done_commrec(cr);
 
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);

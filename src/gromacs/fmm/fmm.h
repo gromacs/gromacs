@@ -32,63 +32,64 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Declares gmx::IMDModule.
+
+
+/*! \libinternal
+ * \defgroup module_fmm Fast Multipole Method (FMM)
+ * \ingroup group_mdrun
  *
- * See \ref page_mdmodules for an overview of this and associated interfaces.
+ * \brief
+ * Prepares \Gromacs to use a Fast Multipole Method (FMM) to evaluate Coulomb interactions.
+ *
+ * The code in fmm.h and fmm.cpp handles the .mdp input parameter parsing (like depth and
+ * multipole order). An underlying FMM can insert itself into the calculateForces() method
+ * in fmm-impl.h
+ */
+
+/*! \libinternal \file
+ *
+ * \brief
+ * This file provides basic infrastructure allowing \Gromacs to interface to a FMM.
+ *
+ * \author Carsten Kutzner <ckutzne@gwdg.de>
  *
  * \inlibraryapi
- * \ingroup module_mdtypes
+ * \ingroup module_fmm
  */
-#ifndef GMX_MDTYPES_IMDMODULE_H
-#define GMX_MDTYPES_IMDMODULE_H
+#ifndef GMX_FMM_FMM_H
+#define GMX_FMM_FMM_H
 
-struct ForceProviders;
-struct gmx_mtop_t;
-struct t_inputrec;
+//#define GMX_WITH_FMM  // This controls whether or not the FMM code is compiled in
+
+#include <memory>
+
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
 
-class IMDOutputProvider;
-class IMdpOptionProvider;
-
-
-/* Temporary structure with data that some force providers need during init */
-struct ForceProviderInitOptions
-{
-    const int         ePBC;             /* Type of periodic boundary conditions    */
-    const int         coulombtype;      /* Type of electrostatics treatment        */
-    const gmx_mtop_t *mtop;             /* Global, complete system topology struct */
-
-    ForceProviderInitOptions(int ePBC, int coulombtype, const gmx_mtop_t *mtop) : ePBC(ePBC), coulombtype(coulombtype), mtop(mtop) { }
-};
-
-
-/*! \libinternal \brief
- * Extension module for \Gromacs simulations.
- *
- * The methods that return other interfaces can in the future return null for
- * those interfaces that the module does not need to implement, but currently
- * the callers are not prepared to generically handle various cases.
- *
- * \inlibraryapi
- * \ingroup module_mdtypes
+/*! \internal
+ * \brief Input parameters needed for FMM methods, defined in the .mdp file
  */
-class IMDModule
+struct fmmInputParameters
 {
-    public:
-        virtual ~IMDModule() {}
+    int  depth;      /**< tree depth                                                  */
+    int  order;      /**< order of the multipole expansion                            */
+    int  separation; /**< separation criterion                                        */
+    real precision;  /**< Maximum accepted relative error in Coulomb potential energy */
 
-        //! Returns an interface for handling mdp input (and tpr I/O).
-        virtual IMdpOptionProvider *mdpOptionProvider() = 0;
-        //! Returns an interface for handling output files during simulation.
-        virtual IMDOutputProvider *outputProvider()     = 0;
-        //! Initializes force providers from this module.
-        virtual void initForceProviders(ForceProviders *forceProviders, ForceProviderInitOptions *options) = 0;
+    // default values of FMM input parameters:
+    fmmInputParameters() : depth(-1), order(-1), separation(-1), precision(0.001) { }
 };
 
-} // namespace gmx
+class IMDModule;
 
-#endif
+/*! \brief
+ * Creates a module allowing \Gromacs to link to a FMM implementation.
+ *
+ */
+std::unique_ptr<IMDModule> createFastMultipoleModule();
+
+}      // namespace gmx
+
+#endif // GMX_FMM_FMM_H

@@ -52,6 +52,7 @@
 #ifndef GMX_MDTYPES_FORCEOUTPUT_H
 #define GMX_MDTYPES_FORCEOUTPUT_H
 
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 

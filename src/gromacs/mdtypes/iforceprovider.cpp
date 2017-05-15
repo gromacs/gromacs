@@ -79,10 +79,11 @@ void ForceProviders::calculateForces(const t_commrec       *cr,
                                      const matrix           box,
                                      double                 t,
                                      const rvec            *x,
-                                     gmx::ForceWithVirial  *forceWithVirial) const
+                                     gmx::ForceWithVirial  *forceWithVirial,
+                                     gmx_enerdata_t        *enerd) const
 {
     for (auto provider : impl_->providers_)
     {
-        provider->calculateForces(cr, mdatoms, box, t, x, forceWithVirial);
+        provider->calculateForces(cr, mdatoms, box, t, x, forceWithVirial, enerd);
     }
 }
