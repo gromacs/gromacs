@@ -48,11 +48,15 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/optionsection.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -80,9 +84,8 @@ class ElectricFieldTest : public ::testing::Test
                   real sigma,
                   real expectedValue)
         {
-            gmx::test::FloatingPointTolerance tolerance(
-                    gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
-            gmx::MDModules                    module;
+            // Instantiate an electric field MD module
+            auto efield(gmx::createElectricFieldModule());
 
             // Prepare MDP inputs
             const char *dimXYZ[3] = { "x", "y", "z" };
@@ -97,21 +100,32 @@ class ElectricFieldTest : public ::testing::Test
             gmx::KeyValueTreeTransformer transform;
             transform.rules()->addRule()
                 .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-            module.initMdpTransform(transform.rules());
-            auto result = transform.transform(mdpValues.build(), nullptr);
-            module.assignOptionsToModules(result.object(), nullptr);
+            efield->mdpOptionProvider()->initMdpTransform(transform.rules());
+            auto         result = transform.transform(mdpValues.build(), nullptr);
 
+            gmx::Options moduleOptions;
+            auto         appliedForcesOptions = moduleOptions.addSection(gmx::OptionSection("applied-forces"));
+            efield->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+            gmx::assignOptionsFromKeyValueTree(&moduleOptions, result.object(), nullptr);
+
+            // Prepare MD data needed for the test
+            PaddedRVecVector f  = { { 0, 0, 0 } };
+            t_commrec       *cr = init_commrec();
             t_mdatoms        md;
-            PaddedRVecVector f = { { 0, 0, 0 } };
             md.homenr = 1;
             snew(md.chargeA, md.homenr);
             md.chargeA[0] = 1;
 
-            t_commrec  *cr = init_commrec();
-            module.initForceProviders()->calculateForces(cr, &md, nullptr, 0, nullptr,
-                                                         gmx::EmptyArrayRef(), f);
-            done_commrec(cr);
+            // Test the E-field force provider module
+            ForceProviders forceProvider;
+            efield->initForceProviders(&forceProvider, nullptr);
+            forceProvider.calculateForces(cr, &md, nullptr, 0, nullptr, gmx::EmptyArrayRef(), f, nullptr);
+            gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
+
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
+
+            // Clean up
+            done_commrec(cr);
             sfree(md.chargeA);
         }
 };
