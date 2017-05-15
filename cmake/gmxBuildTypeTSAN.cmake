@@ -74,6 +74,7 @@ foreach(_language C CXX)
 
     if (CMAKE_${_language}_COMPILER_ID MATCHES "GNU")
         set(CMAKE_${_language}_FLAGS_TSAN "${_flags} -pie -fPIE" CACHE STRING "${_human_readable_language} flags for thread sanitizer")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -ltsan")
     else()
         set(CMAKE_${_language}_FLAGS_TSAN ${_flags} CACHE STRING "${_human_readable_language} flags for thread sanitizer")
     endif()
