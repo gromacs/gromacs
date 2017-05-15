@@ -606,9 +606,9 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
                          int nnodes, int nthreads,
                          int ncalls, double c_sum, double tot)
 {
-    char   nnodes_str[6];
-    char   nthreads_str[6];
-    char   ncalls_str[11];
+    char   nnodes_str[STRLEN];
+    char   nthreads_str[STRLEN];
+    char   ncalls_str[STRLEN];
     double wallt;
     double percentage = (tot > 0.) ? (100. * c_sum / tot) : 0.;
 

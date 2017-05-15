@@ -8,7 +8,7 @@ clang-3.7 double mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
 # TODO Add double to this configuration if/when Carsten stablizes essentialdynamics tests
-gcc-5 npme=1 nranks=2 no-openmp fftpack simd=avx_128_fma release
+gcc-7 npme=1 nranks=2 no-openmp fftpack release
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
 # TODO enable this
@@ -23,7 +23,7 @@ gcc-5 npme=1 nranks=2 no-openmp fftpack simd=avx_128_fma release
 gcc-4.8 nranks=1 gpu cuda-7.5 simd=sse4.1
 
 # Test MPMD PME with library MPI
-clang-4 npme=1 nranks=2 mpi
+clang-4 simd=avx_128_fma npme=1 nranks=2 mpi
 
 # Test non-default use of mdrun -gpu_id
 # Test SSE2 SIMD
