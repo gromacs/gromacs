@@ -45,7 +45,10 @@
 #define GMX_MDTYPES_IFORCEPROVIDER_H
 
 #include "gromacs/math/paddedvector.h"
+#include "gromacs/utility/fatalerror.h"
 
+struct gmx_hw_opt_t;
+struct gmx_mtop_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
@@ -92,6 +95,32 @@ struct IForceProvider
                                      const t_mdatoms  *mdatoms,
                                      PaddedRVecVector *force,
                                      double            t) = 0;
+
+        /*! \brief
+         * Computation of FMM forces needs extra arguments like charge positions and box size.
+         *
+         * Needs to be overridden in fmm.cpp if FMM electrostatics is to be used.
+         */
+        virtual void calculateForces(gmx_unused const t_commrec *cr,
+                                     gmx_unused const matrix    &box,
+                                     gmx_unused const real      *q,
+                                     gmx_unused const rvec      *x,
+                                     gmx_unused rvec            *f_fmm,
+                                     gmx_unused double          *coulombEnergy)
+        {
+            gmx_fatal(FARGS, "FMM electrostatics requested, but GROMACS was compiled without FMM.\n"
+                      "Set -DCMAKE_CXX_FLAGS=-DGMX_WITH_FMM when building GROMACS.");
+        };
+
+        /*! \brief
+         * Initialization routine for the Fast Multipole Solver
+         *
+         * \param[in] mtop   The topology information.
+         * \param[in] hw_opt Threading and GPU options that were set automatically or by the user.
+         * \param[in] useGpu Use GPU acceleration?
+         */
+        virtual void initialize(gmx_unused const gmx_mtop_t *mtop, const gmx_unused gmx_hw_opt_t *hw_opt, gmx_unused gmx_bool useGpu) { };
+
 
     protected:
         ~IForceProvider() {}
