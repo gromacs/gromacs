@@ -449,7 +449,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
 static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, real bw, char **outfiles, int maplevels )
 {
 
-    char   numbuf[8];
+    char   numbuf[STRLEN];
     int    n, i, j;
     real **profile1, **profile2;
     real   max1, max2, min1, min2, *xticks, *yticks;

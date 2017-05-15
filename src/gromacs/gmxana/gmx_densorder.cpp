@@ -532,7 +532,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
 
 static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, int xbins, int ybins, int zbins, real bw, real bwz, char **outfiles, int maplevels )
 {
-    char   numbuf[13];
+    char   numbuf[STRLEN];
     int    n, i, j;
     real **profile1, **profile2;
     real   max1, max2, min1, min2, *xticks, *yticks;
