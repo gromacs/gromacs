@@ -316,7 +316,6 @@ void OPtimization::calcDeviation()
                     
                 }               
                 mymol.computeForces(nullptr, cr_);
-                mymol.CalcPolarizability(1, cr_, nullptr);
             }
                         
             qtot = 0;            
@@ -972,6 +971,7 @@ void OPtimization::print_results(FILE                   *fp,
             
             if(bPolar)
             {
+                mol.CalcPolarizability(1, cr_, nullptr);
                 for (mm = 0; mm < DIM; mm++)
                 {
                     gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
