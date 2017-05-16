@@ -5799,6 +5799,14 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
             }
         }
     }
+    else
+    {
+        /* This just appeases gcc-7 -Wmaybe-uninitialized. It would be
+         * better to refactor so that TNG_PARTICLE_DEPENDENT triggers
+         * two distinct code paths. */
+        num_first_particle = -1;
+        n_particles = -1;
+    }
 
     if(data->dependency & TNG_PARTICLE_DEPENDENT)
     {
