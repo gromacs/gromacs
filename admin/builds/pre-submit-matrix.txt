@@ -26,6 +26,10 @@ gcc-5 gpu cuda-8.0 openmp cmake-3.6.1 release
 # Test newest gcc at time of release
 gcc-7 no-openmp tsan fftpack
 
+# Test with Archer threading checker (with OpenMP+TSAN+OMPT)
+# Test clang with OpenMP support
+clang-3.9 openmp tsan
+
 # Test on MacOS
 # Test X11 build
 gcc-6 double x11
@@ -66,9 +70,7 @@ gcc-4.8 openmp opencl cuda-7.5 mpi release simd=avx2_256
 gcc-5 openmp opencl amdappsdk-3.0
 
 # TODO
-# Add OpenMP support to a clang build, e.g. on a CUDA slave
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc support
 # Test newest supported LTS Ubuntu
-# Explore adding openmp to ThreadSanitizer configuration, perhaps can avoid Redmine #1850 if done differently
 # Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161

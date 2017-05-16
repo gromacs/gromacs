@@ -29,6 +29,9 @@ clang-4 simd=avx_128_fma npme=1 nranks=2 mpi
 # Test SSE2 SIMD
 gcc-4.8 gpu npme=1 nranks=2 gpu_id=2 cuda-7.5 simd=sse2 release
 
+# Test with Archer threading checker (with OpenMP+TSAN+OMPT) with MPI
+clang-3.9 openmp mpi tsan
+
 # TODO
 # Re-enable Phi build
 # Test without TNG support
