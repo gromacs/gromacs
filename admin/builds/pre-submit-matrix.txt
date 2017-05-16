@@ -23,10 +23,8 @@ gcc-5 gpu cuda-8.0 openmp cmake-3.6.1 release
 
 # Test with ThreadSanitizer (without OpenMP, because of Redmine #1850)
 # Test fftpack fallback
-gcc-4.9 tsan fftpack
-
 # Test newest gcc at time of release
-gcc-7
+gcc-7 tsan fftpack
 
 # Test on MacOS
 # Test X11 build
@@ -72,6 +70,5 @@ gcc-5 openmp opencl amdappsdk-3.0
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc support
 # Test newest supported LTS Ubuntu
-# Migrate ThreadSanitizer test off GPU build slave
 # Explore adding openmp to ThreadSanitizer configuration, perhaps can avoid Redmine #1850 if done differently
 # Update gpu testing specifiers per https://redmine.gromacs.org/issues/2161
