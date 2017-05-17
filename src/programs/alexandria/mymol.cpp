@@ -670,6 +670,7 @@ static void do_init_mtop(const Poldata            &pd,
     snew(mtop->molblock, mtop->nmolblock);
     mtop->molblock[0].nmol        = 1;
     mtop->molblock[0].type        = 0;
+    mtop->groups.grps[egcENER].nr = 1;
     mtop->molblock[0].natoms_mol  = atoms->nr;
     mtop->natoms                  = atoms->nr;
     init_t_atoms(&(mtop->moltype[0].atoms), atoms->nr, false);
@@ -712,14 +713,14 @@ static void do_init_mtop(const Poldata            &pd,
         }
     }
 
-    mtop->groups.grps[egcENER].nr   = ntype;
     mtop->ffparams.atnr             = ntype;
     mtop->ffparams.ntypes           = ntype*ntype;   
     mtop->ffparams.reppow           = 12;  
     
     if (nullptr != tabfn)
     {
-        ir->opts.ngener = ntype;
+        mtop->groups.grps[egcENER].nr   = ntype;
+        ir->opts.ngener                 = ntype;
         srenew(ir->opts.egp_flags, ntype*ntype);
         for (int k = 0; k < ntype; k++)
         {
@@ -1034,7 +1035,7 @@ void MyMol::MakeAngles(bool bPairs,
     }
     /* Make Harmonic Angles and Proper Dihedrals */
     snew(excls_, topology_->atoms.nr);
-    init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
+    init_nnb(&nnb, topology_->atoms.nr, nexcl_); //nexcl_+2
     gen_nnb(&nnb, plist);
 
     print_nnb(&nnb, "NNB");
@@ -1048,7 +1049,7 @@ void MyMol::MakeAngles(bool bPairs,
     t_blocka *EXCL;
     snew(EXCL, 1);
     generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
-    for (int i = 0; (i < EXCL->nr); i++)
+    for (int i = 0; i < EXCL->nr; i++)
     {
         int ne = EXCL->index[i+1]-EXCL->index[i];
         srenew(excls_[i].e, ne);
@@ -2769,11 +2770,11 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                           fs->unit().c_str());
             }
             int ftb = fs->fType();
-            for (int i = 0; (i < ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
+            for (int i = 0; i < ltop_->idef.il[ftb].nr; i += interaction_function[ftb].nratoms+1)
             {
-                int         tp  = ltop_->idef.il[ftb].iatoms[i];
-                int         ai  = ltop_->idef.il[ftb].iatoms[i+1];
-                int         aj  = ltop_->idef.il[ftb].iatoms[i+2];
+                int  tp  = ltop_->idef.il[ftb].iatoms[i];
+                int  ai  = ltop_->idef.il[ftb].iatoms[i+1];
+                int  aj  = ltop_->idef.il[ftb].iatoms[i+2];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
                 {
@@ -2825,12 +2826,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             auto fs  = pd.findForces(iType);
             int  fta = fs->fType();
-            for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
+            for (int i = 0; i < ltop_->idef.il[fta].nr; i += interaction_function[fta].nratoms+1)
             {
-                int         tp  = ltop_->idef.il[fta].iatoms[i];
-                int         ai  = ltop_->idef.il[fta].iatoms[i+1];
-                int         aj  = ltop_->idef.il[fta].iatoms[i+2];
-                int         ak  = ltop_->idef.il[fta].iatoms[i+3];
+                int  tp  = ltop_->idef.il[fta].iatoms[i];
+                int  ai  = ltop_->idef.il[fta].iatoms[i+1];
+                int  aj  = ltop_->idef.il[fta].iatoms[i+2];
+                int  ak  = ltop_->idef.il[fta].iatoms[i+3];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
@@ -2892,12 +2893,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             auto fs  = pd.findForces(iType);
             int  fta = fs->fType();
-            for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
+            for (int i = 0; i < ltop_->idef.il[fta].nr; i += interaction_function[fta].nratoms+1)
             {
-                int         tp  = ltop_->idef.il[fta].iatoms[i];
-                int         ai  = ltop_->idef.il[fta].iatoms[i+1];
-                int         aj  = ltop_->idef.il[fta].iatoms[i+2];
-                int         ak  = ltop_->idef.il[fta].iatoms[i+3];
+                int  tp  = ltop_->idef.il[fta].iatoms[i];
+                int  ai  = ltop_->idef.il[fta].iatoms[i+1];
+                int  aj  = ltop_->idef.il[fta].iatoms[i+2];
+                int  ak  = ltop_->idef.il[fta].iatoms[i+3];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
@@ -2960,13 +2961,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             auto fs  = pd.findForces(iType);
             int  ftd = fs->fType();
-            for (int i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
+            for (int i = 0; i < ltop_->idef.il[ftd].nr; i += interaction_function[ftd].nratoms+1)
             {
-                int         tp  = ltop_->idef.il[ftd].iatoms[i];
-                int         ai  = ltop_->idef.il[ftd].iatoms[i+1];
-                int         aj  = ltop_->idef.il[ftd].iatoms[i+2];
-                int         ak  = ltop_->idef.il[ftd].iatoms[i+3];
-                int         al  = ltop_->idef.il[ftd].iatoms[i+4];
+                int  tp  = ltop_->idef.il[ftd].iatoms[i];
+                int  ai  = ltop_->idef.il[ftd].iatoms[i+1];
+                int  aj  = ltop_->idef.il[ftd].iatoms[i+2];
+                int  ak  = ltop_->idef.il[ftd].iatoms[i+3];
+                int  al  = ltop_->idef.il[ftd].iatoms[i+4];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
@@ -3020,13 +3021,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             auto fs  = pd.findForces(iType);
             int  ftd = fs->fType();
-            for (int i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
+            for (int i = 0; i < ltop_->idef.il[ftd].nr; i += interaction_function[ftd].nratoms+1)
             {
-                int         tp  = ltop_->idef.il[ftd].iatoms[i];
-                int         ai  = ltop_->idef.il[ftd].iatoms[i+1];
-                int         aj  = ltop_->idef.il[ftd].iatoms[i+2];
-                int         ak  = ltop_->idef.il[ftd].iatoms[i+3];
-                int         al  = ltop_->idef.il[ftd].iatoms[i+4];
+                int  tp  = ltop_->idef.il[ftd].iatoms[i];
+                int  ai  = ltop_->idef.il[ftd].iatoms[i+1];
+                int  aj  = ltop_->idef.il[ftd].iatoms[i+2];
+                int  ak  = ltop_->idef.il[ftd].iatoms[i+3];
+                int  al  = ltop_->idef.il[ftd].iatoms[i+4];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
@@ -3112,6 +3113,24 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         break;
         case eitLJ14:
         case eitPOLARIZATION:
+        {
+            auto pw = SearchPlist(plist_, iType);
+            if (plist_.end() != pw)
+            {
+                auto ft = pw->getFtype();
+                for (int i = 0; i < ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
+                {
+                    int tp  = ltop_->idef.il[ft].iatoms[i];
+                    int ai  = ltop_->idef.il[ft].iatoms[i+1];
+                    if (pd.getAtypePol(*topology_->atoms.atomtype[ai], &value, &sigma))
+                    {
+                        mtop_->ffparams.iparams[tp].polarize.alpha = value;
+                        ltop_->idef.iparams[tp].polarize.alpha     = value;
+                    }
+                }
+            } 
+        }
+        break;
         case eitVSITE2:
         case eitCONSTR:
         case eitNR:

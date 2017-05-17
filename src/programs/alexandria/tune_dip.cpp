@@ -130,12 +130,14 @@ class OPtimization : public MolDip
         OPtimization(bool  bfitESP, 
                      bool  bfitDipole, 
                      bool  bfitQuadrupole,
+                     bool  bFitAlpha,
                      real  watoms, 
                      char *lot) 
            :
                bESP_(bfitESP),
                bDipole_(bfitDipole),
                bQuadrupole_(bfitQuadrupole),
+               bFitAlpha_(bFitAlpha),
                watoms_(watoms),
                lot_(lot)
           {};
@@ -144,7 +146,8 @@ class OPtimization : public MolDip
        
         param_type    param_, lower_, upper_, best_;
         param_type    orig_, psigma_, pmean_;
-        gmx_bool      bESP_, bDipole_, bQuadrupole_; 
+        bool          bESP_, bDipole_, bQuadrupole_; 
+        bool          bFitAlpha_;
         real          watoms_;
         char         *lot_;
     
@@ -305,10 +308,13 @@ void OPtimization::calcDeviation()
                                            &(mymol.topology_->atoms),
                                            &chieq,
                                            mymol.state_->x);
-            mymol.chieq_ = chieq;
-            
+            mymol.chieq_ = chieq;           
             if (nullptr != mymol.shellfc_)
-            {                
+            {      
+                if (bFitAlpha_)
+                {
+                    mymol.UpdateIdef(pd_, eitPOLARIZATION);  
+                }             
                 for (j = 0; j < mymol.topology_->atoms.nr; j++)
                 {
                     mymol.mtop_->moltype[0].atoms.atom[j].q = 
@@ -316,9 +322,10 @@ void OPtimization::calcDeviation()
                     
                 }               
                 mymol.computeForces(nullptr, cr_);
-            }
-                        
-            qtot = 0;            
+            } 
+                                   
+            qtot = 0; 
+                       
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
             {
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
@@ -448,6 +455,23 @@ void OPtimization::polData2TuneDip()
                                   ai->name().c_str(), iChargeDistributionModel_);
                     }
                 }
+            }
+            if(bFitAlpha_)
+            {
+                double alpha = 0;
+                double sigma = 0;
+                if (pd_.getAtypePol(ai->name(), &alpha, &sigma))
+                {
+                    if (0 != alpha)
+                    {
+                        param_.push_back(std::move(alpha));
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Polarizability is zero for atom %s\n",
+                                  ai->name().c_str());
+                    }
+                }
             } 
         }      
     }
@@ -499,9 +523,22 @@ void OPtimization::tuneDip2PolData()
                     auto zeta = param_[n++];
                     sprintf(buf, "  %10g", zeta);
                     strcat(zstr, buf);
-                }
-                
+                }                
                 ei->setRowZetaQ(rowstr, zstr, qstr);
+            }
+            if (bFitAlpha_)
+            {
+                std::string ptype;
+                if (pd_.atypeToPtype(ai->name(), ptype))
+                {
+                    pd_.setPtypePolarizability(ptype, param_[n], psigma_[n]);
+                    n++;
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "No Ptype for atom type %s\n",
+                              ai->name().c_str());
+                }
             }
         }               
     }
@@ -1259,9 +1296,8 @@ int alex_tune_dip(int argc, char *argv[])
     static gmx_bool             bDipole       = false;
     static gmx_bool             bESP          = false;
     static gmx_bool             bFitZeta      = false; 
-    static gmx_bool             bZero         = true;
-    static gmx_bool             bWeighted     = true;   
-    static gmx_bool             bCharged      = true;
+    static gmx_bool             bFitAlpha     = false;
+    static gmx_bool             bZero         = true;  
     static gmx_bool             bGaussianBug  = true;     
     static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", "AXpp", "AXpg", "AXps", nullptr};
     static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
@@ -1284,9 +1320,7 @@ int alex_tune_dip(int argc, char *argv[])
         { "-qm",     FALSE, etBOOL, {&bQM},
           "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
         { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-charged", FALSE, etBOOL, {&bCharged},
-          "Use charged molecules in the parameter tuning as well" },          
+          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },          
         { "-fullTensor", FALSE, etBOOL, {&bfullTensor},
           "consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },        
         { "-qdist",   FALSE, etENUM, {cqdist},
@@ -1333,6 +1367,8 @@ int alex_tune_dip(int argc, char *argv[])
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended (the default)." },
         { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
           "Controls whether or not the Gaussian/Slater widths are optimized." },
+        { "-fitalpha", FALSE, etBOOL, {&bFitAlpha},
+          "Controls whether or not the atomic polarizability is optimized." },
         { "-esp", FALSE, etBOOL, {&bESP},
           "Calibrate EEM paramters to reproduce QM electrostatic potential." },
         { "-dipole", FALSE, etBOOL, {&bDipole},
@@ -1343,8 +1379,6 @@ int alex_tune_dip(int argc, char *argv[])
           "Use molecules with zero dipole in the fit as well" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
           "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
-        { "-weight", FALSE, etBOOL, {&bWeighted},
-          "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
         { "-hfac",  FALSE, etREAL, {&hfac},
           "Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
         { "-opthfac",  FALSE, etBOOL, {&bOptHfac},
@@ -1406,7 +1440,7 @@ int alex_tune_dip(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
     
-    alexandria::OPtimization       opt(bESP, bDipole, bQuadrupole, watoms, lot);
+    alexandria::OPtimization       opt(bESP, bDipole, bQuadrupole, bFitAlpha, watoms, lot);
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
