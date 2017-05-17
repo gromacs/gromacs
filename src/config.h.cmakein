@@ -207,9 +207,6 @@
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
 
-/* Define native atomic operations are found */
-#cmakedefine TMPI_ATOMICS
-
 /* Define for busy wait option  */
 /* See gmxpre-config.h.cmakein for explanation for the #ifdef */
 #ifndef TMPI_WAIT_FOR_NO_ONE

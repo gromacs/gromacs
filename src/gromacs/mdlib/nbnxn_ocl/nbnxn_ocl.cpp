@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <stdlib.h>
 
@@ -52,21 +50,18 @@
 #include <limits>
 #endif
 
+#include "thread_mpi/atomic.h"
+
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
-#include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/timing/gpu_timing.h"
-
-#ifdef TMPI_ATOMICS
-#include "thread_mpi/atomic.h"
-#endif
-
 #include "gromacs/mdlib/nbnxn_gpu.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
