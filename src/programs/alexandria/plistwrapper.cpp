@@ -3,16 +3,18 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "gmxpre.h"
+
+#include "plistwrapper.h"
+
 #include <stdio.h>
 #include <string.h>
+
 #include <algorithm>
 #include <vector>
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "gmxpre.h"
-#include "plistwrapper.h"
 
 namespace alexandria
 {
