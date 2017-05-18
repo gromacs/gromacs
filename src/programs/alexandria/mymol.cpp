@@ -38,10 +38,7 @@
  * \author  David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "mymol.h"
-
 #include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 
@@ -76,8 +73,18 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
+#include "mymol.h"
+      
 namespace alexandria
 {
+
+static const double A2CM = E_CHARGE*1.0e-10;        /* e Angstrom to Coulomb meter */
+
+static const double CM2D = SPEED_OF_LIGHT*1.0e+24;  /* Coulomb meter to Debye */
+
+static inline int delta(int a, int b) { return ( a == b ) ? 1 : 0;}
+
+static inline double e2d(double a) {return a*ENM2DEBYE;}
 
 const char *immsg(immStatus imm)
 {
@@ -93,9 +100,10 @@ const char *immsg(immStatus imm)
     };
 
     return msg[imm];
-}
+} 
 
-static bool is_planar(rvec xi, rvec xj, rvec xk, rvec xl, t_pbc *pbc,
+static bool is_planar(rvec xi, rvec xj, rvec xk, 
+                      rvec xl, t_pbc *pbc,
                       real phi_toler)
 {
     int  t1, t2, t3;
@@ -107,7 +115,8 @@ static bool is_planar(rvec xi, rvec xj, rvec xk, rvec xl, t_pbc *pbc,
     return (fabs(phi) < phi_toler);
 }
 
-static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
+static bool is_linear(rvec xi, rvec xj, 
+                      rvec xk, t_pbc *pbc,
                       real th_toler)
 {
     int  t1, t2;
@@ -840,8 +849,6 @@ void mtop_update_cgs(gmx_mtop_t *mtop)
     }
 }
 
-
-
 MyMol::MyMol() : gvt_(egvtALL)
 {
     bHaveShells_       = false;
@@ -1347,22 +1354,17 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (immOK == imm)
     {
-        auto total_atn = 0;
+        auto masstot = 0;
         for (int i = 0; i < topology_->atoms.nr; i++)
         {
-            auto atn    = topology_->atoms.atom[i].atomnumber;
-            coq_[XX]   += state_->x[i][XX]*atn;
-            coq_[YY]   += state_->x[i][YY]*atn;
-            coq_[ZZ]   += state_->x[i][ZZ]*atn;
-            total_atn  += atn;
-        }
-        if (total_atn > 0) 
-        {
-            for(int n = 0; n < DIM; n++) 
+            auto mass = topology_->atoms.atom[i].m;
+            masstot  += mass;
+            for (int m = 0; m < DIM; m++)
             {
-                coq_[n] /= total_atn;
+                com_[m] += state_->x[i][m]*mass;
             }
         }
+        svmul((1.0/masstot), com_, com_);
     }   
     if (bAddShells && imm == immOK)
     {
@@ -1929,7 +1931,7 @@ void MyMol::CalcDipole(rvec mu)
     clear_rvec(mu);
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        auto q = ENM2DEBYE*topology_->atoms.atom[i].q;   
+        auto q = e2d(topology_->atoms.atom[i].q);   
         for (int m = 0; m < DIM; m++)
         {
             mu[m] += state_->x[i][m]*q;
@@ -1940,21 +1942,22 @@ void MyMol::CalcDipole(rvec mu)
 
 void MyMol::CalcQuadrupole()
 {
-    real  r2, dfac, q;
+    real  r2, q;   
+    rvec  r; /* distance of atoms to center of mass */
 
     clear_mat(Q_calc_);   
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        q    = ENM2DEBYE*topology_->atoms.atom[i].q;
-        dfac = NM2A*0.5*q;
-        r2   = iprod(state_->x[i], state_->x[i]);
+        rvec_sub(state_->x[i], com_, r);
+        r2   = iprod(r, r);
+        q    = topology_->atoms.atom[i].q;
         for (int m = 0; m < DIM; m++)
         {
-            Q_calc_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
+            for (int n = 0; n < DIM; n++) 
+            {
+                Q_calc_[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D;
+            }
         }
-        Q_calc_[XX][YY] += dfac*3*(state_->x[i][XX]-coq_[YY])*(state_->x[i][YY]-coq_[YY]);
-        Q_calc_[XX][ZZ] += dfac*3*(state_->x[i][XX]-coq_[XX])*(state_->x[i][ZZ]-coq_[ZZ]);
-        Q_calc_[YY][ZZ] += dfac*3*(state_->x[i][YY]-coq_[YY])*(state_->x[i][ZZ]-coq_[ZZ]);
     }
 }
 
@@ -2654,8 +2657,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                               myref, mylot, q, quadrupole))
     {
         int   i, j;
-        real  r2, dfac, Q;
-        
+        real  r2;
+        rvec  r;  /* distance of atoms to center of mass */
         
         clear_rvec(mu_esp_);
         clear_mat(Q_esp_); 
@@ -2664,17 +2667,16 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             if (topology_->atoms.atom[i].ptype == eptAtom)
             {
                 qESP_[j] = q[j];
-                Q        = ENM2DEBYE*qESP_[j];
-                dfac     = NM2A*0.5*Q;
-                r2       = iprod(state_->x[i], state_->x[i]);
+                rvec_sub(state_->x[i], com_, r);
+                r2       = iprod(r, r);
                 for (int m = 0; m < DIM; m++)
                 {
-                    mu_esp_[m]   += state_->x[i][m]*Q;
-                    Q_esp_[m][m] += dfac*(3*gmx::square(state_->x[i][m]) - r2);
+                    mu_esp_[m] += (state_->x[i][m]*e2d(qESP_[j]));
+                    for (int n = 0; n < DIM; n++)
+                    {
+                        Q_esp_[m][n] += 0.5*qESP_[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D;
+                    }
                 }
-                Q_esp_[XX][YY] += dfac*3*(state_->x[i][XX] - coq_[XX])*(state_->x[i][YY] - coq_[YY]);
-                Q_esp_[XX][ZZ] += dfac*3*(state_->x[i][XX] - coq_[XX])*(state_->x[i][ZZ] - coq_[ZZ]);
-                Q_esp_[YY][ZZ] += dfac*3*(state_->x[i][YY] - coq_[YY])*(state_->x[i][ZZ] - coq_[ZZ]);
                 j++;
             }
         }       
