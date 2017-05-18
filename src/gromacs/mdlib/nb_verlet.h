@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,6 +33,55 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+// FIXME: remove the "__" prefix in front of the group def when we move the
+//        nonbonded code into separate dir.
+
+/*! \libinternal \defgroup __module_nb_verlet Short-range non-bonded interaction module
+ * \ingroup group_mdrun
+ *
+ * \brief Computes forces and energies for short-range pair-interactions
+ * based on the Verlet algorithm. The algorithm uses pair-lists generated
+ * at fixed intervals as well as various flavors of pair interaction kernels
+ * implemented for a wide range of CPU and GPU architectures.
+ *
+ * The module includes support for flavors of Coulomb and Lennard-Jones interaction
+ * treatment implemented for a large range of SIMD instruction sets for CPU
+ * architectures as well as in CUDA and OpenCL for GPU architectures.
+ * Additionally there is a reference CPU non-SIMD and a reference CPU
+ * for GPU pair-list setup interaction kernel.
+ *
+ * The implementation of the kernels is based on the cluster non-bonded algorithm
+ * which in the code is referred to as the NxN algorithms ("nbnxn_" prefix);
+ * for details of the algorithm see DOI:10.1016/j.cpc.2013.06.003.
+ *
+ * TODO: add a summary list and brief descriptions of the different submodules:
+ * search, CPU kernels, GPU glue code + kernels.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Szilárd Páll <pall.szilard@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Anca Hamuraru <anca@streamcomputing.eu>
+ * \author Teemu Virolainen <teemu@streamcomputing.eu>
+ * \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
+ *
+ * TODO: add more authors!
+ */
+
+/*! \libinternal \file
+ *
+ * \brief This file contains the public interface of the non-bonded Verlet module
+ * that implements the NxN cluster non-bonded algorithm to efficiently compute
+ * pair forces.
+ *
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Szilárd Páll <pall.szilard@gmail.com>
+ *
+ * \inlibraryapi
+ * \ingroup __module_nb_verlet
+ */
+
+
 #ifndef NB_VERLET_H
 #define NB_VERLET_H
 
@@ -44,7 +93,7 @@ extern "C" {
 #endif
 
 
-/** Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
+/*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
 typedef enum
 {
     nbnxnkNotSet = 0,
@@ -56,55 +105,75 @@ typedef enum
     nbnxnkNR
 } nbnxn_kernel_type;
 
-/** Return a string indentifying the kernel type */
+/*! \brief Return a string identifying the kernel type.
+ *
+ * \param [in] kernel_type   nonbonded kernel types, takes values from the nbnxn_kernel_type enum
+ * \returns                  a string identifying the kernel corresponding to the type passed as argument
+ */
 const char *lookup_nbnxn_kernel_name(int kernel_type);
 
+/*! \brief Ewald exclusion types */
 enum {
     ewaldexclTable, ewaldexclAnalytical
 };
 
-/* Atom locality indicator: local, non-local, all, used for calls to:
-   gridding, pair-search, force calculation, x/f buffer operations */
+/*! \brief Atom locality indicator: local, non-local, all.
+ *
+ * Used for calls to:
+ * gridding, pair-search, force calculation, x/f buffer operations
+ * */
 enum {
     eatLocal = 0, eatNonlocal = 1, eatAll
 };
 
+/*! \brief Tests for local atom range */
 #define LOCAL_A(x)               ((x) == eatLocal)
+/*! \brief Tests for non-local atom range */
 #define NONLOCAL_A(x)            ((x) == eatNonlocal)
+/*! \brief Tests for either local or non-local atom range */
 #define LOCAL_OR_NONLOCAL_A(x)   (LOCAL_A(x) || NONLOCAL_A(x))
 
-/* Interaction locality indicator (used in pair-list search/calculations):
-    - local interactions require local atom data and affect local output only;
-    - non-local interactions require both local and non-local atom data and
-      affect both local- and non-local output. */
+/*! \brief Interaction locality indicator
+ *
+ * Used in pair-list search/calculations in the following manner:
+ *  - local interactions require local atom data and affect local output only;
+ *  - non-local interactions require both local and non-local atom data and
+ *    affect both local- and non-local output.
+ */
 enum {
     eintLocal = 0, eintNonlocal = 1
 };
 
+/*! \brief Tests for local interaction indicator */
 #define LOCAL_I(x)               ((x) == eintLocal)
+/*! \brief Tests for non-local interaction indicator */
 #define NONLOCAL_I(x)            ((x) == eintNonlocal)
 
+/*! \brief Flag to tell the nonbonded kernels whether to clear the force output buffers */
 enum {
     enbvClearFNo, enbvClearFYes
 };
 
+/*! \libinternal
+ *  \brief Non-bonded interaction group data structure. */
 typedef struct nonbonded_verlet_group_t {
-    nbnxn_pairlist_set_t  nbl_lists;   /* pair list(s)                       */
-    nbnxn_atomdata_t     *nbat;        /* atom data                          */
-    int                   kernel_type; /* non-bonded kernel - see enum above */
-    int                   ewald_excl;  /* Ewald exclusion - see enum above   */
+    nbnxn_pairlist_set_t  nbl_lists;   /**< pair list(s)                       */
+    nbnxn_atomdata_t     *nbat;        /**< atom data                          */
+    int                   kernel_type; /**< non-bonded kernel - see enum above */
+    int                   ewald_excl;  /**< Ewald exclusion - see enum above   */
 } nonbonded_verlet_group_t;
 
-/* non-bonded data structure with Verlet-type cut-off */
+/*! \libinternal
+ *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 typedef struct nonbonded_verlet_t {
-    nbnxn_search_t           nbs;             /* n vs n atom pair searching data       */
-    int                      ngrp;            /* number of interaction groups          */
-    nonbonded_verlet_group_t grp[2];          /* local and non-local interaction group */
+    nbnxn_search_t           nbs;             /**< n vs n atom pair searching data       */
+    int                      ngrp;            /**< number of interaction groups          */
+    nonbonded_verlet_group_t grp[2];          /**< local and non-local interaction group */
 
-    gmx_bool                 bUseGPU;         /* TRUE when GPU acceleration is used */
-    gmx_nbnxn_gpu_t         *gpu_nbv;         /* pointer to GPU nb verlet data     */
-    int                      min_ci_balanced; /* pair list balancing parameter
-                                                 used for the 8x8x8 GPU kernels    */
+    gmx_bool                 bUseGPU;         /**< TRUE when GPU acceleration is used */
+    gmx_nbnxn_gpu_t         *gpu_nbv;         /**< pointer to GPU nb verlet data     */
+    int                      min_ci_balanced; /**< pair list balancing parameter
+                                                   used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
 
 /*! \brief Getter for bUseGPU */
