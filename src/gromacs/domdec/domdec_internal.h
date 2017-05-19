@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,23 +144,30 @@ enum {
     ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR
 };
 
-/*! \brief Enum of dynamic load balancing states */
-enum {
-    edlbsOffForever,           /**< DLB is off and will never be turned on */
-    edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
-    edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
-    edlbsOnCanTurnOff,         /**< DLB is on and can turn off when slow */
-    edlbsOnForever,            /**< DLB is on and will stay on forever, because the user chose this */
-    edlbsNR                    /**< The number of DLB states */
-};
-
-/* Allowed DLB state transitions in automatic mode:
+/*! \brief Enum of dynamic load balancing states
+ *
+ * Allowed DLB states and transitions
+ * - intialization at startup:
+ *                             -> edlbsOffUser ("-dlb no")
+ *                             -> edlbsOnUser  ("-dlb yes")
+ *                             -> edlbsOnCanTurnOff ("-dlb auto")
+ *
+ * - in automatic mode (i.e. initial state edlbsOffCanTurnOn):
  *   edlbsOffCanTurnOn         -> edlbsOnCanTurnOff
  *   edlbsOffCanTurnOn         -> edlbsOffForever
  *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
  *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
  *   edlbsOnCanTurnOff         -> edlbsOffCanTurnOn
  */
+enum {
+    edlbsOffUser,              /**< DLB is permanently off per user request */
+    edlbsOffForever,           /**< DLB is off due to a runtime condition (not supported or causes performance loss) and will never be turned on */
+    edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
+    edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
+    edlbsOnCanTurnOff,         /**< DLB is on and can turn off when slow */
+    edlbsOnUser,               /**< DLB is permanently on per user request */
+    edlbsNR                    /**< The number of DLB states */
+};
 
 /*! \brief The PME domain decomposition for one dimension */
 typedef struct
