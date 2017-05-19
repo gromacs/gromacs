@@ -61,7 +61,7 @@ main(int argc, char *argv[])
         if (MASTER(cr))
         {
             printf("\n                   Welcome to Alexandria\n\n");
-            printf("Copyright (c) 2014-2016 Mohammad Mehdi Ghahremanpour, Paul J. van Maaren and David van der Spoel\n");
+            printf("Copyright (c) 2014-2016 David van der Spoel and Paul J. van Maaren\n");
             printf("See http://folding.bmc.uu.se/ for details.\n\n");
             printf("Alexandria is free software under the Gnu Public License v 2.\n");
             printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");

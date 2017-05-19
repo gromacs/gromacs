@@ -34,6 +34,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef POLDATA_H
@@ -44,7 +45,7 @@
 
 #include "gromacs/utility/stringutil.h"
 
-#include "poldata-low.h"
+#include "poldata_low.h"
 #include "stringutil.h"
 
 /* This source code file is part of the Alexandria project */

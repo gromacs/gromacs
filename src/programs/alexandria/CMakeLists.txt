@@ -75,8 +75,9 @@ set(ALEXANDRIA_SOURCES
 	molselect.cpp
 	poldata.cpp
 	poldata_xml.cpp
-	poldata-low.cpp
+	poldata_low.cpp
 	xml_util.c
+        mymol_low.cpp
 	mymol.cpp
         alex_modules.cpp
         analyze.cpp
