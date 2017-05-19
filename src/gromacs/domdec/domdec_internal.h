@@ -146,15 +146,16 @@ enum {
 
 /*! \brief Enum of dynamic load balancing states */
 enum {
-    edlbsOffForever,           /**< DLB is off and will never be turned on */
+    edlbsOffUser,              /**< DLB is permanently off per user request */
+    edlbsOffForever,           /**< DLB is off due to a runtime condition (not supported or causes performance loss) and will never be turned on */
     edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
     edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
     edlbsOnCanTurnOff,         /**< DLB is on and can turn off when slow */
-    edlbsOnForever,            /**< DLB is on and will stay on forever, because the user chose this */
+    edlbsOnUser,               /**< DLB is permanently on per user request */
     edlbsNR                    /**< The number of DLB states */
 };
 
-/* Allowed DLB state transitions in automatic mode:
+/* Allowed DLB state transitions in automatic mode (i.e. initial state edlbsOffCanTurnOn):
  *   edlbsOffCanTurnOn         -> edlbsOnCanTurnOff
  *   edlbsOffCanTurnOn         -> edlbsOffForever
  *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
