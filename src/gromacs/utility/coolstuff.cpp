@@ -743,6 +743,12 @@ std::string getCoolQuote()
         { "Everybody has a plan until they get puched in the mouth", "Mike Tyson" },
         { "Sacrifices must be made", "Otto Lilienthal, dying after having crashed with his glider in 1896" },
         { "The secret to getting ahead is getting started", "Mark Twain" }
+        { "Water is just water", "Berk Hess" },
+        { "GROMACS : Making MD great again", "Vedran Miletic" },
+        { "You still have to climb to the shoulders of the giants", "Vedran Miletic" },
+        { "The road to openness is paved with git commits", "Vedran Miletic" },
+        { "Performance and power are great targets for tuning, but really you want to tune for money!", "Erik Lindahl" },
+        { "Here are all the 'gmx' tools... but no gmx writethesis", "Christian Blau" },
     };
 
     if (beCool())
