@@ -40,11 +40,8 @@
  *
  * \todo
  * The grid implementation could still be optimized in several different ways:
- *   - Pruning grid cells from the search list if they are completely outside
- *     the sphere that is being considered.
- *   - A better heuristic could be added for falling back to simple loops for a
- *     small number of reference particles.
- *   - A better heuristic for selecting the grid size.
+ *   - A better heuristic for selecting the grid size or falling back to a
+ *     simple all-pairs search.
  *   - A multi-level grid implementation could be used to be able to use small
  *     grids for short cutoffs with very inhomogeneous particle distributions
  *     without a memory cost.
@@ -150,13 +147,6 @@ class AnalysisNeighborhoodSearchImpl
 
     private:
         /*! \brief
-         * Checks the efficiency and possibility of doing grid-based searching.
-         *
-         * \param[in] bForce  If `true`, grid search will be forced if possible.
-         * \returns   `false` if grid search is not suitable.
-         */
-        bool checkGridSearchEfficiency(bool bForce);
-        /*! \brief
          * Determines a suitable grid size and sets up the cells.
          *
          * \param[in] box          Box vectors (should not have zero vectors).
@@ -233,6 +223,21 @@ class AnalysisNeighborhoodSearchImpl
          */
         void initCellRange(const rvec centerCell, ivec cell,
                            ivec upperBound, int dim) const;
+        /*! \brief
+         * Computes the extent of the cutoff sphere on a particular cell edge.
+         *
+         * \param[in]     centerCell Fractional cell coordiates of the particle
+         *     for which pairs are being searched.
+         * \param[in]     cell       Current cell (for dimensions `>dim`).
+         * \param[in]     dim        Dimension to compute in this call.
+         * \returns       Fractional extent of the cutoff sphere when looping
+         *    over cells in dimension `dim`, for `cell[d]` (`d > dim`).
+         *
+         * Input parameters are as for initCellRange(), except that if `cell`
+         * is over a periodic boundary from `centerCell`, triclinic shifts
+         * should have been applied to `centerCell` X/Y components.
+         */
+        real computeCutoffExtent(const RVec centerCell, const ivec cell, int dim) const;
         /*! \brief
          * Advances cell pair loop to the next cell.
          *
@@ -454,65 +459,6 @@ AnalysisNeighborhoodSearchImpl::getPairSearch()
     return pairSearch;
 }
 
-bool AnalysisNeighborhoodSearchImpl::checkGridSearchEfficiency(bool bForce)
-{
-    // Find the extent of the sphere in cells.
-    ivec  range;
-    for (int dd = 0; dd < DIM; ++dd)
-    {
-        range[dd] = static_cast<int>(ceil(cutoff_ * invCellSize_[dd]));
-    }
-
-    // Calculate the fraction of cell pairs that need to be searched,
-    // and check that the cutoff is not too large for periodic dimensions.
-    real coveredCells = 1.0;
-    for (int dd = 0; dd < DIM; ++dd)
-    {
-        const int cellCount    = ncelldim_[dd];
-        const int coveredCount = 2 * range[dd] + 1;
-        if (bGridPBC_[dd])
-        {
-            if (coveredCount > cellCount)
-            {
-                // Cutoff is too close to half the box size for grid searching
-                // (it is not possible to find a single shift for every pair of
-                // grid cells).
-                return false;
-            }
-            coveredCells *= coveredCount;
-        }
-        else
-        {
-            if (range[dd] >= cellCount - 1)
-            {
-                range[dd]     = cellCount - 1;
-                coveredCells *= cellCount;
-            }
-            else if (coveredCount > cellCount)
-            {
-                // The sum of range+1, range+2, ..., range+N/2, ... range+1.
-                coveredCells *= range[dd] +
-                    static_cast<real>((cellCount + 1)/2 * (cellCount/2 + 1)) / cellCount;
-            }
-            else
-            {
-                // The sum of range+1, ..., 2*range+1, ..., 2*range+1, ... range+1.
-                coveredCells *= coveredCount -
-                    static_cast<real>(range[dd] * (range[dd] + 1)) / cellCount;
-            }
-        }
-    }
-    // Magic constant that would need tuning for optimal performance:
-    // Don't do grid searching if nearly all cell pairs would anyways need to
-    // be looped through.
-    const int totalCellCount = ncelldim_[XX] * ncelldim_[YY] * ncelldim_[ZZ];
-    if (!bForce && coveredCells >= 0.5 * totalCellCount)
-    {
-        return false;
-    }
-    return true;
-}
-
 bool AnalysisNeighborhoodSearchImpl::initGridCells(
         const matrix box, bool bSingleCell[DIM], int posCount)
 {
@@ -537,6 +483,7 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
                 bSingleCell[dd] = true;
                 if (bGridPBC_[dd])
                 {
+                    // TODO: Consider if a fallback would be possible/better.
                     return false;
                 }
             }
@@ -568,9 +515,8 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
         else
         {
             cellCount = std::max(1, static_cast<int>(box[dd][dd] / targetsize));
-            // TODO: If the cell count is one or two, it would be better to
-            // just fall back to bSingleCell[dd] = true, and leave the rest to
-            // the efficiency check later.
+            // TODO: If the cell count is one or two, it could be better to
+            // just fall back to bSingleCell[dd] = true.
             if (bGridPBC_[dd] && cellCount < 3)
             {
                 return false;
@@ -604,6 +550,10 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(
     {
         return false;
     }
+
+    // TODO: Use this again (can be useful when tuning initGridCells()),
+    // or remove throughout.
+    GMX_UNUSED_VALUE(bForce);
 
     switch (pbc.ePBC)
     {
@@ -671,6 +621,16 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(
         else
         {
             invCellSize_[dd] = 1.0 / cellSize_[dd];
+            // TODO: It could be better to avoid this when determining the cell
+            // size, but this can still remain here as a fallback to avoid
+            // incorrect results.
+            if (std::ceil(2*cutoff_*invCellSize_[dd]) >= ncelldim_[dd])
+            {
+                // Cutoff is too close to half the box size for grid searching
+                // (it is not possible to find a single shift for every pair of
+                // grid cells).
+                return false;
+            }
         }
     }
     if (bTric_)
@@ -679,7 +639,7 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(
         cellShiftZX_ = box[ZZ][XX] * invCellSize_[XX];
         cellShiftYX_ = box[YY][XX] * invCellSize_[XX];
     }
-    return checkGridSearchEfficiency(bForce);
+    return true;
 }
 
 void AnalysisNeighborhoodSearchImpl::mapPointToGridCell(const rvec x,
@@ -752,52 +712,45 @@ void AnalysisNeighborhoodSearchImpl::addToGridCell(const rvec cell, int i)
 void AnalysisNeighborhoodSearchImpl::initCellRange(
         const rvec centerCell, ivec currCell, ivec upperBound, int dim) const
 {
-    // TODO: Prune off cells that are completely outside the cutoff.
-    const real range       = cutoff_ * invCellSize_[dim];
-    real       startOffset = centerCell[dim] - range;
-    real       endOffset   = centerCell[dim] + range;
+    RVec       shiftedCenter(centerCell);
+    // Shift the center to the cell coordinates of currCell, so that
+    // computeCutoffExtent() can assume simple rectangular grid.
     if (bTric_)
     {
-        switch (dim)
+        if (dim == XX)
         {
-            case ZZ:
-                break;
-            case YY:
-                if (currCell[ZZ] < 0)
-                {
-                    startOffset += cellShiftZY_;
-                    endOffset   += cellShiftZY_;
-                }
-                else if (currCell[ZZ] >= ncelldim_[ZZ])
-                {
-                    startOffset -= cellShiftZY_;
-                    endOffset   -= cellShiftZY_;
-                }
-                break;
-            case XX:
-                if (currCell[ZZ] < 0)
-                {
-                    startOffset += cellShiftZX_;
-                    endOffset   += cellShiftZX_;
-                }
-                else if (currCell[ZZ] >= ncelldim_[ZZ])
-                {
-                    startOffset -= cellShiftZX_;
-                    endOffset   -= cellShiftZX_;
-                }
-                if (currCell[YY] < 0)
-                {
-                    startOffset += cellShiftYX_;
-                    endOffset   += cellShiftYX_;
-                }
-                else if (currCell[YY] >= ncelldim_[YY])
-                {
-                    startOffset -= cellShiftYX_;
-                    endOffset   -= cellShiftYX_;
-                }
-                break;
+            if (currCell[ZZ] < 0)
+            {
+                shiftedCenter[XX] += cellShiftZX_;
+            }
+            else if (currCell[ZZ] >= ncelldim_[ZZ])
+            {
+                shiftedCenter[XX] -= cellShiftZX_;
+            }
+            if (currCell[YY] < 0)
+            {
+                shiftedCenter[XX] += cellShiftYX_;
+            }
+            else if (currCell[YY] >= ncelldim_[YY])
+            {
+                shiftedCenter[XX] -= cellShiftYX_;
+            }
+        }
+        if (dim == XX || dim == YY)
+        {
+            if (currCell[ZZ] < 0)
+            {
+                shiftedCenter[YY] += cellShiftZY_;
+            }
+            else if (currCell[ZZ] >= ncelldim_[ZZ])
+            {
+                shiftedCenter[YY] -= cellShiftZY_;
+            }
         }
     }
+    const real range       = computeCutoffExtent(shiftedCenter, currCell, dim) * invCellSize_[dim];
+    real       startOffset = shiftedCenter[dim] - range;
+    real       endOffset   = shiftedCenter[dim] + range;
     // For non-periodic dimensions, clamp to the actual grid edges.
     if (!bGridPBC_[dim])
     {
@@ -815,6 +768,35 @@ void AnalysisNeighborhoodSearchImpl::initCellRange(
     }
     currCell[dim]   = static_cast<int>(floor(startOffset));
     upperBound[dim] = static_cast<int>(floor(endOffset));
+}
+
+real AnalysisNeighborhoodSearchImpl::computeCutoffExtent(
+        const RVec centerCell, const ivec cell, int dim) const
+{
+    if (dim == ZZ)
+    {
+        return cutoff_;
+    }
+
+    real dist2 = 0;
+    for (int d = dim + 1; d < DIM; ++d)
+    {
+        real dimDist = cell[d] - centerCell[d];
+        if (dimDist < -1)
+        {
+            dimDist += 1;
+        }
+        else if (dimDist <= 0)
+        {
+            continue;
+        }
+        dist2 += dimDist*dimDist*cellSize_[d]*cellSize_[d];
+    }
+    if (dist2 >= cutoff2_)
+    {
+        return 0;
+    }
+    return std::sqrt(cutoff2_ - dist2);
 }
 
 bool AnalysisNeighborhoodSearchImpl::nextCell(
