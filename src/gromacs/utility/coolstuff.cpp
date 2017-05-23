@@ -740,8 +740,9 @@ std::string getCoolQuote()
         { "Input, output, electricity", "Joni Mitchell" },
         { "Your daddy ain't your daddy but your daddy don't know", "Dalahan" },
         { "Why is the Earth moving 'round the sun? Floating in the vacuum with no purpose, not a one", "Fleet Foxes" },
-        { "If you leave markets to act as governments, then sure as night follows day, the market will make people suffer and it will turn the world into a wilderness", "Ann Pettifor" },
-        { "If you look back to the fifties, what all economist call the golden age of economics, 1945-1970 was a period of economic stability, economic activity, pretty much full employment because we managed capital flows, we managed interest rates, we managed exchange rates. We coordinated at an international level to maintain balance in the global economy, we had a golden age. And now we're being told, you can't have another golden age, now we have to go through a period of fascism, this is necessary. Excuse me?", "Ann Pettifor" },
+        { "Everybody has a plan until they get puched in the mouth", "Mike Tyson" },
+        { "Sacrifices must be made", "Otto Lilienthal, dying after having crashed with his glider in 1896" },
+        { "The secret to getting ahead is getting started", "Mark Twain" }
     };
 
     if (beCool())
