@@ -301,6 +301,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Diagonalize the Hessian for normal mode analysis");
     registerModule(manager, &gmx_nmens, "nmens",
                    "Generate an ensemble of structures from the normal modes");
+    registerModule(manager, &gmx_nmr, "nmr",
+                   "Analyze nuclear magnetic resonance properties from an energy file");
     registerModule(manager, &gmx_nmtraj, "nmtraj",
                    "Generate a virtual oscillating trajectory from an eigenvector");
     registerModule(manager, &gmx_order, "order",
