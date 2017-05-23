@@ -107,7 +107,7 @@ class OriresTest : public CommandLineTestBase
 
             StdioTestHelper stdioHelper(&fileManager());
             stdioHelper.redirectStringToStdin(stringForStdin);
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+            ASSERT_EQ(0, gmx_nmr(cmdline.argc(), cmdline.argv()));
 
             checkOutputFiles();
         }
@@ -115,7 +115,7 @@ class OriresTest : public CommandLineTestBase
 
 TEST_F(OriresTest, ExtractOrires)
 {
-    runTest("Orient.-Rest.\nOri.-R.-RMSD\n0\n-1\n");
+    runTest("-1\n");
 }
 
 class EnergyTest : public CommandLineTestBase
