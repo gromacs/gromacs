@@ -1409,6 +1409,8 @@ $r_2$ from ~\eqnref{disre}.  In some cases it can be useful to have
 different force constants for some restraints; this is controlled by
 the column {\tt fac}.  The force constant in the parameter file is
 multiplied by the value in the column {\tt fac} for each restraint.
+Information for each restraint is stored in the energy file and can
+be processed and plotted with {\tt gmx nmr}.
 %} % Brace matches ifthenelse test for gmxlite
 
 \newcommand{\SSS}{{\mathbf S}}
@@ -1647,6 +1649,8 @@ should be the inverse of the square of the unit of the observable.
 Some parameters for orientation restraints can be specified in the
 {\tt grompp.mdp} file, for a study of the effect of different
 force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
+Information for each restraint is stored in the energy file and can
+be processed and plotted with {\tt gmx nmr}.
 %} % Brace matches ifthenelse test for gmxlite
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
