@@ -367,13 +367,30 @@ static gmx_bool init_gpu_application_clocks(
     cuda_dev->nvml_is_restricted      = NVML_FEATURE_ENABLED;
     cuda_dev->nvml_app_clocks_changed = false;
 
+    if (cuda_dev->nvml_orig_app_sm_clock >= max_sm_clock)
+    {
+        //TODO: This should probably be integrated into the GPU Properties table.
+        GMX_LOG(mdlog.warning).appendTextFormatted(
+                "Application clocks (GPU clocks) for %s are (%d,%d)",
+                cuda_dev->prop.name, cuda_dev->nvml_orig_app_mem_clock, cuda_dev->nvml_orig_app_sm_clock);
+        return true;
+    }
+
+    if (cuda_version_number >= 60)
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "Cannot change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nContact your admin to change application clocks.\n",
+                cuda_dev->prop.name, cuda_dev->nvml_orig_app_mem_clock, cuda_dev->nvml_orig_app_sm_clock, max_mem_clock, max_sm_clock);
+        return true;
+    }
+
     nvml_stat = nvmlDeviceGetAPIRestriction(cuda_dev->nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(cuda_dev->nvml_is_restricted));
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetAPIRestriction failed" );
 
     if (nvml_stat != NVML_SUCCESS)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "Can not change GPU application clocks to optimal values due to NVML error (%d): %s.",
+                "Cannot change GPU application clocks to optimal values due to NVML error (%d): %s.",
                 nvml_stat, nvmlErrorString(nvml_stat));
         return false;
     }
@@ -383,15 +400,6 @@ static gmx_bool init_gpu_application_clocks(
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                 "Cannot change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clocks.",
                 cuda_dev->prop.name, cuda_dev->nvml_orig_app_mem_clock, cuda_dev->nvml_orig_app_sm_clock, max_mem_clock, max_sm_clock);
-        return true;
-    }
-
-    if (cuda_dev->nvml_orig_app_sm_clock >= max_sm_clock)
-    {
-        //TODO: This should probably be integrated into the GPU Properties table.
-        GMX_LOG(mdlog.warning).appendTextFormatted(
-                "Application clocks (GPU clocks) for %s are (%d,%d)",
-                cuda_dev->prop.name, cuda_dev->nvml_orig_app_mem_clock, cuda_dev->nvml_orig_app_sm_clock);
         return true;
     }
 
