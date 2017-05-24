@@ -25,7 +25,7 @@ Additionally:
 
 * All source files and other non-trivial scripts should contain a copyright
   header with a predetermined format and license information (check existing
-  files).  Copyright holder should be "the GROMACS development team" for the
+  files).  Copyright holder should be "the |Gromacs| development team" for the
   years where the code has been in the |Gromacs| source repository, but earlier
   years can hold other copyrights.
 * Whenever you update a file, you should check that the current year is listed

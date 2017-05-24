@@ -1,7 +1,7 @@
 Flow Chart
 ==========
 
-This is a flow chart of a typical GROMACS MD run of a protein
+This is a flow chart of a typical |Gromacs| MD run of a protein
 in a box of water.
 A more detailed example is available in :doc:`getting-started`.
 Several steps of energy minimization may be necessary,

@@ -48,7 +48,7 @@ Running a related series of lambda points for a free-energy
 computation is also convenient to do this way.
 
 This feature requires
-:ref:`configuring GROMACS with an external MPI library <mpi-support>`
+:ref:`configuring |Gromacs| with an external MPI library <mpi-support>`
 so that the set of
 simulations can communicate. The ``n`` simulations within the set can
 use internal MPI parallelism also, so that ``mpirun -np x mdrun_mpi``
@@ -119,7 +119,7 @@ coupling parameter (e.g. temperature), which ascends over the set of
 input files. The random seed for replica exchange is set with
 ``-reseed``. After every exchange, the velocities are scaled and
 neighbor searching is performed. See the Reference Manual for more
-details on how replica exchange functions in GROMACS.
+details on how replica exchange functions in |Gromacs|.
 
 Controlling the length of the simulation
 ----------------------------------------
@@ -140,7 +140,7 @@ lipid bilayer at a position and orientation specified by the user.
 
 This method was initially described as a ProtSqueeze technique 
 (Yesylevskyy S.O., J Chem Inf Model 47(5) (2007) 1986-94) and 
-later implemented in GROMACS as g_membed tool (Wolf et al, J Comp Chem 31 (2010) 2169-2174). 
+later implemented in |Gromacs| as g_membed tool (Wolf et al, J Comp Chem 31 (2010) 2169-2174). 
 Currently the functionality of g_membed is available in mdrun if 
 ``-membed`` option is specified (see below).
 

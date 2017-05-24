@@ -1,6 +1,6 @@
 Getting good performance from mdrun
 ===================================
-The GROMACS build system and the :ref:`gmx mdrun` tool has a lot of built-in
+The |Gromacs| build system and the :ref:`gmx mdrun` tool has a lot of built-in
 and configurable intelligence to detect your hardware and make pretty
 effective use of that hardware. For a lot of casual and serious use of
 :ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
@@ -51,7 +51,7 @@ definitions. Experienced HPC users can skip this section.
         up to 8 hardware threads per core.
         This feature can usually be enabled or disabled either in
         the hardware bios or through a setting in the Linux operating
-        system. GROMACS can typically make use of this, for a moderate
+        system. |Gromacs| can typically make use of this, for a moderate
         free performance boost. In most cases it will be
         enabled by default e.g. on new x86 processors, but in some cases
         the system administrators might have disabled it. If that is the
@@ -113,8 +113,8 @@ definitions. Experienced HPC users can skip this section.
         numbers of floating-point instructions in a single cycle.
 
 
-GROMACS background information
-------------------------------
+|Gromacs| background information
+--------------------------------
 The algorithms in :ref:`gmx mdrun` and their implementations are most relevant
 when choosing how to make good use of the hardware. For details,
 see the Reference Manual. The most important of these are
@@ -159,11 +159,11 @@ Running mdrun within a single node
 are efficient to use within a single :term:`node`. The default configuration
 using a suitable compiler will deploy a multi-level hybrid parallelism
 that uses CUDA, OpenMP and the threading platform native to the
-hardware. For programming convenience, in GROMACS, those native
+hardware. For programming convenience, in |Gromacs|, those native
 threads are used to implement on a single node the same MPI scheme as
 would be used between nodes, but much more efficient; this is called
 thread-MPI. From a user's perspective, real MPI and thread-MPI look
-almost the same, and GROMACS refers to MPI ranks to mean either kind,
+almost the same, and |Gromacs| refers to MPI ranks to mean either kind,
 except where noted. A real external MPI can be used for :ref:`gmx mdrun` within
 a single node, but runs more slowly than the thread-MPI version.
 
@@ -329,7 +329,7 @@ MPI setup is restricted to one node, then the resulting
 
 Running mdrun on more than one node
 -----------------------------------
-This requires configuring GROMACS to build with an external MPI
+This requires configuring |Gromacs| to build with an external MPI
 library. By default, this mdrun executable is run with
 :ref:`mdrun_mpi`. All of the considerations for running single-node
 mdrun still apply, except that ``-ntmpi`` and ``-nt`` cause a fatal
