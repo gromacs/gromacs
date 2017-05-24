@@ -217,7 +217,7 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_DOUBLE
 
-   Many part of GROMACS are implemented in terms of "real" precision,
+   Many part of |Gromacs| are implemented in terms of "real" precision,
    which is actually either a single- or double-precision type,
    according to the value of this flag. Some parts of the code
    deliberately use single- or double-precision types, and these are

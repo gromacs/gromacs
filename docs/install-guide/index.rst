@@ -408,8 +408,8 @@ You cannot attempt to change compilers after the initial run of
 
 .. _non-standard location:
 
-Where to install GROMACS
-^^^^^^^^^^^^^^^^^^^^^^^^
+Where to install |Gromacs|
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 |Gromacs| is installed in the directory to which
 ``CMAKE_INSTALL_PREFIX`` points. It may not be the source directory or
@@ -591,7 +591,7 @@ By default, optimized code will be generated for CUDA architectures
 supported by the nvcc compiler (and the |Gromacs| build system). 
 However, it can be beneficial to manually pick the specific CUDA architecture(s)
 to generate code for either to reduce compilation time (and binary size) or to
-target a new architecture not yet supported by the |GROMACS| build system.
+target a new architecture not yet supported by the |Gromacs| build system.
 Setting the desired CUDA architecture(s) and virtual architecture(s)
 can be done using the ``GMX_CUDA_TARGET_SM`` and ``GMX_CUDA_TARGET_COMPUTE``
 variables, respectively. These take a semicolon delimited string with 
@@ -828,7 +828,7 @@ directory, then you will need permission to write there, and you
 should use super-user privileges only for ``make install`` and
 not the whole procedure.
 
-.. _getting access to GROMACS:
+.. _getting access to |Gromacs|:
 
 Getting access to |Gromacs| after installation
 ----------------------------------------------
@@ -871,7 +871,7 @@ trust your build.
 The simplest way to run the checks is to build |Gromacs| with
 ``-DREGRESSIONTEST_DOWNLOAD``, and run ``make check``.
 |Gromacs| will automatically download and run the tests for you.
-Alternatively, you can download and unpack the GROMACS
+Alternatively, you can download and unpack the |Gromacs|
 regression test suite |gmx-regressiontests-package| tarball yourself
 and use the advanced ``cmake`` option ``REGRESSIONTEST_PATH`` to
 specify the path to the unpacked tarball, which will then be used for

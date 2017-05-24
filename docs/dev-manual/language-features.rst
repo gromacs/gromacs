@@ -1,7 +1,7 @@
 Allowed language features
 =========================
 
-GROMACS uses C99 for C files and C++11 for C++ files. 
+|Gromacs| uses C99 for C files and C++11 for C++ files. 
 C++ has a lot of features, but to keep the source code maintainable and easy to read, 
 we will avoid using some of them in Gromacs code. The basic principle is to keep things 
 as simple as possible.
