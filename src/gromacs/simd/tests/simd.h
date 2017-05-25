@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,6 +81,7 @@
 #include "gromacs/simd/simd.h"
 
 #include "base.h"
+#include "data.h"
 
 #if GMX_SIMD
 
@@ -108,13 +109,15 @@ namespace test
  * them in a single place makes sure they are consistent.
  */
 #if GMX_SIMD_HAVE_REAL
-extern const SimdReal rSimd_1_2_3;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_4_5_6;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_7_8_9;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_5_7_9;     //!< rSimd_1_2_3 + rSimd_4_5_6.
-extern const SimdReal rSimd_m1_m2_m3;  //!< Generic negative floating-point values.
-extern const SimdReal rSimd_3_1_4;     //!< Used to test min/max.
-extern const SimdReal rSimd_m3_m1_m4;  //!< negative rSimd_3_1_4.
+extern const SimdReal rSimd_c0c1c2;    //!< c0,c1,c2 repeated
+extern const SimdReal rSimd_c3c4c5;    //!< c3,c4,c5 repeated
+extern const SimdReal rSimd_c6c7c8;    //!< c6,c7,c8 repeated
+extern const SimdReal rSimd_c3c0c4;    //!< c3,c0,c4 repeated
+extern const SimdReal rSimd_c4c6c8;    //!< c4,c6,c8 repeated
+extern const SimdReal rSimd_c7c2c3;    //!< c7,c2,c3 repeated
+extern const SimdReal rSimd_m0m1m2;    //!< -c0,-c1,-c2 repeated
+extern const SimdReal rSimd_m3m0m4;    //!< -c3,-c0,-c4 repeated
+
 extern const SimdReal rSimd_2p25;      //!< Value that rounds down.
 extern const SimdReal rSimd_3p25;      //!< Value that rounds down.
 extern const SimdReal rSimd_3p75;      //!< Value that rounds up.
@@ -123,6 +126,14 @@ extern const SimdReal rSimd_m3p25;     //!< Negative value that rounds up.
 extern const SimdReal rSimd_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const SimdReal rSimd_Exp;
+
+#if GMX_SIMD_HAVE_LOGICAL
+extern const SimdReal rSimd_logicalA;         //!< Bit pattern to test logical ops
+extern const SimdReal rSimd_logicalB;         //!< Bit pattern to test logical ops
+extern const SimdReal rSimd_logicalResultOr;  //!< Result or bitwise 'or' of A and B
+extern const SimdReal rSimd_logicalResultAnd; //!< Result or bitwise 'and' of A and B
+#endif                                        // GMX_SIMD_HAVE_LOGICAL
+
 #    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const SimdReal rSimd_ExpDouble;

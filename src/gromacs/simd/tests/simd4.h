@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/simd/simd.h"
 
 #include "base.h"
+#include "data.h"
 
 #if GMX_SIMD
 
@@ -67,29 +68,34 @@ namespace test
 /*! \{ */
 
 #if GMX_SIMD4_HAVE_REAL
-extern const Simd4Real rSimd4_1_2_3;     //!< Generic (different) fp values.
-extern const Simd4Real rSimd4_4_5_6;     //!< Generic (different) fp values.
-extern const Simd4Real rSimd4_7_8_9;     //!< Generic (different) fp values.
-extern const Simd4Real rSimd4_5_7_9;     //!< rSimd_1_2_3 + rSimd_4_5_6.
-extern const Simd4Real rSimd4_m1_m2_m3;  //!< Generic negative fp values.
-extern const Simd4Real rSimd4_3_1_4;     //!< Used to test min/max.
-extern const Simd4Real rSimd4_m3_m1_m4;  //!< negative rSimd_3_1_4.
+extern const Simd4Real rSimd4_c0c1c2;    //!< c0,c1,c2 repeated
+extern const Simd4Real rSimd4_c3c4c5;    //!< c3,c4,c5 repeated
+extern const Simd4Real rSimd4_c6c7c8;    //!< c6,c7,c8 repeated
+extern const Simd4Real rSimd4_c3c0c4;    //!< c3,c0,c4 repeated
+extern const Simd4Real rSimd4_c4c6c8;    //!< c4,c6,c8 repeated
+extern const Simd4Real rSimd4_c7c2c3;    //!< c7,c2,c3 repeated
+extern const Simd4Real rSimd4_m0m1m2;    //!< -c0,-c1,-c2 repeated
+extern const Simd4Real rSimd4_m3m0m4;    //!< -c3,-c0,-c4 repeated
 extern const Simd4Real rSimd4_2p25;      //!< Value that rounds down.
 extern const Simd4Real rSimd4_3p75;      //!< Value that rounds up.
 extern const Simd4Real rSimd4_m2p25;     //!< Negative value that rounds up.
 extern const Simd4Real rSimd4_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const Simd4Real rSimd4_Exp;
-#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
-// Make sure we also test exponents outside single precision when we use double
-extern const Simd4Real rSimd4_ExpDouble;
-#    endif
-extern const Simd4Real rSimd4_Bits1; //!< Pattern F0 repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits2; //!< Pattern CC repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits3; //!< Pattern C0 repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits4; //!< Pattern 0C repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits5; //!< Pattern FC repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits6; //!< Pattern 3C repeated to fill single/double.
+
+#if GMX_SIMD_HAVE_LOGICAL
+extern const Simd4Real rSimd4_logicalA;         //!< Bit pattern to test logical ops
+extern const Simd4Real rSimd4_logicalB;         //!< Bit pattern to test logical ops
+extern const Simd4Real rSimd4_logicalResultOr;  //!< Result or bitwise 'or' of A and B
+extern const Simd4Real rSimd4_logicalResultAnd; //!< Result or bitwise 'and' of A and B
+#endif                                          // GMX_SIMD_HAVE_LOGICAL
+
+extern const Simd4Real rSimd4_Bits1;            //!< Pattern F0 repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits2;            //!< Pattern CC repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits3;            //!< Pattern C0 repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits4;            //!< Pattern 0C repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits5;            //!< Pattern FC repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits6;            //!< Pattern 3C repeated to fill single/double.
 
 /*! \internal
  * \brief

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 
+#include "data.h"
+
 #if GMX_SIMD
 
 namespace gmx
@@ -52,26 +54,34 @@ namespace test
 
 #if GMX_SIMD4_HAVE_REAL
 
-const Simd4Real rSimd4_1_2_3    = setSimd4RealFrom3R(1, 2, 3);
-const Simd4Real rSimd4_4_5_6    = setSimd4RealFrom3R(4, 5, 6);
-const Simd4Real rSimd4_7_8_9    = setSimd4RealFrom3R(7, 8, 9);
-const Simd4Real rSimd4_5_7_9    = setSimd4RealFrom3R(5, 7, 9);
-const Simd4Real rSimd4_m1_m2_m3 = setSimd4RealFrom3R(-1, -2, -3);
-const Simd4Real rSimd4_3_1_4    = setSimd4RealFrom3R(3, 1, 4);
-const Simd4Real rSimd4_m3_m1_m4 = setSimd4RealFrom3R(-3, -1, -4);
+const Simd4Real rSimd4_c0c1c2   = setSimd4RealFrom3R( c0, c1, c2);
+const Simd4Real rSimd4_c3c4c5   = setSimd4RealFrom3R( c3, c4, c5);
+const Simd4Real rSimd4_c6c7c8   = setSimd4RealFrom3R( c6, c7, c8);
+const Simd4Real rSimd4_c3c0c4   = setSimd4RealFrom3R( c3, c0, c4);
+const Simd4Real rSimd4_c4c6c8   = setSimd4RealFrom3R( c4, c6, c8);
+const Simd4Real rSimd4_c7c2c3   = setSimd4RealFrom3R( c7, c2, c3);
+const Simd4Real rSimd4_m0m1m2   = setSimd4RealFrom3R(-c0, -c1, -c2);
+const Simd4Real rSimd4_m3m0m4   = setSimd4RealFrom3R(-c3, -c0, -c4);
 const Simd4Real rSimd4_2p25     = setSimd4RealFrom1R(2.25);
 const Simd4Real rSimd4_3p75     = setSimd4RealFrom1R(3.75);
 const Simd4Real rSimd4_m2p25    = setSimd4RealFrom1R(-2.25);
 const Simd4Real rSimd4_m3p75    = setSimd4RealFrom1R(-3.75);
-const Simd4Real rSimd4_Exp      = setSimd4RealFrom3R( 1.4055235171027452623914516e+18,
-                                                      5.3057102734253445623914516e-13,
-                                                      -2.1057102745623934534514516e+16);
-#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
-// Make sure we also test exponents outside single precision when we use double
-const Simd4Real  rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
-                                                       8.794495252903116023030553e-140,
-                                                       -3.637060701570496477655022e+202);
-#    endif
+
+#if GMX_SIMD_HAVE_LOGICAL
+// The numbers below all have exponent (2^0), which will not change with AND/OR operations.
+// We also leave the last part of the mantissa as zeros, to avoid rounding issues in the compiler
+#if GMX_DOUBLE
+const Simd4Real rSimd4_logicalA         = setSimd4RealFrom1R(1.3333333332557231188); // mantissa 01010101010101010101010101010101
+const Simd4Real rSimd4_logicalB         = setSimd4RealFrom1R(1.7999999998137354851); // mantissa 11001100110011001100110011001100
+const Simd4Real rSimd4_logicalResultAnd = setSimd4RealFrom1R(1.266666666604578495);  // mantissa 01000100010001000100010001000100
+const Simd4Real rSimd4_logicalResultOr  = setSimd4RealFrom1R(1.8666666664648801088); // mantissa 11011101110111011101110111011101
+#else                                                                                // GMX_DOUBLE
+const Simd4Real rSimd4_logicalA         = setSimd4RealFrom1R(1.3333282470703125);    // mantissa 0101010101010101
+const Simd4Real rSimd4_logicalB         = setSimd4RealFrom1R(1.79998779296875);      // mantissa 1100110011001100
+const Simd4Real rSimd4_logicalResultAnd = setSimd4RealFrom1R(1.26666259765625);      // mantissa 0100010001000100
+const Simd4Real rSimd4_logicalResultOr  = setSimd4RealFrom1R(1.8666534423828125);    // mantissa 1101110111011101
+#endif                                                                               // GMX_DOUBLE
+#endif                                                                               // GMX_SIMD_HAVE_LOGICAL
 
 ::std::vector<real>
 simd4Real2Vector(const Simd4Real simd4)
