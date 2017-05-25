@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,54 +32,49 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+#ifndef GMX_SIMD_TESTS_DATA_H
+#define GMX_SIMD_TESTS_DATA_H
 
-#include <cmath>
+/*! \internal \file
+ * \brief Common test data constants for SIMD, SIMD4 and scalar tests
+ *
+ * To avoid silent bugs due to double/float truncation if we ever use the
+ * wrong return type of routines, we want to use test data that fills all
+ * available bits in either single or double precision. The values themselves
+ * are meaningless.
+ * Note that the data is used to initialize the SIMD constants, which for
+ * technical (alignment) reasons in some compilers cannot be placed inside
+ * the text fixture classes. For that reason this data cannot go in the
+ * fixtures either.
+ */
 
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/vector_operations.h"
-
-#include "simd4.h"
-#include "data.h"
-
-#if GMX_SIMD
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
 namespace test
 {
-namespace
-{
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
-
-#if GMX_SIMD4_HAVE_REAL
-
-/*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
-typedef Simd4Test Simd4VectorOperationsTest;
-
-TEST_F(Simd4VectorOperationsTest, norm2)
-{
-    Simd4Real simdX  = rSimd4_c0c1c2;
-    Simd4Real simdY  = rSimd4_c3c4c5;
-    Simd4Real simdZ  = rSimd4_c6c7c8;
-    Simd4Real simdR2 = setSimd4RealFrom3R(c0*c0 + c3*c3 + c6*c6,
-                                          c1*c1 + c4*c4 + c7*c7,
-                                          c2*c2 + c5*c5 + c8*c8);
-
-    setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, norm2(simdX, simdY, simdZ));
-}
-
-#endif      // GMX_SIMD4_HAVE_REAL
+extern const real czero; //!< Value 0.0 in real precision
+extern const real c0;    //!< Random fp value using entire mantissa
+extern const real c1;    //!< Random fp value using entire mantissa
+extern const real c2;    //!< Random fp value using entire mantissa
+extern const real c3;    //!< Random fp value using entire mantissa
+extern const real c4;    //!< Random fp value using entire mantissa
+extern const real c5;    //!< Random fp value using entire mantissa
+extern const real c5;    //!< Random fp value using entire mantissa
+extern const real c6;    //!< Random fp value using entire mantissa
+extern const real c7;    //!< Random fp value using entire mantissa
+extern const real c8;    //!< Random fp value using entire mantissa
+extern const real c9;    //!< Random fp value using entire mantissa
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+}      // namespace test
+}      // namespace gmx
 
-#endif // GMX_SIMD
+#endif

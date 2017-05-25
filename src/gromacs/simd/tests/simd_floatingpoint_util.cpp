@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,10 +85,12 @@ class SimdFloatingpointUtilTest : public SimdTest
             {
                 // Use every third point to avoid a continguous access pattern
                 offset_[i] = 3 * i;
-                val0_[i]   = i;
-                val1_[i]   = i + 0.1;
-                val2_[i]   = i + 0.2;
-                val3_[i]   = i + 0.3;
+                // Multiply numbers by 1+100*GMX_REAL_EPS ensures some low bits are
+                // set too, so the tests make sure we read all bits correctly.
+                val0_[i]   = (i      ) * (1.0 + 100*GMX_REAL_EPS);
+                val1_[i]   = (i + 0.1) * (1.0 + 100*GMX_REAL_EPS);
+                val2_[i]   = (i + 0.2) * (1.0 + 100*GMX_REAL_EPS);
+                val3_[i]   = (i + 0.3) * (1.0 + 100*GMX_REAL_EPS);
             }
         }
 
@@ -265,7 +267,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
         // Set test and reference memory to background value
         for (std::size_t j = 0; j < s_workMemSize_; j++)
         {
-            mem0_[j] = refmem[j] = 1000.0 + j;
+            // Multiply by 1+100*eps to make sure low bits are also used
+            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
         }
 
         for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -316,7 +319,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
         // Set test and reference memory to background value
         for (std::size_t j = 0; j < s_workMemSize_; j++)
         {
-            mem0_[j] = refmem[j] = 1000.0 + j;
+            // Multiply by 1+100*eps to make sure low bits are also used
+            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
         }
 
         for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -366,7 +370,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3Overlapping)
     // Set test and reference memory to background value
     for (std::size_t j = 0; j < s_workMemSize_; j++)
     {
-        mem0_[j] = refmem[j] = 1000.0 + j;
+        // Multiply by 1+100*eps to make sure low bits are also used
+        mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
     }
 
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -405,7 +410,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
         // Set test and reference memory to background value
         for (std::size_t j = 0; j < s_workMemSize_; j++)
         {
-            mem0_[j] = refmem[j] = 1000.0 + j;
+            // Multiply by 1+100*eps to make sure low bits are also used
+            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
         }
 
         for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -455,7 +461,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
     // Set test and reference memory to background value
     for (std::size_t j = 0; j < s_workMemSize_; j++)
     {
-        mem0_[j] = refmem[j] = 1000.0 + j;
+        // Multiply by 1+100*eps to make sure low bits are also used
+        mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
     }
 
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -668,17 +675,17 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4Sum)
     }
 
     // Just put some numbers in memory so we check the addition is correct
-    mem0_[0] = 5.0;
-    mem0_[1] = 15.0;
-    mem0_[2] = 25.0;
-    mem0_[3] = 35.0;
+    mem0_[0] = c0;
+    mem0_[1] = c1;
+    mem0_[2] = c2;
+    mem0_[3] = c3;
 
     tstsum = reduceIncr4ReturnSum(mem0_, v0, v1, v2, v3);
 
-    EXPECT_REAL_EQ_TOL( 5.0 + sum0, mem0_[0], tolerance);
-    EXPECT_REAL_EQ_TOL(15.0 + sum1, mem0_[1], tolerance);
-    EXPECT_REAL_EQ_TOL(25.0 + sum2, mem0_[2], tolerance);
-    EXPECT_REAL_EQ_TOL(35.0 + sum3, mem0_[3], tolerance);
+    EXPECT_REAL_EQ_TOL(c0 + sum0, mem0_[0], tolerance);
+    EXPECT_REAL_EQ_TOL(c1 + sum1, mem0_[1], tolerance);
+    EXPECT_REAL_EQ_TOL(c2 + sum2, mem0_[2], tolerance);
+    EXPECT_REAL_EQ_TOL(c3 + sum3, mem0_[3], tolerance);
 
     EXPECT_REAL_EQ_TOL(sum0 + sum1 + sum2 + sum3, tstsum, tolerance);
 }
@@ -893,17 +900,17 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4SumHsimd)
     }
 
     // Just put some numbers in memory so we check the addition is correct
-    mem0_[0] = 5.0;
-    mem0_[1] = 15.0;
-    mem0_[2] = 25.0;
-    mem0_[3] = 35.0;
+    mem0_[0] = c0;
+    mem0_[1] = c1;
+    mem0_[2] = c2;
+    mem0_[3] = c3;
 
     tstsum = reduceIncr4ReturnSumHsimd(mem0_, v0, v1);
 
-    EXPECT_REAL_EQ_TOL( 5.0 + sum0, mem0_[0], tolerance);
-    EXPECT_REAL_EQ_TOL(15.0 + sum1, mem0_[1], tolerance);
-    EXPECT_REAL_EQ_TOL(25.0 + sum2, mem0_[2], tolerance);
-    EXPECT_REAL_EQ_TOL(35.0 + sum3, mem0_[3], tolerance);
+    EXPECT_REAL_EQ_TOL(c0 + sum0, mem0_[0], tolerance);
+    EXPECT_REAL_EQ_TOL(c1 + sum1, mem0_[1], tolerance);
+    EXPECT_REAL_EQ_TOL(c2 + sum2, mem0_[2], tolerance);
+    EXPECT_REAL_EQ_TOL(c3 + sum3, mem0_[3], tolerance);
 
     EXPECT_REAL_EQ_TOL(sum0 + sum1 + sum2 + sum3, tstsum, tolerance);
 }

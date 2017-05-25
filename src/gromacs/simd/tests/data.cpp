@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,52 +34,34 @@
  */
 #include "gmxpre.h"
 
-#include <cmath>
+#include "gromacs/utility/real.h"
 
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/vector_operations.h"
-
-#include "simd4.h"
 #include "data.h"
-
-#if GMX_SIMD
 
 namespace gmx
 {
 namespace test
-{
-namespace
 {
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD4_HAVE_REAL
-
-/*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
-typedef Simd4Test Simd4VectorOperationsTest;
-
-TEST_F(Simd4VectorOperationsTest, norm2)
-{
-    Simd4Real simdX  = rSimd4_c0c1c2;
-    Simd4Real simdY  = rSimd4_c3c4c5;
-    Simd4Real simdZ  = rSimd4_c6c7c8;
-    Simd4Real simdR2 = setSimd4RealFrom3R(c0*c0 + c3*c3 + c6*c6,
-                                          c1*c1 + c4*c4 + c7*c7,
-                                          c2*c2 + c5*c5 + c8*c8);
-
-    setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, norm2(simdX, simdY, simdZ));
-}
-
-#endif      // GMX_SIMD4_HAVE_REAL
+/* Common test data constants used both for SIMD, SIMD4, and scalar tests */
+const real czero = 0.0;
+const real c0    = 0.1234567890123456789;
+const real c1    = 1.2345678901234567890;
+const real c2    = 2.3456789012345678901;
+const real c3    = 3.4567890123456789012;
+const real c4    = 4.5678901234567890123;
+const real c5    = 5.6789012345678901234;
+const real c6    = 6.7890123456789012345;
+const real c7    = 7.8901234567890123456;
+const real c8    = 8.9012345678901234567;
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace test
 
-#endif // GMX_SIMD
+} // namespace gmx
