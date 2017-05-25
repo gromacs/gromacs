@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,10 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 
+#include "testutils/testasserts.h"
+
+#include "data.h"
+
 namespace gmx
 {
 namespace test
@@ -55,7 +59,7 @@ namespace
 
 TEST(SimdScalarUtilTest, gatherLoadTranspose)
 {
-    real         data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    real         data[8] = {c0, c1, c2, c3, c4, c5, c6, c7};
     std::int32_t offset  = 1;
     real         v0, v1, v2, v3;
 
@@ -74,7 +78,7 @@ TEST(SimdScalarUtilTest, gatherLoadTranspose)
 
 TEST(SimdScalarUtilTest, gatherLoadUTranspose)
 {
-    real         data[6] = {1, 2, 3, 4, 5, 6};
+    real         data[6] = {c0, c1, c2, c3, c4, c5};
     std::int32_t offset  = 1;
     real         v0, v1, v2;
 
@@ -95,33 +99,33 @@ TEST(SimdScalarUtilTest, transposeScatterStoreU)
 
     transposeScatterStoreU<3>(data, &offset, v0, v1, v2);
 
-    EXPECT_EQ(real(0.0), data[0]);
-    EXPECT_EQ(real(0.0), data[1]);
-    EXPECT_EQ(real(0.0), data[2]);
+    EXPECT_EQ(czero, data[0]);
+    EXPECT_EQ(czero, data[1]);
+    EXPECT_EQ(czero, data[2]);
     EXPECT_EQ(v0, data[3]);
     EXPECT_EQ(v1, data[4]);
     EXPECT_EQ(v2, data[5]);
-    EXPECT_EQ(real(0.0), data[6]);
-    EXPECT_EQ(real(0.0), data[7]);
-    EXPECT_EQ(real(0.0), data[8]);
+    EXPECT_EQ(czero, data[6]);
+    EXPECT_EQ(czero, data[7]);
+    EXPECT_EQ(czero, data[8]);
 }
 
 TEST(SimdScalarUtilTest, transposeScatterIncrU)
 {
     real         data[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
     std::int32_t offset  = 1;
-    real         v0      = 1;
-    real         v1      = 2;
-    real         v2      = 3;
+    real         v0      = c1;
+    real         v1      = c2;
+    real         v2      = c3;
 
     transposeScatterIncrU<3>(data, &offset, v0, v1, v2);
 
     EXPECT_EQ(real(10), data[0]);
     EXPECT_EQ(real(20), data[1]);
     EXPECT_EQ(real(30), data[2]);
-    EXPECT_EQ(real(41), data[3]);
-    EXPECT_EQ(real(52), data[4]);
-    EXPECT_EQ(real(63), data[5]);
+    EXPECT_EQ(real(40+c1), data[3]);
+    EXPECT_EQ(real(50+c2), data[4]);
+    EXPECT_EQ(real(60+c3), data[5]);
     EXPECT_EQ(real(70), data[6]);
     EXPECT_EQ(real(80), data[7]);
     EXPECT_EQ(real(90), data[8]);
@@ -131,18 +135,18 @@ TEST(SimdScalarUtilTest, transposeScatterDecrU)
 {
     real         data[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
     std::int32_t offset  = 1;
-    real         v0      = 1;
-    real         v1      = 2;
-    real         v2      = 3;
+    real         v0      = c1;
+    real         v1      = c2;
+    real         v2      = c3;
 
     transposeScatterDecrU<3>(data, &offset, v0, v1, v2);
 
     EXPECT_EQ(real(10), data[0]);
     EXPECT_EQ(real(20), data[1]);
     EXPECT_EQ(real(30), data[2]);
-    EXPECT_EQ(real(39), data[3]);
-    EXPECT_EQ(real(48), data[4]);
-    EXPECT_EQ(real(57), data[5]);
+    EXPECT_EQ(real(40-c1), data[3]);
+    EXPECT_EQ(real(50-c2), data[4]);
+    EXPECT_EQ(real(60-c3), data[5]);
     EXPECT_EQ(real(70), data[6]);
     EXPECT_EQ(real(80), data[7]);
     EXPECT_EQ(real(90), data[8]);
@@ -151,7 +155,7 @@ TEST(SimdScalarUtilTest, transposeScatterDecrU)
 
 TEST(SimdScalarTest, expandScalarsToTriplets)
 {
-    real scalar = 1.234;
+    real scalar = c1;
     real t0, t1, t2;
 
     expandScalarsToTriplets(scalar, &t0, &t1, &t2);
@@ -163,7 +167,7 @@ TEST(SimdScalarTest, expandScalarsToTriplets)
 
 TEST(SimdScalarUtilTest, gatherLoadBySimdIntTranspose)
 {
-    real         data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    real         data[8] = {c0, c1, c2, c3, c4, c5, c6, c7};
     std::int32_t offset  = 1;
     real         v0, v1, v2, v3;
 
@@ -182,7 +186,7 @@ TEST(SimdScalarUtilTest, gatherLoadBySimdIntTranspose)
 
 TEST(SimdScalarUtilTest, gatherLoadUBySimdIntTranspose)
 {
-    real         data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    real         data[8] = {c0, c1, c2, c3, c4, c5, c6, c7};
     std::int32_t offset  = 1;
     real         v0, v1;
 
@@ -195,22 +199,22 @@ TEST(SimdScalarUtilTest, gatherLoadUBySimdIntTranspose)
 TEST(SimdScalarUtilTest, reduceIncr4ReturnSum)
 {
     real data[6] = {0, 0, 0, 0, 0, 0};
-    real v0      = 1;
-    real v1      = 2;
-    real v2      = 3;
-    real v3      = 4;
+    real v0      = c1;
+    real v1      = c2;
+    real v2      = c3;
+    real v3      = c4;
     real sum;
 
     sum = reduceIncr4ReturnSum(data+1, v0, v1, v2, v3);
 
-    EXPECT_EQ(real(0.0), data[0]);
+    EXPECT_EQ(czero, data[0]);
     EXPECT_EQ(v0, data[1]);
     EXPECT_EQ(v1, data[2]);
     EXPECT_EQ(v2, data[3]);
     EXPECT_EQ(v3, data[4]);
-    EXPECT_EQ(real(0.0), data[5]);
+    EXPECT_EQ(czero, data[5]);
 
-    EXPECT_EQ(real(v0+v1+v2+v3), sum);
+    EXPECT_REAL_EQ_TOL(real(v0+v1+v2+v3), sum, defaultRealTolerance());
 }
 
 /*! \} */
