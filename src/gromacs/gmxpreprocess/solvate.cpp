@@ -51,6 +51,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
@@ -661,9 +662,6 @@ static void add_solv(const char *fn, t_topology *top,
     sfree(filename);
     fprintf(stderr, "\n");
 
-    /* apply pbc for solvent configuration for whole molecules */
-    rm_res_pbc(atoms_solvt, &x_solvt, box_solvt);
-
     /* initialise distance arrays for solvent configuration */
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     const std::vector<real> exclusionDistances(
@@ -675,11 +673,21 @@ static void add_solv(const char *fn, t_topology *top,
     fprintf(stderr, "Generating solvent configuration\n");
     t_pbc pbc;
     set_pbc(&pbc, ePBC, box);
-    replicateSolventBox(atoms_solvt, &x_solvt, &v_solvt, &exclusionDistances_solvt,
-                        box_solvt, box);
-    if (ePBC != epbcNONE)
+    if (!gmx::boxesAreEqual(box_solvt, box))
     {
-        removeSolventBoxOverlap(atoms_solvt, &x_solvt, &v_solvt, &exclusionDistances_solvt, pbc);
+        if (TRICLINIC(box_solvt))
+        {
+            gmx_fatal(FARGS, "Generating from non-rectangular solvent boxes is currently not supported.\n"
+                      "You can try to pass the same box for -cp and -cs.");
+        }
+        /* apply pbc for solvent configuration for whole molecules */
+        rm_res_pbc(atoms_solvt, &x_solvt, box_solvt);
+        replicateSolventBox(atoms_solvt, &x_solvt, &v_solvt, &exclusionDistances_solvt,
+                            box_solvt, box);
+        if (ePBC != epbcNONE)
+        {
+            removeSolventBoxOverlap(atoms_solvt, &x_solvt, &v_solvt, &exclusionDistances_solvt, pbc);
+        }
     }
     if (top->atoms.nr > 0)
     {
