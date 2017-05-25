@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,6 +81,28 @@ extern "C" {
 /* 2.0 / sqrt(M_PI) */
 #define M_2_SQRTPI  1.128379167095513
 #endif
+
+/*! \brief Enum to select safe or highly unsafe (faster) math functions.
+ *
+ *  Normally all the Gromacs math functions should apply reasonable care with
+ *  input arguments. While we do not necessarily adhere strictly to IEEE
+ *  (in particular not for arguments that might result in NaN, inf, etc.), the
+ *  functions should return reasonable values or e.g. clamp results to zero.
+ *
+ *  However, in a few cases where we are extremely performance-sensitive it
+ *  makes sense to forego these checks too in cases where we know the exact
+ *  properties if the input data, and we really need to save every cycle we can.
+ *
+ *  This class is typically used as a template parameter to such calls to enable
+ *  the caller to select the level of aggressiveness. We should always use the
+ *  safe alternative as the default value, and document carefully what might
+ *  happen with the unsafe alternative.
+ */
+enum class MathOptimization
+{
+    Safe,    //!< Don't do unsafe optimizations. This should always be default.
+    Unsafe   //!< Allow optimizations that can be VERY dangerous for general code.
+};
 
 /*! \brief Check if two numbers are within a tolerance
  *
