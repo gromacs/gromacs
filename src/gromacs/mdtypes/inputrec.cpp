@@ -1373,3 +1373,38 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
         return !ETC_ANDERSEN(ir->etc) && !shearWithPR;
     }
 }
+
+int inputrec2nboundeddim(const t_inputrec *ir)
+{
+    if (ir->nwall == 2 && ir->ePBC == epbcXY)
+    {
+        return 3;
+    }
+    else
+    {
+        return ePBC2npbcdim(ir->ePBC);
+    }
+}
+
+int ndof_com(const t_inputrec *ir)
+{
+    int n = 0;
+
+    switch (ir->ePBC)
+    {
+        case epbcXYZ:
+        case epbcNONE:
+            n = 3;
+            break;
+        case epbcXY:
+            n = (ir->nwall == 0 ? 3 : 2);
+            break;
+        case epbcSCREW:
+            n = 1;
+            break;
+        default:
+            gmx_incons("Unknown pbc in calc_nrdf");
+    }
+
+    return n;
+}
