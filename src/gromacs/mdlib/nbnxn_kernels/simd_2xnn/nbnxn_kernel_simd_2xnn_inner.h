@@ -729,9 +729,11 @@
 #ifndef HALF_LJ
         cr2_S2        = lje_c2_S * selectByMask(rsq_S2, wco_vdw_S2);
 #endif
-        expmcr2_S0    = exp( -cr2_S0);
+        // Unsafe version of our exp() should be fine, since these arguments should never
+        // be smaller than -127 for any reasonable choice of cutoff or ewald coefficients.
+        expmcr2_S0    = exp<MathOptimization::Unsafe>( -cr2_S0);
 #ifndef HALF_LJ
-        expmcr2_S2    = exp( -cr2_S2);
+        expmcr2_S2    = exp<MathOptimization::Unsafe>( -cr2_S2);
 #endif
 
         /* 1 + cr2 + 1/2*cr2^2 */
