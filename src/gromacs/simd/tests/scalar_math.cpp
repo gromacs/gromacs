@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 
 #include "testutils/testasserts.h"
 
+#include "data.h"
+
 namespace gmx
 {
 namespace test
@@ -66,14 +68,14 @@ namespace
 
 TEST(SimdScalarMathTest, copysign)
 {
-    EXPECT_EQ(real(-4), copysign(real(4), real(-5)));
-    EXPECT_EQ(real(5), copysign(real(5), real(2)));
+    EXPECT_EQ(real(-c1), copysign(real(c1), real(-c2)));
+    EXPECT_EQ(real(c2), copysign(real(c2), real(c3)));
 }
 
 TEST(SimdScalarMathTest, invsqrtPair)
 {
-    real x0 = 1.2345;
-    real x1 = 9.8765;
+    real x0 = c1;
+    real x1 = c2;
 
     real out0, out1;
 
@@ -85,14 +87,14 @@ TEST(SimdScalarMathTest, invsqrtPair)
 
 TEST(SimdScalarMathTest, inv)
 {
-    real x0 = 1.2345;
+    real x0 = c0;
 
     EXPECT_EQ(real(1.0)/x0, inv(x0));
 }
 
 TEST(SimdScalarMathTest, maskzInvsqrt)
 {
-    real x0 = 1.2345;
+    real x0 = c0;
 
     EXPECT_EQ(invsqrt(x0), maskzInvsqrt(x0, true));
     EXPECT_EQ(real(0), maskzInvsqrt(x0, false));
@@ -100,42 +102,42 @@ TEST(SimdScalarMathTest, maskzInvsqrt)
 
 TEST(SimdScalarMathTest, log)
 {
-    real x0 = 1.2345;
+    real x0 = c0;
 
     EXPECT_EQ(std::log(x0), log(x0));
 }
 
 TEST(SimdScalarMathTest, exp2)
 {
-    real x0 = 1.2345;
+    real x0 = c0;
 
     EXPECT_EQ(std::exp2(x0), exp2(x0));
 }
 
 TEST(SimdScalarMathTest, exp)
 {
-    real x0 = 1.2345;
+    real x0 = c0;
 
     EXPECT_EQ(std::exp(x0), exp(x0));
 }
 
 TEST(SimdScalarMathTest, erf)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::erf(x0), erf(x0));
 }
 
 TEST(SimdScalarMathTest, erfc)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::erfc(x0), erfc(x0));
 }
 
 TEST(SimdScalarMathTest, sincos)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
     real s, c;
 
     sincos(x0, &s, &c);
@@ -146,21 +148,21 @@ TEST(SimdScalarMathTest, sincos)
 
 TEST(SimdScalarMathTest, sin)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::sin(x0), sin(x0));
 }
 
 TEST(SimdScalarMathTest, cos)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::cos(x0), cos(x0));
 }
 
 TEST(SimdScalarMathTest, tan)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::tan(x0), tan(x0));
 }
@@ -168,29 +170,29 @@ TEST(SimdScalarMathTest, tan)
 
 TEST(SimdScalarMathTest, asin)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::asin(x0), asin(x0));
 }
 
 TEST(SimdScalarMathTest, acos)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::acos(x0), acos(x0));
 }
 
 TEST(SimdScalarMathTest, atan)
 {
-    real x0 = 0.51256;
+    real x0 = c0;
 
     EXPECT_EQ(std::atan(x0), atan(x0));
 }
 
 TEST(SimdScalarMathTest, atan2)
 {
-    real x = 0.5;
-    real y = std::sqrt(0.75);
+    real x = c0;
+    real y = std::sqrt(c0);
 
 
     EXPECT_EQ(std::atan2(y, x), atan2(y, x));
@@ -198,7 +200,7 @@ TEST(SimdScalarMathTest, atan2)
 
 TEST(SimdScalarMathTest, pmeForceCorrection)
 {
-    real z2 = 0.51256;
+    real z2 = c0;
 
     // Calculate reference value for z2!=0
     real z   = std::sqrt(z2);
@@ -216,7 +218,7 @@ TEST(SimdScalarMathTest, pmeForceCorrection)
 
 TEST(SimdScalarMathTest, pmePotentialCorrection)
 {
-    real z2 = 0.51256;
+    real z2 = c0;
 
     // Calculate reference value for z2!=0
     real z   = std::sqrt(z2);
@@ -238,8 +240,8 @@ TEST(SimdScalarMathTest, pmePotentialCorrection)
 
 TEST(SimdScalarMathTest, invsqrtPairSingleAccuracy)
 {
-    double x0 = 1.2345;
-    double x1 = 9.8765;
+    double x0 = c1;
+    double x1 = c2;
 
     double out0, out1;
 
@@ -251,7 +253,7 @@ TEST(SimdScalarMathTest, invsqrtPairSingleAccuracy)
 
 TEST(SimdScalarMathTest, invSingleAccuracy)
 {
-    double x0 = 1.2345;
+    double x0 = c1;
 
     EXPECT_EQ(1.0f/static_cast<float>(x0),
               static_cast<float>(invSingleAccuracy(x0)));
@@ -259,7 +261,7 @@ TEST(SimdScalarMathTest, invSingleAccuracy)
 
 TEST(SimdScalarMathTest, maskzInvsqrtSingleAccuracy)
 {
-    double x0 = 1.2345;
+    double x0 = c1;
 
     EXPECT_EQ(invsqrt(static_cast<float>(x0)),
               static_cast<float>(maskzInvsqrtSingleAccuracy(x0, true)));
@@ -269,7 +271,7 @@ TEST(SimdScalarMathTest, maskzInvsqrtSingleAccuracy)
 
 TEST(SimdScalarMathTest, logSingleAccuracy)
 {
-    double x0 = 1.2345;
+    double x0 = c1;
 
     EXPECT_EQ(std::log(static_cast<float>(x0)),
               static_cast<float>(logSingleAccuracy(x0)));
@@ -277,7 +279,7 @@ TEST(SimdScalarMathTest, logSingleAccuracy)
 
 TEST(SimdScalarMathTest, exp2SingleAccuracy)
 {
-    double x0 = 1.2345;
+    double x0 = c1;
 
     EXPECT_EQ(std::exp2(static_cast<float>(x0)),
               static_cast<float>(exp2SingleAccuracy(x0)));
@@ -285,7 +287,7 @@ TEST(SimdScalarMathTest, exp2SingleAccuracy)
 
 TEST(SimdScalarMathTest, expSingleAccuracy)
 {
-    double x0 = 1.2345;
+    double x0 = c1;
 
     EXPECT_EQ(std::exp(static_cast<float>(x0)),
               static_cast<float>(expSingleAccuracy(x0)));
@@ -293,21 +295,21 @@ TEST(SimdScalarMathTest, expSingleAccuracy)
 
 TEST(SimdScalarMathTest, erfSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::erf(static_cast<float>(x0)), static_cast<float>(erfSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, erfcSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::erfc(static_cast<float>(x0)), static_cast<float>(erfcSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, sincosSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
     double s, c;
 
     sincosSingleAccuracy(x0, &s, &c);
@@ -318,7 +320,7 @@ TEST(SimdScalarMathTest, sincosSingleAccuracy)
 
 TEST(SimdScalarMathTest, sinSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::sin(static_cast<float>(x0)),
               static_cast<float>(sinSingleAccuracy(x0)));
@@ -326,7 +328,7 @@ TEST(SimdScalarMathTest, sinSingleAccuracy)
 
 TEST(SimdScalarMathTest, cosSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::cos(static_cast<float>(x0)),
               static_cast<float>(cosSingleAccuracy(x0)));
@@ -334,7 +336,7 @@ TEST(SimdScalarMathTest, cosSingleAccuracy)
 
 TEST(SimdScalarMathTest, tanSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::tan(static_cast<float>(x0)),
               static_cast<float>(tanSingleAccuracy(x0)));
@@ -343,7 +345,7 @@ TEST(SimdScalarMathTest, tanSingleAccuracy)
 
 TEST(SimdScalarMathTest, asinSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::asin(static_cast<float>(x0)),
               static_cast<float>(asinSingleAccuracy(x0)));
@@ -351,7 +353,7 @@ TEST(SimdScalarMathTest, asinSingleAccuracy)
 
 TEST(SimdScalarMathTest, acosSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::acos(static_cast<float>(x0)),
               static_cast<float>(acosSingleAccuracy(x0)));
@@ -359,7 +361,7 @@ TEST(SimdScalarMathTest, acosSingleAccuracy)
 
 TEST(SimdScalarMathTest, atanSingleAccuracy)
 {
-    double x0 = 0.51256;
+    double x0 = c0;
 
     EXPECT_EQ(std::atan(static_cast<float>(x0)),
               static_cast<float>(atanSingleAccuracy(x0)));
@@ -367,8 +369,8 @@ TEST(SimdScalarMathTest, atanSingleAccuracy)
 
 TEST(SimdScalarMathTest, atan2SingleAccuracy)
 {
-    double x = 0.5;
-    double y = std::sqrt(0.75);
+    double x = c0;
+    double y = std::sqrt(c0);
 
 
     EXPECT_EQ(std::atan2(static_cast<float>(y), static_cast<float>(x)),
@@ -377,7 +379,7 @@ TEST(SimdScalarMathTest, atan2SingleAccuracy)
 
 TEST(SimdScalarMathTest, pmeForceCorrectionSingleAccuracy)
 {
-    double z2 = 0.51256;
+    double z2 = c0;
 
     // Calculate reference value for z2!=0 in single precision
     float z   = std::sqrt(static_cast<float>(z2));
@@ -391,7 +393,7 @@ TEST(SimdScalarMathTest, pmeForceCorrectionSingleAccuracy)
 
 TEST(SimdScalarMathTest, pmePotentialCorrectionSingleAccuracy)
 {
-    double z2 = 0.51256;
+    double z2 = c0;
 
     // Calculate reference value for z2!=0 in single precision
     float z   = std::sqrt(static_cast<float>(z2));

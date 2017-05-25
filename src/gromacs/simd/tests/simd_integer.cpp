@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -305,7 +305,7 @@ TEST_F(SimdIntegerTest, blend)
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, cvtB2IB)
 {
-    SimdBool  eq   = (rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
+    SimdBool  eq   = (rSimd_c3c4c5 == rSimd_c3c0c4);  // eq should be T,F,F
     SimdIBool eqi  = cvtB2IB(eq);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 0), selectByMask(iSimd_1_2_3, eqi));
 
@@ -315,7 +315,7 @@ TEST_F(SimdIntegerTest, cvtIB2B)
 {
     SimdIBool eqi  = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));  // eq should be T,F,F
     SimdBool  eq   = cvtIB2B(eqi);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), selectByMask(rSimd_1_2_3, eq));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, 0, 0), selectByMask(rSimd_c0c1c2, eq));
 }
 #endif      // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 
