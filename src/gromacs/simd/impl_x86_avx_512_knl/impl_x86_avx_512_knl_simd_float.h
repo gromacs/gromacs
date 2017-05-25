@@ -77,6 +77,7 @@ maskzRcp(SimdFloat x, SimdFBool m)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp2(SimdFloat x)
 {
@@ -85,6 +86,7 @@ exp2(SimdFloat x)
     };
 }
 
+template <MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall
 exp(SimdFloat x)
 {
