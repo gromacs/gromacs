@@ -54,7 +54,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/exceptions.h"
@@ -95,18 +94,6 @@ int ePBC2npbcdim(int ePBC)
     }
 
     return npbcdim;
-}
-
-int inputrec2nboundeddim(const t_inputrec *ir)
-{
-    if (ir->nwall == 2 && ir->ePBC == epbcXY)
-    {
-        return 3;
-    }
-    else
-    {
-        return ePBC2npbcdim(ir->ePBC);
-    }
 }
 
 void dump_pbc(FILE *fp, t_pbc *pbc)
@@ -325,29 +312,6 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, t_graph *graph)
     }
 
     return bCorrected;
-}
-
-int ndof_com(t_inputrec *ir)
-{
-    int n = 0;
-
-    switch (ir->ePBC)
-    {
-        case epbcXYZ:
-        case epbcNONE:
-            n = 3;
-            break;
-        case epbcXY:
-            n = (ir->nwall == 0 ? 3 : 2);
-            break;
-        case epbcSCREW:
-            n = 1;
-            break;
-        default:
-            gmx_incons("Unknown pbc in calc_nrdf");
-    }
-
-    return n;
 }
 
 //! Do the real arithmetic for filling the pbc struct

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
-struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -131,14 +130,6 @@ struct t_graph;
  */
 int ePBC2npbcdim(int ePBC);
 
-/*! \brief Return the number of bounded directories
- *
- * \param[in] ir The input record with MD parameters
- * \return the number of dimensions in which
- * the coordinates of the particles are bounded, starting at X.
- */
-int inputrec2nboundeddim(const t_inputrec *ir);
-
 /*! \brief Dump the contents of the pbc structure to the file
  *
  * \param[in] fp  The file pointer to write to
@@ -189,13 +180,6 @@ int guess_ePBC(const matrix box);
  * \return TRUE when the box was corrected.
  */
 gmx_bool correct_box(FILE *fplog, int step, tensor box, struct t_graph *graph);
-
-/*! \brief Returns the number of degrees of freedom in center of mass motion
- *
- * \param[in] ir the inputrec structure
- * \return the number of degrees of freedom of the center of mass
- */
-int ndof_com(t_inputrec *ir);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *

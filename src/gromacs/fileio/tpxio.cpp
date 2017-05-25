@@ -3302,7 +3302,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             do_inputrec(fio, ir, bRead, fileVersion, mtop ? &mtop->ffparams.fudgeQQ : nullptr);
             if (fileVersion < 51)
             {
-                set_box_rel(ir, state->box_rel, state->box);
+                set_box_rel(ir, state);
             }
             if (fileVersion < 53)
             {
