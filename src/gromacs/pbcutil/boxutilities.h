@@ -38,30 +38,12 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
 
-struct t_inputrec;
-
-/*! \brief Make sure the relative box shape remains the same
+/*! \brief Change box components to preserve the relative box shape
  *
- * This function ensures that the relative box dimensions are
- * preserved, which otherwise might diffuse away due to rounding
- * errors in pressure coupling or the deform option.
- *
- * \param[in]    ir      Input record
- * \param[in]    box_rel Relative box dimensions
- * \param[inout] box     The corrected actual box dimensions
+ * Change box components to box[XX][XX]*box_rel to preserve the relative box shape
  */
-void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
-
-/*! \brief Determine the relative box components
- *
- * Set box_rel e.g. used in mdrun state, used to preserve the box shape
- * \param[in]    ir      Input record
- * \param[inout] box_rel Relative box dimensions
- * \param[inout] box     Actual box dimensions
- */
-void set_box_rel(const t_inputrec *ir, matrix box_rel, matrix box);
+void do_box_rel(int ndim, const matrix deform, matrix box_rel,
+                matrix b, bool bInit);
 
 #endif

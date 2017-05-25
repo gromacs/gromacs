@@ -42,38 +42,22 @@
 
 #include "boxutilities.h"
 
-#include <cmath>
-
-#include <algorithm>
-
-#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
 
-/*! \brief Change box components to preserve the relative box shape
- *
- * Change box components to box[XX][XX]*box_rel to preserve the relative box shape
- */
-static void do_box_rel(const t_inputrec *ir, matrix box_rel,
-                       matrix b, gmx_bool bInit)
+void do_box_rel(int ndim, const matrix deform, matrix box_rel,
+                matrix b, bool bInit)
 {
-    int d, d2;
-
-    for (d = YY; d <= ZZ; d++)
+    for (int d = YY; d <= ZZ; ++d)
     {
-        for (d2 = XX; d2 <= (ir->epct == epctSEMIISOTROPIC ? YY : ZZ); d2++)
+        for (int d2 = XX; d2 < ndim; ++d2)
         {
             /* We need to check if this box component is deformed
              * or if deformation of another component might cause
              * changes in this component due to box corrections.
              */
-            if (ir->deform[d][d2] == 0 &&
-                !(d == ZZ && d2 == XX && ir->deform[d][YY] != 0 &&
-                  (b[YY][d2] != 0 || ir->deform[YY][d2] != 0)))
+            if (deform[d][d2] == 0 &&
+                !(d == ZZ && d2 == XX && deform[d][YY] != 0 &&
+                  (b[YY][d2] != 0 || deform[YY][d2] != 0)))
             {
                 if (bInit)
                 {
@@ -85,26 +69,5 @@ static void do_box_rel(const t_inputrec *ir, matrix box_rel,
                 }
             }
         }
-    }
-}
-
-void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
-{
-    if (inputrecPreserveShape(ir))
-    {
-        do_box_rel(ir, box_rel, box, FALSE);
-    }
-}
-
-void set_box_rel(const t_inputrec *ir, matrix box_rel, matrix box)
-{
-    /* Make sure the box obeys the restrictions before we fix the ratios */
-    correct_box(nullptr, 0, box, nullptr);
-
-    clear_mat(box_rel);
-
-    if (inputrecPreserveShape(ir))
-    {
-        do_box_rel(ir, box_rel, box, TRUE);
     }
 }

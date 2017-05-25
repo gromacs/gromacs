@@ -63,6 +63,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct t_inputrec;
+
 /*
  * The t_state struct should contain all the (possibly) non-static
  * information required to define the state of the system.
@@ -258,5 +260,25 @@ void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real fto
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
                                        unsigned int            n);
+
+/*! \brief Determine the relative box components
+ *
+ * Set box_rel e.g. used in mdrun state, used to preserve the box shape
+ * \param[in]    ir      Input record
+ * \param[inout] state   State
+ */
+void set_box_rel(const t_inputrec *ir, t_state *state);
+
+/*! \brief Make sure the relative box shape remains the same
+ *
+ * This function ensures that the relative box dimensions are
+ * preserved, which otherwise might diffuse away due to rounding
+ * errors in pressure coupling or the deform option.
+ *
+ * \param[in]    ir      Input record
+ * \param[in]    box_rel Relative box dimensions
+ * \param[inout] box     The corrected actual box dimensions
+ */
+void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
 
 #endif
