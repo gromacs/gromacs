@@ -213,7 +213,7 @@ refInvsqrt(real x)
 
 TEST_F(SimdMathTest, invsqrt)
 {
-    setRange(1e-10, 1e10);
+    setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, invsqrt);
 }
 
@@ -245,7 +245,7 @@ tstInvsqrtPair1(SimdReal x)
 
 TEST_F(SimdMathTest, invsqrtPair)
 {
-    setRange(1e-10, 1e10);
+    setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
     // The accuracy conversions lose a bit of extra accuracy compared to
     // doing the iterations in all-double.
     setUlpTol(4*ulpTol_);
@@ -254,10 +254,50 @@ TEST_F(SimdMathTest, invsqrtPair)
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tstInvsqrtPair1);
 }
 
+/*! \brief Function wrapper to evaluate reference sqrt(x) */
+static real
+refSqrt(real x)
+{
+    return std::sqrt(x);
+}
+
+/*! \brief Dummy function returning 0.0 to test function ranges that should be zero */
+static real
+refZero(real gmx_unused x)
+{
+    return 0.0;
+}
+
+
 TEST_F(SimdMathTest, sqrt)
 {
-    // Just make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
+    // The accuracy conversions lose a bit of extra accuracy compared to
+    // doing the iterations in all-double.
+    setUlpTol(4*ulpTol_);
+
+    // First test that 0.0 and a few other values works
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, 2, 3), sqrt(setSimdRealFrom3R(0, 4, 9)));
+
+    // Values smaller-than-or-equal to GMX_FLOAT_MIN will be clamped to 0.0,
+    // so only test larger values
+    setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrt);
+
+#if GMX_DOUBLE
+    // Make sure that values smaller than GMX_FLOAT_MIN lead to result 0.0
+    setRange(0.0, 0.99*GMX_FLOAT_MIN);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refZero, sqrt);
+#endif
+}
+
+TEST_F(SimdMathTest, sqrtUnsafe)
+{
+    // The accuracy conversions lose a bit of extra accuracy compared to
+    // doing the iterations in all-double.
+    setUlpTol(4*ulpTol_);
+
+    setRange(GMX_FLOAT_MIN, GMX_FLOAT_MAX);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrtUnsafe);
 }
 
 /*! \brief Function wrapper to evaluate reference 1/x */
@@ -291,47 +331,80 @@ TEST_F(SimdMathTest, log)
 
 TEST_F(SimdMathTest, exp2)
 {
-    setRange(-100, 100);
+    // For now we cannot test the continuous range of small arguments, since
+    // our implementation might clamp-to-zero a little bit earlier than the
+    // reference implementation
+#if GMX_DOUBLE
+    setRange(-1022.49, 1023.49);
+#else
+    setRange(-126.49, 127.49);
+#endif
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2);
 
-    // We do not care about the SIMD implementation getting denormal values right,
-    // but they must be clamped to zero rather than producing garbage.
-    // Check by setting the absolute tolerance to machine precision.
-    setAbsTol(GMX_REAL_EPS);
+    // Test a range that should be zero both for reference and simd versions.
+    // Some implementations might have denormal support, in which case they
+    // support an extended range, adding roughly the number of bits in the
+    // mantissa to the smallest allowed arg (1023+52 in double, 127+23 single).
+#if GMX_DOUBLE
+    setRange(-1000000.0, -1075.0);
+#else
+    setRange(-100000.0, -150.0);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2);
 
-    // First two values will have denormal results in single, third value in double too.
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp2(-150.0), std::exp2(-300.0), std::exp2(-1050.0)),
-                              exp2(setSimdRealFrom3R(-150.0, -300.0, -1050.0)));
+    // Test a few very negative values, including values so small that they
+    // will start to cause inf values in the polynomial interpolations
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp2(-GMX_FLOAT_MAX), std::exp2(-0.1*GMX_REAL_MAX), std::exp2(-GMX_REAL_MAX)),
+                              exp2(setSimdRealFrom3R(-GMX_FLOAT_MAX, -0.1*GMX_REAL_MAX, -GMX_REAL_MAX)));
+}
 
-    // Reset absolute tolerance to enforce ULP checking
-    setAbsTol(0.0);
-
-    // Make sure that underflowing values are set to zero.
-    // First two values underflow in single, third value in double too.
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp2(-200.0), std::exp2(-600.0), std::exp2(-1500.0)),
-                              exp2(setSimdRealFrom3R(-200.0, -600.0, -1500.0)));
+TEST_F(SimdMathTest, exp2Unsafe)
+{
+    // The unsafe version is only defined in this range
+#if GMX_DOUBLE
+    setRange(-1022.49, 1023.49);
+#else
+    setRange(-126.49, 127.49);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2);
 }
 
 TEST_F(SimdMathTest, exp)
 {
-    setRange(-75, 75);
+    // small range where result will be non-zero
+#if GMX_DOUBLE
+    setRange(-708.7, 709.4);
+#else
+    setRange(-87.6, 88.3);
+#endif
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp);
 
-    // We do not care about the SIMD implementation getting denormal values right,
-    // but they must be clamped to zero rather than producing garbage.
-    // Check by setting the absolute tolerance to machine precision.
-    setAbsTol(GMX_REAL_EPS);
-    // First two values will have denormal results in single, third value in double too.
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp(-90.0), std::exp(-100.0), std::exp(-725.0)),
-                              exp(setSimdRealFrom3R(-90.0, -100.0, -725.0)));
+    // Test a range that should be zero both for reference and simd versions.
+    // Some implementations might have denormal support, in which case they
+    // support an extended range, adding roughly the number of bits in the
+    // mantissa to the smallest result exponent (1023+52 in double, 127+23 single).
+    // Then multiply with ln(2) to get our limit for exp().
+#if GMX_DOUBLE
+    setRange(-1000000.0, -746.0);
+#else
+    setRange(-100000.0, -104.0);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp);
 
-    // Reset absolute tolerance to enforce ULP checking
-    setAbsTol(0.0);
+    // Test a few very negative values, including values so small that they
+    // will start to cause inf values in the polynomial interpolations
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp(-GMX_FLOAT_MAX), std::exp(-0.1*GMX_REAL_MAX), std::exp(-GMX_REAL_MAX)),
+                              exp(setSimdRealFrom3R(-GMX_FLOAT_MAX, -0.1*GMX_REAL_MAX, -GMX_REAL_MAX)));
+}
 
-    // Make sure that underflowing values are set to zero.
-    // First two values underflow in single, third value in double too.
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp(-150.0), std::exp(-300.0), std::exp(-800.0)),
-                              exp(setSimdRealFrom3R(-150.0, -300.0, -800.0)));
+TEST_F(SimdMathTest, expUnsafe)
+{
+#if GMX_DOUBLE
+    setRange(-708.7, 709.4);
+#else
+    setRange(-87.6, 88.3);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp);
 }
 
 /*! \brief Function wrapper for erf(x), with argument/return in default Gromacs precision.
@@ -503,7 +576,7 @@ TEST_F(SimdMathTest, invsqrtSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
-    setRange(1e-10, 1e10);
+    setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
 }
 
@@ -530,7 +603,7 @@ TEST_F(SimdMathTest, invsqrtPairSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
-    setRange(1e-10, 1e10);
+    setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tst_invsqrt_SingleAccuracy_pair0);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tst_invsqrt_SingleAccuracy_pair1);
 }
@@ -540,8 +613,29 @@ TEST_F(SimdMathTest, sqrtSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
-    // Just make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
+    // First test that 0.0 and a few other values works
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, 2, 3), sqrtSingleAccuracy(setSimdRealFrom3R(0, 4, 9)));
+
+    // Values smaller-than-or-equal to GMX_FLOAT_MIN will be clamped to 0.0,
+    // so only test larger values
+    setRange(1.01*GMX_FLOAT_MIN, GMX_FLOAT_MAX);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrtSingleAccuracy);
+
+#if GMX_DOUBLE
+    // Make sure that values smaller than GMX_FLOAT_MIN lead to result 0.0
+    setRange(0.0, 0.99*GMX_FLOAT_MIN);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refZero, sqrtSingleAccuracy);
+#endif
+}
+
+TEST_F(SimdMathTest, sqrtUnsafeSingleAccuracy)
+{
+    /* Increase the allowed error by the difference between the actual precision and single */
+    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+
+    // Test the full range
+    setRange(GMX_FLOAT_MIN, GMX_FLOAT_MAX);
+    GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrtUnsafeSingleAccuracy);
 }
 
 TEST_F(SimdMathTest, invSingleAccuracy)
@@ -570,8 +664,40 @@ TEST_F(SimdMathTest, exp2SingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
-    setRange(-100, 100);
+#if GMX_DOUBLE
+    setRange(-1022.49, 1023.49);
+#else
+    setRange(-126.49, 127.49);
+#endif
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy);
+
+    // Test a range that should be zero both for reference and simd versions.
+    // Some implementations might have denormal support, in which case they
+    // support an extended range, adding roughly the number of bits in the
+    // mantissa to the smallest allowed arg (1023+52 in double, 127+23 single).
+#if GMX_DOUBLE
+    setRange(-1000000.0, -1075.0);
+#else
+    setRange(-100000.0, -150.0);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy);
+
+    // Test a few very negative values
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp2(-GMX_FLOAT_MAX), std::exp2(-0.1*GMX_REAL_MAX), std::exp2(-GMX_REAL_MAX)),
+                              exp2SingleAccuracy(setSimdRealFrom3R(-GMX_FLOAT_MAX, -0.1*GMX_REAL_MAX, -GMX_REAL_MAX)));
+}
+
+TEST_F(SimdMathTest, exp2UnsafeSingleAccuracy)
+{
+    /* Increase the allowed error by the difference between the actual precision and single */
+    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+
+#if GMX_DOUBLE
+    setRange(-1022.49, 1023.49);
+#else
+    setRange(-126.49, 127.49);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2UnsafeSingleAccuracy);
 }
 
 TEST_F(SimdMathTest, expSingleAccuracy)
@@ -579,7 +705,41 @@ TEST_F(SimdMathTest, expSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
-    setRange(-75, 75);
+#if GMX_DOUBLE
+    setRange(-708.7, 709.4);
+#else
+    setRange(-87.6, 88.3);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy);
+
+    // Test a range that should be zero both for reference and simd versions.
+    // Some implementations might have denormal support, in which case they
+    // support an extended range, adding roughly the number of bits in the
+    // mantissa to the smallest result exponent (1023+52 in double, 127+23 single).
+    // Then multiply with ln(2) to get our limit for exp().
+#if GMX_DOUBLE
+    setRange(-1000000.0, -746.0);
+#else
+    setRange(-100000.0, -104.0);
+#endif
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy);
+
+    // Test a few very negative values, including values so small that they
+    // will start to cause inf values in the polynomial interpolations
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp(-GMX_FLOAT_MAX), std::exp(-0.1*GMX_REAL_MAX), std::exp(-GMX_REAL_MAX)),
+                              expSingleAccuracy(setSimdRealFrom3R(-GMX_FLOAT_MAX, -0.1*GMX_REAL_MAX, -GMX_REAL_MAX)));
+}
+
+TEST_F(SimdMathTest, expUnsafeSingleAccuracy)
+{
+    /* Increase the allowed error by the difference between the actual precision and single */
+    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+
+#if GMX_DOUBLE
+    setRange(-708.7, 709.4);
+#else
+    setRange(-87.6, 88.3);
+#endif
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy);
 }
 
