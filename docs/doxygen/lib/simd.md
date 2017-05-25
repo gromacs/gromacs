@@ -579,3 +579,26 @@ performance problem if the code does not correctly include
 in `gromacs/simd/simd.h` and requires that files using those symbols
 do the correct include. Similar checking is done for higher-level
 SIMD-management headers, e.g. `gromacs/ewald/pme-simd.h`.
+
+
+The SIMD math library
+=====================
+
+In addition to the low-level SIMD instructions, \Gromacs comes with a fairly
+extensive SIMD math library in `gromacs/simd/simd_math.h` to support various
+mathematical functions. The functions are available both in single and
+double precision (overloaded on the usual math function names), and we also
+provide a special version of functions that use double precision arguments,
+but that only evaluate the result to single precision accuracy. This is
+useful when you don’t need highly accurate results, but you want to avoid
+the overhead of doing multiple single/double conversions, or if the hardware
+architecture only provides a double precision SIMD implementation.
+
+For a few functions such as the square root and exponential that are
+performance-critical, we provide additional tempate parameters where the
+default choice is to execute the normal function version, but it is also
+possible to choose an unsafe execution path that completely bypass all
+argument checking. Make absolutely sure your arguments always fulfil the
+restrictions listed in the documentation of such a function before using it,
+and it might even be a good idea to add a note before each call to an unsafe
+function justifying why that flavor is fine to use here.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -979,11 +979,13 @@
         cr2_S2        = lje_c2_S * selectByMask(rsq_S2, wco_vdw_S2);
         cr2_S3        = lje_c2_S * selectByMask(rsq_S3, wco_vdw_S3);
 #endif
-        expmcr2_S0    = exp( -cr2_S0 );
-        expmcr2_S1    = exp( -cr2_S1 );
+        // Unsafe version of our exp() should be fine, since these arguments should never
+        // be smaller than -127 for any reasonable choice of cutoff or ewald coefficients.
+        expmcr2_S0    = exp<MathOptimization::Unsafe>( -cr2_S0 );
+        expmcr2_S1    = exp<MathOptimization::Unsafe>( -cr2_S1 );
 #ifndef HALF_LJ
-        expmcr2_S2    = exp( -cr2_S2 );
-        expmcr2_S3    = exp( -cr2_S3 );
+        expmcr2_S2    = exp<MathOptimization::Unsafe>( -cr2_S2 );
+        expmcr2_S3    = exp<MathOptimization::Unsafe>( -cr2_S3 );
 #endif
 
         /* 1 + cr2 + 1/2*cr2^2 */
