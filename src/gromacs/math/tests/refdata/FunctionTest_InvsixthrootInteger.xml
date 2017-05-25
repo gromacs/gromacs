@@ -4,13 +4,13 @@
   <Sequence Name="InvsixthrootInteger">
     <Int Name="Length">9</Int>
     <Real>1</Real>
-    <Real>1.122462048309373</Real>
-    <Real>1.2009369551760027</Real>
-    <Real>1.2599210498948732</Real>
-    <Real>1.3076604860118306</Real>
-    <Real>1.3480061545972777</Real>
-    <Real>1.3830875542684886</Real>
-    <Real>1.4142135623730951</Real>
-    <Real>1.4422495703074083</Real>
+    <Real>0.89089871814033927</Real>
+    <Real>0.83268317765560429</Real>
+    <Real>0.79370052598409968</Real>
+    <Real>0.76472449133173004</Real>
+    <Real>0.74183637559040227</Real>
+    <Real>0.72302002639948371</Real>
+    <Real>0.70710678118654746</Real>
+    <Real>0.69336127435063477</Real>
   </Sequence>
 </ReferenceData>

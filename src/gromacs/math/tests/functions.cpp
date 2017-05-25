@@ -251,7 +251,7 @@ TEST(FunctionTest, InvsixthrootFloat)
 
     for (float f = 1.0; f < 10.0; f += 1.0)
     {
-        result.push_back(gmx::sixthroot(f));
+        result.push_back(gmx::invsixthroot(f));
     }
     checker.checkSequence(result.begin(), result.end(), "InvsixthrootFloat");
 }
@@ -264,7 +264,7 @@ TEST(FunctionTest, InvsixthrootDouble)
 
     for (double d = 1.0; d < 10.0; d += 1.0)
     {
-        result.push_back(gmx::sixthroot(d));
+        result.push_back(gmx::invsixthroot(d));
     }
     checker.checkSequence(result.begin(), result.end(), "InvsixthrootDouble");
 }
@@ -277,7 +277,7 @@ TEST(FunctionTest, InvsixthrootInteger)
 
     for (int i = 1; i < 10; i++)
     {
-        result.push_back(gmx::sixthroot(i));
+        result.push_back(gmx::invsixthroot(i));
     }
     checker.checkSequence(result.begin(), result.end(), "InvsixthrootInteger");
 }
