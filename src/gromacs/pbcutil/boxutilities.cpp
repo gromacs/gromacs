@@ -42,6 +42,10 @@
 
 #include "boxutilities.h"
 
+#include <algorithm>
+
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 
 void do_box_rel(int ndim, const matrix deform, matrix box_rel,
@@ -71,3 +75,33 @@ void do_box_rel(int ndim, const matrix deform, matrix box_rel,
         }
     }
 }
+
+namespace gmx
+{
+
+namespace
+{
+
+//! Whether two box elements are equal (with a tolerance).
+bool boxElementEqual(real element1, real element2)
+{
+    // Compare with a relative tolerance (for big boxes) and with
+    // an absolute tolerance (small boxes are generally not specified with very
+    // high number of decimals).
+    return gmx_within_tol(element1, element2, 10*GMX_REAL_EPS)
+           || std::fabs(element1 - element2) < 1e-3;
+}
+
+}   // namespace
+
+bool boxesAreEqual(const matrix box1, const matrix box2)
+{
+    return boxElementEqual(box1[XX][XX], box2[XX][XX])
+           && boxElementEqual(box1[YY][XX], box2[YY][XX])
+           && boxElementEqual(box1[YY][YY], box2[YY][YY])
+           && boxElementEqual(box1[ZZ][XX], box2[ZZ][XX])
+           && boxElementEqual(box1[ZZ][YY], box2[ZZ][YY])
+           && boxElementEqual(box1[ZZ][ZZ], box2[ZZ][ZZ]);
+}
+
+} // namespace gmx
