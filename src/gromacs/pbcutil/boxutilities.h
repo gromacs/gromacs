@@ -46,4 +46,15 @@
 void do_box_rel(int ndim, const matrix deform, matrix box_rel,
                 matrix b, bool bInit);
 
+namespace gmx
+{
+
+/*! \brief
+ * Returns whether two boxes are of equal size and shape (within reasonable
+ * tolerance).
+ */
+bool boxesAreEqual(const matrix box1, const matrix box2);
+
+} // namespace gmx
+
 #endif
