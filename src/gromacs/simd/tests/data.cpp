@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,52 +34,38 @@
  */
 #include "gmxpre.h"
 
-#include <cmath>
-
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/vector_operations.h"
-
 #include "data.h"
-#include "simd4.h"
 
-#if GMX_SIMD
+#include "gromacs/utility/real.h"
+
 
 namespace gmx
 {
 namespace test
-{
-namespace
 {
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD4_HAVE_REAL
-
-/*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
-typedef Simd4Test Simd4VectorOperationsTest;
-
-TEST_F(Simd4VectorOperationsTest, norm2)
-{
-    Simd4Real simdX  = rSimd4_c0c1c2;
-    Simd4Real simdY  = rSimd4_c3c4c5;
-    Simd4Real simdZ  = rSimd4_c6c7c8;
-    Simd4Real simdR2 = setSimd4RealFrom3R(c0*c0 + c3*c3 + c6*c6,
-                                          c1*c1 + c4*c4 + c7*c7,
-                                          c2*c2 + c5*c5 + c8*c8);
-
-    setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, norm2(simdX, simdY, simdZ));
-}
-
-#endif      // GMX_SIMD4_HAVE_REAL
+// Common test data constants used both for SIMD, SIMD4, and scalar tests.
+// We both want numbers that are easy to identify with integer part from 0 to 9,
+// and to fill all digits in the mantissa and avoid identical differences
+// between adjacent numbers we add a fraction of primes.
+const real czero = 0.0;
+const real c0    = 0.0 + 1.0/3.0;
+const real c1    = 1.0 + 5.0/7.0;
+const real c2    = 2.0 + 9.0/13.0;
+const real c3    = 3.0 + 17.0/19.0;
+const real c4    = 4.0 + 23.0/29.0;
+const real c5    = 5.0 + 31.0/37.0;
+const real c6    = 6.0 + 41.0/43.0;
+const real c7    = 7.0 + 47.0/53.0;
+const real c8    = 8.0 + 59.0/61.0;
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace test
 
-#endif // GMX_SIMD
+} // namespace gmx

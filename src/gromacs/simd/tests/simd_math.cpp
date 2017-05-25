@@ -68,6 +68,7 @@ class SimdMathTest : public SimdTest
         ::testing::AssertionResult
                             compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
                                                     real refFunc(real x),     SimdReal gmx_simdcall simdFunc(SimdReal x));
+
 };
 
 /*! \brief Test approximate equality of SIMD vs reference version of a function.
@@ -198,10 +199,10 @@ namespace
 
 TEST_F(SimdMathTest, copysign)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-4, 5, 6), copysign(setSimdRealFrom3R(4, 5, 6), setSimdRealFrom3R(-5, 2, 0)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-4, 5, 6), copysign(setSimdRealFrom3R(-4, -5, -6), setSimdRealFrom3R(-5, 2, 0)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, -5, 6), copysign(setSimdRealFrom3R(4, 5, 6), setSimdRealFrom3R(5, -2, 0)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, -5, 6), copysign(setSimdRealFrom3R(-4, -5, -6), setSimdRealFrom3R(5, -2, 0)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-c0,  c1, c2), copysign(setSimdRealFrom3R( c0,  c1,  c2), setSimdRealFrom3R(-c3,  c4, 0)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-c0,  c1, c2), copysign(setSimdRealFrom3R(-c0, -c1, -c2), setSimdRealFrom3R(-c3,  c4, 0)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R( c0, -c1, c2), copysign(setSimdRealFrom3R( c0,  c1,  c2), setSimdRealFrom3R( c3, -c4, 0)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R( c0, -c1, c2), copysign(setSimdRealFrom3R(-c0, -c1, -c2), setSimdRealFrom3R( c3, -c4, 0)));
 }
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
@@ -219,9 +220,9 @@ TEST_F(SimdMathTest, invsqrt)
 
 TEST_F(SimdMathTest, maskzInvsqrt)
 {
-    SimdReal x   = setSimdRealFrom3R(1.0, 0.0, 3.0);
+    SimdReal x   = setSimdRealFrom3R(c1, 0.0, c2);
     SimdBool m   = (setZero() < x);
-    SimdReal ref = setSimdRealFrom3R(1.0/std::sqrt(1.0), 0.0, 1.0/std::sqrt(3.0));
+    SimdReal ref = setSimdRealFrom3R(1.0/std::sqrt(c1), 0.0, 1.0/std::sqrt(c2));
     GMX_EXPECT_SIMD_REAL_NEAR(ref, maskzInvsqrt(x, m));
 }
 
@@ -257,7 +258,7 @@ TEST_F(SimdMathTest, invsqrtPair)
 TEST_F(SimdMathTest, sqrt)
 {
     // Just make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, 2, 3), sqrt(setSimdRealFrom3R(0, 4, 9)));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, std::sqrt(c1), std::sqrt(c2)), sqrt(setSimdRealFrom3R(0, c1, c2)));
 }
 
 /*! \brief Function wrapper to evaluate reference 1/x */
@@ -277,9 +278,9 @@ TEST_F(SimdMathTest, inv)
 
 TEST_F(SimdMathTest, maskzInv)
 {
-    SimdReal x   = setSimdRealFrom3R(2.0, 0.0, 3.0);
+    SimdReal x   = setSimdRealFrom3R(c1, 0.0, c2);
     SimdBool m   = (setZero() < x);
-    SimdReal ref = setSimdRealFrom3R(0.5, 0.0, 1.0/3.0);
+    SimdReal ref = setSimdRealFrom3R(1.0/c1, 0.0, 1.0/c2);
     GMX_EXPECT_SIMD_REAL_NEAR(ref, maskzInv(x, m));
 }
 
@@ -429,16 +430,25 @@ TEST_F(SimdMathTest, atan)
 TEST_F(SimdMathTest, atan2)
 {
     // test each quadrant
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, 1.0)), atan2(rSimd_1_2_3, rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, 1.0)), atan2(rSimd_m1_m2_m3, rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, -1.0)), atan2(rSimd_m1_m2_m3, rSimd_m1_m2_m3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, -1.0)), atan2(rSimd_1_2_3, rSimd_m1_m2_m3));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, c3), std::atan2(c1, c4), std::atan2(c2, c5)),
+                              atan2(rSimd_c0c1c2, rSimd_c3c4c5));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(-c0, c3), std::atan2(-c1, c4), std::atan2(-c2, c5)),
+                              atan2(rSimd_m0m1m2, rSimd_c3c4c5));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(-c0, -c3), std::atan2(-c1, -c0), std::atan2(-c2, -c4)),
+                              atan2(rSimd_m0m1m2, rSimd_m3m0m4));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, -c3), std::atan2(c1, -c0), std::atan2(c2, -c4)),
+                              atan2(rSimd_c0c1c2, rSimd_m3m0m4));
+
     // cases important for calculating angles
     // values on coordinate axes
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(0.0, 1.0)), atan2(setZero(), rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, 0.0)), atan2(rSimd_1_2_3, setZero()));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(0.0, -1.0)), atan2(setZero(), rSimd_m1_m2_m3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, 0.0)), atan2(rSimd_m1_m2_m3, setZero()));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(0, c0), std::atan2(0, c1), std::atan2(0, c2)),
+                              atan2(setZero(), rSimd_c0c1c2));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, 0), std::atan2(c1, 0), std::atan2(c2, 0)),
+                              atan2(rSimd_c0c1c2, setZero()));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(0, -c0), std::atan2(0, -c1), std::atan2(0, -c2)),
+                              atan2(setZero(), rSimd_m0m1m2));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(-c0, 0), std::atan2(-c1, 0), std::atan2(-c2, 0)),
+                              atan2(rSimd_m0m1m2, setZero()));
     // degenerate value (origin) should return 0.0. At least IBM xlc 13.1.5 gets the reference
     // value wrong (-nan) at -O3 optimization, so we compare to the correct value (0.0) instead.
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(0.0), atan2(setSimdRealFrom3R(0.0, 0.0, 0.0), setZero()));
@@ -541,7 +551,7 @@ TEST_F(SimdMathTest, sqrtSingleAccuracy)
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
     // Just make sure sqrt(0)=0 works and isn't evaluated as 0*1/sqrt(0)=NaN
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, 2, 3), sqrtSingleAccuracy(setSimdRealFrom3R(0, 4, 9)));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(0, std::sqrt(c0), std::sqrt(c1)), sqrtSingleAccuracy(setSimdRealFrom3R(0, c0, c1)));
 }
 
 TEST_F(SimdMathTest, invSingleAccuracy)
@@ -682,16 +692,25 @@ TEST_F(SimdMathTest, atan2SingleAccuracy)
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
     // test each quadrant
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, 1.0)), atan2SingleAccuracy(rSimd_1_2_3, rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, 1.0)), atan2SingleAccuracy(rSimd_m1_m2_m3, rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, -1.0)), atan2SingleAccuracy(rSimd_m1_m2_m3, rSimd_m1_m2_m3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, -1.0)), atan2SingleAccuracy(rSimd_1_2_3, rSimd_m1_m2_m3));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, c3), std::atan2(c1, c4), std::atan2(c2, c5)),
+                              atan2SingleAccuracy(rSimd_c0c1c2, rSimd_c3c4c5));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(-c0, c3), std::atan2(-c1, c4), std::atan2(-c2, c5)),
+                              atan2SingleAccuracy(rSimd_m0m1m2, rSimd_c3c4c5));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(-c0, -c3), std::atan2(-c1, -c0), std::atan2(-c2, -c4)),
+                              atan2SingleAccuracy(rSimd_m0m1m2, rSimd_m3m0m4));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, -c3), std::atan2(c1, -c0), std::atan2(c2, -c4)),
+                              atan2SingleAccuracy(rSimd_c0c1c2, rSimd_m3m0m4));
     // cases important for calculating angles
     // values on coordinate axes
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(0.0, 1.0)), atan2SingleAccuracy(setZero(), rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(1.0, 0.0)), atan2SingleAccuracy(rSimd_1_2_3, setZero()));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(0.0, -1.0)), atan2SingleAccuracy(setZero(), rSimd_m1_m2_m3));
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(std::atan2(-1.0, 0.0)), atan2SingleAccuracy(rSimd_m1_m2_m3, setZero()));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(0, c0), std::atan2(0, c1), std::atan2(0, c2)),
+                              atan2SingleAccuracy(setZero(), rSimd_c0c1c2));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(c0, 0), std::atan2(c1, 0), std::atan2(c2, 0)),
+                              atan2SingleAccuracy(rSimd_c0c1c2, setZero()));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(0, -c0), std::atan2(0, -c1), std::atan2(0, -c2)),
+                              atan2SingleAccuracy(setZero(), rSimd_m0m1m2));
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::atan2(-c0, 0), std::atan2(-c1, 0), std::atan2(-c2, 0)),
+                              atan2SingleAccuracy(rSimd_m0m1m2, setZero()));
+
     // degenerate value (origin) should return 0.0. At least IBM xlc 13.1.5 gets the reference
     // value wrong (-nan) at -O3 optimization, so we compare to the correct value (0.0) instead.
     GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(0.0), atan2SingleAccuracy(setSimdRealFrom3R(0.0, 0.0, 0.0), setZero()));

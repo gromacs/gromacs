@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "data.h"
+
 namespace gmx
 {
 namespace test
@@ -60,38 +62,34 @@ namespace
 
 TEST(SimdScalarTest, load)
 {
-    real ref = 1.234;
-    real val = load(&ref);
+    real val = load(&c1);
 
-    EXPECT_EQ(ref, val);
+    EXPECT_EQ(c1, val);
 }
 
 TEST(SimdScalarTest, loadU)
 {
-    real ref = 1.234;
-    real val = loadU(&ref);
+    real val = loadU(&c1);
 
-    EXPECT_EQ(ref, val);
+    EXPECT_EQ(c1, val);
 }
 
 TEST(SimdScalarTest, store)
 {
-    real ref = 1.234;
     real val;
 
-    store(&val, ref);
+    store(&val, c1);
 
-    EXPECT_EQ(ref, val);
+    EXPECT_EQ(c1, val);
 }
 
 TEST(SimdScalarTest, storeU)
 {
-    real ref = 1.234;
     real val;
 
-    store(&val, ref);
+    store(&val, c1);
 
-    EXPECT_EQ(ref, val);
+    EXPECT_EQ(c1, val);
 }
 
 TEST(SimdScalarTest, setZero)
@@ -105,61 +103,61 @@ TEST(SimdScalarTest, andNot)
 {
     real signBit = GMX_REAL_NEGZERO;
 
-    EXPECT_EQ(real(1), andNot(signBit, real(-1)));
-    EXPECT_EQ(real(2), andNot(signBit, real(2)));
+    EXPECT_EQ(c1, andNot(signBit, -c1));
+    EXPECT_EQ(c2, andNot(signBit, c2));
 }
 
 TEST(SimdScalarTest, fma)
 {
-    EXPECT_EQ(real(27), fma(real(3), real(6), real(9))); // 3*6+9=27
+    EXPECT_EQ(c1*c2+c3, fma(real(c1), real(c2), real(c3)));
 }
 
 TEST(SimdScalarTest, fms)
 {
-    EXPECT_EQ(real(9), fms(real(3), real(6), real(9))); // 3*6-9=9
+    EXPECT_EQ(c1*c2-c3, fms(c1, c2, c3));
 }
 
 TEST(SimdScalarTest, fnma)
 {
-    EXPECT_EQ(real(-9), fnma(real(3), real(6), real(9))); // -3*6+9=-9
+    EXPECT_EQ(-c1*c2+c3, fnma(c1, c2, c3));
 }
 
 TEST(SimdScalarTest, fnms)
 {
-    EXPECT_EQ(real(-27), fnms(real(3), real(6), real(9))); // -3*6-9=-27
+    EXPECT_EQ(-c1*c2-c3, fnms(c1, c2, c3));
 }
 
 TEST(SimdScalarTest, maskAdd)
 {
-    EXPECT_EQ(real(3), maskAdd(real(3), real(6), false));
-    EXPECT_EQ(real(9), maskAdd(real(3), real(6), true));
+    EXPECT_EQ(c1, maskAdd(c1, c2, false));
+    EXPECT_EQ(c1+c2, maskAdd(c1, c2, true));
 }
 
 TEST(SimdScalarTest, maskzMul)
 {
-    EXPECT_EQ(real(0), maskzMul(real(3), real(6), false));
-    EXPECT_EQ(real(18), maskzMul(real(3), real(6), true));
+    EXPECT_EQ(czero, maskzMul(c1, c2, false));
+    EXPECT_EQ(c1*c2, maskzMul(c1, c2, true));
 }
 
 TEST(SimdScalarTest, maskzFma)
 {
-    EXPECT_EQ(real(0), maskzFma(real(3), real(6), real(9), false));
-    EXPECT_EQ(real(27), maskzFma(real(3), real(6), real(9), true));
+    EXPECT_EQ(czero, maskzFma(c1, c2, c3, false));
+    EXPECT_EQ(c1*c2+c3, maskzFma(c1, c2, c3, true));
 }
 
 TEST(SimdScalarTest, abs)
 {
-    EXPECT_EQ(real(3), abs(real(-3)));
+    EXPECT_EQ(c1, abs(-c1));
 }
 
 TEST(SimdScalarTest, max)
 {
-    EXPECT_EQ(real(3), max(real(1), real(3)));
+    EXPECT_EQ(c3, max(c1, c3));
 }
 
 TEST(SimdScalarTest, min)
 {
-    EXPECT_EQ(real(1), min(real(1), real(3)));
+    EXPECT_EQ(c1, min(c1, c3));
 }
 
 TEST(SimdScalarTest, round)
@@ -180,14 +178,14 @@ TEST(SimdScalarTest, trunc)
 
 TEST(SimdScalarTest, reduce)
 {
-    EXPECT_EQ(real(5), reduce(real(5)));
+    EXPECT_EQ(c1, reduce(c1));
 }
 
 TEST(SimdScalarTest, testBits)
 {
-    EXPECT_TRUE(testBits(real(1)));
+    EXPECT_TRUE(testBits(c1));
     EXPECT_TRUE(testBits(GMX_REAL_NEGZERO));
-    EXPECT_FALSE(testBits(real(0)));
+    EXPECT_FALSE(testBits(czero));
 }
 
 TEST(SimdScalarTest, anyTrue)
@@ -198,20 +196,20 @@ TEST(SimdScalarTest, anyTrue)
 
 TEST(SimdScalarTest, selectByMask)
 {
-    EXPECT_EQ(real(5.0), selectByMask(real(5.0), true));
-    EXPECT_EQ(real(0.0), selectByMask(real(5.0), false));
+    EXPECT_EQ(c1, selectByMask(c1, true));
+    EXPECT_EQ(czero, selectByMask(c1, false));
 }
 
 TEST(SimdScalarTest, selectByNotMask)
 {
-    EXPECT_EQ(real(0.0), selectByNotMask(real(5.0), true));
-    EXPECT_EQ(real(5.0), selectByNotMask(real(5.0), false));
+    EXPECT_EQ(czero, selectByNotMask(c1, true));
+    EXPECT_EQ(c1, selectByNotMask(c1, false));
 }
 
 TEST(SimdScalarTest, blend)
 {
-    EXPECT_EQ(real(5.0), blend(real(3.0), real(5.0), true));
-    EXPECT_EQ(real(3.0), blend(real(3.0), real(5.0), false));
+    EXPECT_EQ(c2, blend(c1, c2, true));
+    EXPECT_EQ(c1, blend(c1, c2, false));
 }
 
 TEST(SimdScalarTest, cvtR2I)
