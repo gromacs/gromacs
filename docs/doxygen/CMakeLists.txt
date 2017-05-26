@@ -166,7 +166,7 @@ if (DOXYGEN_FOUND)
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
                 -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
                 --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
-                -o ${DEPGRAPH_DIR}
+                -o ${DEPGRAPH_DIR} --module-report
             DEPENDS doxygen-xml ${INSTALLED_HEADER_FILE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/doxygenxml.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/gmxtree.py

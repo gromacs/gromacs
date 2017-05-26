@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@ class EdgeType(object):
 
     # Mapping to string representation for the internal integer values
     _names = ['test', 'pubimpl', 'libimpl', 'library', 'public',
-            'intramodule', 'legacy', 'undocumented']
+            'intramodule', 'legacy', 'cyclic', 'undocumented']
 
     def __init__(self, value):
         """Initialize a EdgeType instance.
@@ -77,8 +77,8 @@ class EdgeType(object):
         """
         self._value = value
 
-    def __str__(self):
-        """Return string representation for the edge type (for debugging)."""
+    def to_string(self):
+        """Return string representation for the edge type (for debugging and reporting)."""
         return self._names[self._value]
 
     def __cmp__(self, other):
@@ -149,6 +149,10 @@ class Edge(object):
         return '{0} -> {1} [{2}]'.format(self._fromnode.get_nodename(),
                                          self._tonode.get_nodename(),
                                          properties)
+
+    def is_type(self, edgetype):
+        """Returns whether this edge is of type edgetype."""
+        return self._edgetype == edgetype
 
 class Node(object):
 
@@ -303,6 +307,28 @@ class Graph(object):
         for edge in self._edges:
             outfile.write('    ' + edge.format() + '\n')
         outfile.write('}\n')
+
+    def create_edges_report(self, outfile):
+        """Write report about incidence of edge types to outfile."""
+        count = 0
+        for edge in self._edges:
+            count += 1
+        outfile.write('Total edge count: ' + str(count) + '\n')
+
+        for edgetype in [ EdgeType.test,
+                          EdgeType.pubimpl,
+                          EdgeType.libimpl,
+                          EdgeType.library,
+                          EdgeType.public,
+                          EdgeType.intramodule,
+                          EdgeType.legacy,
+                          EdgeType.cyclic,
+                          EdgeType.undocumented ]:
+            count = 0
+            for edge in self._edges:
+                if edge.is_type(edgetype):
+                    count += 1
+            outfile.write('Edges of type \'' + edgetype.to_string() + '\': ' + str(count) + '\n')
 
 class GraphBuilder(object):
 
@@ -485,6 +511,34 @@ class GraphBuilder(object):
         graph.set_options(concentrate=False)
         return graph
 
+    def create_modules_report(self, outfile):
+        """Write module category report to outfile."""
+        categories = { 'all': 0,
+                       'fully documented': 0,
+                       'legacy': 0,
+                       'analysismodules': 0,
+                       'utilitymodules': 0,
+                       'mdrun': 0,
+                       'with installed files': 0 }
+        all_module_names = ""
+        for module in self._tree.get_modules():
+            categories['all'] += 1
+            all_module_names += module.get_name()[7:] + '\n'
+            if module.is_documented():
+                categories['fully documented'] += 1
+                modulegroup = module.get_group() # Could be declared as legacy, also
+                categories[modulegroup] += 1
+            else:
+                categories['legacy'] += 1
+
+            rootdir = module.get_root_dir()
+            if rootdir.has_installed_files():
+                categories['with installed files'] += 1
+
+        outfile.write('Names of all modules:\n' + all_module_names + '\n')
+        for key, value in categories.items():
+            outfile.write('Modules in category \'' + key + '\': ' + str(value) + '\n')
+
     def create_module_file_graph(self, module):
         """Create file dependency graph for files within a module."""
         filenodes = dict()
@@ -517,6 +571,8 @@ def main():
                       help='Specify output directory for graphs')
     parser.add_option('-q', '--quiet', action='store_true',
                       help='Do not write status messages')
+    parser.add_option("-r", "--module-report", action="store_true",
+                      help='Write a textual summary report about the modules and edges to module_report.txt')
     options, args = parser.parse_args()
 
     reporter = Reporter(quiet=True)
@@ -544,6 +600,18 @@ def main():
     graph = graphbuilder.create_modules_graph()
     with open(filename, 'w') as outfile:
         graph.write(outfile)
+
+    if options.module_report:
+        report_filename = os.path.join(options.outdir, 'module_report.txt')
+        with open(report_filename, 'w') as reportfile:
+            # A Graph doesn't have information about module attributes
+            # once each becomes a Node, so the GraphBuilder has to
+            # help with the report. Each Edge in the Graph has an
+            # EdgeType, so the Graph is enough for reporting about the edges.
+            reportfile.write('# Legacy and fully documented categories are mutually exclusive,\n# others are not.\n')
+            graphbuilder.create_modules_report(reportfile)
+            reportfile.write('\n# Edge types are mutually exclusive\n')
+            graph.create_edges_report(reportfile)
 
     # Skip some modules that are too big to make any sense
     skippedmodules = ('gmxlib', 'mdlib', 'gmxana', 'gmxpreprocess')
