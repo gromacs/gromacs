@@ -163,26 +163,26 @@ class ElectricField : public IMDModule,
         ElectricField() : fpField_(nullptr) {}
 
         // From IMDModule
-        virtual IMdpOptionProvider *mdpOptionProvider() { return this; }
-        virtual IMDOutputProvider *outputProvider() { return this; }
-        virtual IForceProvider *forceProvider() { return this; }
+        virtual IMdpOptionProvider *mdpOptionProvider() override { return this; }
+        virtual IMDOutputProvider *outputProvider() override { return this; }
+        virtual IForceProvider *forceProvider() override { return this; }
 
         // From IMdpOptionProvider
-        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
-        virtual void initMdpOptions(IOptionsContainerWithSections *options);
+        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform) override;
+        virtual void initMdpOptions(IOptionsContainerWithSections *options) override;
 
         // From IMDOutputProvider
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv);
-        virtual void finishOutput();
+                                bool bAppendFiles, const gmx_output_env_t *oenv) override;
+        virtual void finishOutput() override;
 
         // From IForceProvider
-        virtual void initForcerec(t_forcerec *fr);
+        virtual void initForcerec(t_forcerec *fr) override;
         //! \copydoc IForceProvider::calculateForces()
         virtual void calculateForces(const t_commrec  *cr,
                                      const t_mdatoms  *mdatoms,
                                      PaddedRVecVector *force,
-                                     double            t);
+                                     double            t) override;
 
     private:
         //! Return whether or not to apply a field
