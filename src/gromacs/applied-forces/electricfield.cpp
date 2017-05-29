@@ -155,34 +155,34 @@ class ElectricFieldData
  * The electric field can be pulsed and oscillating, simply
  * oscillating, or static, in each of X,Y,Z directions.
  */
-class ElectricField : public IMDModule,
-                      public IMdpOptionProvider, public IMDOutputProvider,
-                      public IForceProvider
+class ElectricField final : public IMDModule,
+                            public IMdpOptionProvider, public IMDOutputProvider,
+                            public IForceProvider
 {
     public:
         ElectricField() : fpField_(nullptr) {}
 
         // From IMDModule
-        virtual IMdpOptionProvider *mdpOptionProvider() { return this; }
-        virtual IMDOutputProvider *outputProvider() { return this; }
-        virtual IForceProvider *forceProvider() { return this; }
+        IMdpOptionProvider *mdpOptionProvider() override { return this; }
+        IMDOutputProvider *outputProvider() override { return this; }
+        IForceProvider *forceProvider() override { return this; }
 
         // From IMdpOptionProvider
-        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
-        virtual void initMdpOptions(IOptionsContainerWithSections *options);
+        void initMdpTransform(IKeyValueTreeTransformRules *transform) override;
+        void initMdpOptions(IOptionsContainerWithSections *options) override;
 
         // From IMDOutputProvider
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv);
-        virtual void finishOutput();
+        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                        bool bAppendFiles, const gmx_output_env_t *oenv) override;
+        void finishOutput() override;
 
         // From IForceProvider
-        virtual void initForcerec(t_forcerec *fr);
+        void initForcerec(t_forcerec *fr) override;
         //! \copydoc IForceProvider::calculateForces()
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *mdatoms,
-                                     PaddedRVecVector *force,
-                                     double            t);
+        void calculateForces(const t_commrec  *cr,
+                             const t_mdatoms  *mdatoms,
+                             PaddedRVecVector *force,
+                             double            t) override;
 
     private:
         //! Return whether or not to apply a field
