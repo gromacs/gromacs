@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -321,9 +321,9 @@ static bool getApplicationClocks(const gmx_device_info_t *cuda_dev,
     {
         return false;
     }
-    HANDLE_NVML_RET_ERR(nvml_stat, "nvmlDeviceGetApplicationsClock failed");
+    HANDLE_NVML_RET_ERR(nvml_stat, "nvmlDeviceGetApplicationsClock failed for NVIDIA_CLOCK_SM");
     nvml_stat = nvmlDeviceGetApplicationsClock(cuda_dev->nvml_device_id, NVML_CLOCK_MEM, app_mem_clock);
-    HANDLE_NVML_RET_ERR(nvml_stat, "nvmlDeviceGetApplicationsClock failed");
+    HANDLE_NVML_RET_ERR(nvml_stat, "nvmlDeviceGetApplicationsClock failed for NVIDIA_CLOCK_MEM");
 
     return true;
 }
@@ -429,7 +429,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     {
         md_print_info(fplog, "Changing GPU application clocks for %s to (%d,%d)\n", cuda_dev->prop.name, max_mem_clock, max_sm_clock);
         nvml_stat = nvmlDeviceSetApplicationsClocks(cuda_dev->nvml_device_id, max_mem_clock, max_sm_clock);
-        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceSetApplicationsClock failed" );
         cuda_dev->nvml_app_clocks_changed = true;
         cuda_dev->nvml_set_app_sm_clock   = max_sm_clock;
         cuda_dev->nvml_set_app_mem_clock  = max_mem_clock;
@@ -475,7 +475,7 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
             app_mem_clock == cuda_dev->nvml_set_app_mem_clock)
         {
             nvml_stat = nvmlDeviceSetApplicationsClocks(cuda_dev->nvml_device_id, cuda_dev->nvml_orig_app_mem_clock, cuda_dev->nvml_orig_app_sm_clock);
-            HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+            HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceSetApplicationsClock failed" );
         }
     }
     nvml_stat = nvmlShutdown();
