@@ -292,9 +292,14 @@ struct t_forcerec {
     gmx_bool          haveDirectVirialContributions;
 #ifdef __cplusplus
     /* TODO: Replace the pointer by an object once we got rid of C */
-    std::vector<gmx::RVec>  *forceBufferForDirectVirialContributions;
+    std::vector<gmx::RVec> *forceBufferForDirectVirialContributions;
+    /* This buffer is currently only used for storing the PME GPU output until reduction.
+     * TODO: Pagelock/pin it
+     * TODO: Replace the pointer by an object once we got rid of C */
+    std::vector<gmx::RVec>  *forceBufferIntermediate;
 #else
     void                    *forceBufferForDirectVirialContributions_dummy;
+    void                    *forceBufferIntermediate_dummy;
 #endif
 
     /* Data for PPPM/PME/Ewald */

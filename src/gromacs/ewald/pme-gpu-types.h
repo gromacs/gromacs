@@ -249,7 +249,7 @@ struct pme_gpu_settings_t
      * Only intended to be used by the test framework.
      */
     bool copyAllOutputs;
-    /*! \brief Various computation flags for the curent step, corresponding to the GMX_PME_ flags in pme.h. */
+    /*! \brief Various computation flags for the current step, corresponding to the GMX_PME_ flags in pme.h. */
     int  stepFlags;
 };
 
@@ -290,21 +290,28 @@ struct pme_shared_t
     /*! \brief Padded grid dimensions - pmegrid_nx, pmegrid_ny, pmegrid_nz
      * TODO: find out if these are really needed for the CPU FFT compatibility.
      */
-    int               pmegrid_n[DIM];
+    int                    pmegrid_n[DIM];
     /*! \brief PME interpolation order */
-    int               pme_order;
+    int                    pme_order;
     /*! \brief Ewald splitting coefficient for Coulomb */
-    real              ewaldcoeff_q;
+    real                   ewaldcoeff_q;
     /*! \brief Electrostatics parameter */
-    real              epsilon_r;
+    real                   epsilon_r;
     /*! \brief Gridline indices - nnx, nny, nnz */
-    std::vector<int>  nn;
+    std::vector<int>       nn;
     /*! \brief Fractional shifts - fshx, fshy, fshz */
-    std::vector<real> fsh;
+    std::vector<real>      fsh;
     /*! \brief Precomputed B-spline values */
-    std::vector<real> bsp_mod[DIM];
+    std::vector<real>      bsp_mod[DIM];
     /*! \brief The PME codepath being taken */
-    PmeRunMode        runMode;
+    PmeRunMode             runMode;
+    /*! \brief The box scaler based on inputrec - created in pme_init and managed by CPU structure */
+    class EwaldBoxZScaler *boxScaler;
+    /*! \brief The previous step box to know if we even need to update the current step box params.
+     * \todo Manage this on higher level.
+     * \todo Alternatively, when this structure is used by CPU PME code, make use of this field there as well.
+     */
+    matrix previousBox;
 };
 
 /*! \internal \brief
