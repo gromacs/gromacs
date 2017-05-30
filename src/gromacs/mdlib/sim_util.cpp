@@ -823,6 +823,9 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
+    const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
+    const bool useGpuPme  = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -835,8 +838,8 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     cycles_wait_gpu = 0;
 
-    const int start  = 0;
-    const int homenr = mdatoms->homenr;
+    const int  start  = 0;
+    const int  homenr = mdatoms->homenr;
 
     clear_mat(vir_force);
 
@@ -908,6 +911,36 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcPP_PMESENDX);
     }
 #endif /* GMX_MPI */
+
+    /* Launching PME on GPU */
+    if (useGpuPme && EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
+    {
+        assert(fr->n_tpi >= 0);
+        if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+        {
+            int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
+            if (flags & GMX_FORCE_FORCES)
+            {
+                pme_flags |= GMX_PME_CALC_F;
+            }
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                pme_flags |= GMX_PME_CALC_ENER_VIR;
+            }
+            if (fr->n_tpi > 0)
+            {
+                /* We don't calculate f, but we do want the potential */
+                pme_flags |= GMX_PME_CALC_POT;
+            }
+
+            pme_gpu_prepare_step(fr->pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pme_flags);
+            pme_gpu_launch_spread(fr->pmedata, x, wcycle);
+            if (pmeRunMode == PmeRunMode::GPU)
+            {
+                pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
+            }
+        }
+    }
 
     /* do gridding for pair search */
     if (bNS)
@@ -1019,6 +1052,11 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+
+    if (pmeRunMode == PmeRunMode::Hybrid)
+    {
+        pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
     }
 
     /* Communicate coordinates and sum dipole if necessary +

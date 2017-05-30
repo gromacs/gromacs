@@ -93,9 +93,34 @@ void pme_gpu_update_timings(const pme_gpu_t *pmeGPU)
 {
     if (pme_gpu_timings_enabled(pmeGPU))
     {
-        for (size_t i = 0; i < pmeGPU->archSpecific->timingEvents.size(); i++)
+        pme_gpu_synchronize(pmeGPU);
+
+        for (const size_t &activeTimer : pmeGPU->archSpecific->activeTimers)
         {
-            pmeGPU->archSpecific->timingEvents[i].getLastRangeTime();
+            pmeGPU->archSpecific->timingEvents[activeTimer].getLastRangeTime();
+        }
+    }
+}
+
+void pme_gpu_reinit_timings(const pme_gpu_t *pmeGPU)
+{
+    if (pme_gpu_timings_enabled(pmeGPU))
+    {
+        pmeGPU->archSpecific->activeTimers.clear();
+        pmeGPU->archSpecific->activeTimers.insert(gtPME_SPLINEANDSPREAD);
+        // TODO: no separate gtPME_SPLINE and gtPME_SPREAD as they are not used currently
+        if (pme_gpu_performs_FFT(pmeGPU))
+        {
+            pmeGPU->archSpecific->activeTimers.insert(gtPME_FFT_C2R);
+            pmeGPU->archSpecific->activeTimers.insert(gtPME_FFT_R2C);
+        }
+        if (pme_gpu_performs_solve(pmeGPU))
+        {
+            pmeGPU->archSpecific->activeTimers.insert(gtPME_SOLVE);
+        }
+        if (pme_gpu_performs_gather(pmeGPU))
+        {
+            pmeGPU->archSpecific->activeTimers.insert(gtPME_GATHER);
         }
     }
 }

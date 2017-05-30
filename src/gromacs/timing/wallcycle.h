@@ -70,6 +70,7 @@ enum {
     ewcsNONBONDED_PRUNING,
     ewcsNONBONDED,
     ewcsLAUNCH_GPU_NONBONDED,
+    ewcsLAUNCH_GPU_PME,
     ewcsEWALD_CORRECTION,
     ewcsNB_X_BUF_OPS,
     ewcsNB_F_BUF_OPS,
