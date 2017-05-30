@@ -503,15 +503,16 @@ void pme_gpu_destroy_specific(const pme_gpu_t *pmeGPU)
 void pme_gpu_init_sync_events(const pme_gpu_t *pmeGPU)
 {
     cudaError_t stat;
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncEnerVirD2H, cudaEventDisableTiming);
+    const auto eventFlags = cudaEventDisableTiming | cudaEventBlockingSync;
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncEnerVirD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncEnerVirD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncForcesD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncForcesD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncForcesD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSpreadGridD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSpreadGridD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncSpreadGridD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSplineAtomDataD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSplineAtomDataD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncSplineAtomDataD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSolveGridD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSolveGridD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncSolveGridD2H failed");
 }
 

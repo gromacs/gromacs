@@ -1751,7 +1751,10 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     sfree(pme->bufv);
     sfree(pme->bufr);
 
-    pme_free_all_work(&pme->solve_work, pme->nthread);
+    if (pme->solve_work)
+    {
+        pme_free_all_work(&pme->solve_work, pme->nthread);
+    }
 
     sfree(pme->sum_qgrid_tmp);
     sfree(pme->sum_qgrid_dd_tmp);
