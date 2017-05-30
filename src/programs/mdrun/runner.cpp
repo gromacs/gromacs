@@ -752,6 +752,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
+    const bool pmeGpuEnabled = false; //TODO this is a placeholder as PME on GPU is not permitted yet
+
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
@@ -1321,7 +1323,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme,
-                                      false, nullptr, gpuTasks.gpuInfo(GpuTask::PME), mdlog);
+                                      pmeGpuEnabled, nullptr, gpuTasks.gpuInfo(GpuTask::PME), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
@@ -1407,7 +1409,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec, pmeGpuEnabled);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
