@@ -527,7 +527,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 t_commrec *cr,    t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                t_inputrec *ir)
+                t_inputrec *ir, PmeRunMode runMode)
 {
     int                npmedata;
     struct gmx_pme_t **pmedata;
@@ -613,19 +613,34 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         dvdlambda_lj = 0;
         clear_mat(vir_q);
         clear_mat(vir_lj);
+        energy_q  = 0;
+        energy_lj = 0;
 
         // TODO Make a struct of array refs onto these per-atom fields
         // of pme_pp (maybe box, energy and virial, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
-        gmx_pme_do(pme, 0, natoms, pme_pp->x, pme_pp->f,
-                   pme_pp->chargeA, pme_pp->chargeB,
-                   pme_pp->sqrt_c6A, pme_pp->sqrt_c6B,
-                   pme_pp->sigmaA, pme_pp->sigmaB, box,
-                   cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                   vir_q, vir_lj,
-                   &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
-                   GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+        const int pmeFlags = GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0);
+        if (runMode != PmeRunMode::CPU)
+        {
+            const bool boxChanged = true; //TODO this should be set properly by gmx_pme_recv_coeffs_coords
+            // TODO bring back pme_gpu_start_step, separate from pme_gpu_launch_spread
+            pme_gpu_launch_spread(pme, pme_pp->x, boxChanged, box, wcycle, pmeFlags);
+            pme_gpu_launch_complex_transforms(pme, wcycle);
+            pme_gpu_launch_gather(pme, wcycle, pme_pp->f, true);
+            pme_gpu_get_results(pme, wcycle, vir_q, &energy_q);
+        }
+        else
+        {
+            gmx_pme_do(pme, 0, natoms, pme_pp->x, pme_pp->f,
+                       pme_pp->chargeA, pme_pp->chargeB,
+                       pme_pp->sqrt_c6A, pme_pp->sqrt_c6B,
+                       pme_pp->sigmaA, pme_pp->sigmaB, box,
+                       cr, maxshift_x, maxshift_y, mynrnb, wcycle,
+                       vir_q, vir_lj,
+                       &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
+                       pmeFlags);
+        }
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
