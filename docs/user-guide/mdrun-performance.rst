@@ -767,3 +767,78 @@ Limitations of interest to |Gromacs| developers:
   multiple of 32
 - Some Ewald tabulated kernels are known to produce incorrect results, so
   (correct) analytical kernels are used instead.
+
+Performance checklist
+---------------------
+
+There are many different aspects that affect the performance of simulations in
+|Gromacs|. Most simulations require a lot of computational resources, therefore
+it can be worthwhile to optimize the use of those resources. Several issues
+mentioned in the list below could lead to a performance difference of a factor
+of 2. So it can be useful go through the checklist.
+
+|Gromacs| configuration
+^^^^^^^^^^^^^^^^^^^^^^^
+
+* Don't use double precision unless you're absolute sure you need it.
+* Compile the FFTW library (yourself) with the correct flags on x86 (in most
+  cases, the correct flags are automatically configured).
+* On x86, use gcc or icc as the compiler (not pgi or the Cray compiler).
+* On POWER, use gcc instead of IBM's xlc.
+* Use a new compiler version, especially for gcc (e.g. from the version 5 to 6
+  the performance of the compiled code improved a lot).
+* MPI library: OpenMPI usually has good performance and causes little trouble.
+* Make sure your compiler supports OpenMP (some versions of Clang don't).
+* If you have GPUs that support either CUDA or OpenCL, use them.
+
+  * Configure with ``-DGMX_GPU=ON`` (add ``-DGMX_USE_OPENCL=ON`` for OpenCL).
+  * For CUDA, use the newest CUDA availabe for your GPU to take advantage of the
+    latest performance enhancements.
+  * Use a recent GPU driver.
+  * If compiling on a cluster head node, make sure that ``GMX_CPU_ACCELERATION``
+    is appropriate for the compute nodes.
+
+Run setup
+^^^^^^^^^
+
+* For an approximately spherical solute, use a rhombic dodecahedron unit cell.
+* You can increase the time-step to 4 or 5 fs when using virtual interaction
+  sites (``gmx pdb2gmx -vsite h``).
+* At moderate to high parallelization, use the Verlet cut-off scheme
+  (:mdp:`cutoff-scheme` = :mdp:`Verlet`) for better performance, due to less
+  load imbalance.
+
+  * To be able to use GPUs, you have to use the Verlet cut-off scheme.
+  * To quickly test the performance on GPUs/Verlet-scheme, use can use
+    ``gmx mdrun -testverlet`` with an old tpr file. This should not be used for
+    production work.
+
+* For massively parallel runs with PME, you might need to try different numbers
+  of PME nodes (``gmx mdrun -npme ???``) to achieve best performance;
+  ``gmx tune_pme`` can help automate this search.
+* For massively parallel runs (also ``gmx mdrun -multidir``), or with a slow
+  network, global communication can become a bottleneck and you can reduce it
+  with ``gmx mdrun -gcom`` (note that this does affect the frequency of
+  temperature and pressure coupling).
+
+Checking and improving performance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Look at the end of the ``md.log`` file to see the performance and the cycle
+  counters and wall-clock time for different parts of the MD calculation. The
+  PP/PME load ratio is also printed, with a warning when a lot of performance is
+  lost due to imbalance.
+* Adjust the number of PME nodes and/or the cut-off and PME grid-spacing when
+  there is a large PP/PME imbalance. Note that even with a small reported
+  imbalance, the automated PME-tuning might have reduced the initial imbalance.
+  You could still gain performance by changing the mdp parameters or increasing
+  the number of PME nodes.
+* If the neighbor searching takes a lot of time, increase nstlist (with the
+  Verlet cut-off scheme, this automatically adjusts the size of the neighbour
+  list to do more non-bonded computation to keep energy drift constant).
+
+  * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
+    file), increase nstcalcenergy or use ``mdrun -gcom``.
+  * If all communication takes a lot of time, you might be running on too many
+    cores, or you could try running combined MPI/OpenMP parallelization with 2
+    or 4 OpenMP threads per MPI process.
