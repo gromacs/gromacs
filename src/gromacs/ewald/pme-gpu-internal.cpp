@@ -51,6 +51,7 @@
 #include <list>
 #include <string>
 
+#include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
@@ -98,8 +99,10 @@ void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box)
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
 #else
-    matrix recipBox;
-    gmx::invertBoxMatrix(box, recipBox);
+    matrix scaledBox, recipBox;
+    pmeGPU->common->boxScaler->scaleBox(box, scaledBox);
+    gmx::invertBoxMatrix(scaledBox, recipBox);
+
     /* The GPU recipBox is transposed as compared to the CPU recipBox.
      * Spread uses matrix columns (while solve and gather use rows).
      * There is no particular reason for this; it might be further rethought/optimized for better access patterns.
@@ -112,15 +115,6 @@ void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box)
     };
     memcpy(kernelParamsPtr->step.recipBox, newRecipBox, sizeof(matrix));
 #endif
-}
-
-void pme_gpu_start_step(pme_gpu_t *pmeGPU, bool needToUpdateBox, const matrix box, const rvec *h_coordinates)
-{
-    pme_gpu_copy_input_coordinates(pmeGPU, h_coordinates);
-    if (needToUpdateBox)
-    {
-        pme_gpu_update_input_box(pmeGPU, box);
-    }
 }
 
 /*! \brief \libinternal
@@ -136,9 +130,6 @@ static void pme_gpu_reinit_step(const pme_gpu_t *pmeGPU)
 
 void pme_gpu_finish_step(const pme_gpu_t *pmeGPU, const bool bCalcF, const bool bCalcEnerVir)
 {
-    /* Needed for copy back as well as timing events */
-    pme_gpu_synchronize(pmeGPU);
-
     if (bCalcF && pme_gpu_performs_gather(pmeGPU))
     {
         pme_gpu_sync_output_forces(pmeGPU);
@@ -230,7 +221,8 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t *pme)
     pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnx, pme->nnx + cellCount * pme->nkx);
     pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nny, pme->nny + cellCount * pme->nky);
     pmeGPU->common->nn.insert(pmeGPU->common->nn.end(), pme->nnz, pme->nnz + cellCount * pme->nkz);
-    pmeGPU->common->runMode = pme->runMode;
+    pmeGPU->common->runMode   = pme->runMode;
+    pmeGPU->common->boxScaler = pme->boxScaler;
 }
 
 /*! \brief \libinternal
@@ -417,6 +409,9 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
     /* GPU FFT will only get used for a single rank.*/
     pme->gpu->settings.performGPUFFT   = (pme->gpu->common->runMode == PmeRunMode::GPU) && !pme_gpu_uses_dd(pme->gpu);
     pme->gpu->settings.performGPUSolve = (pme->gpu->common->runMode == PmeRunMode::GPU);
+
+    /* Reinit active timers */
+    pme_gpu_reinit_timings(pme->gpu);
 
     pme_gpu_reinit_grids(pme->gpu);
     pme_gpu_reinit_step(pme->gpu);

@@ -46,6 +46,7 @@
 #ifndef GMX_EWALD_PME_GPU_INTERNAL_H
 #define GMX_EWALD_PME_GPU_INTERNAL_H
 
+#include "gromacs/fft/fft.h"                   // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing pme_gpu_t members
@@ -425,11 +426,18 @@ CUDA_FUNC_QUALIFIER void pme_gpu_destroy_3dfft(const pme_gpu_t *CUDA_FUNC_ARGUME
 /* Several CUDA event-based timing functions that live in pme-timings.cu */
 
 /*! \libinternal \brief
- * Finalizes all the PME GPU stage timings for the current step. Should be called at the end of every step.
+ * Finalizes all the active PME GPU stage timings for the current step. Should be called at the end of every step.
  *
  * \param[in] pmeGPU         The PME GPU structure.
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_update_timings(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
+ * Updates the internal list of active PME GPU stages (if timings are enabled).
+ *
+ * \param[in] pmeGPU         The PME GPU data structure.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_reinit_timings(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \brief
  * Resets the PME GPU timings. To be called at the reset step.
@@ -466,6 +474,17 @@ CUDA_FUNC_QUALIFIER void pme_gpu_spread(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeG
                                         bool             CUDA_FUNC_ARGUMENT(spreadCharges)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
+ * 3D FFT R2C/C2R routine.
+ *
+ * \param[in]  pmeGpu          The PME GPU structure.
+ * \param[in]  direction       Transform direction (real-to-complex or complex-to-real)
+ * \param[in]  gridIndex       Index of the PME grid - unused, assumed to be 0.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_3dfft(const pme_gpu_t       *CUDA_FUNC_ARGUMENT(pmeGpu),
+                                       enum gmx_fft_direction CUDA_FUNC_ARGUMENT(direction),
+                                       const int              CUDA_FUNC_ARGUMENT(gridIndex)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
  * A GPU Fourier space solving function.
  *
  * \param[in]     pmeGpu                  The PME GPU structure.
@@ -486,7 +505,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_solve(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGp
  * \param[in]     overwriteForces  True: h_forces are output-only.
  *                                 False: h_forces are copied to the device and are reduced with the results of the force gathering.
  *                                 TODO: determine efficiency/balance of host/device-side reductions.
- * \param[in]     h_grid           The host-side grid buffer (used only in testing moe)
+ * \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_gather(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGpu),
                                         float           *CUDA_FUNC_ARGUMENT(h_forces),
@@ -588,23 +607,12 @@ gmx_inline bool pme_gpu_is_testing(const pme_gpu_t *pmeGPU)
 void pme_gpu_get_energy_virial(const pme_gpu_t *pmeGPU, real *energy, matrix virial);
 
 /*! \libinternal \brief
- * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_start_step().
+ * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_step().
  *
  * \param[in] pmeGPU         The PME GPU structure.
  * \param[in] box            The unit cell box.
  */
 void pme_gpu_update_input_box(pme_gpu_t *pmeGPU, const matrix box);
-
-/*! \libinternal \brief
- * Starts the PME GPU step (copies coordinates onto GPU, possibly sets the unit cell parameters).
- *
- * \param[in] pmeGPU           The PME GPU structure.
- * \param[in] needToUpdateBox  Tells if the stored unit cell parameters should be updated from \p box.
- * \param[in] box              The unit cell box which does not necessarily change every step (only with pressure coupling enabled).
- *                             Would only be used if \p needToUpdateBox is true.
- * \param[in] h_coordinates    Input coordinates (XYZ rvec array).
- */
-void pme_gpu_start_step(pme_gpu_t *pmeGPU, bool needToUpdateBox, const matrix box, const rvec *h_coordinates);
 
 /*! \libinternal \brief
  * Finishes the PME GPU step, waiting for the output forces and/or energy/virial to be copied to the host.

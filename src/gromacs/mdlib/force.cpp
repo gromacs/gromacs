@@ -153,7 +153,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_blocka   *excl,
                        rvec       mu_tot[],
                        int        flags,
-                       float      *cycles_pme)
+                       float     *cycles_pme)
 {
     int         i, j;
     int         donb_flags;
@@ -458,7 +458,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                             ewaldOutput.vir_q);
             }
 
-            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))
+            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME) && (pme_run_mode(fr->pmedata) == PmeRunMode::CPU))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
@@ -512,6 +512,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     {
                         gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
                     }
+
                     /* We should try to do as little computation after
                      * this as possible, because parallel PME synchronizes
                      * the nodes, so we want all load imbalance of the

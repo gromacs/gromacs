@@ -152,7 +152,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                 struct t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                t_inputrec *ir);
+                t_inputrec *ir, PmeRunMode runMode);
 
 /*! \brief Calculate the PME grid energy V for n charges.
  *
@@ -218,15 +218,26 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *ch
 bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error);
 
 /*! \brief
+ * Returns the active PME codepath (CPU, GPU, mixed).
+ * \todo This is a rather static data that should be managed by the higher level task scheduler.
+ *
+ * \param[in]  pme            The PME data structure.
+ * \returns active PME codepath.
+ */
+PmeRunMode pme_run_mode(const gmx_pme_t *pme);
+
+/*! \brief
  * Tells if PME is enabled to run on GPU (not necessarily active at the moment).
- * For now, this decision is stored in the PME structure itself.
- * FIXME: this is an information that should be managed by the task scheduler.
- * As soon as such functionality appears, this function should be removed from this module.
+ * \todo This is a rather static data that should be managed by the hardware assignment manager.
+ * For now, it is synonymous with the active PME codepath (in the absence of dynamic switching).
  *
  * \param[in]  pme            The PME data structure.
  * \returns true if PME can run on GPU, false otherwise.
  */
-bool pme_gpu_task_enabled(const gmx_pme_t *pme);
+inline bool pme_gpu_task_enabled(const gmx_pme_t *pme)
+{
+    return (pme != nullptr) && (pme_run_mode(pme) != PmeRunMode::CPU);
+}
 
 /*! \brief
  * Resets the PME GPU timings. To be called at the reset step.
@@ -247,17 +258,68 @@ void pme_gpu_get_timings(const gmx_pme_t         *pme,
 /* The main PME GPU functions */
 
 /*! \brief
- * Gets the output forces and virial/energy if corresponding flags are (were?) passed in.
+ * Prepares PME on GPU step (updating the box if needed)
+ * \param[in] pme               The PME data structure.
+ * \param[in] needToUpdateBox   Tells if the stored unit cell parameters should be updated from \p box.
+ * \param[in] box               The unit cell box.
+ * \param[in] wcycle            The wallclock counter.
+ * \param[in] flags             The combination of flags to affect the PME computation on this step.
+ *                              The flags are the GMX_PME_ flags from pme.h.
+ */
+void pme_gpu_prepare_step(gmx_pme_t      *pme,
+                          bool            needToUpdateBox,
+                          const matrix    box,
+                          gmx_wallcycle_t wcycle,
+                          int             flags);
+
+/*! \brief
+ * Launches first stage of PME on GPU - H2D input transfers, spreading kernel, and D2H grid transfer if needed.
+ *
+ * \param[in] pme               The PME data structure.
+ * \param[in] x                 The array of local atoms' coordinates.
+ * \param[in] wcycle            The wallclock counter.
+ */
+void pme_gpu_launch_spread(gmx_pme_t      *pme,
+                           const rvec     *x,
+                           gmx_wallcycle_t wcycle);
+
+/*! \brief
+ * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
+ *
+ * \param[in] pme               The PME data structure.
+ * \param[in] wcycle            The wallclock counter.
+ */
+void pme_gpu_launch_complex_transforms(gmx_pme_t       *pme,
+                                       gmx_wallcycle_t  wcycle);
+
+/*! \brief
+ * Launches last stage of PME on GPU - force gathering.
+ *
+ * \param[in]  pme               The PME data structure.
+ * \param[in]  wcycle            The wallclock counter.
+ * \param[in,out] forces         The array of local atoms' resulting forces.
+ * \param[in]  overwriteForces   The boolean which tells whether the gathering kernel stores
+ *                               the output reciprocal forces into the host array (true),
+ *                               or copies its contents to the GPU first, and accumulates
+ *                               (false). The reduction is non-atomic.
+ */
+void pme_gpu_launch_gather(const gmx_pme_t      *pme,
+                           gmx_wallcycle_t       wcycle,
+                           rvec                 *forces,
+                           bool                  overwriteForces);
+
+/*! \brief
+ * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
+ * (if they were to be computed).
  *
  * \param[in]  pme            The PME data structure.
  * \param[in]  wcycle         The wallclock counter.
  * \param[out] vir_q          The output virial matrix.
  * \param[out] energy_q       The output energy.
  */
-void pme_gpu_get_results(const gmx_pme_t *pme,
-                         gmx_wallcycle_t  wcycle,
-                         matrix           vir_q,
-                         real            *energy_q);
-
+void pme_gpu_wait_for_gpu(const gmx_pme_t *pme,
+                          gmx_wallcycle_t  wcycle,
+                          matrix           vir_q,
+                          real            *energy_q);
 
 #endif
