@@ -755,8 +755,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     cycles_wait_gpu = 0;
 
-    const int start  = 0;
-    const int homenr = mdatoms->homenr;
+    const bool useGpuPme = pme_gpu_task_enabled(fr->pmedata);
+
+    const int  start  = 0;
+    const int  homenr = mdatoms->homenr;
 
     clear_mat(vir_force);
 
@@ -948,6 +950,114 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
+    /* Temporary solution until all routines take PaddedRVecVector */
+    rvec *f = as_rvec_array(force->data());
+
+    /* Start the force cycle counter.
+     * Note that a different counter is used for dynamic load balancing.
+     */
+    wallcycle_start(wcycle, ewcFORCE);
+    if (bDoForces)
+    {
+        /* Reset forces for which the virial is calculated separately:
+         * PME/Ewald forces if necessary */
+        if (fr->bF_NoVirSum)
+        {
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                fr->f_novirsum = fr->forceBufferNoVirialSummation;
+            }
+            else
+            {
+                /* We are not calculating the pressure so we do not need
+                 * a separate array for forces that do not contribute
+                 * to the pressure.
+                 */
+                fr->f_novirsum = force;
+            }
+        }
+
+        if (fr->bF_NoVirSum)
+        {
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                /* TODO: remove this - 1 when padding is properly implemented */
+                clear_rvecs_omp(fr->f_novirsum->size() - 1,
+                                as_rvec_array(fr->f_novirsum->data()));
+            }
+        }
+        /* Clear the short- and long-range forces */
+        clear_rvecs_omp(fr->natoms_force_constr, f);
+
+        clear_rvec(fr->vir_diag_posres);
+    }
+    wallcycle_stop(wcycle, ewcFORCE);
+
+    /* Launching PME on GPU */
+    gmx_bool    bSB;
+    int         pme_flags;
+    matrix      boxs;
+    rvec        box_size;
+    t_pbc       pbc;
+
+    set_pbc(&pbc, fr->ePBC, box);
+
+    /* Reset box */
+    for (i = 0; (i < DIM); i++)
+    {
+        box_size[i] = box[i][i];
+    }
+
+    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
+    {
+        bSB = (inputrec->nwall == 2);
+        if (bSB)
+        {
+            copy_mat(box, boxs);
+            svmul(inputrec->wall_ewald_zfac, boxs[ZZ], boxs[ZZ]);
+            box_size[ZZ] *= inputrec->wall_ewald_zfac;
+        }
+
+        if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        {
+            if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
+            {
+                assert(fr->n_tpi >= 0);
+                if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+                {
+                    pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
+                    if (flags & GMX_FORCE_FORCES)
+                    {
+                        pme_flags |= GMX_PME_CALC_F;
+                    }
+                    if (flags & GMX_FORCE_VIRIAL)
+                    {
+                        pme_flags |= GMX_PME_CALC_ENER_VIR;
+                    }
+                    if (fr->n_tpi > 0)
+                    {
+                        /* We don't calculate f, but we do want the potential */
+                        pme_flags |= GMX_PME_CALC_POT;
+                    }
+                    if (useGpuPme)
+                    {
+                        const bool boxChanged = true; //TODO set this appropriately
+                        pme_gpu_launch_spread(fr->pmedata,
+                                              x,
+                                              boxChanged,
+                                              bSB ? boxs : box,
+                                              wcycle,
+                                              pme_flags);
+                        if (fr->pmeRunMode != PmeRunMode::Hybrid)
+                        {
+                            pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (bUseGPU)
     {
         if (DOMAINDECOMP(cr))
@@ -960,6 +1070,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
                      step, nrnb, wcycle);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+    }
+
+    if (useGpuPme && (fr->pmeRunMode == PmeRunMode::Hybrid))
+    {
+        pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1103,47 +1218,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcROT);
     }
 
-    /* Temporary solution until all routines take PaddedRVecVector */
-    rvec *f = as_rvec_array(force->data());
-
-    /* Start the force cycle counter.
+    /* Restart the force cycle counter.
      * Note that a different counter is used for dynamic load balancing.
      */
-    wallcycle_start(wcycle, ewcFORCE);
-    if (bDoForces)
-    {
-        /* Reset forces for which the virial is calculated separately:
-         * PME/Ewald forces if necessary */
-        if (fr->bF_NoVirSum)
-        {
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                fr->f_novirsum = fr->forceBufferNoVirialSummation;
-            }
-            else
-            {
-                /* We are not calculating the pressure so we do not need
-                 * a separate array for forces that do not contribute
-                 * to the pressure.
-                 */
-                fr->f_novirsum = force;
-            }
-        }
-
-        if (fr->bF_NoVirSum)
-        {
-            if (flags & GMX_FORCE_VIRIAL)
-            {
-                /* TODO: remove this - 1 when padding is properly implemented */
-                clear_rvecs_omp(fr->f_novirsum->size() - 1,
-                                as_rvec_array(fr->f_novirsum->data()));
-            }
-        }
-        /* Clear the short- and long-range forces */
-        clear_rvecs_omp(fr->natoms_force_constr, f);
-
-        clear_rvec(fr->vir_diag_posres);
-    }
+    wallcycle_start_nocount(wcycle, ewcFORCE);
 
     if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
@@ -1242,7 +1320,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                       x, hist, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
-                      flags, &cycles_pme);
+                      flags, &cycles_pme, useGpuPme);
 
     wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1733,7 +1811,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                       inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
-                      &cycles_pme);
+                      &cycles_pme, false);
 
     wallcycle_stop(wcycle, ewcFORCE);
 

@@ -59,20 +59,11 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_info;
 struct gmx_device_info_t;
-
-/*! \brief Possible PME codepaths
- * TODO: make this enum class with gmx_pme_t C++ refactoring
- */
-enum PmeRunMode
-{
-    CPU,     // whole PME step is done on CPU
-    GPU,     // whole PME step is done on GPU
-    Hybrid,  // only spread and gather run on GPU; FFT and solving are done on CPU
-};
 
 #if GMX_GPU == GMX_GPU_CUDA
 
@@ -249,7 +240,7 @@ struct pme_gpu_settings_t
      * Only intended to be used by the test framework.
      */
     bool copyAllOutputs;
-    /*! \brief Various computation flags for the curent step, corresponding to the GMX_PME_ flags in pme.h. */
+    /*! \brief Various computation flags for the current step, corresponding to the GMX_PME_ flags in pme.h. */
     int  stepFlags;
 };
 
