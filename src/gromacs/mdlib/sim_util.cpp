@@ -223,6 +223,18 @@ static void sum_forces(rvec f[], gmx::ArrayRef<const gmx::RVec> forceToAdd)
     }
 }
 
+static void pme_gpu_reduce_outputs(ForceWithVirial           *forceWithVirial,
+                                   ArrayRef<const gmx::RVec>  pmeForces,
+                                   gmx_enerdata_t            *enerd,
+                                   const tensor               vir_Q,
+                                   real                       Vlr_q)
+{
+    GMX_ASSERT(forceWithVirial, "Invalid force pointer");
+    forceWithVirial->addVirialContribution(vir_Q);
+    enerd->term[F_COUL_RECIP] += Vlr_q;
+    sum_forces(as_rvec_array(forceWithVirial->force_.data()), pmeForces);
+}
+
 static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
@@ -823,6 +835,14 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (fr->nbv->emulateGpu == EmulateGpuNonbonded::Yes);
 
+    const auto pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
+    // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
+    const bool useGpuPme  = EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME) &&
+        ((pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid));
+    // TODO slim this conditional down - inputrec and duty checks should mean the same in proper code!
+    const ArrayRef<RVec> pmeGpuForces                = *fr->forceBufferIntermediate;
+    constexpr bool       pmeGpuAccumulateInputForces = false;
+
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -908,6 +928,37 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcPP_PMESENDX);
     }
 #endif /* GMX_MPI */
+
+    /* Launching PME on GPU */
+    if (useGpuPme)
+    {
+        assert(fr->n_tpi >= 0);
+        if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED)) // TODO consolidate these checks
+        {
+            int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
+            if (flags & GMX_FORCE_FORCES)
+            {
+                pme_flags |= GMX_PME_CALC_F;
+            }
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                pme_flags |= GMX_PME_CALC_ENER_VIR;
+            }
+            if (fr->n_tpi > 0)
+            {
+                /* We don't calculate f, but we do want the potential */
+                pme_flags |= GMX_PME_CALC_POT;
+            }
+
+            pme_gpu_prepare_step(fr->pmedata, flags & GMX_FORCE_DYNAMICBOX, box, wcycle, pme_flags);
+            pme_gpu_launch_spread(fr->pmedata, x, wcycle);
+            if (pmeRunMode == PmeRunMode::GPU)
+            {
+                pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
+                pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), !pmeGpuAccumulateInputForces);
+            }
+        }
+    }
 
     /* do gridding for pair search */
     if (bNS)
@@ -1019,6 +1070,14 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                      step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+
+    if (pmeRunMode == PmeRunMode::Hybrid)
+    {
+        // PME GPU - intermediate CPU work in mixed mode
+        // TODO - try moving this below till after do_force_lowlevel() / special forces?
+        pme_gpu_launch_complex_transforms(fr->pmedata, wcycle);
+        pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(pmeGpuForces.data()), !pmeGpuAccumulateInputForces);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1331,6 +1390,16 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             dd_move_f(cr->dd, f, fr->fshift);
             wallcycle_stop(wcycle, ewcMOVEF);
         }
+    }
+
+    if (useGpuPme)
+    {
+        matrix vir_Q;
+        real   Vlr_q;
+        pme_gpu_wait_for_gpu(fr->pmedata, wcycle, vir_Q, &Vlr_q);
+
+        pme_gpu_reduce_outputs(&forceWithVirial, pmeGpuForces,
+                               enerd, vir_Q, Vlr_q);
     }
 
     if (bUseOrEmulGPU)

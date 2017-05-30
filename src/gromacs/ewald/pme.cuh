@@ -48,6 +48,7 @@
 #include <cassert>
 
 #include <array>
+#include <set>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 
@@ -171,6 +172,8 @@ struct pme_gpu_cuda_t
     std::vector<std::unique_ptr<GpuParallel3dFft > > fftSetup;
 
     std::array<GpuRegionTimer, gtPME_EVENT_COUNT>    timingEvents;
+
+    std::set<size_t>                                 activeTimers; // indices into timingEvents
 
     /* GPU arrays element counts (not the arrays sizes in bytes!).
      * They might be larger than the actual meaningful data sizes.
