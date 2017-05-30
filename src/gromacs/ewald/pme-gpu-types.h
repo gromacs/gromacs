@@ -59,6 +59,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_info;
@@ -249,7 +250,7 @@ struct pme_gpu_settings_t
      * Only intended to be used by the test framework.
      */
     bool copyAllOutputs;
-    /*! \brief Various computation flags for the curent step, corresponding to the GMX_PME_ flags in pme.h. */
+    /*! \brief Various computation flags for the current step, corresponding to the GMX_PME_ flags in pme.h. */
     int  stepFlags;
 };
 
