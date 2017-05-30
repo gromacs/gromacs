@@ -1740,7 +1740,10 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     sfree(pme->bufv);
     sfree(pme->bufr);
 
-    pme_free_all_work(&pme->solve_work, pme->nthread);
+    if (pme->solve_work)
+    {
+        pme_free_all_work(&pme->solve_work, pme->nthread);
+    }
 
     sfree(pme->sum_qgrid_tmp);
     sfree(pme->sum_qgrid_dd_tmp);
@@ -1760,5 +1763,5 @@ void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *co
         pme_gpu_reinit_atoms(pme->gpu, nAtoms, coefficients);
     }
     // TODO: handle the CPU case here
-    // TODO: call this during the initial MD setup
+    // TODO: handle free energy (pass the whole t_mdatoms?)
 }
