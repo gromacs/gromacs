@@ -136,9 +136,6 @@ static void pme_gpu_reinit_step(const pme_gpu_t *pmeGPU)
 
 void pme_gpu_finish_step(const pme_gpu_t *pmeGPU, const bool bCalcF, const bool bCalcEnerVir)
 {
-    /* Needed for copy back as well as timing events */
-    pme_gpu_synchronize(pmeGPU);
-
     if (bCalcF && pme_gpu_performs_gather(pmeGPU))
     {
         pme_gpu_sync_output_forces(pmeGPU);
@@ -417,6 +414,9 @@ void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLog
     /* GPU FFT will only get used for a single rank.*/
     pme->gpu->settings.performGPUFFT   = (pme->gpu->common->runMode == PmeRunMode::GPU) && !pme_gpu_uses_dd(pme->gpu);
     pme->gpu->settings.performGPUSolve = (pme->gpu->common->runMode == PmeRunMode::GPU);
+
+    /* Reinit active timers */
+    pme_gpu_reinit_timings(pme->gpu);
 
     pme_gpu_reinit_grids(pme->gpu);
     pme_gpu_reinit_step(pme->gpu);

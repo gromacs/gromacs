@@ -47,6 +47,8 @@
 #include <list>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -58,9 +60,10 @@
 #include "pme-internal.h"
 #include "pme-solve.h"
 
-bool pme_gpu_task_enabled(const gmx_pme_t *pme)
+PmeRunMode pme_run_mode(const gmx_pme_t *pme)
 {
-    return (pme != nullptr) && (pme->runMode != PmeRunMode::CPU);
+    GMX_ASSERT(pme != nullptr, "Expecting valid PME data pointer");
+    return pme->runMode;
 }
 
 bool pme_gpu_supports_input(const t_inputrec *ir, std::string *error)
@@ -127,6 +130,165 @@ void pme_gpu_get_timings(const gmx_pme_t *pme, gmx_wallclock_gpu_pme_t *timings)
     }
 }
 
+/*! \brief
+ * A convenience wrapper for launching either the GPU or CPU FFT.
+ *
+ * \param[in] pme            The PME structure.
+ * \param[in] gridIndex      The grid index - should currently always be 0.
+ * \param[in] dir            The FFT direction enum.
+ * \param[in] wcycle         The wallclock counter.
+ */
+void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t              *pme,
+                                               const int               gridIndex,
+                                               enum gmx_fft_direction  dir,
+                                               gmx_wallcycle_t         wcycle)
+{
+    GMX_ASSERT(gridIndex == 0, "Only single grid supported");
+    if (pme_gpu_performs_FFT(pme->gpu))
+    {
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+        pme_gpu_3dfft(pme->gpu, dir, gridIndex);
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+    else
+    {
+        wallcycle_start(wcycle, ewcPME_FFT);
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
+        for (int thread = 0; thread < pme->nthread; thread++)
+        {
+            gmx_parallel_3dfft_execute(pme->pfft_setup[gridIndex], dir, thread, wcycle);
+        }
+        wallcycle_stop(wcycle, ewcPME_FFT);
+    }
+}
+
+/* The PME step code split into a few separate functions. */
+void pme_gpu_launch_spread(gmx_pme_t            *pme,
+                           const rvec           *x,
+                           bool                  needToUpdateBox,
+                           const matrix          box,
+                           gmx_wallcycle_t       wcycle,
+                           int                   flags)
+{
+    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->nnodes > 0, "");
+    GMX_ASSERT(pme->nnodes == 1 || pme->ndecompdim > 0, "");
+
+    pme_gpu_t *pmeGpu = pme->gpu;
+    pmeGpu->settings.stepFlags = flags;
+
+    wallcycle_start(wcycle, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_PME);
+    pme_gpu_start_step(pmeGpu, needToUpdateBox, box, x); // FIXME move this out
+    wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
+    wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+
+    if (needToUpdateBox && !pme_gpu_performs_solve(pmeGpu))
+    {
+        gmx::invertBoxMatrix(box, pme->recipbox);
+        // TODO this has already been computed in pme->gpu
+        // FIXME verify that the box is scaled correctly on GPU codepath
+        pme->boxVolume = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+    }
+
+    const unsigned int gridIndex  = 0;
+    real              *fftgrid    = pme->fftgrid[gridIndex];
+    if (pmeGpu->settings.stepFlags & GMX_PME_SPREAD)
+    {
+        /* Spread the coefficients on a grid */
+        const bool computeSplines = true;
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+        wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+        pme_gpu_spread(pmeGpu, gridIndex, fftgrid, computeSplines, true);
+        wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+    }
+}
+
+void pme_gpu_launch_complex_transforms(gmx_pme_t      *pme,
+                                       gmx_wallcycle_t wcycle)
+{
+    pme_gpu_t         *pmeGpu                 = pme->gpu;
+    const bool         computeEnergyAndVirial = pmeGpu->settings.stepFlags & GMX_PME_CALC_ENER_VIR;
+    const bool         performBackFFT         = pmeGpu->settings.stepFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
+    const unsigned int gridIndex              = 0;
+    t_complex         *cfftgrid               = pme->cfftgrid[gridIndex];
+
+    if (pmeGpu->settings.stepFlags & GMX_PME_SPREAD)
+    {
+        if (!pme_gpu_performs_FFT(pmeGpu))
+        {
+            // The wallcycle hierarchy is messy - we pause ewcFORCE just to exclude the PME GPU sync time
+            wallcycle_stop(wcycle, ewcFORCE);
+            wallcycle_start(wcycle, ewcWAIT_GPU_PME_SPREAD);
+
+            pme_gpu_sync_spread_grid(pme->gpu);
+
+            wallcycle_stop(wcycle, ewcWAIT_GPU_PME_SPREAD);
+            wallcycle_start_nocount(wcycle, ewcFORCE);
+        }
+    }
+
+    try
+    {
+        if (pmeGpu->settings.stepFlags & GMX_PME_SOLVE)
+        {
+            /* do R2C 3D-FFT */
+            parallel_3dfft_execute_gpu_wrapper(pme, gridIndex, GMX_FFT_REAL_TO_COMPLEX, wcycle);
+
+            /* solve in k-space for our local cells */
+            if (pme_gpu_performs_solve(pmeGpu))
+            {
+                const auto gridOrdering = pme_gpu_uses_dd(pmeGpu) ? GridOrdering::YZX : GridOrdering::XYZ;
+                wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+                wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME); //FIXME nocount
+                pme_gpu_solve(pmeGpu, cfftgrid, gridOrdering, computeEnergyAndVirial);
+                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
+                wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+            }
+            else
+            {
+                wallcycle_start(wcycle, ewcPME_SOLVE);
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
+                for (int thread = 0; thread < pme->nthread; thread++)
+                {
+                    solve_pme_yzx(pme, cfftgrid, pme->boxVolume,
+                                  computeEnergyAndVirial, pme->nthread, thread);
+                }
+                wallcycle_stop(wcycle, ewcPME_SOLVE);
+            }
+        }
+
+        if (performBackFFT)
+        {
+            parallel_3dfft_execute_gpu_wrapper(pme, gridIndex, GMX_FFT_COMPLEX_TO_REAL, wcycle);
+        }
+    } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+}
+
+void pme_gpu_launch_gather(const gmx_pme_t                 *pme,
+                           gmx_wallcycle_t gmx_unused       wcycle,
+                           rvec                            *forces,
+                           bool                             overwriteForces)
+{
+    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+
+    if (!pme_gpu_performs_gather(pme->gpu))
+    {
+        return;
+    }
+
+    wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
+    wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
+    const unsigned int gridIndex  = 0;
+    real              *fftgrid    = pme->fftgrid[gridIndex];
+    pme_gpu_gather(pme->gpu, reinterpret_cast<float *>(forces), overwriteForces, reinterpret_cast<float *>(fftgrid));
+    wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
+    wallcycle_stop(wcycle, ewcLAUNCH_GPU);
+}
+
 void pme_gpu_get_results(const gmx_pme_t *pme,
                          gmx_wallcycle_t  wcycle,
                          matrix           vir_q,
@@ -139,11 +301,11 @@ void pme_gpu_get_results(const gmx_pme_t *pme,
 
     // The wallcycle hierarchy is messy - we pause ewcFORCE just to exclude the PME GPU sync time
     wallcycle_stop(wcycle, ewcFORCE);
-
     wallcycle_start(wcycle, ewcWAIT_GPU_PME_GATHER);
-    pme_gpu_finish_step(pme->gpu, haveComputedForces, haveComputedEnergyAndVirial);
-    wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
+    pme_gpu_finish_step(pme->gpu, haveComputedForces, haveComputedEnergyAndVirial);
+
+    wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
     wallcycle_start_nocount(wcycle, ewcFORCE);
 
     if (haveComputedEnergyAndVirial)

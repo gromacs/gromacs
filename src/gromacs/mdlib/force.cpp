@@ -153,13 +153,16 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_blocka   *excl,
                        rvec       mu_tot[],
                        int        flags,
-                       float      *cycles_pme)
+                       float     *cycles_pme)
 {
     int         i, j;
     int         donb_flags;
     int         pme_flags;
     t_pbc       pbc;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR];
+
+    const auto  pmeRunMode = fr->pmedata ? pme_run_mode(fr->pmedata) : PmeRunMode::CPU;
+    const bool  useGpuPme  = (pmeRunMode == PmeRunMode::GPU) || (pmeRunMode == PmeRunMode::Hybrid);
 
 #if GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -458,6 +461,13 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                             ewaldOutput.vir_q);
             }
 
+            if (useGpuPme)
+            {
+                wallcycle_stop(wcycle, ewcFORCE);
+                pme_gpu_launch_gather(fr->pmedata, wcycle, as_rvec_array(forceWithVirial->force_.data()), false);
+                wallcycle_start_nocount(wcycle, ewcFORCE);
+            }
+
             if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
@@ -489,29 +499,40 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                         ddCloseBalanceRegionCpu(cr->dd);
                     }
 
-                    wallcycle_start(wcycle, ewcPMEMESH);
-                    status = gmx_pme_do(fr->pmedata,
-                                        0, md->homenr - fr->n_tpi,
-                                        x,
-                                        as_rvec_array(forceWithVirial->force_.data()),
-                                        md->chargeA, md->chargeB,
-                                        md->sqrt_c6A, md->sqrt_c6B,
-                                        md->sigmaA, md->sigmaB,
-                                        box, cr,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
-                                        DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
-                                        nrnb, wcycle,
-                                        ewaldOutput.vir_q, ewaldOutput.vir_lj,
-                                        &Vlr_q, &Vlr_lj,
-                                        lambda[efptCOUL], lambda[efptVDW],
-                                        &ewaldOutput.dvdl[efptCOUL],
-                                        &ewaldOutput.dvdl[efptVDW],
-                                        pme_flags);
-                    *cycles_pme = wallcycle_stop(wcycle, ewcPMEMESH);
-                    if (status != 0)
+                    if (!useGpuPme)
                     {
-                        gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
+                        wallcycle_start(wcycle, ewcPMEMESH);
+                        status = gmx_pme_do(fr->pmedata,
+                                            0, md->homenr - fr->n_tpi,
+                                            x,
+                                            as_rvec_array(forceWithVirial->force_.data()),
+                                            md->chargeA, md->chargeB,
+                                            md->sqrt_c6A, md->sqrt_c6B,
+                                            md->sigmaA, md->sigmaB,
+                                            box, cr,
+                                            DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
+                                            DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
+                                            nrnb, wcycle,
+                                            ewaldOutput.vir_q, ewaldOutput.vir_lj,
+                                            &Vlr_q, &Vlr_lj,
+                                            lambda[efptCOUL], lambda[efptVDW],
+                                            &ewaldOutput.dvdl[efptCOUL],
+                                            &ewaldOutput.dvdl[efptVDW],
+                                            pme_flags);
+                        *cycles_pme = wallcycle_stop(wcycle, ewcPMEMESH);
+                        if (status != 0)
+                        {
+                            gmx_fatal(FARGS, "Error %d in reciprocal PME routine", status);
+                        }
                     }
+                    else
+                    {
+                        pme_gpu_get_results(fr->pmedata,
+                                            wcycle,
+                                            ewaldOutput.vir_q,
+                                            &Vlr_q);
+                    }
+
                     /* We should try to do as little computation after
                      * this as possible, because parallel PME synchronizes
                      * the nodes, so we want all load imbalance of the

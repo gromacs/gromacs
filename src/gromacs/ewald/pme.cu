@@ -170,8 +170,7 @@ void pme_gpu_copy_output_forces(const pme_gpu_t *pmeGPU, float *h_forces)
 
 void pme_gpu_sync_output_forces(const pme_gpu_t *pmeGPU)
 {
-    cudaStream_t s    = pmeGPU->archSpecific->pmeStream;
-    cudaError_t  stat = cudaStreamWaitEvent(s, pmeGPU->archSpecific->syncForcesD2H, 0);
+    cudaError_t  stat = cudaEventSynchronize(pmeGPU->archSpecific->syncForcesD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU forces");
 }
 
@@ -384,7 +383,7 @@ void pme_gpu_free_fract_shifts(const pme_gpu_t *pmeGPU)
 
 void pme_gpu_sync_output_energy_virial(const pme_gpu_t *pmeGPU)
 {
-    cudaError_t stat = cudaStreamWaitEvent(pmeGPU->archSpecific->pmeStream, pmeGPU->archSpecific->syncEnerVirD2H, 0);
+    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncEnerVirD2H);
     CU_RET_ERR(stat, "Error while waiting for PME solve output");
 
     for (int j = 0; j < c_virialAndEnergyCount; j++)
@@ -447,19 +446,19 @@ void pme_gpu_copy_input_gather_atom_data(const pme_gpu_t *pmeGpu)
 
 void pme_gpu_sync_spread_grid(const pme_gpu_t *pmeGPU)
 {
-    cudaError_t stat = cudaStreamWaitEvent(pmeGPU->archSpecific->pmeStream, pmeGPU->archSpecific->syncSpreadGridD2H, 0);
+    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSpreadGridD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU spread grid to be copied to the host");
 }
 
 void pme_gpu_sync_spline_atom_data(const pme_gpu_t *pmeGPU)
 {
-    cudaError_t stat = cudaStreamWaitEvent(pmeGPU->archSpecific->pmeStream, pmeGPU->archSpecific->syncSplineAtomDataD2H, 0);
+    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSplineAtomDataD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU atom data to be copied to the host");
 }
 
 void pme_gpu_sync_solve_grid(const pme_gpu_t *pmeGPU)
 {
-    cudaError_t stat = cudaStreamWaitEvent(pmeGPU->archSpecific->pmeStream, pmeGPU->archSpecific->syncSolveGridD2H, 0);
+    cudaError_t stat = cudaEventSynchronize(pmeGPU->archSpecific->syncSolveGridD2H);
     CU_RET_ERR(stat, "Error while waiting for the PME GPU solve grid to be copied to the host");
     //should check for pme_gpu_performs_solve(pmeGPU)
 }
@@ -503,15 +502,16 @@ void pme_gpu_destroy_specific(const pme_gpu_t *pmeGPU)
 void pme_gpu_init_sync_events(const pme_gpu_t *pmeGPU)
 {
     cudaError_t stat;
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncEnerVirD2H, cudaEventDisableTiming);
+    const auto  eventFlags = cudaEventDisableTiming;
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncEnerVirD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncEnerVirD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncForcesD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncForcesD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncForcesD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSpreadGridD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSpreadGridD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncSpreadGridD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSplineAtomDataD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSplineAtomDataD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncSplineAtomDataD2H failed");
-    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSolveGridD2H, cudaEventDisableTiming);
+    stat = cudaEventCreateWithFlags(&pmeGPU->archSpecific->syncSolveGridD2H, eventFlags);
     CU_RET_ERR(stat, "cudaEventCreate on syncSolveGridD2H failed");
 }
 
