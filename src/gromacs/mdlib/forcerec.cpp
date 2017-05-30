@@ -1514,6 +1514,11 @@ void forcerec_set_ranges(t_forcerec *fr,
     {
         fr->forceBufferForDirectVirialContributions->resize(natoms_f_novirsum);
     }
+
+    if (fr->ic->cutoff_scheme == ecutsVERLET)
+    {
+        fr->forceBufferIntermediate->resize(ncg_home);
+    }
 }
 
 static real cutoff_inf(real cutoff)
@@ -2788,6 +2793,8 @@ void init_forcerec(FILE                *fp,
     {
         fr->forceBufferForDirectVirialContributions = new std::vector<gmx::RVec>;
     }
+
+    fr->forceBufferIntermediate = new std::vector<gmx::RVec>; //TODO add proper conditionals
 
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
