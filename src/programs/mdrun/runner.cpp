@@ -479,8 +479,11 @@ int Mdrunner::mdrunner()
     {
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
-    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
+    bool             forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
+    bool             tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
+
+    const PmeRunMode runMode = PmeRunMode::CPU;
+    //TODO this is a placeholder as PME on GPU is not permitted yet
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -622,6 +625,7 @@ int Mdrunner::mdrunner()
 
         gmx_bcast_sim(sizeof(tryUsePhysicalGpu), &tryUsePhysicalGpu, cr);
     }
+
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
 
@@ -960,6 +964,7 @@ int Mdrunner::mdrunner()
                       shortRangedDeviceInfo,
                       FALSE,
                       pforce);
+        fr->pmeRunMode = runMode; // TODO what is the better place to store it?
 
         /* Initialize QM-MM */
         if (fr->bQMMM)
@@ -1072,7 +1077,6 @@ int Mdrunner::mdrunner()
             try
             {
                 gmx_device_info_t *pmeGpuInfo = nullptr;
-                auto               runMode    = PmeRunMode::CPU;
                 status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                       (Flags & MD_REPRODUCIBLE),
@@ -1169,7 +1173,7 @@ int Mdrunner::mdrunner()
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff_q, ewaldcoeff_lj, inputrec, runMode);
     }
 
     wallcycle_stop(wcycle, ewcRUN);

@@ -157,6 +157,16 @@ struct cginfo_mb_t
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;
 
+/*! \brief Possible PME codepaths
+ * TODO: make this enum class with gmx_pme_t C++ refactoring
+ */
+enum PmeRunMode
+{
+    CPU,     // whole PME step is done on CPU
+    GPU,     // whole PME step is done on GPU
+    Hybrid,  // only spread and gather run on GPU; FFT and solving are done on CPU
+};
+
 struct ewald_corr_thread_t;
 
 struct t_forcerec {
@@ -328,6 +338,7 @@ struct t_forcerec {
     int               ljpme_combination_rule;
     tensor            vir_el_recip;
     tensor            vir_lj_recip;
+    enum PmeRunMode   pmeRunMode;
 
     /* PME/Ewald stuff */
     gmx_bool                bEwald;
