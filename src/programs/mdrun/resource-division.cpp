@@ -54,9 +54,11 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 
@@ -70,7 +72,11 @@
  * and after a switch point doesn't change too much.
  */
 
+//! Constant used to help minimize preprocessed code
 static const bool bHasOmpSupport = GMX_OPENMP;
+
+//! Constant used to help minimize preprocessed code
+static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
 
 #if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
@@ -679,6 +685,27 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->gpu_opt.gpu_id != nullptr ? hw_opt->gpu_opt.gpu_id : "");
 }
 
+//! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
+static gmx_bool anyGpuIdIsRepeated(const gmx_gpu_opt_t *gpu_opt)
+{
+    /* Loop over IDs in the string */
+    for (int i = 0; i < gpu_opt->n_dev_use - 1; ++i)
+    {
+        /* Look for the ID in location i in the following part of the
+           string */
+        for (int j = i + 1; j < gpu_opt->n_dev_use; ++j)
+        {
+            if (gpu_opt->dev_use[i] == gpu_opt->dev_use[j])
+            {
+                /* Same ID found in locations i and j */
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
 /* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
                                const t_commrec *cr,
@@ -784,10 +811,20 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
         hw_opt->nthreads_omp_pme = 1;
     }
 
-    /* Parse GPU IDs, if provided.
-     * We check consistency with the tMPI thread count later.
-     */
-    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
+    if (hw_opt->gpu_opt.n_dev_use > 0 && !bGPUBinary)
+    {
+        gmx_fatal(FARGS, "GPU IDs have been selected, but %s was compiled without GPU support!",
+                  gmx::getProgramContext().displayName());
+    }
+
+    if (!gmx_multiple_gpu_per_node_supported() && 1 < hw_opt->gpu_opt.n_dev_use)
+    {
+        gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
+    }
+    if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(&hw_opt->gpu_opt))
+    {
+        gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
+    }
 
 #if GMX_THREAD_MPI
     if (hw_opt->gpu_opt.n_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
