@@ -1149,7 +1149,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU);
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
     if (DOMAINDECOMP(cr))
