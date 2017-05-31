@@ -36,14 +36,11 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+ 
 #include "gmxpre.h"
-
 #include "gauss_io.h"
-
 #include "config.h"
-
 #include <cstdio>
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -118,54 +115,52 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
 #undef KOKO
 #endif
 
-static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mol)
+static OpenBabel::OBConversion *read_babel(const char *g09, OpenBabel::OBMol *mol)
 {
-    std::ifstream g98f;
+    std::ifstream g09f;
     bool          isGzip = false;
 
-    if (!gmx_fexist(g98))
+    if (!gmx_fexist(g09))
     {
-        std::string g98z(g98);
-        g98z += ".gz";
-        g98f.open(g98z.c_str(), std::ios::in);
-        isGzip = g98f.is_open();
+        std::string g09z(g09);
+        g09z += ".gz";
+        g09f.open(g09z.c_str(), std::ios::in);
+        isGzip = g09f.is_open();
     }
     else
     {
-        g98f.open(g98, std::ios::in);
+        g09f.open(g09, std::ios::in);
     }
-    if (!g98f.is_open())
+    if (!g09f.is_open())
     {
-        gmx_fatal(FARGS, "Cannot open file %s for reading", g98);
+        gmx_fatal(FARGS, "Cannot open file %s for reading", g09);
     }
 
-    // Read from g98f
-    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g98f, &std::cout);
-
+    // Read from g09f
+    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g09f, &std::cout);
     if (conv->SetInFormat("g09", isGzip))
     {
-        if (conv->Read(mol, &g98f))
+        if (conv->Read(mol, &g09f))
         {
-            g98f.close();
+            g09f.close();
 
             return conv; // exit with success
         }
         else
         {
-            fprintf(stderr, "Could not read input file %s with OpenBabel2.\n",
-                    g98);
+            fprintf(stderr, "Could not read input file %s with OpenBabel2.\n", g09);
         }
     }
     else
     {
-        fprintf(stderr, "Input file %s has incomprehensible format.\n", g98);
+        fprintf(stderr, "Input file %s has incomprehensible format.\n", g09);
     }
-    g98f.close();
+    g09f.close();
 
     return nullptr;
 }
 
-static void gmx_molprop_read_babel(const char          *g98,
+static void gmx_molprop_read_babel(const char          *g09,
                                    alexandria::MolProp &mpt,
                                    const char          *molnm,
                                    const char          *iupac,
@@ -192,13 +187,13 @@ static void gmx_molprop_read_babel(const char          *g98,
     std::vector<alexandria::ElectrostaticPotential> espv;
 
     const char              *reference = "Ghahremanpour2016a", *unknown = "unknown";
-    char                    *charge_model, *g98ptr;
+    char                    *charge_model, *g09ptr;
     int                      bondid;
 
-    OpenBabel::OBConversion *conv = read_babel(g98, &mol);
+    OpenBabel::OBConversion *conv = read_babel(g09, &mol);
     if (nullptr == conv)
     {
-        fprintf(stderr, "Failed reading %s\n", g98);
+        fprintf(stderr, "Failed reading %s\n", g09);
         return;
     }
     delete conv;
@@ -279,22 +274,22 @@ static void gmx_molprop_read_babel(const char          *g98,
         method.assign(OBpd->GetValue());
     }
 
-    g98ptr = (char *) strrchr(g98, '/');
-    if (nullptr == g98ptr)
+    g09ptr = (char *) strrchr(g09, '/');
+    if (nullptr == g09ptr)
     {
-        g98ptr = (char *)g98;
+        g09ptr = (char *)g09;
     }
     else
     {
-        g98ptr++;
-        if (strlen(g98ptr) == 0)
+        g09ptr++;
+        if (strlen(g09ptr) == 0)
         {
-            g98ptr = (char *)g98;
+            g09ptr = (char *)g09;
         }
     }
 
     alexandria::Experiment ca(program, method, basis, reference,
-                              conformation, g98ptr,
+                              conformation, g09ptr,
                               jobtype);
     mpt.AddExperiment(ca);
     mpt.SetCharge(mol.GetTotalCharge());

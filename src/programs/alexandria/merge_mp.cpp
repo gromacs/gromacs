@@ -46,6 +46,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -81,11 +82,11 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp,
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
     int    nprop                   = 0;
-    t_prop                     *tp = NULL, key, *tpp;
+    t_prop                     *tp = nullptr, key, *tpp;
     char   buf[STRLEN];
     int    nadd = 0;
 
-    if (NULL != fn)
+    if (nullptr != fn)
     {
         fp = gmx_ffopen(fn, "r");
         while (!feof(fp))
@@ -109,10 +110,10 @@ static void add_properties(const char *fn, std::vector<alexandria::MolProp> &mp,
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
             key.iupac = mpi->getIupac().c_str();
-            if (NULL != key.iupac)
+            if (nullptr != key.iupac)
             {
                 tpp = (t_prop *) bsearch(&key, tp, nprop, sizeof(tp[0]), tp_comp);
-                if (NULL != tpp)
+                if (nullptr != tpp)
                 {
                     alexandria::Experiment      ex(tpp->ref, (char *)"minimum");
                     alexandria::MolecularEnergy me(tpp->prop,
@@ -137,11 +138,11 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp,
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
     int    nprop                   = 0;
-    t_prop                     *tp = NULL, key, *tpp;
+    t_prop                     *tp = nullptr, key, *tpp;
     char   buf[STRLEN];
     int    nadd = 0;
 
-    if (NULL != fn)
+    if (nullptr != fn)
     {
         fp = gmx_ffopen(fn, "r");
         while (!feof(fp))
@@ -165,10 +166,10 @@ static void add_charges(const char *fn, std::vector<alexandria::MolProp> &mp,
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
             key.iupac = mpi->getIupac().c_str();
-            if (NULL != key.iupac)
+            if (nullptr != key.iupac)
             {
                 tpp = (t_prop *) bsearch(&key, tp, nprop, sizeof(tp[0]), tp_comp);
-                if (NULL != tpp)
+                if (nullptr != tpp)
                 {
                     alexandria::Experiment      ex(tpp->ref, (char *)"minimum");
                     alexandria::MolecularEnergy me(tpp->prop,
@@ -205,7 +206,7 @@ int alex_merge_mp(int argc, char *argv[])
         { efDAT, "-c",  "charges",   ffOPTRD }
     };
     int                              NFILE       = (sizeof(fnm)/sizeof(fnm[0]));
-    static const char               *sort[]      = { NULL, "molname", "formula", "composition", NULL };
+    static const char               *sort[]      = { nullptr, "molname", "formula", "composition", nullptr };
     static int                       compress    = 1;
     static real                      temperature = 298.15;
     static int                       maxwarn     = 0;
@@ -228,9 +229,7 @@ int alex_merge_mp(int argc, char *argv[])
     gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
-                           sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc,
-                           0, NULL, &oenv))
+                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -243,7 +242,7 @@ int alex_merge_mp(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    int nwarn = merge_xml(nfiles, fns, mp, NULL, NULL, NULL, ap, pd, TRUE);
+    int nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
 
     if (nwarn <= maxwarn)
     {

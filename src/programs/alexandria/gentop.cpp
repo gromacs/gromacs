@@ -426,7 +426,7 @@ int alex_gentop(int argc, char *argv[])
             }
         }
         
-        if (nfn == 0)
+        if (nfn > 0)
         {
             for (i = 0; i < nfn; i++)
             {

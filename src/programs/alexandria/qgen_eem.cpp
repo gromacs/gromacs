@@ -174,11 +174,12 @@ void QgenEem::updateInfo(const Poldata &pd)
 {
     for (int i = 0; i < natom_; i++)
     {
-        chi0_[i] = pd.getChi0(iChargeDistributionModel_, elem_[i]);
-        j00_[i]  = pd.getJ00(iChargeDistributionModel_, elem_[i]);
+        auto ei  = pd.findEem(iChargeDistributionModel_, elem_[i]);
+        chi0_[i] = ei->getChi0();
+        j00_[i]  = ei->getJ0();
         for (int k = 0; k < nZeta_[i]; k++)
         {
-            zeta_[i][k] = pd.getZeta(iChargeDistributionModel_, elem_[i], k);
+            zeta_[i][k] = ei->getZeta(k);;
         }
     }
 }

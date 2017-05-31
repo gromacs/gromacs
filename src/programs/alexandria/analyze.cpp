@@ -41,7 +41,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <string>
 
 #include "gromacs/commandline/pargs.h"
@@ -52,6 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -171,7 +171,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                             alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
                             mpi.AddExperiment(calc);
-                            if (NULL != debug)
+                            if (nullptr != debug)
                             {
                                 fprintf(debug, "Added polarizability %g for %s\n", p, mpi.getIupac().c_str());
                             }
@@ -253,7 +253,7 @@ static void write_corr_xvg(const char                       *fn,
                         nout++;
                     }
                 }
-                else if (NULL != debug)
+                else if (nullptr != debug)
                 {
                     fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(),
                             bQM ? 1 : 0, bExp ? 1 : 0);
@@ -268,7 +268,7 @@ static void write_corr_xvg(const char                       *fn,
         }
     }
     fclose(fp);
-    do_view(oenv, fn, NULL);
+    do_view(oenv, fn, nullptr);
 }
 
 class RefCount
@@ -388,13 +388,13 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                bPrintMultQ, gms, imsTrain);
         gmx_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
                                bPrintMultQ, gms, imsTest);
-        if (NULL != selout)
+        if (nullptr != selout)
         {
             gp = fopen(selout, "w");
             for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
             {
                 iupac = mpi->getIupac().c_str();
-                if ((NULL != iupac) && (strlen(iupac) > 0))
+                if ((nullptr != iupac) && (strlen(iupac) > 0))
                 {
                     std::string myref, mylot;
                     if (mpi->getPropRef(mpo, iqmBoth, lot, "", "",
@@ -414,13 +414,13 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
         gmx_molprop_composition_table(fp, mp, gms, imsTest);
     }
     fclose(fp);
-    if (NULL != categoryfn)
+    if (nullptr != categoryfn)
     {
         fp = fopen(categoryfn, "w");
         gmx_molprop_category_table(fp, catmin, cList);
         fclose(fp);
     }
-    if (NULL != xvgfn)
+    if (nullptr != xvgfn)
     {
         write_corr_xvg(xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms, exp_type);
     }
@@ -454,8 +454,8 @@ int alex_analyze(int argc, char *argv[])
         { efXVG, "-c",      "correl",    ffWRITE  }
     };
 #define NFILE (sizeof(fnm)/sizeof(fnm[0]))
-    static char                     *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
-    static char                     *prop[]      = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", NULL };
+    static char                     *sort[]      = { nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr };
+    static char                     *prop[]      = { nullptr, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", nullptr };
     static char                     *fc_str      = (char *)"";
     static char                     *exp_type    = (char *)"";
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
@@ -515,14 +515,12 @@ int alex_analyze(int argc, char *argv[])
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
     gmx_output_env_t                *oenv;
-    char                           **mpname = NULL;
+    char                           **mpname = nullptr;
     int                              nmpfile;
 
-    npa = sizeof(pa)/sizeof(pa[0]);
+    npa = asize(pa);
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
-                           npa, pa,
-                           sizeof(desc)/sizeof(desc[0]), desc,
-                           0, NULL, &oenv))
+                           npa, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -571,7 +569,7 @@ int alex_analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        int nwarn = merge_xml(nmpfile, mpname, mp, NULL, NULL, NULL, ap, pd, TRUE);
+        int nwarn = merge_xml(nmpfile, mpname, mp, nullptr, nullptr, nullptr, ap, pd, TRUE);
         if (nwarn > maxwarn)
         {
             printf("Too many warnings (%d). Terminating.\n", nwarn);
