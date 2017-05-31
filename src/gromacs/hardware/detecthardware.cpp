@@ -172,6 +172,7 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
  *
  * \param[in] gpu_info       Pointer to per-node GPU info struct
  * \param[in] gpu_opt        Pointer to per-node GPU options struct
+ * \param[in] userSetGpuIds  Whether the user selected the GPU ids
  * \param[in] numPpRanks     Number of PP ranks per node
  * \param[in] bPrintHostName Print the hostname in the usage information
  * \return                   String to write to the log file
@@ -179,6 +180,7 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
 static std::string
 makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
                    const gmx_gpu_opt_t  *gpu_opt,
+                   bool                  userSetGpuIds,
                    size_t                numPpRanks,
                    bool                  bPrintHostName)
 {
@@ -200,7 +202,7 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     }
 
     std::string output;
-    if (!gpu_opt->bUserSet)
+    if (!userSetGpuIds)
     {
         // gpu_opt->dev_compatible is only populated during auto-selection
         std::string gpuIdsString =
@@ -239,7 +241,7 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
                                     "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
                                     numGpusInUse, bPluralGpus ? "s" : "",
-                                    gpu_opt->bUserSet ? "user-" : "auto-",
+                                    userSetGpuIds ? "user-" : "auto-",
                                     bPluralGpus ? "s" : "",
                                     numPpRanks,
                                     (numPpRanks > 1) ? "s" : "",
@@ -302,6 +304,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
+                                      bool                 userSetGpuIds,
                                       gmx_bool             bUseGPU)
 {
     int      npppn;
@@ -345,6 +348,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         {
             gpuUsageReport = makeGpuUsageReport(&hwinfo->gpu_info,
                                                 &hw_opt->gpu_opt,
+                                                userSetGpuIds,
                                                 cr->nrank_pp_intranode,
                                                 bMPI && cr->nnodes > 1);
         }
@@ -403,7 +407,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         /* number of tMPI threads auto-adjusted */
         if (btMPI && bNthreadsAuto)
         {
-            if (hw_opt->gpu_opt.bUserSet && npppn < ngpu_use)
+            if (userSetGpuIds && npppn < ngpu_use)
             {
                 /* The user manually provided more GPUs than threads we
                    could automatically start. */
@@ -415,7 +419,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                           programName);
             }
 
-            if (!hw_opt->gpu_opt.bUserSet && npppn < ngpu_comp)
+            if (!userSetGpuIds && npppn < ngpu_comp)
             {
                 /* There are more GPUs than tMPI threads; we have
                    limited the number GPUs used. */
@@ -429,7 +433,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
             }
         }
 
-        if (hw_opt->gpu_opt.bUserSet)
+        if (userSetGpuIds)
         {
             if (ngpu_use != npppn)
             {
@@ -492,7 +496,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         {
             int      same_count;
 
-            same_count = gmx_count_gpu_dev_shared(&hw_opt->gpu_opt);
+            same_count = gmx_count_gpu_dev_shared(&hw_opt->gpu_opt, userSetGpuIds);
 
             if (same_count > 0)
             {
@@ -521,12 +525,12 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
  * this is detected. Note that the return value represents the number of
  * PP rank pairs that share a device.
  */
-int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
+int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGpuIds)
 {
     int      same_count    = 0;
     int      ngpu          = gpu_opt->n_dev_use;
 
-    if (gpu_opt->bUserSet)
+    if (userSetGpuIds)
     {
         int      i, j;
 
@@ -1253,49 +1257,41 @@ static gmx_bool anyGpuIdIsRepeated(const gmx_gpu_opt_t *gpu_opt)
     return FALSE;
 }
 
+bool hasUserSetGpuIds(gmx_gpu_opt_t *gpu_opt)
+{
+    return gpu_opt->gpu_id != nullptr;
+}
+
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 {
-    char *env;
+    if (!hasUserSetGpuIds(gpu_opt))
+    {
+        returnar;
+    }
 
-    if (gpu_opt->gpu_id != nullptr && !bGPUBinary)
+    if (!bGPUBinary)
     {
         gmx_fatal(FARGS, "GPU ID string set, but %s was compiled without GPU support!",
                   gmx::getProgramContext().displayName());
     }
 
-    env = getenv("GMX_GPU_ID");
-    if (env != nullptr && gpu_opt->gpu_id != nullptr)
+    /* Parse a "plain" or comma-separated GPU ID string which contains a
+     * sequence of digits corresponding to GPU IDs; the order will
+     * indicate the process/tMPI thread - GPU assignment. */
+    parse_digits_from_string(gpu_opt->gpu_id, &gpu_opt->n_dev_use, &gpu_opt->dev_use);
+    
+    if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
     {
-        gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
+        gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
     }
-    if (env == nullptr)
+    if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
     {
-        env = gpu_opt->gpu_id;
+        gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
     }
-
-    /* parse GPU IDs if the user passed any */
-    if (env != nullptr)
+    if (gpu_opt->n_dev_use == 0)
     {
-        /* Parse a "plain" or comma-separated GPU ID string which contains a
-         * sequence of digits corresponding to GPU IDs; the order will
-         * indicate the process/tMPI thread - GPU assignment. */
-        parse_digits_from_string(env, &gpu_opt->n_dev_use, &gpu_opt->dev_use);
-
-        if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
-        {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
-        }
-        if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
-        {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
-        }
-        if (gpu_opt->n_dev_use == 0)
-        {
-            gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n",
-                      invalid_gpuid_hint);
-        }
-
-        gpu_opt->bUserSet = TRUE;
+        gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n",
+                  invalid_gpuid_hint);
     }
 }
 
