@@ -526,12 +526,13 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
+                                        int                  numGpusToUseOnThisRank,
                                         gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
                                         const gmx::MDLogger &mdlog)
 {
 #if GMX_OPENMP && GMX_MPI
-    int         nth_omp_min, nth_omp_max, ngpu;
+    int         nth_omp_min, nth_omp_max;
     char        buf[1000];
 #if GMX_THREAD_MPI
     const char *mpi_option = " (option -ntmpi)";
@@ -550,8 +551,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
     nth_omp_min = gmx_omp_nthreads_get(emntDefault);
     nth_omp_max = gmx_omp_nthreads_get(emntDefault);
-    ngpu        = hw_opt->gpu_opt.n_dev_use;
 
+    bool anyRankIsUsingGpus = (numGpusToUseOnThisRank > 0);
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
     if (cr->nnodes + cr->npmenodes > 1)
     {
@@ -559,19 +560,19 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
         count[0] = -nth_omp_min;
         count[1] =  nth_omp_max;
-        count[2] =  ngpu;
+        count[2] =  numGpusToUseOnThisRank;
 
         MPI_Allreduce(count, count_max, 3, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
 
         /* In case of an inhomogeneous run setup we use the maximum counts */
-        nth_omp_min = -count_max[0];
-        nth_omp_max =  count_max[1];
-        ngpu        =  count_max[2];
+        nth_omp_min        = -count_max[0];
+        nth_omp_max        =  count_max[1];
+        anyRankIsUsingGpus = count_max[2] > 0;
     }
 
     int nthreads_omp_mpi_ok_min;
 
-    if (ngpu == 0)
+    if (!anyRankIsUsingGpus)
     {
         nthreads_omp_mpi_ok_min = nthreads_omp_mpi_ok_min_cpu;
     }
@@ -586,7 +587,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     if (DOMAINDECOMP(cr) && cr->nnodes > 1)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min ||
-            (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
+            (!(anyRankIsUsingGpus && !gmx_gpu_sharing_supported()) &&
              nth_omp_max > nthreads_omp_mpi_ok_max))
         {
             /* Note that we print target_max here, not ok_max */
@@ -614,8 +615,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
         const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
 
         /* No domain decomposition (or only one domain) */
-        if (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
-            nth_omp_max > nthreads_omp_faster(cpuInfo, ngpu > 0))
+        if (!(anyRankIsUsingGpus && !gmx_gpu_sharing_supported()) &&
+            nth_omp_max > nthreads_omp_faster(cpuInfo, anyRankIsUsingGpus))
         {
             /* To arrive here, the user/system set #ranks and/or #OMPthreads */
             gmx_bool bEnvSet;
