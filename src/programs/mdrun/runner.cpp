@@ -749,8 +749,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
+
+    /* Handle GPU-related user options. Later, we check consistency
+     * with things like whether support is compiled, or tMPI thread
+     * count. */
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.

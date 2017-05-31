@@ -108,6 +108,9 @@ static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
  * array entry. */
 
+/* TODO GPU sharing is now always supported, so we can simplify things
+ * and remove these constants, functions, and comments about sharing
+ * below. */
 /* Both CUDA and OpenCL (on the supported/tested platforms) supports
  * GPU device sharing.
  */
@@ -1232,36 +1235,9 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
     check_use_of_rdtscp_on_this_cpu(mdlog, cpuInfo);
 }
 
-//! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
-static gmx_bool anyGpuIdIsRepeated(const gmx_gpu_opt_t *gpu_opt)
-{
-    /* Loop over IDs in the string */
-    for (int i = 0; i < gpu_opt->n_dev_use - 1; ++i)
-    {
-        /* Look for the ID in location i in the following part of the
-           string */
-        for (int j = i + 1; j < gpu_opt->n_dev_use; ++j)
-        {
-            if (gpu_opt->dev_use[i] == gpu_opt->dev_use[j])
-            {
-                /* Same ID found in locations i and j */
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
-}
-
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 {
     char *env;
-
-    if (gpu_opt->gpu_id != nullptr && !bGPUBinary)
-    {
-        gmx_fatal(FARGS, "GPU ID string set, but %s was compiled without GPU support!",
-                  gmx::getProgramContext().displayName());
-    }
 
     env = getenv("GMX_GPU_ID");
     if (env != nullptr && gpu_opt->gpu_id != nullptr)
@@ -1281,14 +1257,6 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
          * indicate the process/tMPI thread - GPU assignment. */
         parse_digits_from_string(env, &gpu_opt->n_dev_use, &gpu_opt->dev_use);
 
-        if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
-        {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
-        }
-        if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
-        {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
-        }
         if (gpu_opt->n_dev_use == 0)
         {
             gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n",
