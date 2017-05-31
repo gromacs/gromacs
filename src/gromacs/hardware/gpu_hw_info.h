@@ -72,8 +72,6 @@ struct gmx_gpu_info_t
 /* GPU device selection information -- includes either CUDA or OpenCL devices */
 typedef struct gmx_gpu_opt_t
 {
-    char     *gpu_id;           /* GPU id's to use, each specified as chars */
-
     int       n_dev_compatible; /* number of compatible GPU devices that could be used */
     int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
     int       n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */

@@ -676,13 +676,14 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->nthreads_tmpi,
             hw_opt->nthreads_omp,
             hw_opt->nthreads_omp_pme,
-            hw_opt->gpu_opt.gpu_id != nullptr ? hw_opt->gpu_opt.gpu_id : "");
+            hw_opt->gpu_id != nullptr ? hw_opt->gpu_id : "");
 }
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
-                               const t_commrec *cr,
-                               int              nPmeRanks)
+void check_and_update_hw_opt_1(gmx_hw_opt_t        *hw_opt,
+                               const gmx_gpu_opt_t *gpu_opt,
+                               const t_commrec     *cr,
+                               int                  nPmeRanks)
 {
     /* Currently hw_opt only contains default settings or settings supplied
      * by the user on the command line.
@@ -785,10 +786,10 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
     }
 
 #if GMX_THREAD_MPI
-    if (hw_opt->gpu_opt.n_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
+    if (gpu_opt->n_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
     {
         /* Set the number of MPI threads equal to the number of GPUs */
-        hw_opt->nthreads_tmpi = hw_opt->gpu_opt.n_dev_use;
+        hw_opt->nthreads_tmpi = gpu_opt->n_dev_use;
 
         if (hw_opt->nthreads_tot > 0 &&
             hw_opt->nthreads_tmpi > hw_opt->nthreads_tot)
