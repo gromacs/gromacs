@@ -431,20 +431,23 @@ void OPtimization::polData2TuneDip()
     {   
         if (!ai->isConst())
         {
-            auto J00  = pd_.getJ00(iChargeDistributionModel_, ai->name());
+            auto ei   = pd_.findEem(iChargeDistributionModel_, ai->name());
+            GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
+            
+            auto J00  = ei->getJ0();
             param_.push_back(std::move(J00));
             
             if (ai->name().compare(fixchi_) != 0)
             {
-                auto Chi0 = pd_.getChi0(iChargeDistributionModel_, ai->name());
+                auto Chi0 = ei->getChi0();
                 param_.push_back(std::move(Chi0));
             }        
             if (bFitZeta_)
             {
-                auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
-                for (int zz = 0; zz < nzeta; zz++)
+                auto nzeta = ei->getNzeta();
+                for (int k = 0; k < nzeta; k++)
                 {
-                    auto zeta = pd_.getZeta(iChargeDistributionModel_, ai->name(), zz);
+                    auto zeta = ei->getZeta(k);
                     if (0 != zeta)
                     {
                         param_.push_back(std::move(zeta));
@@ -494,18 +497,18 @@ void OPtimization::tuneDip2PolData()
     {
         if (!ai->isConst())
         {
-            std::string qstr   = pd_.getQstr(iChargeDistributionModel_, ai->name());
-            std::string rowstr = pd_.getRowstr(iChargeDistributionModel_, ai->name());
+            auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
+            GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
+            
+            std::string qstr   = ei->getQstr();
+            std::string rowstr = ei->getRowstr();
             
             if (qstr.size() == 0 || rowstr.size() == 0)
             {
                 gmx_fatal(FARGS, "No qstr/rowstr for atom %s in %d model\n",
                           ai->name().c_str(), iChargeDistributionModel_);
             }
-            
-            auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
-            GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
-            
+                       
             ei->setJ0(param_[n]);
             ei->setJ0_sigma(psigma_[n++]);
             
@@ -517,7 +520,7 @@ void OPtimization::tuneDip2PolData()
             if (bFitZeta_)
             {
                 zstr[0] = '\0';
-                auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
+                auto nzeta = ei->getNzeta();
                 for (int zz = 0; zz < nzeta; zz++)
                 {
                     auto zeta = param_[n++];
@@ -577,10 +580,11 @@ double OPtimization::calcPenalty(AtomIndexIterator ai)
     double ref_chi = 0;
     
     ref_chi = pd_.getChi0(iChargeDistributionModel_, fixchi_); 
-       
+
+    auto ei      = pd_.findEem(iChargeDistributionModel_, ai->name());
     auto ai_elem = pd_.getElem(ai->name());
-    auto ai_row  = pd_.getRowstr(iChargeDistributionModel_, ai->name());
-    auto ai_chi  = pd_.getChi0(iChargeDistributionModel_, ai->name());
+    auto ai_row  = ei->getRowstr();
+    auto ai_chi  = ei->getChi0();
     auto ai_atn  = gmx_atomprop_atomnumber(atomprop_, ai_elem.c_str());
        
     if (ai_chi < ref_chi)
@@ -593,13 +597,14 @@ double OPtimization::calcPenalty(AtomIndexIterator ai)
     {  
         if (!aj->isConst())
         {
+            auto ej      = pd_.findEem(iChargeDistributionModel_, aj->name());
             auto aj_elem = pd_.getElem(aj->name());        
-            auto aj_row  = pd_.getRowstr(iChargeDistributionModel_, aj->name());        
+            auto aj_row  = ej->getRowstr();      
             auto aj_atn  = gmx_atomprop_atomnumber(atomprop_, aj_elem.c_str());
             
             if ((ai_row == aj_row) && (ai_atn != aj_atn))
             {           
-                auto aj_chi = pd_.getChi0(iChargeDistributionModel_, aj->name());
+                auto aj_chi = ej->getChi0();
                 
                 if (ai_atn > aj_atn)
                 {

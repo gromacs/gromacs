@@ -179,7 +179,7 @@ void QgenEem::updateInfo(const Poldata &pd)
         j00_[i]  = ei->getJ0();
         for (int k = 0; k < nZeta_[i]; k++)
         {
-            zeta_[i][k] = ei->getZeta(k);;
+            zeta_[i][k] = ei->getZeta(k);
         }
     }
 }
