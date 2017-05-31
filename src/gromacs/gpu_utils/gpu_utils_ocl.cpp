@@ -412,8 +412,8 @@ gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
     {
         char        sbuf[STRLEN];
         sprintf(sbuf, "Trying to initialize an non-existent GPU: "
-                "there are %d %s-selected GPU(s), but #%d was requested.",
-                gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
+                "there are %d selected GPU(s), but #%d was requested.",
+                gpu_opt->n_dev_use, mygpu);
         gmx_incons(sbuf);
     }
 
