@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,6 +90,10 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
+/* Return whether the user selected GPU ids */
+bool hasUserSetGpuIds(const gmx_gpu_opt_t *gpu_opt);
+
+/* Parse the GPU ids the user may have passed. */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
@@ -98,6 +102,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
+                                      bool                 userSetGpuIds,
                                       gmx_bool             bUseGPU);
 
 /* Check whether a GPU is shared among ranks, and return the number of shared
@@ -106,6 +111,6 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
    gpu_opt       = the gpu options struct
 
    returns: The number of GPUs shared among ranks, or 0 */
-int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt);
+int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGpuIds);
 
 #endif

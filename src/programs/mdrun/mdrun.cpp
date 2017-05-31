@@ -57,6 +57,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <cstdlib>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
@@ -312,7 +314,7 @@ int gmx_mdrun(int argc, char *argv[])
      */
     gmx_hw_opt_t    hw_opt = {
         0, 0, 0, 0, threadaffSEL, 0, 0,
-        { nullptr, FALSE, 0, nullptr }
+        { nullptr, 0, nullptr }
     };
 
     t_pargs         pa[] = {
@@ -454,6 +456,20 @@ int gmx_mdrun(int argc, char *argv[])
         return 0;
     }
 
+    // Handle option that parses GPU ids, which could be in an
+    // environment variable, so that there is a way to customize it
+    // when using MPI in heterogeneous contexts.
+    {
+        char *env = getenv("GMX_GPU_ID");
+        if (env != nullptr && hw_opt.gpu_opt.gpu_id != nullptr)
+        {
+            gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
+        }
+        if (env != nullptr)
+        {
+            hw_opt.gpu_opt.gpu_id = env;
+        }
+    }
 
     dd_rank_order = nenum(ddrank_opt);
 
