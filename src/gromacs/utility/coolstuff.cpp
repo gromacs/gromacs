@@ -750,6 +750,7 @@ std::string getCoolQuote()
         { "Performance and power are great targets for tuning, but really you want to tune for money!", "Erik Lindahl" },
         { "Here are all the 'gmx' tools... but no gmx writethesis", "Christian Blau" },
         { "The best part of winter in Stockholm is going to Australia", "Mark Abraham" },
+        { "If you don't know what you're doing, use a (M)BAR-based method", "Erik Lindahl" },
     };
 
     if (beCool())
