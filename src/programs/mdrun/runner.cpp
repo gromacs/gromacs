@@ -840,7 +840,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Parse GPU IDs, if provided.
      * We check consistency with the tMPI thread count later.
      */
-    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
+    bool userSetGpuIds = gmx_parse_gpu_ids(&hw_opt->gpu_opt);
 
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(hw_opt, cr, npme);
@@ -1148,7 +1148,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         /* Select GPU id's to use */
         gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
-                                &hw_opt->gpu_opt);
+                                userSetGpuIds, &hw_opt->gpu_opt);
     }
     else
     {
@@ -1158,7 +1158,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, bUseGPU);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,

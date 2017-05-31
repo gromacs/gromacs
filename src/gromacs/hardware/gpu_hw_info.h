@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,6 @@ struct gmx_gpu_info_t
 typedef struct gmx_gpu_opt_t
 {
     char     *gpu_id;           /* GPU id's to use, each specified as chars */
-    gmx_bool  bUserSet;         /* true if the GPUs in dev_use are manually provided by the user */
 
     int       n_dev_compatible; /* number of compatible GPU devices that could be used */
     int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
