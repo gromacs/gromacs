@@ -236,6 +236,7 @@ static void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
                              gmx_bool bForceUseGPU,
+                             bool userSetGpuIds,
                              gmx_gpu_opt_t *gpu_opt)
 {
     /* Bail if binary is not compiled with GPU acceleration, but this is either
@@ -252,7 +253,7 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
         return;
     }
 
-    if (gpu_opt->bUserSet)
+    if (userSetGpuIds)
     {
         /* Check the GPU IDs passed by the user.
          * (GPU IDs have been parsed by gmx_parse_gpu_ids before)
