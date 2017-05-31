@@ -1378,7 +1378,7 @@
 ;  ai    aj    ak    al   gromos type
     N    -C    CA   CD2     gi_1    
    CA     N     C    CB     gi_2    
-  OD1    CB   CD2    CG     gi_2    
+   CG    CB   CD2   OD1     gi_2
     C    CA    +N     O     gi_1    
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
