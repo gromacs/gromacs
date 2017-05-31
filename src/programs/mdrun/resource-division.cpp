@@ -784,11 +784,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
         hw_opt->nthreads_omp_pme = 1;
     }
 
-    /* Parse GPU IDs, if provided.
-     * We check consistency with the tMPI thread count later.
-     */
-    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
-
 #if GMX_THREAD_MPI
     if (hw_opt->gpu_opt.n_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
     {

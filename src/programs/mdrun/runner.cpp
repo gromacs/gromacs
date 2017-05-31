@@ -837,6 +837,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
     }
 
+    /* Parse GPU IDs, if provided.
+     * We check consistency with the tMPI thread count later.
+     */
+    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
+
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(hw_opt, cr, npme);
 
