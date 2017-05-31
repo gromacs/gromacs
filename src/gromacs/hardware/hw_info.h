@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,10 @@ typedef struct gmx_hw_opt_t {
     int           core_pinning_stride; /* Logical core pinning stride              */
     int           core_pinning_offset; /* Logical core pinning offset              */
 
-    gmx_gpu_opt_t gpu_opt;             /* The GPU options                          */
+    char         *gpu_id;              /* If not nullptr, task to GPU mapping set (only)
+                                        * by the user, each specified as integer ID
+                                        * values, of size char. If nullptr, the user
+                                        * did not specify a task to GPU mapping. */
 } gmx_hw_opt_t;
 
 #endif

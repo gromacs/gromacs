@@ -61,7 +61,6 @@
 #include <stdio.h>
 
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
@@ -77,6 +76,8 @@
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
+struct gmx_hw_info_t;
+struct gmx_gpu_opt_t;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
@@ -203,7 +204,7 @@ void dd_dlb_unlock(struct gmx_domdec_t *dd);
  */
 void dd_setup_dlb_resource_sharing(struct t_commrec           *cr,
                                    const gmx_hw_info_t        *hwinfo,
-                                   const gmx_hw_opt_t         *hw_opt);
+                                   const gmx_gpu_opt_t        *gpu_opt);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
 void dd_collect_vec(struct gmx_domdec_t *dd,

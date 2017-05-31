@@ -62,6 +62,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -313,8 +314,7 @@ int gmx_mdrun(int argc, char *argv[])
      * since declarations follow below.
      */
     gmx_hw_opt_t    hw_opt = {
-        0, 0, 0, 0, threadaffSEL, 0, 0,
-        { nullptr, 0, nullptr }
+        0, 0, 0, 0, threadaffSEL, 0, 0, nullptr
     };
 
     t_pargs         pa[] = {
@@ -339,7 +339,7 @@ int gmx_mdrun(int argc, char *argv[])
           "The lowest logical core number to which mdrun should pin the first thread" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
+        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
           "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
         { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
           "Check for all bonded interactions with DD" },
@@ -461,13 +461,13 @@ int gmx_mdrun(int argc, char *argv[])
     // when using MPI in heterogeneous contexts.
     {
         char *env = getenv("GMX_GPU_ID");
-        if (env != nullptr && hw_opt.gpu_opt.gpu_id != nullptr)
+        if (env != nullptr && hw_opt.gpu_id != nullptr)
         {
             gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
         }
         if (env != nullptr)
         {
-            hw_opt.gpu_opt.gpu_id = env;
+            hw_opt.gpu_id = env;
         }
     }
 

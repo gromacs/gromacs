@@ -67,6 +67,7 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwareassign.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -840,10 +841,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Parse GPU IDs, if provided.
      * We check consistency with the tMPI thread count later.
      */
-    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
+    gmx_gpu_opt_t gpu_opt = gmx_parse_gpu_ids(hw_opt);
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(hw_opt, cr, npme);
+    check_and_update_hw_opt_1(hw_opt, &gpu_opt, cr, npme);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(mdlog, cr,
@@ -1144,32 +1145,32 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    bool userSetGpuIds = hasUserSetGpuIds(&hw_opt->gpu_opt);
+    bool userSetGpuIds = hasUserSetGpuIds(hw_opt);
 
     if (bUseGPU)
     {
         /* Select GPU id's to use */
         gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
-                                userSetGpuIds, &hw_opt->gpu_opt);
+                                userSetGpuIds, &gpu_opt);
     }
     else
     {
         /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
+        gpu_opt.n_dev_use = 0;
     }
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, &gpu_opt, userSetGpuIds, bUseGPU);
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt, gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
     if (DOMAINDECOMP(cr))
     {
         /* When we share GPUs over ranks, we need to know this for the DLB */
-        dd_setup_dlb_resource_sharing(cr, hwinfo, hw_opt);
+        dd_setup_dlb_resource_sharing(cr, hwinfo, &gpu_opt);
     }
 
     /* getting number of PP/PME threads
@@ -1210,7 +1211,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Initiate forcerecord */
         fr          = mk_forcerec();
         fr->hwinfo  = hwinfo;
-        fr->gpu_opt = &hw_opt->gpu_opt;
+        fr->gpu_opt = &gpu_opt;
         init_forcerec(fplog, mdlog, fr, fcd, mdModules.forceProvider(),
                       inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
@@ -1441,7 +1442,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : nullptr);
+    free_gpu_resources(fr, cr, &hwinfo->gpu_info, &gpu_opt);
 
     if (doMembed)
     {

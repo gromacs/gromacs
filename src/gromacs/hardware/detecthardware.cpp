@@ -304,6 +304,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
+                                      const gmx_gpu_opt_t *gpu_opt,
                                       bool                 userSetGpuIds,
                                       gmx_bool             bUseGPU)
 {
@@ -326,15 +327,19 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
 #if GMX_THREAD_MPI
     bMPI          = FALSE;
     btMPI         = TRUE;
-    bNthreadsAuto = (hw_opt->nthreads_tmpi < 1);
 #elif GMX_LIB_MPI
     bMPI          = TRUE;
     btMPI         = FALSE;
-    bNthreadsAuto = FALSE;
 #else
     bMPI          = FALSE;
     btMPI         = FALSE;
+#endif
+
+#if GMX_THREAD_MPI
+    bNthreadsAuto = (hw_opt->nthreads_tmpi < 1);
+#else
     bNthreadsAuto = FALSE;
+    GMX_UNUSED_VALUE(hw_opt);
 #endif
 
     /* GPU emulation detection is done later, but we need here as well
@@ -347,7 +352,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         try
         {
             gpuUsageReport = makeGpuUsageReport(&hwinfo->gpu_info,
-                                                &hw_opt->gpu_opt,
+                                                gpu_opt,
                                                 userSetGpuIds,
                                                 cr->nrank_pp_intranode,
                                                 bMPI && cr->nnodes > 1);
@@ -397,7 +402,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         char gpu_comp_plural[2], gpu_use_plural[2];
 
         ngpu_comp = hwinfo->gpu_info.n_dev_compatible;
-        ngpu_use  = hw_opt->gpu_opt.n_dev_use;
+        ngpu_use  = gpu_opt->n_dev_use;
 
         sprintf(gpu_comp_plural, "%s", (ngpu_comp > 1) ? "s" : "");
         sprintf(gpu_use_plural,  "%s", (ngpu_use > 1) ? "s" : "");
@@ -496,7 +501,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         {
             int      same_count;
 
-            same_count = gmx_count_gpu_dev_shared(&hw_opt->gpu_opt, userSetGpuIds);
+            same_count = gmx_count_gpu_dev_shared(gpu_opt, userSetGpuIds);
 
             if (same_count > 0)
             {
@@ -1257,16 +1262,18 @@ static gmx_bool anyGpuIdIsRepeated(const gmx_gpu_opt_t *gpu_opt)
     return FALSE;
 }
 
-bool hasUserSetGpuIds(gmx_gpu_opt_t *gpu_opt)
+bool hasUserSetGpuIds(const gmx_hw_opt_t *hw_opt)
 {
-    return gpu_opt->gpu_id != nullptr;
+    return hw_opt->gpu_id != nullptr;
 }
 
-void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
+gmx_gpu_opt_t gmx_parse_gpu_ids(const gmx_hw_opt_t *hw_opt)
 {
-    if (!hasUserSetGpuIds(gpu_opt))
+    gmx_gpu_opt_t gpu_opt = { 0, nullptr, 0, nullptr };
+
+    if (!hasUserSetGpuIds(hw_opt))
     {
-        return;
+        return gpu_opt;
     }
 
     if (!bGPUBinary)
@@ -1278,21 +1285,23 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
     /* Parse a "plain" or comma-separated GPU ID string which contains a
      * sequence of digits corresponding to GPU IDs; the order will
      * indicate the process/tMPI thread - GPU assignment. */
-    parse_digits_from_string(gpu_opt->gpu_id, &gpu_opt->n_dev_use, &gpu_opt->dev_use);
+    parse_digits_from_string(hw_opt->gpu_id, &gpu_opt.n_dev_use, &gpu_opt.dev_use);
 
-    if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
+    if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt.n_dev_use)
     {
         gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
     }
-    if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
+    if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(&gpu_opt))
     {
         gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
     }
-    if (gpu_opt->n_dev_use == 0)
+    if (gpu_opt.n_dev_use == 0)
     {
         gmx_fatal(FARGS, "Empty GPU ID string encountered.\n%s\n",
                   invalid_gpuid_hint);
     }
+
+    return gpu_opt;
 }
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)

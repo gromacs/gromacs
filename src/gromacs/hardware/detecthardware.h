@@ -91,10 +91,11 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 /* Return whether the user selected GPU ids */
-bool hasUserSetGpuIds(gmx_gpu_opt_t *gpu_opt);
+bool hasUserSetGpuIds(const gmx_hw_opt_t *hw_opt);
 
-/* Parse the GPU ids the user may have passed. */
-void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
+/* Parse the GPU ids the user may have passed and fill the per-PP-task
+   (ie per-rank) mapping to GPU ids. */
+gmx_gpu_opt_t gmx_parse_gpu_ids(const gmx_hw_opt_t *hw_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
@@ -102,6 +103,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
+                                      const gmx_gpu_opt_t *gpu_opt,
                                       bool                 userSetGpuIds,
                                       gmx_bool             bUseGPU);
 
