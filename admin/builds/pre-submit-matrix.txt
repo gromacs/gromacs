@@ -11,6 +11,11 @@
 # Test MPMD PME with library MPI
 gcc-4.6 gpu cuda-5.0 mpi npme=1 nranks=2 openmp x11 cmake-2.8.8
 
+# Test newest gcc supported by newest CUDA shortly after the release
+# Test thread-MPI with CUDA
+# Test SIMD (AVX2_256) GPU code-path
+gcc-5 gpu cuda-8.0 openmp simd=avx2_256
+
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
 gcc-4.8 gpu cuda-7.5 openmp release
