@@ -49,6 +49,7 @@ gmx_add_gtest_executable(
     energyreader.cpp
     grompp.cpp
     initialconstraints.cpp
+    pmetest.cpp
     rerun.cpp
     trajectory_writing.cpp
     trajectoryreader.cpp
