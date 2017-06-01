@@ -250,6 +250,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     { nullptr, "auto", "on", "off", nullptr };
     const char       *nbpu_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", nullptr };
+    const char       *pme_opt_choices[] =
+    { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
     const char       *gpuIdTaskAssignment   = "";
 
@@ -312,6 +314,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&mdrunOptions.tunePme},
           "Optimize PME load between PP/PME ranks or GPU/CPU (only with the Verlet cut-off scheme)" },
+        { "-pme",      FALSE, etENUM, {pme_opt_choices},
+          "Perform PME calculations on" },
         { "-v",       FALSE, etBOOL, {&mdrunOptions.verbose},
           "Be loud and noisy" },
         { "-pforce",  FALSE, etREAL, {&pforce},
@@ -488,6 +492,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     domdecOptions.numCells[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     nbpu_opt  = nbpu_opt_choices[0];
+    pme_opt   = pme_opt_choices[0];
     rc        = mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
