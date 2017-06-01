@@ -3163,17 +3163,22 @@ void init_forcerec(FILE                *fp,
  */
 void free_gpu_resources(const t_forcerec        *fr,
                         const t_commrec         *cr,
-                        const gmx_device_info_t *deviceInfo)
+                        const gmx_device_info_t *deviceInfo,
+                        bool                     isPmeRankUsingGPU)
 {
-    gmx_bool bIsPPrankUsingGPU;
-    char     gpu_err_str[STRLEN];
+    char       gpu_err_str[STRLEN];
 
-    bIsPPrankUsingGPU = thisRankHasDuty(cr, DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
+    const bool isPpRankUsingGPU  = thisRankHasDuty(cr, DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
+    const bool isRankUsingGPU    = isPpRankUsingGPU || isPmeRankUsingGPU;
 
-    if (bIsPPrankUsingGPU)
+    if (isPpRankUsingGPU)
     {
         /* free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+    }
+
+    if (isRankUsingGPU)
+    {
         /* stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
     }
@@ -3195,7 +3200,8 @@ void free_gpu_resources(const t_forcerec        *fr,
     }
 #endif  /* GMX_THREAD_MPI */
 
-    if (bIsPPrankUsingGPU)
+    // TODO this should handle multiple GPUs per rank in the future
+    if (isRankUsingGPU)
     {
         /* uninitialize GPU (by destroying the context) */
         if (!free_cuda_gpu(deviceInfo, gpu_err_str))
