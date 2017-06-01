@@ -173,6 +173,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
                     sm_forceReduction[elementIndex] += sm_forceReduction[elementIndex + redStride];
                 }
             }
+            __syncthreads();
             // Last iteration - packing everything to be nearby, storing convenience pointer
             sm_forceTemp[dimIndex] = sm_forceReduction + dimIndex * smemPerDim;
             int redStride = minStride;
