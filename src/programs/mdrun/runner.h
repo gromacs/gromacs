@@ -160,6 +160,8 @@ class Mdrunner
         const char                      *ddcsz = nullptr;
         //! Target short-range interations for "cpu", "gpu", "cpu_gpu", or "auto". Default is "auto".
         const char                      *nbpu_opt = nullptr;
+        //! Target long-range interactions for "cpu", "gpu", "gpu_cpu", or "auto". Default is "auto".
+        const char                      *pme_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                              nstlist_cmdline = 0;
         //! Command-line override for the number of MD steps (-2 means that the mdp option will be used).
