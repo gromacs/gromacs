@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Energy Name="Conserved">
+    <Real Name="0">39.455055</Real>
+    <Real Name="1">39.454601</Real>
+    <Real Name="2">39.453709</Real>
+    <Real Name="3">39.453194</Real>
+    <Real Name="4">39.452827</Real>
+    <Real Name="5">39.451984</Real>
+    <Real Name="6">39.450413</Real>
+    <Real Name="7">39.448856</Real>
+    <Real Name="8">39.448353</Real>
+    <Real Name="9">39.448929</Real>
+    <Real Name="10">39.450169</Real>
+    <Real Name="11">39.4506</Real>
+    <Real Name="12">39.450726</Real>
+    <Real Name="13">39.450962</Real>
+    <Real Name="14">39.452282</Real>
+    <Real Name="15">39.454075</Real>
+    <Real Name="16">39.455303</Real>
+    <Real Name="17">39.455303</Real>
+    <Real Name="18">39.454796</Real>
+    <Real Name="19">39.454231</Real>
+    <Real Name="20">39.453823</Real>
+  </Energy>
+  <Energy Name="Reciprocal">
+    <Real Name="0">5.7102599</Real>
+    <Real Name="1">5.7090158</Real>
+    <Real Name="2">5.7027955</Real>
+    <Real Name="3">5.6922712</Real>
+    <Real Name="4">5.678308</Real>
+    <Real Name="5">5.6615648</Real>
+    <Real Name="6">5.6426487</Real>
+    <Real Name="7">5.6213832</Real>
+    <Real Name="8">5.5974426</Real>
+    <Real Name="9">5.5703311</Real>
+    <Real Name="10">5.5399575</Real>
+    <Real Name="11">5.5064549</Real>
+    <Real Name="12">5.4712629</Real>
+    <Real Name="13">5.4358544</Real>
+    <Real Name="14">5.4023991</Real>
+    <Real Name="15">5.3728585</Real>
+    <Real Name="16">5.3487535</Real>
+    <Real Name="17">5.3307228</Real>
+    <Real Name="18">5.3190498</Real>
+    <Real Name="19">5.3129902</Real>
+    <Real Name="20">5.3116117</Real>
+  </Energy>
+</ReferenceData>
