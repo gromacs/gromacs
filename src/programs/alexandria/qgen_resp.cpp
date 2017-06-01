@@ -352,7 +352,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
                     if (src.nEsp() > 0)
                     {
                         pp = ep_[m].vCalc() - src.ep_[m].v();
-                        if (NULL != ppcorr)
+                        if (nullptr != ppcorr)
                         {
                             gmx_stats_add_point(ppcorr,
                                                 gmx2convert(src.ep_[m].v(), eg2cHartree_e),
@@ -379,7 +379,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
                     {
                         rmin = 1000;
                         /* Add point to histogram! */
-                        for (RespAtomIterator i = ra_.begin(); i < ra_.end(); ++i)
+                        for (auto i = ra_.begin(); i < ra_.end(); ++i)
                         {
                             gmx::RVec dx;
                             rvec_sub(i->x(), ep_[m].esp(), dx);

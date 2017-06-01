@@ -177,8 +177,8 @@ class MyMol
         rvec                     *buf_, mu_elec_ = {0,0,0}, mu_calc_ = {0,0,0}, mu_esp_ = {0,0,0}, com_ = {0,0,0};
         double                   *qESP_;
         matrix                    box_;
-        real                      dip_exp_, mu_elec2_, dip_err_, dip_weight_, dip_calc_, dip_esp_, dip_elec_, chieq_;
-        real                      Hform_, Emol_, Ecalc_, OptEcalc_, Force2_, OptForce2_;
+        double                    dip_exp_, mu_elec2_, dip_err_, dip_weight_, dip_calc_, dip_esp_, dip_elec_, chieq_;
+        double                    Hform_, Emol_, Ecalc_, OptEcalc_, Force2_, OptForce2_;
         tensor                    Q_elec_, Q_calc_, Q_esp_, alpha_elec_, alpha_calc_;
         eSupport                  eSupp_;
         t_state                  *state_;

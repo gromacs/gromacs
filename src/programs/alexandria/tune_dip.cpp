@@ -42,7 +42,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -283,32 +282,24 @@ void OPtimization::calcDeviation()
     {
         gmx_bcast(sizeof(bFinal_), &bFinal_, cr_);
     }
-
     if (PAR(cr_) && !bFinal_)
     {
         pd_.broadcast(cr_);
-    }
-    
+    }   
     for (j = 0; j < ermsNR; j++)
     {
         ener_[j] = 0;
-    }
-    
+    }    
     for (auto &mymol : mymol_)
-    {
-        GMX_RELEASE_ASSERT(mymol.mtop_->natoms == mymol.topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
-        
+    {        
         if ((mymol.eSupp_ == eSupportLocal) ||
             (bFinal_ && (mymol.eSupp_ == eSupportRemote)))
-        {    
-            
-            double chieq = 0;
+        {               
             mymol.Qgeem_.generateChargesSm(debug,
                                            pd_, 
                                            &(mymol.topology_->atoms),
-                                           &chieq,
-                                           mymol.state_->x);
-            mymol.chieq_ = chieq;           
+                                           &mymol.chieq_,
+                                           mymol.state_->x);           
             if (nullptr != mymol.shellfc_)
             {      
                 if (bFitAlpha_)
@@ -322,10 +313,8 @@ void OPtimization::calcDeviation()
                     
                 }               
                 mymol.computeForces(nullptr, cr_);
-            } 
-                                   
-            qtot = 0; 
-                       
+            }                                    
+            qtot = 0;                       
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
             {
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
@@ -351,8 +340,7 @@ void OPtimization::calcDeviation()
             if (bESP_)
             {
                 real  rrms   = 0;
-                real  wtot   = 0;
-                
+                real  wtot   = 0;              
                 if (nullptr != mymol.shellfc_)
                 {
                     mymol.Qgresp_.updateAtomCoords(mymol.state_->x);
@@ -360,12 +348,10 @@ void OPtimization::calcDeviation()
                 mymol.Qgresp_.updateAtomCharges(&mymol.topology_->atoms);
                 mymol.Qgresp_.calcPot();
                 ener_[ermsESP] += convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);               
-            }
-            
-            mymol.CalcDipole(mymol.mu_calc_);
-            
+            }            
             if (bDipole_)
-            {                
+            {
+                mymol.CalcDipole(mymol.mu_calc_);
                 if (bQM_)
                 {
                     rvec dmu;                    
@@ -376,12 +362,10 @@ void OPtimization::calcDeviation()
                 {
                     ener_[ermsMU]  += gmx::square(mymol.dip_calc_ - mymol.dip_exp_);
                 }
-            } 
-            
-            mymol.CalcQuadrupole();  
-            
+            }                          
             if (bQuadrupole_)
-            {                         
+            {
+                mymol.CalcQuadrupole();
                 for (int mm = 0; mm < DIM; mm++)
                 {
                     if (bfullTensor_)
@@ -398,8 +382,7 @@ void OPtimization::calcDeviation()
                 }
             }
         }
-    }
-    
+    }    
     if (PAR(cr_) && !bFinal_)
     {
         gmx_sum(ermsNR, ener_, cr_);
@@ -424,8 +407,7 @@ void OPtimization::calcDeviation()
 
 void OPtimization::polData2TuneDip()
 {
-    param_.clear();
-    
+    param_.clear();    
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {   
@@ -484,10 +466,8 @@ void OPtimization::polData2TuneDip()
     }       
 }
 
-
 void OPtimization::tuneDip2PolData()
 {
-
     int   n = 0;
     char  zstr[STRLEN];
     char  buf[STRLEN];
@@ -498,7 +478,6 @@ void OPtimization::tuneDip2PolData()
         if (!ai->isConst())
         {
             auto ei = pd_.findEem(iChargeDistributionModel_, ai->name());
-            GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
             
             std::string qstr   = ei->getQstr();
             std::string rowstr = ei->getRowstr();
@@ -666,8 +645,7 @@ double OPtimization::objFunction(const double v[])
             }       
             penalty += calcPenalty(ai);
         }
-    }
-    
+    }   
     if (bOptHfac_)
     {
         hfac_ = param_[n++];
@@ -679,8 +657,7 @@ double OPtimization::objFunction(const double v[])
         {
             bounds += 100*gmx::square(hfac_ + hfac0_);
         }
-    }
-       
+    }      
     calcDeviation();
 
     ener_[ermsBOUNDS] += bounds;
@@ -769,8 +746,7 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
         {
             calcDeviation();
         }
-    }
-    
+    }    
     bFinal_ = true;
     if(MASTER(cr_))
     {
@@ -968,11 +944,13 @@ void OPtimization::print_results(FILE                   *fp,
                     mol.molProp()->getMolname().c_str(),
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
-
+            
+            mol.CalcDipole(mol.mu_calc_);
             print_dipole(fp, &mol, (char *)"QM",  dip_toler);
             print_dipole(fp, &mol, (char *)"EEM", dip_toler);
             print_dipole(fp, &mol, (char *)"ESP", dip_toler);
 
+            mol.CalcQuadrupole();
             print_quadrapole(fp, &mol, (char *)"QM",  quad_toler);
             print_quadrapole(fp, &mol, (char *)"EEM", quad_toler);
             print_quadrapole(fp, &mol, (char *)"ESP", quad_toler);

@@ -38,8 +38,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "qgen_eem.h"
-
 #include <cctype>
 
 #include "gromacs/fileio/confio.h"
@@ -50,9 +48,10 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
+#include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
-#include "coulombintegrals/coulombintegrals.h"
+#include "qgen_eem.h"
 
 namespace alexandria
 {
@@ -133,20 +132,21 @@ void QgenEem::setInfo(const Poldata            &pd,
             }
             if (bSupport)
             {
+                auto eem   = pd.findEem(iChargeDistributionModel_, atp);                
                 elem_[j]   = atp;
-                atomnr_[j] = atm;
-                chi0_[j]   = pd.getChi0(iChargeDistributionModel_, atp);
-                j00_[j]    = pd.getJ00(iChargeDistributionModel_, atp);
-                nz         = pd.getNzeta(iChargeDistributionModel_, atp);
+                atomnr_[j] = atm;                
+                chi0_[j]   = eem->getChi0();
+                j00_[j]    = eem->getJ0();
+                nz         = eem->getNzeta();
                 nZeta_[j]  = nz;
                 q_[j].resize(nz, 0);
                 zeta_[j].resize(nz, 0);
                 row_[j].resize(nz, 0);
                 for (k = 0; k < nz; k++)
                 {
-                    q_[j][k]    = pd.getQ(iChargeDistributionModel_, atp, k);
-                    zeta_[j][k] = pd.getZeta(iChargeDistributionModel_, atp, k);
-                    row_[j][k]  = pd.getRow(iChargeDistributionModel_, atp, k);
+                    q_[j][k]    = eem->getQ(k);
+                    zeta_[j][k] = eem->getZeta(k);
+                    row_[j][k]  = eem->getRow(k);
                     char buf[256];
                     snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
