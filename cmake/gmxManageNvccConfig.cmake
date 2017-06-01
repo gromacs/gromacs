@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -189,6 +189,10 @@ gmx_dependent_cache_variable(GMX_CUDA_TARGET_COMPUTE "List of CUDA virtual archi
 # assemble the CUDA flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
+if (CUDA_VERSION VERSION_EQUAL "8.0")
+    # requesting sm_20 triggers deprecation messages with nvcc 8.0 which we better avoid
+    list(APPEND GMX_CUDA_NVCC_FLAGS "-Wno-deprecated-gpu-targets")
+endif()
 
 # assemble the CUDA host compiler flags
 # with CMake <2.8.10 the host compiler needs to be set on the nvcc command line
