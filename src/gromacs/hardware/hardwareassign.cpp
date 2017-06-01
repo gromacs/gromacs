@@ -323,7 +323,7 @@ void GpuTaskAssignmentManager::selectRankGpus(const gmx::MDLogger &mdlog, const 
             const int         gpuTasksNodeCount  = devUseCountNode_;
             const std::string gpuTasksNodePlural = (gpuTasksNodeCount > 1) ? "s" : "";
             gmx_fatal(FARGS,
-                      "Incorrect launch configuration: mismatching number of GPU tasks and GPUs%s.\n"
+                      "Incorrect launch configuration: mismatching number of GPU tasks and GPU IDs%s.\n"
                       "%s was started with %d GPU task%s%s in total, but you've provided %d GPU ID%s.",
                       pernode.c_str(), programName, gpuTasksNodeCount, gpuTasksNodePlural.c_str(), pernode.c_str(),
                       gpuOpt_->n_dev_use, gpuTasksUserPlural.c_str());
@@ -347,6 +347,10 @@ GpuContextsMap GpuTaskAssignmentManager::selectTasksGpus()
     if (tasksToAssign_.count(GpuTask::NB) > 0)
     {
         gpuContextsByTask[GpuTask::NB] = getGpuContext(gpuIndex);
+    }
+    if (tasksToAssign_.count(GpuTask::PME) > 0)
+    {
+        gpuContextsByTask[GpuTask::PME] = getGpuContext(gpuIndex); // always single GPU per rank (possibly for both tasks) for now!
     }
     return gpuContextsByTask;
 }
@@ -374,14 +378,29 @@ size_t GpuTaskManager::rankGpuTasksCount() const
     return gpuContextsByTasks_.size();
 }
 
+std::set<gmx_device_info_t *> GpuTaskManager::rankGpuInfos() const
+{
+    std::set<gmx_device_info_t *> rankGpuInfos;
+    for (const auto &it : gpuContextsByTasks_)
+    {
+        rankGpuInfos.insert(it.second.gpuInfo_);
+    }
+    GMX_ASSERT(rankGpuInfos.find(nullptr) == rankGpuInfos.end(), "Invalid GPU assignment");
+    return rankGpuInfos;
+}
+
 GpuTaskManager createGpuAssignment(const gmx::MDLogger &mdlog, const t_commrec *cr,
                                    const gmx_gpu_info_t &gpuInfo, gmx_gpu_opt_t &gpuOpt,
-                                   bool useGpuNB)
+                                   bool useGpuNB, bool useGpuPME)
 {
     GpuTaskAssignmentManager assigner(&gpuInfo, &gpuOpt);
     if (useGpuNB && (cr->duty & DUTY_PP))
     {
         assigner.registerGpuTask(GpuTask::NB);
+    }
+    if (useGpuPME && (cr->duty & DUTY_PME))
+    {
+        assigner.registerGpuTask(GpuTask::PME);
     }
     /* This chooses node-local GPU IDs */
     assigner.selectRankGpus(mdlog, cr);

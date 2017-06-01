@@ -164,11 +164,13 @@ class GpuTaskManager
         gmx_device_info_t *gpuInfo(GpuTask task) const;
         //! Returns the number of GPU tasks on this rank
         size_t rankGpuTasksCount() const;
+        //! Returns all the GPU contexts used by this rank
+        std::set<gmx_device_info_t *> rankGpuInfos() const;
 };
 
 //! A wrapper function which assigns GPUs to tasks using the classes above
 GpuTaskManager createGpuAssignment(const gmx::MDLogger &mdlog, const t_commrec *cr,
                                    const gmx_gpu_info_t &gpuInfo, gmx_gpu_opt_t &gpuOpt,
-                                   bool useGpuNB);
+                                   bool useGpuNB, bool useGpuPME);
 
 #endif

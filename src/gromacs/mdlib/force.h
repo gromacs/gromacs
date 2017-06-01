@@ -223,6 +223,6 @@ void do_force_lowlevel(t_forcerec   *fr,
 
 void free_gpu_resources(const t_forcerec     *fr,
                         const t_commrec      *cr,
-                        const GpuTaskManager *gpuTasks);
+                        const GpuTaskManager &gpuTasks);
 
 #endif

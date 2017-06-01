@@ -3241,13 +3241,17 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
  */
 void free_gpu_resources(const t_forcerec     *fr,
                         const t_commrec      *cr,
-                        const GpuTaskManager *gpuTasks)
+                        const GpuTaskManager &gpuTasks)
 {
     const bool isPPrankUsingGPU = (cr->duty & DUTY_PP) && fr && fr->nbv && fr->nbv->bUseGPU;
     if (isPPrankUsingGPU)
     {
         /* Free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+    }
+
+    if (gpuTasks.rankGpuTasksCount() > 0)
+    {
         /* Stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
     }
@@ -3268,10 +3272,14 @@ void free_gpu_resources(const t_forcerec     *fr,
     }
 #endif  /* GMX_THREAD_MPI */
 
-    if (isPPrankUsingGPU)
+    /* Uninitialize the active GPU (by destroying the context)
+     * TODO: this has always assumed that the context is active,
+     * which will be true as long as we only have single GPU context per rank.
+     * (add context switching if needed).
+     */
+    const auto rankGpuInfos = gpuTasks.rankGpuInfos();
+    for (auto *gpuInfo : rankGpuInfos)
     {
-        const auto *gpuInfo = gpuTasks->gpuInfo(GpuTask::NB);
-        /* Uninitialize the active GPU (by destroying the context) */
         std::string errorString;
         if (!free_cuda_gpu(gpuInfo, &errorString))
         {
