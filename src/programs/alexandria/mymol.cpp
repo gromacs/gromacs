@@ -612,7 +612,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         auto masstot = 0;
         for (int i = 0; i < topology_->atoms.nr; i++)
         {
-            auto mass = topology_->atoms.atom[i].m;
+            auto mass = topology_->atoms.atom[i].atomnumber;
             masstot  += mass;
             for (int m = 0; m < DIM; m++)
             {
