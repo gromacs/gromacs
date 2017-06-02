@@ -47,6 +47,8 @@
 #include <cassert>
 #include <cmath>
 
+#include <algorithm>
+
 #include <sys/types.h>
 
 #include "gromacs/fileio/gmxfio.h"
@@ -233,27 +235,58 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi)
     return q;
 }
 
-static void sum_q(t_atoms *atoms, int n, double *qt, double *qBt)
+/*! \brief Returns the rounded charge of a molecule, when close to integer, otherwise returns the original charge.
+ *
+ * The results of this routine are only used for checking and for
+ * printing warning messages. Thus we can assume that charges of molecules
+ * should be integer. If the user wanted non-integer molecular charge,
+ * an undesired warning is printed and the user should use grompp -maxwarn 1.
+ *
+ * \param qMol     The total, unrounded, charge of the molecule
+ * \param sumAbsQ  The sum of absolute values of the charges, used for determining the tolerance for the rounding.
+ */
+static double roundedMoleculeCharge(double qMol, double sumAbsQ)
 {
-    double  qmolA, qmolB;
-    int     i;
-
-    /* sum charge */
-    qmolA = 0;
-    qmolB = 0;
-    for (i = 0; i < atoms->nr; i++)
-    {
-        qmolA += atoms->atom[i].q;
-        qmolB += atoms->atom[i].qB;
-    }
-    /* Unfortunately an absolute comparison,
-     * but this avoids unnecessary warnings and gmx-users mails.
+    /* We use a tolerance of 1e-6 for inaccuracies beyond the 6th decimal
+     * of the charges for ascii float truncation in the topology files.
+     * Although the summation here uses double precision, the charges
+     * are read and stored in single precision when real=float. This can
+     * lead to rounding errors of half the least significant bit.
+     * Note that, unfortunately, we can not assume addition of random
+     * rounding errors. It is not entirely unlikely that many charges
+     * have a near half-bit rounding error with the same sign.
      */
-    if (fabs(qmolA) >= 1e-6 || fabs(qmolB) >= 1e-6)
+    double tolAbs = 1e-6;
+    double tol    = std::max(tolAbs, 0.5*GMX_REAL_EPS*sumAbsQ);
+    double qRound = std::round(qMol);
+    if (std::abs(qMol - qRound) <= tol)
     {
-        *qt  += n*qmolA;
-        *qBt += n*qmolB;
+        return qRound;
     }
+    else
+    {
+        return qMol;
+    }
+}
+
+static void sum_q(const t_atoms *atoms, int numMols,
+                  double *qTotA, double *qTotB)
+{
+    /* sum charge */
+    double qmolA    = 0;
+    double qmolB    = 0;
+    double sumAbsQA = 0;
+    double sumAbsQB = 0;
+    for (int i = 0; i < atoms->nr; i++)
+    {
+        qmolA    += atoms->atom[i].q;
+        qmolB    += atoms->atom[i].qB;
+        sumAbsQA += std::abs(atoms->atom[i].q);
+        sumAbsQB += std::abs(atoms->atom[i].qB);
+    }
+
+    *qTotA += numMols*roundedMoleculeCharge(qmolA, sumAbsQA);
+    *qTotB += numMols*roundedMoleculeCharge(qmolB, sumAbsQB);
 }
 
 static void get_nbparm(char *nb_str, char *comb_str, int *nb, int *comb,
