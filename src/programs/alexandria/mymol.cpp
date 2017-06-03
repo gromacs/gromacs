@@ -609,17 +609,17 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     }
     if (immOK == imm)
     {
-        auto masstot = 0;
+        auto atntot = 0;
         for (int i = 0; i < topology_->atoms.nr; i++)
         {
-            auto mass = topology_->atoms.atom[i].atomnumber;
-            masstot  += mass;
+            auto atn = topology_->atoms.atom[i].atomnumber;
+            atntot  += atn;
             for (int m = 0; m < DIM; m++)
             {
-                com_[m] += state_->x[i][m]*mass;
+                coc_[m] += state_->x[i][m]*atn;
             }
         }
-        svmul((1.0/masstot), com_, com_);
+        svmul((1.0/atntot), coc_, coc_);
     }   
     if (bAddShells && imm == immOK)
     {
@@ -1155,12 +1155,12 @@ void MyMol::CalcDipole(rvec mu)
 void MyMol::CalcQuadrupole()
 {
     real  r2, q;   
-    rvec  r; /* distance of atoms to center of mass */
+    rvec  r; /* distance of atoms to center of charge */
 
     clear_mat(Q_calc_);   
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        rvec_sub(state_->x[i], com_, r);
+        rvec_sub(state_->x[i], coc_, r);
         r2   = iprod(r, r);
         q    = topology_->atoms.atom[i].q;
         for (int m = 0; m < DIM; m++)
@@ -1540,7 +1540,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             if (topology_->atoms.atom[i].ptype == eptAtom)
             {
                 qESP_[j] = q[j];
-                rvec_sub(state_->x[i], com_, r);
+                rvec_sub(state_->x[i], coc_, r);
                 r2       = iprod(r, r);
                 for (int m = 0; m < DIM; m++)
                 {
