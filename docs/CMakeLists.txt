@@ -120,6 +120,7 @@ if (SPHINX_FOUND)
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/flow.rst
+        user-guide/floating-point.rst
         user-guide/system-preparation.rst
         user-guide/cutoff-schemes.rst
         user-guide/managing-simulations.rst
