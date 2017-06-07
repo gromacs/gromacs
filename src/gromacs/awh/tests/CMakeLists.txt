@@ -33,4 +33,4 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(AwhUnitTest awh-test
-                  bias.cpp)
+                  bias.cpp grid.cpp)
