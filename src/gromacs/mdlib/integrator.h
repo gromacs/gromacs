@@ -125,6 +125,65 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &md
                              unsigned long Flags,
                              gmx_walltime_accounting_t walltime_accounting);
 
+/*! \brief Interface for integrators invoked from the CLI.
+ *
+ * CLI tools have elaborate options handling. An MD Integrator
+ * implementation may or may not provide interfaces for sorts of
+ * invocations.
+ *
+ * An ICliIntegrator must implement the cli_run() method.
+ * TODO: the return value should be a more meaningful type, but this
+ * currently is just a thin wrapper for the integrator_t functions.
+ *
+ * \ingroup module_mdlib
+ * \internal
+ */
+class ICliIntegrator
+{
+public:
+    /*! A CLI integrator guarantees that it has attempted to run
+     * the simulation described in the input record to completion
+     * if and only if cli_run() has been called.
+     *
+     * \returns the return code of the MD simulation.
+     */
+    virtual double cli_run()=0;
+};
+
+/// Declare the interface for integrator factories.
+/*! The abstract factory provides parameterized creation methods for different
+ * integrator interfaces.
+ *
+ * Provides get_cli_integrator method that takes the same arguments as
+ * a integrator_t
+ * \ingroup module_mdlib
+ * \internal
+ */
+class IIntegratorFactory
+{
+public:
+    virtual std::shared_ptr<ICliIntegrator> get_cli_integrator(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+                      int nfile, const t_filenm fnm[],
+                      const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                      int nstglobalcomm,
+                      gmx_vsite_t *vsite, gmx_constr_t constr,
+                      int stepout, gmx::IMDOutputProvider *outputProvider,
+                      t_inputrec *ir,
+                      gmx_mtop_t *top_global,
+                      t_fcdata *fcd,
+                      t_state *state_global,
+                      ObservablesHistory *observablesHistory,
+                      t_mdatoms *mdatoms,
+                      t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                      gmx_edsam_t ed, t_forcerec *fr,
+                      int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                      gmx_membed_t *membed,
+                      real cpt_period, real max_hours,
+                      int imdport,
+                      unsigned long Flags,
+                      gmx_walltime_accounting_t walltime_accounting)=0;
+};
+
 }      // namespace gmx
 
 #endif // GMX_MDLIB_INTEGRATOR_H

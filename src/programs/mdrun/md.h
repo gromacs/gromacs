@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,40 @@ namespace gmx
 
 //! MD simulations
 integrator_t do_md;
+
+// I think we can end up with a consolidated factory method at some point, but
+// in the short term there is other reformulation of the simulation loop taking
+// place, and ultimately I would like to see this functionality in libgromacs
+// itself, so for now I'm just trying to encapsulate do_md a bit. I would also
+// like to move to encapsulated arguments, such as struct mdrunner_arglist...
+/*! \brief Implementation of integrator factory.
+ *
+ * Initial implementation can only produce CliIntegrators.
+ */
+class IntegratorFactoryImpl : public IIntegratorFactory
+{
+    /*! Implement IIntegratorFactory interface */
+    std::shared_ptr<ICliIntegrator> get_cli_integrator(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+        int nfile, const t_filenm fnm[],
+        const gmx_output_env_t *oenv, gmx_bool bVerbose,
+        int nstglobalcomm,
+        gmx_vsite_t *vsite, gmx_constr_t constr,
+        int stepout, gmx::IMDOutputProvider *outputProvider,
+        t_inputrec *ir,
+        gmx_mtop_t *top_global,
+        t_fcdata *fcd,
+        t_state *state_global,
+        ObservablesHistory *observablesHistory,
+        t_mdatoms *mdatoms,
+        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+        gmx_edsam_t ed, t_forcerec *fr,
+        int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+        gmx_membed_t *membed,
+        real cpt_period, real max_hours,
+        int imdport,
+        unsigned long Flags,
+        gmx_walltime_accounting_t walltime_accounting) override;
+};
 
 }      // namespace gmx
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #define GMX_MDLIB_RUNNER_H
 
 #include <cstdio>
+#include <memory>
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
@@ -103,7 +104,44 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags);
+/*
+class ICLIRunner
+{
+public:
+    virtual int run()=0;
+};
 
+ICLIRunner* get_CLI_mdrunner(gmx_hw_opt_t *hw_opt,
+             FILE *fplog, struct t_commrec *cr, int nfile,
+             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+             int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
+             real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+             const char *ddcsx, const char *ddcsy, const char *ddcsz,
+             const char *nbpu_opt, int nstlist_cmdline,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+             int nmultisim, int repl_ex_nst, int repl_ex_nex,
+             int repl_ex_seed, real pforce, real cpt_period, real max_hours,
+             int imdport, unsigned long Flags);
+*/
+
+// IIntegratorFactory is defined in integrator.h
+class IIntegratorFactory;
+
+// This doesn't need to be declared with broader scope for current functionality,
+// but ultimately something of the sort should be in the library API.
+// The task is two-fold:
+//    * For the CLI code, provide an interface with a builder to handle options
+//      and a factory to return the correct integrator.
+//    * Make the integrators and options abstract enough that they can expose
+//      either ICliIntegrator or IApiIntegrator with minimal distinct implementation.
+// This is kind of a mutant design with a factory of factories and I hope it will
+// settle out into something flatter.
+
+//! \brief Get a factory that can produce an integrator of the requested type.
+//!
+//! Creates an appropriate concrete IntegratorFactory for the integration method
+//! specified by the argument. See IIntegratorFactory.
+std::shared_ptr<IIntegratorFactory> integrator_factory(unsigned int ei);
 
 }      // namespace gmx
 

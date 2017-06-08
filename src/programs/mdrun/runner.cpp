@@ -680,6 +680,120 @@ static integrator_t *my_integrator(unsigned int ei)
     }
 }
 
+// Hijacking abstract factory pattern such that LegacyIntegrator is its own factory.
+// This lets us put off dealing with the semantics of which call actually
+// runs the integrator.
+class LegacyIntegrator : public ICliIntegrator, public IIntegratorFactory, public std::enable_shared_from_this<LegacyIntegrator>
+{
+private:
+    integrator_t * integrator_impl_;
+
+    // The constructors are private to enforce management via Create().
+    LegacyIntegrator() :
+        integrator_impl_{nullptr}
+    {};
+    explicit LegacyIntegrator(integrator_t * integrator) :
+        integrator_impl_{integrator}
+    {};
+public:
+    LegacyIntegrator(const LegacyIntegrator&) = delete;
+    LegacyIntegrator& operator=(const LegacyIntegrator&) = delete;
+
+    // Control the lifetime via the shared_ptr returned by Create()
+    // Make sure it is safe to use handle().
+    static std::shared_ptr<LegacyIntegrator> Create(integrator_t * integrator)
+    {
+        // TODO: this is not exception safe, but we can't use
+        // make_shared with the private constructor...
+        std::shared_ptr<LegacyIntegrator> retval(new LegacyIntegrator(integrator));
+        return retval;
+    }
+
+    /// Return a ptr that shares ownership with any other shared_ptrs.
+    std::shared_ptr<LegacyIntegrator> handle()
+    {
+        return shared_from_this();
+    };
+
+    virtual double cli_run() override
+    {
+    // integrator has already run when get_cli_integrator() was called.
+        return 0;
+    };
+    virtual std::shared_ptr<ICliIntegrator> get_cli_integrator(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+                      int nfile, const t_filenm fnm[],
+                      const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                      int nstglobalcomm,
+                      gmx_vsite_t *vsite, gmx_constr_t constr,
+                      int stepout, gmx::IMDOutputProvider *outputProvider,
+                      t_inputrec *ir,
+                      gmx_mtop_t *top_global,
+                      t_fcdata *fcd,
+                      t_state *state_global,
+                      ObservablesHistory *observablesHistory,
+                      t_mdatoms *mdatoms,
+                      t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                      gmx_edsam_t ed, t_forcerec *fr,
+                      int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                      gmx_membed_t *membed,
+                      real cpt_period, real max_hours,
+                      int imdport,
+                      unsigned long Flags,
+                      gmx_walltime_accounting_t walltime_accounting) override
+    {
+        integrator_impl_(fplog,
+            cr,
+            mdlog,
+            nfile,
+            fnm,
+            oenv,
+            bVerbose,
+            nstglobalcomm,
+            vsite,
+            constr,
+            stepout,
+            outputProvider,
+            ir,
+            top_global,
+            fcd,
+            state_global,
+            observablesHistory,
+            mdatoms,
+            nrnb,
+            wcycle,
+            ed,
+            fr,
+            repl_ex_nst,
+            repl_ex_nex,
+            repl_ex_seed,
+            membed,
+            cpt_period,
+            max_hours,
+            imdport,
+            Flags,
+            walltime_accounting);
+        return handle();
+    };
+};
+
+// LegacyIntegrator currently relies on file-scope code in runner.cpp, and
+// IntegratorFactoryImpl relies on file-scope code in md.cpp, and it seems
+// premature to elaborate on this factory to make it extensible in order to
+// register the various dispatchers.
+std::shared_ptr<IIntegratorFactory> integrator_factory(unsigned int ei)
+{
+    auto integrator = my_integrator(ei);
+    if (integrator == &do_md)
+    {
+        return std::make_shared<IntegratorFactoryImpl>();
+    }
+    else
+    {
+        // This is the authoritative
+        return LegacyIntegrator::Create(integrator);
+    }
+};
+
 //! Initializes the logger for mdrun.
 static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
 {
@@ -1382,7 +1496,23 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
+        /*my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
+                                     oenv, bVerbose,
+                                     nstglobalcomm,
+                                     vsite, constr,
+                                     nstepout, mdModules.outputProvider(),
+                                     inputrec, mtop,
+                                     fcd, state, &observablesHistory,
+                                     mdatoms, nrnb, wcycle, ed, fr,
+                                     repl_ex_nst, repl_ex_nex, repl_ex_seed,
+                                     membed,
+                                     cpt_period, max_hours,
+                                     imdport,
+                                     Flags,
+                                     walltime_accounting);*/
+
+        auto factory = gmx::integrator_factory(inputrec->eI);
+        auto integrator = factory->get_cli_integrator(fplog, cr, mdlog, nfile, fnm,
                                      oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, constr,
@@ -1396,6 +1526,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      imdport,
                                      Flags,
                                      walltime_accounting);
+        integrator->cli_run();
 
         if (inputrec->bRot)
         {

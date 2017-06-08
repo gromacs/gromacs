@@ -191,47 +191,159 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
-/*! \libinternal
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                           int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           int nstglobalcomm,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
-                           int stepout,
-                           gmx::IMDOutputProvider *outputProvider,
-                           t_inputrec *inputrec,
-                           gmx_mtop_t *top_global, t_fcdata *fcd,
-                           t_state *state_global,
-                           t_mdatoms *mdatoms,
-                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           gmx_edsam_t ed,
-                           t_forcerec *fr,
-                           int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           real cpt_period, real max_hours,
-                           int imdport,
-                           unsigned long Flags,
-                           gmx_walltime_accounting_t walltime_accounting)
+namespace gmx {
+namespace {
+
+/*! \brief Private integrator handler for do_md.
+ *
+ * Handles implementation for eiMD eiBD eiSD1 eiVV eiVVAK.
+ * Provides ICliIntegrator interface.
+ * Can be refactored to split the various codes branches.
+ * \internal
  */
-double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                  int nfile, const t_filenm fnm[],
-                  const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                  int nstglobalcomm,
-                  gmx_vsite_t *vsite, gmx_constr_t constr,
-                  int stepout, gmx::IMDOutputProvider *outputProvider,
-                  t_inputrec *ir,
-                  gmx_mtop_t *top_global,
-                  t_fcdata *fcd,
-                  t_state *state_global,
-                  ObservablesHistory *observablesHistory,
-                  t_mdatoms *mdatoms,
-                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                  gmx_edsam_t ed, t_forcerec *fr,
-                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                  gmx_membed_t *membed,
-                  real cpt_period, real max_hours,
-                  int imdport,
-                  unsigned long Flags,
-                  gmx_walltime_accounting_t walltime_accounting)
+class Integrator : public ICliIntegrator
+{
+public:
+    /// Constructor that receives the same args as integrator_t.
+    Integrator(FILE *fplog_arg,
+                            t_commrec *cr_arg,
+                            const gmx::MDLogger &mdlog_arg,
+                            int nfile_arg,
+                            const t_filenm* fnm_arg,
+                            const gmx_output_env_t *oenv_arg,
+                            gmx_bool bVerbose_arg,
+                            int nstglobalcomm_arg,
+                            gmx_vsite_t *vsite_arg,
+                            gmx_constr_t constr_arg,
+                            int stepout_arg,
+                            gmx::IMDOutputProvider *outputProvider_arg,
+                            t_inputrec *ir_arg,
+                            gmx_mtop_t *top_global_arg,
+                            t_fcdata *fcd_arg,
+                            t_state *state_global_arg,
+                            ObservablesHistory *observablesHistory,
+                            t_mdatoms *mdatoms_arg,
+                            t_nrnb *nrnb_arg,
+                            gmx_wallcycle_t wcycle_arg,
+                            gmx_edsam_t ed_arg,
+                            t_forcerec *fr_arg,
+                            int repl_ex_nst_arg,
+                            int repl_ex_nex_arg,
+                            int repl_ex_seed_arg,
+                            gmx_membed_t *membed_arg,
+                            real cpt_period_arg,
+                            real max_hours_arg,
+                            int imdport_arg,
+                            unsigned long Flags_arg,
+                            gmx_walltime_accounting_t walltime_accounting_arg);
+
+    /// Implement the ICliIntegrator interface.
+    double cli_run() override;
+
+private:
+    FILE *fplog;
+    t_commrec *cr;
+    const gmx::MDLogger &mdlog;
+    int nfile;
+    const t_filenm* fnm;
+    const gmx_output_env_t *oenv;
+    gmx_bool bVerbose;
+    int nstglobalcomm;
+    gmx_vsite_t *vsite;
+    gmx_constr_t constr;
+    int stepout;
+    gmx::IMDOutputProvider *outputProvider;
+    t_inputrec *ir;
+    gmx_mtop_t *top_global;
+    t_fcdata *fcd;
+    t_state *state_global;
+    ObservablesHistory *observablesHistory;
+    t_mdatoms *mdatoms;
+    t_nrnb *nrnb;
+    gmx_wallcycle_t wcycle;
+    gmx_edsam_t ed;
+    t_forcerec *fr;
+    int repl_ex_nst;
+    int repl_ex_nex;
+    int repl_ex_seed;
+    gmx_membed_t *membed;
+    real cpt_period;
+    real max_hours;
+    int imdport;
+    unsigned long Flags;
+    gmx_walltime_accounting_t walltime_accounting;
+};
+
+Integrator::Integrator(FILE *fplog_arg,
+                        t_commrec *cr_arg,
+                        const gmx::MDLogger &mdlog_arg,
+                        int nfile_arg,
+                        const t_filenm* fnm_arg,
+                        const gmx_output_env_t *oenv_arg,
+                        gmx_bool bVerbose_arg,
+                        int nstglobalcomm_arg,
+                        gmx_vsite_t *vsite_arg,
+                        gmx_constr_t constr_arg,
+                        int stepout_arg,
+                        gmx::IMDOutputProvider *outputProvider_arg,
+                        t_inputrec *ir_arg,
+                        gmx_mtop_t *top_global_arg,
+                        t_fcdata *fcd_arg,
+                        t_state *state_global_arg,
+                        ObservablesHistory *observablesHistory_arg,
+                        t_mdatoms *mdatoms_arg,
+                        t_nrnb *nrnb_arg,
+                        gmx_wallcycle_t wcycle_arg,
+                        gmx_edsam_t ed_arg,
+                        t_forcerec *fr_arg,
+                        int repl_ex_nst_arg,
+                        int repl_ex_nex_arg,
+                        int repl_ex_seed_arg,
+                        gmx_membed_t *membed_arg,
+                        real cpt_period_arg,
+                        real max_hours_arg,
+                        int imdport_arg,
+                        unsigned long Flags_arg,
+                        gmx_walltime_accounting_t walltime_accounting_arg) :
+    fplog{fplog_arg},
+    cr{cr_arg},
+    mdlog{mdlog_arg},
+    nfile{nfile_arg},
+    fnm{fnm_arg},
+    oenv{oenv_arg},
+    bVerbose{bVerbose_arg},
+    nstglobalcomm{nstglobalcomm_arg},
+    vsite{vsite_arg},
+    constr{constr_arg},
+    stepout{stepout_arg},
+    outputProvider{outputProvider_arg},
+    ir{ir_arg},
+    top_global{top_global_arg},
+    fcd{fcd_arg},
+    state_global{state_global_arg},
+    observablesHistory{observablesHistory_arg},
+    mdatoms{mdatoms_arg},
+    nrnb{nrnb_arg},
+    wcycle{wcycle_arg},
+    ed{ed_arg},
+    fr{fr_arg},
+    repl_ex_nst{repl_ex_nst_arg},
+    repl_ex_nex{repl_ex_nex_arg},
+    repl_ex_seed{repl_ex_seed_arg},
+    membed{membed_arg},
+    cpt_period{cpt_period_arg},
+    max_hours{max_hours_arg},
+    imdport{imdport_arg},
+    Flags{Flags_arg},
+    walltime_accounting{walltime_accounting_arg}
+{
+
+}
+
+// Takes over the duties of the do_md() function. Can be broken up
+// and refactored to simplify the various code paths. TODO: work with
+// Shirts group on requirements of the interface at this level.
+double Integrator::cli_run()
 {
     gmx_mdoutf_t    outf = nullptr;
     gmx_int64_t     step, step_rel;
@@ -1870,4 +1982,142 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     return 0;
+}
+
+} // end anonymous namespace
+
+std::shared_ptr<ICliIntegrator>
+IntegratorFactoryImpl::get_cli_integrator(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+                      int nfile, const t_filenm fnm[],
+                      const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                      int nstglobalcomm,
+                      gmx_vsite_t *vsite, gmx_constr_t constr,
+                      int stepout, gmx::IMDOutputProvider *outputProvider,
+                      t_inputrec *ir,
+                      gmx_mtop_t *top_global,
+                      t_fcdata *fcd,
+                      t_state *state_global,
+                      ObservablesHistory *observablesHistory,
+                      t_mdatoms *mdatoms,
+                      t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                      gmx_edsam_t ed, t_forcerec *fr,
+                      int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                      gmx_membed_t *membed,
+                      real cpt_period, real max_hours,
+                      int imdport,
+                      unsigned long Flags,
+                      gmx_walltime_accounting_t walltime_accounting)
+{
+    // Right now only handles one type...
+    return std::make_shared<Integrator>(
+                                fplog,
+                                cr,
+                                mdlog,
+                                nfile,
+                                fnm,
+                                oenv,
+                                bVerbose,
+                                nstglobalcomm,
+                                vsite,
+                                constr,
+                                stepout,
+                                outputProvider,
+                                ir,
+                                top_global,
+                                fcd,
+                                state_global,
+                                observablesHistory,
+                                mdatoms,
+                                nrnb,
+                                wcycle,
+                                ed,
+                                fr,
+                                repl_ex_nst,
+                                repl_ex_nex,
+                                repl_ex_seed,
+                                membed,
+                                cpt_period,
+                                max_hours,
+                                imdport,
+                                Flags,
+                                walltime_accounting);
+}
+
+} // end namespace gmx
+
+/*! \libinternal
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+                           int nfile, const t_filenm fnm[],
+                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                           int nstglobalcomm,
+                           gmx_vsite_t *vsite, gmx_constr_t constr,
+                           int stepout,
+                           gmx::IMDOutputProvider *outputProvider,
+                           t_inputrec *inputrec,
+                           gmx_mtop_t *top_global, t_fcdata *fcd,
+                           t_state *state_global,
+                           t_mdatoms *mdatoms,
+                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                           gmx_edsam_t ed,
+                           t_forcerec *fr,
+                           int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                           real cpt_period, real max_hours,
+                           int imdport,
+                           unsigned long Flags,
+                           gmx_walltime_accounting_t walltime_accounting)
+ */
+double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+                  int nfile, const t_filenm fnm[],
+                  const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                  int nstglobalcomm,
+                  gmx_vsite_t *vsite, gmx_constr_t constr,
+                  int stepout, gmx::IMDOutputProvider *outputProvider,
+                  t_inputrec *ir,
+                  gmx_mtop_t *top_global,
+                  t_fcdata *fcd,
+                  t_state *state_global,
+                  ObservablesHistory *observablesHistory,
+                  t_mdatoms *mdatoms,
+                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                  gmx_edsam_t ed, t_forcerec *fr,
+                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                  gmx_membed_t *membed,
+                  real cpt_period, real max_hours,
+                  int imdport,
+                  unsigned long Flags,
+                  gmx_walltime_accounting_t walltime_accounting)
+{
+    auto integrator = std::make_shared<Integrator>(
+                                        fplog,
+                                        cr,
+                                        mdlog,
+                                        nfile,
+                                        fnm,
+                                        oenv,
+                                        bVerbose,
+                                        nstglobalcomm,
+                                        vsite,
+                                        constr,
+                                        stepout,
+                                        outputProvider,
+                                        ir,
+                                        top_global,
+                                        fcd,
+                                        state_global,
+                                        observablesHistory,
+                                        mdatoms,
+                                        nrnb,
+                                        wcycle,
+                                        ed,
+                                        fr,
+                                        repl_ex_nst,
+                                        repl_ex_nex,
+                                        repl_ex_seed,
+                                        membed,
+                                        cpt_period,
+                                        max_hours,
+                                        imdport,
+                                        Flags,
+                                        walltime_accounting);
+    return integrator->cli_run();
 }
