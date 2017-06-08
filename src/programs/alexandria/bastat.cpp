@@ -34,16 +34,14 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <cmath>
-
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
@@ -65,7 +63,6 @@
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
 
-// Alexandria stuff
 #include "molprop_util.h"
 #include "mymol.h"
 #include "poldata_xml.h"
@@ -469,7 +466,6 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
                 i.a1.c_str(), i.a2.c_str(), av, sig, N,
                 (sig > 1.5) ? " WARNING" : "");
     }
-
     for (auto &i : b->angle)
     {
         gmx_stats_get_average(i.lsq, &av);
@@ -484,7 +480,6 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
                 (sig > 3) ? " WARNING" : "");
     }
-
     for (auto &i : b->linangle)
     {
         gmx_stats_get_average(i.lsq, &av);
@@ -499,7 +494,6 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
                 (sig > 3) ? " WARNING" : "");
     }
-
     for (auto &i : b->dih)
     {
         gmx_stats_get_average(i.lsq, &av);
@@ -513,7 +507,6 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
     }
-
     for (auto &i : b->imp)
     {
         gmx_stats_get_average(i.lsq, &av);
@@ -607,48 +600,45 @@ int alex_bastat(int argc, char *argv[])
     gmx_atomprop_t                   aps;
     int                              nfiles;
     char                           **fns;
-
+    MolSelect                        gms;
+    std::vector<alexandria::MolProp> mp;
+    std::string                      cai, caj, cak, cal;
+    
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, 
                            asize(pa), pa, asize(desc), desc, 
                            0, nullptr, &oenv))
     {
         return 0;
     }
-
     iDistributionModel = name2eemtype(cqdist[0]);
-
     fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
+    fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
     fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
-
-    MolSelect gms;
+    
     gms.read(opt2fn("-sel", NFILE, fnm));
     printf("There are %d molecules.\n", (gms.count(imsTrain) + gms.count(imsTest)));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
 
-    /* Read force field stuff */
+    /* Read PolData */
     try
     {
         readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    /* read Molprops */
+    /* Read Molprops */
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    std::vector<alexandria::MolProp> mp;
-    int nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, aps, pd, true);
+    auto nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, aps, pd, true);
     if (nwarn > maxwarn)
     {
         printf("Too many warnings (%d). Terminating.\n", nwarn);
         return 0;
     }
-
-    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
     {
         if (gms.status(mpi->getIupac()) != imsIgnore)
         {
@@ -660,10 +650,9 @@ int alex_bastat(int argc, char *argv[])
                 printf("Empty molname for molecule with formula %s\n",
                        mmi.molProp()->formula().c_str());
                 continue;
-            }
-            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel,
-                                                 false, false, bDih, false, nullptr);
-
+            }            
+            auto imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel,
+                                            false, false, bDih, false, nullptr);
             if (immOK != imm)
             {
                 if (nullptr != debug)
@@ -676,7 +665,8 @@ int alex_bastat(int argc, char *argv[])
             }
             
 #define ATP(ii) (*mmi.topology_->atoms.atomtype[ii])
-            for (i = 0; (i < mmi.topology_->atoms.nr); i++)
+            
+            for (i = 0; i < mmi.topology_->atoms.nr; i++)
             {
                 std::string btpi;
                 if (!pd.atypeToBtype(*mmi.topology_->atoms.atomtype[i], btpi))
@@ -695,27 +685,23 @@ int alex_bastat(int argc, char *argv[])
                         mmi.molProp()->getMolname().c_str());
                 continue;
             }
-
             for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
             {
                 if (eitBONDS == fs->iType())
                 {
-                    unsigned int funcType = fs->fType();
-
-                    for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr);
+                    auto funcType = fs->fType();
+                    for (auto j = 0; j < mmi.ltop_->idef.il[funcType].nr;
                          j += interaction_function[funcType].nratoms+1)
                     {
-                        int         ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
-                        int         aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
+                        auto ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
+                        auto aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         rvec_sub(mmi.state_->x[ai], mmi.state_->x[aj], dx);
-                        std::string cai, caj;
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
                         {
-                            for (auto bi = mmi.molProp()->BeginBond();
-                                 (bi < mmi.molProp()->EndBond()); bi++)
+                            for (auto bi = mmi.molProp()->BeginBond(); bi < mmi.molProp()->EndBond(); bi++)
                             {
-                                int xi, xj, xb;
+                                auto xi = 0, xj = 0, xb = 0;
                                 bi->get(&xi, &xj, &xb);
                                 xi--;
                                 xj--;
@@ -742,29 +728,22 @@ int alex_bastat(int argc, char *argv[])
                 else if (eitANGLES == fs->iType() ||
                          eitLINEAR_ANGLES == fs->iType())
                 {
-                    unsigned int funcType = fs->fType();
-
-                    for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr);
+                    auto funcType = fs->fType();
+                    for (auto j = 0; j < mmi.ltop_->idef.il[funcType].nr;
                          j += interaction_function[funcType].nratoms+1)
                     {
-                        gmx_bool     linear   = false;
-                        double       refValue = 0;
-
-                        int          ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
-                        int          aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-                        int          ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
-
+                        auto linear   = false;
+                        auto refValue = 0.0;
+                        auto ai       = mmi.ltop_->idef.il[funcType].iatoms[j+1];
+                        auto aj       = mmi.ltop_->idef.il[funcType].iatoms[j+2];
+                        auto ak       = mmi.ltop_->idef.il[funcType].iatoms[j+3];
                         rvec_sub(mmi.state_->x[ai], mmi.state_->x[aj], dx);
                         rvec_sub(mmi.state_->x[ak], mmi.state_->x[aj], dx2);
-
                         refValue = RAD2DEG*gmx_angle(dx, dx2);
-
                         if ( (refValue > 175) || (refValue < 5))
                         {
-                            linear     = true;
+                            linear = true;
                         }
-
-                        std::string cai, caj, cak;
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak))
@@ -789,20 +768,19 @@ int alex_bastat(int argc, char *argv[])
                 else if (eitPROPER_DIHEDRALS   == fs->iType() ||
                          eitIMPROPER_DIHEDRALS == fs->iType())
                 {
-                    unsigned int funcType = fs->fType();
-                    double       angle    = 0.0;
-                    for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr);
+                    auto funcType = fs->fType();
+                    auto angle    = 0.0;
+                    for (auto j = 0; j < mmi.ltop_->idef.il[funcType].nr;
                          j += interaction_function[funcType].nratoms+1)
                     {
-                        int    ai  = mmi.ltop_->idef.il[funcType].iatoms[j+1];
-                        int    aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-                        int    ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
-                        int    al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
-                        angle      = RAD2DEG*dih_angle(mmi.state_->x[ai], mmi.state_->x[aj],
-                                                       mmi.state_->x[ak], mmi.state_->x[al],
-                                                       &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
-                                                       &sign, &t1, &t2, &t3);
-                        std::string cai, caj, cak, cal;
+                        auto ai  = mmi.ltop_->idef.il[funcType].iatoms[j+1];
+                        auto aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
+                        auto ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
+                        auto al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
+                        angle    = RAD2DEG*dih_angle(mmi.state_->x[ai], mmi.state_->x[aj],
+                                                     mmi.state_->x[ak], mmi.state_->x[al],
+                                                     &pbc, r_ij, r_kj, r_kl, mm, nn,
+                                                     &sign, &t1, &t2, &t3);
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak) &&
@@ -834,14 +812,9 @@ int alex_bastat(int argc, char *argv[])
         dump_histo(bonds, bspacing, aspacing, oenv);
     }
     update_pd(fp, bonds, pd, Dm, beta, kt, klin, kp, kimp, kub);
-
     writePoldata(opt2fn("-o", NFILE, fnm), pd, compress);
-
-    printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
-           static_cast<int>(bonds->bond.size()), static_cast<int>(bonds->angle.size()),
-           static_cast<int>(bonds->dih.size()), static_cast<int>(bonds->imp.size()));
-
+    printf("Extracted %zu bondtypes, %zu angletypes, %zu dihedraltypes and %zu impropertypes.\n",
+           bonds->bond.size(), bonds->angle.size(), bonds->dih.size(), bonds->imp.size());
     gmx_ffclose(fp);
-
     return 0;
 }

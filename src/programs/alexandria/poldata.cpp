@@ -37,14 +37,11 @@
  * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
-#include "poldata.h"
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <algorithm>
 #include <vector>
 
@@ -52,6 +49,7 @@
 #include "gromacs/topology/ifunc.h"
 
 #include "gmx_simple_comm.h"
+#include "poldata.h"
 #include "stringutil.h"
 
 namespace alexandria
@@ -61,7 +59,6 @@ void Poldata::setFilename(const std::string &fn2)
 {
     GMX_RELEASE_ASSERT((fn2.size() > 0),
                        "Trying to set empty Poldata filename");
-
     if (0 != filename_.size())
     {
         fprintf(stderr, "Changing Poldata filename_ from %s to %s\n",
@@ -86,9 +83,8 @@ void Poldata::addAtype(const std::string &elem,
                        const std::string &refEnthalpy)
 {
 
-    unsigned int        i;
-
-    for (i = 0; (i < alexandria_.size()); i++)
+    size_t i;
+    for (i = 0; i < alexandria_.size(); i++)
     {
         if (alexandria_[i].getType().compare(atype) == 0)
         {
@@ -111,9 +107,7 @@ void Poldata::addAtype(const std::string &elem,
 gmx_bool Poldata::strcasestrStart(std::string needle, std::string haystack)
 {
     std::string ptr;
-
     ptr = strcasestr(haystack.c_str(), needle.c_str());
-
     return (ptr == haystack);
 }
 
@@ -132,10 +126,9 @@ bool Poldata::getAtypeRefEnthalpy(const std::string &atype,
 std::string Poldata::getDesc(std::string atype)
 {
     size_t i;
-
     if (atype.size() != 0)
     {
-        for (i = 0; (i < alexandria_.size()); i++)
+        for (i = 0; i < alexandria_.size(); i++)
         {
             if (alexandria_[i].getType().compare(atype) == 0)
             {
@@ -143,17 +136,15 @@ std::string Poldata::getDesc(std::string atype)
             }
         }
     }
-
     return "";
 }
 
 std::string  Poldata::getElem(std::string atype)
 {
-    size_t i;
-    
+    size_t i;  
     if (atype.size() != 0)
     {
-        for (i = 0; (i < alexandria_.size()); i++)
+        for (i = 0; i < alexandria_.size(); i++)
         {
             if (alexandria_[i].getType().compare(atype) == 0)
             {
@@ -206,15 +197,13 @@ bool Poldata::getPtypePol(const std::string &ptype,
                           double            *polar,
                           double            *sigPol) const
 {
-    unsigned int j;
-
-    for (j = 0; (j < ptype_.size()); j++)
+    size_t j;
+    for (j = 0; j < ptype_.size(); j++)
     {
         if (ptype.compare(ptype_[j].getType()) == 0)
         {
             *polar   = ptype_[j].getPolarizability();
             *sigPol  = ptype_[j].getSigPol();
-
             return true;
         }
     }
@@ -225,13 +214,11 @@ bool Poldata::setPtypePolarizability(const std::string &ptype,
                                      double             polarizability,
                                      double             sigPol)
 {
-    PtypeIterator sp = findPtype(ptype);
-
+    auto sp = findPtype(ptype);
     if (ptype_.end() != sp)
     {
         sp->setPolarizability(polarizability);
         sp->setSigPol(sigPol);
-
         return true;
     }
     return false;
@@ -243,10 +230,8 @@ void Poldata::addPtype(const std::string &ptype,
                        double             polarizability,
                        double             sigPol)
 {
-
-    unsigned int      i;
-
-    for (i = 0; (i < ptype_.size()); i++)
+    size_t i;
+    for (i = 0; i < ptype_.size(); i++)
     {
         if (ptype_[i].getType().compare(ptype) == 0)
         {
@@ -273,8 +258,8 @@ void Poldata::addPtype(const std::string &ptype,
 bool Poldata::getBosquePol(const std::string &bosque,
                            double            *polarizability) const
 {
-    BosqueConstIterator bb  = bosque_.begin(), be = bosque_.end();
-    BosqueConstIterator bos = std::find_if(bb, be, [bosque](Bosque const &b)
+    auto bb  = bosque_.begin(), be = bosque_.end();
+    auto bos = std::find_if(bb, be, [bosque](Bosque const &b)
         {
             return (bosque.compare(b.getBosque()) == 0);
         });
@@ -328,7 +313,6 @@ void Poldata::addMiller(const std::string &miller,
                         const std::string &alexandria_equiv)
 {
     Miller mil(miller, atomnumber, tauAhc, alphaAhp, alexandria_equiv);
-
     miller_.push_back(mil);
 }
 
@@ -339,8 +323,8 @@ bool Poldata::getMillerPol(const std::string &miller,
                            double            *alphaAhp,
                            std::string       &alexandria_equiv) const
 {
-    MillerConstIterator mb  = miller_.begin(), me = miller_.end();
-    MillerConstIterator mil = std::find_if(mb, me, [miller](Miller const &m)
+    auto mb  = miller_.begin(), me = miller_.end();
+    auto mil = std::find_if(mb, me, [miller](Miller const &m)
         {
             return (miller.compare(m.getMiller()) == 0);
         });
@@ -385,8 +369,7 @@ bool Poldata::atypeToBtype(const std::string &atype,
 void Poldata::addBtype(const std::string &btype)
 {
     size_t i;
-
-    for (i = 0; (i < btype_.size()); i++)
+    for (i = 0; i < btype_.size(); i++)
     {
         if (btype.compare(btype_[i]) == 0)
         {
@@ -454,7 +437,6 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
                           InteractionType           iType) const
 {
     auto f  = findForces(iType);
-
     if (forcesEnd() != f)
     {
         if (f->searchForce(atoms, params, refValue,
@@ -475,9 +457,8 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
 
 void Poldata::setVdwFunction(const std::string &func)
 {
-    unsigned int i;
-
-    for (i = 0; (i < F_NRE); i++)
+    size_t i;
+    for (i = 0; i < F_NRE; i++)
     {
         if (strcasecmp(interaction_function[i].name, func.c_str()) == 0)
         {
@@ -494,9 +475,8 @@ void Poldata::setVdwFunction(const std::string &func)
 
 void Poldata::setCombinationRule(const std::string &func)
 {
-    unsigned int i;
-
-    for (i = 0; (i < eCOMB_NR); i++)
+    size_t i;
+    for (i = 0; i < eCOMB_NR; i++)
     {
         if (strcasecmp(ecomb_names[i], func.c_str()) == 0)
         {
@@ -521,9 +501,9 @@ void Poldata::addSymcharges(const std::string &central,
                             const std::string &attached,
                             int                numattach)
 {
-    unsigned int           i;
-    Symcharges           * sc;
-    for (i = 0; (i < symcharges_.size()); i++)
+    size_t        i;
+    Symcharges * sc;
+    for (i = 0; i < symcharges_.size(); i++)
     {
         sc = &(symcharges_[i]);
         if ((strcasecmp(sc->getCentral().c_str(), central.c_str()) == 0)   &&
@@ -536,31 +516,27 @@ void Poldata::addSymcharges(const std::string &central,
     if (i == symcharges_.size())
     {
         Symcharges symcharges(central, attached, numattach);
-
         symcharges_.push_back(symcharges);
     }
 }
 
 int Poldata::getNumprops(ChargeDistributionModel eqdModel) const
 {
-    unsigned int i, n = 0;
-
-    for (i = 0; (i < eep_.size()); i++)
+    size_t i, n = 0;
+    for (i = 0; i < eep_.size(); i++)
     {
         if (eep_[i].getEqdModel() == eqdModel)
         {
             n++;
         }
     }
-
     return n;
 }
 
 int Poldata::havePolSupport(const std::string &atype) const
 {
-    unsigned int i;
-
-    for (i = 0; (i < alexandria_.size()); i++)
+    size_t i;
+    for (i = 0; i < alexandria_.size(); i++)
     {
         if (atype.compare(alexandria_[i].getType()) == 0)
         {
@@ -574,8 +550,7 @@ bool Poldata::haveEemSupport(ChargeDistributionModel  eqdModel,
                              const std::string       &name,
                              gmx_bool                 bAllowZeroParameters) const
 {
-    EempropsConstIterator eep = findEem(eqdModel, name);
-
+    auto eep = findEem(eqdModel, name);
     return (eep != EndEemprops() &&
             (bAllowZeroParameters || ((eep->getJ0() > 0) && (eep->getChi0() > 0))));
 }
@@ -584,7 +559,6 @@ double Poldata::getJ00(ChargeDistributionModel  eqdModel,
                        const std::string       &name) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         return eer->getJ0();
@@ -596,7 +570,6 @@ const char *Poldata::getQstr(ChargeDistributionModel  eqdModel,
                              const std::string       &name) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         return eer->getQstr();
@@ -608,7 +581,6 @@ const char *Poldata::getRowstr(ChargeDistributionModel  eqdModel,
                                const std::string       &name) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         return eer->getRowstr();
@@ -621,7 +593,6 @@ int Poldata::getRow(ChargeDistributionModel  eqdModel,
                     int                      zz) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
@@ -635,12 +606,11 @@ double Poldata::getZeta(ChargeDistributionModel  eqdModel,
                         int                      zz) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         if ((zz < 0) || (zz >= eer->getNzeta()))
         {
-            printf("Bleh\n");
+            printf("Negative zeta\n");
         }
         range_check(zz, 0, eer->getNzeta());
         return eer->getZeta(zz);
@@ -652,7 +622,6 @@ int Poldata::getNzeta(ChargeDistributionModel  eqdModel,
                       const std::string       &name) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         return eer->getNzeta();
@@ -665,7 +634,6 @@ double Poldata::getQ(ChargeDistributionModel  eqdModel,
                      int                      zz) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         range_check(zz, 0, eer->getNzeta());
@@ -678,7 +646,6 @@ double Poldata::getChi0(ChargeDistributionModel   eqdModel,
                         const  std::string       &name) const
 {
     EempropsConstIterator eer;
-
     if ((eer = findEem(eqdModel, name)) != EndEemprops())
     {
         return eer->getChi0();
@@ -977,7 +944,7 @@ EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
     std::string nn = name;
     if (eqdModel == eqdRappe || eqdModel == eqdBultinck || eqdModel == eqdYang)
     {
-        FfatypeConstIterator fa = findAtype(name);
+        auto fa = findAtype(name);
         if (fa != getAtypeEnd())
         {
             nn = fa->getElem();
@@ -1001,7 +968,7 @@ EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
     std::string nn = name;
     if (eqdModel == eqdRappe || eqdModel == eqdBultinck || eqdModel == eqdYang)
     {
-        FfatypeConstIterator fa = findAtype(name);
+        auto fa = findAtype(name);
         if (fa != getAtypeEnd())
         {
             nn = fa->getElem();

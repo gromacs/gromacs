@@ -40,7 +40,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -104,9 +103,9 @@ bool check_matrix(double **a, double *x, unsigned int nrow,
     int nrownew = nrow;
 
     //printf("check_matrix called with nrow = %d ncol = %d\n", nrow, ncol);
-    for (size_t i = 0; (i < ptypes.size()); i++)
+    for (size_t i = 0; i < ptypes.size(); i++)
     {
-        for (size_t j = i+1; (j < ptypes.size()); j++)
+        for (size_t j = i+1; j < ptypes.size(); j++)
         {
             bool bSame = true;
             for (size_t k = 0; bSame && (k < nrow); k++)
@@ -135,9 +134,9 @@ bool check_matrix(double **a, double *x, unsigned int nrow,
         }
     }
     return true;
-    for (int i = 0; (i < nrownew); i++)
+    for (auto i = 0; i < nrownew; i++)
     {
-        for (int j = i+1; (j < nrownew); j++)
+        for (auto j = i+1; j < nrownew; j++)
         {
             bool bSame = true;
             for (size_t k = 0; bSame && (k < ptypes.size()); k++)
@@ -150,7 +149,7 @@ bool check_matrix(double **a, double *x, unsigned int nrow,
                         i, j, j);
                 if (j < nrownew-1)
                 {
-                    for (size_t k = 0; (k < ptypes.size()); k++)
+                    for (size_t k = 0; k < ptypes.size(); k++)
                     {
                         a[j][k] = a[nrownew-1][k];
                     }
@@ -205,8 +204,7 @@ static void dump_csv(const alexandria::Poldata        &pd,
             fprintf(csv, "\"%d %s\",\"%s\",", nn, mpi->getMolname().c_str(), mpi->formula().c_str());
             
             std::vector<int> count;
-            count.resize(ptypes.size());
-            
+            count.resize(ptypes.size());           
             for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ani++)
             {
                 std::string  ptype;

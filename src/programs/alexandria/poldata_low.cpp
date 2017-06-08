@@ -268,7 +268,7 @@ CommunicationStatus ListedForce::Receive(t_commrec *cr, int src)
         ntrain_   = static_cast<size_t>(gmx_recv_double(cr, src));
         natom     = gmx_recv_int(cr, src);
         
-        for(int n = 0; n < natom; n++)
+        for(auto n = 0; n < natom; n++)
         {
             char *atom = gmx_recv_str(cr, src);
             if (nullptr != atom)
@@ -293,7 +293,6 @@ CommunicationStatus ListedForce::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-
 ListedForces::ListedForces(const std::string   iType,
                            const std::string  &function,
                            const std::string  &unit)
@@ -302,9 +301,8 @@ ListedForces::ListedForces(const std::string   iType,
       function_(function),
       unit_(unit)
 {
-    unsigned int funcType;
-
-    for (funcType = 0; (funcType < F_NRE); funcType++)
+    size_t funcType;
+    for (funcType = 0; funcType < F_NRE; funcType++)
     {
         if (strcasecmp(interaction_function[funcType].name, function_.c_str()) == 0)
         {
@@ -318,7 +316,6 @@ ListedForces::ListedForces(const std::string   iType,
 
     fType_ = funcType;
 }
-
 
 CommunicationStatus ListedForces::Send(t_commrec *cr, int dest)
 {
@@ -412,7 +409,6 @@ bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
                                   size_t                          ntrain)
 {
     auto force = findForce(atoms);
-
     if (forceEnd() != force)
     {
         force->setRefValue(refValue);
@@ -422,7 +418,6 @@ bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
 
         return true;
     }
-
     return false;
 }
 
@@ -437,10 +432,8 @@ void ListedForces::addForce(const std::vector<std::string> &atoms,
     {
         return;
     }
-
     ListedForce force(atoms, params, refValue,
                       sigma, ntrain);
-
     force_.push_back(force);
 }
 
@@ -451,7 +444,6 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
                                size_t                   *ntrain) const
 {
     auto force = findForce(atoms);
-
     if (forceEnd() != force)
     {
         *refValue = force->refValue();
@@ -461,7 +453,6 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
 
         return true;
     }
-
     return false;
 }
 
@@ -478,8 +469,7 @@ CommunicationStatus Bosque::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, bosque_.c_str());
-        gmx_send_double(cr, dest, polarizability_);
-       
+        gmx_send_double(cr, dest, polarizability_);       
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Bosque %s %g, status %s\n",
@@ -497,8 +487,7 @@ CommunicationStatus Bosque::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         bosque_ = gmx_recv_str(cr, src);
-        polarizability_ = gmx_recv_double(cr, src);
-        
+        polarizability_ = gmx_recv_double(cr, src);        
         if (nullptr != debug)
         {
             fprintf(debug, "Received Bosque %s %g, status %s\n",
@@ -555,8 +544,7 @@ CommunicationStatus Miller::Receive(t_commrec *cr, int src)
         atomnumber_ = gmx_recv_int(cr, src);
         tauAhc_     = gmx_recv_double(cr, src);
         alphaAhp_   = gmx_recv_double(cr, src);
-        alexandria_equiv_ = gmx_recv_str(cr, src);
-        
+        alexandria_equiv_ = gmx_recv_str(cr, src);        
         if (nullptr != debug)
         {
             fprintf(debug, "Received Miller %s %d %g %g %s, status %s\n",
@@ -605,8 +593,7 @@ CommunicationStatus Symcharges::Receive(t_commrec *cr, int src)
     {
         const_cast<std::string&>(central_)   = gmx_recv_str(cr, src);
         const_cast<std::string&>(attached_)  = gmx_recv_str(cr, src);
-        numattach_ = gmx_recv_int(cr, src);
-        
+        numattach_ = gmx_recv_int(cr, src);        
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",
@@ -618,7 +605,7 @@ CommunicationStatus Symcharges::Receive(t_commrec *cr, int src)
 }
 
 
-Epref::Epref(ChargeDistributionModel  eqdModel,
+Epref::Epref(ChargeDistributionModel eqdModel,
              const std::string       &epref)
     :
       eqdModel_(eqdModel),
@@ -698,8 +685,7 @@ CommunicationStatus RowZetaQ::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, q_);
         gmx_send_double(cr, dest, zetaRef_);
         gmx_send_int(cr, dest, zindex_);
-        gmx_send_int(cr, dest, fixedQ_);
-        
+        gmx_send_int(cr, dest, fixedQ_);        
         if (nullptr != debug)
         {
             fprintf(debug, "Sent RowZetaQ %d %g %g %g %d %d, status %s\n",
@@ -776,8 +762,7 @@ CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
         for (auto &rzq : rzq_)
         {
             cs = rzq.Send(cr, dest);
-        } 
-        
+        }         
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Eemprops %s %s %s %s %s %g %g, status %s\n",
@@ -871,7 +856,7 @@ t_eemtype_props eemtype_props[eqdNR] = {
 
 ChargeDistributionModel name2eemtype(const std::string name)
 {
-    for (int i = 0; i < eqdNR; i++)
+    for (auto i = 0; i < eqdNR; i++)
     {
         if (strcasecmp(name.c_str(), eemtype_props[i].name) == 0)
         {
@@ -883,7 +868,7 @@ ChargeDistributionModel name2eemtype(const std::string name)
 
 const char *getEemtypeName(ChargeDistributionModel eem)
 {
-    for (int i = 0; i < eqdNR; i++)
+    for (auto i = 0; i < eqdNR; i++)
     {
         if (eem == eemtype_props[i].eqd)
         {

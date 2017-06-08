@@ -245,8 +245,7 @@ void OPtimization::addEspPoint()
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Added %d ESP points to the RESP structure.\n",
-                            static_cast<int>(mymol.Qgresp_.nEsp()));
+                    fprintf(debug, "Added %zu ESP points to the RESP structure.\n", mymol.Qgresp_.nEsp());
                 }
             }
         }
@@ -443,8 +442,8 @@ void OPtimization::polData2TuneDip()
             }
             if(bFitAlpha_)
             {
-                double alpha = 0;
-                double sigma = 0;
+                auto alpha = 0.0;
+                auto sigma = 0.0;
                 if (pd_.getAtypePol(ai->name(), &alpha, &sigma))
                 {
                     if (0 != alpha)
@@ -500,7 +499,7 @@ void OPtimization::tuneDip2PolData()
             {
                 zstr[0] = '\0';
                 auto nzeta = ei->getNzeta();
-                for (int zz = 0; zz < nzeta; zz++)
+                for (auto zz = 0; zz < nzeta; zz++)
                 {
                     auto zeta = param_[n++];
                     sprintf(buf, "  %10g", zeta);
@@ -611,7 +610,7 @@ double OPtimization::objFunction(const double v[])
     double penalty = 0;
     int    n       = 0;
     
-    size_t np  = param_.size();
+    auto np = param_.size();
     for (size_t i = 0; i < np; i++)
     {
         param_[i] = v[i];
@@ -637,7 +636,7 @@ double OPtimization::objFunction(const double v[])
             if (bFitZeta_)
             {
                 auto nzeta = pd_.getNzeta(iChargeDistributionModel_, ai->name());
-                for (int zz = 0; zz < nzeta; zz++)
+                for (auto zz = 0; zz < nzeta; zz++)
                 {
                     auto zeta = param_[n++];
                     bounds += harmonic(zeta, w_0_, w_1_);
@@ -692,12 +691,12 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
             }
         }
         
-        chi2 = chi2_min  = GMX_REAL_MAX;
+        chi2 = chi2_min = GMX_REAL_MAX;
         Bayes <double> TuneDip(func, param_, lower_, upper_, &chi2);
         TuneDip.Init(xvgconv, xvgepot, oenv, seed, stepsize, 
                      maxiter, nprint,temperature, bBound);
                      
-        for (int n = 0; n < nrun; n++)
+        for (auto n = 0; n < nrun; n++)
         {
             if ((nullptr != fp) && (0 == n))
             {
@@ -724,8 +723,8 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
         }
         if (bMinimum)
         {
-            param_  = best_;
-            double emin = objFunction(best_.data());
+            param_    = best_;
+            auto emin = objFunction(best_.data());
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
@@ -741,8 +740,8 @@ void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     else
     {
         /* S L A V E   N O D E S */
-        int niter = gmx_recv_int(cr_, 0);
-        for (int n = 0; n < niter + 2; n++)
+        auto niter = gmx_recv_int(cr_, 0);
+        for (auto n = 0; n < niter + 2; n++)
         {
             calcDeviation();
         }
