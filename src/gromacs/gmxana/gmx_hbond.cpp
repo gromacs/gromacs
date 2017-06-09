@@ -423,7 +423,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
     }
     else if (grpd != hb->d.grp[id])
     {
-        gmx_fatal(FARGS, "Inconsistent donor groups, %d iso %d, atom %d",
+        gmx_fatal(FARGS, "Inconsistent donor groups, %d instead of %d, atom %d",
                   grpd, hb->d.grp[id], d+1);
     }
     if ((ia = hb->a.aptr[a]) == NOTSET)
@@ -432,7 +432,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
     }
     else if (grpa != hb->a.grp[ia])
     {
-        gmx_fatal(FARGS, "Inconsistent acceptor groups, %d iso %d, atom %d",
+        gmx_fatal(FARGS, "Inconsistent acceptor groups, %d instead of %d, atom %d",
                   grpa, hb->a.grp[ia], a+1);
     }
 
@@ -457,7 +457,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
             }
             else if (grpd != hb->d.grp[id])
             {
-                gmx_fatal(FARGS, "Inconsistent donor groups, %d iso %d, atom %d",
+                gmx_fatal(FARGS, "Inconsistent donor groups, %d instead of %d, atom %d",
                           grpd, hb->d.grp[id], d+1);
             }
             if ((ia = hb->a.aptr[a]) == NOTSET)
@@ -466,7 +466,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
             }
             else if (grpa != hb->a.grp[ia])
             {
-                gmx_fatal(FARGS, "Inconsistent acceptor groups, %d iso %d, atom %d",
+                gmx_fatal(FARGS, "Inconsistent acceptor groups, %d instead of %d, atom %d",
                           grpa, hb->a.grp[ia], a+1);
             }
         }

@@ -638,7 +638,7 @@ int gmx_traj(int argc, char *argv[])
         { "-pbc", FALSE, etBOOL, {&bPBC},
           "Make molecules whole for COM" },
         { "-mol", FALSE, etBOOL, {&bMol},
-          "Index contains molecule numbers iso atom numbers" },
+          "Index contains molecule numbers instead of atom numbers" },
         { "-nojump", FALSE, etBOOL, {&bNoJump},
           "Remove jumps of atoms across the box" },
         { "-x", FALSE, etBOOL, {&bX},

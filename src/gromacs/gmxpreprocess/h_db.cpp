@@ -105,7 +105,7 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     hack->nctl = ns - 3;
     if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
     {
-        gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d iso %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
+        gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
     }
     for (i = 0; (i < hack->nctl); i++)
     {
