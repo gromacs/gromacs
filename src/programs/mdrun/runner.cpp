@@ -142,38 +142,36 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 struct mdrunner_arglist
 {
-    gmx_hw_opt_t            hw_opt;
-    FILE                   *fplog;
-    t_commrec              *cr;
-    int                     nfile;
-    const t_filenm         *fnm;
-    const gmx_output_env_t *oenv;
-    gmx_bool                bVerbose;
-    int                     nstglobalcomm;
-    ivec                    ddxyz;
-    int                     dd_rank_order;
-    int                     npme;
-    real                    rdd;
-    real                    rconstr;
-    const char             *dddlb_opt;
-    real                    dlb_scale;
-    const char             *ddcsx;
-    const char             *ddcsy;
-    const char             *ddcsz;
-    const char             *nbpu_opt;
-    int                     nstlist_cmdline;
-    gmx_int64_t             nsteps_cmdline;
-    int                     nstepout;
-    int                     resetstep;
-    int                     nmultisim;
-    int                     repl_ex_nst;
-    int                     repl_ex_nex;
-    int                     repl_ex_seed;
-    real                    pforce;
-    real                    cpt_period;
-    real                    max_hours;
-    int                     imdport;
-    unsigned long           Flags;
+    gmx_hw_opt_t                     hw_opt;
+    FILE                            *fplog;
+    t_commrec                       *cr;
+    int                              nfile;
+    const t_filenm                  *fnm;
+    const gmx_output_env_t          *oenv;
+    gmx_bool                         bVerbose;
+    int                              nstglobalcomm;
+    ivec                             ddxyz;
+    int                              dd_rank_order;
+    int                              npme;
+    real                             rdd;
+    real                             rconstr;
+    const char                      *dddlb_opt;
+    real                             dlb_scale;
+    const char                      *ddcsx;
+    const char                      *ddcsy;
+    const char                      *ddcsz;
+    const char                      *nbpu_opt;
+    int                              nstlist_cmdline;
+    gmx_int64_t                      nsteps_cmdline;
+    int                              nstepout;
+    int                              resetstep;
+    int                              nmultisim;
+    const ReplicaExchangeParameters *replExParams;
+    real                             pforce;
+    real                             cpt_period;
+    real                             max_hours;
+    int                              imdport;
+    unsigned long                    Flags;
 };
 
 
@@ -209,7 +207,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
                       mc.nbpu_opt, mc.nstlist_cmdline,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
+                      mc.nmultisim, *mc.replExParams, mc.pforce,
                       mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -231,7 +229,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          const char *nbpu_opt, int nstlist_cmdline,
                                          gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
-                                         int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                                         int nmultisim,
+                                         const ReplicaExchangeParameters &replExParams,
                                          real pforce, real cpt_period, real max_hours,
                                          unsigned long Flags)
 {
@@ -278,9 +277,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->nstepout        = nstepout;
     mda->resetstep       = resetstep;
     mda->nmultisim       = nmultisim;
-    mda->repl_ex_nst     = repl_ex_nst;
-    mda->repl_ex_nex     = repl_ex_nex;
-    mda->repl_ex_seed    = repl_ex_seed;
+    mda->replExParams    = &replExParams;
     mda->pforce          = pforce;
     mda->cpt_period      = cpt_period;
     mda->max_hours       = max_hours;
@@ -705,8 +702,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-             int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
-             int repl_ex_seed, real pforce, real cpt_period, real max_hours,
+             int gmx_unused nmultisim,
+             const ReplicaExchangeParameters &replExParams,
+             real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags)
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
@@ -875,7 +873,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
-                                        repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
+                                        replExParams, pforce,
                                         cpt_period, max_hours,
                                         Flags);
             /* the main thread continues here with a new cr. We don't deallocate
@@ -979,7 +977,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, mtop, inputrec, cr, fcd, state, repl_ex_nst > 0);
+    init_disres(fplog, mtop, inputrec, cr, fcd, state, replExParams.exchangeInterval > 0);
 
     init_orires(fplog, mtop, as_rvec_array(state->x.data()), inputrec, cr, &(fcd->orires),
                 state);
@@ -1390,7 +1388,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      inputrec, mtop,
                                      fcd, state, &observablesHistory,
                                      mdatoms, nrnb, wcycle, ed, fr,
-                                     repl_ex_nst, repl_ex_nex, repl_ex_seed,
+                                     replExParams,
                                      membed,
                                      cpt_period, max_hours,
                                      imdport,

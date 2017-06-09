@@ -226,7 +226,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   gmx_edsam_t ed, t_forcerec *fr,
-                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                  const ReplicaExchangeParameters &replExParams,
                   gmx_membed_t *membed,
                   real cpt_period, real max_hours,
                   int imdport,
@@ -494,10 +494,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         set_constraints(constr, top, ir, mdatoms, cr);
     }
 
-    if (repl_ex_nst > 0 && MASTER(cr))
+    const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
+    if (useReplicaExchange && MASTER(cr))
     {
         repl_ex = init_replica_exchange(fplog, cr->ms, state_global, ir,
-                                        repl_ex_nst, repl_ex_nex, repl_ex_seed);
+                                        replExParams);
     }
 
     /* PME tuning is only supported with PME for Coulomb. Is is not supported
@@ -561,9 +562,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
         }
-        if (repl_ex_nst > 0)
+        if (useReplicaExchange)
         {
-            nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
+            nstfep = gmx_greatest_common_divisor(replExParams.exchangeInterval, nstfep);
         }
     }
 
@@ -764,8 +765,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         // checkpoints and stop conditions to act on the same step, so
         // the propagation of such signals must take place between
         // simulations, not just within simulations.
-        bool checkpointIsLocal    = (repl_ex_nst <= 0) && !bUsingEnsembleRestraints;
-        bool stopConditionIsLocal = (repl_ex_nst <= 0) && !bUsingEnsembleRestraints;
+        bool checkpointIsLocal    = !useReplicaExchange && !bUsingEnsembleRestraints;
+        bool stopConditionIsLocal = !useReplicaExchange && !bUsingEnsembleRestraints;
         bool resetCountersIsLocal = true;
         signals[eglsCHKPT]         = SimulationSignal(checkpointIsLocal);
         signals[eglsSTOPCOND]      = SimulationSignal(stopConditionIsLocal);
@@ -776,7 +777,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     step_rel = 0;
 
     // TODO extract this to new multi-simulation module
-    if (MASTER(cr) && MULTISIM(cr) && (repl_ex_nst <= 0 ))
+    if (MASTER(cr) && MULTISIM(cr) && !useReplicaExchange)
     {
         if (!multisim_int_all_are_equal(cr->ms, ir->nsteps))
         {
@@ -849,8 +850,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                             && (ir->bExpanded) && (step > 0) && (!startingFromCheckpoint));
         }
 
-        bDoReplEx = ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-                     do_per_step(step, repl_ex_nst));
+        bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep &&
+                     do_per_step(step, replExParams.exchangeInterval));
 
         if (bSimAnn)
         {
@@ -1847,7 +1848,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     done_shellfc(fplog, shellfc, step_rel);
 
-    if (repl_ex_nst > 0 && MASTER(cr))
+    if (useReplicaExchange > 0 && MASTER(cr))
     {
         print_replica_exchange_statistics(fplog, repl_ex);
     }

@@ -58,6 +58,7 @@ struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_output_env_t;
 struct ObservablesHistory;
+struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -93,9 +94,7 @@ class MDLogger;
  * \param[in] wcycle              Wall cycle timing information
  * \param[in] ed                  Essential dynamics sampling information
  * \param[in] fr                  Force record with cut-off information and more
- * \param[in] repl_ex_nst         How often we do replica exchange (in steps)
- * \param[in] repl_ex_nex         How many replicas we have
- * \param[in] repl_ex_seed        The seed for Monte Carlo swaps
+ * \param[in] replExParams        Parameters for the replica exchange algorithm
  * \param[in] membed              Membrane embedding data structure
  * \param[in] cpt_period          How often to checkpoint the simulation
  * \param[in] max_hours           Maximume length of the simulation (wall time)
@@ -118,7 +117,7 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &md
                              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                              gmx_edsam_t ed,
                              t_forcerec *fr,
-                             int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                             const ReplicaExchangeParameters &replExParams,
                              gmx_membed_t gmx_unused * membed,
                              real cpt_period, real max_hours,
                              int imdport,
