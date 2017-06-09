@@ -49,15 +49,31 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 
+/* The parameters for the replica exchange algorithm */
+struct ReplicaExchangeParameters
+{
+    ReplicaExchangeParameters() :
+        exchangeInterval(0),
+        numExchanges(0),
+        randomSeed(-1)
+    {
+    };
+
+    int exchangeInterval; /* Interval in steps at which to attempt exchanges, 0 means no replica exchange */
+    int numExchanges;     /* The number of exchanges to attempt at an exchange step */
+    int randomSeed;       /* The random seed, -1 means generate a seed */
+};
+
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
-gmx_repl_ex_t init_replica_exchange(FILE *fplog,
-                                    const gmx_multisim_t *ms,
-                                    const t_state *state,
-                                    const t_inputrec *ir,
-                                    int nst, int nmultiex, int init_seed);
-/* Should only be called on the master nodes */
+gmx_repl_ex_t
+init_replica_exchange(FILE                            *fplog,
+                      const gmx_multisim_t            *ms,
+                      const t_state                   *state,
+                      const t_inputrec                *ir,
+                      const ReplicaExchangeParameters &replExParams);
+/* Should only be called on the master ranks */
 
 gmx_bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
@@ -65,15 +81,15 @@ gmx_bool replica_exchange(FILE *fplog,
                           t_state *state, gmx_enerdata_t *enerd,
                           t_state *state_local,
                           gmx_int64_t step, real time);
-/* Attempts replica exchange, should be called on all nodes.
+/* Attempts replica exchange, should be called on all ranks.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,
- * this routine collects the state on the master node before exchange.
+ * this routine collects the state on the master rank before exchange.
  * With domain decomposition, the global state after exchange is stored
- * in state and still needs to be redistributed over the nodes.
+ * in state and still needs to be redistributed over the ranks.
  */
 
 void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
-/* Should only be called on the master nodes */
+/* Should only be called on the master ranks */
 
 #endif  /* _repl_ex_h */
