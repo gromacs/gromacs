@@ -69,6 +69,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "mdrun_main.h"
+#include "repl_ex.h"
 #include "runner.h"
 
 /*! \brief Return whether either of the command-line parameters that
@@ -265,7 +266,7 @@ int gmx_mdrun(int argc, char *argv[])
     };
     const int     NFILE = asize(fnm);
 
-    /* Command line options ! */
+    /* Command line option parameters, with their default values */
     gmx_bool          bDDBondCheck  = TRUE;
     gmx_bool          bDDBondComm   = TRUE;
     gmx_bool          bTunePME      = TRUE;
@@ -281,14 +282,15 @@ int gmx_mdrun(int argc, char *argv[])
     int               nstlist       = 0;
     int               nmultisim     = 0;
     int               nstglobalcomm = -1;
-    int               repl_ex_nst   = 0;
-    int               repl_ex_seed  = -1;
-    int               repl_ex_nex   = 0;
     int               nstepout      = 100;
     int               resetstep     = -1;
     gmx_int64_t       nsteps        = -2;   /* the value -2 means that the mdp option will be used */
-    int               imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
 
+    /* Special algorithms section */
+    ReplicaExchangeParameters replExParams;
+    int                       imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
+
+    /* Command line options */
     rvec              realddxyz                   = {0, 0, 0};
     const char       *ddrank_opt[ddrankorderNR+1] =
     { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
@@ -390,11 +392,11 @@ int gmx_mdrun(int argc, char *argv[])
           "Terminate after 0.99 times this time (hours)" },
         { "-multi",   FALSE, etINT, {&nmultisim},
           "Do multiple simulations in parallel" },
-        { "-replex",  FALSE, etINT, {&repl_ex_nst},
+        { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},
           "Attempt replica exchange periodically with this period (steps)" },
-        { "-nex",  FALSE, etINT, {&repl_ex_nex},
+        { "-nex",  FALSE, etINT, {&replExParams.numExchanges},
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
-        { "-reseed",  FALSE, etINT, {&repl_ex_seed},
+        { "-reseed",  FALSE, etINT, {&replExParams.randomSeed},
           "Seed for replica exchange, -1 is generate a seed" },
         { "-imdport",    FALSE, etINT, {&imdport},
           "HIDDENIMD listening port" },
@@ -470,12 +472,12 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
 
-    if (repl_ex_nst != 0 && nmultisim < 2)
+    if (replExParams.exchangeInterval != 0 && nmultisim < 2)
     {
         gmx_fatal(FARGS, "Need at least two replicas for replica exchange (option -multi)");
     }
 
-    if (repl_ex_nex < 0)
+    if (replExParams.numExchanges < 0)
     {
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
@@ -547,7 +549,7 @@ int gmx_mdrun(int argc, char *argv[])
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                        nbpu_opt[0], nstlist,
                        nsteps, nstepout, resetstep,
-                       nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
+                       nmultisim, replExParams,
                        pforce, cpt_period, max_hours, imdport, Flags);
 
     /* Log file has to be closed in mdrunner if we are appending to it

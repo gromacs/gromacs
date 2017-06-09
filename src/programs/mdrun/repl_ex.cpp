@@ -149,11 +149,12 @@ static gmx_bool repl_quantity(const gmx_multisim_t *ms,
     return bDiff;
 }
 
-gmx_repl_ex_t init_replica_exchange(FILE *fplog,
-                                    const gmx_multisim_t *ms,
-                                    const t_state *state,
-                                    const t_inputrec *ir,
-                                    int nst, int nex, int init_seed)
+gmx_repl_ex_t
+init_replica_exchange(FILE                            *fplog,
+                      const gmx_multisim_t            *ms,
+                      const t_state                   *state,
+                      const t_inputrec                *ir,
+                      const ReplicaExchangeParameters &replExParams)
 {
     real                pres;
     int                 i, j, k;
@@ -192,6 +193,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     check_multi_int(fplog, ms, state->natoms, "the number of atoms", FALSE);
     check_multi_int(fplog, ms, ir->eI, "the integrator", FALSE);
     check_multi_int64(fplog, ms, ir->init_step+ir->nsteps, "init_step+nsteps", FALSE);
+    const int nst = replExParams.exchangeInterval;
     check_multi_int64(fplog, ms, (ir->init_step+nst-1)/nst,
                       "first exchange step: init_step/-replex", FALSE);
     check_multi_int(fplog, ms, ir->etc, "the temperature coupling", FALSE);
@@ -372,7 +374,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         }
     }
     re->nst = nst;
-    if (init_seed == -1)
+    if (replExParams.randomSeed == -1)
     {
         if (MASTERSIM(ms))
         {
@@ -386,7 +388,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
     else
     {
-        re->seed = init_seed;
+        re->seed = replExParams.randomSeed;
     }
     fprintf(fplog, "\nReplica exchange interval: %d\n", re->nst);
     fprintf(fplog, "\nReplica random seed: %d\n", re->seed);
@@ -428,7 +430,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     {
         snew(re->de[i], re->nrepl);
     }
-    re->nex = nex;
+    re->nex = replExParams.numExchanges;
     return re;
 }
 
