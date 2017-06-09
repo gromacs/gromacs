@@ -41,7 +41,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -531,7 +530,7 @@ void BondNames::extractParams()
 
 /*! \brief Class holding for one type of interactions all names
  *
- * Class holding the OptNames for one interaction type.
+ * Class holding the OptNames for each interaction type.
  */
 class ForceConstants
 {
@@ -984,8 +983,8 @@ void Optimization::broadcast(t_commrec *cr)
 
 void Optimization::checkSupport(FILE *fp, bool  bOpt[])
 {
-    int ntotal  = mymol_.size();
-    int nlocal  = 0;
+    auto ntotal  = mymol_.size();
+    auto nlocal  = 0;
 
     for (auto mymol =  mymol_.begin(); mymol <  mymol_.end(); )
     {
@@ -996,7 +995,6 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
         }
 
         bool bSupport = true;
-
         for (int bt = 0; bSupport && (bt <= eitNR); bt++)
         {
             int  ft;
@@ -1141,7 +1139,7 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
     }
     if (nullptr != fp)
     {
-        fprintf(fp, "%d out of %d molecules have support in the force field.\n",
+        fprintf(fp, "%d out of %zu molecules have support in the force field.\n",
                 nlocal, ntotal);
     }
 }
@@ -1277,8 +1275,7 @@ void Optimization::tuneFc2PolData()
                               static_cast<int>(fc.interactionType()));
             }
         }
-    }
-    
+    }    
     for (auto &nbp : NonBondParams_)
     {
         for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
@@ -1327,16 +1324,16 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
     auto fs  = pd_.findForces(eitBONDS);
-    int  ftb = fs->fType();
-    int  j   = 0;
+    auto ftb = fs->fType();
+    auto j   = 0;
 
     for (auto mymol =  mymol_.begin(); mymol <  mymol_.end(); mymol++, j++)
     {
-        for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr);
+        for (auto i = 0; i < mymol->ltop_->idef.il[ftb].nr;
              i += interaction_function[ftb].nratoms+1)
         {
-            int                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-            int                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+            auto                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+            auto                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
             std::string              aai, aaj;
             std::vector<std::string> atoms;
             if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
@@ -1346,8 +1343,8 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                 auto f = fs->findForce(atoms);
                 if (fs->forceEnd() != f)
                 {
-                    int  gt  = f - fs->forceBegin();
-                    int  gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+                    auto  gt  = f - fs->forceBegin();
+                    auto  gti = ForceConstants_[eitBONDS].reverseIndex(gt);
                     a[gti][j]++; 
                     ac[gti][j]++;                     
                     ntest[gti]++;
@@ -1375,10 +1372,10 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
-    int nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
-        {
-            return n == 0;
-        });
+    auto nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
+                               {
+                                 return n == 0;
+                               });
 
     GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
 
@@ -1387,7 +1384,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     multi_regression2(nMol, rhs.data(), nD, a, Edissoc.data());
     dump_csv(ctest,  mymol_, ntest, Edissoc, ac, rhs.data());
 
-    for (size_t i = 0; (i < ctest.size()); i++)
+    for (size_t i = 0; i < ctest.size(); i++)
     {
         if (fplog)
         {
@@ -1399,7 +1396,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     free_matrix(a);
     free_matrix(ac);
     
-    int i = 0;
+    auto i = 0;
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
@@ -1428,7 +1425,7 @@ void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
         fts.push_back(std::move(fs->fType()));
     }
 
-    for (size_t bt = 0; (bt < fts.size()); bt++)
+    for (size_t bt = 0; bt < fts.size(); bt++)
     {
         ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), bOpt[bt]);
         fc.analyzeIdef(mymol_, pd_);

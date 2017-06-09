@@ -215,11 +215,11 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
         bonds[bi->getAj() - 1].push_back(bi->getAi() - 1);
     }
     nbonds.resize(topology_->atoms.nr);
-    for (int i = 0; (i < topology_->atoms.nr); i++)
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         nbonds[i] = bonds[i].size();
     }
-    for (int i = 0; (i < topology_->atoms.nr); i++)
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         /* Now test initial geometry */
         if ((bonds[i].size() == 2) &&
@@ -254,8 +254,7 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
                            &nbonds[0]);
         }
     }
-    int anr = topology_->atoms.nr;
-
+    auto anr = topology_->atoms.nr;
     gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x,
                          plist_, symtab_, atype_, &excls_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
@@ -278,14 +277,14 @@ void MyMol::MakeAngles(bool bPairs,
         if (F_BONDS == pw.getFtype())
         {
             pr_alloc(pw.nParam(), &(plist[F_BONDS]));
-            int i = 0;
+            auto i = 0;
             for (auto pi = pw.beginParam(); (pi < pw.endParam()); ++pi)
             {
-                for (int j = 0; j < MAXATOMLIST; j++)
+                for (auto j = 0; j < MAXATOMLIST; j++)
                 {
                     plist[F_BONDS].param[i].a[j] = pi->a[j];
                 }
-                for (int j = 0; j < MAXFORCEPARAM; j++)
+                for (auto j = 0; j < MAXFORCEPARAM; j++)
                 {
                     plist[F_BONDS].param[i].c[j] = pi->c[j];
                 }
@@ -316,7 +315,7 @@ void MyMol::MakeAngles(bool bPairs,
         int ne = EXCL->index[i+1]-EXCL->index[i];
         srenew(excls_[i].e, ne);
         excls_[i].nr = 0;
-        for (int j = EXCL->index[i]; (j < EXCL->index[i+1]); j++)
+        for (auto j = EXCL->index[i]; j < EXCL->index[i+1]; j++)
         {
             if (EXCL->a[j] != i)
             {
@@ -324,7 +323,7 @@ void MyMol::MakeAngles(bool bPairs,
             }
         }
         // Set the rest of the memory to zero
-        for (int j = excls_[i].nr; j < ne; j++)
+        for (auto j = excls_[i].nr; j < ne; j++)
         {
             excls_[i].e[j] = 0;
         }
@@ -333,10 +332,10 @@ void MyMol::MakeAngles(bool bPairs,
     sfree(EXCL);
     if (nullptr != debug)
     {
-        for (int i = 0; i < topology_->atoms.nr; i++)
+        for (auto i = 0; i < topology_->atoms.nr; i++)
         {
             fprintf(debug, "excl %d", i);
-            for (int j = 0; j < excls_[i].nr; j++)
+            for (auto j = 0; j < excls_[i].nr; j++)
             {
                 fprintf(debug, "  %2d", excls_[i].e[j]);
             }
@@ -351,13 +350,11 @@ void MyMol::MakeAngles(bool bPairs,
     {
         cp_plist(&plist[F_PDIHS], F_PDIHS, eitPROPER_DIHEDRALS, plist_);
     }
-
     if (bPairs)
     {
         cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
     }
-
-    for (int i = 0; i < F_NRE; i++)
+    for (auto i = 0; i < F_NRE; i++)
     {
         if (plist[i].nr > 0)
         {
@@ -435,7 +432,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
 
             natom++;
         }
-        for (int i = 0; (i < natom); i++)
+        for (auto i = 0; i < natom; i++)
         {
             topology_->atoms.atom[i].type      =
                 topology_->atoms.atom[i].typeB = add_atomtype(atype_, symtab_,
@@ -464,9 +461,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
 
 immStatus MyMol::checkAtoms(const Poldata &pd)
 {
-    int nmissing = 0;
-
-    for (int i = 0; i < topology_->atoms.nr; i++)
+    auto nmissing = 0;
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         const auto atype(*topology_->atoms.atomtype[i]);
         auto       fa = pd.findAtype(atype);
@@ -486,11 +482,11 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
 
 immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
                             const Poldata          &pd)
-{ 
-    double zeta = 0;
+{
     /*Here, we add zeta for the core. addShell will 
       take care of the zeta for the shells later*/
-    for (int i = 0; i < topology_->atoms.nr; i++)
+    auto zeta = 0.0;
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);       
         if (zeta == 0 && (eqdModel != eqdAXp && 
@@ -556,7 +552,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             if (eitBONDS == fs->iType())
             {
                 ListedForceConstIterator force;
-                int lengthUnit = string2unit(fs->unit().c_str());
+                auto lengthUnit = string2unit(fs->unit().c_str());
                 if (-1 == lengthUnit)
                 {
                     gmx_fatal(FARGS, "No such length unit '%s' for bonds", fs->unit().c_str());
@@ -584,7 +580,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                     else
                     {
                         // Insert dummy bond to be replaced later
-                        for (int i = 0; i < MAXFORCEPARAM; i++)
+                        for (auto i = 0; i < MAXFORCEPARAM; i++)
                         {
                             b.c[i] = 0;
                         }
@@ -610,11 +606,11 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (immOK == imm)
     {
         auto atntot = 0;
-        for (int i = 0; i < topology_->atoms.nr; i++)
+        for (auto i = 0; i < topology_->atoms.nr; i++)
         {
             auto atn = topology_->atoms.atom[i].atomnumber;
             atntot  += atn;
-            for (int m = 0; m < DIM; m++)
+            for (auto m = 0; m < DIM; m++)
             {
                 coc_[m] += state_->x[i][m]*atn;
             }
@@ -665,7 +661,7 @@ void MyMol::addShells(const Poldata          &pd,
     state_change_natoms(state_, maxatom);
     memset(&p, 0, sizeof(p));
     inv_renum.resize(topology_->atoms.nr*2, -1);
-    int polarUnit = string2unit(pd.getPolarUnit().c_str());
+    auto polarUnit = string2unit(pd.getPolarUnit().c_str());
     if (-1 == polarUnit)
     {
         gmx_fatal(FARGS, "No such polarizability unit '%s'",
@@ -727,7 +723,7 @@ void MyMol::addShells(const Poldata          &pd,
                          j->a[0], inv_renum[j->a[0]],
                          j->a[1], inv_renum[j->a[1]]);
                 GMX_RELEASE_ASSERT(i0 >= 0, buf);
-                for (int j0 = 0; (j0 < excls_[i0].nr); j0++)
+                for (auto j0 = 0; j0 < excls_[i0].nr; j0++)
                 {
                     add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);
                     add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
@@ -735,7 +731,7 @@ void MyMol::addShells(const Poldata          &pd,
             }
             for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
             {
-                for (int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
+                for (auto j0 = 0; j0 < newexcls[j->a[0]].nr; j0++)
                 {
                     add_excl_pair(newexcls, j->a[1], newexcls[j->a[0]].e[j0]);
                 }
@@ -852,7 +848,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     }
     else
     {
-        for (int i = 0; i < topology_->atoms.nr; i++)
+        for (auto i = 0; i < topology_->atoms.nr; i++)
         {
             symmetric_charges_.push_back(i);
         }
@@ -860,8 +856,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     switch (iChargeGenerationAlgorithm)
     {
         case eqgNONE:
-            printf("Using zero charges!\n");
-            for (int i = 0; i < topology_->atoms.nr; i++)
+            printf("WARNING! Using zero charges!\n");
+            for (auto i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
             }
@@ -885,8 +881,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                     {
                         continue;
                     }
-                    int xu = string2unit(epi->getXYZunit().c_str());
-                    int vu = string2unit(epi->getVunit().c_str());
+                    auto xu = string2unit(epi->getXYZunit().c_str());
+                    auto vu = string2unit(epi->getVunit().c_str());
                     if (-1 == xu)
                     {
                         gmx_fatal(FARGS, "No such length unit '%s' for potential",
@@ -904,8 +900,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Added %d ESP points to the RESP structure.\n",
-                            static_cast<int>(Qgresp_.nEsp()));
+                    fprintf(debug, "Added %zu ESP points to the RESP structure.\n", Qgresp_.nEsp());
                 }
             }
             double chi2[2]   = {1e8, 1e8};
@@ -917,7 +912,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             {
                 Qgresp_.updateAtomCoords(state_->x);
                 Qgresp_.optimizeCharges();
-                for (int i = 0; i < topology_->atoms.nr; i++)
+                for (auto i = 0; i < topology_->atoms.nr; i++)
                 {
                     mtop_->moltype[0].atoms.atom[i].q      =
                         mtop_->moltype[0].atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
@@ -934,7 +929,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 iter++;
             }
             while ((!converged) && (iter < maxiter));
-            for (int i = 0; i < topology_->atoms.nr; i++)
+            for (auto i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
@@ -952,7 +947,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             auto natom = Qgeem_.natom();
             
             qq.resize(natom + 1);
-            for (int i = 0; i < natom + 1; i++)
+            for (auto i = 0; i < natom + 1; i++)
             {           
                 qq[i] = q[i][0];
             }               
@@ -964,7 +959,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                                        pd, &topology_->atoms,
                                                        state_->x))
                 {   
-                    for (int i = 0; i < mtop_->natoms; i++)
+                    for (auto i = 0; i < mtop_->natoms; i++)
                     {
                         mtop_->moltype[0].atoms.atom[i].q = 
                             mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
@@ -976,7 +971,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                     }                    
                     q       = Qgeem_.q(); 
                     EemRms_ = 0;                  
-                    for (int i = 0; i < natom + 1; i++)
+                    for (auto i = 0; i < natom + 1; i++)
                     {
                         EemRms_  += gmx::square(qq[i] - q[i][0]);
                         qq[i]     = q[i][0];
@@ -991,13 +986,12 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }           
             }
             while(imm == immOK && (!converged) && (iter < maxiter));
-            for (int i = 0; i < mtop_->natoms; i++)
+            for (auto i = 0; i < mtop_->natoms; i++)
             {
                 mtop_->moltype[0].atoms.atom[i].q = 
                     mtop_->moltype[0].atoms.atom[i].qB = topology_->atoms.atom[i].q;     
                 
-            }  
-            
+            }             
             if (!converged)
             {
                 printf("EEM did not converge to %g. rms: %g\n", tolerance, EemRms_);
@@ -1017,7 +1011,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
                                  gmx_hw_info_t       *hwinfo)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
-    int nalloc = 2*topology_->atoms.nr + 1;
+    auto nalloc = 2*topology_->atoms.nr + 1;
 
     if (nullptr == fr_)
     {
@@ -1055,7 +1049,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     
     clear_mat (force_vir);
 
-    for (int i = 0; i < mtop_->natoms; i++)
+    for (auto i = 0; i < mtop_->natoms; i++)
     {
         mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;     
         if (nullptr != debug)
@@ -1141,10 +1135,10 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 void MyMol::CalcDipole(rvec mu)
 {
     clear_rvec(mu);
-    for (int i = 0; i < topology_->atoms.nr; i++)
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         auto q = e2d(topology_->atoms.atom[i].q);   
-        for (int m = 0; m < DIM; m++)
+        for (auto m = 0; m < DIM; m++)
         {
             mu[m] += state_->x[i][m]*q;
         }
@@ -1158,14 +1152,14 @@ void MyMol::CalcQuadrupole()
     rvec  r; /* distance of atoms to center of charge */
 
     clear_mat(Q_calc_);   
-    for (int i = 0; i < topology_->atoms.nr; i++)
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         rvec_sub(state_->x[i], coc_, r);
         r2   = iprod(r, r);
         q    = topology_->atoms.atom[i].q;
-        for (int m = 0; m < DIM; m++)
+        for (auto m = 0; m < DIM; m++)
         {
-            for (int n = 0; n < DIM; n++) 
+            for (auto n = 0; n < DIM; n++) 
             {
                 Q_calc_[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D;
             }
@@ -1221,7 +1215,7 @@ void MyMol::CalcPolarizability(double     efield,
     myforce->setField(field); 
     CalcDipole(mu_ref);       
     computeForces(fplog, cr);
-    for (int m = 0; m < DIM; m++)
+    for (auto m = 0; m < DIM; m++)
     {
         field[m] = efield;
         myforce->setField(field);
@@ -1344,7 +1338,6 @@ void MyMol::PrintTopology(FILE                   *fp,
     {
         print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);
     }
-
     if (bVerbose)
     {
         for (auto &p : plist_)
@@ -1367,7 +1360,6 @@ void MyMol::PrintTopology(FILE                   *fp,
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 {
     real qtot, mtot;
-
     if ((cgnr_ = generate_charge_groups(ecg, &topology_->atoms,
                                         plist_,
                                         bUsePDBcharge,
@@ -1375,7 +1367,6 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
     {
         return immChargeGeneration;
     }
-
     if (ecg != ecgAtom)
     {
         //sort_on_charge_groups(cgnr_, &topology_->atoms,
@@ -1467,14 +1458,13 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     std::string  myref, mylot;
     int          ia, natom = 0;
     
-    for (int i = 0; i < topology_->atoms.nr; i++)
+    for (auto i = 0; i < topology_->atoms.nr; i++)
     {
         if (topology_->atoms.atom[i].ptype == eptAtom)
         {
             natom++;
         }
-    }
-    
+    }   
     if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
                               lot, "", (char *)"electronic",
                               &value, &error, &T, myref, mylot,
@@ -1507,7 +1497,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             imm = immZeroDip;
         }
     }
-
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
                               lot, "", (char *)"electronic",
                               &value, &error, &T, myref, mylot,
@@ -1542,10 +1531,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 qESP_[j] = q[j];
                 rvec_sub(state_->x[i], coc_, r);
                 r2       = iprod(r, r);
-                for (int m = 0; m < DIM; m++)
+                for (auto m = 0; m < DIM; m++)
                 {
                     mu_esp_[m] += (state_->x[i][m]*e2d(qESP_[j]));
-                    for (int n = 0; n < DIM; n++)
+                    for (auto n = 0; n < DIM; n++)
                     {
                         Q_esp_[m][n] += 0.5*qESP_[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D;
                     }
@@ -1554,8 +1543,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }       
         dip_esp_ = norm(mu_esp_);      
-    }
-    
+    }   
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
@@ -1602,8 +1590,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             imm = immNoData;
         }
-    }
-    
+    }    
     if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, 
                               lot, "", (char *)"electronic", 
                               &value, &error, &T, myref, mylot, 
@@ -1616,8 +1603,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 alpha_elec_[m][n] = polar[m][n];
             }
         }
-    }
-    
+    }    
     return imm;
 }
 
@@ -1644,12 +1630,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
                           fs->unit().c_str());
             }
-            int ftb = fs->fType();
-            for (int i = 0; i < ltop_->idef.il[ftb].nr; i += interaction_function[ftb].nratoms+1)
+            auto ftb = fs->fType();
+            for (auto i = 0; i < ltop_->idef.il[ftb].nr; i += interaction_function[ftb].nratoms+1)
             {
-                int  tp  = ltop_->idef.il[ftb].iatoms[i];
-                int  ai  = ltop_->idef.il[ftb].iatoms[i+1];
-                int  aj  = ltop_->idef.il[ftb].iatoms[i+2];
+                auto  tp  = ltop_->idef.il[ftb].iatoms[i];
+                auto  ai  = ltop_->idef.il[ftb].iatoms[i+1];
+                auto  aj  = ltop_->idef.il[ftb].iatoms[i+2];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
                 {
@@ -1700,13 +1686,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitANGLES:
         {
             auto fs  = pd.findForces(iType);
-            int  fta = fs->fType();
-            for (int i = 0; i < ltop_->idef.il[fta].nr; i += interaction_function[fta].nratoms+1)
+            auto fta = fs->fType();
+            for (auto i = 0; i < ltop_->idef.il[fta].nr; i += interaction_function[fta].nratoms+1)
             {
-                int  tp  = ltop_->idef.il[fta].iatoms[i];
-                int  ai  = ltop_->idef.il[fta].iatoms[i+1];
-                int  aj  = ltop_->idef.il[fta].iatoms[i+2];
-                int  ak  = ltop_->idef.il[fta].iatoms[i+3];
+                auto  tp  = ltop_->idef.il[fta].iatoms[i];
+                auto  ai  = ltop_->idef.il[fta].iatoms[i+1];
+                auto  aj  = ltop_->idef.il[fta].iatoms[i+2];
+                auto  ak  = ltop_->idef.il[fta].iatoms[i+3];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
@@ -1767,13 +1753,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitLINEAR_ANGLES:
         {
             auto fs  = pd.findForces(iType);
-            int  fta = fs->fType();
-            for (int i = 0; i < ltop_->idef.il[fta].nr; i += interaction_function[fta].nratoms+1)
+            auto fta = fs->fType();
+            for (auto i = 0; i < ltop_->idef.il[fta].nr; i += interaction_function[fta].nratoms+1)
             {
-                int  tp  = ltop_->idef.il[fta].iatoms[i];
-                int  ai  = ltop_->idef.il[fta].iatoms[i+1];
-                int  aj  = ltop_->idef.il[fta].iatoms[i+2];
-                int  ak  = ltop_->idef.il[fta].iatoms[i+3];
+                auto  tp  = ltop_->idef.il[fta].iatoms[i];
+                auto  ai  = ltop_->idef.il[fta].iatoms[i+1];
+                auto  aj  = ltop_->idef.il[fta].iatoms[i+2];
+                auto  ak  = ltop_->idef.il[fta].iatoms[i+3];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
@@ -1835,14 +1821,14 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitPROPER_DIHEDRALS:
         {
             auto fs  = pd.findForces(iType);
-            int  ftd = fs->fType();
-            for (int i = 0; i < ltop_->idef.il[ftd].nr; i += interaction_function[ftd].nratoms+1)
+            auto ftd = fs->fType();
+            for (auto i = 0; i < ltop_->idef.il[ftd].nr; i += interaction_function[ftd].nratoms+1)
             {
-                int  tp  = ltop_->idef.il[ftd].iatoms[i];
-                int  ai  = ltop_->idef.il[ftd].iatoms[i+1];
-                int  aj  = ltop_->idef.il[ftd].iatoms[i+2];
-                int  ak  = ltop_->idef.il[ftd].iatoms[i+3];
-                int  al  = ltop_->idef.il[ftd].iatoms[i+4];
+                auto  tp  = ltop_->idef.il[ftd].iatoms[i];
+                auto  ai  = ltop_->idef.il[ftd].iatoms[i+1];
+                auto  aj  = ltop_->idef.il[ftd].iatoms[i+2];
+                auto  ak  = ltop_->idef.il[ftd].iatoms[i+3];
+                auto  al  = ltop_->idef.il[ftd].iatoms[i+4];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
@@ -1895,14 +1881,14 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitIMPROPER_DIHEDRALS:
         {
             auto fs  = pd.findForces(iType);
-            int  ftd = fs->fType();
-            for (int i = 0; i < ltop_->idef.il[ftd].nr; i += interaction_function[ftd].nratoms+1)
+            auto ftd = fs->fType();
+            for (auto i = 0; i < ltop_->idef.il[ftd].nr; i += interaction_function[ftd].nratoms+1)
             {
-                int  tp  = ltop_->idef.il[ftd].iatoms[i];
-                int  ai  = ltop_->idef.il[ftd].iatoms[i+1];
-                int  aj  = ltop_->idef.il[ftd].iatoms[i+2];
-                int  ak  = ltop_->idef.il[ftd].iatoms[i+3];
-                int  al  = ltop_->idef.il[ftd].iatoms[i+4];
+                auto  tp  = ltop_->idef.il[ftd].iatoms[i];
+                auto  ai  = ltop_->idef.il[ftd].iatoms[i+1];
+                auto  aj  = ltop_->idef.il[ftd].iatoms[i+2];
+                auto  ak  = ltop_->idef.il[ftd].iatoms[i+3];
+                auto  al  = ltop_->idef.il[ftd].iatoms[i+4];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
@@ -1948,11 +1934,11 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         {
             auto ftv   = pd.getVdwFtype();
             auto ntype = mtop_->ffparams.atnr;
-            for (int i = 0; (i < ntype); i++)
+            for (auto i = 0; (i < ntype); i++)
             {
-                for (int j = 0; (j < ntype); j++)
+                for (auto j = 0; (j < ntype); j++)
                 {
-                    int idx = ntype*i+j;
+                    auto idx = ntype*i+j;
                     switch (ftv)
                     {
                         case F_LJ:
@@ -1993,10 +1979,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             if (plist_.end() != pw)
             {
                 auto ft = pw->getFtype();
-                for (int i = 0; i < ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
+                for (auto i = 0; i < ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
                 {
-                    int tp  = ltop_->idef.il[ft].iatoms[i];
-                    int ai  = ltop_->idef.il[ft].iatoms[i+1];
+                    auto tp  = ltop_->idef.il[ft].iatoms[i];
+                    auto ai  = ltop_->idef.il[ft].iatoms[i+1];
                     if (pd.getAtypePol(*topology_->atoms.atomtype[ai], &value, &sigma))
                     {
                         mtop_->ffparams.iparams[tp].polarize.alpha = value;
