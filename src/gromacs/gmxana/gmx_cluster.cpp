@@ -1453,7 +1453,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-skip",  FALSE, etINT,  {&skip},
           "Only analyze every nr-th frame" },
         { "-av",    FALSE, etBOOL, {&bAverage},
-          "Write average iso middle structure for each cluster" },
+          "Write average instead of middle structure for each cluster" },
         { "-wcl",   FALSE, etINT,  {&write_ncl},
           "Write the structures for this number of clusters to numbered files" },
         { "-nst",   FALSE, etINT,  {&write_nst},
