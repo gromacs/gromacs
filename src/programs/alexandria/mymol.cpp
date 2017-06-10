@@ -1161,7 +1161,7 @@ void MyMol::CalcQuadrupole()
         {
             for (auto n = 0; n < DIM; n++) 
             {
-                Q_calc_[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D;
+                Q_calc_[m][n] += 0.5*q*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
             }
         }
     }
@@ -1536,7 +1536,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                     mu_esp_[m] += (state_->x[i][m]*e2d(qESP_[j]));
                     for (auto n = 0; n < DIM; n++)
                     {
-                        Q_esp_[m][n] += 0.5*qESP_[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D;
+                        Q_esp_[m][n] += 0.5*qESP_[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
                     }
                 }
                 j++;
