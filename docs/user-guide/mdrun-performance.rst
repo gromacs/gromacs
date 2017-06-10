@@ -329,9 +329,11 @@ There are further command-line parameters that are relevant in these
 cases.
 
 ``-tunepme``
-    Defaults to "on." If "on," will optimize various aspects of the
-    PME and DD algorithms, shifting load between ranks and/or GPUs to
-    maximize throughput
+    Defaults to "on." If "on," a Verlet-scheme simulation will
+    optimize various aspects of the PME and DD algorithms, shifting
+    load between ranks and/or GPUs to maximize throughput. Some
+    mdrun features are not compatible with this, and these ignore
+    this option.
 
 ``-dlb``
     Can be set to "auto," "no," or "yes."
