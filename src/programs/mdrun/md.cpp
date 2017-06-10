@@ -508,7 +508,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
      * with only LJ PME, or for reruns.
      */
     bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD &&
-                !(Flags & MD_REPRODUCIBLE));
+                !(Flags & MD_REPRODUCIBLE) && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, fplog, ir, state->box,
