@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,6 +163,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
 {
+    GMX_RELEASE_ASSERT(ir->cutoff_scheme != ecutsGROUP, "PME tuning is buggy with cutoff-scheme=group");
+
     pme_load_balancing_t *pme_lb;
     real                  spm, sp;
     int                   d;
