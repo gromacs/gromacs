@@ -506,9 +506,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* PME tuning is only supported with PME for Coulomb. Is is not supported
      * with only LJ PME, or for reruns.
+     * PME tuning is buggy with cutoff-scheme=group.
      */
     bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD &&
-                !(Flags & MD_REPRODUCIBLE));
+                !(Flags & MD_REPRODUCIBLE) && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, fplog, ir, state->box,
