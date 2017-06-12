@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1040,6 +1040,10 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         fr->rlistlong     = fr->ic->rlistlong;
         fr->rcoulomb      = fr->ic->rcoulomb;
         fr->rvdw          = fr->ic->rvdw;
+        if (pme_lb->cutoff_scheme == ecutsGROUP)
+        {
+            fr->bTwinRange = (fr->rlistlong > fr->rlist);
+        }
 
         if (ir->eDispCorr != edispcNO)
         {
