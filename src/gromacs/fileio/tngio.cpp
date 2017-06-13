@@ -41,6 +41,7 @@
 #include <cmath>
 
 #include <memory>
+#include <vector>
 
 #if GMX_USE_TNG
 #include "tng/tng_io.h"
@@ -193,8 +194,6 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
         gmx_file("Cannot add molecule to TNG molecular system.");
     }
 
-    /* FIXME: The TNG atoms should contain mass and atomB info (for free
-     * energy calculations), i.e. in when it's available in TNG (2.0). */
     for (int atomIndex = 0; atomIndex < atoms->nr; atomIndex++)
     {
         const t_atom *at = &atoms->atom[atomIndex];
@@ -241,15 +240,25 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
 void gmx_tng_add_mtop(tng_trajectory_t  tng,
                       const gmx_mtop_t *mtop)
 {
-    int                  i, j;
-    const t_ilist       *ilist;
-    tng_bond_t           tngBond;
+    int                i;
+    int                j;
+    std::vector<real>  atomCharges;
+    std::vector<real>  atomMasses;
+    const t_ilist     *ilist;
+    tng_bond_t         tngBond;
+    char               datatype;
 
     if (!mtop)
     {
         /* No topology information available to add. */
         return;
     }
+
+#if GMX_DOUBLE
+    datatype = TNG_DOUBLE_DATA;
+#else
+    datatype = TNG_FLOAT_DATA;
+#endif
 
     for (int molIndex = 0; molIndex < mtop->nmolblock; molIndex++)
     {
@@ -296,7 +305,28 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
                 j += 4;
             }
         }
+        /* First copy atom charges and masses, first atom by atom and then copy the memory for the molecule instances.
+         * FIXME: Atom B state data should also be written to TNG (v 2.0?) */
+        for (int atomCounter = 0; atomCounter < molType->atoms.nr; atomCounter++)
+        {
+            atomCharges.push_back(molType->atoms.atom[atomCounter].q);
+            atomMasses.push_back(molType->atoms.atom[atomCounter].m);
+        }
+        for (int molCounter = 1; molCounter < mtop->molblock[molIndex].nmol; molCounter++)
+        {
+            atomCharges.insert(atomCharges.end(), atomCharges.end() - molType->atoms.nr, atomCharges.end());
+            atomMasses.insert(atomMasses.end(), atomMasses.end() - molType->atoms.nr, atomMasses.end());
+        }
     }
+    /* Write the TNG data blocks. */
+    tng_particle_data_block_add(tng, TNG_TRAJ_PARTIAL_CHARGES, "PARTIAL CHARGES",
+                                datatype, TNG_NON_TRAJECTORY_BLOCK,
+                                1, 1, 1, 0, mtop->natoms,
+                                TNG_GZIP_COMPRESSION, atomCharges.data());
+    tng_particle_data_block_add(tng, TNG_TRAJ_MASSES, "ATOM MASSES",
+                                datatype, TNG_NON_TRAJECTORY_BLOCK,
+                                1, 1, 1, 0, mtop->natoms,
+                                TNG_GZIP_COMPRESSION, atomMasses.data());
 }
 
 /*! \libinternal \brief Compute greatest common divisor of n1 and n2
@@ -1473,12 +1503,19 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
                                    FILE            *stream)
 {
 #if GMX_USE_TNG
-    gmx_int64_t        nMolecules, nChains, nResidues, nAtoms, *molCntList;
-    tng_molecule_t     molecule;
-    tng_chain_t        chain;
-    tng_residue_t      residue;
-    tng_atom_t         atom;
-    char               str[256], varNAtoms;
+    gmx_int64_t         nMolecules, nChains, nResidues, nAtoms, nFramesRead;
+    gmx_int64_t         strideLength, nParticlesRead, nValuesPerFrameRead, *molCntList;
+    tng_molecule_t      molecule;
+    tng_chain_t         chain;
+    tng_residue_t       residue;
+    tng_atom_t          atom;
+    tng_function_status stat;
+    char                str[256];
+    char                varNAtoms;
+    char                datatype;
+    void               *data = nullptr;
+    std::vector<float>  atomCharges;
+    std::vector<float>  atomMasses;
 
     tng_num_molecule_types_get(input, &nMolecules);
     tng_molecule_cnt_list_get(input, &molCntList);
@@ -1564,6 +1601,62 @@ void gmx_print_tng_molecule_system(tng_trajectory_t input,
                 }
             }
         }
+    }
+
+    tng_num_particles_get(input, &nAtoms);
+    stat = tng_particle_data_vector_get(input, TNG_TRAJ_PARTIAL_CHARGES, &data, &nFramesRead,
+                                        &strideLength, &nParticlesRead,
+                                        &nValuesPerFrameRead, &datatype);
+    if (stat == TNG_SUCCESS)
+    {
+        atomCharges.reserve(nAtoms);
+        convert_array_to_real_array(data,
+                                    atomCharges.data(),
+                                    1,
+                                    nAtoms,
+                                    1,
+                                    datatype);
+
+        fprintf(stream, "Atom Charges (%d):\n", int(nAtoms));
+        for (gmx_int64_t i = 0; i < nAtoms; i += 10)
+        {
+            fprintf(stream, "Atom Charges [%8d-]=[", int(i));
+            for (gmx_int64_t j = 0; (j < 10 && i + j < nAtoms); j++)
+            {
+                fprintf(stream, " %12.5e", atomCharges[i + j]);
+            }
+            fprintf(stream, "]\n");
+        }
+    }
+
+    stat = tng_particle_data_vector_get(input, TNG_TRAJ_MASSES, &data, &nFramesRead,
+                                        &strideLength, &nParticlesRead,
+                                        &nValuesPerFrameRead, &datatype);
+    if (stat == TNG_SUCCESS)
+    {
+        atomMasses.reserve(nAtoms);
+        convert_array_to_real_array(data,
+                                    atomMasses.data(),
+                                    1,
+                                    nAtoms,
+                                    1,
+                                    datatype);
+
+        fprintf(stream, "Atom Masses (%d):\n", int(nAtoms));
+        for (gmx_int64_t i = 0; i < nAtoms; i += 10)
+        {
+            fprintf(stream, "Atom Masses [%8d-]=[", int(i));
+            for (gmx_int64_t j = 0; (j < 10 && i + j < nAtoms); j++)
+            {
+                fprintf(stream, " %12.5e", atomMasses[i + j]);
+            }
+            fprintf(stream, "]\n");
+        }
+    }
+
+    if (data != nullptr)
+    {
+        sfree(data);
     }
 #else
     GMX_UNUSED_VALUE(input);
@@ -1693,6 +1786,8 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     {
         *prec = localPrec;
     }
+
+    sfree(data);
 
     *bOK = TRUE;
     return TRUE;
