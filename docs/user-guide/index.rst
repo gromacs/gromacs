@@ -31,3 +31,4 @@ For background on algorithms and implementations, see the
    file-formats
    cmdline
    environment-variables
+   terminology
