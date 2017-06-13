@@ -127,6 +127,7 @@ if (SPHINX_FOUND)
         user-guide/mdrun-features.rst
         user-guide/mdrun-performance.rst
         user-guide/mdp-options.rst
+        user-guide/run-time-errors.rst
         user-guide/file-formats.rst
         user-guide/cmdline.rst
         user-guide/environment-variables.rst
