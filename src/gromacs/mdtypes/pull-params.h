@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,11 +57,14 @@
 
 /*! \brief Struct that defines a pull group */
 typedef struct {
-    int   nat;     /**< Number of atoms in the pull group */
-    int  *ind;     /**< The global atoms numbers */
-    int   nweight; /**< The number of weights (0 or nat) */
-    real *weight;  /**< Weights (use all 1 when weight==NULL) */
-    int   pbcatom; /**< The reference atom for pbc (global number) */
+    int      nat;         /**< Number of atoms in the pull group */
+    int     *ind;         /**< The global atoms numbers */
+    int      nweight;     /**< The number of weights (0 or nat) */
+    real    *weight;      /**< Weights (use all 1 when weight==NULL) */
+    int      pbcatom;     /**< The reference atom for pbc (global number) */
+    gmx_bool bSliced;     /**< Sliced group */
+    double   slice_x_min; /**< Min of the slice interval in x coordinate */
+    double   slice_x_max; /**< Max of the slice interval in x coordinate */
 } t_pull_group;
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */

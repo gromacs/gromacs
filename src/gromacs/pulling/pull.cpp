@@ -1685,9 +1685,92 @@ static void do_pull_pot_coord(struct pull_t *pull, int coord_ind, t_pbc *pbc,
     add_virial_coord(vir, pcrd);
 }
 
+void
+update_sliced_pull_groups(struct pull_t *pull, rvec x[])
+{
+    int g, i, ii;
+    for (g = 0; g < pull->ngroup; g++)
+    {
+        pull_group_work_t *pgrp;
+
+        pgrp = &pull->group[g];
+        if (pgrp->params.bSliced)
+        {
+            /* Compute the center of the slice and half of the slice length
+             * that are required for computation of force smoothening
+             * coefficient.
+             */
+            real slice_center   = (pgrp->params.slice_x_min + pgrp->params.slice_x_max) / 2;
+            real slice_len_half = (pgrp->params.slice_x_max - pgrp->params.slice_x_min) / 2;
+            gmx_bool bAtomExistsInRegion = false;
+            if (debug)
+            {
+                fprintf(debug, "Pull group %d slice [%.3f, %.3f] center %.3f half length %.3f contains:\n", g, pgrp->params.slice_x_min, pgrp->params.slice_x_max, slice_center, slice_len_half);
+            }
+            for (i = 0; i < pgrp->nat_loc; i++)
+            {
+                /* Check if x coordinate of the atom is in the slice */
+                ii = pgrp->ind_loc[i];
+                real x_coord = x[ii][0];
+                real weight  = 0.0;
+                if (debug)
+                {
+                    fprintf(debug, "   atom[%5d] local index %d coordinates {%f, %f, %f}", i, ii, x[ii][0], x[ii][1], x[ii][2]);
+                }
+                if (x_coord >= pgrp->params.slice_x_min && x_coord <= pgrp->params.slice_x_max)
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, " in region [%f, %f]", pgrp->params.slice_x_min, pgrp->params.slice_x_max);
+                    }
+                    /*       x - slice_center
+                     * x_ =  ----------------
+                     *        slice_len_half
+                     */
+                    real x_unit  = std::fabs(x_coord - slice_center) / slice_len_half;
+                    /* smoothfunc(x) := x^4 - 2x^2 + 1
+                     * smoothfunc(0) = 1
+                     * smoothfunc(1) = 0
+                     * smoothfunc(-1) = 0
+                     */
+                    weight = x_unit * x_unit * x_unit * x_unit -
+                        2 * x_unit * x_unit + 1.0;
+                    bAtomExistsInRegion = true;
+                }
+                else
+                {
+                    weight = 0.0;
+                }
+                if (pgrp->params.weight != nullptr)
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, " weight %f", pgrp->weight_loc_orig[i]);
+                    }
+                    /* TODO (?) check if pgrp->params.weight can provide this info and remove weight_loc_orig */
+                    pgrp->weight_loc[i] = pgrp->weight_loc_orig[i] * weight;
+                }
+                else
+                {
+                    pgrp->weight_loc[i] = weight;
+                }
+                if (debug)
+                {
+                    fprintf(debug, " adjusted weight %f\n", pgrp->weight_loc[i]);
+                }
+            }
+            if (!bAtomExistsInRegion)
+            {
+                gmx_fatal(FARGS, "Pull group %d contains %d atoms, but none of them are located in the slice [%.3f, %.3f] where the force would be applied. This would lead to infinite potential energy and result in an unstable system. Consider decreasing the pull force.\n", g, pgrp->params.nat, pgrp->params.slice_x_min, pgrp->params.slice_x_max);
+            }
+        }
+    }
+}
+
 real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
-                    rvec *x, rvec *f, tensor vir, real *dvdlambda)
+                    rvec *x, rvec *f, tensor vir, real *dvdlambda,
+                    gmx_wallcycle_t wcycle)
 {
     real V = 0;
 
@@ -1702,6 +1785,10 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     if (pull->comm.bParticipate)
     {
         real dVdl = 0;
+
+        wallcycle_sub_start(wcycle, ewcsPULLSLICE);
+        update_sliced_pull_groups(pull, x);
+        wallcycle_sub_stop(wcycle, ewcsPULLSLICE);
 
         pull_calc_coms(cr, pull, md, pbc, t, x, nullptr);
 
@@ -1743,6 +1830,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 
     if (pull->comm.bParticipate)
     {
+        update_sliced_pull_groups(pull, x);
         pull_calc_coms(cr, pull, md, pbc, t, x, xp);
 
         do_constraint(pull, pbc, xp, v, MASTER(cr), vir, dt, t);
@@ -1772,15 +1860,21 @@ static void make_local_pull_group(gmx_ga2la_t *ga2la,
             {
                 pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
                 srenew(pg->ind_loc, pg->nalloc_loc);
-                if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != nullptr)
+                if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != nullptr || pg->params.bSliced)
                 {
                     srenew(pg->weight_loc, pg->nalloc_loc);
+                    srenew(pg->weight_loc_orig, pg->nalloc_loc);
                 }
             }
             pg->ind_loc[pg->nat_loc] = ii;
             if (pg->params.weight != nullptr)
             {
-                pg->weight_loc[pg->nat_loc] = pg->params.weight[i];
+                pg->weight_loc[pg->nat_loc]      = pg->params.weight[i];
+                pg->weight_loc_orig[pg->nat_loc] = pg->params.weight[i];
+            }
+            else if (pg->params.bSliced)
+            {
+                pg->weight_loc[pg->nat_loc] = 1;
             }
             pg->nat_loc++;
         }
@@ -1932,18 +2026,20 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
 
     if (cr && PAR(cr))
     {
-        pg->nat_loc    = 0;
-        pg->nalloc_loc = 0;
-        pg->ind_loc    = nullptr;
-        pg->weight_loc = nullptr;
+        pg->nat_loc         = 0;
+        pg->nalloc_loc      = 0;
+        pg->ind_loc         = nullptr;
+        pg->weight_loc      = nullptr;
+        pg->weight_loc_orig = nullptr;
     }
     else
     {
         pg->nat_loc = pg->params.nat;
         pg->ind_loc = pg->params.ind;
-        if (pg->epgrppbc == epgrppbcCOS)
+        if (pg->epgrppbc == epgrppbcCOS || pg->params.bSliced)
         {
             snew(pg->weight_loc, pg->params.nat);
+            pg->weight_loc_orig = pg->params.weight;
         }
         else
         {
@@ -2542,6 +2638,10 @@ static void destroy_pull_group(pull_group_work_t *pgrp)
     if (pgrp->weight_loc != pgrp->params.weight)
     {
         sfree(pgrp->weight_loc);
+    }
+    if (pgrp->weight_loc_orig != pgrp->params.weight)
+    {
+        sfree(pgrp->weight_loc_orig);
     }
     sfree(pgrp->mdw);
     sfree(pgrp->dv);
