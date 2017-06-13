@@ -326,6 +326,15 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         STYPE(buf,              wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
         ITYPE(buf,              pgrp->pbcatom, 0);
+        sprintf(buf, "pull-group%d-sliced", groupNum);
+        EETYPE(buf,             pgrp->bSliced, yesno_names);
+        if (pgrp->bSliced)
+        {
+            sprintf(buf, "pull-group%d-slice-x-min", groupNum);
+            RTYPE(buf,              pgrp->slice_x_min, 0.0);
+            sprintf(buf, "pull-group%d-slice-x-max", groupNum);
+            RTYPE(buf,              pgrp->slice_x_max, 0.0);
+        }
 
         /* Initialize the pull group */
         init_pull_group(pgrp, wbuf);
@@ -473,7 +482,7 @@ void make_pull_groups(pull_params_t *pull,
 
 void make_pull_coords(pull_params_t *pull)
 {
-    int           c;
+    int           c, g;
     t_pull_coord *pcrd;
 
     for (c = 0; c < pull->ncoord; c++)
@@ -496,6 +505,13 @@ void make_pull_coords(pull_params_t *pull)
             if (pull->group[pcrd->group[0]].nweight > 0)
             {
                 gmx_fatal(FARGS, "Weights are not supported for the reference group with cylinder pulling");
+            }
+            for (g = 0; g < pcrd->ngroup; g++)
+            {
+                if (pull->group[pcrd->group[g]].bSliced)
+                {
+                    gmx_fatal(FARGS, "Pull group slicing is not supported for the groups with cylinder pulling");
+                }
             }
         }
     }
@@ -525,6 +541,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
+    update_sliced_pull_groups(nullptr, pull_work, x);
     pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
 
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
