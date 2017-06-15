@@ -1,0 +1,9 @@
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+2: Erik Lindahl <erik.lindahl@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Thu, 15 Jun 2017 11:41:13 +0200
+Reviewed-on: https://gerrit.gromacs.org/6679
+Project: gromacs
+Branch: refs/heads/master
