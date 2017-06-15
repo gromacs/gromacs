@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -406,7 +406,7 @@ int read_conffile(const char *confin, rvec **x)
 
 
 void read_eigenvalues(int vecs[], const char *eigfile, real values[],
-                      gmx_bool bHesse, real kT)
+                      gmx_bool bHesse, real kT, int natoms_average_struct)
 {
     int      neig, nrow, i;
     double **eigval;
@@ -442,7 +442,20 @@ void read_eigenvalues(int vecs[], const char *eigfile, real values[],
     {
         for (i = 0; vecs[i]; i++)
         {
-            if (vecs[i] > (neig-6))
+            /* Make sure this eigenvalue does not correspond to one of the last 6 eigenvectors of the
+             * covariance matrix. These correspond to the rotational and translational degrees of
+             * freedom and will be zero within numerical accuracy.
+             *
+             * Note that the total number of eigenvectors produced by gmx covar depends on:
+             * 1) the total number of degrees of freedom of the system (3N, with N the number of atoms)
+             * 2) the number S of independent configurations fed into gmx covar.
+             * For long trajectories with lots of frames, usually S >= 3N + 1, so that one indeed gets
+             * 3N eigenvalues (of which the last 6 will have zero eigenvalues).
+             * For S < 3N + 1, however, the covariance matrix becomes rank deficient, and the number
+             * of possible eigenvalues is just S - 1. Since in make_edi we only know N but not S, we can
+             * only warn the user if he picked one of the last 6 of 3N.
+             */
+            if (vecs[i] > ( 3 * natoms_average_struct - 6 ))
             {
                 gmx_fatal(FARGS, "ERROR: You have chosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
             }
@@ -900,7 +913,7 @@ int gmx_make_edi(int argc, char *argv[])
 
         if (listen[evFLOOD][0] != 0)
         {
-            read_eigenvalues(listen[evFLOOD], opt2fn("-eig", NFILE, fnm), evStepList[evFLOOD], bHesse, kB*T);
+            read_eigenvalues(listen[evFLOOD], opt2fn("-eig", NFILE, fnm), evStepList[evFLOOD], bHesse, kB*T, nav);
         }
 
         edi_params.flood.tau       = tau;
