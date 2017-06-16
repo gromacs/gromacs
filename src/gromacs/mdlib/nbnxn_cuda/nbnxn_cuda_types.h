@@ -48,6 +48,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -233,30 +234,23 @@ struct cu_plist
 };
 
 /** \internal
- * \brief CUDA events used for timing GPU kernels and H2D/D2H transfers.
+ * \brief CUDA timers used for timing GPU kernels and H2D/D2H transfers.
  *
  * The two-sized arrays hold the local and non-local values and should always
  * be indexed with eintLocal/eintNonlocal.
  */
 struct cu_timers
 {
-    cudaEvent_t start_atdat;             /**< start event for atom data transfer (every PS step)             */
-    cudaEvent_t stop_atdat;              /**< stop event for atom data transfer (every PS step)              */
-    cudaEvent_t start_nb_h2d[2];         /**< start events for x/q H2D transfers (l/nl, every step)          */
-    cudaEvent_t stop_nb_h2d[2];          /**< stop events for x/q H2D transfers (l/nl, every step)           */
-    cudaEvent_t start_nb_d2h[2];         /**< start events for f D2H transfer (l/nl, every step)             */
-    cudaEvent_t stop_nb_d2h[2];          /**< stop events for f D2H transfer (l/nl, every step)              */
-    cudaEvent_t start_pl_h2d[2];         /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t stop_pl_h2d[2];          /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    bool        didPairlistH2D[2];       /**< true when a pair-list transfer has been done at this step      */
-    cudaEvent_t start_nb_k[2];           /**< start event for non-bonded kernels (l/nl, every step)          */
-    cudaEvent_t stop_nb_k[2];            /**< stop event non-bonded kernels (l/nl, every step)               */
-    cudaEvent_t start_prune_k[2];        /**< start event for the 1st pass list pruning kernel (l/nl, every PS step)   */
-    cudaEvent_t stop_prune_k[2];         /**< stop event for the 1st pass list pruning kernel (l/nl, every PS step)   */
-    bool        didPrune[2];             /**< true when we timed pruning and the timings need to be accounted for */
-    cudaEvent_t start_rollingPrune_k[2]; /**< start event for rolling pruning kernels (l/nl, frequency depends on chunk size)   */
-    cudaEvent_t stop_rollingPrune_k[2];  /**< stop event for rolling pruning kernels (l/nl, frequency depends on chunk size)   */
-    bool        didRollingPrune[2];      /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
+    GpuRegionTimer atdat;              /**< timer for atom data transfer (every PS step)            */
+    GpuRegionTimer nb_h2d[2];          /**< timer for x/q H2D transfers (l/nl, every step)          */
+    GpuRegionTimer nb_d2h[2];          /**< timer for f D2H transfer (l/nl, every step)             */
+    GpuRegionTimer pl_h2d[2];          /**< timer for pair-list H2D transfers (l/nl, every PS step) */
+    bool           didPairlistH2D[2];  /**< true when a pair-list transfer has been done at this step */
+    GpuRegionTimer nb_k[2];            /**< timer for non-bonded kernels (l/nl, every step)         */
+    GpuRegionTimer prune_k[2];         /**< timer for the 1st pass list pruning kernel (l/nl, every PS step)   */
+    bool           didPrune[2];        /**< true when we timed pruning and the timings need to be accounted for */
+    GpuRegionTimer rollingPrune_k[2];  /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
+    bool           didRollingPrune[2]; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
 };
 
 /** \internal
