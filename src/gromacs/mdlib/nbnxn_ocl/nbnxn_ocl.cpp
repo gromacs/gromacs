@@ -69,6 +69,7 @@
 
 #include "thread_mpi/atomic.h"
 
+#include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -377,7 +378,7 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
  * The function returns 0.0 if the input event, *ocl_event, is 0.
  * Don't use this function when more than one wait will be issued for the event.
  */
-static double ocl_event_elapsed_ms(cl_event *ocl_event)
+static inline double ocl_event_elapsed_ms(cl_event *ocl_event)
 {
     cl_int gmx_unused cl_error;
     cl_ulong          start_ns, end_ns;
@@ -486,10 +487,14 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* beginning of timed HtoD section */
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].startRecording(stream);
+    }
 
     /* HtoD x, q */
     ocl_copy_H2D_async(adat->xq, nbatom->x + adat_begin * 4, adat_begin*sizeof(float)*4,
-                       adat_len * sizeof(float) * 4, stream, bDoTime ? (&(t->nb_h2d[iloc])) : NULL);
+                       adat_len * sizeof(float) * 4, stream, bDoTime ? t->nb_h2d[iloc].fetchNextEvent() : nullptr);
 
     /* When we get here all misc operations issues in the local stream as well as
        the local xq H2D are done,
@@ -518,6 +523,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         }
     }
 
+    if (bDoTime)
+    {
+        t->nb_h2d[iloc].stopRecording(stream);
+    }
+
     if (nbp->useDynamicPruning && plist->haveFreshList)
     {
         /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
@@ -536,6 +546,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* beginning of timed nonbonded calculation section */
+    if (bDoTime)
+    {
+        t->nb_k[iloc].startRecording(stream);
+    }
 
     /* get the pointer to the kernel flavor we need to use */
     nb_kernel = select_nbnxn_kernel(nb,
@@ -627,8 +641,13 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     {
         printf("OpenCL error: %s\n", ocl_get_error_string(cl_error).c_str());
     }
-    cl_error = clEnqueueNDRangeKernel(stream, nb_kernel, 3, NULL, global_work_size, local_work_size, 0, NULL, bDoTime ? &(t->nb_k[iloc]) : NULL);
+    cl_error = clEnqueueNDRangeKernel(stream, nb_kernel, 3, NULL, global_work_size, local_work_size, 0, NULL, bDoTime ? t->nb_k[iloc].fetchNextEvent() : nullptr);
     assert(cl_error == CL_SUCCESS);
+
+    if (bDoTime)
+    {
+        t->nb_k[iloc].stopRecording(stream);
+    }
 
 #ifdef DEBUG_OCL
     {
@@ -767,6 +786,18 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
         return;
     }
 
+    GpuRegionTimer *timer = nullptr;
+    if (bDoTime)
+    {
+        timer = &(plist->haveFreshList ? t->prune_k[iloc] : t->rollingPrune_k[iloc]);
+    }
+
+    /* beginning of timed prune calculation section */
+    if (bDoTime)
+    {
+        timer->startRecording(stream);
+    }
+
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,
      *   and j-cluster concurrency, in x, y, and z, respectively.
@@ -816,15 +847,9 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     cl_error |= clSetKernelArg(pruneKernel, arg_no++, shmem, nullptr);
     assert(cl_error == CL_SUCCESS);
 
-    cl_event *pruneEventPtr = nullptr;
-    if (bDoTime)
-    {
-        pruneEventPtr = plist->haveFreshList ? &t->prune_k[iloc] : &t->rollingPrune_k[iloc];
-    }
-
     cl_error = clEnqueueNDRangeKernel(stream, pruneKernel, 3,
                                       nullptr, global_work_size, local_work_size,
-                                      0, nullptr, pruneEventPtr);
+                                      0, nullptr, bDoTime ? timer->fetchNextEvent() : nullptr);
     GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
 
     if (plist->haveFreshList)
@@ -837,6 +862,11 @@ void nbnxn_gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t       *nb,
     {
         /* Mark that rolling pruning has been done */
         nb->timers->didRollingPrune[iloc] = true;
+    }
+
+    if (bDoTime)
+    {
+        timer->stopRecording(stream);
     }
 }
 
@@ -908,6 +938,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* beginning of timed D2H section */
+    if (bDoTime)
+    {
+        t->nb_d2h[iloc].startRecording(stream);
+    }
 
     /* With DD the local D2H transfer can only start after the non-local
        has been launched. */
@@ -918,7 +952,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
     /* DtoH f */
     ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
-                       (adat_len)* adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
+                       (adat_len)* adat->f_elem_size, stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
 
     /* kick off work */
     cl_error = clFlush(stream);
@@ -946,18 +980,23 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
         if (bCalcFshift)
         {
             ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0,
-                               SHIFTS * adat->fshift_elem_size, stream, bDoTime ? &(t->nb_d2h_fshift[iloc]) : NULL);
+                               SHIFTS * adat->fshift_elem_size, stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
         }
 
         /* DtoH energies */
         if (bCalcEner)
         {
             ocl_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, 0,
-                               sizeof(float), stream, bDoTime ? &(t->nb_d2h_e_lj[iloc]) : NULL);
+                               sizeof(float), stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
 
             ocl_copy_D2H_async(nb->nbst.e_el, adat->e_el, 0,
-                               sizeof(float), stream, bDoTime ? &(t->nb_d2h_e_el[iloc]) : NULL);
+                               sizeof(float), stream, bDoTime ? t->nb_d2h[iloc].fetchNextEvent() : nullptr);
         }
+    }
+
+    if (bDoTime)
+    {
+        t->nb_d2h[iloc].stopRecording(stream);
     }
 }
 
@@ -987,13 +1026,13 @@ static void countPruneKernelTime(cl_timers_t         *timers,
     if (timers->didPrune[iloc])
     {
         timings->pruneTime.c++;
-        timings->pruneTime.t += ocl_event_elapsed_ms(&timers->prune_k[iloc]);
+        timings->pruneTime.t += timers->prune_k[iloc].getLastTimeMilliseconds();
     }
 
     if (timers->didRollingPrune[iloc])
     {
         timings->dynamicPruneTime.c++;
-        timings->dynamicPruneTime.t += ocl_event_elapsed_ms(&timers->rollingPrune_k[iloc]);
+        timings->dynamicPruneTime.t += timers->rollingPrune_k[iloc].getLastTimeMilliseconds();
     }
 }
 
@@ -1063,16 +1102,12 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
             /* kernel timings */
             if (timers->didNB[iloc])
             {
-                timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t +=
-                    ocl_event_elapsed_ms(timers->nb_k + iloc);
+                timings->ktime[plist->haveFreshList ? 1 : 0][bCalcEner ? 1 : 0].t += timers->nb_k[iloc].getLastTimeMilliseconds();
             }
 
             /* X/q H2D and F D2H timings */
-            timings->nb_h2d_t += ocl_event_elapsed_ms(timers->nb_h2d        + iloc);
-            timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_f      + iloc);
-            timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_fshift + iloc);
-            timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_el   + iloc);
-            timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_lj   + iloc);
+            timings->nb_h2d_t += timers->nb_h2d[iloc].getLastTimeMilliseconds();
+            timings->nb_d2h_t += timers->nb_d2h[iloc].getLastTimeMilliseconds();
 
             /* Count the pruning kernel times for both cases:1st pass (at search step)
                and rolling pruning (if called at the previous step).
@@ -1089,13 +1124,10 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
                 if (LOCAL_A(aloc))
                 {
                     timings->pl_h2d_c++;
-                    timings->pl_h2d_t += ocl_event_elapsed_ms(&(timers->atdat));
+                    timings->pl_h2d_t += timers->atdat.getLastTimeMilliseconds();
                 }
 
-                timings->pl_h2d_t +=
-                    ocl_event_elapsed_ms(timers->pl_h2d_sci     + iloc) +
-                    ocl_event_elapsed_ms(timers->pl_h2d_cj4     + iloc) +
-                    ocl_event_elapsed_ms(timers->pl_h2d_excl    + iloc);
+                timings->pl_h2d_t += timers->pl_h2d[iloc].getLastTimeMilliseconds();
 
                 /* Clear the timing flag for the next step */
                 timers->didPairlistH2D[iloc] = false;
