@@ -48,11 +48,11 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gputimer.cuh"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/gpu_timing.h"
-
 
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
@@ -213,23 +213,18 @@ struct cu_plist
 };
 
 /** \internal
- * \brief CUDA events used for timing GPU kernels and H2D/D2H transfers.
+ * \brief CUDA timers used for timing GPU kernels and H2D/D2H transfers.
  *
  * The two-sized arrays hold the local and non-local values and should always
  * be indexed with eintLocal/eintNonlocal.
  */
 struct cu_timers
 {
-    cudaEvent_t start_atdat;     /**< start event for atom data transfer (every PS step)             */
-    cudaEvent_t stop_atdat;      /**< stop event for atom data transfer (every PS step)              */
-    cudaEvent_t start_nb_h2d[2]; /**< start events for x/q H2D transfers (l/nl, every step)          */
-    cudaEvent_t stop_nb_h2d[2];  /**< stop events for x/q H2D transfers (l/nl, every step)           */
-    cudaEvent_t start_nb_d2h[2]; /**< start events for f D2H transfer (l/nl, every step)             */
-    cudaEvent_t stop_nb_d2h[2];  /**< stop events for f D2H transfer (l/nl, every step)              */
-    cudaEvent_t start_pl_h2d[2]; /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t stop_pl_h2d[2];  /**< start events for pair-list H2D transfers (l/nl, every PS step) */
-    cudaEvent_t start_nb_k[2];   /**< start event for non-bonded kernels (l/nl, every step)          */
-    cudaEvent_t stop_nb_k[2];    /**< stop event non-bonded kernels (l/nl, every step)               */
+    GpuTimer atdat;           /**< timer for atom data transfer (every PS step)            */
+    GpuTimer nb_h2d[2];       /**< timer for x/q H2D transfers (l/nl, every step)          */
+    GpuTimer nb_d2h[2];       /**< timer for f D2H transfer (l/nl, every step)             */
+    GpuTimer pl_h2d[2];       /**< timer for pair-list H2D transfers (l/nl, every PS step) */
+    GpuTimer nb_k[2];         /**< timer for non-bonded kernels (l/nl, every step)         */
 };
 
 /** \internal

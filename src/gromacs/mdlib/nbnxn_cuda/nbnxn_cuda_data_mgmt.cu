@@ -66,8 +66,6 @@
 
 #include "nbnxn_cuda_types.h"
 
-static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
-
 /* This is a heuristically determined parameter for the Fermi, Kepler
  * and Maxwell architectures for the minimum size of ci lists by multiplying
  * this constant with the # of multiprocessors on the current device.
@@ -515,43 +513,6 @@ static void init_plist(cu_plist_t *pl)
     pl->bDoPrune    = false;
 }
 
-/*! Initializes the timer data structure. */
-static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
-{
-    cudaError_t stat;
-    int         eventflags = ( bUseCudaEventBlockingSync ? cudaEventBlockingSync : cudaEventDefault );
-
-    stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
-    CU_RET_ERR(stat, "cudaEventCreate on start_atdat failed");
-    stat = cudaEventCreateWithFlags(&(t->stop_atdat), eventflags);
-    CU_RET_ERR(stat, "cudaEventCreate on stop_atdat failed");
-
-    /* The non-local counters/stream (second in the array) are needed only with DD. */
-    for (int i = 0; i <= (bUseTwoStreams ? 1 : 0); i++)
-    {
-        stat = cudaEventCreateWithFlags(&(t->start_nb_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nb_k failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nb_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nb_k failed");
-
-
-        stat = cudaEventCreateWithFlags(&(t->start_pl_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_pl_h2d failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_pl_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_pl_h2d failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_nb_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nb_h2d failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nb_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nb_h2d failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_nb_d2h[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nb_d2h failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nb_d2h[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nb_d2h failed");
-    }
-}
-
 /*! Initializes the timings data structure. */
 static void init_timings(gmx_wallclock_gpu_t *t)
 {
@@ -614,7 +575,6 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     nb->bUseTwoStreams = bLocalAndNonlocal;
 
-    snew(nb->timers, 1);
     snew(nb->timings, 1);
 
     /* init nbst */
@@ -664,7 +624,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     if (nb->bDoTime)
     {
-        init_timers(nb->timers, nb->bUseTwoStreams);
+        nb->timers = new cu_timers;
         init_timings(nb->timings);
     }
 
@@ -687,7 +647,6 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                              int                     iloc)
 {
     char          sbuf[STRLEN];
-    cudaError_t   stat;
     bool          bDoTime    = nb->bDoTime;
     cudaStream_t  stream     = nb->stream[iloc];
     cu_plist_t   *d_plist    = nb->plist[iloc];
@@ -708,8 +667,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(nb->timers->start_pl_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        nb->timers->pl_h2d[iloc].startRecording(stream);
     }
 
     cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
@@ -729,8 +687,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(nb->timers->stop_pl_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        nb->timers->pl_h2d[iloc].stopRecording(stream);
     }
 
     /* need to prune the pair list during the next step */
@@ -806,8 +763,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     if (bDoTime)
     {
         /* time async copy */
-        stat = cudaEventRecord(timers->start_atdat, ls);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        timers->atdat.startRecording(ls);
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
@@ -866,8 +822,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(timers->stop_atdat, ls);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        timers->atdat.stopRecording(ls);
     }
 }
 
@@ -923,38 +878,14 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     stat = cudaEventDestroy(nb->misc_ops_and_local_H2D_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_and_local_H2D_done");
 
+    delete timers;
     if (nb->bDoTime)
     {
-        stat = cudaEventDestroy(timers->start_atdat);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_atdat");
-        stat = cudaEventDestroy(timers->stop_atdat);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_atdat");
-
         /* The non-local counters/stream (second in the array) are needed only with DD. */
         for (int i = 0; i <= (nb->bUseTwoStreams ? 1 : 0); i++)
         {
-            stat = cudaEventDestroy(timers->start_nb_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_k");
-            stat = cudaEventDestroy(timers->stop_nb_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_k");
-
-            stat = cudaEventDestroy(timers->start_pl_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_pl_h2d");
-            stat = cudaEventDestroy(timers->stop_pl_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_pl_h2d");
-
             stat = cudaStreamDestroy(nb->stream[i]);
             CU_RET_ERR(stat, "cudaStreamDestroy failed on stream");
-
-            stat = cudaEventDestroy(timers->start_nb_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_h2d");
-            stat = cudaEventDestroy(timers->stop_nb_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_h2d");
-
-            stat = cudaEventDestroy(timers->start_nb_d2h[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_d2h");
-            stat = cudaEventDestroy(timers->stop_nb_d2h[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_d2h");
         }
     }
 
@@ -1028,7 +959,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     {
         sfree(plist_nl);
     }
-    sfree(timers);
     sfree(nb->timings);
     sfree(nb);
 

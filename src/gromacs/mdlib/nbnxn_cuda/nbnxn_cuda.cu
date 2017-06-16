@@ -376,8 +376,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->start_nb_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_h2d[iloc].startRecording(stream);
     }
 
     /* HtoD x, q */
@@ -403,8 +402,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_h2d[iloc].stopRecording(stream);
     }
 
     if (plist->nsci == 0)
@@ -416,8 +414,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->start_nb_k[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_k[iloc].startRecording(stream);
     }
 
     /* get the pointer to the kernel flavor we need to use */
@@ -473,8 +470,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->stop_nb_k[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_k[iloc].stopRecording(stream);
     }
 
 #if (defined(WIN32) || defined( _WIN32 ))
@@ -538,8 +534,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     /* beginning of timed D2H section */
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->start_nb_d2h[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_d2h[iloc].startRecording(stream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local
@@ -586,8 +581,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(t->stop_nb_d2h[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        t->nb_d2h[iloc].stopRecording(stream);
     }
 }
 
@@ -653,14 +647,11 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
         }
 
         /* kernel timings */
-        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t +=
-            cu_event_elapsed(timers->start_nb_k[iloc], timers->stop_nb_k[iloc]);
+        timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t += timers->nb_k[iloc].update();
 
         /* X/q H2D and F D2H timings */
-        timings->nb_h2d_t += cu_event_elapsed(timers->start_nb_h2d[iloc],
-                                              timers->stop_nb_h2d[iloc]);
-        timings->nb_d2h_t += cu_event_elapsed(timers->start_nb_d2h[iloc],
-                                              timers->stop_nb_d2h[iloc]);
+        timings->nb_h2d_t += timers->nb_h2d[iloc].update();
+        timings->nb_d2h_t += timers->nb_d2h[iloc].update();
 
         /* only count atdat and pair-list H2D at pair-search step */
         if (plist->bDoPrune)
@@ -669,12 +660,10 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
             if (LOCAL_A(aloc))
             {
                 timings->pl_h2d_c++;
-                timings->pl_h2d_t += cu_event_elapsed(timers->start_atdat,
-                                                      timers->stop_atdat);
+                timings->pl_h2d_t += timers->atdat.update();
             }
 
-            timings->pl_h2d_t += cu_event_elapsed(timers->start_pl_h2d[iloc],
-                                                  timers->stop_pl_h2d[iloc]);
+            timings->pl_h2d_t += timers->pl_h2d[iloc].update();
         }
     }
 
