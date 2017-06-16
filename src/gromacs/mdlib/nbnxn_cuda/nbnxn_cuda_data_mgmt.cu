@@ -66,8 +66,6 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_types.h"
 
-static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
-
 /* This is a heuristically determined parameter for the Fermi, Kepler
  * and Maxwell architectures for the minimum size of ci lists by multiplying
  * this constant with the # of multiprocessors on the current device.
@@ -519,47 +517,9 @@ static void init_plist(cu_plist_t *pl)
 /*! Initializes the timer data structure. */
 static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
 {
-    cudaError_t stat;
-    int         eventflags = ( bUseCudaEventBlockingSync ? cudaEventBlockingSync : cudaEventDefault );
-
-    stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
-    CU_RET_ERR(stat, "cudaEventCreate on start_atdat failed");
-    stat = cudaEventCreateWithFlags(&(t->stop_atdat), eventflags);
-    CU_RET_ERR(stat, "cudaEventCreate on stop_atdat failed");
-
     /* The non-local counters/stream (second in the array) are needed only with DD. */
     for (int i = 0; i <= (bUseTwoStreams ? 1 : 0); i++)
     {
-        stat = cudaEventCreateWithFlags(&(t->start_nb_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nb_k failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nb_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nb_k failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_prune_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_prune_k failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_prune_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_prune_k failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_rollingPrune_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_rollingPrune_k failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_rollingPrune_k[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_rollingPrune_k failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_pl_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_pl_h2d failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_pl_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_pl_h2d failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_nb_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nb_h2d failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nb_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nb_h2d failed");
-
-        stat = cudaEventCreateWithFlags(&(t->start_nb_d2h[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nb_d2h failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nb_d2h[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nb_d2h failed");
-
         t->didPairlistH2D[i]  = false;
         t->didPrune[i]        = false;
         t->didRollingPrune[i] = false;
@@ -630,7 +590,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     nb->bUseTwoStreams = bLocalAndNonlocal;
 
-    snew(nb->timers, 1);
+    nb->timers = new cu_timers_t();
     snew(nb->timings, 1);
 
     /* init nbst */
@@ -703,7 +663,6 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                              int                     iloc)
 {
     char          sbuf[STRLEN];
-    cudaError_t   stat;
     bool          bDoTime    = nb->bDoTime;
     cudaStream_t  stream     = nb->stream[iloc];
     cu_plist_t   *d_plist    = nb->plist[iloc];
@@ -724,8 +683,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(nb->timers->start_pl_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        nb->timers->pl_h2d[iloc].startRecording(stream);
         nb->timers->didPairlistH2D[iloc] = true;
     }
 
@@ -752,8 +710,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(nb->timers->stop_pl_h2d[iloc], stream);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        nb->timers->pl_h2d[iloc].stopRecording(stream);
     }
 
     /* the next use of thist list we be the first one, so we need to prune */
@@ -829,8 +786,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     if (bDoTime)
     {
         /* time async copy */
-        stat = cudaEventRecord(timers->start_atdat, ls);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        timers->atdat.startRecording(ls);
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
@@ -889,8 +845,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
 
     if (bDoTime)
     {
-        stat = cudaEventRecord(timers->stop_atdat, ls);
-        CU_RET_ERR(stat, "cudaEventRecord failed");
+        timers->atdat.stopRecording(ls);
     }
 }
 
@@ -926,7 +881,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     cu_atomdata_t   *atdat;
     cu_nbparam_t    *nbparam;
     cu_plist_t      *plist, *plist_nl;
-    cu_timers_t     *timers;
 
     if (nb == NULL)
     {
@@ -937,7 +891,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     nbparam     = nb->nbparam;
     plist       = nb->plist[eintLocal];
     plist_nl    = nb->plist[eintNonlocal];
-    timers      = nb->timers;
 
     nbnxn_cuda_free_nbparam_table(nbparam, nb->dev_info);
 
@@ -946,48 +899,14 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     stat = cudaEventDestroy(nb->misc_ops_and_local_H2D_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_and_local_H2D_done");
 
+    delete nb->timers;
     if (nb->bDoTime)
     {
-        stat = cudaEventDestroy(timers->start_atdat);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_atdat");
-        stat = cudaEventDestroy(timers->stop_atdat);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_atdat");
-
         /* The non-local counters/stream (second in the array) are needed only with DD. */
         for (int i = 0; i <= (nb->bUseTwoStreams ? 1 : 0); i++)
         {
-            stat = cudaEventDestroy(timers->start_nb_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_k");
-            stat = cudaEventDestroy(timers->stop_nb_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_k");
-
-            stat = cudaEventDestroy(timers->start_prune_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_prune_k");
-            stat = cudaEventDestroy(timers->stop_prune_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_prune_k");
-
-            stat = cudaEventDestroy(timers->start_rollingPrune_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_rollingPrune_k");
-            stat = cudaEventDestroy(timers->stop_rollingPrune_k[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_rollingPrune_k");
-
-            stat = cudaEventDestroy(timers->start_pl_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_pl_h2d");
-            stat = cudaEventDestroy(timers->stop_pl_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_pl_h2d");
-
             stat = cudaStreamDestroy(nb->stream[i]);
             CU_RET_ERR(stat, "cudaStreamDestroy failed on stream");
-
-            stat = cudaEventDestroy(timers->start_nb_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_h2d");
-            stat = cudaEventDestroy(timers->stop_nb_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_h2d");
-
-            stat = cudaEventDestroy(timers->start_nb_d2h[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_d2h");
-            stat = cudaEventDestroy(timers->stop_nb_d2h[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_d2h");
         }
     }
 
@@ -1063,7 +982,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     {
         sfree(plist_nl);
     }
-    sfree(timers);
     sfree(nb->timings);
     sfree(nb);
 
