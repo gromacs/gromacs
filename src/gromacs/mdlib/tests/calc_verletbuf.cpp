@@ -129,7 +129,7 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
         }
 
         // Also check sigma2 for the COM of the two atoms
-        EXPECT_EQ(sigma2_rot, sigma2_3d);
+        EXPECT_REAL_EQ_TOL(sigma2_rot, sigma2_3d, test::defaultRealTolerance());
     }
 
     GMX_RELEASE_ASSERT(numPointsBeforeMax >= 20 && numPointsAfterMax >= 20, "This test only provides full coverage when we test a sufficient number of points before and after the location of the maximum value for the exact formula.");
