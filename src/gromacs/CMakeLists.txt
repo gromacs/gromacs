@@ -232,3 +232,7 @@ if(GMX_USE_OPENCL)
     install(FILES ${OPENCL_KERNELS} DESTINATION
         ${OCL_INSTALL_DIR} COMPONENT libraries)
 endif()
+
+if (BUILD_TESTING)
+    add_subdirectory(compat/tests)
+endif()
