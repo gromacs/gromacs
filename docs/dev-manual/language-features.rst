@@ -16,3 +16,13 @@ these standards fully.
   compilers that have full support for C++11.
 
 .. TODO: Copy important points from http://www.gromacs.org/index.php?title=Developer_Zone/Programming_Guide/Allowed_C%2B%2B_Features
+
+C++ Standard Library
+--------------------
+
+|Gromacs| code must support the lowest common denomenator of C++11 standard library
+features available on supported platforms.
+Some modern features are useful enough to warrant back-porting.
+Consistent and forward-compatible headers are provided in ``src/gromacs/compat/``
+as described in the `Library documentation <../doxygen/html-lib/group__group__compatibility.xhtml>`_
+
