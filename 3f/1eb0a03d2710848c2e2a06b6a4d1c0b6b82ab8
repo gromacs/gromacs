@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Maxim Igaev <maxim.igaev@gmail.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Sat, 17 Jun 2017 23:47:37 +0200
+Reviewed-on: https://gerrit.gromacs.org/6707
+Project: gromacs
+Branch: refs/heads/release-2016
