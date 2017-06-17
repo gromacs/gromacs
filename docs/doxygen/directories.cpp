@@ -51,6 +51,13 @@ Doxygen documentation file for directories in the source tree.
 \ingroup module_commandline
  */
 
+/*!
+\dir src/gromacs/compat
+\brief \ref module_compatibility
+
+\ingroup module_compatibility
+ */
+
 /*! \libinternal
 \dir src/gromacs/onlinehelp
 \brief \ref module_onlinehelp
