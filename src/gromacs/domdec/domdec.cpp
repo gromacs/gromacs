@@ -6724,14 +6724,15 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
         cellsize_min = std::min(cellsize_min, comm->cellsize_min[dd->dim[d]]);
     }
 
+    /* Turn off DLB if we're too close to the cell size limit. */
     if (cellsize_min < comm->cellsize_limit*1.05)
     {
-        char buf[STRLEN];
-        sprintf(buf, "step %" GMX_PRId64 " Measured %.1f %% performance load due to load imbalance, but the minimum cell size is smaller than 1.05 times the cell size limit. Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
+        auto str = gmx::formatString("step %" GMX_PRId64 " Measured %.1f %% performance loss due to load imbalance, "
+                                     "but the minimum cell size is smaller than 1.05 times the cell size limit."
+                                     "Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
+        dd_warning(cr, fp, str.c_str());
 
-        /* Change DLB from "auto" to "no". */
         comm->dlbState = edlbsOffForever;
-
         return;
     }
 
