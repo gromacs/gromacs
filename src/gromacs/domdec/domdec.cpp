@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -6725,6 +6725,7 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
     {
         char buf[STRLEN];
         sprintf(buf, "step %" GMX_PRId64 " Measured %.1f %% performance load due to load imbalance, but the minimum cell size is smaller than 1.05 times the cell size limit. Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
+        dd_warning(cr, fplog, buf);
 
         /* Change DLB from "auto" to "no". */
         comm->dlbState = edlbsOffForever;
