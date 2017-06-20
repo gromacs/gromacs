@@ -888,4 +888,41 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     return 0;
 }
 
+/*! \brief Do test particle insertion.
+ *
+ * \param params parameter container object.
+ */
+double do_tpi(const IntegratorParams &params)
+{
+    return do_tpi(params.fpLog(),
+                  params.commRec(),
+                  params.mdLog(),
+                  params.nFile(),
+                  params.fnm(),
+                  params.oenv(),
+                  params.verbose(),
+                  params.nstGlobalComm(),
+                  params.vSite(),
+                  params.constraints(),
+                  params.stepOut(),
+                  params.outputProvider(),
+                  params.inputRec(),
+                  params.topGlobal(),
+                  params.fcd(),
+                  params.stateGlobal(),
+                  params.observablesHistory(),
+                  params.mdAtoms(),
+                  params.nrnb(),
+                  params.wCycle(),
+                  params.forceRec(),
+                  params.replExParams(),
+                  params.membed(),
+                  params.cptPeriod(),
+                  params.maxHours(),
+                  params.imdPort(),
+                  params.flags(),
+                  params.walltimeAccounting()
+                  );
+};
+
 } // namespace gmx
