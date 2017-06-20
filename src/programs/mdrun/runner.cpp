@@ -1379,21 +1379,26 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
         }
 
-        /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
-                                     oenv, bVerbose,
-                                     nstglobalcomm,
-                                     vsite, constr,
-                                     nstepout, mdModules.outputProvider(),
-                                     inputrec, mtop,
-                                     fcd, state, &observablesHistory,
-                                     mdatoms, nrnb, wcycle, fr,
-                                     replExParams,
-                                     membed,
-                                     cpt_period, max_hours,
-                                     imdport,
-                                     Flags,
-                                     walltime_accounting);
+        {       // scope to force destructor of md_params_t to avoid lifetime ambiguities.
+            const IntegratorParams my_integrator_args {
+                fplog, cr, mdlog, nfile, fnm,
+                oenv, bVerbose,
+                nstglobalcomm,
+                vsite, constr,
+                nstepout, mdModules.outputProvider(),
+                inputrec, mtop,
+                fcd, state, &observablesHistory,
+                mdatoms, nrnb, wcycle, fr,
+                replExParams,
+                membed,
+                cpt_period, max_hours,
+                imdport,
+                Flags,
+                walltime_accounting
+            };
+            /* Now do whatever the user wants us to do (how flexible...) */
+            my_integrator(inputrec->eI) (my_integrator_args);
+        };
 
         if (inputrec->bRot)
         {
