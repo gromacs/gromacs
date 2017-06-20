@@ -1612,8 +1612,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
-}   /* That's all folks */
-
+};   /* That's all folks */
 
 /*! \brief Do L-BFGS conjugate gradients minimization
     \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
@@ -2386,7 +2385,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
-}   /* That's all folks */
+};   /* That's all folks */
 
 /*! \brief Do steepest descents minimization
     \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
@@ -2656,7 +2655,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     walltime_accounting_set_nsteps_done(walltime_accounting, count);
 
     return 0;
-}   /* That's all folks */
+};   /* That's all folks */
 
 /*! \brief Do normal modes analysis
     \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
@@ -2985,6 +2984,140 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     walltime_accounting_set_nsteps_done(walltime_accounting, atom_index.size()*2);
 
     return 0;
-}
+};
+
+double do_lbfgs(const IntegratorParams &params)
+{
+    return do_lbfgs(params.fpLog(),
+                    params.commRec(),
+                    params.mdLog(),
+                    params.nFile(),
+                    params.fnm(),
+                    params.oenv(),
+                    params.verbose(),
+                    params.nstGlobalComm(),
+                    params.vSite(),
+                    params.constraints(),
+                    params.stepOut(),
+                    params.outputProvider(),
+                    params.inputRec(),
+                    params.topGlobal(),
+                    params.fcd(),
+                    params.stateGlobal(),
+                    params.observablesHistory(),
+                    params.mdAtoms(),
+                    params.nrnb(),
+                    params.wCycle(),
+                    params.forceRec(),
+                    params.replExParams(),
+                    params.membed(),
+                    params.cptPeriod(),
+                    params.maxHours(),
+                    params.imdPort(),
+                    params.flags(),
+                    params.walltimeAccounting()
+                    );
+};
+
+/*! \brief Do conjugate gradients minimization
+ */
+double do_cg(const IntegratorParams &params)
+{
+    return do_cg(params.fpLog(),
+                 params.commRec(),
+                 params.mdLog(),
+                 params.nFile(),
+                 params.fnm(),
+                 params.oenv(),
+                 params.verbose(),
+                 params.nstGlobalComm(),
+                 params.vSite(),
+                 params.constraints(),
+                 params.stepOut(),
+                 params.outputProvider(),
+                 params.inputRec(),
+                 params.topGlobal(),
+                 params.fcd(),
+                 params.stateGlobal(),
+                 params.observablesHistory(),
+                 params.mdAtoms(),
+                 params.nrnb(),
+                 params.wCycle(),
+                 params.forceRec(),
+                 params.replExParams(),
+                 params.membed(),
+                 params.cptPeriod(),
+                 params.maxHours(),
+                 params.imdPort(),
+                 params.flags(),
+                 params.walltimeAccounting()
+                 );
+};
+
+double do_nm(const IntegratorParams &params)
+{
+    return do_nm(params.fpLog(),
+                 params.commRec(),
+                 params.mdLog(),
+                 params.nFile(),
+                 params.fnm(),
+                 params.oenv(),
+                 params.verbose(),
+                 params.nstGlobalComm(),
+                 params.vSite(),
+                 params.constraints(),
+                 params.stepOut(),
+                 params.outputProvider(),
+                 params.inputRec(),
+                 params.topGlobal(),
+                 params.fcd(),
+                 params.stateGlobal(),
+                 params.observablesHistory(),
+                 params.mdAtoms(),
+                 params.nrnb(),
+                 params.wCycle(),
+                 params.forceRec(),
+                 params.replExParams(),
+                 params.membed(),
+                 params.cptPeriod(),
+                 params.maxHours(),
+                 params.imdPort(),
+                 params.flags(),
+                 params.walltimeAccounting()
+                 );
+};
+
+double do_steep(const IntegratorParams &params)
+{
+    return do_steep(params.fpLog(),
+                    params.commRec(),
+                    params.mdLog(),
+                    params.nFile(),
+                    params.fnm(),
+                    params.oenv(),
+                    params.verbose(),
+                    params.nstGlobalComm(),
+                    params.vSite(),
+                    params.constraints(),
+                    params.stepOut(),
+                    params.outputProvider(),
+                    params.inputRec(),
+                    params.topGlobal(),
+                    params.fcd(),
+                    params.stateGlobal(),
+                    params.observablesHistory(),
+                    params.mdAtoms(),
+                    params.nrnb(),
+                    params.wCycle(),
+                    params.forceRec(),
+                    params.replExParams(),
+                    params.membed(),
+                    params.cptPeriod(),
+                    params.maxHours(),
+                    params.imdPort(),
+                    params.flags(),
+                    params.walltimeAccounting()
+                    );
+};
 
 } // namespace gmx
