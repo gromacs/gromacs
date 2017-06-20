@@ -43,6 +43,7 @@
 #define GMX_MDLIB_RUNNER_H
 
 #include <cstdio>
+#include <memory>
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
@@ -125,18 +126,18 @@ struct mdrunner_arglist
 namespace gmx
 {
 
-mdrunner_arglist make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
-                                       FILE *fplog, struct t_commrec *cr, int nfile,
-                                       const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                       int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
-                                       real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
-                                       const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                       const char *nbpu_opt, int nstlist_cmdline,
-                                       gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-                                       int nmultisim,
-                                       const ReplicaExchangeParameters &replExParams,
-                                       real pforce, real cpt_period, real max_hours,
-                                       int imdport, unsigned long Flags);
+std::unique_ptr<mdrunner_arglist> make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
+                                                        FILE *fplog, struct t_commrec *cr, int nfile,
+                                                        const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                                                        int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
+                                                        real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+                                                        const char *ddcsx, const char *ddcsy, const char *ddcsz,
+                                                        const char *nbpu_opt, int nstlist_cmdline,
+                                                        gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+                                                        int nmultisim,
+                                                        const ReplicaExchangeParameters &replExParams,
+                                                        real pforce, real cpt_period, real max_hours,
+                                                        int imdport, unsigned long Flags);
 
 /*! \brief Driver routine, that calls the different methods
  */
