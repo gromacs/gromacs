@@ -139,40 +139,73 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #define MIN_ATOMS_PER_MPI_THREAD    90
 #define MIN_ATOMS_PER_GPU           900
 
-struct mdrunner_arglist
+namespace gmx
 {
-    gmx_hw_opt_t                     hw_opt;
-    FILE                            *fplog;
-    t_commrec                       *cr;
-    int                              nfile;
-    const t_filenm                  *fnm;
-    const gmx_output_env_t          *oenv;
-    gmx_bool                         bVerbose;
-    int                              nstglobalcomm;
-    ivec                             ddxyz;
-    int                              dd_rank_order;
-    int                              npme;
-    real                             rdd;
-    real                             rconstr;
-    const char                      *dddlb_opt;
-    real                             dlb_scale;
-    const char                      *ddcsx;
-    const char                      *ddcsy;
-    const char                      *ddcsz;
-    const char                      *nbpu_opt;
-    int                              nstlist_cmdline;
-    gmx_int64_t                      nsteps_cmdline;
-    int                              nstepout;
-    int                              resetstep;
-    int                              nmultisim;
-    const ReplicaExchangeParameters *replExParams;
-    real                             pforce;
-    real                             cpt_period;
-    real                             max_hours;
-    int                              imdport;
-    unsigned long                    Flags;
+// Declare implementation of the runner.
+int mdrunner(gmx_hw_opt_t *hw_opt,
+             FILE *fplog, t_commrec *cr, int nfile,
+             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+             int nstglobalcomm,
+             ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
+             const char *dddlb_opt, real dlb_scale,
+             const char *ddcsx, const char *ddcsy, const char *ddcsz,
+             const char *nbpu_opt, int nstlist_cmdline,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+             int gmx_unused nmultisim,
+             const ReplicaExchangeParameters &replExParams,
+             real pforce, real cpt_period, real max_hours,
+             int imdport, unsigned long Flags);
+
+mdrunner_arglist make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
+                                       FILE *fplog, struct t_commrec *cr, int nfile,
+                                       const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                                       int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
+                                       real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+                                       const char *ddcsx, const char *ddcsy, const char *ddcsz,
+                                       const char *nbpu_opt, int nstlist_cmdline,
+                                       gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+                                       int nmultisim,
+                                       const ReplicaExchangeParameters &replExParams,
+                                       real pforce, real cpt_period, real max_hours,
+                                       int imdport, unsigned long Flags)
+{
+    mdrunner_arglist retval;   // Create object to be returned.
+    retval.hw_opt          = *hw_opt;
+    retval.fplog           = fplog;
+    retval.cr              = cr;
+    retval.nfile           = nfile;
+    retval.fnm             = fnm;
+    retval.oenv            = oenv;
+    retval.bVerbose        = bVerbose;
+    retval.nstglobalcomm   = nstglobalcomm;
+    retval.ddxyz[XX]       = ddxyz[XX];
+    retval.ddxyz[YY]       = ddxyz[YY];
+    retval.ddxyz[ZZ]       = ddxyz[ZZ];
+    retval.dd_rank_order   = dd_rank_order;
+    retval.npme            = npme;
+    retval.rdd             = rdd;
+    retval.rconstr         = rconstr;
+    retval.dddlb_opt       = dddlb_opt;
+    retval.dlb_scale       = dlb_scale;
+    retval.ddcsx           = ddcsx;
+    retval.ddcsy           = ddcsy;
+    retval.ddcsz           = ddcsz;
+    retval.nbpu_opt        = nbpu_opt;
+    retval.nstlist_cmdline = nstlist_cmdline;
+    retval.nsteps_cmdline  = nsteps_cmdline;
+    retval.nstepout        = nstepout;
+    retval.resetstep       = resetstep;
+    retval.nmultisim       = nmultisim;
+    retval.replExParams    = &replExParams;
+    retval.pforce          = pforce;
+    retval.cpt_period      = cpt_period;
+    retval.max_hours       = max_hours;
+    retval.imdport         = imdport;
+    retval.Flags           = Flags;
+    return retval;
 };
 
+} // end namespace gmx
 
 /* The function used for spawning threads. Extracts the mdrunner()
    arguments from its one argument and calls mdrunner(), after making
@@ -1462,6 +1495,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
     return rc;
+};
+
+int mdrunner(mdrunner_arglist args)
+{
+    return gmx::mdrunner(&args.hw_opt, args.fplog, args.cr, args.nfile, args.fnm, args.oenv,
+                         args.bVerbose, args.nstglobalcomm,
+                         args.ddxyz, args.dd_rank_order, args.npme, args.rdd,
+                         args.rconstr, args.dddlb_opt, args.dlb_scale,
+                         args.ddcsx, args.ddcsy, args.ddcsz,
+                         args.nbpu_opt, args.nstlist_cmdline,
+                         args.nsteps_cmdline, args.nstepout, args.resetstep,
+                         args.nmultisim, *args.replExParams, args.pforce,
+                         args.cpt_period, args.max_hours, args.imdport, args.Flags);
 }
 
 } // namespace gmx
