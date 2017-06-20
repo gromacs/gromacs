@@ -132,47 +132,91 @@ matrix              deform_init_box_tpx;
 //! MPI variable for use in pressure scaling
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
+
+namespace gmx
+{
+
+// Declare overload of the mdrunner() defined in the header file. Documented
+// at the definition below.
+/*! \internal
+ * \brief Declare implementation of the runner.
+ */
+int mdrunner(gmx_hw_opt_t *hw_opt,
+             FILE *fplog, t_commrec *cr, int nfile,
+             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+             int nstglobalcomm,
+             ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
+             const char *dddlb_opt, real dlb_scale,
+             const char *ddcsx, const char *ddcsy, const char *ddcsz,
+             const char *nbpu_opt, int nstlist_cmdline,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+             int gmx_unused nmultisim,
+             const ReplicaExchangeParameters &replExParams,
+             real pforce, real cpt_period, real max_hours,
+             int imdport, unsigned long Flags);
+
+// Already documented in header.
+/*! \internal
+ * \brief Make parameter structure for driver routine.
+ */
+mdrunner_arglist make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
+                                       FILE *fplog, t_commrec *cr, int nfile,
+                                       const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                                       int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
+                                       real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+                                       const char *ddcsx, const char *ddcsy, const char *ddcsz,
+                                       const char *nbpu_opt, int nstlist_cmdline,
+                                       gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+                                       int nmultisim,
+                                       const ReplicaExchangeParameters &replExParams,
+                                       real pforce, real cpt_period, real max_hours,
+                                       int imdport, unsigned long Flags)
+{
+    mdrunner_arglist retval;   // Create object to be returned.
+    retval.hw_opt          = *hw_opt;
+    retval.fplog           = fplog;
+    retval.cr              = cr;
+    retval.nfile           = nfile;
+    retval.fnm             = fnm;
+    retval.oenv            = oenv;
+    retval.bVerbose        = bVerbose;
+    retval.nstglobalcomm   = nstglobalcomm;
+    retval.ddxyz[XX]       = ddxyz[XX];
+    retval.ddxyz[YY]       = ddxyz[YY];
+    retval.ddxyz[ZZ]       = ddxyz[ZZ];
+    retval.dd_rank_order   = dd_rank_order;
+    retval.npme            = npme;
+    retval.rdd             = rdd;
+    retval.rconstr         = rconstr;
+    retval.dddlb_opt       = dddlb_opt;
+    retval.dlb_scale       = dlb_scale;
+    retval.ddcsx           = ddcsx;
+    retval.ddcsy           = ddcsy;
+    retval.ddcsz           = ddcsz;
+    retval.nbpu_opt        = nbpu_opt;
+    retval.nstlist_cmdline = nstlist_cmdline;
+    retval.nsteps_cmdline  = nsteps_cmdline;
+    retval.nstepout        = nstepout;
+    retval.resetstep       = resetstep;
+    retval.nmultisim       = nmultisim;
+    retval.replExParams    = &replExParams;
+    retval.pforce          = pforce;
+    retval.cpt_period      = cpt_period;
+    retval.max_hours       = max_hours;
+    retval.imdport         = imdport;
+    retval.Flags           = Flags;
+    return retval;
+}
+
+} // end namespace gmx
+
+
 #if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */
 #define MIN_ATOMS_PER_MPI_THREAD    90
 #define MIN_ATOMS_PER_GPU           900
-
-struct mdrunner_arglist
-{
-    gmx_hw_opt_t                     hw_opt;
-    FILE                            *fplog;
-    t_commrec                       *cr;
-    int                              nfile;
-    const t_filenm                  *fnm;
-    const gmx_output_env_t          *oenv;
-    gmx_bool                         bVerbose;
-    int                              nstglobalcomm;
-    ivec                             ddxyz;
-    int                              dd_rank_order;
-    int                              npme;
-    real                             rdd;
-    real                             rconstr;
-    const char                      *dddlb_opt;
-    real                             dlb_scale;
-    const char                      *ddcsx;
-    const char                      *ddcsy;
-    const char                      *ddcsz;
-    const char                      *nbpu_opt;
-    int                              nstlist_cmdline;
-    gmx_int64_t                      nsteps_cmdline;
-    int                              nstepout;
-    int                              resetstep;
-    int                              nmultisim;
-    const ReplicaExchangeParameters *replExParams;
-    real                             pforce;
-    real                             cpt_period;
-    real                             max_hours;
-    int                              imdport;
-    unsigned long                    Flags;
-};
-
 
 /* The function used for spawning threads. Extracts the mdrunner()
    arguments from its one argument and calls mdrunner(), after making
@@ -692,6 +736,42 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
+/*! \cond internal
+ *
+ * \brief Implementation of the runner. Overloads declared function in header file.
+ *
+ * \param[in] hw_opt   Hardware detection structure
+ * \param[in] fplog    File pointer for log file
+ * \param[in] cr       Communication data
+ * \param[in] nfile    Number of files
+ * \param[in] fnm      Array of filenames and file properties
+ * \param[in] oenv     Output variables for storing xvg files etc.
+ * \param[in] bVerbose Verbose output or not
+ * \param[in] nstglobalcomm Number of steps between global communication
+ * \param[in] ddxyz    Division of sub-boxes over processors for
+ *                     use in domain decomposition parallellization
+ * \param[in] dd_rank_order Ordering of the PP and PME ranks
+ * \param[in] npme     The number of separate PME ranks requested, -1 = auto
+ * \param[in] rdd      The maximum distance for bonded interactions with DD (nm)
+ * \param[in] rconstr  Maximum distance for P-LINCS (nm)
+ * \param[in] dddlb_opt File name for debugging
+ * \param[in] dlb_scale File name for debugging
+ * \param[in] ddcsx     File name for debugging
+ * \param[in] ddcsy     File name for debugging
+ * \param[in] ddcsz     File name for debugging
+ * \param[in] nbpu_opt  Type of nonbonded processing unit
+ * \param[in] nstlist_cmdline  Override neighbor search frequency
+ * \param[in] nsteps_cmdline   Override number of simulation steps
+ * \param[in] nstepout     How often to write to the console
+ * \param[in] resetstep    Reset the step counter
+ * \param[in] nmultisim    Number of parallel simulations to run
+ * \param[in] replExParams Parameters for the replica exchange algorithm
+ * \param[in] pforce       Minimum force for printing (for debugging)
+ * \param[in] cpt_period    How often to checkpoint the simulation
+ * \param[in] max_hours     Maximume length of the simulation (wall time)
+ * \param[in] imdport       Interactive MD port (socket)
+ * \param[in] Flags         More command line options
+ */
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -1464,6 +1544,22 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
     return rc;
+};
+/// \endcond
+
+/// \cond internal
+int mdrunner(mdrunner_arglist args)
+{
+    return gmx::mdrunner(&args.hw_opt, args.fplog, args.cr, args.nfile, args.fnm, args.oenv,
+                         args.bVerbose, args.nstglobalcomm,
+                         args.ddxyz, args.dd_rank_order, args.npme, args.rdd,
+                         args.rconstr, args.dddlb_opt, args.dlb_scale,
+                         args.ddcsx, args.ddcsy, args.ddcsz,
+                         args.nbpu_opt, args.nstlist_cmdline,
+                         args.nsteps_cmdline, args.nstepout, args.resetstep,
+                         args.nmultisim, *args.replExParams, args.pforce,
+                         args.cpt_period, args.max_hours, args.imdport, args.Flags);
 }
+/// \endcond
 
 } // namespace gmx
