@@ -54,10 +54,52 @@ struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_filenm;
 
+/*! \internal
+ * \brief Parameter structure for driver routine.
+ *
+ * See make_mdrunner_arglist()
+ */
+struct mdrunner_arglist
+{
+    /// \cond
+    gmx_hw_opt_t                     hw_opt;
+    FILE                            *fplog;
+    t_commrec                       *cr;
+    int                              nfile;
+    const t_filenm                  *fnm;
+    const gmx_output_env_t          *oenv;
+    gmx_bool                         bVerbose;
+    int                              nstglobalcomm;
+    ivec                             ddxyz;
+    int                              dd_rank_order;
+    int                              npme;
+    real                             rdd;
+    real                             rconstr;
+    const char                      *dddlb_opt;
+    real                             dlb_scale;
+    const char                      *ddcsx;
+    const char                      *ddcsy;
+    const char                      *ddcsz;
+    const char                      *nbpu_opt;
+    int                              nstlist_cmdline;
+    gmx_int64_t                      nsteps_cmdline;
+    int                              nstepout;
+    int                              resetstep;
+    int                              nmultisim;
+    const ReplicaExchangeParameters *replExParams;
+    real                             pforce;
+    real                             cpt_period;
+    real                             max_hours;
+    int                              imdport;
+    unsigned long                    Flags;
+    /// \endcond
+};
+
 namespace gmx
 {
 
-/*! \brief Driver routine, that calls the different methods
+/*! \cond internal
+ * \brief Make parameter structure for driver routine.
  *
  * \param[in] hw_opt   Hardware detection structure
  * \param[in] fplog    File pointer for log file
@@ -91,19 +133,25 @@ namespace gmx
  * \param[in] imdport       Interactive MD port (socket)
  * \param[in] Flags         More command line options
  */
-int mdrunner(gmx_hw_opt_t *hw_opt,
-             FILE *fplog, struct t_commrec *cr, int nfile,
-             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
-             real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
-             const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
-             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-             int nmultisim,
-             const ReplicaExchangeParameters &replExParams,
-             real pforce, real cpt_period, real max_hours,
-             int imdport, unsigned long Flags);
+mdrunner_arglist make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
+                                       FILE *fplog, t_commrec *cr, int nfile,
+                                       const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                                       int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
+                                       real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+                                       const char *ddcsx, const char *ddcsy, const char *ddcsz,
+                                       const char *nbpu_opt, int nstlist_cmdline,
+                                       gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+                                       int nmultisim,
+                                       const ReplicaExchangeParameters &replExParams,
+                                       real pforce, real cpt_period, real max_hours,
+                                       int imdport, unsigned long Flags);
+/// \endcond
 
+/*! \cond internal
+ * \brief Driver routine, that calls the different methods
+ */
+int mdrunner(mdrunner_arglist args);
+/// \endcond
 
 }      // namespace gmx
 
