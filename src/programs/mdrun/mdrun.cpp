@@ -560,14 +560,14 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
-                       nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
-                       dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                       nbpu_opt[0], nstlist,
-                       nsteps, nstepout, resetstep,
-                       nmultisim, replExParams,
-                       pforce, cpt_period, max_hours, imdport, Flags);
-
+    auto args = gmx::make_mdrunner_arglist(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
+                                           nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
+                                           dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
+                                           nbpu_opt[0], nstlist,
+                                           nsteps, nstepout, resetstep,
+                                           nmultisim, replExParams,
+                                           pforce, cpt_period, max_hours, imdport, Flags);
+    rc = gmx::mdrunner(args);
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
     if (MASTER(cr) && !bDoAppendFiles)
