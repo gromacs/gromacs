@@ -964,26 +964,26 @@ namespace gmx
 {
 
 /*! \brief Do conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                           int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           int nstglobalcomm,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
-                           int stepout,
-                           gmx::IMDOutputProvider *outputProvider,
-                           t_inputrec *inputrec,
-                           gmx_mtop_t *top_global, t_fcdata *fcd,
-                           t_state *state_global,
-                           t_mdatoms *mdatoms,
-                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           gmx_edsam_t ed,
-                           t_forcerec *fr,
-                           const ReplicaExchangeParameters &replExParams,
-                           gmx_membed_t gmx_unused *membed,
-                           real cpt_period, real max_hours,
-                           int imdport,
-                           unsigned long Flags,
-                           gmx_walltime_accounting_t walltime_accounting)
+    \copydoc gmx::IntegratorParams::IntegratorParams(FILE *fplog, t_commrec *commrec, const gmx::MDLogger &mdlog,
+                     int nfile, const t_filenm* fnm,
+                     const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                     int nstglobalcomm,
+                     gmx_vsite_t *vsite, gmx_constr_t constr,
+                     int stepout,
+                     gmx::IMDOutputProvider *outputProvider,
+                     t_inputrec *inputrec,
+                     gmx_mtop_t *top_global, t_fcdata *fcd,
+                     t_state *state_global,
+                     ObservablesHistory *observablesHistory,
+                     t_mdatoms *mdatoms,
+                     t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     t_forcerec *fr,
+                     const ReplicaExchangeParameters &replExParams,
+                     gmx_membed_t gmx_unused * membed,
+                     real cpt_period, real max_hours,
+                     int imdport,
+                     unsigned long Flags,
+                     gmx_walltime_accounting_t walltime_accounting)
  */
 double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
              int nfile, const t_filenm fnm[],
@@ -1612,30 +1612,30 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
-}   /* That's all folks */
-
+};   /* That's all folks */
 
 /*! \brief Do L-BFGS conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                          int nfile, const t_filenm fnm[],
-                          const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          int nstglobalcomm,
-                          gmx_vsite_t *vsite, gmx_constr_t constr,
-                          int stepout,
-                          gmx::IMDOutputProvider *outputProvider,
-                          t_inputrec *inputrec,
-                          gmx_mtop_t *top_global, t_fcdata *fcd,
-                          t_state *state_global,
-                          t_mdatoms *mdatoms,
-                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                          gmx_edsam_t ed,
-                          t_forcerec *fr,
-                          const ReplicaExchangeParameters &replExParams,
-                          gmx_membed_t gmx_unused *membed,
-                          real cpt_period, real max_hours,
-                          int imdport,
-                          unsigned long Flags,
-                          gmx_walltime_accounting_t walltime_accounting)
+ *
+ * \copydetails gmx::IntegratorParams::IntegratorParams(FILE *fplog, t_commrec *commrec, const gmx::MDLogger &mdlog,
+                     int nfile, const t_filenm* fnm,
+                     const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                     int nstglobalcomm,
+                     gmx_vsite_t *vsite, gmx_constr_t constr,
+                     int stepout,
+                     gmx::IMDOutputProvider *outputProvider,
+                     t_inputrec *inputrec,
+                     gmx_mtop_t *top_global, t_fcdata *fcd,
+                     t_state *state_global,
+                     ObservablesHistory *observablesHistory,
+                     t_mdatoms *mdatoms,
+                     t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     t_forcerec *fr,
+                     const ReplicaExchangeParameters &replExParams,
+                     gmx_membed_t gmx_unused * membed,
+                     real cpt_period, real max_hours,
+                     int imdport,
+                     unsigned long Flags,
+                     gmx_walltime_accounting_t walltime_accounting)
  */
 double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 int nfile, const t_filenm fnm[],
@@ -2386,28 +2386,30 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
-}   /* That's all folks */
+};   /* That's all folks */
 
 /*! \brief Do steepest descents minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                          int nfile, const t_filenm fnm[],
-                          const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          int nstglobalcomm,
-                          gmx_vsite_t *vsite, gmx_constr_t constr,
-                          int stepout,
-                          gmx::IMDOutputProvider *outputProvider,
-                          t_inputrec *inputrec,
-                          gmx_mtop_t *top_global, t_fcdata *fcd,
-                          t_state *state_global,
-                          t_mdatoms *mdatoms,
-                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                          gmx_edsam_t ed,
-                          t_forcerec *fr,
-                          const ReplicaExchangeParameters &replExParams,
-                          real cpt_period, real max_hours,
-                          int imdport,
-                          unsigned long Flags,
-                          gmx_walltime_accounting_t walltime_accounting)
+ *
+ * \copydetails gmx::IntegratorParams::IntegratorParams(FILE *fplog, t_commrec *commrec, const gmx::MDLogger &mdlog,
+                 int nfile, const t_filenm* fnm,
+                 const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                 int nstglobalcomm,
+                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                 int stepout,
+                 gmx::IMDOutputProvider *outputProvider,
+                 t_inputrec *inputrec,
+                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                 t_state *state_global,
+                 ObservablesHistory *observablesHistory,
+                 t_mdatoms *mdatoms,
+                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                 t_forcerec *fr,
+                 const ReplicaExchangeParameters &replExParams,
+                 gmx_membed_t gmx_unused * membed,
+                 real cpt_period, real max_hours,
+                 int imdport,
+                 unsigned long Flags,
+                 gmx_walltime_accounting_t walltime_accounting)
  */
 double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 int nfile, const t_filenm fnm[],
@@ -2656,28 +2658,29 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     walltime_accounting_set_nsteps_done(walltime_accounting, count);
 
     return 0;
-}   /* That's all folks */
+};   /* That's all folks */
 
 /*! \brief Do normal modes analysis
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                          int nfile, const t_filenm fnm[],
-                          const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          int nstglobalcomm,
-                          gmx_vsite_t *vsite, gmx_constr_t constr,
-                          int stepout,
-                          gmx::IMDOutputProvider *outputProvider,
-                          t_inputrec *inputrec,
-                          gmx_mtop_t *top_global, t_fcdata *fcd,
-                          t_state *state_global,
-                          t_mdatoms *mdatoms,
-                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                          gmx_edsam_t ed,
-                          t_forcerec *fr,
-                          const ReplicaExchangeParameters &replExParams,
-                          real cpt_period, real max_hours,
-                          int imdport,
-                          unsigned long Flags,
-                          gmx_walltime_accounting_t walltime_accounting)
+   \copydoc gmx::IntegratorParams::IntegratorParams(FILE *fplog, t_commrec *commrec, const gmx::MDLogger &mdlog,
+                 int nfile, const t_filenm* fnm,
+                 const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                 int nstglobalcomm,
+                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                 int stepout,
+                 gmx::IMDOutputProvider *outputProvider,
+                 t_inputrec *inputrec,
+                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                 t_state *state_global,
+                 ObservablesHistory *observablesHistory,
+                 t_mdatoms *mdatoms,
+                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                 t_forcerec *fr,
+                 const ReplicaExchangeParameters &replExParams,
+                 gmx_membed_t gmx_unused * membed,
+                 real cpt_period, real max_hours,
+                 int imdport,
+                 unsigned long Flags,
+                 gmx_walltime_accounting_t walltime_accounting)
  */
 double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              int nfile, const t_filenm fnm[],
@@ -2985,6 +2988,154 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     walltime_accounting_set_nsteps_done(walltime_accounting, atom_index.size()*2);
 
     return 0;
-}
+};
+
+/*! \brief Do L-BFGS conjugate gradients minimization
+ *
+ * \param params parameter container object.
+ */
+double do_lbfgs(const IntegratorParams &params)
+{
+    return do_lbfgs(params.fpLog(),
+                    params.commRec(),
+                    params.mdLog(),
+                    params.nFile(),
+                    params.fnm(),
+                    params.oenv(),
+                    params.verbose(),
+                    params.nstGlobalComm(),
+                    params.vSite(),
+                    params.constraints(),
+                    params.stepOut(),
+                    params.outputProvider(),
+                    params.inputRec(),
+                    params.topGlobal(),
+                    params.fcd(),
+                    params.stateGlobal(),
+                    params.observablesHistory(),
+                    params.mdAtoms(),
+                    params.nrnb(),
+                    params.wCycle(),
+                    params.forceRec(),
+                    params.replExParams(),
+                    params.membed(),
+                    params.cptPeriod(),
+                    params.maxHours(),
+                    params.imdPort(),
+                    params.flags(),
+                    params.walltimeAccounting()
+                    );
+};
+
+/*! \brief Do conjugate gradients minimization
+ *
+ * \param params parameter container object.
+ */
+double do_cg(const IntegratorParams &params)
+{
+    return do_cg(params.fpLog(),
+                 params.commRec(),
+                 params.mdLog(),
+                 params.nFile(),
+                 params.fnm(),
+                 params.oenv(),
+                 params.verbose(),
+                 params.nstGlobalComm(),
+                 params.vSite(),
+                 params.constraints(),
+                 params.stepOut(),
+                 params.outputProvider(),
+                 params.inputRec(),
+                 params.topGlobal(),
+                 params.fcd(),
+                 params.stateGlobal(),
+                 params.observablesHistory(),
+                 params.mdAtoms(),
+                 params.nrnb(),
+                 params.wCycle(),
+                 params.forceRec(),
+                 params.replExParams(),
+                 params.membed(),
+                 params.cptPeriod(),
+                 params.maxHours(),
+                 params.imdPort(),
+                 params.flags(),
+                 params.walltimeAccounting()
+                 );
+};
+
+/*! \brief Do normal modes analysis
+ *
+ * \param params parameter container object.
+ */
+double do_nm(const IntegratorParams &params)
+{
+    return do_nm(params.fpLog(),
+                 params.commRec(),
+                 params.mdLog(),
+                 params.nFile(),
+                 params.fnm(),
+                 params.oenv(),
+                 params.verbose(),
+                 params.nstGlobalComm(),
+                 params.vSite(),
+                 params.constraints(),
+                 params.stepOut(),
+                 params.outputProvider(),
+                 params.inputRec(),
+                 params.topGlobal(),
+                 params.fcd(),
+                 params.stateGlobal(),
+                 params.observablesHistory(),
+                 params.mdAtoms(),
+                 params.nrnb(),
+                 params.wCycle(),
+                 params.forceRec(),
+                 params.replExParams(),
+                 params.membed(),
+                 params.cptPeriod(),
+                 params.maxHours(),
+                 params.imdPort(),
+                 params.flags(),
+                 params.walltimeAccounting()
+                 );
+};
+
+/*! \brief Do steepest descents minimization
+ *
+ * \param params parameter container object.
+ */
+double do_steep(const IntegratorParams &params)
+{
+    return do_steep(params.fpLog(),
+                    params.commRec(),
+                    params.mdLog(),
+                    params.nFile(),
+                    params.fnm(),
+                    params.oenv(),
+                    params.verbose(),
+                    params.nstGlobalComm(),
+                    params.vSite(),
+                    params.constraints(),
+                    params.stepOut(),
+                    params.outputProvider(),
+                    params.inputRec(),
+                    params.topGlobal(),
+                    params.fcd(),
+                    params.stateGlobal(),
+                    params.observablesHistory(),
+                    params.mdAtoms(),
+                    params.nrnb(),
+                    params.wCycle(),
+                    params.forceRec(),
+                    params.replExParams(),
+                    params.membed(),
+                    params.cptPeriod(),
+                    params.maxHours(),
+                    params.imdPort(),
+                    params.flags(),
+                    params.walltimeAccounting()
+                    );
+};
 
 } // namespace gmx

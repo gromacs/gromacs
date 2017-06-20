@@ -127,25 +127,26 @@ namespace gmx
 {
 
 /*! \brief Do test particle insertion.
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                           int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           int nstglobalcomm,
-                           gmx_vsite_t *vsite, gmx_constr_t constr,
-                           int stepout,
-                           gmx::IMDOutputProvider *outputProvider,
-                           t_inputrec *inputrec,
-                           gmx_mtop_t *top_global, t_fcdata *fcd,
-                           t_state *state_global,
-                           t_mdatoms *mdatoms,
-                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           gmx_edsam_t ed,
-                           t_forcerec *fr,
-                           const ReplicaExchangeParameters &replExParams,
-                           real cpt_period, real max_hours,
-                           int imdport,
-                           unsigned long Flags,
-                           gmx_walltime_accounting_t walltime_accounting)
+   \copydoc gmx::IntegratorParams::IntegratorParams(FILE *fplog, t_commrec *commrec, const gmx::MDLogger &mdlog,
+                 int nfile, const t_filenm* fnm,
+                 const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                 int nstglobalcomm,
+                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                 int stepout,
+                 gmx::IMDOutputProvider *outputProvider,
+                 t_inputrec *inputrec,
+                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                 t_state *state_global,
+                 ObservablesHistory *observablesHistory,
+                 t_mdatoms *mdatoms,
+                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                 t_forcerec *fr,
+                 const ReplicaExchangeParameters &replExParams,
+                 gmx_membed_t gmx_unused * membed,
+                 real cpt_period, real max_hours,
+                 int imdport,
+                 unsigned long Flags,
+                 gmx_walltime_accounting_t walltime_accounting)
  */
 double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               int nfile, const t_filenm fnm[],
@@ -887,5 +888,42 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     return 0;
 }
+
+/*! \brief Do test particle insertion.
+ *
+ * \param params parameter container object.
+ */
+double do_tpi(const IntegratorParams &params)
+{
+    return do_tpi(params.fpLog(),
+                  params.commRec(),
+                  params.mdLog(),
+                  params.nFile(),
+                  params.fnm(),
+                  params.oenv(),
+                  params.verbose(),
+                  params.nstGlobalComm(),
+                  params.vSite(),
+                  params.constraints(),
+                  params.stepOut(),
+                  params.outputProvider(),
+                  params.inputRec(),
+                  params.topGlobal(),
+                  params.fcd(),
+                  params.stateGlobal(),
+                  params.observablesHistory(),
+                  params.mdAtoms(),
+                  params.nrnb(),
+                  params.wCycle(),
+                  params.forceRec(),
+                  params.replExParams(),
+                  params.membed(),
+                  params.cptPeriod(),
+                  params.maxHours(),
+                  params.imdPort(),
+                  params.flags(),
+                  params.walltimeAccounting()
+                  );
+};
 
 } // namespace gmx

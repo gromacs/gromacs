@@ -192,8 +192,9 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
-/*! \libinternal
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+namespace gmx
+{
+/*! \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv, gmx_bool bVerbose,
                            int nstglobalcomm,
@@ -212,26 +213,26 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
                            unsigned long Flags,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
-                  int nfile, const t_filenm fnm[],
-                  const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                  int nstglobalcomm,
-                  gmx_vsite_t *vsite, gmx_constr_t constr,
-                  int stepout, gmx::IMDOutputProvider *outputProvider,
-                  t_inputrec *ir,
-                  gmx_mtop_t *top_global,
-                  t_fcdata *fcd,
-                  t_state *state_global,
-                  ObservablesHistory *observablesHistory,
-                  t_mdatoms *mdatoms,
-                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                  t_forcerec *fr,
-                  const ReplicaExchangeParameters &replExParams,
-                  gmx_membed_t *membed,
-                  real cpt_period, real max_hours,
-                  int imdport,
-                  unsigned long Flags,
-                  gmx_walltime_accounting_t walltime_accounting)
+double do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+             int nfile, const t_filenm fnm[],
+             const gmx_output_env_t *oenv, gmx_bool bVerbose,
+             int nstglobalcomm,
+             gmx_vsite_t *vsite, gmx_constr_t constr,
+             int stepout, gmx::IMDOutputProvider *outputProvider,
+             t_inputrec *ir,
+             gmx_mtop_t *top_global,
+             t_fcdata *fcd,
+             t_state *state_global,
+             ObservablesHistory *observablesHistory,
+             t_mdatoms *mdatoms,
+             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+             t_forcerec *fr,
+             const ReplicaExchangeParameters &replExParams,
+             gmx_membed_t *membed,
+             real cpt_period, real max_hours,
+             int imdport,
+             unsigned long Flags,
+             gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t    outf = nullptr;
     gmx_int64_t     step, step_rel;
@@ -1885,4 +1886,43 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     return 0;
-}
+};
+
+/*! \brief Run MD engine.
+ *
+ * \param params parameter container object.
+ */
+double do_md(const IntegratorParams &params)
+{
+    return do_md(params.fpLog(),
+                 params.commRec(),
+                 params.mdLog(),
+                 params.nFile(),
+                 params.fnm(),
+                 params.oenv(),
+                 params.verbose(),
+                 params.nstGlobalComm(),
+                 params.vSite(),
+                 params.constraints(),
+                 params.stepOut(),
+                 params.outputProvider(),
+                 params.inputRec(),
+                 params.topGlobal(),
+                 params.fcd(),
+                 params.stateGlobal(),
+                 params.observablesHistory(),
+                 params.mdAtoms(),
+                 params.nrnb(),
+                 params.wCycle(),
+                 params.forceRec(),
+                 params.replExParams(),
+                 params.membed(),
+                 params.cptPeriod(),
+                 params.maxHours(),
+                 params.imdPort(),
+                 params.flags(),
+                 params.walltimeAccounting()
+                 );
+};
+
+} // end namespace gmx
