@@ -89,6 +89,14 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
+    auto mdrunnerArgs = initializeMDEnvironment(argc, argv);
+    auto rc           = gmx::mdrunner(*mdrunnerArgs);
+    deinitializeMDEnvironment(*mdrunnerArgs);
+    return rc;
+}
+
+std::unique_ptr<mdrunner_arglist> initializeMDEnvironment(int argc, char *argv[])
+{
     const char   *desc[] = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
@@ -422,7 +430,6 @@ int gmx_mdrun(int argc, char *argv[])
     int             dd_rank_order;
     gmx_bool        bDoAppendFiles, bStartFromCpt;
     FILE           *fplog;
-    int             rc;
     char          **multidir = nullptr;
 
     cr = init_commrec();
@@ -551,13 +558,16 @@ int gmx_mdrun(int argc, char *argv[])
                                            nsteps, nstepout, resetstep,
                                            nmultisim, replExParams,
                                            pforce, cpt_period, max_hours, imdport, Flags);
-    rc = gmx::mdrunner(args);
+    return args;
+}
+
+void deinitializeMDEnvironment(const mdrunner_arglist &mdrunnerArgs)
+{
+    bool bDoAppendFiles = bool(mdrunnerArgs.Flags & MD_APPENDFILES);
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(mdrunnerArgs.cr) && !bDoAppendFiles)
     {
-        gmx_log_close(fplog);
+        gmx_log_close(mdrunnerArgs.fplog);
     }
-
-    return rc;
 }

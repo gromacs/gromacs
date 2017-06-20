@@ -156,52 +156,54 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags);
 
-mdrunner_arglist make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
-                                       FILE *fplog, struct t_commrec *cr, int nfile,
-                                       const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                       int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
-                                       real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
-                                       const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                       const char *nbpu_opt, int nstlist_cmdline,
-                                       gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-                                       int nmultisim,
-                                       const ReplicaExchangeParameters &replExParams,
-                                       real pforce, real cpt_period, real max_hours,
-                                       int imdport, unsigned long Flags)
+std::unique_ptr<mdrunner_arglist> make_mdrunner_arglist(gmx_hw_opt_t *hw_opt,
+                                                        FILE *fplog, struct t_commrec *cr, int nfile,
+                                                        const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                                                        int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
+                                                        real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+                                                        const char *ddcsx, const char *ddcsy, const char *ddcsz,
+                                                        const char *nbpu_opt, int nstlist_cmdline,
+                                                        gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+                                                        int nmultisim,
+                                                        const ReplicaExchangeParameters &replExParams,
+                                                        real pforce, real cpt_period, real max_hours,
+                                                        int imdport, unsigned long Flags)
 {
-    mdrunner_arglist retval;   // Create object to be returned.
-    retval.hw_opt          = *hw_opt;
-    retval.fplog           = fplog;
-    retval.cr              = cr;
-    retval.nfile           = nfile;
-    retval.fnm             = fnm;
-    retval.oenv            = oenv;
-    retval.bVerbose        = bVerbose;
-    retval.nstglobalcomm   = nstglobalcomm;
-    retval.ddxyz[XX]       = ddxyz[XX];
-    retval.ddxyz[YY]       = ddxyz[YY];
-    retval.ddxyz[ZZ]       = ddxyz[ZZ];
-    retval.dd_rank_order   = dd_rank_order;
-    retval.npme            = npme;
-    retval.rdd             = rdd;
-    retval.rconstr         = rconstr;
-    retval.dddlb_opt       = dddlb_opt;
-    retval.dlb_scale       = dlb_scale;
-    retval.ddcsx           = ddcsx;
-    retval.ddcsy           = ddcsy;
-    retval.ddcsz           = ddcsz;
-    retval.nbpu_opt        = nbpu_opt;
-    retval.nstlist_cmdline = nstlist_cmdline;
-    retval.nsteps_cmdline  = nsteps_cmdline;
-    retval.nstepout        = nstepout;
-    retval.resetstep       = resetstep;
-    retval.nmultisim       = nmultisim;
-    retval.replExParams    = &replExParams;
-    retval.pforce          = pforce;
-    retval.cpt_period      = cpt_period;
-    retval.max_hours       = max_hours;
-    retval.imdport         = imdport;
-    retval.Flags           = Flags;
+    std::unique_ptr<mdrunner_arglist> retval {
+        new mdrunner_arglist
+    };                                                                // Create object to be returned.
+    retval->hw_opt          = *hw_opt;
+    retval->fplog           = fplog;
+    retval->cr              = cr;
+    retval->nfile           = nfile;
+    retval->fnm             = fnm;
+    retval->oenv            = oenv;
+    retval->bVerbose        = bVerbose;
+    retval->nstglobalcomm   = nstglobalcomm;
+    retval->ddxyz[XX]       = ddxyz[XX];
+    retval->ddxyz[YY]       = ddxyz[YY];
+    retval->ddxyz[ZZ]       = ddxyz[ZZ];
+    retval->dd_rank_order   = dd_rank_order;
+    retval->npme            = npme;
+    retval->rdd             = rdd;
+    retval->rconstr         = rconstr;
+    retval->dddlb_opt       = dddlb_opt;
+    retval->dlb_scale       = dlb_scale;
+    retval->ddcsx           = ddcsx;
+    retval->ddcsy           = ddcsy;
+    retval->ddcsz           = ddcsz;
+    retval->nbpu_opt        = nbpu_opt;
+    retval->nstlist_cmdline = nstlist_cmdline;
+    retval->nsteps_cmdline  = nsteps_cmdline;
+    retval->nstepout        = nstepout;
+    retval->resetstep       = resetstep;
+    retval->nmultisim       = nmultisim;
+    retval->replExParams    = &replExParams;
+    retval->pforce          = pforce;
+    retval->cpt_period      = cpt_period;
+    retval->max_hours       = max_hours;
+    retval->imdport         = imdport;
+    retval->Flags           = Flags;
     return retval;
 };
 
