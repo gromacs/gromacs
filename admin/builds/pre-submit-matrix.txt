@@ -18,7 +18,8 @@ gcc-4.8 gpu cuda-6.5 mpi npme=1 nranks=2 openmp x11
 
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
-gcc-5 gpu cuda-8.0 openmp release
+# Test SIMD (AVX2_256) GPU code-path
+gcc-5 gpu cuda-8.0 openmp release simd=avx2_256
 
 # Test with ThreadSanitizer (without OpenMP, because of Redmine #1850)
 # Test AVX2_256 SIMD
