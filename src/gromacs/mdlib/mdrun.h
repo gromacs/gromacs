@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include <memory>
+
 #include "gromacs/timing/wallcycle.h"
 
 struct df_history_t;
@@ -102,5 +104,37 @@ void init_parallel(t_commrec *cr, t_inputrec *inputrec,
 void bcast_state(const t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  */
+
+// Forward declare mdrunner_arglist, defined in programs/mdrun/runner.h
+struct mdrunner_arglist;
+
+/*! \brief Prepares for an MD run from the command line.
+ * Configures execution environment and processes CLI arguments to prepare the
+ * input for gmx::mdrunner(). Once initializeMDEnvironment is called,
+ * deinitializeMDEnvironment() must be called subsequently.
+ *
+ * Example:
+ *
+ *     auto mdrunnerArgs = initializeMDEnvironment(argc, argv);
+ *     auto rc = gmx::mdrunner(*mdrunnerArgs);
+ *     deinitializeMDEnvironment(*mdrunnerArgs);
+ *
+ * \internal
+ */
+std::unique_ptr<mdrunner_arglist> initializeMDEnvironment(int argc, char *argv[]);
+
+/*! \brief Cleans up for an MD run from the command line.
+ * When initializeMDEnvironment has been called, deinitializeMDEnvironment()
+ * must be called subsequently to ensure stateful resources are finalized.
+ *
+ * Example:
+ *
+ *     auto mdrunnerArgs = initializeMDEnvironment(argc, argv);
+ *     auto rc = gmx::mdrunner(*mdrunnerArgs);
+ *     deinitializeMDEnvironment(*mdrunnerArgs);
+ *
+ * \internal
+ */
+void deinitializeMDEnvironment(const mdrunner_arglist &mdrunnerArgs);
 
 #endif
