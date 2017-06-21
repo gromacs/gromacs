@@ -1241,6 +1241,11 @@ bool hasUserSetGpuIds(const gmx_gpu_opt_t *gpu_opt)
     return gpu_opt->gpu_id != nullptr;
 }
 
+bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info)
+{
+    return gpu_info.n_dev_compatible > 0;
+}
+
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 {
     if (!hasUserSetGpuIds(gpu_opt))

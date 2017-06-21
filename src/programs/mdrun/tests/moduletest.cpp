@@ -232,14 +232,6 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
         caller.addOption("-nsteps", nsteps_);
     }
 
-#if GMX_MPI
-#  if GMX_GPU != GMX_GPU_NONE
-    const int   numGpusNeeded = getNumberOfTestMpiRanks();
-    std::string gpuIdString(numGpusNeeded, '0');
-    caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
-#endif
-
 #if GMX_THREAD_MPI
     caller.addOption("-ntmpi", getNumberOfTestMpiRanks());
 #endif
