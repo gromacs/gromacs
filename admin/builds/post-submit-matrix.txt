@@ -1,13 +1,20 @@
 # Comment line(s) preceding each configuration document the main
 # intent behind that configuration, so that we can correctly judge
 # whether to preserve that during maintenance decisions.
+#
+# Other configurations might coincidentally test such configurations
+# (e.g. because they are the current default), but it is appropriate
+# to intend to teach each feature (or a feature combination) exactly
+# once, and for the intent to be reflected precisely in the
+# configuration syntax, so that the configurations are stable even
+# if the defaults change in future.
 
 # Test the mdrun-only build
 # TODO In combination with gmx from another build, arrange to run regressiontests
 clang-3.7 double mpi no-openmp fftpack mdrun-only
 
 # Test MPMD PME with thread-MPI
-# TODO Add double to this configuration if/when Carsten stablizes essentialdynamics tests
+# TODO Add double to this configuration if/when we stablize the essentialdynamics tests
 gcc-5 npme=1 nranks=2 no-openmp fftpack simd=avx_128_fma release
 
 # Test non-default GMX_PREFER_STATIC_LIBS behavior
