@@ -53,7 +53,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
@@ -235,18 +234,9 @@ static void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
 
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
-                             gmx_bool bForceUseGPU,
                              bool userSetGpuIds,
                              gmx_gpu_opt_t *gpu_opt)
 {
-    /* Bail if binary is not compiled with GPU acceleration, but this is either
-     * explicitly (-nb gpu) or implicitly (gpu ID passed) requested. */
-    if (bForceUseGPU && (GMX_GPU == GMX_GPU_NONE))
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
-                  gmx::getProgramContext().displayName());
-    }
-
     if (!(cr->duty & DUTY_PP))
     {
         /* Our rank is not doing PP, we don't use a GPU */
@@ -273,11 +263,5 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
     {
         pickCompatibleGpus(gpu_info, gpu_opt);
         assign_rank_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
-    }
-
-    /* If the user asked for a GPU, check whether we have a GPU */
-    if (bForceUseGPU && gpu_info->n_dev_compatible == 0)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but no compatible GPUs were detected.");
     }
 }

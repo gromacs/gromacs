@@ -93,6 +93,9 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 /* Return whether the user selected GPU ids */
 bool hasUserSetGpuIds(const gmx_gpu_opt_t *gpu_opt);
 
+//! Return whether compatible GPUs were found.
+bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
+
 /* Parse the GPU ids the user may have passed. */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 

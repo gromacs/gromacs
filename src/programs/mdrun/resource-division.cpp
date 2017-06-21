@@ -58,7 +58,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 
@@ -74,9 +73,6 @@
 
 //! Constant used to help minimize preprocessed code
 static const bool bHasOmpSupport = GMX_OPENMP;
-
-//! Constant used to help minimize preprocessed code
-static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
 
 #if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
@@ -811,12 +807,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
         }
         hw_opt->nthreads_omp     = 1;
         hw_opt->nthreads_omp_pme = 1;
-    }
-
-    if (hw_opt->gpu_opt.n_dev_use > 0 && !bGPUBinary)
-    {
-        gmx_fatal(FARGS, "GPU IDs have been selected, but %s was compiled without GPU support!",
-                  gmx::getProgramContext().displayName());
     }
 
     if (!gmx_multiple_gpu_per_node_supported() && 1 < hw_opt->gpu_opt.n_dev_use)

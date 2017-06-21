@@ -113,6 +113,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
@@ -639,6 +640,34 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
 namespace gmx
 {
 
+static void exitIfCannotForceGpuRun(bool requirePhysicalGpu,
+                                    bool useVerletScheme,
+                                    bool compatibleGpusFound)
+{
+    /* Was GPU acceleration either explicitly (-nb gpu) or implicitly
+     * (gpu ID passed) requested? */
+    if (!requirePhysicalGpu)
+    {
+        return;
+    }
+
+    if (GMX_GPU == GMX_GPU_NONE)
+    {
+        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
+                  gmx::getProgramContext().displayName());
+    }
+
+    if (!useVerletScheme)
+    {
+        gmx_fatal(FARGS, "GPU acceleration requested, but can't be used without cutoff-scheme=Verlet");
+    }
+
+    if (!compatibleGpusFound)
+    {
+        gmx_fatal(FARGS, "GPU acceleration requested, but no compatible GPUs were detected.");
+    }
+}
+
 //! \brief Return the correct integrator function.
 static integrator_t *my_integrator(unsigned int ei)
 {
@@ -749,9 +778,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
      * count. */
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
     gmx_parse_gpu_ids(&hw_opt->gpu_opt);
+    bool userSetGpuIds = hasUserSetGpuIds(&hw_opt->gpu_opt);
+    bool forceUseCpu   = (strncmp(nbpu_opt, "cpu", 3) == 0);
+    if (userSetGpuIds && forceUseCpu)
+    {
+        gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
+    }
+    bForceUseGPU       = (strncmp(nbpu_opt, "gpu", 3) == 0) || userSetGpuIds;
+    bTryUseGPU         = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -784,10 +819,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
 
+        exitIfCannotForceGpuRun(bForceUseGPU,
+                                inputrec->cutoff_scheme == ecutsVERLET,
+                                compatibleGpusFound(hwinfo->gpu_info));
+
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
+            bUseGPU = (compatibleGpusFound(hwinfo->gpu_info) ||
                        getenv("GMX_EMULATE_GPU") != nullptr);
 
             /* TODO add GPU kernels for this and replace this check by:
@@ -817,16 +856,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
             }
 
-            if (hwinfo->gpu_info.n_dev_compatible > 0)
+            if (compatibleGpusFound(hwinfo->gpu_info))
             {
                 GMX_LOG(mdlog.warning).asParagraph().appendText(
                         "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
-            }
-
-            if (bForceUseGPU)
-            {
-                gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
 
 #if GMX_TARGET_BGQ
@@ -1130,12 +1164,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    bool userSetGpuIds = hasUserSetGpuIds(&hw_opt->gpu_opt);
-
     if (bUseGPU)
     {
         /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
+        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info,
                                 userSetGpuIds, &hw_opt->gpu_opt);
     }
     else
