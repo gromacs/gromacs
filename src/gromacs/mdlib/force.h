@@ -111,16 +111,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  * and fp (if !=NULL) on the master node.
  */
 
-
-gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
-                                          const t_inputrec    *ir,
-                                          gmx_bool             bRerunMD);
-/* Return if GPU acceleration is supported with the given settings.
- *
- * If the return value is FALSE and fplog/cr != NULL, prints a fallback
- * message to fplog/stderr.
- */
-
 gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
                               const t_inputrec    *ir);
 /* Return if CPU SIMD support exists for the given inputrec

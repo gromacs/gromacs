@@ -1563,27 +1563,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 }
 
 
-gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
-                                          const t_inputrec    *ir,
-                                          gmx_bool             bRerunMD)
-{
-    if (bRerunMD && ir->opts.ngener > 1)
-    {
-        /* Rerun execution time is dominated by I/O and pair search,
-         * so GPUs are not very useful, plus they do not support more
-         * than one energy group. If the user requested GPUs
-         * explicitly, a fatal error is given later.  With non-reruns,
-         * we fall back to a single whole-of system energy group
-         * (which runs much faster than a multiple-energy-groups
-         * implementation would), and issue a note in the .log
-         * file. Users can re-run if they want the information. */
-        GMX_LOG(mdlog.warning).asParagraph().appendText("Rerun with energy groups is not implemented for GPUs, falling back to the CPU");
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
                               const t_inputrec    *ir)
 {

@@ -669,6 +669,30 @@ static void exitIfCannotForceGpuRun(bool requirePhysicalGpu,
     }
 }
 
+/*! \brief Return whether GPU acceleration is useful with the given settings.
+ *
+ * If not, logs a message about falling back to CPU code. */
+static bool gpuAccelerationIsUseful(const MDLogger   &mdlog,
+                                    const t_inputrec *ir,
+                                    bool              doRerun)
+{
+    if (doRerun && ir->opts.ngener > 1)
+    {
+        /* Rerun execution time is dominated by I/O and pair search,
+         * so GPUs are not very useful, plus they do not support more
+         * than one energy group. If the user requested GPUs
+         * explicitly, a fatal error is given later.  With non-reruns,
+         * we fall back to a single whole-of system energy group
+         * (which runs much faster than a multiple-energy-groups
+         * implementation would), and issue a note in the .log
+         * file. Users can re-run if they want the information. */
+        GMX_LOG(mdlog.warning).asParagraph().appendText("Multiple energy groups is not implemented for GPUs, so is not useful for this rerun, so falling back to the CPU");
+        return false;
+    }
+
+    return true;
+}
+
 //! \brief Return the correct integrator function.
 static integrator_t *my_integrator(unsigned int ei)
 {
@@ -830,13 +854,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             bUseGPU = (compatibleGpusFound(hwinfo->gpu_info) ||
                        getenv("GMX_EMULATE_GPU") != nullptr);
 
-            /* TODO add GPU kernels for this and replace this check by:
-             * (bUseGPU && (ir->vdwtype == evdwPME &&
-             *               ir->ljpme_combination_rule == eljpmeLB))
-             * update the message text and the content of nbnxn_acceleration_supported.
-             */
             if (bUseGPU &&
-                !nbnxn_gpu_acceleration_supported(mdlog, inputrec, bRerunMD))
+                !gpuAccelerationIsUseful(mdlog, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
                 if (bForceUseGPU)
