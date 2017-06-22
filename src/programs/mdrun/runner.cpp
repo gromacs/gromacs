@@ -787,8 +787,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
-    /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU            = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -858,24 +856,28 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (compatibleGpusFound(hwinfo->gpu_info) ||
-                       emulateGpu);
-
-            if (bUseGPU &&
+            /* TODO This logic could run later, e.g. before -npme -1
+               is handled. If inputrec has already been communicated,
+               then the resulting tryUsePhysicalGpu does not need to
+               be communicated. */
+            if ((tryUsePhysicalGpu || forceUsePhysicalGpu) &&
                 !gpuAccelerationIsUseful(mdlog, inputrec, doRerun))
             {
-                /* Fallback message printed by nbnxn_acceleration_supported */
                 if (forceUsePhysicalGpu)
                 {
                     gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
                 }
-                bUseGPU = FALSE;
+                tryUsePhysicalGpu = false;
             }
-
+            /* TODO This logic could run later, e.g. after inputrec,
+               mtop, and state have been communicated, but before DD
+               is initialized. */
+            bool makeGpuPairList = (forceUsePhysicalGpu ||
+                                    tryUsePhysicalGpu ||
+                                    emulateGpu);
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
-                                  bUseGPU, *hwinfo->cpuInfo);
+                                  makeGpuPairList, *hwinfo->cpuInfo);
         }
         else
         {
@@ -957,10 +959,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
 
-        /* The master rank decided on the use of GPUs,
-         * broadcast this information to all ranks.
-         */
-        gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
+        gmx_bcast_sim(sizeof(tryUsePhysicalGpu), &tryUsePhysicalGpu, cr);
     }
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
@@ -1016,7 +1015,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         npme = 0;
     }
 
-    if (bUseGPU && npme < 0)
+    if ((tryUsePhysicalGpu || forceUsePhysicalGpu) && npme < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
@@ -1192,21 +1191,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU && !emulateGpu)
+    /* TODO It is OK to do PP-rank task-to-GPU assignment here, but
+       this code may need to move earlier, e.g. where -npme -1 is
+       handled once PME ranks need to be considered. */
+    if (tryUsePhysicalGpu || forceUsePhysicalGpu)
     {
         /* Select GPU id's to use */
         gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info,
                                 userSetGpuIds, &hw_opt->gpu_opt);
     }
-    else
-    {
-        /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
-    }
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, hw_opt->gpu_opt.n_dev_use > 0);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
