@@ -203,10 +203,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
-    if (!bt->haveBondeds)
-    {
-        return;
-    }
+    assert(bt->haveBondeds);
 
     if (bt->nblock_used > 0)
     {
@@ -492,64 +489,66 @@ void calc_listed(const t_commrec             *cr,
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
-    /* TODO: Skip this whole loop with a system/domain without listeds */
-    wallcycle_sub_start(wcycle, ewcsLISTED);
-#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (thread = 0; thread < bt->nthreads; thread++)
+    if (bt->haveBondeds)
     {
-        try
+        wallcycle_sub_start(wcycle, ewcsLISTED);
+#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
+        for (thread = 0; thread < bt->nthreads; thread++)
         {
-            int                ftype;
-            real              *epot, v;
-            /* thread stuff */
-            rvec4             *ft;
-            rvec              *fshift;
-            real              *dvdlt;
-            gmx_grppairener_t *grpp;
-
-            zero_thread_output(bt, thread);
-
-            ft = bt->f_t[thread].f;
-
-            if (thread == 0)
+            try
             {
-                fshift = fr->fshift;
-                epot   = enerd->term;
-                grpp   = &enerd->grpp;
-                dvdlt  = dvdl;
-            }
-            else
-            {
-                fshift = bt->f_t[thread].fshift;
-                epot   = bt->f_t[thread].ener;
-                grpp   = &bt->f_t[thread].grpp;
-                dvdlt  = bt->f_t[thread].dvdl;
-            }
-            /* Loop over all bonded force types to calculate the bonded forces */
-            for (ftype = 0; (ftype < F_NRE); ftype++)
-            {
-                if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
+                int                ftype;
+                real              *epot, v;
+                /* thread stuff */
+                rvec4             *ft;
+                rvec              *fshift;
+                real              *dvdlt;
+                gmx_grppairener_t *grpp;
+
+                zero_thread_output(bt, thread);
+
+                ft = bt->f_t[thread].f;
+
+                if (thread == 0)
                 {
-                    v = calc_one_bond(thread, ftype, idef, x,
-                                      ft, fshift, fr, pbc_null, g, grpp,
-                                      nrnb, lambda, dvdlt,
-                                      md, fcd, bCalcEnerVir,
-                                      global_atom_index);
-                    epot[ftype] += v;
+                    fshift = fr->fshift;
+                    epot   = enerd->term;
+                    grpp   = &enerd->grpp;
+                    dvdlt  = dvdl;
+                }
+                else
+                {
+                    fshift = bt->f_t[thread].fshift;
+                    epot   = bt->f_t[thread].ener;
+                    grpp   = &bt->f_t[thread].grpp;
+                    dvdlt  = bt->f_t[thread].dvdl;
+                }
+                /* Loop over all bonded force types to calculate the bonded forces */
+                for (ftype = 0; (ftype < F_NRE); ftype++)
+                {
+                    if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
+                    {
+                        v = calc_one_bond(thread, ftype, idef, x,
+                                          ft, fshift, fr, pbc_null, g, grpp,
+                                          nrnb, lambda, dvdlt,
+                                          md, fcd, bCalcEnerVir,
+                                          global_atom_index);
+                        epot[ftype] += v;
+                    }
                 }
             }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-    wallcycle_sub_stop(wcycle, ewcsLISTED);
+        wallcycle_sub_stop(wcycle, ewcsLISTED);
 
-    wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-    reduce_thread_output(fr->natoms_force, f, fr->fshift,
-                         enerd->term, &enerd->grpp, dvdl,
-                         bt,
-                         bCalcEnerVir,
-                         force_flags & GMX_FORCE_DHDL);
-    wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
+        wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
+        reduce_thread_output(fr->natoms_force, f, fr->fshift,
+                             enerd->term, &enerd->grpp, dvdl,
+                             bt,
+                             bCalcEnerVir,
+                             force_flags & GMX_FORCE_DHDL);
+        wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
+    }
 
     /* Remaining code does not have enough flops to bother counting */
     if (force_flags & GMX_FORCE_DHDL)
