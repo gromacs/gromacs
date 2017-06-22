@@ -338,7 +338,7 @@ static const float  nbnxn_gpu_listfac_max   = 1.30;
 static void increase_nstlist(FILE *fp, t_commrec *cr,
                              t_inputrec *ir, int nstlist_cmdline,
                              const gmx_mtop_t *mtop, matrix box,
-                             gmx_bool bGPU, const gmx::CpuInfo &cpuinfo)
+                             bool makeGpuPairList, const gmx::CpuInfo &cpuinfo)
 {
     float                  listfac_ok, listfac_max;
     int                    nstlist_orig, nstlist_prev;
@@ -364,7 +364,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             return;
         }
 
-        if (fp != nullptr && bGPU && ir->nstlist < nstlist_try[0])
+        if (fp != nullptr && makeGpuPairList && ir->nstlist < nstlist_try[0])
         {
             fprintf(fp, nstl_gpu, ir->nstlist);
         }
@@ -394,7 +394,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         return;
     }
 
-    if (ir->verletbuf_tol == 0 && bGPU)
+    if (ir->verletbuf_tol == 0 && makeGpuPairList)
     {
         gmx_fatal(FARGS, "You are using an old tpr file with a GPU, please generate a new tpr file with an up to date version of grompp");
     }
@@ -413,7 +413,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         return;
     }
 
-    if (bGPU)
+    if (makeGpuPairList)
     {
         listfac_ok  = nbnxn_gpu_listfac_ok;
         listfac_max = nbnxn_gpu_listfac_max;
@@ -440,7 +440,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         ir->nstlist = nstlist_cmdline;
     }
 
-    verletbuf_get_list_setup(TRUE, bGPU, &ls);
+    verletbuf_get_list_setup(true, makeGpuPairList, &ls);
 
     /* Allow rlist to make the list a given factor larger than the list
      * would be with the reference value for nstlist (10).
@@ -553,7 +553,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   int                             nstlist_cmdline,
                                   const gmx_mtop_t               *mtop,
                                   matrix                          box,
-                                  gmx_bool                        bUseGPU,
+                                  bool                            makeGpuPairList,
                                   const gmx::CpuInfo             &cpuinfo)
 {
     /* For NVE simulations, we will retain the initial list buffer */
@@ -569,7 +569,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
          * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
          * and 4x2 gives a larger buffer than 4x4, this is ok.
          */
-        verletbuf_get_list_setup(TRUE, bUseGPU, &ls);
+        verletbuf_get_list_setup(true, makeGpuPairList, &ls);
 
         calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, nullptr, &rlist_new);
 
@@ -594,7 +594,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         /* Set or try nstlist values */
-        increase_nstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, bUseGPU, cpuinfo);
+        increase_nstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, makeGpuPairList, cpuinfo);
     }
 }
 
@@ -760,7 +760,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags)
 {
-    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
@@ -798,7 +797,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
-    bRerunMD     = (Flags & MD_RERUN);
+    bool doRerun  = (Flags & MD_RERUN);
 
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
@@ -810,8 +809,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
-    bForceUseGPU       = (strncmp(nbpu_opt, "gpu", 3) == 0) || userSetGpuIds;
-    bTryUseGPU         = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || userSetGpuIds;
+    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) || forceUsePhysicalGpu;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -820,7 +819,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
-    hwinfo = gmx_detect_hardware(mdlog, cr, bTryUseGPU);
+    hwinfo = gmx_detect_hardware(mdlog, cr, tryUsePhysicalGpu);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
@@ -844,7 +843,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
 
-        exitIfCannotForceGpuRun(bForceUseGPU,
+        exitIfCannotForceGpuRun(forceUsePhysicalGpu,
                                 inputrec->cutoff_scheme == ecutsVERLET,
                                 compatibleGpusFound(hwinfo->gpu_info));
 
@@ -855,10 +854,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                        getenv("GMX_EMULATE_GPU") != nullptr);
 
             if (bUseGPU &&
-                !gpuAccelerationIsUseful(mdlog, inputrec, bRerunMD))
+                !gpuAccelerationIsUseful(mdlog, inputrec, doRerun))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
-                if (bForceUseGPU)
+                if (forceUsePhysicalGpu)
                 {
                     gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
                 }
@@ -986,7 +985,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   );
     }
 
-    if (bRerunMD &&
+    if (doRerun &&
         (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
     {
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
