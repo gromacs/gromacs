@@ -305,11 +305,11 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
                                       bool                 userSetGpuIds,
-                                      gmx_bool             bUseGPU)
+                                      bool                 willUsePhysicalGpu)
 {
     int      npppn;
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
-    gmx_bool btMPI, bMPI, bNthreadsAuto, bEmulateGPU;
+    gmx_bool btMPI, bMPI, bNthreadsAuto;
 
     GMX_RELEASE_ASSERT(hwinfo, "hwinfo must be a non-NULL pointer");
     GMX_RELEASE_ASSERT(cr, "cr must be a non-NULL pointer");
@@ -336,10 +336,6 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
     btMPI         = FALSE;
     bNthreadsAuto = FALSE;
 #endif
-
-    /* GPU emulation detection is done later, but we need here as well
-     * -- uncool, but there's no elegant workaround */
-    bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != nullptr);
 
     if (hwinfo->gpu_info.n_dev_compatible > 0)
     {
@@ -390,8 +386,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         sprintf(th_or_proc, "process");
     }
 
-    if (bUseGPU && hwinfo->gpu_info.n_dev_compatible > 0 &&
-        !bEmulateGPU)
+    if (willUsePhysicalGpu)
     {
         int  ngpu_comp, ngpu_use;
         char gpu_comp_plural[2], gpu_use_plural[2];
