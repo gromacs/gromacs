@@ -642,6 +642,7 @@ namespace gmx
 
 //! Halt the run if there are inconsistences between user choices to run with GPUs and/or hardware detection.
 static void exitIfCannotForceGpuRun(bool requirePhysicalGpu,
+                                    bool emulateGpu,
                                     bool useVerletScheme,
                                     bool compatibleGpusFound)
 {
@@ -656,6 +657,11 @@ static void exitIfCannotForceGpuRun(bool requirePhysicalGpu,
     {
         gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
                   gmx::getProgramContext().displayName());
+    }
+
+    if (emulateGpu)
+    {
+        gmx_fatal(FARGS, "GPU emulation cannot be requested together with GPU acceleration!");
     }
 
     if (!useVerletScheme)
@@ -802,6 +808,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
      * count. */
+    bool emulateGpu          = getenv("GMX_EMULATE_GPU") != nullptr;
     gmx_parse_gpu_ids(&hw_opt->gpu_opt);
     bool userSetGpuIds = hasUserSetGpuIds(&hw_opt->gpu_opt);
     bool forceUseCpu   = (strncmp(nbpu_opt, "cpu", 3) == 0);
@@ -810,7 +817,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
     bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || userSetGpuIds;
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) || forceUsePhysicalGpu;
+    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -819,7 +826,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
-    hwinfo = gmx_detect_hardware(mdlog, cr, tryUsePhysicalGpu);
+    bool detectGpus = forceUsePhysicalGpu || tryUsePhysicalGpu;
+    hwinfo = gmx_detect_hardware(mdlog, cr, detectGpus);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
@@ -844,6 +852,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
 
         exitIfCannotForceGpuRun(forceUsePhysicalGpu,
+                                emulateGpu,
                                 inputrec->cutoff_scheme == ecutsVERLET,
                                 compatibleGpusFound(hwinfo->gpu_info));
 
@@ -851,7 +860,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             /* Here the master rank decides if all ranks will use GPUs */
             bUseGPU = (compatibleGpusFound(hwinfo->gpu_info) ||
-                       getenv("GMX_EMULATE_GPU") != nullptr);
+                       emulateGpu);
 
             if (bUseGPU &&
                 !gpuAccelerationIsUseful(mdlog, inputrec, doRerun))
@@ -916,7 +925,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 mdlog, bUseGPU,
+                                                 mdlog,
                                                  doMembed);
 
         if (hw_opt->nthreads_tmpi > 1)
@@ -1183,7 +1192,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU)
+    if (bUseGPU && !emulateGpu)
     {
         /* Select GPU id's to use */
         gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info,
@@ -1197,7 +1206,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU && !emulateGpu);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,

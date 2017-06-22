@@ -259,7 +259,7 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
             gmx_fatal(FARGS, errorMessage.c_str());
         }
     }
-    else if (getenv("GMX_EMULATE_GPU") == nullptr)
+    else
     {
         pickCompatibleGpus(gpu_info, gpu_opt);
         assign_rank_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);

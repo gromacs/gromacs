@@ -106,7 +106,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
                                       bool                 userSetGpuIds,
-                                      gmx_bool             bUseGPU);
+                                      bool                 willUsePhysicalGpu);
 
 /* Check whether a GPU is shared among ranks, and return the number of shared
    gpus
