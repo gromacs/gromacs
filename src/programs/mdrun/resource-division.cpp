@@ -363,6 +363,29 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
+    /* TODO Here we handle the case where the user set GPU IDs, and
+       further below we handle the case where the algorithm does not
+       support multiple ranks. We need also to handle the case where
+       the user set multiple GPU IDs for an algorithm that cannot
+       handle multiple ranks. */
+    if (hw_opt->nthreads_tmpi < 1 && hasUserSetGpuIds(&hw_opt->gpu_opt))
+    {
+        /* Set the number of thread-MPI ranks equal to the number of GPU
+           ranks that the user chose. */
+        int numGpuRanks = hw_opt->gpu_opt.n_dev_use;
+
+        /* If the user chose both mdrun -nt -gpu_id, is that consistent? */
+        if (hw_opt->nthreads_tot > 0 &&
+            (numGpuRanks > hw_opt->nthreads_tot ||
+             hw_opt->nthreads_tot % numGpuRanks != 0))
+        {
+            /* We have more GPU ranks requested than total threads requested. */
+            gmx_fatal(FARGS, "Cannot run %d total threads with %d GPU ranks. Choose the total number of threads to be a multiple of the number of GPU ranks.", hw_opt->nthreads_tot, numGpuRanks);
+        }
+
+        return numGpuRanks;
+    }
+
     {
         /* Check if an algorithm does not support parallel simulation.  */
         // TODO This might work better if e.g. implemented algorithms
@@ -386,10 +409,11 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
     if (hw_opt->nthreads_tmpi > 0)
     {
-        /* Trivial, return right away */
+        /* Trivial, return the user's choice right away */
         return hw_opt->nthreads_tmpi;
     }
 
+    // Now implement automatic selection of number of thread-MPI ranks
     nthreads_hw = hwinfo->nthreads_hw_avail;
 
     if (nthreads_hw <= 0)
@@ -796,17 +820,19 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
         }
     }
 
-    if (hw_opt->nthreads_tot == 1)
+    if (hw_opt->nthreads_tot > 0)
     {
-        hw_opt->nthreads_tmpi = 1;
-
-        if (hw_opt->nthreads_omp > 1)
+        if (hw_opt->nthreads_omp > hw_opt->nthreads_tot)
         {
-            gmx_fatal(FARGS, "You requested %d OpenMP threads with %d total threads",
+            gmx_fatal(FARGS, "You requested %d OpenMP threads with %d total threads. Choose a total number of threads that is a multiple of the number of OpenMP threads.",
+                      hw_opt->nthreads_omp, hw_opt->nthreads_tot);
+        }
+
+        if (hw_opt->nthreads_tmpi > hw_opt->nthreads_tot)
+        {
+            gmx_fatal(FARGS, "You requested %d thread-MPI ranks with %d total threads. Choose a total number of threads that is a multiple of the number of thread-MPI ranks.",
                       hw_opt->nthreads_tmpi, hw_opt->nthreads_tot);
         }
-        hw_opt->nthreads_omp     = 1;
-        hw_opt->nthreads_omp_pme = 1;
     }
 
     if (!gmx_multiple_gpu_per_node_supported() && 1 < hw_opt->gpu_opt.n_dev_use)
@@ -817,24 +843,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
     {
         gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
     }
-
-#if GMX_THREAD_MPI
-    if (hw_opt->gpu_opt.n_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
-    {
-        /* Set the number of MPI threads equal to the number of GPUs */
-        hw_opt->nthreads_tmpi = hw_opt->gpu_opt.n_dev_use;
-
-        if (hw_opt->nthreads_tot > 0 &&
-            hw_opt->nthreads_tmpi > hw_opt->nthreads_tot)
-        {
-            /* We have more GPUs than total threads requested.
-             * We choose to (later) generate a mismatch error,
-             * instead of launching more threads than requested.
-             */
-            hw_opt->nthreads_tmpi = hw_opt->nthreads_tot;
-        }
-    }
-#endif
 
     if (debug)
     {
