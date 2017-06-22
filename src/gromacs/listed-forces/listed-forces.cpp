@@ -203,10 +203,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
-    if (!bt->haveBondeds)
-    {
-        return;
-    }
+    assert(bt->haveBondeds);
 
     if (bt->nblock_used > 0)
     {
@@ -400,102 +397,24 @@ ftype_is_bonded_potential(int ftype)
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
-void calc_listed(const t_commrec             *cr,
-                 struct gmx_wallcycle        *wcycle,
-                 const t_idef *idef,
-                 const rvec x[], history_t *hist,
-                 rvec f[], t_forcerec *fr,
-                 const struct t_pbc *pbc,
-                 const struct t_pbc *pbc_full,
-                 const struct t_graph *g,
-                 gmx_enerdata_t *enerd, t_nrnb *nrnb,
-                 real *lambda,
-                 const t_mdatoms *md,
-                 t_fcdata *fcd, int *global_atom_index,
-                 int force_flags)
+/*! \brief Compute the bonded part of the listed force, parallelized over threads */
+static void calc_bonded(const t_idef *idef,
+                        const rvec x[],
+                        t_forcerec *fr,
+                        const struct t_pbc *pbc_null,
+                        const struct t_graph *g,
+                        gmx_enerdata_t *enerd, t_nrnb *nrnb,
+                        real *lambda,
+                        real *dvdl,
+                        const t_mdatoms *md,
+                        t_fcdata *fcd,
+                        gmx_bool bCalcEnerVir,
+                        int *global_atom_index)
 {
-    struct bonded_threading_t *bt;
-    gmx_bool                   bCalcEnerVir;
-    int                        i;
-    /* The dummy array is to have a place to store the dhdl at other values
-       of lambda, which will be thrown away in the end */
-    real                       dvdl[efptNR];
-    const  t_pbc              *pbc_null;
-    int                        thread;
+    struct bonded_threading_t *bt = fr->bonded_threading;
 
-    bt = fr->bonded_threading;
-
-    assert(bt->nthreads == idef->nthreads);
-
-    bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
-
-    for (i = 0; i < efptNR; i++)
-    {
-        dvdl[i] = 0.0;
-    }
-    if (fr->bMolPBC)
-    {
-        pbc_null = pbc;
-    }
-    else
-    {
-        pbc_null = nullptr;
-    }
-
-#ifdef DEBUG
-    if (g && debug)
-    {
-        p_graph(debug, "Bondage is fun", g);
-    }
-#endif
-
-    if ((idef->il[F_POSRES].nr > 0) ||
-        (idef->il[F_FBPOSRES].nr > 0) ||
-        fcd->orires.nr > 0 ||
-        fcd->disres.nres > 0)
-    {
-        /* TODO Use of restraints triggers further function calls
-           inside the loop over calc_one_bond(), but those are too
-           awkward to account to this subtimer properly in the present
-           code. We don't test / care much about performance with
-           restraints, anyway. */
-        wallcycle_sub_start(wcycle, ewcsRESTRAINTS);
-
-        if (idef->il[F_POSRES].nr > 0)
-        {
-            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr);
-        }
-
-        if (idef->il[F_FBPOSRES].nr > 0)
-        {
-            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr);
-        }
-
-        /* Do pre force calculation stuff which might require communication */
-        if (fcd->orires.nr > 0)
-        {
-            enerd->term[F_ORIRESDEV] =
-                calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
-                                idef->il[F_ORIRES].iatoms,
-                                idef->iparams, md, x,
-                                pbc_null, fcd, hist);
-        }
-        if (fcd->disres.nres > 0)
-        {
-            calc_disres_R_6(cr,
-                            idef->il[F_DISRES].nr,
-                            idef->il[F_DISRES].iatoms,
-                            x, pbc_null,
-                            fcd, hist);
-        }
-
-        wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
-    }
-
-    /* TODO: Skip this whole loop with a system/domain without listeds */
-    wallcycle_sub_start(wcycle, ewcsLISTED);
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (thread = 0; thread < bt->nthreads; thread++)
+    for (int thread = 0; thread < bt->nthreads; thread++)
     {
         try
         {
@@ -541,30 +460,119 @@ void calc_listed(const t_commrec             *cr,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    wallcycle_sub_stop(wcycle, ewcsLISTED);
+}
 
-    wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-    reduce_thread_output(fr->natoms_force, f, fr->fshift,
-                         enerd->term, &enerd->grpp, dvdl,
-                         bt,
-                         bCalcEnerVir,
-                         force_flags & GMX_FORCE_DHDL);
-    wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
+void calc_listed(const t_commrec             *cr,
+                 struct gmx_wallcycle        *wcycle,
+                 const t_idef *idef,
+                 const rvec x[], history_t *hist,
+                 rvec f[], t_forcerec *fr,
+                 const struct t_pbc *pbc,
+                 const struct t_pbc *pbc_full,
+                 const struct t_graph *g,
+                 gmx_enerdata_t *enerd, t_nrnb *nrnb,
+                 real *lambda,
+                 const t_mdatoms *md,
+                 t_fcdata *fcd, int *global_atom_index,
+                 int force_flags)
+{
+    struct bonded_threading_t *bt;
+    gmx_bool                   bCalcEnerVir;
+    const  t_pbc              *pbc_null;
 
-    /* Remaining code does not have enough flops to bother counting */
-    if (force_flags & GMX_FORCE_DHDL)
+    bt = fr->bonded_threading;
+
+    assert(bt->nthreads == idef->nthreads);
+
+    bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
+
+    if (fr->bMolPBC)
     {
-        for (i = 0; i < efptNR; i++)
+        pbc_null = pbc;
+    }
+    else
+    {
+        pbc_null = nullptr;
+    }
+
+    if ((idef->il[F_POSRES].nr > 0) ||
+        (idef->il[F_FBPOSRES].nr > 0) ||
+        fcd->orires.nr > 0 ||
+        fcd->disres.nres > 0)
+    {
+        /* TODO Use of restraints triggers further function calls
+           inside the loop over calc_one_bond(), but those are too
+           awkward to account to this subtimer properly in the present
+           code. We don't test / care much about performance with
+           restraints, anyway. */
+        wallcycle_sub_start(wcycle, ewcsRESTRAINTS);
+
+        if (idef->il[F_POSRES].nr > 0)
         {
-            enerd->dvdl_nonlin[i] += dvdl[i];
+            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr);
         }
+
+        if (idef->il[F_FBPOSRES].nr > 0)
+        {
+            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr);
+        }
+
+        /* Do pre force calculation stuff which might require communication */
+        if (fcd->orires.nr > 0)
+        {
+            enerd->term[F_ORIRESDEV] =
+                calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
+                                idef->il[F_ORIRES].iatoms,
+                                idef->iparams, md, x,
+                                pbc_null, fcd, hist);
+        }
+        if (fcd->disres.nres > 0)
+        {
+            calc_disres_R_6(cr,
+                            idef->il[F_DISRES].nr,
+                            idef->il[F_DISRES].iatoms,
+                            x, pbc_null,
+                            fcd, hist);
+        }
+
+        wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
+    }
+
+    if (bt->haveBondeds)
+    {
+        wallcycle_sub_start(wcycle, ewcsLISTED);
+        /* The dummy array is to have a place to store the dhdl at other values
+           of lambda, which will be thrown away in the end */
+        real dvdl[efptNR];
+        for (int i = 0; i < efptNR; i++)
+        {
+            dvdl[i] = 0.0;
+        }
+        calc_bonded(idef, x, fr, pbc_null, g, enerd, nrnb, lambda, dvdl, md,
+                    fcd, bCalcEnerVir, global_atom_index);
+        wallcycle_sub_stop(wcycle, ewcsLISTED);
+
+        wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
+        reduce_thread_output(fr->natoms_force, f, fr->fshift,
+                             enerd->term, &enerd->grpp, dvdl,
+                             bt,
+                             bCalcEnerVir,
+                             force_flags & GMX_FORCE_DHDL);
+
+        if (force_flags & GMX_FORCE_DHDL)
+        {
+            for (int i = 0; i < efptNR; i++)
+            {
+                enerd->dvdl_nonlin[i] += dvdl[i];
+            }
+        }
+        wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
     }
 
     /* Copy the sum of violations for the distance restraints from fcd */
     if (fcd)
     {
         enerd->term[F_DISRESVIOL] = fcd->disres.sumviol;
-
     }
 }
 
