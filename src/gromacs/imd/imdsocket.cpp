@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,32 +112,6 @@ static void print_IMD_error(const char *file, int line, char *msg)
     }
 }
 
-/*! \brief Byte swap in case we are little-endian */
-static uint16_t gmx_htons(uint16_t src)
-{
-    uint16_t num = 1;
-
-    if (*(char *)&num == 1)
-    {
-        return src;
-    }
-    else
-    {
-        uint16_t dest = 0;
-
-        dest |= (src & 0x0000FF00) >> 8;
-        dest |= (src & 0x000000FF) << 8;
-
-        return dest;
-    }
-}
-
-/*! \brief Byte-unswap 16 bit word in case we are little-endian */
-static uint16_t gmx_ntohs(uint16_t src)
-{
-    return gmx_htons(src);
-}
-
 
 extern IMDSocket* imdsock_create()
 {
@@ -170,7 +144,7 @@ extern int imdsock_bind(IMDSocket *sock, int port)
 #ifdef GMX_IMD
     memset(&(sock->address), 0, sizeof(sock->address));
     sock->address.sin_family = PF_INET;
-    sock->address.sin_port   = gmx_htons(port);
+    sock->address.sin_port   = htons(port);
 
     /* Try to bind to address and port ...*/
     ret = bind(sock->sockfd, (struct sockaddr *) &sock->address, sizeof(sock->address));
@@ -256,7 +230,7 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
     }
     else
     {
-        *port = gmx_ntohs(sock->address.sin_port);
+        *port = ntohs(sock->address.sin_port);
     }
 #else
     gmx_incons("imdsock_getport called without IMD support.");
