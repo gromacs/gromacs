@@ -345,7 +345,7 @@ maskzRsqrt(SimdDouble x, SimdDBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f64(m.simdInternal_, vdupq_n_f64(1.0, x.simdInternal_);
+    x.simdInternal_ = vbslq_f64(m.simdInternal_, x.simdInternal_, vdupq_n_f64(1.0));
 #endif
     return {
                float64x2_t(vandq_u64(uint64x2_t(vrsqrteq_f64(x.simdInternal_)), m.simdInternal_))
@@ -358,7 +358,7 @@ maskzRcp(SimdDouble x, SimdDBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f64(m.simdInternal_, vdupq_n_f64(1.0, x.simdInternal_);
+    x.simdInternal_ = vbslq_f64(m.simdInternal_, x.simdInternal_, vdupq_n_f64(1.0));
 #endif
     return {
                float64x2_t(vandq_u64(uint64x2_t(vrecpeq_f64(x.simdInternal_)), m.simdInternal_))
