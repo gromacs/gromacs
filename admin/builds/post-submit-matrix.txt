@@ -4,13 +4,11 @@
 
 # Test on ARM v7
 # Test ARM_NEON SIMD
-# NOTE: We use release-with-debug-info because in debug mode the SIMD module does not compile
-gcc-4.8 simd=ARM_NEON release-with-debug-info
+gcc-4.8 simd=ARM_NEON release
 
 # Test on ARM v8
 # Test ARM_NEON_ASIMD SIMD
-# NOTE: We use release-with-debug-info because in debug mode the SIMD module does not compile
-gcc-5 simd=ARM_NEON_ASIMD release-with-debug-info
+gcc-5 simd=ARM_NEON_ASIMD release
 
 # Test the mdrun-only build
 # TODO In combination with gmx from another build, arrange to run regressiontests

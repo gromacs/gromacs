@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -373,7 +373,7 @@ static inline SimdFloat gmx_simdcall
 maskzRsqrt(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f32(m, vdupq_n_f32(1.0f), x.simdInternal_);
+    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
 #endif
     return {
                vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrsqrteq_f32(x.simdInternal_)),
@@ -385,7 +385,7 @@ static inline SimdFloat gmx_simdcall
 maskzRcp(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f32(m, vdupq_n_f32(1.0f), x.simdInternal_);
+    x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
 #endif
     return {
                vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrecpeq_f32(x.simdInternal_)),
