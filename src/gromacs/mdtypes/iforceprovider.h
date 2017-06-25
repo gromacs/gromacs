@@ -34,67 +34,110 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::IForceProvider.
+ * Declares gmx::IForceProvider and ForceProviders.
  *
  * See \ref page_mdmodules for an overview of this and associated interfaces.
  *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_mdtypes
  */
 #ifndef GMX_MDTYPES_IFORCEPROVIDER_H
 #define GMX_MDTYPES_IFORCEPROVIDER_H
 
-#include "gromacs/math/paddedvector.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
 
+namespace gmx
+{
+
+template <typename T>
+class ArrayRef;
+
 /*! \libinternal \brief
  * Interface for a component that provides forces during MD.
  *
- * This is typically part of a larger structure/class managing its own
- * data, such that it has the information on what to do stored locally.
+ * Modules implementing IMDModule generally implement this internally, and use
+ * IMDModule::initForceProviders() to register their implementation in
+ * ForceProviders.
  *
- * The interface is not very generic, as it has been written purely based on
- * extraction of existing functions related to electric field handling.
- * This needs to be generalized when more modules are moved to use the
- * interface.
+ * The interface most likely requires additional generalization for use in
+ * other modules than the current electric field implementation.
  *
  * \inlibraryapi
  * \ingroup module_mdtypes
  */
-struct IForceProvider
+class IForceProvider
 {
     public:
-        /*! \brief
-         * Sets relevant options in the forcerec structure.
-         *
-         * \param[inout] fr The forcerec structure
-         *
-         * \todo
-         * This should be replaced by a method that returns a set of
-         * flags/other options (either here, or where the IForceProvider
-         * instance is returned), and forcerec should be initialized based on
-         * that.
-         */
-        virtual void initForcerec(t_forcerec *fr) = 0;
-
         /*! \brief
          * Computes forces.
          *
          * \param[in]    cr      Communication record for parallel operations
          * \param[in]    mdatoms Atom information
-         * \param[inout] force   The forces
+         * \param[in]    box     The box
          * \param[in]    t       The actual time in the simulation (ps)
+         * \param[in]    x       The coordinates
+         * \param[inout] force   The forces
          */
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *mdatoms,
-                                     PaddedRVecVector *force,
-                                     double            t) = 0;
+        virtual void calculateForces(const t_commrec          *cr,
+                                     const t_mdatoms          *mdatoms,
+                                     const matrix              box,
+                                     double                    t,
+                                     const rvec               *x,
+                                     gmx::ArrayRef<gmx::RVec>  force) = 0;
 
     protected:
         ~IForceProvider() {}
+};
+
+} // namespace gmx
+
+/*! \libinternal \brief
+ * Evaluates forces from a collection of gmx::IForceProvider.
+ *
+ * This class is a `struct` outside the `gmx` namespace to make it possible to
+ * forward-declare it in forcerec.h, which still needs to compile when included
+ * from the C group kernels.
+ *
+ * \inlibraryapi
+ * \ingroup module_mdtypes
+ */
+struct ForceProviders
+{
+    public:
+        ForceProviders();
+        ~ForceProviders();
+
+        /*! \brief
+         * Adds a provider.
+         */
+        void addForceProvider(gmx::IForceProvider *provider);
+        /*! \brief
+         * Adds a provider whose forces should not contribute to the virial.
+         */
+        void addForceProviderWithoutVirialContribution(gmx::IForceProvider *provider);
+
+        //! Whether there are modules that do not contribute to the virial.
+        bool hasForcesWithoutVirialContribution() const;
+
+        //! Computes forces.
+        void calculateForces(const t_commrec          *cr,
+                             const t_mdatoms          *mdatoms,
+                             const matrix              box,
+                             double                    t,
+                             const rvec               *x,
+                             gmx::ArrayRef<gmx::RVec>  force,
+                             gmx::ArrayRef<gmx::RVec>  f_novirsum) const;
+
+    private:
+        class Impl;
+
+        gmx::PrivateImplPointer<Impl> impl_;
 };
 
 #endif

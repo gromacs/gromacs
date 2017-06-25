@@ -32,49 +32,68 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Declares gmx::IMDModule.
+ * Implements classes from iforceprovider.h.
  *
- * See \ref page_mdmodules for an overview of this and associated interfaces.
- *
- * \inlibraryapi
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_mdtypes
  */
-#ifndef GMX_MDTYPES_IMDMODULE_H
-#define GMX_MDTYPES_IMDMODULE_H
+#include "gmxpre.h"
 
-struct ForceProviders;
+#include "iforceprovider.h"
 
-namespace gmx
-{
+#include <vector>
 
-class IMDOutputProvider;
-class IMdpOptionProvider;
+#include "gromacs/utility/arrayref.h"
 
-/*! \libinternal \brief
- * Extension module for \Gromacs simulations.
- *
- * The methods that return other interfaces can in the future return null for
- * those interfaces that the module does not need to implement, but currently
- * the callers are not prepared to generically handle various cases.
- *
- * \inlibraryapi
- * \ingroup module_mdtypes
- */
-class IMDModule
+using namespace gmx;
+
+class ForceProviders::Impl
 {
     public:
-        virtual ~IMDModule() {}
-
-        //! Returns an interface for handling mdp input (and tpr I/O).
-        virtual IMdpOptionProvider *mdpOptionProvider() = 0;
-        //! Returns an interface for handling output files during simulation.
-        virtual IMDOutputProvider *outputProvider()     = 0;
-        //! Initializes force providers from this module.
-        virtual void initForceProviders(ForceProviders *forceProviders) = 0;
+        std::vector<IForceProvider *> withVirialContribution_;
+        std::vector<IForceProvider *> withoutVirialContribution_;
 };
 
-} // namespace gmx
+ForceProviders::ForceProviders()
+    : impl_(new Impl)
+{
+}
 
-#endif
+ForceProviders::~ForceProviders()
+{
+}
+
+void ForceProviders::addForceProvider(gmx::IForceProvider *provider)
+{
+    impl_->withVirialContribution_.push_back(provider);
+}
+
+void ForceProviders::addForceProviderWithoutVirialContribution(gmx::IForceProvider *provider)
+{
+    impl_->withoutVirialContribution_.push_back(provider);
+}
+
+bool ForceProviders::hasForcesWithoutVirialContribution() const
+{
+    return !impl_->withoutVirialContribution_.empty();
+}
+
+void ForceProviders::calculateForces(const t_commrec          *cr,
+                                     const t_mdatoms          *mdatoms,
+                                     const matrix              box,
+                                     double                    t,
+                                     const rvec               *x,
+                                     gmx::ArrayRef<gmx::RVec>  force,
+                                     gmx::ArrayRef<gmx::RVec>  f_novirsum) const
+{
+    for (auto provider : impl_->withVirialContribution_)
+    {
+        provider->calculateForces(cr, mdatoms, box, t, x, force);
+    }
+    for (auto provider : impl_->withoutVirialContribution_)
+    {
+        provider->calculateForces(cr, mdatoms, box, t, x, f_novirsum);
+    }
+}

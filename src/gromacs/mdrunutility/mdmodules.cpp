@@ -53,7 +53,7 @@
 namespace gmx
 {
 
-class MDModules::Impl : public IMDOutputProvider, public IForceProvider
+class MDModules::Impl : public IMDOutputProvider
 {
     public:
 
@@ -81,20 +81,8 @@ class MDModules::Impl : public IMDOutputProvider, public IForceProvider
             field_->outputProvider()->finishOutput();
         }
 
-        // From IForceProvider
-        virtual void initForcerec(t_forcerec *fr)
-        {
-            field_->forceProvider()->initForcerec(fr);
-        }
-        virtual void calculateForces(const t_commrec  * /*cr*/,
-                                     const t_mdatoms  * /*mdatoms*/,
-                                     PaddedRVecVector * /*force*/,
-                                     double             /*t*/)
-        {
-            // not called currently
-        }
-
-        std::unique_ptr<IMDModule> field_;
+        std::unique_ptr<IMDModule>      field_;
+        std::unique_ptr<ForceProviders> forceProviders_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -140,9 +128,13 @@ IMDOutputProvider *MDModules::outputProvider()
     return impl_.get();
 }
 
-IForceProvider *MDModules::forceProvider()
+ForceProviders *MDModules::initForceProviders()
 {
-    return impl_.get();
+    GMX_RELEASE_ASSERT(impl_->forceProviders_ == nullptr,
+                       "Force providers initialized multiple times");
+    impl_->forceProviders_.reset(new ForceProviders);
+    impl_->field_->initForceProviders(impl_->forceProviders_.get());
+    return impl_->forceProviders_.get();
 }
 
 } // namespace gmx
