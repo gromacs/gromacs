@@ -45,7 +45,8 @@
 
 #include "gromacs/utility/classhelpers.h"
 
-struct IForceProvider;
+struct ForceProviders;
+
 struct t_inputrec;
 
 namespace gmx
@@ -72,15 +73,11 @@ class KeyValueTreeObject;
  *
  * Currently, where the set of modules needs to be accessed, either a pointer
  * to MDModules is passed around, or an instance of IMDOutputProvider or
- * IForceProvider returned from MDModules.  The implementation of these
- * interfaces in MDModules calls the corresponding methods in the relevant
- * modules.  In the future, some additional logic may need to be introduced at
- * the call sites that can also influence the signature of the methods.  In
- * this case, a separate object may need to be introduced (e.g.,
- * ForceProvidersManager or similar) that can be passed around without
- * knowledge of the full MDModules.  t_forcerec also currently directly calls
- * individual modules through pointers to their interfaces, which should be
- * generalized in the future.
+ * ForceProviders returned from MDModules.  These objects returned from
+ * MDModules calls the corresponding methods in the relevant modules.
+ * In the future, some additional logic may need to be introduced at
+ * the call sites that can also influence the signature of the methods,
+ * similar to what ForceProviders already does for force computation.
  *
  * The assignOptionsToModules() and adjustInputrecBasedOnModules() methods of
  * this class also take responsibility for wiring up the options (and their
@@ -128,9 +125,9 @@ class MDModules
          */
         IMDOutputProvider *outputProvider();
         /*! \brief
-         * Returns an interface for initializing modules providing forces.
+         * Returns an object for computing forces from the modules.
          */
-        IForceProvider *forceProvider();
+        ForceProviders *initForceProviders();
 
     private:
         class Impl;
