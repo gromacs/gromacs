@@ -1246,10 +1246,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         bcast_state(cr, state);
 
         /* Initiate forcerecord */
-        fr          = mk_forcerec();
-        fr->hwinfo  = hwinfo;
-        fr->gpu_opt = &hw_opt->gpu_opt;
-        init_forcerec(fplog, mdlog, fr, fcd, mdModules.forceProvider(),
+        fr                 = mk_forcerec();
+        fr->hwinfo         = hwinfo;
+        fr->gpu_opt        = &hw_opt->gpu_opt;
+        fr->forceProviders = mdModules.initForceProviders();
+        init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),

@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/real.h"
@@ -72,8 +73,6 @@ namespace
 class ElectricFieldTest : public ::testing::Test
 {
     public:
-        ElectricFieldTest() {}
-
         void test(int  dim,
                   real E0,
                   real omega,
@@ -108,13 +107,11 @@ class ElectricFieldTest : public ::testing::Test
             snew(md.chargeA, md.homenr);
             md.chargeA[0] = 1;
 
-            t_commrec  *cr       = init_commrec();
-            t_forcerec *forcerec = mk_forcerec();
-            module.forceProvider()->initForcerec(forcerec);
-            forcerec->efield->calculateForces(cr, &md, &f, 0);
+            t_commrec  *cr = init_commrec();
+            module.initForceProviders()->calculateForces(cr, &md, nullptr, 0, nullptr,
+                                                         gmx::EmptyArrayRef(), f);
             done_commrec(cr);
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
-            sfree(forcerec);
             sfree(md.chargeA);
         }
 };
