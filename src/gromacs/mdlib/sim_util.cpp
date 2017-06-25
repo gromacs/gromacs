@@ -1387,11 +1387,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        /* Compute forces due to electric field */
-        if (fr->efield != nullptr)
+        /* Collect forces from modules */
+        gmx::ArrayRef<gmx::RVec> fNoVirSum;
+        if (fr->f_novirsum != nullptr)
         {
-            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
+            fNoVirSum = *fr->f_novirsum;
         }
+        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=f later.
@@ -1745,11 +1747,13 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        /* Compute forces due to electric field */
-        if (fr->efield != nullptr)
+        /* Collect forces from modules */
+        gmx::ArrayRef<gmx::RVec> fNoVirSum;
+        if (fr->f_novirsum != nullptr)
         {
-            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
+            fNoVirSum = *fr->f_novirsum;
         }
+        fr->forceProviders->calculateForces(cr, mdatoms, box, t, x, *force, fNoVirSum);
 
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))

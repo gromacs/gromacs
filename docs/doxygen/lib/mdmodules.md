@@ -22,8 +22,8 @@ Structure of a module
 ---------------------
 
 Each module implements a factory that returns an instance of gmx::IMDModule.
-This interface has methods that in turn return instances of other interfaces:
-gmx::IMdpOptionProvider, gmx::IMDOutputProvider, and IForceProvider.
+This interface has methods that in turn refer to other interfaces:
+gmx::IMdpOptionProvider, gmx::IMDOutputProvider, and gmx::IForceProvider.
 The module also implements these interfaces (or a subset of them), and code
 outside the module only calls methods in these interfaces.
 
