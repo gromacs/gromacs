@@ -2284,7 +2284,6 @@ void init_forcerec(FILE                *fp,
                    const gmx::MDLogger &mdlog,
                    t_forcerec          *fr,
                    t_fcdata            *fcd,
-                   IForceProvider      *forceProviders,
                    const t_inputrec    *ir,
                    const gmx_mtop_t    *mtop,
                    const t_commrec     *cr,
@@ -2799,13 +2798,9 @@ void init_forcerec(FILE                *fp,
     }
 
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
+                       fr->forceProviders->hasForcesWithoutVirialContribution() ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
-
-    /* Initialization call after setting bF_NoVirSum,
-     * since it efield->initForcerec also sets this to true.
-     */
-    forceProviders->initForcerec(fr);
 
     if (fr->bF_NoVirSum)
     {

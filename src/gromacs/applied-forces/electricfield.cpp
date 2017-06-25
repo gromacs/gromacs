@@ -165,7 +165,13 @@ class ElectricField final : public IMDModule,
         // From IMDModule
         IMdpOptionProvider *mdpOptionProvider() override { return this; }
         IMDOutputProvider *outputProvider() override { return this; }
-        IForceProvider *forceProvider() override { return this; }
+        void initForceProviders(ForceProviders *forceProviders) override
+        {
+            if (isActive())
+            {
+                forceProviders->addForceProviderWithoutVirialContribution(this);
+            }
+        }
 
         // From IMdpOptionProvider
         void initMdpTransform(IKeyValueTreeTransformRules *transform) override;
@@ -177,12 +183,13 @@ class ElectricField final : public IMDModule,
         void finishOutput() override;
 
         // From IForceProvider
-        void initForcerec(t_forcerec *fr) override;
         //! \copydoc IForceProvider::calculateForces()
         void calculateForces(const t_commrec  *cr,
                              const t_mdatoms  *mdatoms,
-                             PaddedRVecVector *force,
-                             double            t) override;
+                             const matrix      box,
+                             double            t,
+                             const rvec       *x,
+                             ArrayRef<RVec>    force) override;
 
     private:
         //! Return whether or not to apply a field
@@ -357,15 +364,6 @@ void ElectricField::finishOutput()
     }
 }
 
-void ElectricField::initForcerec(t_forcerec *fr)
-{
-    if (isActive())
-    {
-        fr->bF_NoVirSum = TRUE;
-        fr->efield      = this;
-    }
-}
-
 real ElectricField::field(int dim, real t) const
 {
     return efield_[dim].evaluate(t);
@@ -386,12 +384,14 @@ void ElectricField::printComponents(double t) const
 
 void ElectricField::calculateForces(const t_commrec  *cr,
                                     const t_mdatoms  *mdatoms,
-                                    PaddedRVecVector *force,
-                                    double            t)
+                                    const matrix      /* box */,
+                                    double            t,
+                                    const rvec        * /* x */,
+                                    ArrayRef<RVec>    force)
 {
     if (isActive())
     {
-        rvec *f = as_rvec_array(force->data());
+        rvec *f = as_rvec_array(force.data());
 
         for (int m = 0; (m < DIM); m++)
         {
