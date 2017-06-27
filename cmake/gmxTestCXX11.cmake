@@ -69,10 +69,12 @@ class b: public a
 b bTest() {
   return b();
 }
-// Early patch versions of icc 16 (and perhaps earlier versions)
-// have an issue with this test, but the GROMACS tests pass,
-// so we disable this test in that sub-case.
-#if (defined __INTEL_COMPILER && __INTEL_COMPILER >= 1700) || (defined __ICL && __ICL >= 1700) || (defined __INTEL_COMPILER_UDPATE && __INTEL_COMPILER_UPDATE >= 3)
+// ICC requires that a suitable GCC is available. It is using its standard library and emulates
+// GCC behaviour based on its version. Relevant here it emulates the implementation of the move
+// constructor. This compiler check should only fail based on the compiler not GCC. The GCC version
+// is checked by the following STL check. It is known that all ICC>=15 have the proper move
+// constructor. Thus this check is disabled for ICC.
+#if !((defined __INTEL_COMPILER && __INTEL_COMPILER >= 1500) || (defined __ICL && __ICL >= 1500))
 // Test that a subclass has a proper move constructor
 struct c {
   c() {};
@@ -155,6 +157,6 @@ int main() {
   }
 }" CXX11_STDLIB_PRESENT)
     if(NOT CXX11_STDLIB_PRESENT)
-        message(FATAL_ERROR "This version of GROMACS requires C++11-compatible standard library. Please use a newer compiler, or a newer standard library, or use the GROMACS 5.1.x release. See the installation guide for details.")
+        message(FATAL_ERROR "This version of GROMACS requires C++11-compatible standard library. Several compilers (e.g. Clang and Intel) use GCC. For those make sure to have GCC 4.8.1 or later. Please use a newer compiler, or a newer standard library, or use the GROMACS 5.1.x release. See the installation guide for details.")
     endif()
 endfunction()
