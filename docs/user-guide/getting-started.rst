@@ -37,7 +37,7 @@ then you have to find where your version of |Gromacs| is installed. In
 the default case, the binaries are located in
 ``/usr/local/gromacs/bin``, however, you can ask your local system
 administrator for more information, and then follow the advice for
-:ref:`getting access to GROMACS`.
+:ref:`getting access to |Gromacs|`.
 
 Flowchart of typical simulation
 -------------------------------

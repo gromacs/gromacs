@@ -1325,7 +1325,8 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
             continue;
         }
 
-        pcrd->f_scal = dr_tot[c]/((pull->group[pcrd->params.group[0]].invtm + pull->group[pcrd->params.group[1]].invtm)*dt*dt);
+        /* Accumulate the forces, in case we have multiple constraint steps */
+        pcrd->f_scal += dr_tot[c]/((pull->group[pcrd->params.group[0]].invtm + pull->group[pcrd->params.group[1]].invtm)*dt*dt);
 
         if (vir != nullptr && pcrd->params.eGeom != epullgDIRPBC && bMaster)
         {

@@ -1254,6 +1254,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                     evdw_names[ir->vdwtype],
                     eintmod_names[eintmodPOTSHIFT],
                     eintmod_names[eintmodNONE]);
+            warning_error(wi, err_buf);
         }
     }
 
