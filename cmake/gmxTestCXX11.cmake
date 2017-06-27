@@ -69,10 +69,8 @@ class b: public a
 b bTest() {
   return b();
 }
-// Early patch versions of icc 16 (and perhaps earlier versions)
-// have an issue with this test, but the GROMACS tests pass,
-// so we disable this test in that sub-case.
-#if (defined __INTEL_COMPILER && __INTEL_COMPILER >= 1700) || (defined __ICL && __ICL >= 1700) || (defined __INTEL_COMPILER_UDPATE && __INTEL_COMPILER_UPDATE >= 3)
+// ICC emulates the GCC behavior for move constructors. But we don't want this test to fail if the GCC version is old. In that case we want the STL test to fail.
+#if !((defined __INTEL_COMPILER && __INTEL_COMPILER >= 1500) || (defined __ICL && __ICL >= 1500))
 // Test that a subclass has a proper move constructor
 struct c {
   c() {};
