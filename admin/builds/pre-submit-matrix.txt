@@ -32,8 +32,8 @@ gcc-4.8 gpu thread-mpi cuda-7.5 openmp release
 gcc-4.9 tsan fftpack simd=avx2_256
 
 # Test newest gcc at time of release
-# Test on MacOS (because gcc-6.1 is only available there)
-gcc-6.1 double
+# Test on MacOS (because gcc-6 is only available there)
+gcc-6 double
 
 # Test older clang
 # Test double precision
