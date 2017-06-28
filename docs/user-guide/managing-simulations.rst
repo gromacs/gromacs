@@ -173,7 +173,7 @@ The following factors affect the reproducibility of a simulation, and thus its o
   the calculations. Since the speed estimate is not deterministic, the
   results may vary from run to run.
 * Random numbers used for instance as a seed for generating velocities
-  (in GROMACS at the preprocessing stage).
+  (in |Gromacs| at the preprocessing stage).
 * Uninitialized variables in the code (but there shouldn't be any)
 * Dynamic linking to different versions of shared libraries (e.g. for FFTs)
 * Dynamic load balancing, since particles are redistributed to
@@ -194,7 +194,7 @@ is a cornerstone of science in general, and hence it is important.
 The `Central Limit Theorem <https://en.wikipedia.org/wiki/Central_limit_theorem>`
 tells us that in the case of infinitely long
 simulations, all observables converge to their equilibrium
-values. Molecular simulations in GROMACS adhere to this theorem, and
+values. Molecular simulations in |Gromacs| adhere to this theorem, and
 hence, for instance, the energy of your system will converge to a
 finite value, the diffusion constant of your water molecules will
 converge to a finite value, and so on. That means all the important
