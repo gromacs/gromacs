@@ -130,6 +130,11 @@ def do_build(context):
         if context.opts.mdrun_only:
             cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
 
+    if context.env.has_rdtscp:
+        cmake_opts['GMX_USE_RDTSCP'] = 'ON'
+    else:
+        cmake_opts['GMX_USE_RDTSCP'] = 'OFF'
+
     context.env.set_env_var('GMX_NO_TERM', '1')
 
     context.run_cmake(cmake_opts)
