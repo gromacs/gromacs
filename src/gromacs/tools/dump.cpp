@@ -93,8 +93,7 @@ static void list_tpx(const char *fn,
                    tpx.bTop ? &mtop : nullptr);
     if (tpx.bIr && !bOriginalInputrec)
     {
-        gmx::MDModules mdModules;
-        mdModules.adjustInputrecBasedOnModules(&ir);
+        gmx::MDModules().adjustInputrecBasedOnModules(&ir);
     }
 
     if (mdpfn && tpx.bIr)

@@ -152,6 +152,76 @@ TEST(TreeValueSupportAssignErrorTest, HandlesInvalidValue)
 }
 
 /********************************************************************
+ * Tests for checkForUnknownOptionsInKeyValueTree()
+ */
+
+class TreeValueSupportCheckTest : public ::testing::Test
+{
+    public:
+        TreeValueSupportCheckTest()
+        {
+            auto sec1 = options_.addSection(gmx::OptionSection("s"));
+            auto sec2 = options_.addSection(gmx::OptionSection("r"));
+            options_.addOption(gmx::IntegerOption("a"));
+            sec1.addOption(gmx::IntegerOption("a"));
+            sec1.addOption(gmx::IntegerOption("b"));
+            sec2.addOption(gmx::IntegerOption("b"));
+        }
+
+        gmx::Options              options_;
+        gmx::KeyValueTreeBuilder  builder_;
+};
+
+TEST_F(TreeValueSupportCheckTest, HandlesEmpty)
+{
+    EXPECT_NO_THROW_GMX(gmx::checkForUnknownOptionsInKeyValueTree(builder_.build(), options_));
+}
+
+TEST_F(TreeValueSupportCheckTest, HandlesMatchingTree)
+{
+    auto                     root = builder_.rootObject();
+    root.addValue<int>("a", 1);
+    auto                     obj1 = root.addObject("s");
+    obj1.addValue<int>("a", 1);
+    obj1.addValue<int>("b", 2);
+    auto                     obj2 = root.addObject("r");
+    obj2.addValue<int>("b", 3);
+
+    EXPECT_NO_THROW_GMX(gmx::checkForUnknownOptionsInKeyValueTree(builder_.build(), options_));
+}
+
+TEST_F(TreeValueSupportCheckTest, HandlesSmallerTree1)
+{
+    auto                     root = builder_.rootObject();
+    root.addValue<int>("a", 1);
+    auto                     obj1 = root.addObject("s");
+    obj1.addValue<int>("b", 2);
+
+    EXPECT_NO_THROW_GMX(gmx::checkForUnknownOptionsInKeyValueTree(builder_.build(), options_));
+}
+
+TEST_F(TreeValueSupportCheckTest, HandlesSmallerTree2)
+{
+    auto                     root = builder_.rootObject();
+    auto                     obj1 = root.addObject("s");
+    obj1.addValue<int>("a", 1);
+    obj1.addValue<int>("b", 2);
+
+    EXPECT_NO_THROW_GMX(gmx::checkForUnknownOptionsInKeyValueTree(builder_.build(), options_));
+}
+
+TEST_F(TreeValueSupportCheckTest, DetectsExtraValue)
+{
+    auto                     root = builder_.rootObject();
+    auto                     obj2 = root.addObject("r");
+    obj2.addValue<int>("a", 1);
+    obj2.addValue<int>("b", 3);
+
+    EXPECT_THROW_GMX(gmx::checkForUnknownOptionsInKeyValueTree(builder_.build(), options_),
+                     gmx::InvalidInputError);
+}
+
+/********************************************************************
  * Tests for adjustKeyValueTreeFromOptions()
  */
 
