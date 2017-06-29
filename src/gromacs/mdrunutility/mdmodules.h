@@ -119,7 +119,8 @@ class MDModules
          * Normalizes inputrec parameters to match current code version.
          *
          * This orders the parameters in `ir->param` to match the current code
-         * and adds any missing defaults.
+         * and adds any missing defaults.  It also throws an error if the
+         * inputrec contains parameters that are not recognized by any module.
          */
         void adjustInputrecBasedOnModules(t_inputrec *ir);
 
