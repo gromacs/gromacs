@@ -2442,7 +2442,7 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
 
 // TODO This can be cleaned up a lot, and move back to runner.cpp
 void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
-                t_inputrec *inputrec,
+                const t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 nonbonded_verlet_t *nbv,
