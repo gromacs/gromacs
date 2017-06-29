@@ -121,7 +121,7 @@ void print_start(FILE *fplog, t_commrec *cr,
                  const char *name);
 
 void finish_run(FILE *log, const gmx::MDLogger &mdlog, t_commrec *cr,
-                t_inputrec *inputrec,
+                const t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 nonbonded_verlet_t *nbv,
