@@ -352,11 +352,14 @@ Performance and Run Control
 ``MDRUN``
         the :ref:`gmx mdrun` command used by :ref:`gmx tune_pme`.
 
-``GMX_NSTLIST_PRUNE``
+``GMX_DISABLE DYNAMICPRUNING``
+        disables dynamic pair-list pruning. Note that :ref:`gmx mdrun` will
+        still tune nstlist to the optimal value with dynamic pruning. Thus
+        for good performance the -nstlist option should be used.
+
+``GMX_NSTLIST_DYNAMICPRUNING``
         overrides the dynamic pair-list pruning interval chosen heuristically
-        by mdrun. Setting this equal to or larger than the list update interval
-        in mdrun disables dynamic pruning. Note that for optimal performance
-        without dynamic list pruning nstlist should be lowered.
+        by mdrun.
 
 ``GMX_USE_TREEREDUCE``
         use tree reduction for nbnxn force reduction. Potentially faster for large number of

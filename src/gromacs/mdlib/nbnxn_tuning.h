@@ -50,22 +50,25 @@
 
 struct gmx_mtop_t;
 struct interaction_const_t;
+struct NbnxnListParameters;
 struct t_inputrec;
 
-/*! \brief Setup the dynamic pairlist pruning
+/*! \brief Set the pair-list parameters and setup the dynamic pairlist pruning
  *
- * \param[in,out] fplog   Log file
- * \param[in]     ir      The input parameter record
- * \param[in]     mtop    The global topology
- * \param[in]     box     The unit cell
- * \param[in]     useGpu  Tells if we are using a GPU for non-bondeds
- * \param[in,out] ic      The nonbonded interactions constants
+ * \param[in,out] fplog       Log file
+ * \param[in]     ir          The input parameter record
+ * \param[in]     mtop        The global topology
+ * \param[in]     box         The unit cell
+ * \param[in]     useGpu      Tells if we are using a GPU for non-bondeds
+ * \param[in]     ic          The nonbonded interactions constants
+ * \param[out]    listParams  The list setup parameters
  */
-void setupDynamicPairlistPruning(FILE                *fplog,
-                                 const t_inputrec    *ir,
-                                 const gmx_mtop_t    *mtop,
-                                 matrix               box,
-                                 bool                 useGpu,
-                                 interaction_const_t *ic);
+void setPairlistParameters(FILE                      *fplog,
+                           const t_inputrec          *ir,
+                           const gmx_mtop_t          *mtop,
+                           matrix                     box,
+                           bool                       useGpu,
+                           const interaction_const_t *ic,
+                           NbnxnListParameters       *listParams);
 
 #endif /* NBNXN_TUNING_H */

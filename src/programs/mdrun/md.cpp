@@ -520,7 +520,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
-                         fr->ic, fr->pmedata, use_GPU(fr->nbv),
+                         fr->ic, &fr->nbv->listParams, fr->pmedata, use_GPU(fr->nbv),
                          &bPMETunePrinting);
     }
 

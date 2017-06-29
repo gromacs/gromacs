@@ -46,6 +46,17 @@
 
 struct tMPI_Atomic;
 
+/* The setup for generating and pruning the nbnxn pair list.
+ * Without dynamic pruning rlistOuter=rlistInner.
+ */
+struct NbnxnListParameters
+{
+    bool useDynamicPruning; /* Are we using dynamic pair-list pruning */
+    int  nstlistPrune;      /* Pair-list dynamic pruning interval */
+    real rlistOuter;        /* Cut-off of the larger, outer pair-list */
+    real rlistInner;        /* Cut-off of the smaller, inner pair-list */
+};
+
 /* With GPU kernels the i and j cluster size is 8 atoms */
 static const int c_nbnxnGpuClusterSize = 8;
 
@@ -159,9 +170,9 @@ typedef struct nbnxn_pairlist_t {
     int                     na_sc;       /* The number of atoms per super cluster    */
     real                    rlist;       /* The radius for constructing the list     */
     int                     nci;         /* The number of i-clusters in the list     */
-    int                     nci0;        /* The number of i-clusters in the unpruned list */
+    int                     nciOuter;    /* The number of i-clusters in the outer, unpruned list */
     nbnxn_ci_t             *ci;          /* The i-cluster list, size nci             */
-    nbnxn_ci_t             *ci0;         /* The unpruned i-cluster list, size nci    */
+    nbnxn_ci_t             *ciOuter;     /* The outer, unpruned i-cluster list, size nci    */
     int                     ci_nalloc;   /* The allocation size of ci/ci0            */
     int                     nsci;        /* The number of i-super-clusters in the list */
     nbnxn_sci_t            *sci;         /* The i-super-cluster list                 */
@@ -169,7 +180,7 @@ typedef struct nbnxn_pairlist_t {
 
     int                     ncj;         /* The number of j-clusters in the list     */
     nbnxn_cj_t             *cj;          /* The j-cluster list, size ncj             */
-    nbnxn_cj_t             *cj0;         /* The unpruned j-cluster list, size ncj    */
+    nbnxn_cj_t             *cjOuter;     /* The outer, unpruned j-cluster list, size ncj    */
     int                     cj_nalloc;   /* The allocation size of cj/cj0            */
     int                     ncjInUse;    /* The number of j-clusters that are used by ci entries in this list, will be <= ncj */
 
@@ -187,18 +198,18 @@ typedef struct nbnxn_pairlist_t {
 } nbnxn_pairlist_t;
 
 typedef struct {
-    int                nnbl;             /* number of lists */
-    nbnxn_pairlist_t **nbl;              /* lists */
-    nbnxn_pairlist_t **nbl_work;         /* work space for rebalancing lists */
-    gmx_bool           bCombined;        /* TRUE if lists get combined into one (the 1st) */
-    gmx_bool           bSimple;          /* TRUE if the list of of type "simple"
-                                            (na_sc=na_s, no super-clusters used) */
-    int                natpair_ljq;      /* Total number of atom pairs for LJ+Q kernel */
-    int                natpair_lj;       /* Total number of atom pairs for LJ kernel   */
-    int                natpair_q;        /* Total number of atom pairs for Q kernel    */
-    t_nblist         **nbl_fep;          /* List of free-energy atom pair interactions */
-    bool               prunedSimpleList; /* Has the simple list been pruned and the original list been copied into ci0,nci0? */
-    gmx_int64_t        step;             /* Step at which the list was created */
+    int                nnbl;                 /* number of lists */
+    nbnxn_pairlist_t **nbl;                  /* lists */
+    nbnxn_pairlist_t **nbl_work;             /* work space for rebalancing lists */
+    gmx_bool           bCombined;            /* TRUE if lists get combined into one (the 1st) */
+    gmx_bool           bSimple;              /* TRUE if the list of of type "simple"
+                                                (na_sc=na_s, no super-clusters used) */
+    int                natpair_ljq;          /* Total number of atom pairs for LJ+Q kernel */
+    int                natpair_lj;           /* Total number of atom pairs for LJ kernel   */
+    int                natpair_q;            /* Total number of atom pairs for Q kernel    */
+    t_nblist         **nbl_fep;              /* List of free-energy atom pair interactions */
+    bool               havePrunedSimpleList; /* Has the simple list been pruned and the original list been copied into ciOuter,nciOuter? */
+    gmx_int64_t        step;                 /* Step at which the list was created */
 } nbnxn_pairlist_set_t;
 
 enum {

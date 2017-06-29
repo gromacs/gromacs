@@ -671,7 +671,7 @@ static void print_gputimes(FILE *fplog, const char *name,
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
                 name, num, t/1000, avg_perf, 100 * t/tot_t);
     }
-    else // FIXME: the pruning will look weird here
+    else
     {
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
                 name, "", t/1000, avg_perf, 100.0);
@@ -927,13 +927,13 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Total ", gpu_t->nb_c, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);
-        if (gpu_t->rollPruneTime.c)
+        if (gpu_t->dynamicPruneTime.c)
         {
-            /* TODO: for now we print in after a separator the rolling pruning kernel timings
-             *       and avoid adding it to tot_gpu as this is not in the force overlap, but we
-             *       print the fraction as relative to the rest.
+            /* We print the dynamic pruning kernel timings after a separator
+             * and avoid adding it to tot_gpu as this is not in the force
+             * overlap. We print the fraction as relative to the rest.
              */
-            print_gputimes(fplog, "*Rolling pruning ", gpu_t->rollPruneTime.c, gpu_t->rollPruneTime.t, tot_gpu);
+            print_gputimes(fplog, "*Dynamic pruning", gpu_t->dynamicPruneTime.c, gpu_t->dynamicPruneTime.t, tot_gpu);
             fprintf(fplog, "%s\n", hline);
         }
 

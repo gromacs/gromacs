@@ -440,8 +440,8 @@ static void do_nb_verlet(t_forcerec *fr,
         /* When dynamic pair-list  pruning is requested, we need to prune
          * at nstlistPrune steps.
          */
-        if ((flags & GMX_FORCE_DYN_PRUNING) &&
-            (step - nbvg->nbl_lists.step) % fr->ic->nstlistPrune == 0)
+        if ((flags & GMX_FORCE_DYNAMICPRUNING) &&
+            (step - nbvg->nbl_lists.step) % fr->nbv->listParams.nstlistPrune == 0)
         {
             /* Prune the pair-list beyond fr->ic->rlistPrune using
              * the current coordinates of the atoms.
@@ -795,9 +795,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
 
     /* Check if we should apply dynamic pruning to the pair list */
-    if (fr->ic->nstlistPrune < inputrec->nstlist - 1)
+    if (fr->nbv->listParams.useDynamicPruning)
     {
-        flags |= GMX_FORCE_DYN_PRUNING;
+        flags |= GMX_FORCE_DYNAMICPRUNING;
     }
 
     if (bStateChanged)
@@ -943,7 +943,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintLocal].nbat,
                             &top->excls,
-                            ic->rlistOuter,
+                            nbv->listParams.rlistOuter,
                             nbv->min_ci_balanced,
                             &nbv->grp[eintLocal].nbl_lists,
                             eintLocal,
@@ -1014,7 +1014,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintNonlocal].nbat,
                                 &top->excls,
-                                ic->rlistOuter,
+                                nbv->listParams.rlistOuter,
                                 nbv->min_ci_balanced,
                                 &nbv->grp[eintNonlocal].nbl_lists,
                                 eintNonlocal,
@@ -1379,7 +1379,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
 
             /* Is dynamic pair-list pruning activated? */
-            if (flags & GMX_FORCE_DYN_PRUNING)
+            if (flags & GMX_FORCE_DYNAMICPRUNING)
             {
                 /* We should not launch the rolling pruning kernel at a search
                  * step or just before search steps, since that's useless.

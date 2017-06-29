@@ -58,7 +58,7 @@
 /* Calculate dHdl */
 #define GMX_FORCE_DHDL         (1<<10)
 /* We will apply dynamic pruning to the pair list */
-#define GMX_FORCE_DYN_PRUNING  (1<<11)
+#define GMX_FORCE_DYNAMICPRUNING  (1<<11)
 
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
