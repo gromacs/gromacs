@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,10 @@
 
 #include "treesupport.h"
 
+#include <set>
+#include <string>
+#include <vector>
+
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/options/optionsection.h"
@@ -51,6 +55,7 @@
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -142,11 +147,79 @@ class TreeAssignHelper
         KeyValueTreePath           context_;
 };
 
-class TreeIterationHelper : private OptionsVisitor
+class TreeCheckHelper : private OptionsVisitor
 {
     public:
-        TreeIterationHelper(const KeyValueTreeObject &root,
-                            KeyValueTreeBuilder      *builder)
+        TreeCheckHelper(const KeyValueTreeObject &root)
+            : currentObject_(&root), currentKnownNames_(nullptr)
+        {
+        }
+
+        bool hasUnknownPaths() const { return !unknownPaths_.empty(); }
+        const std::vector<KeyValueTreePath> &unknownPaths() const
+        {
+            return unknownPaths_;
+        }
+
+        void processOptionSection(const OptionSectionInfo &section)
+        {
+            OptionsIterator       iterator(section);
+            std::set<std::string> knownNames;
+            currentKnownNames_ = &knownNames;
+            iterator.acceptOptions(this);
+            iterator.acceptSections(this);
+            currentKnownNames_ = nullptr;
+            for (const auto &prop : currentObject_->properties())
+            {
+                if (knownNames.count(prop.key()) == 0)
+                {
+                    KeyValueTreePath path(currentPath_);
+                    path.append(prop.key());
+                    unknownPaths_.push_back(std::move(path));
+                }
+            }
+        }
+
+    private:
+        virtual void visitSection(const OptionSectionInfo &section)
+        {
+            const std::string &name = section.name();
+            if (currentObject_->keyExists(name))
+            {
+                currentKnownNames_->insert(name);
+                auto parentObject     = currentObject_;
+                auto parentKnownNames = currentKnownNames_;
+                // TODO: Consider what to do with mismatching types.
+                currentObject_ = &(*currentObject_)[name].asObject();
+                currentPath_.append(name);
+                processOptionSection(section);
+                currentPath_.pop_back();
+                currentObject_     = parentObject;
+                currentKnownNames_ = parentKnownNames;
+            }
+        }
+        virtual void visitOption(const OptionInfo &option)
+        {
+            const std::string &name = option.name();
+            if (currentObject_->keyExists(name))
+            {
+                currentKnownNames_->insert(name);
+                // TODO: Consider what to do with mismatching types.
+            }
+        }
+
+        KeyValueTreePath               currentPath_;
+        const KeyValueTreeObject      *currentObject_;
+        std::set<std::string>         *currentKnownNames_;
+        std::vector<KeyValueTreePath>  unknownPaths_;
+
+};
+
+class TreeAdjustHelper : private OptionsVisitor
+{
+    public:
+        TreeAdjustHelper(const KeyValueTreeObject &root,
+                         KeyValueTreeBuilder      *builder)
             : currentSourceObject_(&root),
               currentObjectBuilder_(builder->rootObject())
         {
@@ -246,12 +319,26 @@ void assignOptionsFromKeyValueTree(Options                   *options,
     helper.assignAll(tree);
 }
 
+void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject &tree,
+                                          const Options            &options)
+{
+    TreeCheckHelper helper(tree);
+    helper.processOptionSection(options.rootSection());
+    if (helper.hasUnknownPaths())
+    {
+        std::string paths(formatAndJoin(helper.unknownPaths(), "\n  ",
+                                        [](const KeyValueTreePath &path) { return path.toString(); }));
+        std::string message("Unknown input values:\n  " + paths);
+        GMX_THROW(InvalidInputError(message));
+    }
+}
+
 KeyValueTreeObject
 adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
                               const Options            &options)
 {
     KeyValueTreeBuilder builder;
-    TreeIterationHelper helper(tree, &builder);
+    TreeAdjustHelper    helper(tree, &builder);
     helper.processOptionSection(options.rootSection());
     return builder.build();
 }

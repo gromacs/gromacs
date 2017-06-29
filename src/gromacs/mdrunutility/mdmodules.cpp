@@ -116,9 +116,11 @@ void MDModules::adjustInputrecBasedOnModules(t_inputrec *ir)
     Options moduleOptions;
     impl_->makeModuleOptions(&moduleOptions);
 
+    checkForUnknownOptionsInKeyValueTree(*ir->params, moduleOptions);
+
     std::unique_ptr<KeyValueTreeObject> params(
             new KeyValueTreeObject(
-                    gmx::adjustKeyValueTreeFromOptions(*ir->params, moduleOptions)));
+                    adjustKeyValueTreeFromOptions(*ir->params, moduleOptions)));
     delete ir->params;
     ir->params = params.release();
 }
