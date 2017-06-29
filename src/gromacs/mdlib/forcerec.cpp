@@ -1966,9 +1966,6 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_F, 16, 32);
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
-    ic->rlistOuter      = fr->rlist;
-    ic->rlistInner      = fr->rlist;
-
     /* Lennard-Jones */
     ic->vdwtype         = fr->vdwtype;
     ic->vdw_modifier    = fr->vdw_modifier;
@@ -2148,7 +2145,9 @@ static void init_nb_verlet(FILE                *fp,
         }
     }
 
-    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->bUseGPU, fr->ic);
+    nbv->listParams = new NbnxnListParameters(ir->rlist);
+    setupDynamicPairlistPruning(fp, ir, mtop, box, nbv->bUseGPU, fr->ic,
+                                nbv->listParams);
 
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
@@ -2226,6 +2225,7 @@ static void init_nb_verlet(FILE                *fp,
                        &fr->hwinfo->gpu_info,
                        fr->gpu_opt,
                        fr->ic,
+                       nbv->listParams,
                        nbv->grp,
                        cr->rank_pp_intranode,
                        cr->nodeid,

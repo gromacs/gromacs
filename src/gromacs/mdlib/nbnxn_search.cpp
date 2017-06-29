@@ -738,9 +738,9 @@ static void check_cell_list_space_simple(nbnxn_pairlist_t *nbl,
                            nbl->cj_nalloc*sizeof(*nbl->cj),
                            nbl->alloc, nbl->free);
 
-        nbnxn_realloc_void((void **)&nbl->cj0,
-                           nbl->ncj*sizeof(*nbl->cj0),
-                           nbl->cj_nalloc*sizeof(*nbl->cj0),
+        nbnxn_realloc_void((void **)&nbl->cjOuter,
+                           nbl->ncj*sizeof(*nbl->cjOuter),
+                           nbl->cj_nalloc*sizeof(*nbl->cjOuter),
                            nbl->alloc, nbl->free);
     }
 }
@@ -2133,9 +2133,9 @@ static void nb_realloc_ci(nbnxn_pairlist_t *nbl, int n)
                        nbl->ci_nalloc*sizeof(*nbl->ci),
                        nbl->alloc, nbl->free);
 
-    nbnxn_realloc_void((void **)&nbl->ci0,
-                       nbl->nci*sizeof(*nbl->ci0),
-                       nbl->ci_nalloc*sizeof(*nbl->ci0),
+    nbnxn_realloc_void((void **)&nbl->ciOuter,
+                       nbl->nci*sizeof(*nbl->ciOuter),
+                       nbl->ci_nalloc*sizeof(*nbl->ciOuter),
                        nbl->alloc, nbl->free);
 }
 
@@ -2400,6 +2400,7 @@ static void clear_pairlist(nbnxn_pairlist_t *nbl)
     nbl->ncjInUse      = 0;
     nbl->ncj4          = 0;
     nbl->nci_tot       = 0;
+    nbl->nciOuter      = -1;
     nbl->nexcl         = 1;
 
     nbl->work->ncj_noq = 0;
@@ -4343,9 +4344,10 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     }
 
     /* This is a fresh list, so not pruned, stored using ci and nci.
-     * ci0 and nci0 are invalid at this point.
+     * ciOuter and nciOuter are invalid at this point.
      */
-    nbl_list->prunedSimpleList = false;
+    GMX_ASSERT(nbl_list->nbl[0]->nciOuter == -1, "nciOuter should have been set to -1 to signal that it is invalid");
+    nbl_list->havePrunedSimpleList = false;
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
     if (LOCAL_I(iloc))

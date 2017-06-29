@@ -72,14 +72,6 @@ struct interaction_const_t
 {
     int             cutoff_scheme;
 
-    /* Pair-list dynamic pruning interval */
-    int nstlistPrune;
-
-    /* Pair-list cut-off of the larger, outer pair-list */
-    real rlistOuter;
-    /* Pair-list cut-off of the smaller, inner pair-list */
-    real rlistInner;
-
     /* VdW */
     int                    vdwtype;
     int                    vdw_modifier;
