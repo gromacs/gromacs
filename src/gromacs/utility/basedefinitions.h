@@ -235,11 +235,7 @@ typedef uint64_t gmx_uint64_t;
  * random engines), we need to specify it for other compilers.
  */
 #ifndef gmx_constexpr
-#if !defined(_MSC_VER)
 #    define gmx_constexpr constexpr
-#else
-#    define gmx_constexpr
-#endif
 #endif
 
 /*! \def GMX_ALIGNED(type, alignment)
