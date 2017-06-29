@@ -283,7 +283,7 @@ void dd_partition_system(FILE                *fplog,
 void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
 
 /*! \brief Print statistics for domain decomposition communication */
-void print_dd_statistics(struct t_commrec *cr, t_inputrec *ir, FILE *fplog);
+void print_dd_statistics(struct t_commrec *cr, const t_inputrec *ir, FILE *fplog);
 
 /* In domdec_con.c */
 

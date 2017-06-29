@@ -9061,7 +9061,7 @@ void reset_dd_statistics_counters(gmx_domdec_t *dd)
     comm->load_pme = 0;
 }
 
-void print_dd_statistics(t_commrec *cr, t_inputrec *ir, FILE *fplog)
+void print_dd_statistics(t_commrec *cr, const t_inputrec *ir, FILE *fplog)
 {
     gmx_domdec_comm_t *comm;
     int                ddnat;
