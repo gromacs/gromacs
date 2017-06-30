@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -223,22 +223,6 @@ typedef uint64_t gmx_uint64_t;
 #define gmx_noreturn __declspec(noreturn)
 #else
 #define gmx_noreturn
-#endif
-#endif
-
-/*! \def gmx_constexpr
- * \brief C++11 constexpr everywhere except MSVC 2013, where it is empty.
- *
- * Support for constexpr was not added until MSVC 2015, and it still
- * seems to be unreliable. Since interacting with parts of libc++ and
- * libstdc++ depend on it (for instance the min/max calls in our
- * random engines), we need to specify it for other compilers.
- */
-#ifndef gmx_constexpr
-#if !defined(_MSC_VER)
-#    define gmx_constexpr constexpr
-#else
-#    define gmx_constexpr
 #endif
 #endif
 
