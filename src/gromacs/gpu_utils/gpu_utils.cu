@@ -452,29 +452,33 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
 #endif /* HAVE_NVML_APPLICATION_CLOCKS */
 }
 
-gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
-                  const struct gmx_gpu_info_t *gpu_info,
-                  const struct gmx_gpu_opt_t *gpu_opt)
+void init_gpu(const gmx::MDLogger &mdlog, int rank, int mygpu,
+              const struct gmx_gpu_info_t *gpu_info,
+              const struct gmx_gpu_opt_t *gpu_opt)
 {
     cudaError_t stat;
     char        sbuf[STRLEN];
     int         gpuid;
 
     assert(gpu_info);
-    assert(result_str);
+    assert(gpu_opt);
 
     if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
     {
-        sprintf(sbuf, "Trying to initialize an non-existent GPU: "
+        sprintf(sbuf, "On rank %d trying to initialize an non-existent GPU: "
                 "there are %d selected GPU(s), but #%d was requested.",
-                gpu_opt->n_dev_use, mygpu);
+                rank, gpu_opt->n_dev_use, mygpu);
         gmx_incons(sbuf);
     }
 
     gpuid = gpu_info->gpu_dev[gpu_opt->dev_use[mygpu]].id;
 
     stat = cudaSetDevice(gpuid);
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    if (stat != cudaSuccess)
+    {
+        gmx_fatal(FARGS, "On rank %s failed to initialize GPU #%d: %s",
+                  rank, mygpu, cudaGetErrorString(stat));
+    }
 
     if (debug)
     {
@@ -482,11 +486,7 @@ gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
     }
 
     //Ignoring return value as NVML errors should be treated not critical.
-    if (stat == cudaSuccess)
-    {
-        init_gpu_application_clocks(mdlog, gpuid, gpu_info);
-    }
-    return (stat == cudaSuccess);
+    init_gpu_application_clocks(mdlog, gpuid, gpu_info);
 }
 
 gmx_bool free_cuda_gpu(
