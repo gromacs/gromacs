@@ -776,7 +776,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bUseGPU       = fr->nbv->bUseGPU;
-    bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
+    bUseOrEmulGPU = bUseGPU || fr->nbv->emulateGpu;
 
     if (bStateChanged)
     {
