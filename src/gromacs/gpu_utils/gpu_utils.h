@@ -107,19 +107,20 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * gpu_info.gpu_dev array.
  *
  * \param      mdlog        log file to write to
+ * \param[in]  rank         MPI rank of this process (for error output)
  * \param[in]  mygpu        index of the GPU to initialize
- * \param[out] result_str   the message related to the error that occurred
- *                          during the initialization (if there was any).
  * \param[in] gpu_info      GPU info of all detected devices in the system.
  * \param[in] gpu_opt       options for using the GPUs in gpu_info
- * \returns                 true if no error occurs during initialization.
+ *
+ * Issues a fatal error for any critical errors that occur during
+ * initialization.
  */
 GPU_FUNC_QUALIFIER
-gmx_bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
-                  int GPU_FUNC_ARGUMENT(mygpu),
-                  char *GPU_FUNC_ARGUMENT(result_str),
-                  const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
-                  const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM_WITH_RETURN(-1)
+void init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
+              int GPU_FUNC_ARGUMENT(rank),
+              int GPU_FUNC_ARGUMENT(mygpu),
+              const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+              const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
