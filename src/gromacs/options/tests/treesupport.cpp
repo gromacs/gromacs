@@ -43,6 +43,7 @@
 
 #include "gromacs/options/treesupport.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -57,6 +58,7 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
@@ -246,6 +248,8 @@ class TreeValueSupportTest : public ::testing::Test
                 gmx::InMemoryDeserializer     deserializer(buffer);
                 gmx::KeyValueTreeObject       output
                     = gmx::deserializeKeyValueTree(&deserializer);
+                SCOPED_TRACE("After serialization/deserialization\n  Buffer: "
+                             + formatBuffer(buffer));
                 checker.checkKeyValueTreeObject(output, "Adjusted");
             }
             // Check that dumping works.
@@ -281,6 +285,11 @@ class TreeValueSupportTest : public ::testing::Test
             gmx::InMemorySerializer serializer;
             gmx::serializeKeyValueTree(tree, &serializer);
             return serializer.finishAndGetBuffer();
+        }
+
+        std::string formatBuffer(const std::vector<char> &buffer)
+        {
+            return gmx::formatAndJoin(buffer, " ", [](char c) { return gmx::formatString("%02x", (unsigned char)c); });
         }
 };
 

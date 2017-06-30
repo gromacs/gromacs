@@ -115,7 +115,7 @@ std::vector<char> InMemorySerializer::finishAndGetBuffer()
 
 void InMemorySerializer::doBool(bool *value)
 {
-    impl_->doValue(value);
+    impl_->doValue(*value);
 }
 
 void InMemorySerializer::doUChar(unsigned char *value)
