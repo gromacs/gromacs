@@ -1761,35 +1761,6 @@ static void pick_nbnxn_kernel(FILE                *fp,
     }
 }
 
-static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
-                                 const t_commrec     *cr,
-                                 const gmx_hw_info_t *hwinfo,
-                                 gmx_bool            *bUseGPU,
-                                 bool                 emulateGpu,
-                                 const gmx_gpu_opt_t *gpu_opt)
-{
-    *bUseGPU = FALSE;
-
-    /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
-     */
-    if (gpu_opt->n_dev_use > 0 && !emulateGpu)
-    {
-        /* Each PP node will use the intra-node id-th device from the
-         * list of detected/selected GPUs.
-         *
-         * At this point the init should never fail as we made sure that
-         * we have all the GPUs we need. If it still does, we'll exit.
-         *
-         * TODO The error reporting will be nicer when the logger is
-         * aware of MPI ranks. */
-        init_gpu(mdlog, cr->nodeid, cr->rank_pp_intranode,
-                 &hwinfo->gpu_info, gpu_opt);
-
-        /* Here we actually turn on hardware GPU acceleration */
-        *bUseGPU = TRUE;
-    }
-}
-
 gmx_bool uses_simple_tables(int                 cutoff_scheme,
                             nonbonded_verlet_t *nbv,
                             int                 group)
@@ -2073,10 +2044,18 @@ static void init_nb_verlet(FILE                *fp,
     snew(nbv, 1);
 
     nbv->emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
-    pick_nbnxn_resources(mdlog, cr, fr->hwinfo,
-                         &nbv->bUseGPU,
-                         nbv->emulateGpu,
-                         fr->gpu_opt);
+    nbv->bUseGPU    = (fr->gpu_opt->n_dev_use > 0);
+    GMX_RELEASE_ASSERT(!(nbv->emulateGpu && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
+
+    if (nbv->bUseGPU)
+    {
+        /* This PP MPI rank uses the GPU that the GPU assignment
+         * prepared for it, which is the entry in gpu_opt->dev_use
+         * corresponding to the index of this PP MPI rank within the
+         * set of such ranks on this node. */
+        init_gpu(mdlog, cr->nodeid, cr->rank_pp_intranode,
+                 &fr->hwinfo->gpu_info, fr->gpu_opt);
+    }
 
     nbv->nbs             = nullptr;
     nbv->min_ci_balanced = 0;
