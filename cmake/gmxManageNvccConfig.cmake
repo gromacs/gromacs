@@ -51,23 +51,6 @@ if (CUDA_HOST_COMPILER_CHANGED AND CUDA_HOST_COMPILER_AUTOSET)
     unset(CUDA_HOST_COMPILER_AUTOSET CACHE)
 endif()
 
-# Set the host compiler for nvcc if this is not set by CMake (v<=2.8.9)
-#
-# Note that even though nvcc compiles host code as C++, we use the
-# CMAKE_C_COMPILER as host compiler. We do this because CUDA versions
-# preceding 5.0 only recognize icc, but not icpc. However, both gcc and icc
-# (i.e. all supported compilers) happily compile C++ code.
-#
-# Also note that with MSVC nvcc sets the -compiler-bindir option behind the
-# scenes; to avoid conflicts we don't set -ccbin automatically.
-#
-# TODO: remove this when CMAke >=v2.8.10 is required.
-if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
-    set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
-    set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
-        "True if CUDA_HOST_COMPILER is automatically set")
-endif()
-
 # glibc 2.23 changed string.h in a way that breaks CUDA compilation in
 # many projects, but which has a trivial workaround. It would be nicer
 # to compile with nvcc and see that the workaround is necessary and
