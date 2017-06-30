@@ -170,7 +170,8 @@ typedef struct nonbonded_verlet_t {
     int                      ngrp;            /**< number of interaction groups          */
     nonbonded_verlet_group_t grp[2];          /**< local and non-local interaction group */
 
-    gmx_bool                 bUseGPU;         /**< TRUE when GPU acceleration is used */
+    gmx_bool                 bUseGPU;         /**< TRUE when non-bonded interactions are computed on a physical GPU */
+    bool                     emulateGpu;      /**< true when non-bonded interactions are computed on the CPU using GPU-style pair lists */
     gmx_nbnxn_gpu_t         *gpu_nbv;         /**< pointer to GPU nb verlet data     */
     int                      min_ci_balanced; /**< pair list balancing parameter
                                                    used for the 8x8x8 GPU kernels    */
