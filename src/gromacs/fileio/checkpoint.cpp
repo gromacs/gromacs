@@ -525,8 +525,8 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
         return -1;
     }
     /* Read/write the element data type */
-    gmx_constexpr int xdrTypeInTheCode = xdr_type<T>::value;
-    int               xdrTypeInTheFile = xdrTypeInTheCode;
+    constexpr int xdrTypeInTheCode = xdr_type<T>::value;
+    int           xdrTypeInTheFile = xdrTypeInTheCode;
     res = xdr_int(xd, &xdrTypeInTheFile);
     if (res == 0)
     {

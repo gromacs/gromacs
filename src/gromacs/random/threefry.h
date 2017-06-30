@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -426,11 +426,16 @@ class ThreeFry2x64General
 
     public:
         //! \brief Smallest value that can be returned from random engine.
-        static gmx_constexpr
+#if !defined(_MSC_VER)
+        static constexpr
+#else
+        // Avoid constexpr bug in MSVC 2015, note that max() below does work
+        static
+#endif
         result_type min() { return std::numeric_limits<result_type>::min(); }
 
         //! \brief Largest value that can be returned from random engine.
-        static gmx_constexpr
+        static constexpr
         result_type max() { return std::numeric_limits<result_type>::max(); }
 
         /*! \brief Construct random engine with 2x64 key values
