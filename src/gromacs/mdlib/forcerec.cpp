@@ -1768,8 +1768,6 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                                  bool                 emulateGpu,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
-    char     gpu_err_str[STRLEN];
-
     *bUseGPU = FALSE;
 
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
@@ -1777,21 +1775,15 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
     if (gpu_opt->n_dev_use > 0 && !emulateGpu)
     {
         /* Each PP node will use the intra-node id-th device from the
-         * list of detected/selected GPUs. */
-        if (!init_gpu(mdlog, cr->rank_pp_intranode, gpu_err_str,
-                      &hwinfo->gpu_info, gpu_opt))
-        {
-            /* At this point the init should never fail as we made sure that
-             * we have all the GPUs we need. If it still does, we'll bail. */
-            /* TODO the decorating of gpu_err_str is nicer if it
-               happens inside init_gpu. Out here, the decorating with
-               the MPI rank makes sense. */
-            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
-                      cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                        cr->rank_pp_intranode),
-                      gpu_err_str);
-        }
+         * list of detected/selected GPUs.
+         *
+         * At this point the init should never fail as we made sure that
+         * we have all the GPUs we need. If it still does, we'll exit.
+         *
+         * TODO The error reporting will be nicer when the logger is
+         * aware of MPI ranks. */
+        init_gpu(mdlog, cr->nodeid, cr->rank_pp_intranode,
+                 &hwinfo->gpu_info, gpu_opt);
 
         /* Here we actually turn on hardware GPU acceleration */
         *bUseGPU = TRUE;

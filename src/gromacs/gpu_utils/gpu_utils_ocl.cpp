@@ -397,23 +397,21 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
 }
 
 //! This function is documented in the header file
-gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
-                  int                              mygpu,
-                  char                            *result_str,
-                  const gmx_gpu_info_t gmx_unused *gpu_info,
-                  const gmx_gpu_opt_t             *gpu_opt
-                  )
+void init_gpu(const gmx::MDLogger               & /*mdlog*/,
+              int                               rank,
+              int                               mygpu,
+              const gmx_gpu_info_t             *gpu_info,
+              const gmx_gpu_opt_t              *gpu_opt
+              )
 {
-    assert(result_str);
-
-    result_str[0] = 0;
+    assert(gpu_opt);
 
     if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
     {
         char        sbuf[STRLEN];
-        sprintf(sbuf, "Trying to initialize an non-existent GPU: "
+        sprintf(sbuf, "On rank %d trying to initialize an non-existent GPU: "
                 "there are %d selected GPU(s), but #%d was requested.",
-                gpu_opt->n_dev_use, mygpu);
+                rank, gpu_opt->n_dev_use, mygpu);
         gmx_incons(sbuf);
     }
 
@@ -433,8 +431,6 @@ gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
         setenv("CUDA_CACHE_DISABLE", "1", 0);
 #endif
     }
-
-    return TRUE;
 }
 
 //! This function is documented in the header file
