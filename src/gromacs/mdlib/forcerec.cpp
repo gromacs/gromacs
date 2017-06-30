@@ -1705,7 +1705,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
                               const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
-                              gmx_bool             bEmulateGPU,
+                              bool                 emulateGpu,
                               const t_inputrec    *ir,
                               int                 *kernel_type,
                               int                 *ewald_excl,
@@ -1716,7 +1716,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     *kernel_type = nbnxnkNotSet;
     *ewald_excl  = ewaldexclTable;
 
-    if (bEmulateGPU)
+    if (emulateGpu)
     {
         *kernel_type = nbnxnk8x8x8_PlainC;
 
@@ -1764,35 +1764,17 @@ static void pick_nbnxn_kernel(FILE                *fp,
 static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                                  const t_commrec     *cr,
                                  const gmx_hw_info_t *hwinfo,
-                                 gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
-                                 gmx_bool            *bEmulateGPU,
+                                 bool                 emulateGpu,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
-    gmx_bool bEmulateGPUEnvVarSet;
     char     gpu_err_str[STRLEN];
 
     *bUseGPU = FALSE;
 
-    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != nullptr);
-
-    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. Because
-     * GPUs (currently) only handle non-bonded calculations, we will
-     * automatically switch to emulation if non-bonded calculations are
-     * turned off via GMX_NO_NONBONDED - this is the simple and elegant
-     * way to turn off GPU initialization, data movement, and cleanup.
-     *
-     * GPU emulation can be useful to assess the performance one can expect by
-     * adding GPU(s) to the machine. The conditional below allows this even
-     * if mdrun is compiled without GPU acceleration support.
-     * Note that you should freezing the system as otherwise it will explode.
-     */
-    *bEmulateGPU = (bEmulateGPUEnvVarSet ||
-                    (!bDoNonbonded && gpu_opt->n_dev_use > 0));
-
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
      */
-    if (gpu_opt->n_dev_use > 0 && !(*bEmulateGPU))
+    if (gpu_opt->n_dev_use > 0 && !emulateGpu)
     {
         /* Each PP node will use the intra-node id-th device from the
          * list of detected/selected GPUs. */
@@ -2091,17 +2073,17 @@ static void init_nb_verlet(FILE                *fp,
     nonbonded_verlet_t *nbv;
     int                 i;
     char               *env;
-    gmx_bool            bEmulateGPU, bHybridGPURun = FALSE;
+    gmx_bool            bHybridGPURun = FALSE;
 
     nbnxn_alloc_t      *nb_alloc;
     nbnxn_free_t       *nb_free;
 
     snew(nbv, 1);
 
+    nbv->emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
     pick_nbnxn_resources(mdlog, cr, fr->hwinfo,
-                         fr->bNonbonded,
                          &nbv->bUseGPU,
-                         &bEmulateGPU,
+                         nbv->emulateGpu,
                          fr->gpu_opt);
 
     nbv->nbs             = nullptr;
@@ -2117,7 +2099,7 @@ static void init_nb_verlet(FILE                *fp,
         if (i == 0) /* local */
         {
             pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
-                              nbv->bUseGPU, bEmulateGPU, ir,
+                              nbv->bUseGPU, nbv->emulateGpu, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
                               fr->bNonbonded);
@@ -2128,7 +2110,7 @@ static void init_nb_verlet(FILE                *fp,
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
-                                  FALSE, FALSE, ir,
+                                  FALSE, false, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
                                   fr->bNonbonded);
