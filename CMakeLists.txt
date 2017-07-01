@@ -615,24 +615,34 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
 include(gmxSetBuildInformation)
 gmx_set_build_information()
-# Turn on RDTSCP if:
-# - the build system's CPU supports it
-# - the acceleration is set to AVX as all AVX-capable CPUs support AVX (which
-#   at this point means that the user set it).
-# Note: it's better to not use the later set value of GMX_SIMD because
-# it reflects the system's capability of both compiling and running AVX code.
-# TODO: After merge with 5.0 one could implement a cache variable dependency
-# such that GMX_USE_RDTSCP can change if GMX_SIMD is changed to AVX
-# after the first cmake pass.
-if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
-    set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
-else()
-    set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)
-endif()
-option(GMX_USE_RDTSCP "Use RDTSCP for better CPU-based timers (available on recent x86 CPUs; might need to be off when compiling for heterogeneous environments)" ${GMX_USE_RDTSCP_DEFAULT_VALUE})
+
+gmx_option_multichoice(
+    GMX_USE_RDTSCP
+    "Use low-latency RDTSCP instruction for CPU-based timers for mdrun execution; might need to be off when compiling for heterogeneous environments)"
+    "AUTO"
+    OFF ON AUTO DETECT)
 mark_as_advanced(GMX_USE_RDTSCP)
-if(GMX_USE_RDTSCP)
+
+set(HAVE_RDTSCP 0)
+if (GMX_USE_RDTSCP STREQUAL "ON")
     set(HAVE_RDTSCP 1)
+elseif(GMX_USE_RDTSCP STREQUAL "DETECT")
+    if (BUILD_CPU_FEATURES MATCHES "rdtscp")
+        set(HAVE_RDTSCP 1)
+    endif()
+elseif(GMX_USE_RDTSCP STREQUAL "AUTO")
+    # If the SIMD suggestion is filled, then it was derived from
+    # detection, so should not override the detected
+    # BUILD_CPU_FEATURES. Someone cross-compiling GROMACS by
+    # specifying an AVX level will get our best guess, ie that it in
+    # practice mostly correlates with rdtscp (and anyway is only
+    # relevant in rather old x86 hardware). Note that an initial cmake
+    # run that detected SIMD support, followed by a manual choice of
+    # SIMD, will have GMX_SUGGESTED_SIMD undefined; the user always
+    # gets the behaviour associated with their choice of SIMD.
+    if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR (NOT DEFINED GMX_SUGGESTED_SIMD AND GMX_SIMD MATCHES "AVX"))
+        set(HAVE_RDTSCP 1)
+    endif()
 endif()
 
 include(gmxTestLargeFiles)
