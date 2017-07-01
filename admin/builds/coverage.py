@@ -47,6 +47,7 @@ def do_build(context):
     # Ideally, this would be Reference, but running the regression tests is way
     # too slow that way (and also with None)...
     cmake_opts['GMX_SIMD'] = 'SSE4.1'
+    cmake_opts['GMX_USE_RDTSCP'] = 'DETECT'
 
     context.env.set_env_var('GMX_NO_TERM', '1')
 
