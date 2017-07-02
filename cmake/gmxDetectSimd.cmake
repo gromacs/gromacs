@@ -123,7 +123,7 @@ function(gmx_suggest_simd _suggested_simd)
 endfunction()
 
 function(gmx_detect_simd _suggested_simd)
-    if(NOT DEFINED GMX_SIMD)
+    if(GMX_SIMD STREQUAL "AUTO")
         if(GMX_TARGET_BGQ)
             set(${_suggested_simd} "IBM_QPX")
         elseif(GMX_TARGET_FUJITSU_SPARC64)
