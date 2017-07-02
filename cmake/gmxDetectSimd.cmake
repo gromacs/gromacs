@@ -122,7 +122,7 @@ function(gmx_suggest_simd _suggested_simd)
 endfunction()
 
 function(gmx_detect_simd _suggested_simd)
-    if(NOT DEFINED GMX_SIMD)
+    if(GMX_SIMD STREQUAL "AUTO")
         if(GMX_TARGET_BGQ)
             # BG/Q requires cross-compilation, so needs this
             # logic. While the qpx feature flag in cpuinfo works, it

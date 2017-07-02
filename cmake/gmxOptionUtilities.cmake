@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -210,13 +210,13 @@ function (GMX_SET_BOOLEAN NAME CONDITIONS)
     set(${NAME} ${${NAME}} PARENT_SCOPE)
 endfunction()
 
-# Checks if one or more cache variables have changed
+# Checks if one or more variables have changed since last call to this function
 #
 # Usage:
 #   gmx_check_if_changed(RESULT VAR1 VAR2 ... VARN)
 #
-# Sets RESULT to true if any of the given cache variables VAR1 ... VARN has
-# changes since the last call to this function for that variable.
+# Sets RESULT to true if any of the given variables VAR1 ... VARN has
+# changed since the last call to this function for that variable.
 # Changes are tracked also across CMake runs.
 function(GMX_CHECK_IF_CHANGED RESULT)
     set(_result FALSE)

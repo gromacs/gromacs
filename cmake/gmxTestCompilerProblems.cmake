@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,15 +45,7 @@ macro(gmx_test_compiler_problems)
     endif()
 
     # Note that we've already tested that the compiler works with C++11
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-
-        # GCC bug 49001, 54412 on Windows (just warn, since it might be fixed in later versions)
-        if((CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.0" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
-           AND (WIN32 OR CYGWIN)
-           AND (GMX_SIMD MATCHES "AVX") AND NOT (GMX_SIMD STREQUAL AVX_128_FMA))
-            message(WARNING "GCC on Windows (GCC older than 4.9 in 32-bit mode, or any version in 64-bit mode) with 256-bit AVX will probably crashes. You might want to choose a different GMX_SIMD or a different compiler.")
-        endif()
-    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         if(WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.5.0")
             message(WARNING "Using Clang on Windows requires Clang 3.5.0")
         endif()
