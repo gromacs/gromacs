@@ -236,14 +236,11 @@ else()
     endif()
 endif()
 
-include(gmxDetectSimd)
-gmx_detect_simd(GMX_SUGGESTED_SIMD)
-
 gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
-    "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    "AUTO"
+    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 if(GMX_TARGET_MIC)
     set(GMX_FFT_LIBRARY_DEFAULT "mkl")
@@ -624,7 +621,7 @@ gmx_set_build_information()
 # TODO: After merge with 5.0 one could implement a cache variable dependency
 # such that GMX_USE_RDTSCP can change if GMX_SIMD is changed to AVX
 # after the first cmake pass.
-if (CPU_DETECTION_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
+if ((GMX_SIMD STREQUAL "AUTO" AND CPU_DETECTION_FEATURES MATCHES "rdtscp") OR (GMX_SIMD MATCHES "AVX"))
     set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
 else()
     set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)

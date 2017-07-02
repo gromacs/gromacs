@@ -126,33 +126,41 @@ endif()
 #
 # Section to set (and test) compiler flags for SIMD.
 #
-# The flags will be set based on the GMX_SIMD choice provided by the user.
-# Automatic detection of the architecture on the build host is done prior to
-# calling this macro.
+# If the user chose the (default) automatic behaviour, then detection
+# is run to suggest a SIMD choice suitable for the build
+# host. Otherwise, the users's choice is always honoured. The compiler
+# flags will be set based on that choice.
 #
 
-if(GMX_SIMD STREQUAL "NONE")
+set(GMX_SIMD_CHOICE ${GMX_SIMD})
+if(GMX_SIMD STREQUAL "AUTO")
+    include(gmxDetectSimd)
+    gmx_detect_simd(GMX_SUGGESTED_SIMD)
+    set(GMX_SIMD_CHOICE ${GMX_SUGGESTED_SIMD})
+endif()
+
+if(GMX_SIMD_CHOICE STREQUAL "NONE")
     # nothing to do configuration-wise
     set(SIMD_STATUS_MESSAGE "SIMD instructions disabled")
-elseif(GMX_SIMD STREQUAL "SSE2")
+elseif(GMX_SIMD_CHOICE STREQUAL "SSE2")
 
     gmx_find_flags(
         "#include<xmmintrin.h>
          int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return _mm_movemask_ps(x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-msse2" "/arch:SSE2" "-hgnu")
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("SSE2" "disable SIMD support (slow)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_X86_${GMX_SIMD} 1)
+    set(GMX_SIMD_X86_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "SSE4.1")
+elseif(GMX_SIMD_CHOICE STREQUAL "SSE4.1")
 
     # Note: MSVC enables SSE4.1 with the SSE2 flag, so we include that in testing.
     gmx_find_flags(
@@ -171,7 +179,7 @@ elseif(GMX_SIMD STREQUAL "SSE4.1")
     set(GMX_SIMD_X86_SSE4_1 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE4.1 SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
+elseif(GMX_SIMD_CHOICE STREQUAL "AVX_128_FMA")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -229,11 +237,11 @@ elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
         ${INCLUDE_INTRIN_H}
         int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return _mm_movemask_ps(x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-mfma4" "-hgnu")
 
     # We only need to check the last (FMA) test; that will always fail if the generic AVX test failed
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("128-bit AVX with FMA support" "choose SSE4.1 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
@@ -249,10 +257,10 @@ elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_X86_${GMX_SIMD} 1)
+    set(GMX_SIMD_X86_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD GROMACS SIMD (with fused-multiply add)")
 
-elseif(GMX_SIMD STREQUAL "AVX_256")
+elseif(GMX_SIMD_CHOICE STREQUAL "AVX_256")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -260,19 +268,19 @@ elseif(GMX_SIMD STREQUAL "AVX_256")
         "#include<immintrin.h>
          int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return _mm256_movemask_ps(x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-mavx" "/arch:AVX" "-hgnu")
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("AVX" "choose SSE4.1 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_X86_${GMX_SIMD} 1)
+    set(GMX_SIMD_X86_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
-elseif(GMX_SIMD MATCHES "AVX2_")
+elseif(GMX_SIMD_CHOICE MATCHES "AVX2_")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -280,30 +288,30 @@ elseif(GMX_SIMD MATCHES "AVX2_")
         "#include<immintrin.h>
          int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("AVX2" "choose AVX SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_X86_${GMX_SIMD} 1)
+    set(GMX_SIMD_X86_${GMX_SIMD_CHOICE} 1)
 
-    if(GMX_SIMD STREQUAL "AVX2_128")
+    if(GMX_SIMD_CHOICE STREQUAL "AVX2_128")
         set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX2 SIMD instructions")
     else()
         set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
     endif()
 
-elseif(GMX_SIMD STREQUAL "MIC")
+elseif(GMX_SIMD_CHOICE STREQUAL "MIC")
 
     # No flags needed. Not testing.
     set(GMX_SIMD_X86_MIC 1)
     set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "AVX_512")
+elseif(GMX_SIMD_CHOICE STREQUAL "AVX_512")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -311,19 +319,19 @@ elseif(GMX_SIMD STREQUAL "AVX_512")
         "#include<immintrin.h>
          int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-xCORE-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("AVX 512F" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_X86_${GMX_SIMD} 1)
+    set(GMX_SIMD_X86_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512 SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "AVX_512_KNL")
+elseif(GMX_SIMD_CHOICE STREQUAL "AVX_512_KNL")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -331,87 +339,87 @@ elseif(GMX_SIMD STREQUAL "AVX_512_KNL")
         "#include<immintrin.h>
         int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("AVX 512ER" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_X86_${GMX_SIMD} 1)
+    set(GMX_SIMD_X86_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512-KNL SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "ARM_NEON")
+elseif(GMX_SIMD_CHOICE STREQUAL "ARM_NEON")
 
     gmx_find_flags(
         "#include<arm_neon.h>
          int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-mfpu=neon-vfpv4" "-mfpu=neon" "")
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("ARM NEON" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_${GMX_SIMD} 1)
+    set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "ARM_NEON_ASIMD")
+elseif(GMX_SIMD_CHOICE STREQUAL "ARM_NEON_ASIMD")
 
     gmx_find_flags(
         "#include<arm_neon.h>
          int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "")
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("ARM (AArch64) NEON Advanced SIMD" "particularly gcc version 4.9 or later, or disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_${GMX_SIMD} 1)
+    set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "IBM_QPX")
+elseif(GMX_SIMD_CHOICE STREQUAL "IBM_QPX")
 
     try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
         "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c")
 
     if (TEST_QPX)
         message(WARNING "IBM QPX SIMD instructions selected. This will work, but SIMD kernels are only available for the Verlet cut-off scheme. The plain C kernels that are used for the group cut-off scheme kernels will be slow, so please consider using the Verlet cut-off scheme.")
-        set(GMX_SIMD_${GMX_SIMD} 1)
+        set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
         set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions")
 
     else()
         gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-bgclang-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
-elseif(GMX_SIMD STREQUAL "IBM_VMX")
+elseif(GMX_SIMD_CHOICE STREQUAL "IBM_VMX")
 
     gmx_find_flags(
         "#include<altivec.h>
          int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
 
-    if(NOT SIMD_${GMX_SIMD}_C_FLAGS OR NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_C_FLAGS OR NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("IBM VMX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_${GMX_SIMD} 1)
+    set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "IBM_VSX")
+elseif(GMX_SIMD_CHOICE STREQUAL "IBM_VSX")
 
     prepare_power_vsx_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
 
@@ -419,7 +427,7 @@ elseif(GMX_SIMD STREQUAL "IBM_VSX")
         "#include<altivec.h>
          int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_${GMX_SIMD}_C_FLAGS SIMD_${GMX_SIMD}_CXX_FLAGS
+        SIMD_${GMX_SIMD_CHOICE}_C_FLAGS SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS
         "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
 
     # Usually we check also for the C compiler here, but a C compiler
@@ -427,23 +435,23 @@ elseif(GMX_SIMD STREQUAL "IBM_VSX")
     # at least version 3.7 cannot pass this check with the C compiler
     # in the latest xlc 13.1.5, but the C++ compiler has different
     # behaviour and is OK. See Redmine #2102.
-    if(NOT SIMD_${GMX_SIMD}_CXX_FLAGS)
+    if(NOT SIMD_${GMX_SIMD_CHOICE}_CXX_FLAGS)
         gmx_give_fatal_error_when_simd_support_not_found("IBM VSX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
-    set(GMX_SIMD_${GMX_SIMD} 1)
+    set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "SPARC64_HPC_ACE")
+elseif(GMX_SIMD_CHOICE STREQUAL "SPARC64_HPC_ACE")
 
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
 
-    set(GMX_SIMD_${GMX_SIMD} 1)
+    set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "REFERENCE")
+elseif(GMX_SIMD_CHOICE STREQUAL "REFERENCE")
 
     # NB: This file handles settings for the SIMD module, so in the interest 
     # of proper modularization, please do NOT put any verlet kernel settings in this file.
@@ -455,15 +463,15 @@ elseif(GMX_SIMD STREQUAL "REFERENCE")
       	add_definitions(-DGMX_SIMD_REF_DOUBLE_WIDTH=${GMX_SIMD_REF_DOUBLE_WIDTH})
     endif()
 
-    set(GMX_SIMD_${GMX_SIMD} 1)
+    set(GMX_SIMD_${GMX_SIMD_CHOICE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling reference (emulated) SIMD instructions.")
 
 else()
-    gmx_invalid_option_value(GMX_SIMD)
+    gmx_invalid_option_value(GMX_SIMD_CHOICE)
 endif()
 
 
-gmx_check_if_changed(SIMD_CHANGED GMX_SIMD)
+gmx_check_if_changed(SIMD_CHANGED GMX_SIMD_CHOICE)
 if (SIMD_CHANGED AND DEFINED SIMD_STATUS_MESSAGE)
     message(STATUS "${SIMD_STATUS_MESSAGE}")
 endif()
@@ -491,7 +499,7 @@ endif()
 if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
     if(GMX_TARGET_BGQ)
         set(CALLCONV_LIST " ")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD_CHOICE STREQUAL "REFERENCE")
         set(CALLCONV_LIST __regcall " ")
    elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
         set(CALLCONV_LIST " ")
@@ -506,6 +514,15 @@ if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
             break()
         endif()
     endforeach()
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # GCC bug 49001, 54412 on Windows (just warn, since it might be fixed in later versions)
+    if((CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.0" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+            AND (WIN32 OR CYGWIN)
+            AND (GMX_SIMD_CHOICE MATCHES "AVX") AND NOT (GMX_SIMD_CHOICE STREQUAL "AVX_128_FMA"))
+        message(WARNING "GCC on Windows (GCC older than 4.9 in 32-bit mode, or any version in 64-bit mode) with 256-bit AVX will probably crash. You might want to choose a different GMX_SIMD or a different compiler.")
+    endif()
 endif()
 
 endmacro()
