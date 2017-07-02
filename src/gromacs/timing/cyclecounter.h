@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #define GMX_TIMING_CYCLECOUNTER_H
 
 /*
- * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
+ * Define HAVE_RDTSCP=1 to use the serializing rdtscp instruction instead of rdtsc.
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
 #include "config.h"
@@ -221,7 +221,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     gmx_cycles_t   cycle;
     unsigned       low, high;
 
-#ifdef HAVE_RDTSCP
+#if HAVE_RDTSCP
     __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
 #else
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
@@ -255,7 +255,7 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
     return __rdpmccntr64();
 #else
     /* x86 */
-#    ifdef HAVE_RDTSCP
+#    if HAVE_RDTSCP
     unsigned int ui;
     return __rdtscp(&ui);
 #    else
