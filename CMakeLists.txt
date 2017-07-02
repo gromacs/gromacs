@@ -612,24 +612,50 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
 include(gmxSetBuildInformation)
 gmx_set_build_information()
-# Turn on RDTSCP if:
-# - the build system's CPU supports it
-# - the acceleration is set to AVX as all AVX-capable CPUs support AVX (which
-#   at this point means that the user set it).
-# Note: it's better to not use the later set value of GMX_SIMD because
-# it reflects the system's capability of both compiling and running AVX code.
-# TODO: After merge with 5.0 one could implement a cache variable dependency
-# such that GMX_USE_RDTSCP can change if GMX_SIMD is changed to AVX
-# after the first cmake pass.
-if ((GMX_SIMD STREQUAL "AUTO" AND CPU_DETECTION_FEATURES MATCHES "rdtscp") OR (GMX_SIMD MATCHES "AVX"))
-    set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
-else()
-    set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)
-endif()
-option(GMX_USE_RDTSCP "Use RDTSCP for better CPU-based timers (available on recent x86 CPUs; might need to be off when compiling for heterogeneous environments)" ${GMX_USE_RDTSCP_DEFAULT_VALUE})
+
+gmx_option_multichoice(
+    GMX_USE_RDTSCP
+    "Use low-latency RDTSCP instruction for CPU-based timers for mdrun execution; might need to be off when compiling for heterogeneous environments)"
+    "AUTO"
+    OFF ON AUTO DETECT)
 mark_as_advanced(GMX_USE_RDTSCP)
-if(GMX_USE_RDTSCP)
+
+macro(gmx_check_rdtscp)
+    if (CPU_DETECTION_FEATURES MATCHES "rdtscp")
+        set(HAVE_RDTSCP 1)
+        set(RDTSCP_DETECTION_MESSAGE " - detected on the build host")
+    else()
+        set(RDTSCP_DETECTION_MESSAGE " - not detected on the build host")
+    endif()
+endmacro()
+
+set(HAVE_RDTSCP 0)
+if (GMX_USE_RDTSCP STREQUAL "ON")
     set(HAVE_RDTSCP 1)
+elseif(GMX_USE_RDTSCP STREQUAL "DETECT")
+    gmx_check_rdtscp()
+elseif(GMX_USE_RDTSCP STREQUAL "AUTO")
+    # If the user specified automated SIMD selection, that the choice
+    # is made based on detection on the build host. If so, then RDTSCP
+    # should be chosen the same way.
+    #
+    # If the user specified an AVX SIMD level (e.g. when
+    # cross-compiling GROMACS) then they will get our best guess, ie
+    # that in practice AVX mostly correlates with rdtscp (and anyway
+    # is only relevant in rather old x86 hardware).
+    if (GMX_SIMD STREQUAL "AUTO")
+        gmx_check_rdtscp()
+    elseif (GMX_SIMD MATCHES "AVX")
+        set(HAVE_RDTSCP 1)
+    endif()
+endif()
+gmx_check_if_changed(HAVE_RDTSCP_CHANGED HAVE_RDTSCP)
+if (HAVE_RDTSCP_CHANGED)
+    if (HAVE_RDTSCP)
+        message(STATUS "Enabling RDTSCP support${RDTSCP_DETECTION_MESSAGE}")
+    else()
+        message(STATUS "Disabling RDTSCP support${RDTSCP_DETECTION_MESSAGE}")
+    endif()
 endif()
 
 include(gmxTestLargeFiles)

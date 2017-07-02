@@ -62,6 +62,7 @@ def do_build(context):
     cmake_opts['GMX_COMPILER_WARNINGS'] = 'ON'
     cmake_opts['GMX_DEFAULT_SUFFIX'] = 'OFF'
     cmake_opts['CMAKE_BUILD_TYPE'] = 'Debug'
+    cmake_opts['GMX_USE_RDTSCP'] = 'DETECT'
 
     if context.opts.reference:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'Reference'

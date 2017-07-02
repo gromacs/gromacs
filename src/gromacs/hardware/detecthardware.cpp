@@ -260,11 +260,7 @@ static void
 check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
                                 const gmx::CpuInfo    &cpuInfo)
 {
-#ifdef HAVE_RDTSCP
-    bool binaryUsesRdtscp = TRUE;
-#else
-    bool binaryUsesRdtscp = FALSE;
-#endif
+    bool        binaryUsesRdtscp = HAVE_RDTSCP;
 
     const char *programName = gmx::getProgramContext().displayName();
 

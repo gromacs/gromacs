@@ -253,11 +253,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
     writer->writeLine(formatString("FFT library:        %s", getFftDescriptionString()));
-#ifdef HAVE_RDTSCP
-    writer->writeLine("RDTSCP usage:       enabled");
-#else
-    writer->writeLine("RDTSCP usage:       disabled");
-#endif
+    writer->writeLine(formatString("RDTSCP usage:       %s", HAVE_RDTSCP ? "enabled" : "disabled"));
 #ifdef GMX_USE_TNG
     writer->writeLine("TNG support:        enabled");
 #else
