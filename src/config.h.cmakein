@@ -275,7 +275,7 @@
 #cmakedefine01 HAVE_GETTIMEOFDAY
 
 /* Define to 1 if you have the rdtscp instruction. */
-#cmakedefine HAVE_RDTSCP
+#cmakedefine01 HAVE_RDTSCP
 
 /* Define to 1 if you have the fsync() function. */
 #cmakedefine01 HAVE_FSYNC

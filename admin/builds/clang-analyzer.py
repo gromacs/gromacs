@@ -44,6 +44,7 @@ def do_build(context):
             'GMX_GPU': 'OFF',
             'GMX_OPENMP': 'OFF',
             'GMX_SIMD': 'None',
+            'GMX_USE_RDTSCP': 'OFF',
             'GMX_FFT_LIBRARY': 'fftpack'
         }
 
