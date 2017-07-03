@@ -55,13 +55,16 @@
 #    include <xmmintrin.h>
 #endif
 
-#include "gromacs/utility/gmxassert.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
-namespace internal
+namespace
 {
 
 /*! \brief Allocate aligned memory in a fully portable way
@@ -137,10 +140,49 @@ alignedFreeGeneric(void *p)
     }
 }
 
+static void *mallocImpl(std::size_t bytes, std::size_t alignment)
+{
+    void   *    p;
 
+#if HAVE__MM_MALLOC
+    p = _mm_malloc( bytes, alignment );
+#elif HAVE_POSIX_MEMALIGN
+    if (posix_memalign(&p, alignment, bytes) != 0)
+    {
+        p = nullptr;
+    }
+#elif HAVE_MEMALIGN
+    p = memalign(alignment, bytes);
+#elif HAVE__ALIGNED_MALLOC
+    p = _aligned_malloc(bytes, alignment);
+#else
+    p = internal::alignedMallocGeneric(bytes, alignment);
+#endif
 
-void *
-alignedMalloc(std::size_t bytes)
+    return p;
+}
+
+static void freeImpl(void *p)
+{
+    if (p)
+    {
+#if HAVE__MM_MALLOC
+        _mm_free(p);
+#elif HAVE_POSIX_MEMALIGN || HAVE_MEMALIGN
+        free(p);
+#elif HAVE__ALIGNED_MALLOC
+        _aligned_free(p);
+#else
+        internal::alignedFreeGeneric(p);
+#endif
+    }
+}
+
+}   // namespace
+
+// === AlignedAllocationPolicy
+
+std::size_t AlignedAllocationPolicy::alignment()
 {
     // For now we always use 128-byte alignment:
     // 1) IBM Power already has cache lines of 128-bytes, and needs it.
@@ -155,48 +197,55 @@ alignedMalloc(std::size_t bytes)
     // So, for now we're semi-lazy and just align to 128 bytes!
     //
     // TODO LINCS code is copying this assumption independently (for now)
-    std::size_t alignment = 128;
+    return 128;
+}
 
-    void   *    p;
-
+void *
+AlignedAllocationPolicy::malloc(std::size_t bytes)
+{
     // Pad memory at the end with another alignment bytes to avoid false sharing
-    bytes += alignment;
+    auto size = alignment();
+    bytes += size;
 
-#if HAVE__MM_MALLOC
-    p = _mm_malloc( bytes, alignment );
-#elif HAVE_POSIX_MEMALIGN
-    if (posix_memalign(&p, alignment, bytes) != 0)
-    {
-        p = nullptr;
-    }
-#elif HAVE_MEMALIGN
-    p = memalign(alignment, bytes);
-#elif HAVE__ALIGNED_MALLOC
-    p = _aligned_malloc(bytes, alignment);
-#else
-    p = alignedMallocGeneric(bytes, alignment);
-#endif
-
-    return p;
+    return mallocImpl(bytes, size);
 }
 
 void
-alignedFree(void *p)
+AlignedAllocationPolicy::free(void *p)
 {
-    if (p)
-    {
-#if HAVE__MM_MALLOC
-        _mm_free(p);
-#elif HAVE_POSIX_MEMALIGN || HAVE_MEMALIGN
-        free(p);
-#elif HAVE__ALIGNED_MALLOC
-        _aligned_free(p);
-#else
-        alignedFreeGeneric(p);
-#endif
-    }
+    freeImpl(p);
 }
 
-} // namespace internal
+// === PageAlignedAllocationPolicy
+
+/* Implements the "construct on first use" idiom to avoid the static
+ * initialization order fiasco where a possible static page-aligned
+ * container would be initialized before the alignment variable was.
+ *
+ * Note that thread-safety of the initialization is guaranteed by the
+ * C++11 language standard. */
+std::size_t PageAlignedAllocationPolicy::alignment()
+{
+    static std::size_t *thePageSize = new std::size_t
+#ifdef _SC_PAGESIZE
+            (sysconf(_SC_PAGESIZE))
+#else
+        (4096) // A useful guess e.g. on Windows.
+#endif
+    ;
+    return *thePageSize;
+}
+
+void *
+PageAlignedAllocationPolicy::malloc(std::size_t bytes)
+{
+    return mallocImpl(bytes, alignment());
+}
+
+void
+PageAlignedAllocationPolicy::free(void *p)
+{
+    freeImpl(p);
+}
 
 } // namespace gmx
