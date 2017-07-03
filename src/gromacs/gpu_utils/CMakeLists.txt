@@ -36,6 +36,7 @@
 # regardless of what flavour of GPU build this is.
 file(GLOB GPU_SOURCES_FROM_CXX
     hostallocator.cpp
+    pagelockedmemory.cpp
     )
 
 # Compile files that are non-portable
