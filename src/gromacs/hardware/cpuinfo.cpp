@@ -1062,11 +1062,15 @@ main(int argc, char **argv)
     }
     else if (arg == "-features")
     {
+        // Separate the feature strings with spaces. Note that in the
+        // GROMACS cmake code, surrounding whitespace is first
+        // stripped by the CPU detection routine, and then added back
+        // in the code for making the SIMD suggestion.
         for (auto &f : cpuInfo.featureSet() )
         {
-            printf(" %s", cpuInfo.featureString(f).c_str());
+            printf("%s ", cpuInfo.featureString(f).c_str());
         }
-        printf(" \n"); // extra space so we can grep output for " <feature> " in CMake
+        printf("\n");
     }
     else if (arg == "-topology")
     {
