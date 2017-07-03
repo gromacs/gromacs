@@ -32,6 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxDetectCpu)
 include(gmxFindFlagsForSource)
 
 # Macro that manages setting the respective C and C++ toolchain
@@ -58,7 +59,8 @@ macro(prepare_power_vsx_toolchain TOOLCHAIN_C_FLAGS_VARIABLE TOOLCHAIN_CXX_FLAGS
         # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
         # By putting these flags here rather than in the general compiler flags file we can safely assume
         # that we are at least on Power7 since that is when VSX appeared.
-        if(BUILD_CPU_BRAND MATCHES "POWER7")
+        gmx_run_cpu_detection(brand)
+        if(CPU_DETECTION_BRAND MATCHES "POWER7")
             gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_C_FLAGS_VARIABLE})
             gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" ${TOOLCHAIN_CXX_FLAGS_VARIABLE})
         else()
