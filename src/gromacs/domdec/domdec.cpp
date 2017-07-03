@@ -5983,13 +5983,21 @@ static void make_dd_communicators(FILE *fplog, t_commrec *cr,
     }
 }
 
-static real *get_slb_frac(FILE *fplog, const char *dir, int nc, const char *size_string)
+// Sanity check and parse variable-size argument list for specifying fractional
+// domain sizes for static load balancing.
+static real *get_slb_frac(FILE *fplog, const char *dir, int nc, std::string size_input)
 {
-    real  *slb_frac, tot;
-    int    i, n;
-    double dbl;
+    real        *slb_frac = nullptr;
+    real         tot;
+    int          i;
+    int          n;
+    double       dbl;
 
-    slb_frac = nullptr;
+    const char * size_string = nullptr;
+    if (!size_input.empty())
+    {
+        size_string = size_input.c_str();
+    }
     if (nc > 1 && size_string != nullptr)
     {
         if (fplog)
@@ -6304,11 +6312,8 @@ static gmx_domdec_comm_t *init_dd_comm()
 
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
-                                   unsigned long Flags,
-                                   ivec nc, int nPmeRanks,
-                                   real comm_distance_min, real rconstr,
-                                   const char *dlb_opt, real dlb_scale,
-                                   const char *sizex, const char *sizey, const char *sizez,
+                                   const DomDecParams &params,
+                                   ivec nc,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
                                    matrix box, const rvec *x,
@@ -6332,7 +6337,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->dlbState         = determineInitialDlbState(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    comm->dlbState         = determineInitialDlbState(fplog, cr, params.dlbOpt.c_str(), comm->bRecordLoad, params.flags, ir);
     dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
     /* To consider turning DLB on after 2*nstlist steps we need to check
      * at partitioning count 3. Thus we need to increase the first count by 2.
@@ -6391,10 +6396,10 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
 
     if (comm->bInterCGBondeds)
     {
-        if (comm_distance_min > 0)
+        if (params.commDistanceMin > 0)
         {
-            comm->cutoff_mbody = comm_distance_min;
-            if (Flags & MD_DDBONDCOMM)
+            comm->cutoff_mbody = params.commDistanceMin;
+            if (params.flags & MD_DDBONDCOMM)
             {
                 comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
             }
@@ -6418,7 +6423,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
             if (MASTER(cr))
             {
                 dd_bonded_cg_distance(fplog, mtop, ir, x, box,
-                                      Flags & MD_DDBONDCHECK, &r_2b, &r_mb);
+                                      params.flags & MD_DDBONDCHECK, &r_2b, &r_mb);
             }
             gmx_bcast(sizeof(r_2b), &r_2b, cr);
             gmx_bcast(sizeof(r_mb), &r_mb, cr);
@@ -6426,7 +6431,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
             /* We use an initial margin of 10% for the minimum cell size,
              * except when we are just below the non-bonded cut-off.
              */
-            if (Flags & MD_DDBONDCOMM)
+            if (params.flags & MD_DDBONDCOMM)
             {
                 if (std::max(r_2b, r_mb) > comm->cutoff)
                 {
@@ -6460,6 +6465,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         comm->cellsize_limit = std::max(comm->cellsize_limit, r_bonded_limit);
     }
 
+    auto rconstr = params.rConstraints;
     if (dd->bInterCGcons && rconstr <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
@@ -6495,9 +6501,9 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         set_dd_dim(fplog, dd);
         set_ddbox_cr(cr, &dd->nc, ir, box, &comm->cgs_gl, x, ddbox);
 
-        if (nPmeRanks >= 0)
+        if (params.nPmeRanks >= 0)
         {
-            cr->npmenodes = nPmeRanks;
+            cr->npmenodes = params.nPmeRanks;
         }
         else
         {
@@ -6527,9 +6533,9 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
         /* We need to choose the optimal DD grid and possibly PME nodes */
         real limit =
             dd_choose_grid(fplog, cr, dd, ir, mtop, box, ddbox,
-                           nPmeRanks,
+                           params.nPmeRanks,
                            !isDlbDisabled(comm),
-                           dlb_scale,
+                           params.dlbScale,
                            comm->cellsize_limit, comm->cutoff,
                            comm->bInterCGBondeds);
 
@@ -6636,9 +6642,9 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     snew(comm->slb_frac, DIM);
     if (isDlbDisabled(comm))
     {
-        comm->slb_frac[XX] = get_slb_frac(fplog, "x", dd->nc[XX], sizex);
-        comm->slb_frac[YY] = get_slb_frac(fplog, "y", dd->nc[YY], sizey);
-        comm->slb_frac[ZZ] = get_slb_frac(fplog, "z", dd->nc[ZZ], sizez);
+        comm->slb_frac[XX] = get_slb_frac(fplog, "x", dd->nc[XX], params.sizeX);
+        comm->slb_frac[YY] = get_slb_frac(fplog, "y", dd->nc[YY], params.sizeY);
+        comm->slb_frac[ZZ] = get_slb_frac(fplog, "z", dd->nc[ZZ], params.sizeZ);
     }
 
     if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
@@ -6654,7 +6660,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
             if (!isDlbDisabled(comm))
             {
                 /* Check if this does not limit the scaling */
-                comm->cutoff_mbody = std::min(comm->cutoff_mbody, dlb_scale*acs);
+                comm->cutoff_mbody = std::min(comm->cutoff_mbody, params.dlbScale*acs);
             }
             if (!comm->bBondComm)
             {
@@ -7184,17 +7190,8 @@ static void set_dd_envvar_options(FILE *fplog, gmx_domdec_t *dd, int rank_mysim)
 
 gmx_domdec_t *init_domain_decomposition(FILE                 *fplog,
                                         t_commrec            *cr,
-                                        unsigned long         Flags,
+                                        const DomDecParams   &params,
                                         ivec                  nc,
-                                        int                   nPmeRanks,
-                                        int                   dd_rank_order,
-                                        real                  comm_distance_min,
-                                        real                  rconstr,
-                                        const char           *dlb_opt,
-                                        real                  dlb_scale,
-                                        const char           *sizex,
-                                        const char           *sizey,
-                                        const char           *sizez,
                                         const gmx_mtop_t     *mtop,
                                         const t_inputrec     *ir,
                                         matrix                box,
@@ -7217,21 +7214,19 @@ gmx_domdec_t *init_domain_decomposition(FILE                 *fplog,
 
     set_dd_envvar_options(fplog, dd, cr->nodeid);
 
-    set_dd_limits_and_grid(fplog, cr, dd, Flags,
-                           nc, nPmeRanks,
-                           comm_distance_min, rconstr,
-                           dlb_opt, dlb_scale,
-                           sizex, sizey, sizez,
+    set_dd_limits_and_grid(fplog, cr, dd,
+                           params,
+                           nc,
                            mtop, ir,
                            box, x,
                            ddbox,
                            npme_x, npme_y);
 
-    make_dd_communicators(fplog, cr, dd, dd_rank_order);
+    make_dd_communicators(fplog, cr, dd, params.ddRankOrder);
 
     if (cr->duty & DUTY_PP)
     {
-        set_ddgrid_parameters(fplog, dd, dlb_scale, mtop, ir, ddbox);
+        set_ddgrid_parameters(fplog, dd, params.dlbScale, mtop, ir, ddbox);
 
         setup_neighbor_relations(dd);
     }
