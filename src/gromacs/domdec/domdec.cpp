@@ -7185,18 +7185,26 @@ static void set_dd_envvar_options(FILE *fplog, gmx_domdec_t *dd, int rank_mysim)
     }
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
-                                        unsigned long Flags,
-                                        ivec nc, int nPmeRanks,
-                                        int dd_rank_order,
-                                        real comm_distance_min, real rconstr,
-                                        const char *dlb_opt, real dlb_scale,
-                                        const char *sizex, const char *sizey, const char *sizez,
-                                        const gmx_mtop_t *mtop,
-                                        const t_inputrec *ir,
-                                        matrix box, rvec *x,
-                                        gmx_ddbox_t *ddbox,
-                                        int *npme_x, int *npme_y)
+gmx_domdec_t *init_domain_decomposition(FILE                 *fplog,
+                                        t_commrec            *cr,
+                                        unsigned long         Flags,
+                                        ivec                  nc,
+                                        int                   nPmeRanks,
+                                        int                   dd_rank_order,
+                                        real                  comm_distance_min,
+                                        real                  rconstr,
+                                        const char           *dlb_opt,
+                                        real                  dlb_scale,
+                                        const char           *sizex,
+                                        const char           *sizey,
+                                        const char           *sizez,
+                                        const gmx_mtop_t     *mtop,
+                                        const t_inputrec     *ir,
+                                        matrix                box,
+                                        rvec                 *x,
+                                        gmx_ddbox_t          *ddbox,
+                                        int                  *npme_x,
+                                        int                  *npme_y)
 {
     gmx_domdec_t      *dd;
 
