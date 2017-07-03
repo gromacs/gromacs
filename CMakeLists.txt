@@ -624,7 +624,7 @@ gmx_set_build_information()
 # TODO: After merge with 5.0 one could implement a cache variable dependency
 # such that GMX_USE_RDTSCP can change if GMX_SIMD is changed to AVX
 # after the first cmake pass.
-if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
+if (CPU_DETECTION_FEATURES MATCHES "rdtscp" OR GMX_SIMD MATCHES "AVX")
     set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
 else()
     set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)
