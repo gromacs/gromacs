@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
  * \brief Tests for gmx::AlignedAllocator
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
  */
 
@@ -43,43 +44,82 @@
 
 #include "gromacs/utility/alignedallocator.h"
 
-#include <list>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
 {
 
-TEST(AlignedAllocatorTest, AllocatorAlign)
+//! Templated test fixture.
+template <typename T>
+class AllocatorTest : public ::testing::Test
 {
-    AlignedAllocator<real>   a;
-    real *                   p    = a.allocate(1000);
+    public:
+        /*! \brief Bitmask for testing the alignment.
+         *
+         * e.g. for 128-byte alignment the mask is 128-1 - all of
+         * these bits should be zero in pointers that have the
+         * intended alignment. */
+        std::size_t mask_ = T::allocation_policy::alignment()-1;
+};
 
-    // Mask for 128-byte alignment is 128-1 - these bits should be zero in p
-    std::size_t              mask = static_cast<std::size_t>(128-1);
+//! Declare allocator types to test.
+using AllocatorTypesToTest = ::testing::Types<AlignedAllocator<real>,
+                                              PageAlignedAllocator<real>,
+                                              AlignedAllocator<int>,
+                                              PageAlignedAllocator<int>,
+                                              AlignedAllocator<RVec>,
+                                              PageAlignedAllocator<RVec>
+                                              >;
+TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
-    EXPECT_EQ(0, reinterpret_cast<std::size_t>(p) & mask);
+// NB need to use this->mask_ because of GoogleTest quirks
+
+TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment)
+{
+    using pointer = typename TypeParam::pointer;
+    TypeParam a;
+    pointer   p = a.allocate(1000);
+
+    EXPECT_EQ(0, reinterpret_cast<std::size_t>(p) & this->mask_);
     a.deallocate(p, 1000);
 }
 
 
-TEST(AlignedAllocator, Vector)
+TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment)
 {
-    // Mask for 128-byte alignment is 128-1 - these bits should be zero in pointers
-    std::size_t mask = static_cast<std::size_t>(128-1);
+    using value_type = typename TypeParam::value_type;
+    std::vector<value_type, TypeParam> v(10);
+    EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & this->mask_);
 
-    std::vector<real, AlignedAllocator<real> > v(10);
-    EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & mask);
-
-    for (std::size_t i = 10000; i <= 100000; i += 10000)
+    // Reserve a few times to check things work ok, making sure we
+    // will trigger several reallocations on common vector
+    // implementations.
+    for (std::size_t i = 1000; i <= 10000; i += 1000)
     {
         v.resize(i);
-        EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & mask);
+        EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & this->mask_);
     }
 }
 
+TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment)
+{
+    using value_type = typename TypeParam::value_type;
+    std::vector<value_type, TypeParam> v(10);
+    EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & this->mask_);
+
+    // Reserve a few times to check things work ok, making sure we
+    // will trigger several reallocations on common vector
+    // implementations.
+    for (std::size_t i = 1000; i <= 10000; i += 1000)
+    {
+        v.reserve(i);
+        EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & this->mask_);
+    }
+}
 
 }
