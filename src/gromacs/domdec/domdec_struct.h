@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #define GMX_DOMDEC_DOMDEC_STRUCT_H
 
 #include <cstddef>
+#include <string>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -207,6 +208,76 @@ struct gmx_domdec_t {
     int   pme_recv_f_alloc;
     rvec *pme_recv_f_buf;
 
+}; // end struct gmx_domdec_t
+
+namespace gmx
+{
+
+/*! \libinternal
+ * \brief Parameters with which to initialize Domain Decomposition.
+ *
+ * Provide an RAII, const-safe, POD parameter structure to encapsulate
+ * input to e.g. init_domain_decomposition()
+ * \ingroup library_api
+ * \ingroup module_domdec
+ */
+// The abbreviation of "DomDec" is fairly widespread and probably achieves
+// a reasonable balance between confusing and unwieldy in the absence of
+// a gmx::domainDecomposition namespace.
+struct DomDecParams
+{
+    /// Bitmask for basic parameters from ``mdrun.h``.
+    unsigned long flags;
+    /// Number of PME ranks
+    int           nPmeRanks;
+    /// Enum value for ordering policy of PP and PME ranks.
+    int           ddRankOrder;
+    /// The maximum distance for bonded interactions with DD (nm).
+    real          commDistanceMin;
+    /// Maximum distance for P-LINCS (nm).
+    real          rConstraints;
+    /// Keyword for dynamic load balancing policy.
+    std::string   dlbOpt;
+    /// Margin for dynamic load balancing cell size adjustment.
+    /*! Fraction in (0,1) by whose reciprocal the initial DD cell size will be
+     * increased in order to provide a margin in which dynamic load balancing
+     * can act while preserving the minimum cell size.
+     */
+    real          dlbScale;
+    /// Relative sizes of DD cells in static load balancing.
+    std::string   sizeX;
+    /// Relative sizes of DD cells in static load balancing.
+    std::string   sizeY;
+    /// Relative sizes of DD cells in static load balancing.
+    std::string   sizeZ;
+
+    /// Initialize structure to safe (not necessarily reasonable) values.
+    DomDecParams() :
+        flags {0UL},
+    nPmeRanks {0},
+    ddRankOrder {0},
+    commDistanceMin {real(0)},
+    rConstraints {real(0)},
+    dlbOpt {},
+    dlbScale {real(0)},
+    sizeX {},
+    sizeY {},
+    sizeZ {}
+    {};
+    /// Can be copy constructed.
+    DomDecParams(const DomDecParams &)            = default;
+    /// Can be copy assigned.
+    DomDecParams &operator=(const DomDecParams &) = default;
+    //! \cond
+    /// The P.O.D. struct can use default destruction for its members.
+    ~DomDecParams()                               = default;
+    /// Disallow move construction (likely more expensive than copy).
+    DomDecParams(DomDecParams &&)                 = delete;
+    /// Move assignment is unnecessary.
+    DomDecParams &operator=(DomDecParams &&)      = delete;
+    //! \endcond
 };
+
+} // end namespace gmx
 
 #endif

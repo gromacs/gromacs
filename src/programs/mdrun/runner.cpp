@@ -1114,11 +1114,33 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
-                                           dd_rank_order,
-                                           rdd, rconstr,
-                                           dddlb_opt, dlb_scale,
-                                           ddcsx, ddcsy, ddcsz,
+        gmx::DomDecParams ddParams;
+        ddParams.flags           = Flags;
+        ddParams.nPmeRanks       = npme;
+        ddParams.ddRankOrder     = dd_rank_order;
+        ddParams.commDistanceMin = rdd;
+        ddParams.rConstraints    = rconstr;
+        if (dddlb_opt != nullptr)
+        {
+            ddParams.dlbOpt = dddlb_opt;
+        }
+        ddParams.dlbScale = dlb_scale;
+        if (ddcsx != nullptr)
+        {
+            ddParams.sizeX = ddcsx;
+        }
+        if (ddcsy != nullptr)
+        {
+            ddParams.sizeY = ddcsy;
+        }
+        if (ddcsz != nullptr)
+        {
+            ddParams.sizeZ = ddcsz;
+        }
+        cr->dd = init_domain_decomposition(fplog,
+                                           cr,
+                                           ddParams,
+                                           ddxyz,
                                            mtop, inputrec,
                                            box, as_rvec_array(state->x.data()),
                                            &ddbox, &npme_major, &npme_minor);

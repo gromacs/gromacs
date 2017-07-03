@@ -80,6 +80,11 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 
+namespace gmx
+{
+struct DomDecParams;
+}
+
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
  * This function is intended for writing ASCII output
@@ -131,17 +136,8 @@ int dd_pme_maxshift_y(const gmx_domdec_t *dd);
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
 gmx_domdec_t *init_domain_decomposition(FILE                    *fplog,
                                         t_commrec               *cr,
-                                        unsigned long            Flags,
+                                        const gmx::DomDecParams &params,
                                         ivec                     nc,
-                                        int                      nPmeRanks,
-                                        int                      dd_node_order,
-                                        real                     comm_distance_min,
-                                        real                     rconstr,
-                                        const char              *dlb_opt,
-                                        real                     dlb_scale,
-                                        const char              *sizex,
-                                        const char              *sizey,
-                                        const char              *sizez,
                                         const gmx_mtop_t        *mtop,
                                         const t_inputrec        *ir,
                                         matrix                   box,
