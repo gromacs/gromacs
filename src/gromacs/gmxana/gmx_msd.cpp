@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1057,8 +1057,8 @@ int gmx_msd(int argc, char *argv[])
         "The diffusion coefficient is determined by linear regression of the MSD,",
         "where, unlike for the normal output of D, the times are weighted",
         "according to the number of reference points, i.e. short times have",
-        "a higher weight. Also when [TT]-beginfit[tt]=-1,fitting starts at 10%",
-        "and when [TT]-endfit[tt]=-1, fitting goes to 90%.",
+        "a higher weight. Also when [TT]-beginfit[tt] is -1, fitting starts at 10%",
+        "and when [TT]-endfit[tt] is -1, fitting goes to 90%.",
         "Using this option one also gets an accurate error estimate",
         "based on the statistics between individual molecules.",
         "Note that this diffusion coefficient and error estimate are only",
