@@ -1363,8 +1363,11 @@ static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
     {
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
+         *
+         * We need GMX_SIMD_REAL_WIDTH-1 extra elements for full SIMD
+         * width operations on rvec entries.
          */
-        f->resize(natoms + 1);
+        f->resize(natoms + GMX_REAL_MAX_SIMD_WIDTH);
     }
 }
 
