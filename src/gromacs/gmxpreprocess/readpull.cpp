@@ -515,7 +515,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     pull      = ir->pull;
     pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, ContinuationOptions());
-    md        = init_mdatoms(nullptr, mtop, ir->efep);
+    md        = init_mdatoms(nullptr, *mtop, *ir);
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, md);
     if (ir->efep)
     {
