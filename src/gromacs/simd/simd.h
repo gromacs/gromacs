@@ -812,6 +812,33 @@ setZero()
 //! \endcond   end of condition libapi
 
 
+#if GMX_SIMD_HAVE_FLOAT
+
+/*! \brief Returns whether a pointer to float is aligned to a SIMD boundary
+ *
+ * \param[in] ptr  A pointer to a float
+ */
+static inline bool isSimdAligned(const float *ptr)
+{
+    return reinterpret_cast<std::size_t>(ptr) % (GMX_SIMD_FLOAT_WIDTH*sizeof(float)) == 0;
+}
+
+#endif // GMX_SIMD_HAVE_FLOAT
+
+#if GMX_SIMD_HAVE_DOUBLE
+
+/*! \brief Returns whether a pointer to double is aligned to a SIMD boundary
+ *
+ * \param[in] ptr  A pointer to a double
+ */
+static inline bool isSimdAligned(const double *ptr)
+{
+    return reinterpret_cast<std::size_t>(ptr) % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)) == 0;
+}
+
+#endif // GMX_SIMD_HAVE_DOUBLE
+
+
 #if GMX_SIMD_HAVE_REAL
 #if GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH
 #error "GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH: increase GMX_REAL_MAX_SIMD_WIDTH in real.h"
