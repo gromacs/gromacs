@@ -123,18 +123,21 @@ void state_change_natoms(t_state *state, int natoms)
     {
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
+         *
+         * We need GMX_SIMD_REAL_WIDTH-1 extra elements for full SIMD
+         * width operations on rvec entries.
          */
         if (state->flags & (1 << estX))
         {
-            state->x.resize(state->natoms + 1);
+            state->x.resize(state->natoms + GMX_REAL_MAX_SIMD_WIDTH);
         }
         if (state->flags & (1 << estV))
         {
-            state->v.resize(state->natoms + 1);
+            state->v.resize(state->natoms + GMX_REAL_MAX_SIMD_WIDTH);
         }
         if (state->flags & (1 << estCGP))
         {
-            state->cg_p.resize(state->natoms + 1);
+            state->cg_p.resize(state->natoms + GMX_REAL_MAX_SIMD_WIDTH);
         }
     }
     else
