@@ -965,7 +965,7 @@ int Mdrunner::mdrunner()
          * mdatoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        mdatoms = init_mdatoms(fplog, mtop, inputrec->efep != efepNO);
+        mdatoms = init_mdatoms(fplog, mtop, inputrec);
 
         /* Initialize the virtual site communication */
         vsite = init_vsite(mtop, cr, FALSE);
