@@ -71,6 +71,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -78,6 +79,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -158,7 +161,7 @@ enum class NumTempScaleValues
 
 /*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling
  *
- * Note that this enum is only used in updateMdLeapfrogSimple(), which does
+ * Note that this enum is only used in updateMDLeapfrogSimple(), which does
  * not handle fully anistropic Parrinello-Rahman scaling, so we only have
  * options \p no and \p diagonal here and no anistropic option.
  */
@@ -193,7 +196,7 @@ enum class ApplyParrinelloRahmanVScaling
 template<NumTempScaleValues            numTempScaleValues,
          ApplyParrinelloRahmanVScaling applyPRVScaling>
 static void
-updateMdLeapfrogSimple(int                       start,
+updateMDLeapfrogSimple(int                       start,
                        int                       nrend,
                        real                      dt,
                        real                      dtPressureCouple,
@@ -240,6 +243,132 @@ updateMdLeapfrogSimple(int                       start,
     }
 }
 
+#if GMX_SIMD && GMX_SIMD_HAVE_REAL
+#define GMX_HAVE_SIMD_UPDATE 1
+#else
+#define GMX_HAVE_SIMD_UPDATE 0
+#endif
+
+#if GMX_HAVE_SIMD_UPDATE
+
+/*! \brief Load (aligned) the contents of GMX_SIMD_REAL_WIDTH rvec elements sequentially into 3 SIMD registers
+ *
+ * The loaded output is:
+ * \p r0: { r[index][XX], r[index][YY], ... }
+ * \p r1: { ... }
+ * \p r2: { ..., r[index+GMX_SIMD_REAL_WIDTH-1][YY], r[index+GMX_SIMD_REAL_WIDTH-1][ZZ] }
+ *
+ * \param[in]  r      Real to an rvec array, has to be aligned to SIMD register width
+ * \param[in]  index  Index of the first rvec triplet of reals to load
+ * \param[out] r0     Pointer to first SIMD register
+ * \param[out] r1     Pointer to second SIMD register
+ * \param[out] r2     Pointer to third SIMD register
+ */
+static inline void simdLoadRvecs(const rvec *r,
+                                 int         index,
+                                 SimdReal   *r0,
+                                 SimdReal   *r1,
+                                 SimdReal   *r2)
+{
+    const real *realPtr = r[index];
+
+    GMX_ASSERT(isSimdAligned(realPtr), "Pointer should be SIMD aligned");
+
+    *r0 = simdLoad(realPtr + 0*GMX_SIMD_REAL_WIDTH);
+    *r1 = simdLoad(realPtr + 1*GMX_SIMD_REAL_WIDTH);
+    *r2 = simdLoad(realPtr + 2*GMX_SIMD_REAL_WIDTH);
+}
+
+/*! \brief Store (aligned) 3 SIMD registers sequentially to GMX_SIMD_REAL_WIDTH rvec elements
+ *
+ * The stored output is:
+ * \p r[index] = { { r0[0], r0[1], ... }
+ * ...
+ * \p r[index+GMX_SIMD_REAL_WIDTH-1] =  { ... , r2[GMX_SIMD_REAL_WIDTH-2], r2[GMX_SIMD_REAL_WIDTH-1] }
+ *
+ * \param[out] r      Pointer to an rvec array, has to be aligned to SIMD register width
+ * \param[in]  index  Index of the first rvec triplet of reals to store to
+ * \param[in]  r0     First SIMD register
+ * \param[in]  r1     Second SIMD register
+ * \param[in]  r2     Third SIMD register
+ */
+static inline void simdStoreRvecs(rvec     *r,
+                                  int       index,
+                                  SimdReal  r0,
+                                  SimdReal  r1,
+                                  SimdReal  r2)
+{
+    real *realPtr = r[index];
+
+    GMX_ASSERT(isSimdAligned(realPtr), "Pointer should be SIMD aligned");
+
+    store(realPtr + 0*GMX_SIMD_REAL_WIDTH, r0);
+    store(realPtr + 1*GMX_SIMD_REAL_WIDTH, r1);
+    store(realPtr + 2*GMX_SIMD_REAL_WIDTH, r2);
+}
+
+/*! \brief Integrate using leap-frog with single group T-scaling and SIMD
+ *
+ * \param[in]    start                  Index of first atom to update
+ * \param[in]    nrend                  Last atom to update: \p nrend - 1
+ * \param[in]    dt                     The time step
+ * \param[in]    invMass                1/mass per atom
+ * \param[in]    tcstat                 Temperature coupling information
+ * \param[in]    x                      Input coordinates
+ * \param[out]   xprime                 Updated coordinates
+ * \param[inout] v                      Velocities
+ * \param[in]    f                      Forces
+ */
+static void
+updateMDLeapfrogSimpleSimd(int                       start,
+                           int                       nrend,
+                           real                      dt,
+                           const real * gmx_restrict invMass,
+                           const t_grp_tcstat      * tcstat,
+                           const rvec * gmx_restrict x,
+                           rvec       * gmx_restrict xprime,
+                           rvec       * gmx_restrict v,
+                           const rvec * gmx_restrict f)
+{
+    SimdReal                  timestep(dt);
+    SimdReal                  lambdaSystem(tcstat[0].lambda);
+
+    /* We declare variables here, since code is often slower when declaring them inside the loop */
+    SimdReal invMass0, invMass1, invMass2;
+    SimdReal v0, v1, v2;
+    SimdReal f0, f1, f2;
+    SimdReal x0, x1, x2;
+    SimdReal xprime0, xprime1, xprime2;
+
+    /* Note: We should implement a proper PaddedVector, so we don't need this check */
+    GMX_ASSERT(isSimdAligned(invMass), "invMass should be aligned");
+
+    for (int a = start; a < nrend; a += GMX_SIMD_REAL_WIDTH)
+    {
+        expandScalarsToTriplets(simdLoad(invMass + a),
+                                &invMass0, &invMass1, &invMass2);
+
+        simdLoadRvecs(v, a, &v0, &v1, &v2);
+        simdLoadRvecs(f, a, &f0, &f1, &f2);
+
+        v0 = fma(f0*invMass0, timestep, lambdaSystem*v0);
+        v1 = fma(f1*invMass1, timestep, lambdaSystem*v1);
+        v2 = fma(f2*invMass2, timestep, lambdaSystem*v2);
+
+        simdStoreRvecs(v, a, v0, v1, v2);
+
+        simdLoadRvecs(x, a, &x0, &x1, &x2);
+
+        xprime0 = fma(v0, timestep, x0);
+        xprime1 = fma(v1, timestep, x1);
+        xprime2 = fma(v2, timestep, x2);
+
+        simdStoreRvecs(xprime, a, xprime0, xprime1, xprime2);
+    }
+}
+
+#endif // GMX_HAVE_SIMD_UPDATE
+
 /*! \brief Sets the NEMD acceleration type */
 enum class AccelerationType
 {
@@ -267,7 +396,7 @@ enum class AccelerationType
  */
 template<AccelerationType accelerationType>
 static void
-updateMdLeapfrogGeneral(int                         start,
+updateMDLeapfrogGeneral(int                         start,
                         int                         nrend,
                         bool                        doNoseHoover,
                         real                        dt,
@@ -399,26 +528,26 @@ static void do_update_md(int                         start,
 
     real dtPressureCouple   = (doParrinelloRahman ? ir->nstpcouple*dt : 0);
 
-    /* NEMD (also cosine) acceleration is applied in updateMdLeapFrogGeneral */
+    /* NEMD (also cosine) acceleration is applied in updateMDLeapFrogGeneral */
     bool doAcceleration     = (ekind->bNEMD || ekind->cosacc.cos_accel != 0);
 
     if (doNoseHoover || doPROffDiagonal || doAcceleration)
     {
         if (!doAcceleration)
         {
-            updateMdLeapfrogGeneral<AccelerationType::none>
+            updateMDLeapfrogGeneral<AccelerationType::none>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
                 ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
         else if (ekind->bNEMD)
         {
-            updateMdLeapfrogGeneral<AccelerationType::group>
+            updateMDLeapfrogGeneral<AccelerationType::group>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
                 ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
         else
         {
-            updateMdLeapfrogGeneral<AccelerationType::cosine>
+            updateMDLeapfrogGeneral<AccelerationType::cosine>
                 (start, nrend, doNoseHoover, dt, dtPressureCouple,
                 ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
@@ -439,7 +568,7 @@ static void do_update_md(int                         start,
 
         if (doParrinelloRahman)
         {
-            GMX_ASSERT(!doPROffDiagonal, "updateMdLeapfrogSimple only support diagonal Parrinello-Rahman scaling matrices");
+            GMX_ASSERT(!doPROffDiagonal, "updateMDLeapfrogSimple only support diagonal Parrinello-Rahman scaling matrices");
 
             rvec diagM;
             for (int d = 0; d < DIM; d++)
@@ -449,7 +578,7 @@ static void do_update_md(int                         start,
 
             if (haveSingleTempScaleValue)
             {
-                updateMdLeapfrogSimple
+                updateMDLeapfrogSimple
                 <NumTempScaleValues::single,
                  ApplyParrinelloRahmanVScaling::diagonal>
                     (start, nrend, dt, dtPressureCouple,
@@ -457,7 +586,7 @@ static void do_update_md(int                         start,
             }
             else
             {
-                updateMdLeapfrogSimple
+                updateMDLeapfrogSimple
                 <NumTempScaleValues::multiple,
                  ApplyParrinelloRahmanVScaling::diagonal>
                     (start, nrend, dt, dtPressureCouple,
@@ -468,15 +597,31 @@ static void do_update_md(int                         start,
         {
             if (haveSingleTempScaleValue)
             {
-                updateMdLeapfrogSimple
-                <NumTempScaleValues::single,
-                 ApplyParrinelloRahmanVScaling::no>
-                    (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
+                /* Note that modern compilers are pretty good at vectorizing
+                 * updateMDLeapfrogSimple(). But the SIMD version will still
+                 * be faster because invMass lowers the cache pressure
+                 * compared to invMassPerDim.
+                 */
+#if GMX_HAVE_SIMD_UPDATE
+                /* Check if we can use invmass instead of invMassPerDim */
+                if (!md->havePartiallyFrozenAtoms)
+                {
+                    updateMDLeapfrogSimpleSimd
+                        (start, nrend, dt, md->invmass, tcstat, x, xprime, v, f);
+                }
+                else
+#endif
+                {
+                    updateMDLeapfrogSimple
+                    <NumTempScaleValues::single,
+                     ApplyParrinelloRahmanVScaling::no>
+                        (start, nrend, dt, dtPressureCouple,
+                        invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
+                }
             }
             else
             {
-                updateMdLeapfrogSimple
+                updateMDLeapfrogSimple
                 <NumTempScaleValues::multiple,
                  ApplyParrinelloRahmanVScaling::no>
                     (start, nrend, dt, dtPressureCouple,
@@ -1074,7 +1219,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
 
         /* Note that the times of x and v differ by half a step */
         /* MRS -- would have to be changed for VV */
-        cosz         = cos(fac*x[n][ZZ]);
+        cosz         = std::cos(fac*x[n][ZZ]);
         /* Calculate the amplitude of the new velocity profile */
         mvcos       += 2*cosz*md->massT[n]*v[n][XX];
 
@@ -1319,6 +1464,32 @@ void update_tcouple(gmx_int64_t       step,
     }
 }
 
+/*! \brief Computes the atom range for a thread to operate on, ensured SIMD aligned ranges
+ *
+ * \param[in]  numThreads   The number of threads to divide atoms over
+ * \param[in]  threadIndex  The thread to get the range for
+ * \param[in]  numAtoms     The total number of atoms (on this rank)
+ * \param[out] startAtom    The start of the atom range
+ * \param[out] endAtom      The end of the atom range, note that this is in general not a multiple of the SIMD width
+ */
+static void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms,
+                               int *startAtom, int *endAtom)
+{
+#if GMX_HAVE_SIMD_UPDATE
+    constexpr int blockSize = GMX_SIMD_REAL_WIDTH;
+#else
+    constexpr int blockSize = 1;
+#endif
+    int           numBlocks = (numAtoms + blockSize - 1)/blockSize;
+
+    *startAtom    = ((numBlocks* threadIndex     )/numThreads)*blockSize;
+    *endAtom      = ((numBlocks*(threadIndex + 1))/numThreads)*blockSize;
+    if (threadIndex == numThreads - 1)
+    {
+        *endAtom  = numAtoms;
+    }
+}
+
 void update_pcouple_before_coordinates(FILE             *fplog,
                                        gmx_int64_t       step,
                                        const t_inputrec *inputrec,
@@ -1376,9 +1547,7 @@ void update_constraints(FILE             *fplog,
     /* for now, SD update is here -- though it really seems like it
        should be reformulated as a velocity verlet method, since it has two parts */
 
-    int  start  = 0;
     int  homenr = md->homenr;
-    int  nrend  = start+homenr;
 
     /* Cast delta_t from double to real to make the integrators faster.
      * The only reason for having delta_t double is to get accurate values
@@ -1459,9 +1628,7 @@ void update_constraints(FILE             *fplog,
             try
             {
                 int start_th, end_th;
-
-                start_th = start + ((nrend-start)* th   )/nth;
-                end_th   = start + ((nrend-start)*(th+1))/nth;
+                getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
                 /* The second part of the SD integration */
                 do_update_sd1(upd->sd,
@@ -1528,7 +1695,7 @@ void update_constraints(FILE             *fplog,
             }
             if (partialFreezeAndConstraints)
             {
-                for (int i = start; i < nrend; i++)
+                for (int i = 0; i < homenr; i++)
                 {
                     int g = md->cFREEZE[i];
 
@@ -1564,7 +1731,7 @@ void update_constraints(FILE             *fplog,
             nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
 #pragma omp parallel for num_threads(nth) schedule(static)
-            for (int i = start; i < nrend; i++)
+            for (int i = 0; i < homenr; i++)
             {
                 // Trivial statement, does not throw
                 copy_rvec(xp[i], state->x[i]);
@@ -1702,9 +1869,7 @@ void update_coords(FILE             *fplog,
         gmx_incons("update_coords called for velocity without VV integrator");
     }
 
-    int  start  = 0;
     int  homenr = md->homenr;
-    int  nrend  = start+homenr;
 
     /* Cast to real for faster code, no loss in precision (see comment above) */
     real dt     = inputrec->delta_t;
@@ -1732,9 +1897,19 @@ void update_coords(FILE             *fplog,
         try
         {
             int start_th, end_th;
+            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
-            start_th = start + ((nrend-start)* th   )/nth;
-            end_th   = start + ((nrend-start)*(th+1))/nth;
+#ifndef NDEBUG
+            /* Strictly speaking, we would only need this check with SIMD
+             * and for the actual SIMD width. But since the code currently
+             * always adds padding for GMX_REAL_MAX_SIMD_WIDTH, we check that.
+             */
+            size_t homenrSimdPadded = ((homenr + GMX_REAL_MAX_SIMD_WIDTH - 1)/GMX_REAL_MAX_SIMD_WIDTH)*GMX_REAL_MAX_SIMD_WIDTH;
+            GMX_ASSERT(state->x.size() >= homenrSimdPadded, "state->x needs to be padded for SIMD access");
+            GMX_ASSERT(upd->xp.size()  >= homenrSimdPadded, "upd->xp needs to be padded for SIMD access");
+            GMX_ASSERT(state->v.size() >= homenrSimdPadded, "state->v needs to be padded for SIMD access");
+            GMX_ASSERT(f->size()       >= homenrSimdPadded, "f needs to be padded for SIMD access");
+#endif
 
             const rvec *x_rvec  = as_rvec_array(state->x.data());
             rvec       *xp_rvec = as_rvec_array(upd->xp.data());
