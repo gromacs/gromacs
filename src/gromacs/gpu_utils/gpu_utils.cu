@@ -638,6 +638,7 @@ bool isGpuCompatible(const gmx_gpu_info_t *gpu_info,
                      int                   index)
 {
     assert(gpu_info);
+    assert(gpu_info->n_dev == 0 || gpu_info->gpu_dev);
 
     return (index >= gpu_info->n_dev ?
             false :

@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -167,6 +168,8 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
     return gmx::joinStrings(gpuStrings, "\n");
 }
 
+// TODO This function should not live in detectharware.cpp
+
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
  *
@@ -204,19 +207,19 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     std::string output;
     if (!userSetGpuIds)
     {
-        // gpu_opt->dev_compatible is only populated during auto-selection
-        std::string gpuIdsString =
-            formatAndJoin(gmx::constArrayRefFromArray(gpu_opt->dev_compatible,
-                                                      gpu_opt->n_dev_compatible),
+        auto        compatibleGpus    = getCompatibleGpus(gpu_info);
+        int         numCompatibleGpus = static_cast<int>(compatibleGpus.size());
+        std::string gpuIdsString      =
+            formatAndJoin(compatibleGpus,
                           ",", gmx::StringFormatter("%d"));
-        bool bPluralGpus = gpu_opt->n_dev_compatible > 1;
+        bool bPluralGpus = numCompatibleGpus > 1;
 
         if (bPrintHostName)
         {
             output += gmx::formatString("On host %s ", host);
         }
         output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
-                                    gpu_opt->n_dev_compatible,
+                                    numCompatibleGpus,
                                     bPluralGpus ? "s" : "",
                                     bPluralGpus ? "are" : "is",
                                     bPluralGpus ? "s" : "",

@@ -101,6 +101,7 @@ static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
  * This function is responsible for mapping the GPUs to the processes on a single node
  * (filling the gpu_opt->dev_use array).
  *
+ * \param[in]        compatibleGpus       Vector of GPUs that are compatible
  * \param[in,out]    gpu_opt              Input/output GPU assignment data.
  * \param[in]        nrank                Number of PP GPU ranks on the node.
  * \param[in]        rank                 Index of PP GPU rank on the node.
@@ -108,14 +109,16 @@ static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
  * This selects the GPUs we will use. This is an operation local to each physical node.
  * If we have less MPI ranks than GPUs, we will waste some GPUs.
  */
-static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
+static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
+                                gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
 {
+    int numCompatibleGpus = static_cast<int>(compatibleGpus.size());
     GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
     GMX_RELEASE_ASSERT(nrank >= 1,
                        gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
-                                         rank, gpu_opt->n_dev_compatible).c_str());
+                                         rank, numCompatibleGpus).c_str());
 
-    if (gpu_opt->n_dev_compatible == 0)
+    if (numCompatibleGpus == 0)
     {
         char host[HOSTNAMELEN];
 
@@ -126,18 +129,18 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     int nshare;
 
     nshare = 1;
-    if (nrank > gpu_opt->n_dev_compatible)
+    if (nrank > numCompatibleGpus)
     {
-        if (nrank % gpu_opt->n_dev_compatible == 0)
+        if (nrank % numCompatibleGpus == 0)
         {
-            nshare = gmx_gpu_sharing_supported() ? nrank/gpu_opt->n_dev_compatible : 1;
+            nshare = gmx_gpu_sharing_supported() ? nrank/numCompatibleGpus : 1;
         }
         else
         {
             if (rank == 0)
             {
                 gmx_fatal(FARGS, "The number of MPI ranks (%d) in a physical node is not a multiple of the number of GPUs (%d). Select a different number of MPI ranks or use the -gpu_id option to manually specify the GPU to be used.",
-                          nrank, gpu_opt->n_dev_compatible);
+                          nrank, numCompatibleGpus);
             }
 
 #if GMX_MPI
@@ -149,8 +152,8 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
         }
     }
 
-    /* Here we will waste GPUs when nrank < gpu_opt->n_dev_compatible */
-    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible*nshare, nrank);
+    /* Here we will waste GPUs when nrank < numCompatibleGpus */
+    gpu_opt->n_dev_use = std::min(numCompatibleGpus*nshare, nrank);
     if (!gmx_multiple_gpu_per_node_supported())
     {
         gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_use, 1);
@@ -159,7 +162,7 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     for (int i = 0; i != gpu_opt->n_dev_use; ++i)
     {
         /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i/nshare];
+        gpu_opt->dev_use[i] = compatibleGpus[i/nshare];
     }
 }
 
@@ -203,33 +206,21 @@ static bool checkGpuSelection(const gmx_gpu_info_t *gpu_info,
     return allOK;
 }
 
-/*! \brief Select the compatible GPUs
- *
- * This function filters gpu_info->gpu_dev for compatible gpus based
- * on the previously run compatibility tests. Sets
- * gpu_info->dev_compatible and gpu_info->n_dev_compatible.
- *
- * \param[in]     gpu_info    pointer to structure holding GPU information
- * \param[out]    gpu_opt     pointer to structure holding GPU options
- */
-static void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
-                               gmx_gpu_opt_t        *gpu_opt)
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t *gpu_info)
 {
     GMX_ASSERT(gpu_info, "Invalid gpu_info");
-    GMX_ASSERT(gpu_opt, "Invalid gpu_opt");
 
     // Possible minor over-allocation here, but not important for anything
-    gpu_opt->n_dev_compatible = 0;
-    snew(gpu_opt->dev_compatible, gpu_info->n_dev);
+    std::vector<int> compatibleGpus;
+    compatibleGpus.reserve(gpu_info->n_dev);
     for (int i = 0; i < gpu_info->n_dev; i++)
     {
-        GMX_ASSERT(gpu_info->gpu_dev, "Invalid gpu_info->gpu_dev");
         if (isGpuCompatible(gpu_info, i))
         {
-            gpu_opt->dev_compatible[gpu_opt->n_dev_compatible] = i;
-            gpu_opt->n_dev_compatible++;
+            compatibleGpus.push_back(i);
         }
     }
+    return compatibleGpus;
 }
 
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
@@ -261,7 +252,7 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
     }
     else
     {
-        pickCompatibleGpus(gpu_info, gpu_opt);
-        assign_rank_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
+        auto compatibleGpus = getCompatibleGpus(gpu_info);
+        assign_rank_gpu_ids(compatibleGpus, gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
     }
 }
