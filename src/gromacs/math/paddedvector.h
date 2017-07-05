@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,28 @@ namespace gmx
 
 /*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities.
  *
- * \todo This vector is not padded yet, padding will be added soon */
+ * \todo Replace the manual padding using resizePaddedRVecVector() by automated padded on resize() */
 using PaddedRVecVector = std::vector<gmx::RVec>;
+
+/*! \brief Resize a paddedRVecVector, this adds and clears the padding
+ *
+ * \param[in,out] vec           The vector to resize
+ * \param[in]     unpaddedSize  The requested unpadded size
+ */
+static void resizePaddedRVecVector(PaddedRVecVector *vec, int unpaddedSize)
+{
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     *
+     * We need padding for SIMD loads and stores of rvec ranges.
+     * As we don't want this file to depend on the SIMD module,
+     * we padd with GMX_REAL_MAX_SIMD_WIDTH.
+     *
+     * The padded elements should be 0, therefore we resize twice.
+     */
+    vec->resize(unpaddedSize);
+    vec->resize(unpaddedSize + GMX_REAL_MAX_SIMD_WIDTH);
+};
 
 } // namespace gmx
 
