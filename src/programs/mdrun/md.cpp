@@ -436,8 +436,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         state_change_natoms(state_global, state_global->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
+         *
+         * We need GMX_SIMD_REAL_WIDTH-1 extra elements for full SIMD
+         * width operations on rvec entries.
          */
-        f.resize(state_global->natoms + 1);
+        f.resize(state_global->natoms + GMX_REAL_MAX_SIMD_WIDTH);
         /* Copy the pointer to the global state */
         state = state_global;
 
