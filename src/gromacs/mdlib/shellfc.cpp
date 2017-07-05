@@ -1028,8 +1028,13 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
     for (i = 0; (i < 2); i++)
     {
-        shfc->x[i].resize(nat + 1);
-        shfc->f[i].resize(nat + 1);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         *
+         * We need padding for SIMD loads and stores of rvec ranges.
+         */
+        shfc->x[i].resize(nat + GMX_REAL_MAX_SIMD_WIDTH);
+        shfc->f[i].resize(nat + GMX_REAL_MAX_SIMD_WIDTH);
     }
 
     /* Create pointer that we can swap */
