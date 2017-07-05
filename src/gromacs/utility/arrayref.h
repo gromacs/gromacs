@@ -209,9 +209,10 @@ class ArrayRef
          * lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector<T> to a method that takes ArrayRef.
+         * std::vector<T, A> to a method that takes ArrayRef.
          */
-        ArrayRef(std::vector<T> &v)
+        template <typename A>
+        ArrayRef(std::vector<T, A> &v)
             : begin_((!v.empty()) ? &v[0] : nullptr),
               end_((!v.empty()) ? &v[0] + v.size() : nullptr)
         {
