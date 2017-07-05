@@ -35,6 +35,8 @@
 #ifndef GMX_HARDWARE_HARDWAREASSIGN_H
 #define GMX_HARDWARE_HARDWAREASSIGN_H
 
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_gpu_info_t;
@@ -45,6 +47,15 @@ namespace gmx
 {
 class MDLogger;
 }
+
+/*! \brief Select the compatible GPUs
+ *
+ * This function filters gpu_info->gpu_dev for compatible GPUs based
+ * on the previously run compatibility tests.
+ *
+ * \param[in]     gpu_info    pointer to structure holding GPU information, including compatibility
+ * \return                    vector of IDs of GPUs already recorded as compatible */
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t *gpu_info);
 
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
