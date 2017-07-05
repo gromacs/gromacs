@@ -656,11 +656,11 @@ static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
         v_real = nullptr;
     }
     // The current invariant of a PaddedRVecVector is that its size is
-    // one larger than necessary to store the data. Make sure that we
-    // read/write only the valid data, and don't leak to the outside
-    // world that currently we find it convenient internally to
-    // allocate one extra element.
-    gmx::ArrayRef<real> ref(v_real, v_real + (vector->size()-1) * DIM);
+    // GMX_REAL_MAX_SIMD_WIDTH larger than necessary to store the data.
+    // Make sure that we read/write only the valid data, and don't leak
+    // to the outside world that currently we find it convenient internally
+    // to allocate one extra element.
+    gmx::ArrayRef<real> ref(v_real, v_real + (vector->size() - GMX_REAL_MAX_SIMD_WIDTH) * DIM);
 
     return doRealArrayRef(xd, part, ecpt, sflags, ref, list);
 }

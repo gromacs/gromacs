@@ -53,7 +53,7 @@
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
+t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, const t_inputrec *ir)
 {
     t_mdatoms *md;
     snew(md, 1);
@@ -73,7 +73,7 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
         totalMassA += nmol*atom->m;
         totalMassB += nmol*atom->mB;
 
-        if (bFreeEnergy && PERTURBED(*atom))
+        if (ir->efep != efepNO && PERTURBED(*atom))
         {
             md->nPerturbed++;
             if (atom->mB != atom->m)
@@ -94,11 +94,23 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
     md->tmassA = totalMassA;
     md->tmassB = totalMassB;
 
-    if (bFreeEnergy && fp)
+    if (ir->efep != efepNO && fp)
     {
         fprintf(fp,
                 "There are %d atoms and %d charges for free energy perturbation\n",
                 md->nPerturbed, md->nChargePerturbed);
+    }
+
+    md->havePartiallyFrozenAtoms = FALSE;
+    for (int g = 0; g < ir->opts.ngfrz; g++)
+    {
+        for (int d = YY; d < DIM; d++)
+        {
+            if (ir->opts.nFreeze[d] != ir->opts.nFreeze[XX])
+            {
+                md->havePartiallyFrozenAtoms = TRUE;
+            }
+        }
     }
 
     md->bOrires = gmx_mtop_ftype_count(mtop, F_ORIRES);
@@ -142,7 +154,11 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             srenew(md->massB, md->nalloc);
         }
         srenew(md->massT, md->nalloc);
-        srenew(md->invmass, md->nalloc);
+        /* The SIMD version of the integrator needs this aligned and padded.
+         * The padding needs to be with zeros, which we set later below.
+         */
+        sfree_aligned(md->invmass);
+        snew_aligned(md->invmass, md->nalloc + GMX_REAL_MAX_SIMD_WIDTH, GMX_REAL_MAX_SIMD_WIDTH*sizeof(real));
         srenew(md->invMassPerDim, md->nalloc);
         srenew(md->chargeA, md->nalloc);
         srenew(md->typeA, md->nalloc);
@@ -402,6 +418,15 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+
+    if (md->nr > 0)
+    {
+        /* Pad invmass with 0 so a SIMD MD update does not change v and x */
+        for (int i = md->nr; i < md->nr + GMX_REAL_MAX_SIMD_WIDTH; i++)
+        {
+            md->invmass[i] = 0;
+        }
     }
 
     md->homenr = homenr;
