@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,17 +43,54 @@
 #ifndef GMX_MATH_PADDEDVECTOR_H
 #define GMX_MATH_PADDEDVECTOR_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/alignedallocator.h"
 
 namespace gmx
 {
 
 /*! \brief Temporary definition of a type usable for SIMD-style loads of RVec quantities.
  *
- * \todo This vector is not padded yet, padding will be added soon */
-using PaddedRVecVector = std::vector<gmx::RVec>;
+ * \note Currently paddedRVecVector should only be resized using
+ *       resizePaddedRVecVector() to ensure the proper padding is added.
+ * \todo Replace the padding applied in resizePaddedRVecVector() by automated
+ *       padding on resize() of the vector.
+ */
+using PaddedRVecVector = std::vector < gmx::RVec, gmx::Allocator < gmx::RVec, AlignedAllocationPolicy > >;
+
+/*! \brief Resize a paddedRVecVector, this adds and clears the padding
+ *
+ * \param[in,out] vec           The vector to resize
+ * \param[in]     unpaddedSize  The requested unpadded size
+ *
+ * \note If this vector is used as a denominator in SIMD code, the paddinxg
+ *       elements should be manually set to a non-zero values to avoid
+ *       division by zero.
+ */
+static inline void resizePaddedRVecVector(PaddedRVecVector *vec,
+                                          size_t            unpaddedSize)
+{
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     *
+     * We need padding for SIMD loads and stores of rvec ranges.
+     * As we don't want this file to depend on the SIMD module,
+     * we pad with GMX_REAL_MAX_SIMD_WIDTH.
+     */
+    const size_t paddedSize = unpaddedSize + GMX_REAL_MAX_SIMD_WIDTH;
+    vec->resize(paddedSize);
+
+    /* We set the padded element to zero, so there are initialized and
+     * we avoid fp overflow exceptions.
+     */
+    for (size_t i = unpaddedSize; i < paddedSize; i++)
+    {
+        (*vec)[i] = { 0, 0, 0 };
+    }
+};
 
 } // namespace gmx
 

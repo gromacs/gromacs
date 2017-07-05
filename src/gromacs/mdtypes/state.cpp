@@ -103,20 +103,17 @@ void state_change_natoms(t_state *state, int natoms)
     state->natoms = natoms;
     if (state->natoms > 0)
     {
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
         if (state->flags & (1 << estX))
         {
-            state->x.resize(state->natoms + 1);
+            resizePaddedRVecVector(&state->x, natoms);
         }
         if (state->flags & (1 << estV))
         {
-            state->v.resize(state->natoms + 1);
+            resizePaddedRVecVector(&state->v, natoms);
         }
         if (state->flags & (1 << estCGP))
         {
-            state->cg_p.resize(state->natoms + 1);
+            resizePaddedRVecVector(&state->cg_p, natoms);
         }
     }
     else
