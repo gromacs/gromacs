@@ -56,7 +56,10 @@
 
 #include "dimparams.h" /* This is needed for awh_dvec */
 
-struct awh_dim_params_t;
+namespace gmx
+{
+
+struct AwhDimParams;
 
 /*! \internal
  * \brief An axis, i.e. dimension, of the grid.
@@ -206,7 +209,7 @@ class Grid
          * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
          * \param[in] awhDimParams  Dimension params from inputrec.
          */
-        Grid(const std::vector<DimParams> &dimParams, const awh_dim_params_t *awhDimParams);
+        Grid(const std::vector<DimParams> &dimParams, const AwhDimParams *awhDimParams);
 
         /*! \brief Returns the number of points in the grid.
          *
@@ -279,37 +282,37 @@ class Grid
 /*! \brief Convert a multidimensional grid point index to a linear one.
  *
  * \param[in] grid        The grid.
- * \param[in] index_multi Multidimensional grid point index to convert to a linear one.
+ * \param[in] indexMulti  Multidimensional grid point index to convert to a linear one.
  * \returns the linear index.
  */
-int multidim_gridindex_to_linear(const Grid &grid, const awh_ivec index_multi);
+int multidimGridindexToLinear(const Grid &grid, const awh_ivec indexMulti);
 
 /*! \brief Convert multidimensional array index to a linear one.
  *
- * \param[in] index_multi Multidimensional index to convert to a linear one.
+ * \param[in] indexMulti  Multidimensional index to convert to a linear one.
  * \param[in] ndim        Number of dimensions of the array.
- * \param[in] npoints_dim Number of points of the array.
+ * \param[in] numPointsDim Number of points of the array.
  * \returns the linear index.
  * \note This function can be used without having an initialized grid.
  */
-int multidim_array_index_to_linear(const awh_ivec index_multi,  int ndim, const awh_ivec npoints_dim);
+int multidimArrayIndexToLinear(const awh_ivec indexMulti,  int ndim, const awh_ivec numPointsDim);
 
 /*! \brief Convert a linear grid point index to a multidimensional one.
  *
  * \param[in] grid                The grid.
- * \param[in] index_linear        Linear grid point index to convert to a multidimensional one.
- * \param[out] index_multi        The multidimensional index.
+ * \param[in] indexLinear         Linear grid point index to convert to a multidimensional one.
+ * \param[out] indexMulti         The multidimensional index.
  */
-void linear_gridindex_to_multidim(const Grid &grid, int index_linear, awh_ivec index_multi);
+void linearGridindexToMultidim(const Grid &grid, int indexLinear, awh_ivec indexMulti);
 
 /*! \brief Convert a linear array index to a multidimensional one.
  *
- * \param[in] index_linear        Linear array index
+ * \param[in] indexLinear         Linear array index
  * \param[in] ndim                Number of dimensions of the array.
- * \param[in] npoints_dim         Number of points for each dimension.
- * \param[out] index_multi        The multidimensional index.
+ * \param[in] numPointsDim        Number of points for each dimension.
+ * \param[out] indexMulti         The multidimensional index.
  */
-void linear_array_index_to_multidim(int index_linear, int ndim, const awh_ivec npoints_dim, awh_ivec index_multi);
+void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPointsDim, awh_ivec indexMulti);
 
 /*! \brief
  * Find the next grid point in the sub-part of the grid given a starting point.
@@ -362,6 +365,6 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint, const double* con
  */
 double getDeviationFromPointAlongGridaxis(const Grid &grid, int dimindex, int pointindex, double value);
 
-/*! \endcond */
+} // namespace gmx
 
 #endif

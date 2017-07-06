@@ -53,6 +53,9 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 //! Target distribution enum.
 enum {
     eawhtargetCONSTANT, eawhtargetCUTOFF, eawhtargetBOLTZMANN, eawhtargetLOCALBOLTZMANN, eawhtargetNR
@@ -60,7 +63,7 @@ enum {
 //! String for target distribution.
 extern const char *eawhtarget_names[eawhtargetNR+1];
 //! Macro for target distribution string.
-#define EAWHTARGET(e)  enum_name(e, eawhtargetNR, eawhtarget_names)
+#define EAWHTARGET(e)  enum_name(e, gmx::eawhtargetNR, gmx::eawhtarget_names)
 
 //! Weight histogram growth enum.
 enum {
@@ -69,7 +72,7 @@ enum {
 //! String for weight histogram growth
 extern const char *eawhgrowth_names[eawhgrowthNR+1];
 //! Macro for weight histogram growth string.
-#define EAWHGROWTH(e)    enum_name(e, eawhgrowthNR, eawhgrowth_names)
+#define EAWHGROWTH(e)    enum_name(e, gmx::eawhgrowthNR, gmx::eawhgrowth_names)
 
 //! AWH potential type enum.
 enum {
@@ -78,48 +81,53 @@ enum {
 //! String for AWH potential type
 extern const char *eawhpotential_names[eawhpotentialNR+1];
 //! Macro for AWH potential type string.
-#define EAWHPOTENTIAL(e)    enum_name(e, eawhpotentialNR, eawhpotential_names)
+#define EAWHPOTENTIAL(e)    enum_name(e, gmx::eawhpotentialNR, gmx::eawhpotential_names)
 
 /*! \cond INTERNAL */
 
 //! Parameters for an AWH coordinate dimension.
-struct awh_dim_params_t {
-    int    pull_coord_index;          /**< Index of the pull coordinate to bias. */
-    double period;                    /**< The period of this dimension (= 0 if not periodic). */
-    double diffusion;                 /**< Estimated diffusion constant in units of nm^2/ps or rad^2/ps. */
-    double origin;                    /**< Start value of the interval. */
-    double end;                       /**< End value of the interval. */
-    int    ninterval;                 /**< The number of subintervals to split the interval into along this dimension. */
-    double interval_overlap;          /**< Subinterval overlap (as a fractional value in [0, 1]). */
-    double coord_value_init;          /**< The initial coordinate value. */
-    double coverDiameter;             /**< The diameter that needs to be sampled around a point before it is considered covered. */
+struct AwhDimParams
+{
+    int    pullCoordIndex;   /**< Index of the pull coordinate to bias. */
+    double period;           /**< The period of this dimension (= 0 if not periodic). */
+    double diffusion;        /**< Estimated diffusion constant in units of nm^2/ps or rad^2/ps. */
+    double origin;           /**< Start value of the interval. */
+    double end;              /**< End value of the interval. */
+    int    numInterval;      /**< The number of subintervals to split the interval into along this dimension. */
+    double intervalOverlap;  /**< Subinterval overlap (as a fractional value in [0, 1]). */
+    double coordValueInit;   /**< The initial coordinate value. */
+    double coverDiameter;    /**< The diameter that needs to be sampled around a point before it is considered covered. */
 };
 
 //! Parameters for an AWH bias.
-struct awh_bias_params_t {
-    int                 ndim;                   /**< Dimension of the coordinate space. */
-    awh_dim_params_t   *dim_params;             /**< AWH parameters per dimension. */
-    int                 eTarget;                /**< Type of target distribution. */
-    double              targetBetaScaling;      /**< Beta scaling value for Boltzmann type target distributions. */
-    double              targetCutoff;           /**< Free energy cutoff value for cutoff type target distribution.*/
-    int                 eGrowth;                /**< How the biasing histogram grows. */
-    int                 bUser_data;             /**< Is there a user-defined initial PMF estimate and target estimate? */
-    double              error_initial;          /**< Estimated initial free energy error. */
-    gmx_bool            bShare;                 /**< Share the bias across multiple simulations? */
-    gmx_bool            equilibrateHistogram;   /**< True if the simulation starts out by equilibrating the histogram.  */
+struct AwhBiasParams
+{
+    int           ndim;                  /**< Dimension of the coordinate space. */
+    AwhDimParams *dimParams;             /**< AWH parameters per dimension. */
+    int           eTarget;               /**< Type of target distribution. */
+    double        targetBetaScaling;     /**< Beta scaling value for Boltzmann type target distributions. */
+    double        targetCutoff;          /**< Free energy cutoff value for cutoff type target distribution.*/
+    int           eGrowth;               /**< How the biasing histogram grows. */
+    int           bUserData;             /**< Is there a user-defined initial PMF estimate and target estimate? */
+    double        errorInitial;          /**< Estimated initial free energy error. */
+    gmx_bool      bShare;                /**< Share the bias across multiple simulations? */
+    gmx_bool      equilibrateHistogram;  /**< True if the simulation starts out by equilibrating the histogram.  */
 };
 
 //! Parameters for AWH.
-struct awh_params_t {
-    int                      nbias;                       /**< The number of AWH biases.*/
-    awh_bias_params_t       *awh_bias_params;             /**< AWH bias parameters.*/
-    gmx_int64_t              seed;                        /**< Random seed.*/
-    int                      nstout;                      /**< Output step interval.*/
-    int                      nstsample_coord;             /**< Number of samples per coordinate sample (also used for PMF) */
-    int                      nsamples_update_free_energy; /**< Number of samples per free energy update. */
-    int                      ePotential;                  /**< Type of potential. */
+struct AwhParams
+{
+    int            numBias;                    /**< The number of AWH biases.*/
+    AwhBiasParams *awhBiasParams;              /**< AWH bias parameters.*/
+    gmx_int64_t    seed;                       /**< Random seed.*/
+    int            nstOut;                     /**< Output step interval.*/
+    int            nstSampleCoord;             /**< Number of samples per coordinate sample (also used for PMF) */
+    int            numSamplesUpdateFreeEnergy; /**< Number of samples per free energy update. */
+    int            ePotential;                 /**< Type of potential. */
 };
 
 /*! \endcond */
+
+}      // namespace gmx
 
 #endif /* GMX_MDTYPES_AWH_PARAMS_H */

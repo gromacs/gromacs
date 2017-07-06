@@ -54,6 +54,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 //! The maximum dimensionality of the AWH coordinate.
 static const int c_biasMaxNumDim = 4;
 
@@ -108,4 +111,6 @@ struct DimParams
     const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
 };
 
-#endif  /* GMX_AWH_DIMPARAMS_H */
+}      // namespace gmx
+
+#endif /* GMX_AWH_DIMPARAMS_H */

@@ -55,8 +55,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "internal.h"
 #include "math.h"
+#include "biasparams.h"
+
+namespace gmx
+{
 
 const char *eawhtarget_names[eawhtargetNR+1] = {
     "constant", "cutoff", "boltzmann", "local-boltzmann", nullptr
@@ -73,17 +76,17 @@ const char *eawhpotential_names[eawhpotentialNR+1] = {
 /*! \brief
  * Read parameters of an AWH bias dimension.
  *
- * \param[in,out] ninp_p       Number of read input file entries.
- * \param[in,out] inp_p        Input file entries.
- * \param[in] prefix           Prefix for dimension parameters.
- * \param[in,out] dim_params   AWH dimensional parameters.
- * \param[in] pull_params      Pull parameters.
- * \param[in,out] wi           Struct for bookeeping warnings.
- * \param[in] bComment         True if comments should be printed.
+ * \param[in,out] ninp_p     Number of read input file entries.
+ * \param[in,out] inp_p      Input file entries.
+ * \param[in] prefix         Prefix for dimension parameters.
+ * \param[in,out] dimParams  AWH dimensional parameters.
+ * \param[in] pull_params    Pull parameters.
+ * \param[in,out] wi         Struct for bookeeping warnings.
+ * \param[in] bComment       True if comments should be printed.
  */
-static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
-                            awh_dim_params_t *dim_params, const pull_params_t *pull_params,
-                            warninp_t wi, bool bComment)
+static void readDimParams(int *ninp_p, t_inpfile **inp_p, const char *prefix,
+                          AwhDimParams *dimParams, const pull_params_t *pull_params,
+                          warninp_t wi, bool bComment)
 {
     int        icoord_ext, icoord, eGeom;
     char       warningmsg[STRLEN], opt[STRLEN];
@@ -106,8 +109,8 @@ static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
     }
 
     /* The pull coordinate indices start at 1 in the input file, at 0 internally */
-    icoord                       = icoord_ext - 1;
-    dim_params->pull_coord_index = icoord;
+    icoord                    = icoord_ext - 1;
+    dimParams->pullCoordIndex = icoord;
 
     /* The pull settings need to be consistent with the AWH settings */
     if (!(pull_params->coord[icoord].eType == epullEXTERNAL) )
@@ -132,20 +135,20 @@ static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
         CTYPE("Estimated diffusion constant (nm^2/ps or rad^2/ps)");
     }
     sprintf(opt, "%s-diffusion", prefix);
-    RTYPE(opt, dim_params->diffusion, 0);
+    RTYPE(opt, dimParams->diffusion, 0);
 
-    if (dim_params->diffusion <= 0)
+    if (dimParams->diffusion <= 0)
     {
         const double diffusion_default = 1e-5;
         sprintf(warningmsg, "%s not explicitly set by user."
                 " You can choose to use a default value (%g nm^2/ps or rad^2/ps) but this may very well be non-optimal for your system!",
                 opt, diffusion_default);
         warning(wi, warningmsg);
-        dim_params->diffusion = diffusion_default;
+        dimParams->diffusion = diffusion_default;
     }
 
     /* Grid params for each axis */
-    eGeom = pull_params->coord[dim_params->pull_coord_index].eGeom;
+    eGeom = pull_params->coord[dimParams->pullCoordIndex].eGeom;
 
     if (bComment)
     {
@@ -153,42 +156,42 @@ static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
     }
 
     sprintf(opt, "%s-start", prefix);
-    RTYPE(opt, dim_params->origin, 0.);
+    RTYPE(opt, dimParams->origin, 0.);
 
     sprintf(opt, "%s-end", prefix);
-    RTYPE(opt, dim_params->end, 0.);
+    RTYPE(opt, dimParams->end, 0.);
 
-    if (gmx_within_tol(dim_params->end - dim_params->origin, 0, GMX_REAL_EPS))
+    if (gmx_within_tol(dimParams->end - dimParams->origin, 0, GMX_REAL_EPS))
     {
         sprintf(warningmsg, "The given interval length given by %s-start (%g) and %s-end (%g) is zero. "
                 "This will result in only one point along this axis in the coordinate value grid.",
-                prefix, dim_params->origin, prefix, dim_params->end);
+                prefix, dimParams->origin, prefix, dimParams->end);
         warning(wi, warningmsg);
     }
     /* Check that the requested interval is in allowed range */
     if (eGeom == epullgDIST)
     {
-        if (dim_params->origin < 0 || dim_params->end < 0)
+        if (dimParams->origin < 0 || dimParams->end < 0)
         {
             gmx_fatal(FARGS, "%s-start (%g) or %s-end (%g) set to a negative value. With pull geometry distance coordinate values are non-negative. "
                       "Perhaps you want to use geometry %s instead?",
-                      prefix, dim_params->origin, prefix, dim_params->end, EPULLGEOM(epullgDIR));
+                      prefix, dimParams->origin, prefix, dimParams->end, EPULLGEOM(epullgDIR));
         }
     }
     else if (eGeom == epullgANGLE || eGeom == epullgANGLEAXIS)
     {
-        if (dim_params->origin < 0 || dim_params->end > 180)
+        if (dimParams->origin < 0 || dimParams->end > 180)
         {
             gmx_fatal(FARGS, "%s-start (%g) and %s-end (%g) are outside of the allowed range 0 to 180 deg for pull geometries %s and %s ",
-                      prefix, dim_params->origin, prefix, dim_params->end, EPULLGEOM(epullgANGLE), EPULLGEOM(epullgANGLEAXIS));
+                      prefix, dimParams->origin, prefix, dimParams->end, EPULLGEOM(epullgANGLE), EPULLGEOM(epullgANGLEAXIS));
         }
     }
     else if (eGeom == epullgDIHEDRAL)
     {
-        if (dim_params->origin < -180 || dim_params->end > 180)
+        if (dimParams->origin < -180 || dimParams->end > 180)
         {
             gmx_fatal(FARGS, "%s-start (%g) and %s-end (%g) are outside of the allowed range -180 to 180 deg for pull geometry %s. ",
-                      prefix, dim_params->origin, prefix, dim_params->end, EPULLGEOM(epullgDIHEDRAL));
+                      prefix, dimParams->origin, prefix, dimParams->end, EPULLGEOM(epullgDIHEDRAL));
         }
     }
     if (bComment)
@@ -196,24 +199,24 @@ static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
         CTYPE("The number of subintervals to partition the coordinate interval into");
     }
     sprintf(opt, "%s-ninterval", prefix);
-    ITYPE(opt, dim_params->ninterval, 1);
-    if (dim_params->ninterval > 1)
+    ITYPE(opt, dimParams->numInterval, 1);
+    if (dimParams->numInterval > 1)
     {
     }
-    if (dim_params->ninterval <= 0)
+    if (dimParams->numInterval <= 0)
     {
-        gmx_fatal(FARGS, "%s (%d) needs to a positive number", opt, dim_params->ninterval);
+        gmx_fatal(FARGS, "%s (%d) needs to a positive number", opt, dimParams->numInterval);
     }
     if (bComment)
     {
         CTYPE("Overlap of the coordinate subintervals used when partitioning the interval");
     }
     sprintf(opt, "%s-interval-overlap", prefix);
-    RTYPE(opt, dim_params->interval_overlap, 1.);
-    if (dim_params->interval_overlap < 0 || dim_params->interval_overlap > 1)
+    RTYPE(opt, dimParams->intervalOverlap, 1.);
+    if (dimParams->intervalOverlap < 0 || dimParams->intervalOverlap > 1)
     {
         gmx_fatal(FARGS, "%s (%g) only takes values in the range of 0 to 1",
-                  opt, dim_params->interval_overlap);
+                  opt, dimParams->intervalOverlap);
     }
 
     if (bComment)
@@ -221,12 +224,12 @@ static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
         CTYPE("Diameter that needs to be sampled around a point before it is considered covered.");
     }
     sprintf(opt, "%s-cover-diameter", prefix);
-    RTYPE(opt, dim_params->coverDiameter, 0);
+    RTYPE(opt, dimParams->coverDiameter, 0);
 
-    if (dim_params->coverDiameter < 0)
+    if (dimParams->coverDiameter < 0)
     {
         gmx_fatal(FARGS, "%s (%g) cannot be negative.",
-                  opt, dim_params->coverDiameter);
+                  opt, dimParams->coverDiameter);
     }
 
     *ninp_p   = ninp;
@@ -236,25 +239,25 @@ static void read_dim_params(int *ninp_p, t_inpfile **inp_p, const char *prefix,
 /*! \brief
  * Check consistency of input at the AWH bias level.
  *
- * \param[in] awh_bias_params   AWH bias parameters.
- * \param[in,out] wi            Struct for bookeeping warnings.
+ * \param[in]     awhBiasParams  AWH bias parameters.
+ * \param[in,out] wi             Struct for bookeeping warnings.
  */
-static void check_input_consistency_awh_bias(const awh_bias_params_t *awh_bias_params, warninp_t wi)
+static void checkInputConsistencyAwhBias(const AwhBiasParams *awhBiasParams, warninp_t wi)
 {
     char warningmsg[STRLEN];
 
     /* Settings for partitioning the AWH domain */
-    for (int d = 0; d < awh_bias_params->ndim; d++)
+    for (int d = 0; d < awhBiasParams->ndim; d++)
     {
-        if (awh_bias_params->dim_params[d].ninterval > 1)
+        if (awhBiasParams->dimParams[d].numInterval > 1)
         {
-            if (awh_bias_params->bShare)
+            if (awhBiasParams->bShare)
             {
                 gmx_fatal(FARGS, "Partitioning the AWH dimension %d into %d intervals is not compatible "
                           "with having sharing simulations since all intervals need to be identical.",
-                          d + 1, awh_bias_params->dim_params[d].ninterval);
+                          d + 1, awhBiasParams->dimParams[d].numInterval);
             }
-            else if (awh_bias_params->dim_params[d].interval_overlap == 1)
+            else if (awhBiasParams->dimParams[d].intervalOverlap == 1)
             {
                 sprintf(warningmsg, "Splitting the interval of independent simulations "
                         "with an overlap of 1 has no effect. "
@@ -262,7 +265,7 @@ static void check_input_consistency_awh_bias(const awh_bias_params_t *awh_bias_p
                 warning(wi, warningmsg);
             }
         }
-        else if ((awh_bias_params->dim_params[d].ninterval == 1) && (awh_bias_params->dim_params[d].interval_overlap < 1))
+        else if ((awhBiasParams->dimParams[d].numInterval == 1) && (awhBiasParams->dimParams[d].intervalOverlap < 1))
         {
             gmx_fatal(FARGS, "With a single AWH subinterval the AWH overlap can only equal 1. "
                       "Perhaps you forgot to set the number of AWH subintervals in the mdp file?");
@@ -270,10 +273,10 @@ static void check_input_consistency_awh_bias(const awh_bias_params_t *awh_bias_p
     }
 
     /* Covering diameter and sharing warning. */
-    for (int d = 0; d < awh_bias_params->ndim; d++)
+    for (int d = 0; d < awhBiasParams->ndim; d++)
     {
-        double coverDiameter = awh_bias_params->dim_params[d].coverDiameter;
-        if (!awh_bias_params->bShare && coverDiameter > 0)
+        double coverDiameter = awhBiasParams->dimParams[d].coverDiameter;
+        if (!awhBiasParams->bShare && coverDiameter > 0)
         {
             warning(wi, "The covering diameter is only relevant to set for bias sharing simulations.");
         }
@@ -284,15 +287,15 @@ static void check_input_consistency_awh_bias(const awh_bias_params_t *awh_bias_p
 /*! \brief
  * Read parameters of an AWH bias.
  *
- * \param[in,out] ninp_p            Number of read input file entries.
- * \param[in,out] inp_p             Input file entries.
- * \param[in,out] awh_bias_params   AWH dimensional parameters.
- * \param[in] prefix                Prefix for bias parameters.
- * \param[in] ir                    Input parameter struct.
- * \param[in,out] wi                Struct for bookeeping warnings.
- * \param[in] bComment              True if comments should be printed.
+ * \param[in,out] ninp_p         Number of read input file entries.
+ * \param[in,out] inp_p          Input file entries.
+ * \param[in,out] awhBiasParams  AWH dimensional parameters.
+ * \param[in]     prefix         Prefix for bias parameters.
+ * \param[in]     ir             Input parameter struct.
+ * \param[in,out] wi             Struct for bookeeping warnings.
+ * \param[in]     bComment       True if comments should be printed.
  */
-static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *awh_bias_params, const char *prefix,
+static void read_bias_params(int *ninp_p, t_inpfile **inp_p, AwhBiasParams *awhBiasParams, const char *prefix,
                              const t_inputrec *ir, warninp_t wi, bool bComment)
 {
     int        ninp;
@@ -311,8 +314,8 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
     sprintf(opt, "%s-error-init", prefix);
 
     /* We allow using a default value here without warning (but warn the user if the diffusion constant is not set). */
-    RTYPE(opt, awh_bias_params->error_initial, 4);
-    if (awh_bias_params->error_initial <= 0)
+    RTYPE(opt, awhBiasParams->errorInitial, 4);
+    if (awhBiasParams->errorInitial <= 0)
     {
         gmx_fatal(FARGS, "%s (%d) needs to be > 0.", opt);
     }
@@ -322,15 +325,15 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
         CTYPE("Growth rate of the reference histogram determining the bias update size: exp-linear or linear");
     }
     sprintf(opt, "%s-growth", prefix);
-    EETYPE(opt, awh_bias_params->eGrowth, eawhgrowth_names);
+    EETYPE(opt, awhBiasParams->eGrowth, eawhgrowth_names);
 
     if (bComment)
     {
         CTYPE("Start the simulation by equilibrating histogram towards the target distribution: no or yes");
     }
     sprintf(opt, "%s-equilibrate-histogram", prefix);
-    EETYPE(opt, awh_bias_params->equilibrateHistogram, yesno_names);
-    if (awh_bias_params->equilibrateHistogram && awh_bias_params->eGrowth != eawhgrowthEXP_LINEAR)
+    EETYPE(opt, awhBiasParams->equilibrateHistogram, yesno_names);
+    if (awhBiasParams->equilibrateHistogram && awhBiasParams->eGrowth != eawhgrowthEXP_LINEAR)
     {
         sprintf(warningmsg, "Option %s will only have an effect for histogram growth type '%s'.",
                 opt, EAWHGROWTH(eawhgrowthEXP_LINEAR));
@@ -342,10 +345,10 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
         CTYPE("Target distribution type: constant, cutoff, boltzmann or local-boltzmann");
     }
     sprintf(opt, "%s-target", prefix);
-    EETYPE(opt, awh_bias_params->eTarget, eawhtarget_names);
+    EETYPE(opt, awhBiasParams->eTarget, eawhtarget_names);
 
-    if ((awh_bias_params->eTarget == eawhtargetLOCALBOLTZMANN) &&
-        (awh_bias_params->eGrowth == eawhgrowthEXP_LINEAR))
+    if ((awhBiasParams->eTarget == eawhtargetLOCALBOLTZMANN) &&
+        (awhBiasParams->eGrowth == eawhgrowthEXP_LINEAR))
     {
         sprintf(warningmsg, "Target type '%s' combined with histogram growth type '%s' is not "
                 "expected to give stable bias updates. You probably want to use growth type "
@@ -360,23 +363,23 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
         CTYPE("Boltzmann beta scaling factor for target distribution types 'boltzmann' and 'boltzmann-local'");
     }
     sprintf(opt, "%s-target-beta-scaling", prefix);
-    RTYPE(opt, awh_bias_params->targetBetaScaling, 0);
+    RTYPE(opt, awhBiasParams->targetBetaScaling, 0);
 
-    switch (awh_bias_params->eTarget)
+    switch (awhBiasParams->eTarget)
     {
         case eawhtargetBOLTZMANN:
         case eawhtargetLOCALBOLTZMANN:
-            if (awh_bias_params->targetBetaScaling < 0 || awh_bias_params->targetBetaScaling > 1)
+            if (awhBiasParams->targetBetaScaling < 0 || awhBiasParams->targetBetaScaling > 1)
             {
                 gmx_fatal(FARGS, "%s = %g is not useful for target type %s.",
-                          opt, awh_bias_params->targetBetaScaling, EAWHTARGET(awh_bias_params->eTarget));
+                          opt, awhBiasParams->targetBetaScaling, EAWHTARGET(awhBiasParams->eTarget));
             }
             break;
         default:
-            if (awh_bias_params->targetBetaScaling != 0)
+            if (awhBiasParams->targetBetaScaling != 0)
             {
                 gmx_fatal(FARGS, "Value for %s (%g) set explicitly but will not be used for target type %s.",
-                          opt, awh_bias_params->targetBetaScaling, EAWHTARGET(awh_bias_params->eTarget));
+                          opt, awhBiasParams->targetBetaScaling, EAWHTARGET(awhBiasParams->eTarget));
             }
             break;
     }
@@ -386,22 +389,22 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
         CTYPE("Free energy cutoff value for target distribution type 'cutoff'");
     }
     sprintf(opt, "%s-target-cutoff", prefix);
-    RTYPE(opt, awh_bias_params->targetCutoff, 0);
+    RTYPE(opt, awhBiasParams->targetCutoff, 0);
 
-    switch (awh_bias_params->eTarget)
+    switch (awhBiasParams->eTarget)
     {
         case eawhtargetCUTOFF:
-            if (awh_bias_params->targetCutoff <= 0)
+            if (awhBiasParams->targetCutoff <= 0)
             {
                 gmx_fatal(FARGS, "%s = %g is not useful for target type %s.",
-                          opt, awh_bias_params->targetCutoff, EAWHTARGET(awh_bias_params->eTarget));
+                          opt, awhBiasParams->targetCutoff, EAWHTARGET(awhBiasParams->eTarget));
             }
             break;
         default:
-            if (awh_bias_params->targetCutoff != 0)
+            if (awhBiasParams->targetCutoff != 0)
             {
                 gmx_fatal(FARGS, "Value for %s (%g) set explicitly but will not be used for target type %s.",
-                          opt, awh_bias_params->targetCutoff, EAWHTARGET(awh_bias_params->eTarget));
+                          opt, awhBiasParams->targetCutoff, EAWHTARGET(awhBiasParams->eTarget));
             }
             break;
     }
@@ -411,42 +414,42 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
         CTYPE("Initialize PMF and target with user data: no or yes");
     }
     sprintf(opt, "%s-user-data", prefix);
-    EETYPE(opt, awh_bias_params->bUser_data, yesno_names);
+    EETYPE(opt, awhBiasParams->bUserData, yesno_names);
 
     if (bComment)
     {
         CTYPE("Share the bias across multiple simulations: no or yes");
     }
     sprintf(opt, "%s-share", prefix);
-    EETYPE(opt, awh_bias_params->bShare, yesno_names);
+    EETYPE(opt, awhBiasParams->bShare, yesno_names);
 
     if (bComment)
     {
         CTYPE("Dimensionality of the coordinate");
     }
     sprintf(opt, "%s-ndim", prefix);
-    ITYPE(opt, awh_bias_params->ndim, 0);
+    ITYPE(opt, awhBiasParams->ndim, 0);
 
-    if (awh_bias_params->ndim <= 0 ||
-        awh_bias_params->ndim > c_biasMaxNumDim)
+    if (awhBiasParams->ndim <= 0 ||
+        awhBiasParams->ndim > c_biasMaxNumDim)
     {
-        gmx_fatal(FARGS, "%s-ndim (%d) needs to be > 0 and at most %d\n", prefix,  awh_bias_params->ndim, c_biasMaxNumDim);
+        gmx_fatal(FARGS, "%s-ndim (%d) needs to be > 0 and at most %d\n", prefix,  awhBiasParams->ndim, c_biasMaxNumDim);
     }
-    if (awh_bias_params->ndim > 2)
+    if (awhBiasParams->ndim > 2)
     {
         warning_note(wi, "For awh-dim > 2 the estimate based on the diffusion and the initial error is currently only a rough guideline."
                      " You should verify its usefulness for your system before production runs!");
     }
-    snew(awh_bias_params->dim_params, awh_bias_params->ndim);
-    for (int d = 0; d < awh_bias_params->ndim; d++)
+    snew(awhBiasParams->dimParams, awhBiasParams->ndim);
+    for (int d = 0; d < awhBiasParams->ndim; d++)
     {
         bComment = bComment && d == 0;
         sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
-        read_dim_params(&ninp, &inp, prefixdim, &awh_bias_params->dim_params[d], ir->pull, wi, bComment);
+        readDimParams(&ninp, &inp, prefixdim, &awhBiasParams->dimParams[d], ir->pull, wi, bComment);
     }
 
     /* Check consistencies here that cannot be checked at read time at a lower level. */
-    check_input_consistency_awh_bias(awh_bias_params, wi);
+    checkInputConsistencyAwhBias(awhBiasParams, wi);
 
     *ninp_p   = ninp;
     *inp_p    = inp;
@@ -455,32 +458,32 @@ static void read_bias_params(int *ninp_p, t_inpfile **inp_p, awh_bias_params_t *
 /*! \brief
  * Check consistency of input at the AWH level.
  *
- * \param[in] awh_params        AWH parameters.
+ * \param[in] awhParams  AWH parameters.
  */
-static void check_input_consistency_awh(const awh_params_t *awh_params)
+static void checkInputConsistencyAwh(const AwhParams *awhParams)
 {
     /* Each pull coord can map to at most 1 AWH coord */
-    for (int k1 = 0; k1 < awh_params->nbias; k1++)
+    for (int k1 = 0; k1 < awhParams->numBias; k1++)
     {
-        awh_bias_params_t *awh_bias_params1 = &awh_params->awh_bias_params[k1];
+        AwhBiasParams *awhBiasParams1 = &awhParams->awhBiasParams[k1];
 
         /* k1 is the reference AWH, k2 is the AWH we compare with (can be equal to k1) */
-        for (int k2 = k1; k2 < awh_params->nbias; k2++)
+        for (int k2 = k1; k2 < awhParams->numBias; k2++)
         {
-            for (int d1 = 0; d1 < awh_bias_params1->ndim; d1++)
+            for (int d1 = 0; d1 < awhBiasParams1->ndim; d1++)
             {
-                awh_bias_params_t *awh_bias_params2 = &awh_params->awh_bias_params[k2];
+                AwhBiasParams *awhBiasParams2 = &awhParams->awhBiasParams[k2];
 
                 /* d1 is the reference dimension of the reference AWH. d2 is the dim index of the AWH to compare with. */
-                for (int d2 = 0; d2 < awh_bias_params2->ndim; d2++)
+                for (int d2 = 0; d2 < awhBiasParams2->ndim; d2++)
                 {
                     /* Give an error if (d1, k1) is different from (d2, k2) but the pull coordinate is the same */
-                    if ( (d1 != d2 || k1 != k2) && (awh_bias_params1->dim_params[d1].pull_coord_index == awh_bias_params2->dim_params[d2].pull_coord_index) )
+                    if ( (d1 != d2 || k1 != k2) && (awhBiasParams1->dimParams[d1].pullCoordIndex == awhBiasParams2->dimParams[d2].pullCoordIndex) )
                     {
                         char errormsg[STRLEN];
                         sprintf(errormsg, "One pull coordinate (%d) cannot be mapped to two separate AWH dimensions (awh%d-dim%d and awh%d-dim%d). "
                                 "If this is really what you want to do you will have to duplicate this pull coordinate.",
-                                awh_bias_params1->dim_params[d1].pull_coord_index + 1, k1 + 1, d1 + 1, k2 + 1, d2 + 1);
+                                awhBiasParams1->dimParams[d1].pullCoordIndex + 1, k1 + 1, d1 + 1, k2 + 1, d2 + 1);
                         gmx_fatal(FARGS, errormsg);
                     }
                 }
@@ -490,17 +493,15 @@ static void check_input_consistency_awh(const awh_params_t *awh_params)
 }
 
 /* Allocate and initialize the AWH parameters with values from the input file. */
-awh_params_t *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputrec *ir, warninp_t wi)
+AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputrec *ir, warninp_t wi)
 {
-    int               ninp;
-    t_inpfile        *inp;
-    char              opt[STRLEN], prefix[STRLEN], prefixawh[STRLEN];
+    char       opt[STRLEN], prefix[STRLEN], prefixawh[STRLEN];
 
-    awh_params_t     *awh_params;
-    snew(awh_params, 1);
+    AwhParams *awhParams;
+    snew(awhParams, 1);
 
-    ninp   = *ninp_p;
-    inp    = *inp_p;
+    int        ninp = *ninp_p;
+    t_inpfile *inp  = *inp_p;
 
     sprintf(prefix, "%s", "awh");
 
@@ -508,56 +509,56 @@ awh_params_t *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inpu
 
     CTYPE("The way to apply the biasing potential: convolved or umbrella");
     sprintf(opt, "%s-potential", prefix);
-    EETYPE(opt, awh_params->ePotential, eawhpotential_names);
+    EETYPE(opt, awhParams->ePotential, eawhpotential_names);
 
     CTYPE("The random seed used for sampling the umbrella center in the case of umbrella type potential");
     sprintf(opt, "%s-seed", prefix);
-    ITYPE(opt, awh_params->seed, -1);
-    if (awh_params->seed == -1)
+    ITYPE(opt, awhParams->seed, -1);
+    if (awhParams->seed == -1)
     {
-        awh_params->seed = static_cast<int>(gmx::makeRandomSeed());
-        fprintf(stderr, "Setting the AWH bias MC random seed to %" GMX_PRId64 "\n", awh_params->seed);
+        awhParams->seed = static_cast<int>(gmx::makeRandomSeed());
+        fprintf(stderr, "Setting the AWH bias MC random seed to %" GMX_PRId64 "\n", awhParams->seed);
     }
 
     CTYPE("Data output interval in number of steps");
     sprintf(opt, "%s-nstout", prefix);
-    ITYPE(opt, awh_params->nstout, 100000);
-    if (awh_params->nstout <= 0)
+    ITYPE(opt, awhParams->nstOut, 100000);
+    if (awhParams->nstOut <= 0)
     {
         char buf[STRLEN];
         sprintf(buf, "Not writing AWH output with AWH (%s = %d) does not make sense",
-                opt, awh_params->nstout);
+                opt, awhParams->nstOut);
         warning_error(wi, buf);
     }
 
     CTYPE("Coordinate sampling interval in number of steps");
     sprintf(opt, "%s-nstsample", prefix);
-    ITYPE(opt, awh_params->nstsample_coord, 10);
+    ITYPE(opt, awhParams->nstSampleCoord, 10);
 
     CTYPE("Free energy and bias update interval in number of samples");
     sprintf(opt, "%s-nsamples-update", prefix);
-    ITYPE(opt, awh_params->nsamples_update_free_energy, 10);
+    ITYPE(opt, awhParams->numSamplesUpdateFreeEnergy, 10);
 
     CTYPE("The number of independent AWH biases");
     sprintf(opt, "%s-nbias", prefix);
-    ITYPE(opt, awh_params->nbias, 1);
-    if (awh_params->nbias <= 0)
+    ITYPE(opt, awhParams->numBias, 1);
+    if (awhParams->numBias <= 0)
     {
         gmx_fatal(FARGS, "%s needs to be an integer > 0", opt);
     }
 
     /* Read the parameters specific to each AWH bias */
-    snew(awh_params->awh_bias_params, awh_params->nbias);
+    snew(awhParams->awhBiasParams, awhParams->numBias);
 
-    for (int k = 0; k < awh_params->nbias; k++)
+    for (int k = 0; k < awhParams->numBias; k++)
     {
         bool bComment = (k == 0);
         sprintf(prefixawh, "%s%d", prefix, k + 1);
-        read_bias_params(&ninp, &inp, &awh_params->awh_bias_params[k], prefixawh, ir, wi, bComment);
+        read_bias_params(&ninp, &inp, &awhParams->awhBiasParams[k], prefixawh, ir, wi, bComment);
     }
 
     /* Do a final consistency check before returning */
-    check_input_consistency_awh(awh_params);
+    checkInputConsistencyAwh(awhParams);
 
     if (ir->init_step != 0)
     {
@@ -567,7 +568,7 @@ awh_params_t *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inpu
     *ninp_p   = ninp;
     *inp_p    = inp;
 
-    return awh_params;
+    return awhParams;
 }
 
 /*! \brief
@@ -656,7 +657,7 @@ static double get_pull_coord_period(const pull_params_t *pull_params,
  * \param[in] period      Period (or 0 if not periodic).
  * \returns true if the end point values are in the correct periodic interval.
  */
-static bool interval_is_in_periodic_interval(double origin, double end, double period)
+static bool intervalIsInPeriodicInterval(double origin, double end, double period)
 {
     return (period == 0) || (std::fabs(origin) <= 0.5*period && std::fabs(end) <= 0.5*period);
 }
@@ -670,7 +671,7 @@ static bool interval_is_in_periodic_interval(double origin, double end, double p
  * \param[in] value       Value to check.
  * \returns true if the value is inside of the interval.
  */
-static bool value_is_in_interval(double origin, double end, double period, double value)
+static bool valueIsInInterval(double origin, double end, double period, double value)
 {
     bool bIn_interval;
 
@@ -698,20 +699,20 @@ static bool value_is_in_interval(double origin, double end, double period, doubl
 /*! \brief
  * Check if the starting configuration is consistent with the given interval.
  *
- * \param[in] awh_params   AWH parameters.
- * \param[in,out] wi       Struct for bookeeping warnings.
+ * \param[in]     awhParams  AWH parameters.
+ * \param[in,out] wi         Struct for bookeeping warnings.
  */
-static void check_input_consistency_interval(const awh_params_t *awh_params, warninp_t wi)
+static void checkInputConsistencyInterval(const AwhParams *awhParams, warninp_t wi)
 {
-    for (int k = 0; k < awh_params->nbias; k++)
+    for (int k = 0; k < awhParams->numBias; k++)
     {
-        awh_bias_params_t *awh_bias_params = &awh_params->awh_bias_params[k];
-        for (int d = 0; d < awh_bias_params->ndim; d++)
+        AwhBiasParams    *awhBiasParams  = &awhParams->awhBiasParams[k];
+        for (int d = 0; d < awhBiasParams->ndim; d++)
         {
-            awh_dim_params_t *dim_params            = &awh_bias_params->dim_params[d];
-            int               pull_coord_index      = dim_params->pull_coord_index;
-            double            origin                = dim_params->origin, end = dim_params->end, period = dim_params->period;
-            double            coord_value_init      = dim_params->coord_value_init;
+            AwhDimParams *dimParams      = &awhBiasParams->dimParams[d];
+            int           pullCoordIndex = dimParams->pullCoordIndex;
+            double        origin         = dimParams->origin, end = dimParams->end, period = dimParams->period;
+            double        coordValueInit = dimParams->coordValueInit;
 
             if ((period == 0) && (origin > end))
             {
@@ -727,7 +728,7 @@ static void check_input_consistency_interval(const awh_params_t *awh_params, war
                depend on AWH input. Also, for dihedral angles you would always want the reference interval to be -180, +180,
                independent of AWH parameters.
              */
-            if (!interval_is_in_periodic_interval(origin, end, period))
+            if (!intervalIsInPeriodicInterval(origin, end, period))
             {
                 gmx_fatal(FARGS, "When using AWH with periodic pull coordinate geometries awh%d-dim%d-start (%.8g) and "
                           "awh%d-dim%d-end (%.8g) should cover at most one period (%.8g) and take values in between "
@@ -738,13 +739,13 @@ static void check_input_consistency_interval(const awh_params_t *awh_params, war
             }
 
             /* Warn if the pull initial coordinate value is not in the grid */
-            if (!value_is_in_interval(origin, end, period, coord_value_init))
+            if (!valueIsInInterval(origin, end, period, coordValueInit))
             {
                 char       warningmsg[STRLEN];
                 sprintf(warningmsg, "The initial coordinate value (%.8g) for pull coordinate index %d falls outside "
                         "of the sampling nterval awh%d-dim%d-start (%.8g) to awh%d-dim%d-end (%.8g). "
                         "This can lead to large initial forces pulling the coordinate towards the sampling interval.",
-                        coord_value_init, pull_coord_index + 1,
+                        coordValueInit, pullCoordIndex + 1,
                         k + 1, d + 1, origin, k + 1, d + 1, end);
                 warning(wi, warningmsg);
             }
@@ -753,20 +754,21 @@ static void check_input_consistency_interval(const awh_params_t *awh_params, war
 }
 
 /* Sets AWH parameters that need state parameters such as the box vectors. */
-void set_state_dependent_awh_params(awh_params_t *awh_params,
-                                    const pull_params_t *pull_params, pull_t *pull_work,
-                                    const matrix box,  int ePBC,
-                                    const t_grpopts *inputrec_group_options, warninp_t wi)
+void setStateDependentAwhParams(AwhParams *awhParams,
+                                const pull_params_t *pull_params, pull_t *pull_work,
+                                const matrix box,  int ePBC,
+                                const t_grpopts *inputrecGroupOptions, warninp_t wi)
 {
-    /* The temperature is not really state depenendent but is not know when read_awh_params is called (in get ir).
+    /* The temperature is not really state depenendent but is not know when read_awhParams is called (in get ir).
        It is known first after do_index has been called in grompp.cpp. */
-    if (inputrec_group_options->ref_t == NULL || inputrec_group_options->ref_t[0] <= 0)
+    if (inputrecGroupOptions->ref_t == NULL ||
+        inputrecGroupOptions->ref_t[0] <= 0)
     {
         gmx_fatal(FARGS, "AWH biasing is only supported for temperatures > 0");
     }
-    for (int i = 1; i < inputrec_group_options->ngtc; i++)
+    for (int i = 1; i < inputrecGroupOptions->ngtc; i++)
     {
-        if (inputrec_group_options->ref_t[i] != inputrec_group_options->ref_t[0])
+        if (inputrecGroupOptions->ref_t[i] != inputrecGroupOptions->ref_t[0])
         {
             gmx_fatal(FARGS, "AWH biasing is currently only supported for identical temperatures for all temperature coupling groups");
         }
@@ -775,25 +777,27 @@ void set_state_dependent_awh_params(awh_params_t *awh_params,
     t_pbc          pbc;
     set_pbc(&pbc, ePBC, box);
 
-    for (int k = 0; k < awh_params->nbias; k++)
+    for (int k = 0; k < awhParams->numBias; k++)
     {
-        awh_bias_params_t *awh_bias_params = &awh_params->awh_bias_params[k];
-        for (int d = 0; d < awh_bias_params->ndim; d++)
+        AwhBiasParams *awhBiasParams = &awhParams->awhBiasParams[k];
+        for (int d = 0; d < awhBiasParams->ndim; d++)
         {
-            awh_dim_params_t *dim_params = &awh_bias_params->dim_params[d];
+            AwhDimParams *dimParams = &awhBiasParams->dimParams[d];
 
             /* The periodiciy of the AWH grid in certain cases depends on the simulation box */
-            dim_params->period = get_pull_coord_period(pull_params, dim_params->pull_coord_index, box);
+            dimParams->period = get_pull_coord_period(pull_params, dimParams->pullCoordIndex, box);
 
             /* The initial coordinate value, converted to external user units. */
-            get_pull_coord_value(pull_work, dim_params->pull_coord_index, &pbc, &dim_params->coord_value_init);
+            get_pull_coord_value(pull_work, dimParams->pullCoordIndex, &pbc, &dimParams->coordValueInit);
 
-            t_pull_coord *pullCoord = &pull_params->coord[dim_params->pull_coord_index];
-            dim_params->coord_value_init *= pull_conversion_factor_internal2userinput(pullCoord);
+            t_pull_coord *pullCoord = &pull_params->coord[dimParams->pullCoordIndex];
+            dimParams->coordValueInit *= pull_conversion_factor_internal2userinput(pullCoord);
         }
     }
-    check_input_consistency_interval(awh_params, wi);
+    checkInputConsistencyInterval(awhParams, wi);
 
     /* Register AWH as external potential with pull to check consistency. */
-    Awh::registerAwhWithPull(awh_params, pull_work);
+    Awh::registerAwhWithPull(awhParams, pull_work);
 }
+
+} // namespace gmx

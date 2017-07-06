@@ -70,16 +70,21 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct awh_params_t;
-struct AwhHistory;
-class Bias;
-class BiasCoupledToSystem;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
+struct pull_t;
 class t_state;
 struct t_commrec;
 struct t_inputrec;
 struct t_mdatoms;
+
+namespace gmx
+{
+
+struct AwhHistory;
+struct AwhParams;
+class Bias;
+class BiasCoupledToSystem;
 
 /*! \libinternal \brief The accelerated weight histogram method (AWH).
  *
@@ -140,13 +145,13 @@ class Awh
          * \param[in,out] pull_work      Pull struct which AWH will register the bias into.
          * \param[in] startingFromCheckpoint  Is true if this this is a continuation run.
          */
-        Awh(FILE                 *fplog,
-            const t_inputrec     *ir,
-            const t_commrec      *cr,
-            const awh_params_t   *awhParams,
-            t_state              *state_global,
-            struct pull_t        *pull_work,
-            bool                  startingFromCheckpoint);
+        Awh(FILE              *fplog,
+            const t_inputrec  *ir,
+            const t_commrec   *cr,
+            const AwhParams   *awhParams,
+            t_state           *state_global,
+            pull_t            *pull_work,
+            bool               startingFromCheckpoint);
 
         /*! \brief Peform an AWH update, to be called every MD step.
          *
@@ -236,8 +241,8 @@ class Awh
          * \param[in]     awhParams  The AWH parameters.
          * \param[in,out] pull_work  Pull struct which AWH will register the bias into.
          */
-        static void registerAwhWithPull(const awh_params_t *awhParams,
-                                        struct pull_t      *pull_work);
+        static void registerAwhWithPull(const AwhParams *awhParams,
+                                        struct pull_t   *pull_work);
 
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
@@ -245,6 +250,6 @@ class Awh
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
 };
 
-/*! \endcond */
+}      // namespace gmx
 
-#endif  /* GMX_AWH_H */
+#endif /* GMX_AWH_H */

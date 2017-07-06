@@ -63,6 +63,11 @@ struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 
 #ifdef __cplusplus
+namespace gmx
+{
+class Awh;
+}
+
 extern "C" {
 #endif
 
@@ -425,7 +430,7 @@ struct t_forcerec {
     gmx_bool    bDoAwh;
     // TODO: make this a unique pointer once we get rid of C
 #ifdef __cplusplus
-    class Awh  *awh;
+    gmx::Awh   *awh;
 #else
     struct Awh *awh;
 #endif

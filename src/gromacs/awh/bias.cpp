@@ -66,10 +66,11 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "grid.h"
-#include "internal.h"
 #include "math.h"
 #include "pointstate.h"
 
+namespace gmx
+{
 
 /* Makes checks for the collected histograms and warns if issues are detected. */
 void Bias::checkHistograms(double t, gmx_int64_t step, FILE *fplog)
@@ -227,12 +228,12 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory &biasHistory,
  * \param[in] awhBiasParams  Bias parameters.
  * \returns the number of domains.
  */
-static int getNumDomains(const awh_bias_params_t &awhBiasParams)
+static int getNumDomains(const AwhBiasParams &awhBiasParams)
 {
     int numDomains = 1;
     for (int d = 0; d < awhBiasParams.ndim; d++)
     {
-        numDomains *= awhBiasParams.dim_params[d].ninterval;
+        numDomains *= awhBiasParams.dimParams[d].numInterval;
     }
     return numDomains;
 }
@@ -247,16 +248,16 @@ static int getNumDomains(const awh_bias_params_t &awhBiasParams)
  * \param[in] point          Point index.
  * \returns domain id.
  */
-static int getDomainId(const awh_bias_params_t &awhBiasParams, const Grid &grid, int point)
+static int getDomainId(const AwhBiasParams &awhBiasParams, const Grid &grid, int point)
 {
-    const awh_dim_params_t *awh_dim_params = awhBiasParams.dim_params;
+    const AwhDimParams *awhDimParams = awhBiasParams.dimParams;
 
     /* First get the multidimensional id. */
     awh_ivec domainIdDim;
 
     for (int d = 0; d < grid.ndim(); d++)
     {
-        domainIdDim[d] = static_cast<int>(std::floor(1.*grid.point(point).index[d]/grid.axis(d).numPoints()*awh_dim_params[d].ninterval));
+        domainIdDim[d] = static_cast<int>(std::floor(1.*grid.point(point).index[d]/grid.axis(d).numPoints()*awhDimParams[d].numInterval));
     }
 
     /* Convert to a linear domain id for returning. */
@@ -264,10 +265,10 @@ static int getDomainId(const awh_bias_params_t &awhBiasParams, const Grid &grid,
 
     for (int d = 0; d < awhBiasParams.ndim; d++)
     {
-        numIntervalDim[d] = awh_dim_params[d].ninterval;
+        numIntervalDim[d] = awhDimParams[d].numInterval;
     }
 
-    return multidim_array_index_to_linear(domainIdDim, grid.ndim(), numIntervalDim);
+    return multidimArrayIndexToLinear(domainIdDim, grid.ndim(), numIntervalDim);
 }
 
 
@@ -280,28 +281,28 @@ static int getDomainId(const awh_bias_params_t &awhBiasParams, const Grid &grid,
  * \param[in,out] pointMin   Mininmum boundary point index.
  * \param[in,out] pointMax   Maximum boundary point index.
  */
-static void getDomainBoundary(const awh_bias_params_t &awhBiasParams, const Grid &grid,
+static void getDomainBoundary(const AwhBiasParams &awhBiasParams, const Grid &grid,
                               int domainId,
                               int *pointMin, int *pointMax)
 {
-    const awh_dim_params_t *awh_dim_params = awhBiasParams.dim_params;
+    const AwhDimParams *awhDimParams = awhBiasParams.dimParams;
 
     /* Convert the given linear domain id to a multidimensional one. */
     awh_ivec numInterval, domainIdDim = {0};
 
     for (int d = 0; d < awhBiasParams.ndim; d++)
     {
-        numInterval[d] = awh_dim_params[d].ninterval;
+        numInterval[d] = awhDimParams[d].numInterval;
     }
-    linear_array_index_to_multidim(domainId, grid.ndim(), numInterval, domainIdDim);
+    linearArrayIndexToMultidim(domainId, grid.ndim(), numInterval, domainIdDim);
 
     /* Get the multidimensional min and max coordinates that defines the domain */
     awh_ivec         numPoints, domainIMin, domainIMax;
 
     for (int d = 0; d < grid.ndim(); d++)
     {
-        const double nonOverlap       = 1 - awh_dim_params[d].interval_overlap;
-        const double intervalFraction = 1./(nonOverlap*(awh_dim_params[d].ninterval - 1) + 1);
+        const double nonOverlap       = 1 - awhDimParams[d].intervalOverlap;
+        const double intervalFraction = 1./(nonOverlap*(awhDimParams[d].numInterval - 1) + 1);
         const double intervalSize     = grid.axis(d).numPoints()*intervalFraction;
 
         numPoints[d] = grid.axis(d).numPoints();
@@ -316,8 +317,8 @@ static void getDomainBoundary(const awh_bias_params_t &awhBiasParams, const Grid
     }
 
     /* Finally, convert the multidimensional point indices to linear ones */
-    *pointMin = multidim_array_index_to_linear(domainIMin, grid.ndim(), numPoints);
-    *pointMax = multidim_array_index_to_linear(domainIMax, grid.ndim(), numPoints);
+    *pointMin = multidimArrayIndexToLinear(domainIMin, grid.ndim(), numPoints);
+    *pointMax = multidimArrayIndexToLinear(domainIMax, grid.ndim(), numPoints);
 }
 
 /*! \brief
@@ -326,21 +327,22 @@ static void getDomainBoundary(const awh_bias_params_t &awhBiasParams, const Grid
  * \param[in] awhBiasParams  Bias parameters.
  * \param[in] grid           Grid.
  * \param[in] point          Point index.
- * \param[in,out] point_min  Mininmum boundary point index.
- * \param[in,out] point_max  Maximum boundary point index.
+ * \param[in,out] pointMin   Mininmum boundary point index.
+ * \param[in,out] pointMax   Maximum boundary point index.
  */
-static void getDomainBoundaryForPoint(const awh_bias_params_t &awhBiasParams, const Grid &grid, int point,
-                                      int *point_min, int *point_max)
+static void getDomainBoundaryForPoint(const AwhBiasParams &awhBiasParams,
+                                      const Grid &grid, int point,
+                                      int *pointMin, int *pointMax)
 {
     getDomainBoundary(awhBiasParams, grid, getDomainId(awhBiasParams, grid, point),
-                      point_min, point_max);
+                      pointMin, pointMax);
 
     /* Make sure that point is inside of the domain */
     for (int d = 0; d < grid.ndim(); d++)
     {
-        int index_d = grid.point(point).index[d];
-        GMX_RELEASE_ASSERT(grid.point(*point_min).index[d] <= index_d &&
-                           grid.point(*point_max).index[d] >= index_d,
+        int indexDim = grid.point(point).index[d];
+        GMX_RELEASE_ASSERT(grid.point(*pointMin).index[d] <= indexDim &&
+                           grid.point(*pointMax).index[d] >= indexDim,
                            "AWH coord point outside of domain while partitioning.");
     }
 }
@@ -353,10 +355,10 @@ static void getDomainBoundaryForPoint(const awh_bias_params_t &awhBiasParams, co
  * \param[in] awhBiasParams  AWH bias parameters.
  * \param[in,out] fplog      Log file.
  */
-static void printPartitioningDomainInit(const std::string       &awhPrefix,
-                                        const Bias              &bias,
-                                        const awh_bias_params_t &awhBiasParams,
-                                        FILE                    *fplog)
+static void printPartitioningDomainInit(const std::string   &awhPrefix,
+                                        const Bias          &bias,
+                                        const AwhBiasParams &awhBiasParams,
+                                        FILE                *fplog)
 {
     int numDomains = getNumDomains(awhBiasParams);
     if (numDomains == 1)
@@ -371,16 +373,16 @@ static void printPartitioningDomainInit(const std::string       &awhPrefix,
     if (fplog != nullptr)
     {
         /* Print partitioning info for this simulation. */
-        int domain_imin, domain_imax;
-        getDomainBoundary(awhBiasParams, grid, my_id, &domain_imin, &domain_imax);
+        int domainIMin, domainIMax;
+        getDomainBoundary(awhBiasParams, grid, my_id, &domainIMin, &domainIMax);
 
         fprintf(fplog, "%s partitioned the AWH domain into %d subdomains. This sim has target domain: ",
                 awhPrefix.c_str(), numDomains);
         for (int d = 0; d < bias.ndim(); d++)
         {
             fprintf(fplog, "[%g, %g]",
-                    bias.dimParams()[d].scaleInternalToUserInput(grid.point(domain_imin).coordValue[d]),
-                    bias.dimParams()[d].scaleInternalToUserInput(grid.point(domain_imax).coordValue[d]));
+                    bias.dimParams()[d].scaleInternalToUserInput(grid.point(domainIMin).coordValue[d]),
+                    bias.dimParams()[d].scaleInternalToUserInput(grid.point(domainIMax).coordValue[d]));
             if (d < bias.ndim() - 1)
             {
                 fprintf(fplog, ", ");
@@ -396,27 +398,27 @@ static void printPartitioningDomainInit(const std::string       &awhPrefix,
                               "The coordinate value to subdomain mapping ('-->') for each dimensions is "
                               "approximately as follows. This simulation will be assigned target domain id %d.\n",
                               awhPrefix.c_str(), numDomains, my_id);
-        fprintf(stderr, "%s", wrap_lines(output.c_str(), linewidth, indent, FALSE));
+        fprintf(stderr, "%s", wrap_lines(output.c_str(), c_linewidth, c_indent, FALSE));
 
         for (int id = 0; id < numDomains; id++)
         {
             /* Get the multidim id of this domain */
-            awh_ivec ninterval_dim, id_dim;
+            awh_ivec numIntervalDim, idDim;
             for (int d = 0; d < awhBiasParams.ndim; d++)
             {
-                ninterval_dim[d] = awhBiasParams.dim_params[d].ninterval;
+                numIntervalDim[d] = awhBiasParams.dimParams[d].numInterval;
             }
-            linear_array_index_to_multidim(id, grid.ndim(), ninterval_dim, id_dim);
+            linearArrayIndexToMultidim(id, grid.ndim(), numIntervalDim, idDim);
 
             /* Get the boundary points of each domain and the coordinate values that map to it. */
-            int domain_imin, domain_imax;
-            getDomainBoundary(awhBiasParams, grid, id, &domain_imin, &domain_imax);
+            int domainIMin, domainIMax;
+            getDomainBoundary(awhBiasParams, grid, id, &domainIMin, &domainIMax);
 
             fprintf(stderr, "\n");
             for (int d = 0; d < bias.ndim(); d++)
             {
-                int coord_imin = static_cast<int>(std::floor(1.0*id_dim[d]/ninterval_dim[d]*(bias.state().points().size() - 1)));
-                int coord_imax = static_cast<int>(std::floor(1.0*(id_dim[d] + 1)/ninterval_dim[d]*(bias.state().points().size() - 1)));
+                int coord_imin = static_cast<int>(std::floor(1.0*idDim[d]/numIntervalDim[d]*(bias.state().points().size() - 1)));
+                int coord_imax = static_cast<int>(std::floor(1.0*(idDim[d] + 1)/numIntervalDim[d]*(bias.state().points().size() - 1)));
 
                 fprintf(stderr, "[%.4g, %.4g]",
                         bias.dimParams()[d].scaleInternalToUserInput(grid.point(coord_imin).coordValue[d]),
@@ -431,8 +433,8 @@ static void printPartitioningDomainInit(const std::string       &awhPrefix,
             for (int d = 0; d < bias.ndim(); d++)
             {
                 fprintf(stderr, "[%.4g, %.4g]",
-                        bias.dimParams()[d].scaleInternalToUserInput(grid.point(domain_imin).coordValue[d]),
-                        bias.dimParams()[d].scaleInternalToUserInput(grid.point(domain_imax).coordValue[d]));
+                        bias.dimParams()[d].scaleInternalToUserInput(grid.point(domainIMin).coordValue[d]),
+                        bias.dimParams()[d].scaleInternalToUserInput(grid.point(domainIMax).coordValue[d]));
                 if (d < bias.ndim() - 1)
                 {
                     fprintf(stderr, " x ");
@@ -450,9 +452,9 @@ static void printPartitioningDomainInit(const std::string       &awhPrefix,
  * \param[in] awhBiasParams  AWH bias parameters.
  * \param[in,out] fplog      Log file.
  */
-static void printInitializationToLog(const Bias              &bias,
-                                     const awh_bias_params_t &awhBiasParams,
-                                     FILE                    *fplog)
+static void printInitializationToLog(const Bias          &bias,
+                                     const AwhBiasParams &awhBiasParams,
+                                     FILE                *fplog)
 {
     std::string prefix =
         gmx::formatString("\nawh%d:", bias.params().biasIndex + 1);
@@ -464,14 +466,14 @@ static void printInitializationToLog(const Bias              &bias,
 Bias::Bias(FILE                          *fplog,
            const t_commrec               *cr,
            int                            biasIndexInCollection,
-           const awh_params_t            &awhParams,
-           const awh_bias_params_t       &awhBiasParams,
+           const AwhParams               &awhParams,
+           const AwhBiasParams           &awhBiasParams,
            const std::vector<DimParams>  &dimParamsInit,
            double                         beta,
            double                         mdTimeStep,
            BiasParams::DisableUpdateSkips disableUpdateSkips) :
     dimParams_(dimParamsInit),
-    grid_(new Grid(dimParamsInit, awhBiasParams.dim_params)),
+    grid_(new Grid(dimParamsInit, awhBiasParams.dimParams)),
     params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, cr, grid_->axis(), biasIndexInCollection),
     state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid()),
     tempWorkSpace_(),
@@ -480,7 +482,7 @@ Bias::Bias(FILE                          *fplog,
     /* For a global update updateList covers all points, so reserve that */
     updateList_.reserve(grid_->numPoints());
 
-    state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, awhParams.nbias, (cr != nullptr ? cr->ms : nullptr));
+    state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, awhParams.numBias, (cr != nullptr ? cr->ms : nullptr));
 
     /* Partition the AWH domain if any of the dimensions is set to be divided into more than 1 interval. */
     if (getNumDomains(awhBiasParams) > 1)
@@ -501,3 +503,5 @@ Bias::Bias(FILE                          *fplog,
         printInitializationToLog(*this, awhBiasParams, fplog);
     }
 }
+
+} // namespace gmx

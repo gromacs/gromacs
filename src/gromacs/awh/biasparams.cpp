@@ -53,55 +53,56 @@
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "grid.h"
 #include "math.h"
 
+namespace gmx
+{
 
 /*! \brief
  * Estimate a reasonable initial reference weight histogram size.
  *
- * \param[in] dimParams      Parameters for the dimensions of the coordinate.
- * \param[in] awhBiasParams  Bias parameters.
- * \param[in] gridAxis       The Grid axes.
- * \param[in] dt_sample      Sampling frequency of probability weights.
+ * \param[in] dimParams         Parameters for the dimensions of the coordinate.
+ * \param[in] awhBiasParams     Bias parameters.
+ * \param[in] gridAxis          The Grid axes.
+ * \param[in] samplingTimestep  Sampling frequency of probability weights.
  * \returns estimate of initial histogram size.
  */
-static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams, const awh_bias_params_t &awhBiasParams,
-                                         const std::vector<GridAxis> &gridAxis, double dt_sample)
+static double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams, const AwhBiasParams &awhBiasParams,
+                                         const std::vector<GridAxis> &gridAxis, double samplingTimestep)
 {
-    int      ndim_skip;
-    double   s, error_initial2, L2invD, histSize;
-    awh_dvec x;
-
     /* Get diffusion factor */
-    ndim_skip = 0;
-    L2invD    = 0.;
+    awh_dvec x;
+    int      numDimToSkip = 0;
+    double   L2invD       = 0.;
     for (size_t d = 0; d < gridAxis.size(); d++)
     {
         double L = gridAxis[d].length();
         if (L > 0)
         {
-            L2invD += awhBiasParams.dim_params[d].diffusion/(L*L);
-            s       = 1./std::sqrt(dimParams[d].betak);
-            x[d]    = s/L;
+            L2invD   += awhBiasParams.dimParams[d].diffusion/(L*L);
+            double s  = 1./std::sqrt(dimParams[d].betak);
+            x[d]      = s/L;
         }
         else
         {
             /* Avoid division by zero for the rare case when there is only one point along one dimension */
-            ndim_skip += 1;
-            x[d]       = 1;
+            numDimToSkip += 1;
+            x[d]          = 1;
         }
     }
-    L2invD         = 1./L2invD;
-    error_initial2 = awhBiasParams.error_initial*awhBiasParams.error_initial;
-    histSize       = L2invD*gaussian_geometry_factor(x, gridAxis.size() - ndim_skip)/(error_initial2*dt_sample);
+    GMX_RELEASE_ASSERT(L2invD > 0, "We need at least one dimension with non-zero length");
+    L2invD               = 1./L2invD;
+    double errorInitial2 = awhBiasParams.errorInitial*awhBiasParams.errorInitial;
+    double histSize      = L2invD*gaussian_geometry_factor(x, gridAxis.size() - numDimToSkip)/(errorInitial2*samplingTimestep);
 
     return histSize;
 }
 
-BiasParams::BiasParams(const awh_params_t           &awhParams,
-                       const awh_bias_params_t      &awhBiasParams,
+BiasParams::BiasParams(const AwhParams              &awhParams,
+                       const AwhBiasParams          &awhBiasParams,
                        const std::vector<DimParams> &dimParams,
                        double                        beta,
                        double                        mdTimeStep,
@@ -109,8 +110,8 @@ BiasParams::BiasParams(const awh_params_t           &awhParams,
                        const t_commrec              *cr,
                        const std::vector<GridAxis>  &gridAxis,
                        int                           biasIndex) :
-    numStepsSampleCoord(awhParams.nstsample_coord),
-    numSamplesUpdateFreeEnergy(awhParams.nsamples_update_free_energy),
+    numStepsSampleCoord(awhParams.nstSampleCoord),
+    numSamplesUpdateFreeEnergy(awhParams.numSamplesUpdateFreeEnergy),
     eTarget(awhBiasParams.eTarget),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
@@ -178,7 +179,7 @@ BiasParams::BiasParams(const awh_params_t           &awhParams,
 
     for (int d = 0; d < awhBiasParams.ndim; d++)
     {
-        double coverRadiusInNm = 0.5*awhBiasParams.dim_params[d].coverDiameter;
+        double coverRadiusInNm = 0.5*awhBiasParams.dimParams[d].coverDiameter;
         double spacing         = gridAxis[d].spacing();
         coverRadius[d]         = spacing > 0 ?  static_cast<int>(std::round(coverRadiusInNm/spacing)) : 0;
     }
@@ -186,3 +187,5 @@ BiasParams::BiasParams(const awh_params_t           &awhParams,
     /* Estimate and initialize histSizeInitial. The estimation depends on the grid. */
     histSizeInitial = getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord*mdTimeStep);
 }
+
+} // namespace gmx

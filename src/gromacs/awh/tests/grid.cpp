@@ -68,8 +68,8 @@ TEST(gridTest, neighborhood)
      * The only thing not tested here is a periodic dimension with a gap.
      */
 
-    const int                     numDim = 2;
-    std::vector<awh_dim_params_t> awhDimParams(numDim);
+    const int                 numDim = 2;
+    std::vector<AwhDimParams> awhDimParams(numDim);
 
     awhDimParams[0].origin      = -5;
     awhDimParams[0].end         = 5;

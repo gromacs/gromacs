@@ -53,7 +53,10 @@ struct t_grpopts;
 struct t_inputrec;
 struct pull_params_t;
 struct pull_t;
-struct awh_params_t;
+
+namespace gmx
+{
+struct AwhParams;
 
 /*! \brief Allocate, initialize and check the AWH parameters with values from the input file.
  *
@@ -63,25 +66,30 @@ struct awh_params_t;
  * \param[in,out] wi           Struct for bookeeping warnings.
  * \returns AWH parameters.
  */
-awh_params_t *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputrec *inputrec, warninp_t wi);
+AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputrec *inputrec, warninp_t wi);
 
 
 /*! \brief
  * Sets AWH parameters that need state parameters such as the box vectors.
  *
- * \param[in,out] awh_params          AWH parameters.
- * \param[in]     pull_params             Pull parameters.
- * \param[in,out] pull_work               Pull working struct to register AWH bias in.
- * \param[in]     box                     Box vectors.
- * \param[in]     ePBC                    Periodic boundary conditions enum.
- * \param[in]     inputrec_group_options  Parameters for atom groups.
- * \param[in,out] wi                      Struct for bookeeping warnings.
+ * \param[in,out] awhParams             AWH parameters.
+ * \param[in]     pull_params           Pull parameters.
+ * \param[in,out] pull_work             Pull working struct to register AWH bias in.
+ * \param[in]     box                   Box vectors.
+ * \param[in]     ePBC                  Periodic boundary conditions enum.
+ * \param[in]     inputrecGroupOptions  Parameters for atom groups.
+ * \param[in,out] wi                    Struct for bookeeping warnings.
  *
  * \note This function currently relies on the function set_pull_init to have been called.
  */
-void set_state_dependent_awh_params(awh_params_t *awh_params,
-                                    const pull_params_t *pull_params, pull_t *pull_work,
-                                    const matrix box, int ePBC,
-                                    const t_grpopts *inputrec_group_options,  warninp_t wi);
+void setStateDependentAwhParams(AwhParams           *awhParams,
+                                const pull_params_t *pull_params,
+                                pull_t              *pull_work,
+                                const matrix         box,
+                                int                  ePBC,
+                                const t_grpopts     *inputrecGroupOptions,
+                                warninp_t            wi);
+
+} // namespace gmx
 
 #endif /* GMX_AWH_READPARAMS_H */

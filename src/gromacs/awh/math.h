@@ -49,6 +49,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \brief Generate a sample from a discrete probability distribution defined on [0, ndistr - 1].
  *
  * \param[in] distr      Normalized probability distribution to generate a sample from.
@@ -82,10 +85,6 @@ double expsum(double a, double b);
  */
 double gaussian_geometry_factor(const double *xarray, int ndim);
 
-/*! \brief Returns the the minimum power of 2 exponent k >= 0 such that x <= 2^k.
- * \param[in] x  real value.
- * \returns ceil(log2(x)) for x >= 1 and 0 for x <= 1, i.e. ceil(log2(max(1, x))).
- */
-int ceil_log2(double x);
+} // namespace gmx
 
 #endif

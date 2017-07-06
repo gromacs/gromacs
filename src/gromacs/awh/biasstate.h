@@ -62,18 +62,18 @@
 
 #include "dimparams.h"
 
-struct AwhBiasHistory;
-struct AwhHistory;
-struct AwhPointStateHistory;
-struct awh_bias_params_t;
-struct awh_dim_params_t;
-struct awh_params_t;
-class BiasParams;
 struct gmx_multisim_t;
+struct t_commrec;
+
+namespace gmx
+{
+
+struct AwhBiasHistory;
+struct AwhBiasParams;
+class BiasParams;
 class Grid;
 class GridAxis;
 class PointState;
-struct t_commrec;
 
 /*! \internal
  * \brief The state of a bias.
@@ -97,7 +97,7 @@ class BiasState
          * \param[in] dimParams        The dimension Parameters.
          * \param[in] grid             The grid.
          */
-        BiasState(const awh_bias_params_t      &awhBiasParams,
+        BiasState(const AwhBiasParams          &awhBiasParams,
                   double                        histSizeInitial,
                   const std::vector<DimParams> &dimParams,
                   const Grid                   &grid);
@@ -171,7 +171,7 @@ class BiasState
          * \param[in] numBias         The number of biases.
          * \param[in] ms              Struct for multi-simulation communication.
          */
-        void initGridPointState(const awh_bias_params_t       &awhBiasParams,
+        void initGridPointState(const AwhBiasParams           &awhBiasParams,
                                 const std::vector<DimParams>  &dimParams,
                                 const Grid                    &grid,
                                 const BiasParams              &params,
@@ -511,6 +511,47 @@ class BiasState
         bool      havePrintedAboutCovering_; /**< True if we have printed about covering to the log while equilibrateHistogram==true */
 };
 
+/* Here follow some utility functions used by multiple files in AWH */
+
+/*! \brief
+ * Calculates the convolved bias for a given coordinate value.
+ *
+ * The convolved bias is the effective bias acting on the coordinate.
+ * Since the bias here has arbitrary normalization, this only makes
+ * sense as a relative, to other coordinate values, measure of the bias.
+ *
+ * \note If it turns out to be costly to calculate this pointwise
+ * the convolved bias for the whole grid could be returned instead.
+ *
+ * \param[in] dimParams   The bias dimensions parameters
+ * \param[in] grid        The grid.
+ * \param[in] points      The point state.
+ * \param[in] coordValue  Coordinate value.
+ * \returns the convolved bias >= -GMX_DOUBLE_MAX.
+ */
+double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
+                         const Grid                    &grid,
+                         const std::vector<PointState> &points,
+                         const awh_dvec                &coordValue);
+
+/*! \brief
+ * Sets the given array with PMF values.
+ *
+ * Points outside of the biasing target region will get PMF = GMX_DOUBLE_MAX.
+ * In the simplest case the PMF is simply the negative of the PMF histogram.
+ * If there are sharing replicas however, histograms need to be summed
+ * across multiple simulations. The output PMF is not normalized.
+ *
+ * \param[in] params      The bias parameters.
+ * \param[in] points      The point state.
+ * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
+ * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
+ */
+void calculatePmf(const BiasParams              &params,
+                  const std::vector<PointState> &points,
+                  const gmx_multisim_t          *ms,
+                  std::vector<float>            *pmf);
+
 /*! \brief
  * Query if something should be done at this step.
  *
@@ -541,4 +582,12 @@ bool isCheckStep(const BiasParams              &params,
                  const std::vector<PointState> &pointState,
                  gmx_int64_t                    step);
 
-#endif  /* GMX_AWH_BIASSTATE_H */
+//! Linewidth used for warning output
+static const int c_linewidth = 78;
+
+//! Indent used for warning output
+static const int c_indent    = 0;
+
+}      // namespace gmx
+
+#endif /* GMX_AWH_BIASSTATE_H */

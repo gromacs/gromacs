@@ -2146,7 +2146,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         if (ir->bPull)
         {
-            ir->awh_params = readAndCheckAwhParams(&ninp, &inp, ir, wi);
+            ir->awhParams = gmx::readAndCheckAwhParams(&ninp, &inp, ir, wi);
         }
         else
         {

@@ -51,6 +51,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+
 /*! \cond INTERNAL */
 
 //! Grid point state history data.
@@ -124,5 +127,7 @@ struct AwhHistory
 };
 
 /*! \endcond */
+
+} // namespace gmx
 
 #endif

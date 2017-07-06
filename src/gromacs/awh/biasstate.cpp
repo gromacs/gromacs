@@ -68,10 +68,11 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "grid.h"
-#include "internal.h"
 #include "math.h"
 #include "pointstate.h"
 
+namespace gmx
+{
 
 /* Sets the given array with PMF values. */
 void calculatePmf(const BiasParams              &params,
@@ -173,13 +174,21 @@ static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
     return weight;
 }
 
-/* Convolves the given PMF using the given AWH bias. */
-void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                           const Grid                    &grid,
-                           const BiasParams              &params,
-                           const std::vector<PointState> &points,
-                           const gmx_multisim_t          *ms,
-                           std::vector<float>            *convolvedPmf)
+/*! \brief Convolves the given PMF using the given AWH bias.
+ *
+ * \param[in] dimParams   The bias dimensions parameters
+ * \param[in] grid        The grid.
+ * \param[in] params      The bias parameters.
+ * \param[in] points      The point state.
+ * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
+ * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
+ */
+static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
+                                  const Grid                    &grid,
+                                  const BiasParams              &params,
+                                  const std::vector<PointState> &points,
+                                  const gmx_multisim_t          *ms,
+                                  std::vector<float>            *convolvedPmf)
 {
     size_t             numPoints = grid.numPoints();
 
@@ -332,7 +341,7 @@ int BiasState::checkHistograms(const Grid  &grid,
                                   "If you are not certain about your settings you might want to increase your pull force constant or "
                                   "modify your sampling region.\n",
                                   biasIndex + 1, t, pointValueString.c_str(), maxHistogramRatio);
-            fprintf(fplog, "%s", wrap_lines(warningMessage.c_str(), linewidth, indent, FALSE));
+            fprintf(fplog, "%s", wrap_lines(warningMessage.c_str(), c_linewidth, c_indent, FALSE));
 
             numWarnings++;
         }
@@ -1418,10 +1427,10 @@ void BiasState::updateHistory(AwhBiasHistory *biasHistory,
     stateHistory->equilibrateHistogram    = equilibrateHistogram_;
     stateHistory->histSize                = histSize_;
 
-    stateHistory->origin_index_updatelist = multidim_gridindex_to_linear(grid,
-                                                                         originUpdatelist_);
-    stateHistory->end_index_updatelist    = multidim_gridindex_to_linear(grid,
-                                                                         endUpdatelist_);
+    stateHistory->origin_index_updatelist = multidimGridindexToLinear(grid,
+                                                                      originUpdatelist_);
+    stateHistory->end_index_updatelist    = multidimGridindexToLinear(grid,
+                                                                      endUpdatelist_);
 
     stateHistory->scaledSampleWeight      = scaledSampleWeight_;
     stateHistory->maxScaledSampleWeight   = maxScaledSampleWeight_;
@@ -1445,8 +1454,8 @@ void BiasState::restoreFromHistory(const AwhBiasHistory &biasHistory,
     equilibrateHistogram_   = stateHistory.equilibrateHistogram;
     histSize_               = stateHistory.histSize;
 
-    linear_gridindex_to_multidim(grid, stateHistory.origin_index_updatelist, originUpdatelist_);
-    linear_gridindex_to_multidim(grid, stateHistory.end_index_updatelist, endUpdatelist_);
+    linearGridindexToMultidim(grid, stateHistory.origin_index_updatelist, originUpdatelist_);
+    linearGridindexToMultidim(grid, stateHistory.end_index_updatelist, endUpdatelist_);
 
     scaledSampleWeight_     = stateHistory.scaledSampleWeight;
     maxScaledSampleWeight_  = stateHistory.maxScaledSampleWeight;
@@ -1473,15 +1482,15 @@ double BiasState::partitionDomain(const Grid &grid,
                                   int         pointMin,
                                   int         pointMax)
 {
-    awh_ivec    domain_imin_dim, domain_imax_dim, npoints_dim;
+    awh_ivec    domainIMinDim, domainIMaxDim, numPointsDim;
 
     /* Convert linear index to multidimensional index */
     for (int d = 0; d < grid.ndim(); d++)
     {
-        npoints_dim[d] = grid.axis(d).numPoints();
+        numPointsDim[d] = grid.axis(d).numPoints();
     }
-    linear_array_index_to_multidim(pointMin, grid.ndim(), npoints_dim, domain_imin_dim);
-    linear_array_index_to_multidim(pointMax, grid.ndim(), npoints_dim, domain_imax_dim);
+    linearArrayIndexToMultidim(pointMin, grid.ndim(), numPointsDim, domainIMinDim);
+    linearArrayIndexToMultidim(pointMax, grid.ndim(), numPointsDim, domainIMaxDim);
 
     double targetSum = 0.;
     for (size_t m = 0; m < points_.size(); m++)
@@ -1490,8 +1499,8 @@ double BiasState::partitionDomain(const Grid &grid,
         for (int d = 0; d < grid.ndim(); d++)
         {
             int index_d = grid.point(m).index[d];
-            if (index_d < domain_imin_dim[d] ||
-                index_d > domain_imax_dim[d])
+            if (index_d < domainIMinDim[d] ||
+                index_d > domainIMaxDim[d])
             {
                 pointState.setTargetToZero();
             }
@@ -1611,7 +1620,7 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams> &dimPa
             "Make sure there input file ends with a new line but has no trailing new lines.",
             filename);
     char correctFormatMessage[STRLEN];
-    sprintf(correctFormatMessage, "%s", wrap_lines(buf, linewidth, indent, FALSE));
+    sprintf(correctFormatMessage, "%s", wrap_lines(buf, c_linewidth, c_indent, FALSE));
 
     double  **data;
     int       nrows, ncols;
@@ -1764,7 +1773,7 @@ void BiasState::normalizePmf(int numSharingSims)
  * \param[in] numBias         The number of biases.
  * \param[in] ms              Struct for multi-simulation communication.
  */
-void BiasState::initGridPointState(const awh_bias_params_t       &awhBiasParams,
+void BiasState::initGridPointState(const AwhBiasParams           &awhBiasParams,
                                    const std::vector<DimParams>  &dimParams,
                                    const Grid                    &grid,
                                    const BiasParams              &params,
@@ -1774,7 +1783,7 @@ void BiasState::initGridPointState(const awh_bias_params_t       &awhBiasParams,
     /* Modify PMF, free energy and the constant target distribution factor
      * to user input values if there is data given.
      */
-    if (awhBiasParams.bUser_data)
+    if (awhBiasParams.bUserData)
     {
         readUserPmfAndTargetDistribution(dimParams, grid, numBias, params.biasIndex, &points_);
         setFreeEnergyToConvolvedPmf(dimParams, grid, params, ms);
@@ -1812,7 +1821,7 @@ void BiasState::initGridPointState(const awh_bias_params_t       &awhBiasParams,
     normalizePmf(params.numSharedUpdate);
 }
 
-BiasState::BiasState(const awh_bias_params_t      &awhBiasParams,
+BiasState::BiasState(const AwhBiasParams          &awhBiasParams,
                      double                        histSizeInitial,
                      const std::vector<DimParams> &dimParams,
                      const Grid                   &grid) :
@@ -1827,7 +1836,7 @@ BiasState::BiasState(const awh_bias_params_t      &awhBiasParams,
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
-        coordValue_[d] = dimParams[d].scaleUserInputToInternal(awhBiasParams.dim_params[d].coord_value_init);
+        coordValue_[d] = dimParams[d].scaleUserInputToInternal(awhBiasParams.dimParams[d].coordValueInit);
     }
 
     /* Set initial coordinate reference value to the one closest to the initial reference value given in pull.
@@ -1855,3 +1864,5 @@ bool isCheckStep(const BiasParams &params, const std::vector<PointState> &pointS
 
     return step % numStepsCheck == 0;
 }
+
+} // namespace gmx

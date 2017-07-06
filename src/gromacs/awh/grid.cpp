@@ -62,6 +62,8 @@
 
 #include "math.h"
 
+namespace gmx
+{
 
 /*! \brief
  * Modify x so that it is periodic in [-period/2, +period/2).
@@ -173,7 +175,7 @@ double getDeviationFromPointAlongGridaxis(const Grid &grid, int dimIndex, int po
 }
 
 /* Convert a linear index to a multidimensional index. */
-void linear_array_index_to_multidim(int index_linear, int ndim, const awh_ivec npoints_dim, awh_ivec index_multi)
+void linearArrayIndexToMultidim(int indexLinear, int ndim, const awh_ivec numPointsDim, awh_ivec indexMulti)
 {
     for (int d = 0; d < ndim; d++)
     {
@@ -183,69 +185,69 @@ void linear_array_index_to_multidim(int index_linear, int ndim, const awh_ivec n
 #ifndef __clang_analyzer__
         for (int k = d + 1; k < ndim; k++)
         {
-            stride *= npoints_dim[k];
+            stride *= numPointsDim[k];
         }
 #endif
 
-        index_multi[d] = index_linear/stride;
-        index_linear  -= index_multi[d]*stride;
+        indexMulti[d] = indexLinear/stride;
+        indexLinear  -= indexMulti[d]*stride;
     }
 }
 
 /* Convert a linear grid point index to a multidimensional one. */
-void linear_gridindex_to_multidim(const Grid &grid, int index_linear, awh_ivec index_multi)
+void linearGridindexToMultidim(const Grid &grid, int indexLinear, awh_ivec indexMulti)
 {
-    awh_ivec npoints_dim;
+    awh_ivec numPointsDim;
 
     for (int d = 0; d < grid.ndim(); d++)
     {
-        npoints_dim[d] = grid.axis(d).numPoints();
+        numPointsDim[d] = grid.axis(d).numPoints();
     }
 
-    linear_array_index_to_multidim(index_linear, grid.ndim(), npoints_dim, index_multi);
+    linearArrayIndexToMultidim(indexLinear, grid.ndim(), numPointsDim, indexMulti);
 }
 
 
 /* Convert multidimensional array index to a linear one. */
-int multidim_array_index_to_linear(const awh_ivec index_multi, int ndim, const awh_ivec npoints_dim)
+int multidimArrayIndexToLinear(const awh_ivec indexMulti, int ndim, const awh_ivec numPointsDim)
 {
-    int stride       = 1;
-    int index_linear = 0;
+    int stride      = 1;
+    int indexLinear = 0;
     /* Workaround for bug in clang */
 #ifndef __clang_analyzer__
     for (int d = ndim - 1; d >= 0; d--)
     {
-        index_linear += stride*index_multi[d];
-        stride       *= npoints_dim[d];
+        indexLinear += stride*indexMulti[d];
+        stride      *= numPointsDim[d];
     }
 #endif
 
-    return index_linear;
+    return indexLinear;
 }
 
 /*! \brief Convert a multidimensional grid point index to a linear one.
  *
- * \param[in] axis        The grid axes.
- * \param[in] index_multi Multidimensional grid point index to convert to a linear one.
+ * \param[in] axis       The grid axes.
+ * \param[in] indexMulti Multidimensional grid point index to convert to a linear one.
  * \returns the linear index.
  */
-static int multidim_gridindex_to_linear(const std::vector<GridAxis> &axis,
-                                        const awh_ivec               index_multi)
+static int multidimGridindexToLinear(const std::vector<GridAxis> &axis,
+                                     const awh_ivec               indexMulti)
 {
-    awh_ivec npoints_dim;
+    awh_ivec numPointsDim;
 
     for (size_t d = 0; d < axis.size(); d++)
     {
-        npoints_dim[d] = axis[d].numPoints();
+        numPointsDim[d] = axis[d].numPoints();
     }
 
-    return multidim_array_index_to_linear(index_multi, axis.size(), npoints_dim);
+    return multidimArrayIndexToLinear(indexMulti, axis.size(), numPointsDim);
 }
 
 /* Convert a multidimensional grid point index to a linear one. */
-int multidim_gridindex_to_linear(const Grid &grid, const awh_ivec index_multi)
+int multidimGridindexToLinear(const Grid &grid, const awh_ivec indexMulti)
 {
-    return multidim_gridindex_to_linear(grid.axis(), index_multi);
+    return multidimGridindexToLinear(grid.axis(), indexMulti);
 }
 
 /*! \brief
@@ -256,12 +258,12 @@ int multidim_gridindex_to_linear(const Grid &grid, const awh_ivec index_multi)
  * incremented in the highest dimension possible. If the starting point is the end
  * of the array, a step cannot be taken and the index is not modified.
  *
- * \param[in] ndim           Number of dimensions of the array.
- * \param[in] numPoints      Vector with the number of points along each dimension.
- * \param[in,out] index_dim  Multidimensional index, each with values in [0, npoints_dim[d] - 1].
+ * \param[in] ndim          Number of dimensions of the array.
+ * \param[in] numPoints     Vector with the number of points along each dimension.
+ * \param[in,out] indexDim  Multidimensional index, each with values in [0, npoints_dim[d] - 1].
  * \returns true if a step was taken, false if not.
  */
-static bool stepInMultidimArray(int ndim, const awh_ivec numPoints, awh_ivec index_dim)
+static bool stepInMultidimArray(int ndim, const awh_ivec numPoints, awh_ivec indexDim)
 {
     bool haveStepped = false;
 
@@ -269,10 +271,10 @@ static bool stepInMultidimArray(int ndim, const awh_ivec numPoints, awh_ivec ind
     {
         /* Workaround for bug in clang */
 #ifndef __clang_analyzer__
-        if (index_dim[d] < numPoints[d] - 1)
+        if (indexDim[d] < numPoints[d] - 1)
         {
             /* Not at a boundary, just increase by 1. */
-            index_dim[d]++;
+            indexDim[d]++;
             haveStepped = true;
         }
         else
@@ -281,7 +283,7 @@ static bool stepInMultidimArray(int ndim, const awh_ivec numPoints, awh_ivec ind
                reset the index and check if we can step in higher dimensions */
             if (d > 0)
             {
-                index_dim[d] = 0;
+                indexDim[d] = 0;
             }
         }
 #endif
@@ -347,16 +349,16 @@ static bool subgridToGridIndex(const Grid     &grid,
                                const awh_ivec  subgridIndex,
                                int            *gridIndex)
 {
-    awh_ivec global_index_dim;
+    awh_ivec globalIndexDim;
 
     /* Check and apply boundary conditions for each dimension */
     for (int d = 0; d < grid.ndim(); d++)
     {
         /* Transform to global multidimensional indexing by adding the origin */
-        global_index_dim[d] = subgridOrigin[d] + subgridIndex[d];
+        globalIndexDim[d] = subgridOrigin[d] + subgridIndex[d];
 
         /* The local grid is allowed to stick out on the edges of the global grid. Here the boundary conditions are applied.*/
-        if (global_index_dim[d] < 0 ||  global_index_dim[d] > grid.axis(d).numPoints() - 1)
+        if (globalIndexDim[d] < 0 ||  globalIndexDim[d] > grid.axis(d).numPoints() - 1)
         {
             /* Try to wrap around if periodic. Otherwise, the transformation failed so return. */
             if (!grid.axis(d).isPeriodic())
@@ -367,27 +369,27 @@ static bool subgridToGridIndex(const Grid     &grid,
             /* The grid might not contain a whole period. Can only wrap around if this gap is not too large. */
             int gap = grid.axis(d).numPointsInPeriod() - grid.axis(d).numPoints();
 
-            int bridge, nwrapped;
-            if (global_index_dim[d] < 0)
+            int bridge, numWrapped;
+            if (globalIndexDim[d] < 0)
             {
-                bridge   = -global_index_dim[d];
-                nwrapped = bridge - gap;
-                if (nwrapped > 0)
+                bridge     = -globalIndexDim[d];
+                numWrapped = bridge - gap;
+                if (numWrapped > 0)
                 {
-                    global_index_dim[d] = grid.axis(d).numPoints() - nwrapped;
+                    globalIndexDim[d] = grid.axis(d).numPoints() - numWrapped;
                 }
             }
             else
             {
-                bridge   = global_index_dim[d] - (grid.axis(d).numPoints() - 1);
-                nwrapped = bridge - gap;
-                if (nwrapped > 0)
+                bridge     = globalIndexDim[d] - (grid.axis(d).numPoints() - 1);
+                numWrapped = bridge - gap;
+                if (numWrapped > 0)
                 {
-                    global_index_dim[d] = nwrapped - 1;
+                    globalIndexDim[d] = numWrapped - 1;
                 }
             }
 
-            if (nwrapped <= 0)
+            if (numWrapped <= 0)
             {
                 return false;
             }
@@ -395,7 +397,7 @@ static bool subgridToGridIndex(const Grid     &grid,
     }
 
     /* Translate from multidimensional to linear indexing and set the return value */
-    (*gridIndex) = multidim_gridindex_to_linear(grid, global_index_dim);
+    (*gridIndex) = multidimGridindexToLinear(grid, globalIndexDim);
 
     return true;
 }
@@ -535,15 +537,15 @@ int GridAxis::nearestIndex(double value) const
 static int getNearestIndexInGrid(const awh_dvec               value,
                                  const std::vector<GridAxis> &axis)
 {
-    awh_ivec index_multi;
+    awh_ivec indexMulti;
 
     /* If the index is out of range, modify it so that it is in range by choosing the nearest point on the edge. */
     for (size_t d = 0; d < axis.size(); d++)
     {
-        index_multi[d] = axis[d].nearestIndex(value[d]);
+        indexMulti[d] = axis[d].nearestIndex(value[d]);
     }
 
-    return multidim_gridindex_to_linear(axis, index_multi);
+    return multidimGridindexToLinear(axis, indexMulti);
 }
 
 /* Map a value to the nearest point in the grid. */
@@ -689,7 +691,8 @@ GridAxis::GridAxis(double origin, double end,
 }
 
 /* Allocate, initialize and return a grid. */
-Grid::Grid(const std::vector<DimParams> &dimParams, const awh_dim_params_t *awhDimParams)
+Grid::Grid(const std::vector<DimParams> &dimParams,
+           const AwhDimParams           *awhDimParams)
 {
     /* Define the discretization along each dimension */
     awh_dvec period;
@@ -790,4 +793,4 @@ void mapGridToDatagrid(std::vector<int> *gridpointToDatapoint,
     }
 }
 
-/*! \endcond */
+} // namespace gmx

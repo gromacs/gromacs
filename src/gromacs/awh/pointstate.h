@@ -52,7 +52,11 @@
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "biasparams.h"
 #include "math.h"
+
+namespace gmx
+{
 
 //! A value that can be passed to exp() with result 0, also with SIMD
 static const double c_largeNegativeExponent = -10000.0;
@@ -433,5 +437,7 @@ class PointState
         double visits_iteration;       /**< Visits to this bin this iteration. */
         double visits_tot;             /**< Accumulated visits to this bin */
 };
+
+} // namespace gmx
 
 #endif  /* GMX_AWH_POINTSTATE_H */

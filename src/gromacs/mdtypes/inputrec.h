@@ -51,6 +51,7 @@ struct pull_params_t;
 
 namespace gmx
 {
+struct AwhParams;
 class KeyValueTreeObject;
 }
 
@@ -360,7 +361,7 @@ struct t_inputrec
 
     /* AWH bias data */
     gmx_bool                 bDoAwh;     /* Use awh biasing for PMF calculations?        */
-    struct awh_params_t     *awh_params; /* AWH biasing parameters                       */
+    gmx::AwhParams          *awhParams; /* AWH biasing parameters                       */
 
     /* Enforced rotation data */
     gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */

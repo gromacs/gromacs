@@ -50,6 +50,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /*! \brief
  * Uses binary search to find the smallest element larger than the given value.
  *
@@ -225,16 +228,4 @@ double gaussian_geometry_factor(const double *xarray, int ndim)
     return z_estimate;
 }
 
-int ceil_log2(double x)
-{
-    int k     = 0;
-    int pow2k = 1;
-
-    while (pow2k < x)
-    {
-        pow2k <<= 1;
-        k++;
-    }
-
-    return k;
-}
+} // namespace gmx

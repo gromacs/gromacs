@@ -1500,12 +1500,12 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
 }
 
 static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
-                           int fflags, AwhBiasHistory *biasHistory,
+                           int fflags, gmx::AwhBiasHistory *biasHistory,
                            FILE *list)
 {
     int                  ret   = 0;
 
-    AwhBiasStateHistory *state = &biasHistory->state;
+    gmx::AwhBiasStateHistory *state = &biasHistory->state;
     for (int i = 0; (i < eawhhNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
@@ -1571,20 +1571,20 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
 }
 
 static int do_cpt_awh(XDR *xd, gmx_bool bRead,
-                      int fflags, AwhHistory *awhHistory,
+                      int fflags, gmx::AwhHistory *awhHistory,
                       FILE *list)
 {
     int ret = 0;
 
     if (fflags != 0)
     {
-        std::shared_ptr<AwhHistory> awhHistoryLocal;
+        std::shared_ptr<gmx::AwhHistory> awhHistoryLocal;
 
         if (awhHistory == nullptr)
         {
             GMX_RELEASE_ASSERT(bRead, "do_cpt_awh should not be called for writing without an AwhHistory");
 
-            awhHistoryLocal = std::shared_ptr<AwhHistory>(new AwhHistory());
+            awhHistoryLocal = std::shared_ptr<gmx::AwhHistory>(new gmx::AwhHistory());
             awhHistory      = awhHistoryLocal.get();
         }
 
@@ -2369,7 +2369,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (flags_awhh != 0 && state->awhHistory == nullptr)
     {
-        state->awhHistory = std::shared_ptr<AwhHistory>(new AwhHistory());
+        state->awhHistory = std::shared_ptr<gmx::AwhHistory>(new gmx::AwhHistory());
     }
     ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
                      flags_awhh, state->awhHistory.get(), NULL);

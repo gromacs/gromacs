@@ -71,8 +71,10 @@
 
 #include "bias.h"
 #include "grid.h"
-#include "internal.h"
 #include "pointstate.h"
+
+namespace gmx
+{
 
 /*! \internal
  * \brief A bias and its coupling to the system.
@@ -133,13 +135,13 @@ BiasCoupledToSystem::BiasCoupledToSystem(Bias                   *bias,
 }
 
 /* Construct an AWH at the start of a simulation. */
-Awh::Awh(FILE                *fplog,
-         const t_inputrec    *ir,
-         const t_commrec     *cr,
-         const awh_params_t  *awhParams,
-         t_state             *state_global,
-         struct pull_t       *pull_work,
-         bool                 startingFromCheckpoint) :
+Awh::Awh(FILE              *fplog,
+         const t_inputrec  *ir,
+         const t_commrec   *cr,
+         const AwhParams   *awhParams,
+         t_state           *state_global,
+         struct pull_t     *pull_work,
+         bool               startingFromCheckpoint) :
     seed_(awhParams->seed),
     potentialOffset_(0)
 {
@@ -152,24 +154,24 @@ Awh::Awh(FILE                *fplog,
 
     /* Initialize all the biases */
     double beta = 1/(BOLTZ*ir->opts.ref_t[0]);
-    for (int k = 0; k < awhParams->nbias; k++)
+    for (int k = 0; k < awhParams->numBias; k++)
     {
-        const awh_bias_params_t &awhBiasParams   = awhParams->awh_bias_params[k];
+        const AwhBiasParams    &awhBiasParams = awhParams->awhBiasParams[k];
 
-        std::vector<int>         pullCoordIndex;
-        std::vector<DimParams>   dimParams;
+        std::vector<int>        pullCoordIndex;
+        std::vector<DimParams>  dimParams;
         for (int d = 0; d < awhBiasParams.ndim; d++)
         {
-            int                        pullCoordIndexDim = awhBiasParams.dim_params[d].pull_coord_index;
-            const t_pull_coord        &pullCoord         = ir->pull->coord[pullCoordIndexDim];
-            double                     conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
+            int                 pullCoordIndexDim = awhBiasParams.dimParams[d].pullCoordIndex;
+            const t_pull_coord &pullCoord         = ir->pull->coord[pullCoordIndexDim];
+            double              conversionFactor  = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
             dimParams.emplace_back(DimParams(conversionFactor, pullCoord.k, beta));
 
             pullCoordIndex.push_back(pullCoordIndexDim);
         }
 
         /* Initialize the bias */
-        Bias *bias = new Bias(fplog, cr, k, *awhParams, awhParams->awh_bias_params[k], dimParams, beta, ir->delta_t);
+        Bias *bias = new Bias(fplog, cr, k, *awhParams, awhParams->awhBiasParams[k], dimParams, beta, ir->delta_t);
 
         biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(bias, pullCoordIndex));
     }
@@ -309,16 +311,18 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
 }
 
 /* Register the AWH biased coordinates with pull. */
-void Awh::registerAwhWithPull(const awh_params_t *awhParams,
-                              struct pull_t      *pull_work)
+void Awh::registerAwhWithPull(const AwhParams *awhParams,
+                              struct pull_t   *pull_work)
 {
-    for (int k = 0; k < awhParams->nbias; k++)
+    for (int k = 0; k < awhParams->numBias; k++)
     {
-        const awh_bias_params_t &biasParams = awhParams->awh_bias_params[k];
+        const AwhBiasParams &biasParams = awhParams->awhBiasParams[k];
 
         for (int d = 0; d < biasParams.ndim; d++)
         {
-            register_external_pull_potential(pull_work, biasParams.dim_params[d].pull_coord_index, Awh::externalPotentialString());
+            register_external_pull_potential(pull_work, biasParams.dimParams[d].pullCoordIndex, Awh::externalPotentialString());
         }
     }
 }
+
+} // namespace gmx

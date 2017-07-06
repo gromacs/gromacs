@@ -502,10 +502,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     if (ir->bDoAwh)
     {
         fr->bDoAwh = true;
-        fr->awh    = new Awh(fplog, ir, cr, ir->awh_params,
-                             state_global,
-                             ir->pull_work,
-                             startingFromCheckpoint);
+        fr->awh    = new gmx::Awh(fplog, ir, cr, ir->awhParams,
+                                  state_global,
+                                  ir->pull_work,
+                                  startingFromCheckpoint);
     }
 
     if (repl_ex_nst > 0 && MASTER(cr))

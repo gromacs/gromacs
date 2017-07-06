@@ -487,23 +487,23 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
     }
 }
 
-static void bc_awh_bias(const t_commrec *cr, awh_bias_params_t *awh_bias_params)
+static void bc_awhBias(const t_commrec *cr, gmx::AwhBiasParams *awhBiasParams)
 {
-    block_bc(cr, *awh_bias_params);
+    block_bc(cr, *awhBiasParams);
 
-    snew_bc(cr, awh_bias_params->dim_params, awh_bias_params->ndim);
-    nblock_bc(cr, awh_bias_params->ndim, awh_bias_params->dim_params);
+    snew_bc(cr, awhBiasParams->dimParams, awhBiasParams->ndim);
+    nblock_bc(cr, awhBiasParams->ndim, awhBiasParams->dimParams);
 }
 
-static void bc_awh(const t_commrec *cr, awh_params_t *awh_params)
+static void bc_awh(const t_commrec *cr, gmx::AwhParams *awhParams)
 {
     int k;
 
-    block_bc(cr, *awh_params);
-    snew_bc(cr, awh_params->awh_bias_params, awh_params->nbias);
-    for (k = 0; k < awh_params->nbias; k++)
+    block_bc(cr, *awhParams);
+    snew_bc(cr, awhParams->awhBiasParams, awhParams->numBias);
+    for (k = 0; k < awhParams->numBias; k++)
     {
-        bc_awh_bias(cr, &awh_params->awh_bias_params[k]);
+        bc_awhBias(cr, &awhParams->awhBiasParams[k]);
     }
 }
 
@@ -745,8 +745,8 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     }
     if (inputrec->bDoAwh)
     {
-        snew_bc(cr, inputrec->awh_params, 1);
-        bc_awh(cr, inputrec->awh_params);
+        snew_bc(cr, inputrec->awhParams, 1);
+        bc_awh(cr, inputrec->awhParams);
     }
 
     if (inputrec->bRot)

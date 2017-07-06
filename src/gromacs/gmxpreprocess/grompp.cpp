@@ -2306,8 +2306,8 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bDoAwh)
     {
-        set_state_dependent_awh_params(ir->awh_params, ir->pull, pull,
-                                       state.box, ir->ePBC, &ir->opts, wi);
+        setStateDependentAwhParams(ir->awhParams, ir->pull, pull,
+                                   state.box, ir->ePBC, &ir->opts, wi);
     }
 
     if (ir->bPull)

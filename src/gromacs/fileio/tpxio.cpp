@@ -658,60 +658,60 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
 }
 
-static void do_awh_bias(t_fileio *fio, awh_bias_params_t *awh_bias_params, gmx_bool bRead,
-                        int gmx_unused file_version)
+static void do_awhBias(t_fileio *fio, gmx::AwhBiasParams *awhBiasParams, gmx_bool bRead,
+                       int gmx_unused file_version)
 {
-    gmx_fio_do_int(fio, awh_bias_params->eTarget);
-    gmx_fio_do_double(fio, awh_bias_params->targetBetaScaling);
-    gmx_fio_do_double(fio, awh_bias_params->targetCutoff);
-    gmx_fio_do_int(fio, awh_bias_params->eGrowth);
-    gmx_fio_do_int(fio, awh_bias_params->bUser_data);
-    gmx_fio_do_double(fio, awh_bias_params->error_initial);
-    gmx_fio_do_int(fio, awh_bias_params->ndim);
-    gmx_fio_do_gmx_bool(fio, awh_bias_params->bShare);
-    gmx_fio_do_gmx_bool(fio, awh_bias_params->equilibrateHistogram);
+    gmx_fio_do_int(fio, awhBiasParams->eTarget);
+    gmx_fio_do_double(fio, awhBiasParams->targetBetaScaling);
+    gmx_fio_do_double(fio, awhBiasParams->targetCutoff);
+    gmx_fio_do_int(fio, awhBiasParams->eGrowth);
+    gmx_fio_do_int(fio, awhBiasParams->bUserData);
+    gmx_fio_do_double(fio, awhBiasParams->errorInitial);
+    gmx_fio_do_int(fio, awhBiasParams->ndim);
+    gmx_fio_do_gmx_bool(fio, awhBiasParams->bShare);
+    gmx_fio_do_gmx_bool(fio, awhBiasParams->equilibrateHistogram);
 
     if (bRead)
     {
-        snew(awh_bias_params->dim_params, awh_bias_params->ndim);
+        snew(awhBiasParams->dimParams, awhBiasParams->ndim);
     }
 
-    for (int d = 0; d < awh_bias_params->ndim; d++)
+    for (int d = 0; d < awhBiasParams->ndim; d++)
     {
-        awh_dim_params_t *dim_params = &awh_bias_params->dim_params[d];
+        gmx::AwhDimParams *dimParams = &awhBiasParams->dimParams[d];
 
-        gmx_fio_do_double(fio, dim_params->origin);
-        gmx_fio_do_double(fio, dim_params->end);
-        gmx_fio_do_int(fio, dim_params->pull_coord_index);
-        gmx_fio_do_double(fio, dim_params->period);
-        gmx_fio_do_double(fio, dim_params->diffusion);
-        gmx_fio_do_int(fio, dim_params->ninterval);
-        gmx_fio_do_double(fio, dim_params->interval_overlap);
-        gmx_fio_do_double(fio, dim_params->coord_value_init);
-        gmx_fio_do_double(fio, dim_params->coverDiameter);
+        gmx_fio_do_double(fio, dimParams->origin);
+        gmx_fio_do_double(fio, dimParams->end);
+        gmx_fio_do_int(fio, dimParams->pullCoordIndex);
+        gmx_fio_do_double(fio, dimParams->period);
+        gmx_fio_do_double(fio, dimParams->diffusion);
+        gmx_fio_do_int(fio, dimParams->numInterval);
+        gmx_fio_do_double(fio, dimParams->intervalOverlap);
+        gmx_fio_do_double(fio, dimParams->coordValueInit);
+        gmx_fio_do_double(fio, dimParams->coverDiameter);
     }
 }
 
-static void do_awh(t_fileio *fio, awh_params_t *awh_params, gmx_bool bRead,
+static void do_awh(t_fileio *fio, gmx::AwhParams *awhParams, gmx_bool bRead,
                    int gmx_unused file_version)
 {
-    gmx_fio_do_int(fio, awh_params->nbias);
-    gmx_fio_do_int(fio, awh_params->nstout);
-    gmx_fio_do_int64(fio, awh_params->seed);
-    gmx_fio_do_int(fio, awh_params->nstsample_coord);
-    gmx_fio_do_int(fio, awh_params->nsamples_update_free_energy);
-    gmx_fio_do_int(fio, awh_params->ePotential);
+    gmx_fio_do_int(fio, awhParams->numBias);
+    gmx_fio_do_int(fio, awhParams->nstOut);
+    gmx_fio_do_int64(fio, awhParams->seed);
+    gmx_fio_do_int(fio, awhParams->nstSampleCoord);
+    gmx_fio_do_int(fio, awhParams->numSamplesUpdateFreeEnergy);
+    gmx_fio_do_int(fio, awhParams->ePotential);
 
-    if (awh_params->nbias > 0)
+    if (awhParams->numBias > 0)
     {
         if (bRead)
         {
-            snew(awh_params->awh_bias_params, awh_params->nbias);
+            snew(awhParams->awhBiasParams, awhParams->numBias);
         }
 
-        for (int k = 0; k < awh_params->nbias; k++)
+        for (int k = 0; k < awhParams->numBias; k++)
         {
-            do_awh_bias(fio, &awh_params->awh_bias_params[k], bRead, file_version);
+            do_awhBias(fio, &awhParams->awhBiasParams[k], bRead, file_version);
         }
     }
 }
@@ -1603,9 +1603,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         {
             if (bRead)
             {
-                snew(ir->awh_params, 1);
+                snew(ir->awhParams, 1);
             }
-            do_awh(fio, ir->awh_params, bRead, file_version);
+            do_awh(fio, ir->awhParams, bRead, file_version);
         }
     }
     else

@@ -61,19 +61,22 @@
 #include "biasstate.h"
 #include "dimparams.h"
 
+struct gmx_multisim_t;
+struct t_commrec;
+
+namespace gmx
+{
+
 struct AwhBiasHistory;
+struct AwhBiasParams;
 struct AwhHistory;
+struct AwhParams;
 struct AwhPointStateHistory;
-struct awh_bias_params_t;
-struct awh_dim_params_t;
-struct awh_params_t;
 class BiasParams;
 class BiasState;
-struct gmx_multisim_t;
 class Grid;
 class GridAxis;
 class PointState;
-struct t_commrec;
 
 /*! \internal
  * \brief A bias acting on a multidimensional coordinate.
@@ -142,8 +145,8 @@ class Bias
         Bias(FILE                          *fplog,
              const t_commrec               *cr,
              int                            biasIndexInCollection,
-             const awh_params_t            &awhParams,
-             const awh_bias_params_t       &awhBiasParams,
+             const AwhParams               &awhParams,
+             const AwhBiasParams           &awhBiasParams,
              const std::vector<DimParams>  &dimParams,
              double                         beta,
              double                         mdTimeStep,
@@ -262,4 +265,6 @@ class Bias
         int                          numWarningsIssued_; /**< The number of warning issued in the current run. */
 };
 
-#endif  /* GMX_AWH_BIAS_H */
+}      // namespace gmx
+
+#endif /* GMX_AWH_BIAS_H */

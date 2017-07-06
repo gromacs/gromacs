@@ -126,26 +126,26 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
             // such that we can measure the effects of different parameters.
             // The idea is to, among other things, have part of the interval
             // not covered by samples.
-            awh_dim_params_t awhDimParams;
+            AwhDimParams awhDimParams;
 
             awhDimParams.period           = 0;
             awhDimParams.diffusion        = 0.1;
             awhDimParams.origin           = 0.5;
             awhDimParams.end              = 1.5;
-            awhDimParams.ninterval        = 1;
-            awhDimParams.interval_overlap = 1;
+            awhDimParams.numInterval      = 1;
+            awhDimParams.intervalOverlap  = 1;
             awhDimParams.coverDiameter    = 0;
 
-            awh_bias_params_t awhBiasParams;
+            AwhBiasParams awhBiasParams;
 
             awhBiasParams.ndim                 = 1;
-            awhBiasParams.dim_params           = &awhDimParams;
+            awhBiasParams.dimParams            = &awhDimParams;
             awhBiasParams.eTarget              = eawhtargetCONSTANT;
             awhBiasParams.targetBetaScaling    = 0;
             awhBiasParams.targetCutoff         = 0;
             awhBiasParams.eGrowth              = eawhgrowth;
-            awhBiasParams.bUser_data           = 0;
-            awhBiasParams.error_initial        = 0.5;
+            awhBiasParams.bUserData            = 0;
+            awhBiasParams.errorInitial         = 0.5;
             awhBiasParams.bShare               = false;
             awhBiasParams.equilibrateHistogram = false;
 
@@ -156,18 +156,18 @@ class BiasTest : public ::testing::TestWithParam<BiasTestParameters>
 
             std::vector<DimParams> dimParams   = { DimParams(convFactor, k, beta) };
 
-            awh_params_t           awhParams;
+            AwhParams              awhParams;
 
-            awhParams.nbias                       = 1;
-            awhParams.awh_bias_params             = &awhBiasParams;
-            awhParams.seed                        = c_seed;
-            awhParams.nstout                      = 0;
-            awhParams.nstsample_coord             = 1;
-            awhParams.nsamples_update_free_energy = 10;
-            awhParams.ePotential                  = eawhpotential;
+            awhParams.numBias                    = 1;
+            awhParams.awhBiasParams              = &awhBiasParams;
+            awhParams.seed                       = c_seed;
+            awhParams.nstOut                     = 0;
+            awhParams.nstSampleCoord             = 1;
+            awhParams.numSamplesUpdateFreeEnergy = 10;
+            awhParams.ePotential                 = eawhpotential;
 
             int numSamples = coordinates_.size() - 1; // No sample taken at step 0
-            GMX_RELEASE_ASSERT(numSamples % awhParams.nsamples_update_free_energy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
+            GMX_RELEASE_ASSERT(numSamples % awhParams.numSamplesUpdateFreeEnergy == 0, "This test is intended to reproduce the situation when the might need to write output during a normal AWH run, therefore the number of samples should be a multiple of the free-energy update interval (but the test should also runs fine without this condition).");
 
             bias_ = std::unique_ptr<Bias>(new Bias(nullptr, nullptr, -1, awhParams, awhBiasParams, dimParams, beta, mdTimeStep, disableUpdateSkips));
         }

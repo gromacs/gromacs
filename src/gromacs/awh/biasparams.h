@@ -57,12 +57,15 @@
 
 #include "dimparams.h"
 
-struct awh_bias_params_t;
-struct awh_params_t;
-struct DimParams;
-struct gmx_multisim_t;
-class GridAxis;
 struct t_commrec;
+
+namespace gmx
+{
+
+struct AwhBiasParams;
+struct AwhParams;
+struct DimParams;
+class GridAxis;
 
 /*! \internal \brief Constant parameters for the bias.
  */
@@ -116,8 +119,8 @@ class BiasParams
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          * \param[in] biasIndex              Index of the bias.
          */
-        BiasParams(const awh_params_t           &awhParams,
-                   const awh_bias_params_t      &awhBiasParams,
+        BiasParams(const AwhParams              &awhParams,
+                   const AwhBiasParams          &awhBiasParams,
                    const std::vector<DimParams> &dimParams,
                    double                        beta,
                    double                        mdTimeStep,
@@ -144,4 +147,6 @@ class BiasParams
         DisableUpdateSkips disableUpdateSkips_;        /**< If true, we disallow update skips, even when the method supports it. */
 };
 
-#endif  /* GMX_AWH_BIASPARAMS_H */
+}      // namespace gmx
+
+#endif /* GMX_AWH_BIASPARAMS_H */
