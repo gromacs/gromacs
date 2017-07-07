@@ -1,0 +1,9 @@
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+1: Berk Hess <hess@kth.se>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-by: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-at: Fri, 07 Jul 2017 17:48:00 +0200
+Reviewed-on: https://gerrit.gromacs.org/6751
+Project: gromacs
+Branch: refs/heads/master
