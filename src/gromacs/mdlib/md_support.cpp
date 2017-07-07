@@ -177,7 +177,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
 
-    bEkinAveVel = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres) || bReadEkin);
+    bEkinAveVel = ((ir->eI == eiVV || bReadEkin) || (flags & CGLO_EKINAVEVEL));
 
     /* in initalization, it sums the shake virial in vv, and to
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
@@ -328,53 +328,14 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
     }
 }
 
-void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
-                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[])
+void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals,
+                         t_state *state_global, t_state *state, double lam0[])
 /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
    requiring different logic. */
 {
     real frac;
     int  i, fep_state = 0;
-    if (bRerunMD)
-    {
-        if (rerun_fr->bLambda)
-        {
-            if (fepvals->delta_lambda == 0)
-            {
-                state_global->lambda[efptFEP] = rerun_fr->lambda;
-                for (i = 0; i < efptNR; i++)
-                {
-                    if (i != efptFEP)
-                    {
-                        state->lambda[i] = state_global->lambda[i];
-                    }
-                }
-            }
-            else
-            {
-                /* find out between which two value of lambda we should be */
-                frac      = (step*fepvals->delta_lambda);
-                fep_state = static_cast<int>(floor(frac*fepvals->n_lambda));
-                /* interpolate between this state and the next */
-                /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
-                frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
-                }
-            }
-        }
-        else if (rerun_fr->bFepState)
-        {
-            state_global->fep_state = rerun_fr->fep_state;
-            for (i = 0; i < efptNR; i++)
-            {
-                state_global->lambda[i] = fepvals->all_lambda[i][fep_state];
-            }
-        }
-    }
-    else
+    
     {
         if (fepvals->delta_lambda != 0)
         {

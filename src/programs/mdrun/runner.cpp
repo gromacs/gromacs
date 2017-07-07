@@ -114,6 +114,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
+#include "programs/mdrun/customintegrator/customMD.h"
 #include "md.h"
 #include "membed.h"
 #include "repl_ex.h"
@@ -645,11 +646,12 @@ static integrator_t *my_integrator(unsigned int ei)
 {
     switch (ei)
     {
+        case eiCUSTOM:
+            return do_customMD;
         case eiMD:
         case eiBD:
         case eiSD1:
         case eiVV:
-        case eiVVAK:
             if (!EI_DYNAMICS(ei))
             {
                 GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
@@ -926,6 +928,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   );
     }
 
+    if (bRerunMD && EI_DYNAMICS(inputrec->eI))
+    {
+        gmx_fatal(FARGS, "The -rerun flag is temporarily disabled to be used with dynamical integrators");
+    }
+
     if (bRerunMD &&
         (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
     {
@@ -946,6 +953,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         npme = 0;
+    }
+
+    if (inputrec->eI == eiVVAK)
+    {
+        gmx_fatal(FARGS, "The velocity-verlet integrator that averages KE is temporarily disabled");
     }
 
     if (bUseGPU && npme < 0)

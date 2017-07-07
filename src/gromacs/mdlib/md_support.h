@@ -105,8 +105,8 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bNotLastFrame);
 
 /* set the lambda values at each step of mdrun when they change */
-void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
-                         t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[]);
+void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals,
+                         t_state *state_global, t_state *state, double lam0[]);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */

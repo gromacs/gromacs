@@ -741,6 +741,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
          * the same user-exposed names to facilitate debugging.
          */
         PS("integrator", EI(ir->eI));
+        PS("custom-type", ECT(ir->eCT));
         PR("tinit", ir->init_t);
         PR("dt", ir->delta_t);
         PSTEP("nsteps", ir->nsteps);
@@ -1299,18 +1300,18 @@ gmx_bool inputrecExclForces(const t_inputrec *ir)
 
 gmx_bool inputrecNptTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+    return ( (ir->eI == eiVV)  &&
              (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
 }
 
 gmx_bool inputrecNvtTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+    return ( (ir->eI == eiVV) &&
              (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
 }
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+    return ( (ir->eI == eiVV) &&
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }

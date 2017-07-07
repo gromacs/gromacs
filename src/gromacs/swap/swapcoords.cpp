@@ -537,7 +537,6 @@ static void detect_flux_per_channel(
         real            cyl0_r2,
         real            cyl1_r2,
         gmx_int64_t     step,
-        gmx_bool        bRerun,
         FILE           *fpout)
 {
     gmx_swapcoords_t s;
@@ -608,11 +607,7 @@ static void detect_flux_per_channel(
 
                 fprintf(stderr, " %s Warning! Step %s, ion %d moved from %s to %s\n",
                         SwS, gmx_step_str(step, buf), iAtom, DomainString[*comp_from], DomainString[*comp_now]);
-                if (bRerun)
-                {
-                    fprintf(stderr, ", possibly due to a swap in the original simulation.\n");
-                }
-                else
+               
                 {
                     fprintf(stderr, "but did not pass cyl0 or cyl1 as defined in the .mdp file.\n"
                             "Do you have an ion somewhere within the membrane?\n");
@@ -666,7 +661,6 @@ static void sortMoleculesIntoCompartments(
         matrix          box,
         gmx_int64_t     step,
         FILE           *fpout,
-        gmx_bool        bRerun,
         gmx_bool        bIsSolvent)
 {
     gmx_swapcoords_t s = sc->si_priv;
@@ -706,7 +700,7 @@ static void sortMoleculesIntoCompartments(
                     int globalAtomNr = g->ind[iAtom] + 1; /* PDB index starts at 1 ... */
                     detect_flux_per_channel(g, globalAtomNr, comp, g->xc[iAtom],
                                             &g->comp_now[iMol], &g->comp_from[iMol], &g->channel_label[iMol],
-                                            sc, cyl0_r2, cyl1_r2, step, bRerun, fpout);
+                                            sc, cyl0_r2, cyl1_r2, step, fpout);
                 }
             }
             else
@@ -765,8 +759,7 @@ static void get_initial_ioncounts(
         t_inputrec       *ir,
         rvec              x[],   /* the initial positions */
         matrix            box,
-        t_commrec        *cr,
-        gmx_bool          bRerun)
+        t_commrec        *cr)
 {
     t_swapcoords *sc;
     t_swap       *s;
@@ -793,7 +786,7 @@ static void get_initial_ioncounts(
         }
 
         /* Set up the compartments and get lists of atoms in each compartment */
-        sortMoleculesIntoCompartments(g, cr, sc, box, 0, s->fpout, bRerun, FALSE);
+        sortMoleculesIntoCompartments(g, cr, sc, box, 0, s->fpout, FALSE);
 
         /* Set initial molecule counts if requested (as signaled by "-1" value) */
         for (ic = 0; ic < eCompNR; ic++)
@@ -1466,7 +1459,7 @@ void init_swapcoords(
     t_swap                *s;
     t_swapgrp             *g;
     swapstateIons_t       *gs;
-    gmx_bool               bAppend, bStartFromCpt, bRerun;
+    gmx_bool               bAppend, bStartFromCpt;
     matrix                 boxCopy;
 
 
@@ -1477,23 +1470,10 @@ void init_swapcoords(
 
     bAppend       = Flags & MD_APPENDFILES;
     bStartFromCpt = Flags & MD_STARTFROMCPT;
-    bRerun        = Flags & MD_RERUN;
 
     sc = ir->swap;
     snew(sc->si_priv, 1);
     s = sc->si_priv;
-
-    if (bRerun)
-    {
-        if (PAR(cr))
-        {
-            gmx_fatal(FARGS, "%s This module does not support reruns in parallel\nPlease request a serial run with -nt 1 / -np 1\n", SwS);
-        }
-
-        fprintf(stderr, "%s Rerun - using every available frame\n", SwS);
-        sc->nstswap  = 1;
-        sc->nAverage = 1;  /* averaging makes no sense for reruns */
-    }
 
     if (MASTER(cr) && !bAppend)
     {
@@ -1697,7 +1677,7 @@ void init_swapcoords(
                     sc->cyl1r, sc->cyl1u, sc->cyl1l);
 
             fprintf(s->fpout, "#\n");
-            if (!bRerun)
+
             {
                 fprintf(s->fpout, "# Coupling constant (number of swap attempt steps to average over): %d  (translates to %f ps).\n",
                         sc->nAverage, sc->nAverage*sc->nstswap*ir->delta_t);
@@ -1758,7 +1738,7 @@ void init_swapcoords(
         else
         {
             fprintf(stderr, "%s Determining initial numbers of ions per compartment.\n", SwS);
-            get_initial_ioncounts(ir, x, box, cr, bRerun);
+            get_initial_ioncounts(ir, x, box, cr);
         }
 
         /* Prepare (further) checkpoint writes ... */
@@ -1992,8 +1972,7 @@ gmx_bool do_swapcoords(
         gmx_wallcycle_t   wcycle,
         rvec              x[],
         matrix            box,
-        gmx_bool          bVerbose,
-        gmx_bool          bRerun)
+        gmx_bool          bVerbose)
 {
     t_swapcoords         *sc;
     t_swap               *s;
@@ -2034,20 +2013,13 @@ gmx_bool do_swapcoords(
                                     x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, nullptr, nullptr);
 
         /* Determine how many ions of this type each compartment contains */
-        sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, bRerun, FALSE);
+        sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, FALSE);
     }
 
     /* Output how many ions are in the compartments */
     if (MASTER(cr))
     {
         print_ionlist(s, t, "");
-    }
-
-    /* If we are doing a rerun, we are finished here, since we cannot perform
-     * swaps anyway */
-    if (bRerun)
-    {
-        return FALSE;
     }
 
     /* Do we have to perform a swap? */
@@ -2061,7 +2033,7 @@ gmx_bool do_swapcoords(
                                     x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, nullptr, nullptr);
 
         /* Determine how many molecules of solvent each compartment contains */
-        sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, bRerun, TRUE);
+        sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, TRUE);
 
         /* Save number of solvent molecules per compartment prior to any swaps */
         g->comp[eCompA].nMolBefore = g->comp[eCompA].nMol;

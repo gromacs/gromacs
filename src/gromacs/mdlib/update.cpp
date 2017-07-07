@@ -40,6 +40,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <iostream>
 
 #include <algorithm>
 
@@ -105,6 +106,16 @@ struct gmx_update_t
     gmx_stochd_t     *sd;
     /* xprime for constraint algorithms */
     PaddedRVecVector  xp;
+
+    /*vprime for velocity scaling*/
+    PaddedRVecVector vp;
+
+    /*fprime for force scaling*/
+
+    PaddedRVecVector fp;
+
+    /*xtmp for storing position data*/
+    PaddedRVecVector xtmp;
 
     /* Variables for the deform algorithm */
     gmx_int64_t       deformref_step;
@@ -678,6 +689,9 @@ gmx_update_t *init_update(const t_inputrec *ir)
     update_temperature_constants(upd, ir);
 
     upd->xp.resize(0);
+    upd->vp.resize(0);
+    upd->fp.resize(0);
+    upd->xtmp.resize(0);
 
     return upd;
 }
@@ -689,6 +703,9 @@ void update_realloc(gmx_update_t *upd, int natoms)
     /* We need to allocate one element extra, since we might use
      * (unaligned) 4-wide SIMD loads to access rvec entries. */
     upd->xp.resize(natoms + 1);
+    upd->vp.resize(natoms + 1);
+    upd->fp.resize(natoms + 1);
+    upd->xtmp.resize(natoms + 1);
 }
 
 static void do_update_sd1(gmx_stochd_t *sd,
@@ -1342,10 +1359,94 @@ void update_pcouple_before_coordinates(FILE             *fplog,
     }
 }
 
+void constrain_velocities(gmx_int64_t     step,
+                        real            *dvdlambda,
+                        t_inputrec      *inputrec,
+                        t_mdatoms       *md,
+                        t_state         *state,
+                        gmx_update_t     *upd,
+                        gmx_bool        bMolPBC,
+                        t_idef          *idef,
+                        tensor          vir_part,
+                        t_commrec       *cr,
+                        t_nrnb          *nrnb,
+                        gmx_constr_t    constr,
+                        gmx_bool        bCalcVir,
+                        int             delta_step)
+{
+    gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE;
+    tensor               vir_con;
+    /* clear out constraints before applying */
+    clear_mat(vir_part);
+
+    bLastStep = (step == inputrec->init_step+inputrec->nsteps);
+    bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
+    bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
+    
+    constrain(nullptr, bLog, bEner, constr, idef,
+              inputrec, cr, step, delta_step, 1.0, md,
+              as_rvec_array(state->x.data()), as_rvec_array(upd->vp.data()), as_rvec_array(upd->vp.data()),
+              bMolPBC, state->box,
+              state->lambda[efptBONDED], dvdlambda,
+              nullptr, bCalcVir ? &vir_con : nullptr, nrnb, econqVeloc);
+
+    if (bCalcVir)
+    {
+        m_add(vir_part, vir_con, vir_part);
+        if (debug)
+        {
+            pr_rvecs(debug, 0, "constraint virial", vir_part, DIM);
+        }
+    }
+}
+
+void constrain_positions(gmx_int64_t     step,
+                        real            *dvdlambda,
+                        t_inputrec      *inputrec,
+                        t_mdatoms       *md,
+                        t_state         *state,
+                        gmx_update_t     *upd,
+                        gmx_bool        bMolPBC,
+                        t_idef          *idef,
+                        tensor          vir_part,
+                        t_commrec       *cr,
+                        t_nrnb          *nrnb,
+                        gmx_constr_t    constr,
+                        gmx_bool        bCalcVir,
+                        int             delta_step,
+                        rvec *v)
+{
+    gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE;
+    tensor               vir_con;
+
+    /* clear out constraints before applying */
+    clear_mat(vir_part);
+
+    bLastStep = (step == inputrec->init_step+inputrec->nsteps);
+    bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
+    bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
+    
+    constrain(nullptr, bLog, bEner, constr, idef,
+              inputrec, cr, step, delta_step, 1.0, md,
+              as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), nullptr,
+              bMolPBC, state->box,
+              state->lambda[efptBONDED], dvdlambda,
+              v, bCalcVir ? &vir_con : nullptr, nrnb, econqCoord);
+
+    if (bCalcVir)
+    {
+        m_add(vir_part, vir_con, vir_part);
+        if (debug)
+        {
+            pr_rvecs(debug, 0, "constraint virial", vir_part, DIM);
+        }
+    }
+}
+
 void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
-                        t_inputrec       *inputrec,  /* input record and box stuff	*/
+                        t_inputrec       *inputrec,  /* input record and box stuff  */
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
@@ -1676,9 +1777,570 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                 state->natoms, &state->x, &upd->xp, &state->v, nullptr);
 }
 
+// scalar product
+real prod(const rvec a, const real b, const int d)
+{
+    real c;
+    c = a[d]*b;
+    return c;
+}
+
+// Dot product of 2 rvec
+real prod(const rvec a, const matrix b, const int d)
+{
+    real c;
+    c = iprod(b[d], a);
+    return c;
+}
+
+void scale_rvec(const int                  start,
+                const int                  nrend, 
+                rvec  * gmx_restrict r,
+                const std::vector<real> scl,
+                const ivec                 nFreeze[],
+                const unsigned short       cFREEZE[],
+                const unsigned short       ptype[])
+{
+    /* 
+    * scales each atom seperately, with type T
+    * the currently supported product with T
+    *   - scalar product, T is real
+    *   - dot product, T is matrix
+    */
+
+    int gf = 0;
+    for (int n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {    
+            gf = cFREEZE[n];
+        }
+        for (int d=0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                r[n][d] = prod(r[n], scl[n], d);
+            }
+        }
+    } 
+}
+
+void scale_rvec(const int                  start,
+                const int                  nrend, 
+                rvec  * gmx_restrict r, 
+                const real                 scl,
+                const ivec                 nFreeze[],
+                const unsigned short       cFREEZE[],
+                const unsigned short       ptype[])
+{
+    /* scales each atoms with the same scl
+    *  Two types of pruct are supporte
+    *   - scalar product
+    *   - dot product
+    */
+    int gf=0;
+    for (int n = start; n < nrend; n++)
+    {
+        for (int d=0; d < DIM; d++)
+        {
+            if (cFREEZE)
+            {    
+                gf = cFREEZE[n];
+            }
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                r[n][d] = prod(r[n], scl, d);
+            }
+        }
+    }
+}
+
+void scale_vprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, real scl)
+{
+  int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec       *vp = as_rvec_array(upd->vp.data());
+            
+            scale_rvec(start_th, end_th, vp, scl, inputrec->opts.nFreeze, md->cFREEZE, md->ptype);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
+template<typename T>
+void scale_xprime(const t_mdatoms        *md,
+                  const t_inputrec       *inputrec,
+                  gmx_update_t           *upd,
+                  const T                scl)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec       *xp = as_rvec_array(upd->xp.data());
+            
+            scale_rvec(start_th, end_th, xp, scl, inputrec->opts.nFreeze, md->cFREEZE, md->ptype);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }  
+}
+
+template<typename T>
+void scale_fprime(const t_mdatoms        *md,
+                  const t_inputrec       *inputrec,
+                  gmx_update_t           *upd,
+                  const T                scl)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec       *fp = as_rvec_array(upd->fp.data());
+            
+            scale_rvec(start_th, end_th, fp, scl, inputrec->opts.nFreeze, md->cFREEZE, md->ptype);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }  
+}
+
+void progress_xprime(const t_mdatoms        *md,
+                     const t_inputrec       *inputrec,
+                     const real             dt,
+                     gmx_update_t           *upd)
+{
+    int  gf = 0;
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec             *xp = as_rvec_array(upd->xp.data());
+            const rvec       *vp = as_rvec_array(upd->vp.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                if (md->cFREEZE)
+                {    
+                    gf = md->cFREEZE[n];
+                }
+                for (int d = 0; d < DIM; d++)
+                {
+                    if ((md->ptype[n] != eptVSite) && (md->ptype[n] != eptShell) && !inputrec->opts.nFreeze[gf][d])
+                    {
+                        xp[n][d] = xp[n][d] + vp[n][d]*dt;
+                    }
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }  
+}
+
+void progress_vprime(const t_mdatoms        *md,
+                     const t_inputrec       *inputrec,
+                     const real             dt,
+                     gmx_update_t           *upd)
+{
+    int  gf = 0;
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec             *vp = as_rvec_array(upd->vp.data());
+            const rvec       *fp = as_rvec_array(upd->fp.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                if (md->cFREEZE)
+                {    
+                    gf = md->cFREEZE[n];
+                }
+                real w_dt = md->invmass[n]*dt;
+                for (int d = 0; d < DIM; d++)
+                {
+                    if ((md->ptype[n] != eptVSite) && (md->ptype[n] != eptShell) && !inputrec->opts.nFreeze[gf][d])
+                    {
+                        vp[n][d] = vp[n][d] + w_dt*fp[n][d];
+                    }
+                    else
+                    {
+                        vp[n][d] = 0.0;
+                    }
+                }
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }  
+}
+
+void add_acceleration(const t_mdatoms        *md,
+                      const t_inputrec       *inputrec,
+                      const real             dt,
+                      gmx_update_t           *upd)
+{
+    int ga=0;
+    int gf = 0;
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec             *vp = as_rvec_array(upd->vp.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                ga = md->cACC[n];
+                if (md->cFREEZE)
+                {    
+                    gf = md->cFREEZE[n];
+                }
+                for (int d = 0; d < DIM; d++)
+                {
+                    if ((md->ptype[n] != eptVSite) && (md->ptype[n] != eptShell) && !inputrec->opts.nFreeze[gf][d])
+                    {
+                        vp[n][d] = vp[n][d] + 0.5*inputrec->opts.acc[ga][d]*dt;
+                    }
+                    else
+                    {
+                        vp[n][d] = 0.0;
+                    }
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    } 
+}
+
+
+void set_v(const t_mdatoms        *md,
+           const gmx_update_t     *upd,
+           t_state                *state)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            const rvec *vp = as_rvec_array(upd->vp.data());
+            rvec       *v  = as_rvec_array(state->v.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {  
+                for (int d = 0; d < DIM; d++)
+                {
+                    v[n][d] = vp[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    } 
+}
+
+void set_x(const t_mdatoms        *md,
+           const gmx_update_t     *upd,
+           t_state                *state)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            const rvec *xp = as_rvec_array(upd->xp.data());
+            rvec       *x  = as_rvec_array(state->x.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                for (int d = 0; d < DIM; d++)
+                {
+                    x[n][d] = xp[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
+void set_fprime(const t_mdatoms        *md,
+                gmx_update_t     *upd,
+                const PaddedRVecVector *f)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            const rvec *f_rvec  = as_rvec_array(f->data());
+            rvec       *fp = as_rvec_array(upd->fp.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {  
+                for (int d = 0; d < DIM; d++)
+                {
+                    fp[n][d] = f_rvec[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    } 
+}
+
+void set_vprime(const t_mdatoms        *md,
+                gmx_update_t           *upd,
+                const t_state          *state)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec         *vp = as_rvec_array(upd->vp.data());
+            const rvec   *v  = as_rvec_array(state->v.data());
+
+            for (int n = start_th; n < end_th; n++)
+            {  
+                for (int d = 0; d < DIM; d++)
+                {
+                    vp[n][d] = v[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    } 
+}
+
+void set_xprime(const t_mdatoms        *md,
+                gmx_update_t           *upd,
+                const t_state          *state)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec         *xp = as_rvec_array(upd->xp.data());
+            const rvec   *x  = as_rvec_array(state->x.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                for (int d = 0; d < DIM; d++)
+                {
+                    xp[n][d] = x[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
+void save_x(const t_mdatoms        *md,
+            gmx_update_t           *upd,
+            const t_state          *state)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            rvec         *xtmp = as_rvec_array(upd->xtmp.data());
+            const rvec   *x  = as_rvec_array(state->x.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                for (int d = 0; d < DIM; d++)
+                {
+                    xtmp[n][d] = x[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
+void load_x(const t_mdatoms        *md,
+            const gmx_update_t     *upd,
+            t_state                *state)
+{
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
+    
+    int nth = gmx_omp_nthreads_get(emntUpdate);
+    // loop over the threads
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+            
+            const rvec         *xtmp = as_rvec_array(upd->xtmp.data());
+            rvec   *x  = as_rvec_array(state->x.data());
+            
+            for (int n = start_th; n < end_th; n++)
+            {
+                for (int d = 0; d < DIM; d++)
+                {
+                    x[n][d] = xtmp[n][d];
+                }
+                
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
 void update_coords(FILE             *fplog,
                    gmx_int64_t       step,
-                   t_inputrec       *inputrec,  /* input record and box stuff	*/
+                   t_inputrec       *inputrec,  /* input record and box stuff   */
                    t_mdatoms        *md,
                    t_state          *state,
                    PaddedRVecVector *f,    /* forces on home particles */
@@ -1767,7 +2429,6 @@ void update_coords(FILE             *fplog,
                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
                     break;
                 case (eiVV):
-                case (eiVVAK):
                 {
                     gmx_bool bExtended = (inputrec->etc == etcNOSEHOOVER ||
                                           inputrec->epc == epcPARRINELLORAHMAN ||

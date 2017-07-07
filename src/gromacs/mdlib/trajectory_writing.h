@@ -76,7 +76,6 @@ do_md_trajectory_writing(FILE                     *fplog,
                          PaddedRVecVector         *f,
                          int                      *nchkpt,
                          gmx_bool                  bCPT,
-                         gmx_bool                  bRerunMD,
                          gmx_bool                  bLastStep,
                          gmx_bool                  bDoConfOut,
                          gmx_bool                  bSumEkinhOld

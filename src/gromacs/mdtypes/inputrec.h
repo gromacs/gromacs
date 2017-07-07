@@ -343,6 +343,7 @@ typedef struct t_swapcoords {
 struct t_inputrec
 {
     int             eI;                      /* Integration method                 */
+    int             eCT;                     /* Custom Integrator type             */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
     gmx_int64_t     init_step;               /* start at a stepcount >0 (used w. convert-tpr)    */
