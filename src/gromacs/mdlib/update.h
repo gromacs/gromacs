@@ -111,6 +111,63 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       t_nrnb           *nrnb,
                                       gmx_update_t     *upd);
 
+
+void set_fprime(const t_mdatoms *md, gmx_update_t *upd, const PaddedRVecVector *f);
+
+void set_xprime(const t_mdatoms *md, gmx_update_t *upd, const t_state *state);
+
+void set_vprime(const t_mdatoms *md, gmx_update_t *upd, const t_state *state);
+
+void save_x(const t_mdatoms *md, gmx_update_t *upd, const t_state *state);
+
+void load_x(const t_mdatoms *md, const gmx_update_t *upd, t_state *state);
+
+void set_x(const t_mdatoms *md, const gmx_update_t *upd, t_state *state);
+
+void set_v(const t_mdatoms *md, const gmx_update_t *upd, t_state *state);
+
+// Scale fprime via scalar, matrix, a vector of scalar or a vector of matrix
+void scale_fprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const real scl);
+
+void scale_fprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const matrix scl);
+
+void scale_fprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const std::vector<real> &scl);
+
+void scale_fprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const std::vector<matrix> &scl);
+
+// scale xprime via scalar, matrix, a vector of scalar or a vector of matrix
+void scale_xprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const real scl);
+
+void scale_xprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const matrix scl);
+
+void scale_xprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const std::vector<real> &scl);
+
+void scale_xprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const std::vector<matrix> &scl);
+
+// Scale vprime via scalar, matrix, a vector of scalar or a vector of matrix
+void scale_vprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const real scl);
+
+void scale_vprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const matrix scl);
+
+void scale_vprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const std::vector<real> &scl);
+
+void scale_vprime(const t_mdatoms *md, const t_inputrec *inputrec, gmx_update_t *upd, const std::vector<matrix> &scl);
+
+void add_acceleration(const t_mdatoms        *md,
+                      const t_inputrec       *inputrec,
+                      const real              dt,
+                      gmx_update_t     *upd);
+
+void progress_vprime(const t_mdatoms        *md,
+                     const t_inputrec       *inputrec,
+                     const real              dt,
+                     gmx_update_t     *upd);
+
+void progress_xprime(const t_mdatoms        *md,
+                     const t_inputrec       *inputrec,
+                     const real              dt,
+                     gmx_update_t     *upd);
+
 void update_coords(FILE              *fplog,
                    gmx_int64_t        step,
                    t_inputrec        *inputrec, /* input record and box stuff	*/
@@ -128,6 +185,37 @@ void update_coords(FILE              *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
+
+void constrain_velocities(gmx_int64_t     step,
+                        real            *dvdlambda,
+                        t_inputrec      *inputrec,
+                        t_mdatoms       *md,
+                        t_state         *state,
+                        gmx_update_t     *upd,
+                        gmx_bool        bMolPBC,
+                        t_idef          *idef,
+                        tensor          vir_part,
+                        t_commrec       *cr,
+                        t_nrnb          *nrnb,
+                        gmx_constr      *constr,
+                        gmx_bool        bCalcVir,
+                        int             delta_step);
+
+void constrain_positions(gmx_int64_t     step,
+                        real            *dvdlambda,
+                        t_inputrec      *inputrec,
+                        t_mdatoms       *md,
+                        t_state         *state,
+                        gmx_update_t    *upd,
+                        gmx_bool        bMolPBC,
+                        t_idef          *idef,
+                        tensor          vir_part,
+                        t_commrec       *cr,
+                        t_nrnb          *nrnb,
+                        gmx_constr      *constr,
+                        gmx_bool        bCalcVir,
+                        int             delta_step,
+                        rvec *v);
 
 void update_constraints(FILE              *fplog,
                         gmx_int64_t        step,

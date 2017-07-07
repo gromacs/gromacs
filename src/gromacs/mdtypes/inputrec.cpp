@@ -741,6 +741,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
          * the same user-exposed names to facilitate debugging.
          */
         PS("integrator", EI(ir->eI));
+        PS("custom-type", ECT(ir->eCT));
         PR("tinit", ir->init_t);
         PR("dt", ir->delta_t);
         PSTEP("nsteps", ir->nsteps);
