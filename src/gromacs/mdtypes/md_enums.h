@@ -234,12 +234,14 @@ extern const char *ens_names[ensNR+1];
  * and the half step kinetic energy for temperature control
  */
 enum {
-    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiCUSTOM, eiNR
 };
 //! Name of the integrator algorithm
 extern const char *ei_names[eiNR+1];
 //! Macro returning integrator string
 #define EI(e)          enum_name(e, eiNR, ei_names)
+//! Do we use a custom integrator
+#define EI_CUSTOM(e) ((e) == eiCUSTOM)
 //! Do we use velocity Verlet
 #define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
 //! Do we use molecular dynamics
@@ -250,13 +252,22 @@ extern const char *ei_names[eiNR+1];
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
 //! Do we use any type of dynamics
-#define EI_DYNAMICS(e) (EI_MD(e) || EI_RANDOM(e))
+#define EI_DYNAMICS(e) (EI_MD(e) || EI_RANDOM(e) || EI_CUSTOM(e))
 //! Or do we use minimization
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 //! Do we apply test particle insertion
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 //! Do we deal with particle velocities
 #define EI_STATE_VELOCITY(e) (EI_MD(e) || EI_SD(e))
+
+//! Custom Integrator types
+enum {
+    ectLF_NVE, ectLF_HMC, ectHELLO, ectLANGEVIN, ectVV_NVE, ectNR
+};
+//! Name of the custom integrator algorithm
+extern const char *ecustomtype_names[ectNR+1];
+//! Macro returning custom integrator string
+#define ECT(e)          enum_name(e, ectNR, ecustomtype_names)
 
 //! Constraint algorithm
 enum {

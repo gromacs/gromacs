@@ -1885,6 +1885,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     CCTYPE ("RUN CONTROL PARAMETERS");
     EETYPE("integrator",  ir->eI,         ei_names);
+    EETYPE("custom-type", ir->eCT,        ecustomtype_names);
     CTYPE ("Start time and timestep in ps");
     RTYPE ("tinit",   ir->init_t, 0.0);
     RTYPE ("dt",      ir->delta_t,    0.001);
@@ -3270,7 +3271,7 @@ void do_index(const char* mdparin, const char *ndx,
                   "%d tau-t values", ntcg, nref_t, ntau_t);
     }
 
-    bSetTCpar = (ir->etc || EI_SD(ir->eI) || ir->eI == eiBD || EI_TPI(ir->eI));
+    bSetTCpar = (ir->etc || EI_SD(ir->eI) || ir->eI == eiBD || EI_TPI(ir->eI) || EI_CUSTOM(ir->eI));
     do_numbering(natoms, groups, ntcg, ptr3, grps, gnames, egcTC,
                  restnm, bSetTCpar ? egrptpALL : egrptpALL_GENREST, bVerbose, wi);
     nr            = groups->grps[egcTC].nr;

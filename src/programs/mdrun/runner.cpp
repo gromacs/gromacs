@@ -114,6 +114,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
+#include "programs/mdrun/customintegrator/customMD.h"
 #include "md.h"
 #include "membed.h"
 #include "repl_ex.h"
@@ -645,6 +646,8 @@ static integrator_t *my_integrator(unsigned int ei)
 {
     switch (ei)
     {
+        case eiCUSTOM:
+            return do_customMD;
         case eiMD:
         case eiBD:
         case eiSD1:
