@@ -435,6 +435,15 @@ reduceIncr4ReturnSumHsimd(double *     m,
     return _mm_cvtsd_f64(_mm256_castpd256_pd128(t2));
 }
 
+static inline SimdDouble gmx_simdcall
+load4NOffset(const double *m, int offset)
+{
+    return {
+               _mm512_insertf64x4(_mm512_castpd256_pd512(_mm256_loadu_pd(m)),
+                                  _mm256_loadu_pd(m+offset), 1)
+    };
+}
+
 }      // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_UTIL_DOUBLE_H

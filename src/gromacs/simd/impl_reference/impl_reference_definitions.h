@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -205,6 +205,16 @@ namespace gmx
 #else
 //! \brief Width of the \ref gmx::SimdDouble datatype
 #    define GMX_SIMD_DOUBLE_WIDTH                                4
+#endif
+
+#if GMX_SIMD_FLOAT_WIDTH >= 8 || defined DOXYGEN //set in simd.h for GMX_SIMD_FLOAT_WIDTH<=4
+//! \brief 1 if float 4xN load utils present, otherwise 0
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT                          1
+#endif
+
+#if GMX_SIMD_DOUBLE_WIDTH >= 8 || defined DOXYGEN //set in simd.h for GMX_SIMD_DOUBLE_WIDTH<=4
+//! \brief 1 if double 4xN load utils present, otherwise 0
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE                         1
 #endif
 
 //! \brief 1 if implementation provides \ref gmx::Simd4Float, otherwise 0.

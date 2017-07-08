@@ -126,8 +126,10 @@ struct do_fspline
         return f;
     }
 
-#ifdef PME_SIMD4_UNALIGNED //TODO: Consider always have at least a dummy implementation of Simd (enough for first phase of two-phase lookup) and then use enable_if instead of #ifdef
+//TODO: Consider always have at least a dummy implementation of Simd (enough for first phase of two-phase lookup) and then use enable_if instead of #ifdef
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL //Currrently assumes 4<=SIMD_WIDTH<=16
 /* Gather for one charge with pme_order=4 with unaligned SIMD4 load+store.
+ * Uses 4N SIMD where N is SIMD_WIDTH/4 to operate on all of z and N of y.
  * This code does not assume any memory alignment for the grid.
  */
     RVec
@@ -142,30 +144,32 @@ struct do_fspline
         const real *const gmx_restrict dthy = spline->dtheta[YY] + norder;
         const real *const gmx_restrict dthz = spline->dtheta[ZZ] + norder;
 
-        Simd4Real                      fx_S = setZero();
-        Simd4Real                      fy_S = setZero();
-        Simd4Real                      fz_S = setZero();
+        SimdReal                       fx_S = setZero();
+        SimdReal                       fy_S = setZero();
+        SimdReal                       fz_S = setZero();
 
         /* With order 4 the z-spline is actually aligned */
-        const Simd4Real tz_S = load4(thz);
-        const Simd4Real dz_S = load4(dthz);
+        const SimdReal tz_S = load4DuplicateN(thz);
+        const SimdReal dz_S = load4DuplicateN(dthz);
 
-        for (int ithx = 0; (ithx < 4); ithx++)
+        for (int ithx = 0; ithx < 4; ithx++)
         {
-            const int       index_x = (idxX + ithx)*gridNY*gridNZ;
-            const Simd4Real tx_S    = Simd4Real(thx[ithx]);
-            const Simd4Real dx_S    = Simd4Real(dthx[ithx]);
+            const int      index_x = (idxX + ithx)*gridNY*gridNZ;
+            const SimdReal tx_S    = SimdReal(thx[ithx]);
+            const SimdReal dx_S    = SimdReal(dthx[ithx]);
 
-            for (int ithy = 0; (ithy < 4); ithy++)
+            for (int ithy = 0; ithy < 4; ithy += GMX_SIMD_REAL_WIDTH/4)
             {
-                const int       index_xy = index_x + (idxY + ithy)*gridNZ;
-                const Simd4Real ty_S     = Simd4Real(thy[ithy]);
-                const Simd4Real dy_S     = Simd4Real(dthy[ithy]);
+                const int      index_xy = index_x + (idxY+ithy)*gridNZ;
 
-                const Simd4Real gval_S = load4U(grid + index_xy + idxZ);
+                const SimdReal ty_S = loadNDuplicate4(thy +ithy); //unaligned
+                const SimdReal dy_S = loadNDuplicate4(dthy+ithy);
 
-                const Simd4Real fxy1_S = tz_S * gval_S;
-                const Simd4Real fz1_S  = dz_S * gval_S;
+                const SimdReal gval_S = load4NOffset(grid+index_xy+idxZ, gridNZ);
+
+
+                const SimdReal fxy1_S = tz_S * gval_S;
+                const SimdReal fz1_S  = dz_S * gval_S;
 
                 fx_S = fma(dx_S * ty_S, fxy1_S, fx_S);
                 fy_S = fma(tx_S * dy_S, fxy1_S, fy_S);
@@ -185,7 +189,7 @@ struct do_fspline
     static inline void loadOrderU(const real* data, std::integral_constant<int, order>,
                                   int offset, Simd4Real* S0, Simd4Real* S1)
     {
-#ifdef PME_SIMD4_UNALIGNED //TODO: Extract into helper function
+#ifdef PME_SIMD4_UNALIGNED
         *S0 = load4U(data-offset);
         *S1 = load4U(data-offset+4);
 #else
