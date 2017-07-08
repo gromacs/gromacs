@@ -34,6 +34,8 @@
  */
 #include "gmxpre.h"
 
+#include <numeric>
+
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -915,8 +917,70 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4SumHsimd)
     EXPECT_REAL_EQ_TOL(sum0 + sum1 + sum2 + sum3, tstsum, tolerance);
 }
 
-
 #endif      // GMX_SIMD_HAVE_HSIMD_UTIL_REAL
+
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
+
+TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
+{
+    SimdReal        v0, v1;
+    int             i;
+    real            data[GMX_SIMD_REAL_WIDTH/4];
+    std::iota(data, data+GMX_SIMD_REAL_WIDTH/4, 1);
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
+    {
+        val0_[i*4] = val0_[i*4+1] = val0_[i*4+2] = val0_[i*4+3] = data[i];
+    }
+
+    v0 = load<SimdReal>(val0_);
+    v1 = loadUNDuplicate4(data);
+
+    GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
+}
+
+TEST_F(SimdFloatingpointUtilTest, load4DuplicateN)
+{
+    SimdReal        v0, v1;
+    int             i;
+    real            data[4] = { 1, 2, 3, 4};
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
+    {
+        val0_[i*4]   = data[0];
+        val0_[i*4+1] = data[1];
+        val0_[i*4+2] = data[2];
+        val0_[i*4+3] = data[3];
+    }
+
+    v0 = load<SimdReal>(val0_);
+    v1 = load4DuplicateN(val0_);
+
+    GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
+}
+
+TEST_F(SimdFloatingpointUtilTest, loadU4NOffset)
+{
+    constexpr int   offset  = 6; //non power of 2
+    constexpr int   dataLen = 4+offset*(GMX_SIMD_REAL_WIDTH/4-1);
+    real            data[dataLen];
+    std::iota(data, data+dataLen, 1);
+
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
+    {
+        val0_[i*4]   = data[0+offset*i];
+        val0_[i*4+1] = data[1+offset*i];
+        val0_[i*4+2] = data[2+offset*i];
+        val0_[i*4+3] = data[3+offset*i];
+    }
+
+    const SimdReal v0 = load<SimdReal>(val0_);
+    const SimdReal v1 = loadU4NOffset(data, offset);
+
+    GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
+}
+
+#endif      // GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
 
 #endif      // GMX_SIMD_HAVE_REAL
 

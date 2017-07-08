@@ -571,6 +571,99 @@ setZero()
 {
     return {};
 }
+
+/* Implement most of 4xn functions by forwarding them to other functions when possible.
+ * The functions forwarded here don't need to be implemented by each implementation.
+ * For width=4 all functions are forwarded and for width=8 all but loadU4NOffset are forwarded.
+ */
+#if GMX_SIMD_HAVE_FLOAT
+#if GMX_SIMD_FLOAT_WIDTH < 4 || !GMX_SIMD_HAVE_LOADU
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
+#elif GMX_SIMD_FLOAT_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 1
+//For GMX_SIMD_FLOAT_WIDTH>4 it is the reponsibility of the implementation to set
+//GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#endif
+
+#if GMX_SIMD_FLOAT_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
+static inline SimdFloat gmx_simdcall
+loadUNDuplicate4(const float* f)
+{
+    return SimdFloat(*f);
+}
+static inline SimdFloat gmx_simdcall
+load4DuplicateN(const float* f)
+{
+    return load<SimdFloat>(f);
+}
+static inline SimdFloat gmx_simdcall
+loadU4NOffset(const float* f, int)
+{
+    return loadU<SimdFloat>(f);
+}
+#elif GMX_SIMD_FLOAT_WIDTH == 8 && GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT && GMX_SIMD_HAVE_LOADU
+static inline SimdFloat gmx_simdcall
+loadUNDuplicate4(const float* f)
+{
+    return load1DualHsimd(f);
+}
+static inline SimdFloat gmx_simdcall
+load4DuplicateN(const float* f)
+{
+    return loadDuplicateHsimd(f);
+}
+#endif
+#else //GMX_SIMD_HAVE_FLOAT
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
+#endif
+
+#if GMX_SIMD_HAVE_DOUBLE
+#if GMX_SIMD_DOUBLE_WIDTH < 4 || !GMX_SIMD_HAVE_LOADU
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
+#elif GMX_SIMD_DOUBLE_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 1
+//For GMX_SIMD_DOUBLE_WIDTH>4 it is the reponsibility of the implementation to set
+//GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#endif
+
+#if GMX_SIMD_DOUBLE_WIDTH == 4 && GMX_SIMD_HAVE_LOADU
+static inline SimdDouble gmx_simdcall
+loadUNDuplicate4(const double* f)
+{
+    return SimdDouble(*f);
+}
+static inline SimdDouble gmx_simdcall
+load4DuplicateN(const double* f)
+{
+    return load<SimdDouble>(f);
+}
+static inline SimdDouble gmx_simdcall
+loadU4NOffset(const double* f, int)
+{
+    return loadU<SimdDouble>(f);
+}
+#elif GMX_SIMD_DOUBLE_WIDTH == 8 && GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE && GMX_SIMD_HAVE_LOADU
+static inline SimdDouble gmx_simdcall
+loadUNDuplicate4(const double* f)
+{
+    return load1DualHsimd(f);
+}
+static inline SimdDouble gmx_simdcall
+load4DuplicateN(const double* f)
+{
+    return loadDuplicateHsimd(f);
+}
+#endif
+#else //GMX_SIMD_HAVE_DOUBLE
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
+#endif
+
+#if GMX_DOUBLE
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#else
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#endif
+
 //! \}  end of name-group proxy objects
 
 }      // namespace gmx
