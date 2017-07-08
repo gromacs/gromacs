@@ -163,10 +163,10 @@ transposeScatterIncrU(double *            base,
     {
         for (int i = 0; i < 4; i++)
         {
-            _mm512_mask_storeu_pd(base + o[0 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
-                                          _mm256_add_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i]))));
-            _mm512_mask_storeu_pd(base + o[4 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
-                                          _mm256_add_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1))));
+            _mm256_mask_storeu_pd(base + o[0 + i], avx512Int2Mask(7),
+                                  _mm256_add_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i])));
+            _mm256_mask_storeu_pd(base + o[4 + i], avx512Int2Mask(7),
+                                  _mm256_add_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1)));
         }
     }
     else
@@ -218,10 +218,10 @@ transposeScatterDecrU(double *            base,
     {
         for (int i = 0; i < 4; i++)
         {
-            _mm512_mask_storeu_pd(base + o[0 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
-                                          _mm256_sub_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i]))));
-            _mm512_mask_storeu_pd(base + o[4 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
-                                          _mm256_sub_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1))));
+            _mm256_mask_storeu_pd(base + o[0 + i], avx512Int2Mask(7),
+                                  _mm256_sub_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i])));
+            _mm256_mask_storeu_pd(base + o[4 + i], avx512Int2Mask(7),
+                                  _mm256_sub_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1)));
         }
     }
     else
