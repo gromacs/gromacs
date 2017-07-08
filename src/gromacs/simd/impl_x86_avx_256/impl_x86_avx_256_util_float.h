@@ -688,6 +688,15 @@ reduceIncr4ReturnSumHsimd(float *     m,
     return *reinterpret_cast<float *>(&t0);
 }
 
+static inline SimdFloat gmx_simdcall
+loadU4NOffset(const float *m, int offset)
+{
+    return {
+               _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(m)), _mm_loadu_ps(m+offset), 0x1)
+    };
+}
+
+
 }      // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_256_UTIL_FLOAT_H
