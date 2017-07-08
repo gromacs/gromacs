@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,22 +49,22 @@
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 #define DO_FSPLINE(order)                      \
-    for (ithx = 0; (ithx < order); ithx++)              \
+    for (int ithx = 0; (ithx < order); ithx++)              \
     {                                              \
-        index_x = (i0+ithx)*pny*pnz;               \
-        tx      = thx[ithx];                       \
-        dx      = dthx[ithx];                      \
+        const int  index_x = (i0+ithx)*pny*pnz;               \
+        const real tx      = thx[ithx];                             \
+        const real dx      = dthx[ithx];                                      \
                                                \
-        for (ithy = 0; (ithy < order); ithy++)          \
+        for (int ithy = 0; (ithy < order); ithy++)          \
         {                                          \
-            index_xy = index_x+(j0+ithy)*pnz;      \
-            ty       = thy[ithy];                  \
-            dy       = dthy[ithy];                 \
-            fxy1     = fz1 = 0;                    \
+            const int  index_xy = index_x+(j0+ithy)*pnz;      \
+            const real ty       = thy[ithy];                            \
+            const real dy       = dthy[ithy];                                     \
+            real       fxy1     = 0, fz1 = 0;                                 \
                                                \
-            for (ithz = 0; (ithz < order); ithz++)      \
+            for (int ithz = 0; (ithz < order); ithz++)      \
             {                                      \
-                gval  = grid[index_xy+(k0+ithz)];  \
+                const real gval  = grid[index_xy+(k0+ithz)];  \
                 fxy1 += thz[ithz]*gval;            \
                 fz1  += dthz[ithz]*gval;           \
             }                                      \
@@ -81,17 +81,6 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
                        real scale)
 {
     /* sum forces for local particles */
-    int    nn, n, ithx, ithy, ithz, i0, j0, k0;
-    int    index_x, index_xy;
-    int    nx, ny, nz, pny, pnz;
-    int   *idxptr;
-    real   tx, ty, dx, dy, coefficient;
-    real   fx, fy, fz, gval;
-    real   fxy1, fz1;
-    real  *thx, *thy, *thz, *dthx, *dthy, *dthz;
-    int    norder;
-    real   rxx, ryx, ryy, rzx, rzy, rzz;
-    int    order;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
     // cppcheck-suppress unreadVariable cppcheck seems not to analyze code from pme-simd4.h
@@ -102,24 +91,24 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
 #endif
 #endif
 
-    order = pme->pme_order;
-    nx    = pme->nkx;
-    ny    = pme->nky;
-    nz    = pme->nkz;
-    pny   = pme->pmegrid_ny;
-    pnz   = pme->pmegrid_nz;
+    const int  order = pme->pme_order;
+    const int  nx    = pme->nkx;
+    const int  ny    = pme->nky;
+    const int  nz    = pme->nkz;
+    const int  pny   = pme->pmegrid_ny;
+    const int  pnz   = pme->pmegrid_nz;
 
-    rxx   = pme->recipbox[XX][XX];
-    ryx   = pme->recipbox[YY][XX];
-    ryy   = pme->recipbox[YY][YY];
-    rzx   = pme->recipbox[ZZ][XX];
-    rzy   = pme->recipbox[ZZ][YY];
-    rzz   = pme->recipbox[ZZ][ZZ];
+    const real rxx   = pme->recipbox[XX][XX];
+    const real ryx   = pme->recipbox[YY][XX];
+    const real ryy   = pme->recipbox[YY][YY];
+    const real rzx   = pme->recipbox[ZZ][XX];
+    const real rzy   = pme->recipbox[ZZ][YY];
+    const real rzz   = pme->recipbox[ZZ][ZZ];
 
-    for (nn = 0; nn < spline->n; nn++)
+    for (int nn = 0; nn < spline->n; nn++)
     {
-        n           = spline->ind[nn];
-        coefficient = scale*atc->coefficient[n];
+        const int  n           = spline->ind[nn];
+        const real coefficient = scale*atc->coefficient[n];
 
         if (bClearF)
         {
@@ -129,23 +118,23 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
         }
         if (coefficient != 0)
         {
-            fx     = 0;
-            fy     = 0;
-            fz     = 0;
-            idxptr = atc->idx[n];
-            norder = nn*order;
+            real       fx     = 0;
+            real       fy     = 0;
+            real       fz     = 0;
+            const int* idxptr = atc->idx[n];
+            const int  norder = nn*order;
 
-            i0   = idxptr[XX];
-            j0   = idxptr[YY];
-            k0   = idxptr[ZZ];
+            const int  i0   = idxptr[XX];
+            const int  j0   = idxptr[YY];
+            const int  k0   = idxptr[ZZ];
 
             /* Pointer arithmetic alert, next six statements */
-            thx  = spline->theta[XX] + norder;
-            thy  = spline->theta[YY] + norder;
-            thz  = spline->theta[ZZ] + norder;
-            dthx = spline->dtheta[XX] + norder;
-            dthy = spline->dtheta[YY] + norder;
-            dthz = spline->dtheta[ZZ] + norder;
+            const real* thx  = spline->theta[XX] + norder;
+            const real* thy  = spline->theta[YY] + norder;
+            const real* thz  = spline->theta[ZZ] + norder;
+            const real* dthx = spline->dtheta[XX] + norder;
+            const real* dthy = spline->dtheta[YY] + norder;
+            const real* dthz = spline->dtheta[ZZ] + norder;
 
             switch (order)
             {
