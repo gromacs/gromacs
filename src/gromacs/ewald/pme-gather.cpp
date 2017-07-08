@@ -141,7 +141,11 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
                 case 4:
 #ifdef PME_SIMD4_SPREAD_GATHER
 #ifdef PME_SIMD4_UNALIGNED
-#define PME_GATHER_F_SIMD4_ORDER4
+#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
+#define PME_GATHER_F_SIMD4N_ORDER4
+#else
+#define PME_GATHER_F_SIMD4_ORDER4 //TODO: This seems to not be faster for any current implementaiton. Could be removed
+#endif
 #else
 #define PME_GATHER_F_SIMD4_ALIGNED
 #define PME_ORDER 4

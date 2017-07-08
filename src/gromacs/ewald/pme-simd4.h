@@ -87,6 +87,50 @@
 #endif
 
 
+#ifdef PME_GATHER_F_SIMD4N_ORDER4 //Currrently assumes 4<=SIMD_WIDTH<=16
+/* Gather for one charge with pme_order=4 with unaligned SIMD4 load+store.
+ * This code does not assume any memory alignment for the grid.
+ */
+{
+    SimdReal       fx_S = setZero();
+    SimdReal       fy_S = setZero();
+    SimdReal       fz_S = setZero();
+
+    const SimdReal tz_S = load4DuplicateN(thz);
+    const SimdReal dz_S = load4DuplicateN(dthz);
+
+    for (int ithx = 0; ithx < 4; ithx++)
+    {
+        const int      index_x   = (i0+ithx)*pny*pnz;
+        const SimdReal tx_S      = SimdReal(thx[ithx]);
+        const SimdReal dx_S      = SimdReal(dthx[ithx]);
+
+        for (int ithy = 0; ithy < 4; ithy += GMX_SIMD_REAL_WIDTH/4)
+        {
+            const int      index_xy = index_x+(j0+ithy)*pnz;
+
+            const SimdReal ty_S = loadNDuplicate4(thy +ithy); //unaligned
+            const SimdReal dy_S = loadNDuplicate4(dthy+ithy);
+
+            const SimdReal gval_S = load4NOffset(grid+index_xy+k0, pnz);
+
+
+            const SimdReal fxy1_S = tz_S * gval_S;
+            const SimdReal fz1_S  = dz_S * gval_S;
+
+            fx_S = fma(dx_S * ty_S, fxy1_S, fx_S);
+            fy_S = fma(tx_S * dy_S, fxy1_S, fy_S);
+            fz_S = fma(tx_S * ty_S, fz1_S, fz_S);
+        }
+    }
+
+    fx += reduce(fx_S);
+    fy += reduce(fy_S);
+    fz += reduce(fz_S);
+}
+#undef PME_GATHER_F_SIMD4N_ORDER4
+#endif
+
 #ifdef PME_GATHER_F_SIMD4_ORDER4
 /* Gather for one charge with pme_order=4 with unaligned SIMD4 load+store.
  * This code does not assume any memory alignment for the grid.
