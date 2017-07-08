@@ -16,7 +16,6 @@ src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" firs
 # making the right #includes should be on the source file that uses these.
 # TODO: # Stop using the preprocessor for meta-programming!
 src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
-src/gromacs/ewald/pme-gather.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spline-work.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spline-work.h: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spread.cpp: warning: includes "simd.h" unnecessarily
