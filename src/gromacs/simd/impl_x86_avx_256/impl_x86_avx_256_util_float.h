@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -689,6 +689,15 @@ reduceIncr4ReturnSumHsimd(float *     m,
     t0 = _mm_add_ss(t0, _mm_permute_ps(t0, _MM_SHUFFLE(0, 3, 2, 1)));
     return *reinterpret_cast<float *>(&t0);
 }
+
+static inline SimdFloat gmx_simdcall
+load4NOffset(const float *m, int offset)
+{
+    return {
+               _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(m)), _mm_loadu_ps(m+offset), 0x1)
+    };
+}
+
 
 }      // namespace gmx
 
