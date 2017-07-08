@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,15 +110,15 @@
     tz_S  = load4(thz);
     dz_S  = load4(dthz);
 
-    for (ithx = 0; (ithx < 4); ithx++)
+    for (int ithx = 0; (ithx < 4); ithx++)
     {
-        index_x  = (i0+ithx)*pny*pnz;
+        const int index_x  = (i0+ithx)*pny*pnz;
         tx_S     = Simd4Real(thx[ithx]);
         dx_S     = Simd4Real(dthx[ithx]);
 
-        for (ithy = 0; (ithy < 4); ithy++)
+        for (int ithy = 0; (ithy < 4); ithy++)
         {
-            index_xy = index_x+(j0+ithy)*pnz;
+            const int index_xy = index_x+(j0+ithy)*pnz;
             ty_S     = Simd4Real(thy[ithy]);
             dy_S     = Simd4Real(dthy[ithy]);
 
@@ -305,15 +305,15 @@
     tz_S1 = selectByMask(tz_S1, work->mask_S1[offset]);
     dz_S1 = selectByMask(dz_S1, work->mask_S1[offset]);
 
-    for (ithx = 0; (ithx < PME_ORDER); ithx++)
+    for (int ithx = 0; (ithx < PME_ORDER); ithx++)
     {
-        index_x  = (i0+ithx)*pny*pnz;
+        const int index_x  = (i0+ithx)*pny*pnz;
         tx_S     = Simd4Real(thx[ithx]);
         dx_S     = Simd4Real(dthx[ithx]);
 
-        for (ithy = 0; (ithy < PME_ORDER); ithy++)
+        for (int ithy = 0; (ithy < PME_ORDER); ithy++)
         {
-            index_xy = index_x+(j0+ithy)*pnz;
+            const int index_xy = index_x+(j0+ithy)*pnz;
             ty_S     = Simd4Real(thy[ithy]);
             dy_S     = Simd4Real(dthy[ithy]);
 
