@@ -53,6 +53,7 @@
 #define GMX_SIMD_HAVE_DINT32_EXTRACT        0
 #define GMX_SIMD_HAVE_DINT32_LOGICAL        0
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS    0
+#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT     0
 #define GMX_SIMD4_HAVE_FLOAT                0
 #define GMX_SIMD4_HAVE_DOUBLE               0
 
