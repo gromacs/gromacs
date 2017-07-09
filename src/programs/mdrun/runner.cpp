@@ -191,6 +191,10 @@ static void mdrunner_start_fn(void *arg)
         FILE      *fplog = nullptr;
         t_filenm  *fnm;
 
+        // TODO This duplication is formally necessary if any thread
+        // might modify any memory in fnm or the pointers it
+        // contains. If the contents are ever provably const, then we
+        // can remove this allocation (and memory leak).
         fnm = dup_tfn(mc.nfile, mc.fnm);
 
         cr = reinitialize_commrec_for_this_thread(mc.cr);
@@ -214,10 +218,12 @@ static void mdrunner_start_fn(void *arg)
 }
 
 
-/* called by mdrunner() to start a specific number of threads (including
-   the main thread) for thread-parallel runs. This in turn calls mdrunner()
-   for each thread.
-   All options besides nthreads are the same as for mdrunner(). */
+/*! \brief Start thread-MPI threads.
+ *
+ * Called by mdrunner() to start a specific number of threads
+ * (including the main thread) for thread-parallel runs. This in turn
+ * calls mdrunner() for each thread. All options are the same as for
+ * mdrunner(). */
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -234,9 +240,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          real pforce, real cpt_period, real max_hours,
                                          unsigned long Flags)
 {
-    int                      ret;
     struct mdrunner_arglist *mda;
-    t_commrec               *crn; /* the new commrec */
     t_filenm                *fnmn;
 
     /* first check whether we even need to start tMPI */
@@ -247,7 +251,11 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 
     /* a few small, one-time, almost unavoidable memory leaks: */
     snew(mda, 1);
-    fnmn = dup_tfn(nfile, fnm);
+    // TODO This duplication is formally necessary if any thread might
+    // modify any memory in fnm or the pointers it contains. If the
+    // contents are ever provably const, then we can remove this
+    // allocation (and memory leak).
+    fnmn = dup_tfn(nfile, nfm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
     /* hw_opt contains pointers, which should all be NULL at this stage */
@@ -255,7 +263,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->fplog           = fplog;
     mda->cr              = cr;
     mda->nfile           = nfile;
-    mda->fnm             = fnmn;
+    mda->nfile           = fnmn;
     mda->oenv            = oenv;
     mda->bVerbose        = bVerbose;
     mda->nstglobalcomm   = nstglobalcomm;
@@ -285,15 +293,13 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
-    ret = tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_NONE,
-                       mdrunner_start_fn, (void*)(mda) );
-    if (ret != TMPI_SUCCESS)
+    if (tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_NONE,
+                     mdrunner_start_fn, (void*)(mda)) != TMPI_SUCCESS)
     {
-        return nullptr;
+        GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
     }
 
-    crn = reinitialize_commrec_for_this_thread(cr);
-    return crn;
+    return reinitialize_commrec_for_this_thread(cr);
 }
 
 #endif /* GMX_THREAD_MPI */
@@ -921,33 +927,25 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          */
         check_and_update_hw_opt_2(hw_opt, inputrec->cutoff_scheme);
 
-        /* NOW the threads will be started: */
+        // Determine how many thread-MPI ranks to start.
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
                                                  mdlog,
                                                  doMembed);
 
-        if (hw_opt->nthreads_tmpi > 1)
-        {
-            t_commrec *cr_old       = cr;
-            /* now start the threads. */
-            cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
-                                        oenv, bVerbose, nstglobalcomm,
-                                        ddxyz, dd_rank_order, npme, rdd, rconstr,
-                                        dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                        nbpu_opt, nstlist_cmdline,
-                                        nsteps_cmdline, nstepout, resetstep, nmultisim,
-                                        replExParams, pforce,
-                                        cpt_period, max_hours,
-                                        Flags);
-            /* the main thread continues here with a new cr. We don't deallocate
-               the old cr because other threads may still be reading it. */
-            if (cr == nullptr)
-            {
-                gmx_comm("Failed to spawn threads");
-            }
-        }
+        // Now start the threads for thread MPI.
+        cr = mdrunner_start_threads(hw_opt, fplog, cr, nfile, fnm,
+                                    oenv, bVerbose, nstglobalcomm,
+                                    ddxyz, dd_rank_order, npme, rdd, rconstr,
+                                    dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
+                                    nbpu_opt, nstlist_cmdline,
+                                    nsteps_cmdline, nstepout, resetstep, nmultisim,
+                                    replExParams, pforce,
+                                    cpt_period, max_hours,
+                                    Flags);
+        /* The main thread continues here with a new cr. We don't deallocate
+           the old cr because other threads may still be reading it. */
     }
 #endif
     /* END OF CAUTION: cr is now reliable */
