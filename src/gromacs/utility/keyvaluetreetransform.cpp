@@ -60,6 +60,60 @@ IKeyValueTreeTransformRules::~IKeyValueTreeTransformRules()
 }
 
 /********************************************************************
+ * KeyValueTreeTransformRulesScoped::Impl
+ */
+
+class KeyValueTreeTransformRulesScoped::Impl : public IKeyValueTreeTransformRules
+{
+    public:
+        Impl(internal::KeyValueTreeTransformerImpl *impl, const KeyValueTreePath &prefix)
+            : impl_(impl), prefix_(prefix)
+        {
+        }
+
+        KeyValueTreeTransformRuleBuilder addRule() override
+        {
+            return KeyValueTreeTransformRuleBuilder(impl_, prefix_);
+        }
+
+        KeyValueTreeTransformRulesScoped
+        scopedTransform(const KeyValueTreePath &scope) override
+        {
+            return KeyValueTreeTransformRulesScoped(impl_, prefix_ + scope);
+        }
+
+    private:
+        internal::KeyValueTreeTransformerImpl *impl_;
+        KeyValueTreePath                       prefix_;
+};
+
+/********************************************************************
+ * KeyValueTreeTransformRulesScoped
+ */
+
+KeyValueTreeTransformRulesScoped::KeyValueTreeTransformRulesScoped(
+        internal::KeyValueTreeTransformerImpl *impl, const KeyValueTreePath &prefix)
+    : impl_(new Impl(impl, prefix))
+{
+}
+
+KeyValueTreeTransformRulesScoped::KeyValueTreeTransformRulesScoped(
+        KeyValueTreeTransformRulesScoped &&) = default;
+
+KeyValueTreeTransformRulesScoped &
+KeyValueTreeTransformRulesScoped::operator=(
+        KeyValueTreeTransformRulesScoped &&) = default;
+
+KeyValueTreeTransformRulesScoped::~KeyValueTreeTransformRulesScoped()
+{
+}
+
+IKeyValueTreeTransformRules *KeyValueTreeTransformRulesScoped::rules()
+{
+    return impl_.get();
+}
+
+/********************************************************************
  * IKeyValueTreeBackMapping
  */
 
@@ -147,7 +201,7 @@ namespace internal
  * KeyValueTreeTransformerImpl
  */
 
-class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
+class KeyValueTreeTransformerImpl
 {
     public:
         class Rule
@@ -253,9 +307,9 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                 KeyValueTreePath                         context_;
         };
 
-        virtual KeyValueTreeTransformRuleBuilder addRule()
+        KeyValueTreeTransformerImpl()
+            : rootScope_(this, KeyValueTreePath())
         {
-            return KeyValueTreeTransformRuleBuilder(this);
         }
 
         Rule *getOrCreateRootRule()
@@ -273,7 +327,8 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
             rootRule_.reset(new Rule(keyMatchType));
         }
 
-        std::unique_ptr<Rule>  rootRule_;
+        std::unique_ptr<Rule>             rootRule_;
+        KeyValueTreeTransformRulesScoped  rootScope_;
 };
 
 /********************************************************************
@@ -382,7 +437,7 @@ KeyValueTreeTransformer::~KeyValueTreeTransformer()
 
 IKeyValueTreeTransformRules *KeyValueTreeTransformer::rules()
 {
-    return impl_.get();
+    return impl_->rootScope_.rules();
 }
 
 std::vector<KeyValueTreePath> KeyValueTreeTransformer::mappedPaths() const
@@ -413,8 +468,8 @@ class KeyValueTreeTransformRuleBuilder::Data
     public:
         typedef internal::KeyValueTreeTransformerImpl::Rule Rule;
 
-        Data()
-            : expectedType_(typeid(void)),
+        explicit Data(const KeyValueTreePath &prefix)
+            : prefixPath_(prefix), expectedType_(typeid(void)),
               keyMatchType_(StringCompareType::Exact), keyMatchRule_(false)
         {
         }
@@ -461,6 +516,7 @@ class KeyValueTreeTransformRuleBuilder::Data
             }
         }
 
+        const KeyValueTreePath   prefixPath_;
         KeyValueTreePath         fromPath_;
         KeyValueTreePath         toPath_;
         std::type_index          expectedType_;
@@ -474,8 +530,8 @@ class KeyValueTreeTransformRuleBuilder::Data
  */
 
 KeyValueTreeTransformRuleBuilder::KeyValueTreeTransformRuleBuilder(
-        internal::KeyValueTreeTransformerImpl *impl)
-    : impl_(impl), data_(new Data)
+        internal::KeyValueTreeTransformerImpl *impl, const KeyValueTreePath &prefix)
+    : impl_(impl), data_(new Data(prefix))
 {
 }
 
@@ -499,7 +555,7 @@ void KeyValueTreeTransformRuleBuilder::setExpectedType(const std::type_index &ty
 
 void KeyValueTreeTransformRuleBuilder::setToPath(const KeyValueTreePath &path)
 {
-    data_->toPath_ = path;
+    data_->toPath_ = data_->prefixPath_ + path;
 }
 
 void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatchType)
