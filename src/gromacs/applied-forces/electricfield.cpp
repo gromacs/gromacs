@@ -302,21 +302,17 @@ void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
 
 void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
-    // TODO This responsibility should be handled by the caller,
-    // e.g. embedded in the rules, somehow.
-    std::string prefix = "/applied-forces/";
-
-    rules->addRule().from<std::string>("/E-x").to<real>(prefix + "electric-field/x/E0")
+    rules->addRule().from<std::string>("/E-x").to<real>("/electric-field/x/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-xt").toObject(prefix + "electric-field/x")
+    rules->addRule().from<std::string>("/E-xt").toObject("/electric-field/x")
         .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-y").to<real>(prefix + "electric-field/y/E0")
+    rules->addRule().from<std::string>("/E-y").to<real>("/electric-field/y/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-yt").toObject(prefix + "electric-field/y")
+    rules->addRule().from<std::string>("/E-yt").toObject("/electric-field/y")
         .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-z").to<real>(prefix + "electric-field/z/E0")
+    rules->addRule().from<std::string>("/E-z").to<real>("/electric-field/z/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-zt").toObject(prefix + "electric-field/z")
+    rules->addRule().from<std::string>("/E-zt").toObject("/electric-field/z")
         .transformWith(&convertDynamicParameters);
 }
 

@@ -48,6 +48,7 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -95,10 +96,8 @@ MDModules::~MDModules()
 
 void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
-    // TODO The transform rules for applied-forces modules should
-    // embed the necessary prefix (and similarly for other groupings
-    // of modules). For now, electric-field embeds this itself.
-    impl_->field_->mdpOptionProvider()->initMdpTransform(rules);
+    auto appliedForcesScope = rules->scopedTransform("/applied-forces");
+    impl_->field_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,

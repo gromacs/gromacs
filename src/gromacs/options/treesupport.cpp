@@ -173,9 +173,7 @@ class TreeCheckHelper : private OptionsVisitor
             {
                 if (knownNames.count(prop.key()) == 0)
                 {
-                    KeyValueTreePath path(currentPath_);
-                    path.append(prop.key());
-                    unknownPaths_.push_back(std::move(path));
+                    unknownPaths_.push_back(currentPath_ + prop.key());
                 }
             }
         }
