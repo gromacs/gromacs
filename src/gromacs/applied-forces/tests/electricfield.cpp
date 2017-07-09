@@ -48,11 +48,14 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -82,11 +85,11 @@ class ElectricFieldTest : public ::testing::Test
         {
             gmx::test::FloatingPointTolerance tolerance(
                     gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
-            gmx::MDModules                    module;
+            auto                              module(gmx::createElectricFieldModule());
 
             // Prepare MDP inputs
             const char *dimXYZ[3] = { "x", "y", "z" };
-            GMX_RELEASE_ASSERT((dim >= 0 && dim < 3), "Dimension should be 0, 1 or 2");
+            GMX_RELEASE_ASSERT(dim >= 0 && dim < DIM, "Dimension should be 0, 1 or 2");
 
             gmx::KeyValueTreeBuilder     mdpValues;
             mdpValues.rootObject().addValue(gmx::formatString("E%s", dimXYZ[dim]),
@@ -97,9 +100,14 @@ class ElectricFieldTest : public ::testing::Test
             gmx::KeyValueTreeTransformer transform;
             transform.rules()->addRule()
                 .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-            module.initMdpTransform(transform.rules());
-            auto result = transform.transform(mdpValues.build(), nullptr);
-            module.assignOptionsToModules(result.object(), nullptr);
+            module->mdpOptionProvider()->initMdpTransform(transform.rules());
+            auto         result = transform.transform(mdpValues.build(), nullptr);
+            gmx::Options moduleOptions;
+            module->mdpOptionProvider()->initMdpOptions(&moduleOptions);
+            gmx::assignOptionsFromKeyValueTree(&moduleOptions, result.object(), nullptr);
+
+            ForceProviders forceProviders;
+            module->initForceProviders(&forceProviders);
 
             t_mdatoms        md;
             PaddedRVecVector f = { { 0, 0, 0 } };
@@ -108,9 +116,10 @@ class ElectricFieldTest : public ::testing::Test
             md.chargeA[0] = 1;
 
             t_commrec  *cr = init_commrec();
-            module.initForceProviders()->calculateForces(cr, &md, nullptr, 0, nullptr,
-                                                         gmx::EmptyArrayRef(), f);
+            forceProviders.calculateForces(cr, &md, nullptr, 0, nullptr,
+                                           gmx::EmptyArrayRef(), f);
             done_commrec(cr);
+
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
             sfree(md.chargeA);
         }

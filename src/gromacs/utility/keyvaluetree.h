@@ -113,6 +113,12 @@ class KeyValueTreePath
 
         //! Adds another element to the path, making it a child of the old path.
         void append(const std::string &key) { path_.push_back(key); }
+        //! Adds elements from another path to the path.
+        void append(const KeyValueTreePath &other)
+        {
+            auto elements = other.elements();
+            path_.insert(path_.end(), elements.begin(), elements.end());
+        }
         //! Removes the last element in the path, making it the parent path.
         void pop_back() { return path_.pop_back(); }
         //! Removes and returns the last element in the path.
@@ -138,6 +144,25 @@ class KeyValueTreePath
     private:
         std::vector<std::string> path_;
 };
+
+//! \cond libapi
+
+//! Combines two paths as with KeyValueTreePath::append().
+inline KeyValueTreePath operator+(const KeyValueTreePath &a, const KeyValueTreePath &b)
+{
+    KeyValueTreePath result(a);
+    result.append(b);
+    return result;
+}
+
+//! Combines an element to a path as with KeyValueTreePath::append().
+inline KeyValueTreePath operator+(const KeyValueTreePath &a, const std::string &b)
+{
+    KeyValueTreePath result(a);
+    result.append(b);
+    return result;
+}
+//! \endcond
 
 class KeyValueTreeValue
 {
