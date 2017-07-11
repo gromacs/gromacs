@@ -44,66 +44,165 @@
 
 #include <cstdio>
 
+#include <array>
+
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "repl_ex.h"
+
 struct gmx_output_env_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
-struct t_filenm;
 
 namespace gmx
 {
 
-/*! \brief Driver routine, that calls the different methods
+/*! Runner object for supporting setup and execution of mdrun.
  *
- * \param[in] hw_opt   Hardware detection structure
- * \param[in] fplog    File pointer for log file
- * \param[in] cr       Communication data
- * \param[in] nfile    Number of files
- * \param[in] fnm      Array of filenames and file properties
- * \param[in] oenv     Output variables for storing xvg files etc.
- * \param[in] bVerbose Verbose output or not
- * \param[in] nstglobalcomm Number of steps between global communication
- * \param[in] ddxyz    Division of sub-boxes over processors for
- *                     use in domain decomposition parallellization
- * \param[in] dd_rank_order Ordering of the PP and PME ranks
- * \param[in] npme     The number of separate PME ranks requested, -1 = auto
- * \param[in] rdd      The maximum distance for bonded interactions with DD (nm)
- * \param[in] rconstr  Maximum distance for P-LINCS (nm)
- * \param[in] dddlb_opt File name for debugging
- * \param[in] dlb_scale File name for debugging
- * \param[in] ddcsx     File name for debugging
- * \param[in] ddcsy     File name for debugging
- * \param[in] ddcsz     File name for debugging
- * \param[in] nbpu_opt  Type of nonbonded processing unit
- * \param[in] nstlist_cmdline  Override neighbor search frequency
- * \param[in] nsteps_cmdline   Override number of simulation steps
- * \param[in] nstepout     How often to write to the console
- * \param[in] resetstep    Reset the step counter
- * \param[in] nmultisim    Number of parallel simulations to run
- * \param[in] replExParams Parameters for the replica exchange algorithm
- * \param[in] pforce       Minimum force for printing (for debugging)
- * \param[in] cpt_period    How often to checkpoint the simulation
- * \param[in] max_hours     Maximume length of the simulation (wall time)
- * \param[in] imdport       Interactive MD port (socket)
- * \param[in] Flags         More command line options
+ * This class has responsibility for the lifetime of data structures
+ * that exist for the life of the simulation, e.g. for logging and
+ * communication.
+ *
+ * \todo Most of the attributes should be declared by specific modules
+ * as command-line options. Accordingly, they do not conform to the
+ * naming scheme, because that would make for a lot of noise in the
+ * diff, only to have it change again when the options move to their
+ * modules.
+ *
+ * \todo Preparing logging and MPI contexts could probably be a
+ * higher-level responsibility, so that an Mdrunner would get made
+ * without needing to re-initialize these components (as currently
+ * happens always for the master rank, and differently for the spawned
+ * ranks with thread-MPI).
  */
-int mdrunner(gmx_hw_opt_t *hw_opt,
-             FILE *fplog, struct t_commrec *cr, int nfile,
-             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             int nstglobalcomm, ivec ddxyz, int dd_rank_order, int npme,
-             real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
-             const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
-             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-             int nmultisim,
-             const ReplicaExchangeParameters &replExParams,
-             real pforce, real cpt_period, real max_hours,
-             int imdport, unsigned long Flags);
+class Mdrunner
+{
+    private:
+        //! Parallelism-related user options.
+        gmx_hw_opt_t hw_opt {
+            0, 0, 0, 0, threadaffSEL, 0, 0,
+            { nullptr, 0, nullptr }
+        };
+        //! Filenames and properties from command-line argument values.
+        std::array<t_filenm, 34> filenames =
+        {{{ efTPR, nullptr,     nullptr,     ffREAD },
+          { efTRN, "-o",        nullptr,     ffWRITE },
+          { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
+          { efCPT, "-cpi",      nullptr,     ffOPTRD | ffALLOW_MISSING },
+          { efCPT, "-cpo",      nullptr,     ffOPTWR },
+          { efSTO, "-c",        "confout",   ffWRITE },
+          { efEDR, "-e",        "ener",      ffWRITE },
+          { efLOG, "-g",        "md",        ffWRITE },
+          { efXVG, "-dhdl",     "dhdl",      ffOPTWR },
+          { efXVG, "-field",    "field",     ffOPTWR },
+          { efXVG, "-table",    "table",     ffOPTRD },
+          { efXVG, "-tablep",   "tablep",    ffOPTRD },
+          { efXVG, "-tableb",   "table",     ffOPTRDMULT },
+          { efTRX, "-rerun",    "rerun",     ffOPTRD },
+          { efXVG, "-tpi",      "tpi",       ffOPTWR },
+          { efXVG, "-tpid",     "tpidist",   ffOPTWR },
+          { efEDI, "-ei",       "sam",       ffOPTRD },
+          { efXVG, "-eo",       "edsam",     ffOPTWR },
+          { efXVG, "-devout",   "deviatie",  ffOPTWR },
+          { efXVG, "-runav",    "runaver",   ffOPTWR },
+          { efXVG, "-px",       "pullx",     ffOPTWR },
+          { efXVG, "-pf",       "pullf",     ffOPTWR },
+          { efXVG, "-ro",       "rotation",  ffOPTWR },
+          { efLOG, "-ra",       "rotangles", ffOPTWR },
+          { efLOG, "-rs",       "rotslabs",  ffOPTWR },
+          { efLOG, "-rt",       "rottorque", ffOPTWR },
+          { efMTX, "-mtx",      "nm",        ffOPTWR },
+          { efRND, "-multidir", nullptr,     ffOPTRDMULT},
+          { efDAT, "-membed",   "membed",    ffOPTRD },
+          { efTOP, "-mp",       "membed",    ffOPTRD },
+          { efNDX, "-mn",       "membed",    ffOPTRD },
+          { efXVG, "-if",       "imdforces", ffOPTWR },
+          { efXVG, "-swap",     "swapions",  ffOPTWR }}};
+        /*! \brief Filename arguments.
+         *
+         * Provided for compatibility with old C-style code accessing
+         * command-line arguments that are file names. */
+        t_filenm *fnm = filenames.data();
+        /*! \brief Number of filename argument values.
+         *
+         * Provided for compatibility with old C-style code accessing
+         * command-line arguments that are file names. */
+        int nfile = filenames.size();
+        //! Output context for writing text files
+        gmx_output_env_t                *oenv = nullptr;
+        //! TRUE if mdrun should be verbose.
+        gmx_bool                         bVerbose = FALSE;
+        //! Number of steps between global communication.
+        int                              nstglobalcomm = -1;
+        //! Division of sub-boxes over processors for use in domain decomposition parallellization.
+        ivec                             ddxyz = { 0, 0, 0 };
+        //! Ordering of the PP and PME ranks.
+        int                              dd_rank_order;
+        //! The number of separate PME ranks requested, -1 = auto.
+        int                              npme = -1;
+        //! The maximum distance for bonded interactions with DD (nm).
+        real                             rdd = 0.0;
+        //! Maximum distance for P-LINCS (nm).
+        real                             rconstr = 0.0;
+        //! String with user choice for dynamic load balancing "on", "off", or "auto". Default is "auto".
+        const char                      *dddlb_opt = nullptr;
+        /*! \brief Fraction in (0,1) by whose reciprocal the initial
+         * DD cell size will be increased in order to provide a margin
+         * in which dynamic load balancing can act, while preserving
+         * the minimum cell size. */
+        real                             dlb_scale = 0.8;
+        //! String containing a vector of the relative sizes in the x direction of the corresponding DD cells.
+        const char                      *ddcsx = nullptr;
+        //! String containing a vector of the relative sizes in the y direction of the corresponding DD cells.
+        const char                      *ddcsy = nullptr;
+        //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
+        const char                      *ddcsz = nullptr;
+        //! Target short-range interations for "cpu", "gpu", "cpu_gpu", or "auto". Default is "auto".
+        const char                      *nbpu_opt = nullptr;
+        //! Command-line override for the duration of a neighbor list with the Verlet scheme.
+        int                              nstlist_cmdline = 0;
+        //! Command-line override for the number of MD steps (-2 means that the mdp option will be used).
+        gmx_int64_t                      nsteps_cmdline = -2;
+        //! Number of steps between output to the console of time remaining.
+        int                              nstepout = 100;
+        //! Number of steps that elapse before cycle counters are reset.
+        int                              resetstep = -1;
+        //! Number of simulations in multi-simulation set.
+        int                              nmultisim = 0;
+        //! Parameters for replica-exchange simulations.
+        ReplicaExchangeParameters        replExParams;
+        //! Print a warning if any force is larger than this (in kJ/mol nm).
+        real                             pforce = -1;
+        //! Period (in wall-clock minutes) between writing checkpoint files.
+        real                             cpt_period = 15.0;
+        //! Maximum duration of this simulation (in wall-clock hours).
+        real                             max_hours = -1;
+        //! Socket number used for IMD inter-process communication.
+        int                              imdport = 8888;
+        //! Bitfield of boolean flags configuring mdrun behavior.
+        unsigned long                    Flags = 0;
+        //! Handle to file used for logging.
+        FILE                            *fplog;
+        //! Handle to communication data structure.
+        t_commrec                       *cr;
 
+    public:
+        //! Start running mdrun by calling its C-style main function.
+        int mainFunction(int argc, char *argv[]);
+        /*! \brief Driver routine, that calls the different simulation methods. */
+        int mdrunner();
+        //! Called when thread-MPI spawns threads.
+        t_commrec *spawnThreads(int numThreadsToLaunch);
+        /*! \brief Re-initializes the object after threads spawn.
+         *
+         * \todo Can this be refactored so that the Mdrunner on a spawned thread is
+         * constructed ready to use? */
+        void reinitializeOnSpawnedThread();
+};
 
 }      // namespace gmx
 

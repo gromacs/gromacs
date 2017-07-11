@@ -202,7 +202,7 @@ void dd_dlb_unlock(struct gmx_domdec_t *dd);
  */
 void dd_setup_dlb_resource_sharing(struct t_commrec           *cr,
                                    const gmx_hw_info_t        *hwinfo,
-                                   const gmx_hw_opt_t         *hw_opt);
+                                   const gmx_hw_opt_t         &hw_opt);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
 void dd_collect_vec(struct gmx_domdec_t *dd,
