@@ -254,7 +254,7 @@ void OPtimization::addEspPoint()
 
 void OPtimization::setEEM()
 {
-    for (auto &mymol : mymol_)
+    for (auto& mymol : mymol_)
     {
         if (mymol.eSupp_ != eSupportNo)
         {
@@ -365,11 +365,11 @@ void OPtimization::calcDeviation()
             if (bQuadrupole_)
             {
                 mymol.CalcQuadrupole();
-                for (int mm = 0; mm < DIM; mm++)
+                for (auto mm = 0; mm < DIM; mm++)
                 {
                     if (bfullTensor_)
                     {
-                        for (int nn = 0; nn < DIM; nn++)
+                        for (auto nn = 0; nn < DIM; nn++)
                         {
                             ener_[ermsQUAD] += gmx::square(mymol.Q_calc_[mm][nn] - mymol.Q_elec_[mm][nn]);
                         }

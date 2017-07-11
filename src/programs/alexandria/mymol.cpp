@@ -1062,7 +1062,6 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
-        
         relax_shell_flexcon(fplog, cr, false, 0,
                             inputrec_, true, force_flags,
                             ltop_, nullptr, enerd_,
@@ -1137,7 +1136,7 @@ void MyMol::CalcDipole(rvec mu)
     clear_rvec(mu);
     for (auto i = 0; i < topology_->atoms.nr; i++)
     {
-        auto q = e2d(topology_->atoms.atom[i].q);   
+        auto q = e2d(topology_->atoms.atom[i].q);
         for (auto m = 0; m < DIM; m++)
         {
             mu[m] += state_->x[i][m]*q;

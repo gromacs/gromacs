@@ -181,6 +181,7 @@ static void gmx_molprop_read_babel(const char          *g09,
     OpenBabel::OBVectorData   *dipole;
     OpenBabel::OBMatrixData   *quadrupole, *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
+    OpenBabel::OBPcharges     *OBpc;
     OpenBabel::OBElementTable *OBet;
     std::string                formula, attr, value;
 
@@ -400,23 +401,13 @@ static void gmx_molprop_read_babel(const char          *g09,
     mpt.LastExperiment()->AddEnergy(mes);
 
     /* Now add properties by extracting them from the OpenBabel structure */
-    OBpd = (OpenBabel::OBPairData *) mol.GetData("PartialCharges");
-    if (nullptr != OBpd)
-    {
-        charge_model = strdup(OBpd->GetValue().c_str());
-    }
-    else
-    {
-        charge_model = strdup(unknown);
-    }
-
     OBet = new OpenBabel::OBElementTable();
-
     OpenBabel::OBForceField *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {
         ff->GetAtomTypes(mol);
-        FOR_ATOMS_OF_MOL (atom, mol) {
+        FOR_ATOMS_OF_MOL (atom, mol)
+        {
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
@@ -430,23 +421,36 @@ static void gmx_molprop_read_babel(const char          *g09,
             }
             alexandria::CalcAtom     ca(OBet->GetSymbol(atom->GetAtomicNum()),
                                         type->GetValue(), atom->GetIdx());
-            alexandria::AtomicCharge aq(charge_model, "e", 0.0,
-                                        atom->GetPartialCharge());
-
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
-            ca.AddCharge(aq);
+
+            std::vector<std::string> charge_models = {"Mulliken Charges", "ESP Charges"};
+            for (auto cm :charge_models)
+            {
+                OBpd = (OpenBabel::OBPairData *) mol.GetData(cm);
+                if (nullptr != OBpd)
+                {
+                    charge_model = strdup(OBpd->GetValue().c_str());
+                }
+                else
+                {
+                    charge_model = strdup(unknown);
+                }                   
+                OBpc = (OpenBabel::OBPcharges *) mol.GetData(charge_model);
+                double q = 0;
+                OBpc->FindPcharge(atom->GetIdx(), &q);
+                alexandria::AtomicCharge aq(charge_model, "e", 0.0, q);                
+                ca.AddCharge(aq);
+            }
             mpt.LastExperiment()->AddAtom(ca);
         }
-        // Not necessary to delete?
-        //delete ff;
     }
     else
     {
-        gmx_fatal(FARGS, "Can not read %s force field", forcefield);
+        gmx_fatal(FARGS, "Cannot read %s force field", forcefield);
     }
     delete OBet;
-
+    
     OBbi   = mol.BeginBonds();
     bondid = 1;
     for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
@@ -512,7 +516,7 @@ static void gmx_molprop_read_babel(const char          *g09,
     }
 
     // Electrostatic potential
-    esp = (OpenBabel::OBFreeGrid *) mol.GetData("Electrostatic Potential");
+    esp = (OpenBabel::OBFreeGrid *) mol.GetData("Optimized Electrostatic Potential");
     if (nullptr != esp)
     {
         OpenBabel::OBFreeGridPoint        *fgp;
