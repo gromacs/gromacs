@@ -268,7 +268,7 @@ check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
 void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
+                                      const gmx_hw_opt_t  &hw_opt,
                                       bool                 userSetGpuIds,
                                       bool                 willUsePhysicalGpu)
 {
@@ -291,7 +291,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
 #if GMX_THREAD_MPI
     bMPI          = FALSE;
     btMPI         = TRUE;
-    bNthreadsAuto = (hw_opt->nthreads_tmpi < 1);
+    bNthreadsAuto = (hw_opt.nthreads_tmpi < 1);
 #elif GMX_LIB_MPI
     bMPI          = TRUE;
     btMPI         = FALSE;
@@ -340,7 +340,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         char gpu_comp_plural[2], gpu_use_plural[2];
 
         ngpu_comp = hwinfo->gpu_info.n_dev_compatible;
-        ngpu_use  = hw_opt->gpu_opt.n_dev_use;
+        ngpu_use  = hw_opt.gpu_opt.n_dev_use;
 
         sprintf(gpu_comp_plural, "%s", (ngpu_comp > 1) ? "s" : "");
         sprintf(gpu_use_plural,  "%s", (ngpu_use > 1) ? "s" : "");
