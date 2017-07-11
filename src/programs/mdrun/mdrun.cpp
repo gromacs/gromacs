@@ -91,6 +91,15 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
 //! Implements C-style main function for mdrun
 int gmx_mdrun(int argc, char *argv[])
 {
+    gmx::Mdrunner runner;
+    return runner.mainFunction(argc, argv);
+}
+
+namespace gmx
+{
+
+int Mdrunner::mainFunction(int argc, char *argv[])
+{
     const char   *desc[] = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
@@ -230,67 +239,17 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
-    t_commrec    *cr;
-    t_filenm      fnm[] = {
-        { efTPR, nullptr,      nullptr,       ffREAD },
-        { efTRN, "-o",      nullptr,       ffWRITE },
-        { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
-        { efCPT, "-cpi",    nullptr,       ffOPTRD | ffALLOW_MISSING },
-        { efCPT, "-cpo",    nullptr,       ffOPTWR },
-        { efSTO, "-c",      "confout",  ffWRITE },
-        { efEDR, "-e",      "ener",     ffWRITE },
-        { efLOG, "-g",      "md",       ffWRITE },
-        { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
-        { efXVG, "-field",  "field",    ffOPTWR },
-        { efXVG, "-table",  "table",    ffOPTRD },
-        { efXVG, "-tablep", "tablep",   ffOPTRD },
-        { efXVG, "-tableb", "table",    ffOPTRDMULT },
-        { efTRX, "-rerun",  "rerun",    ffOPTRD },
-        { efXVG, "-tpi",    "tpi",      ffOPTWR },
-        { efXVG, "-tpid",   "tpidist",  ffOPTWR },
-        { efEDI, "-ei",     "sam",      ffOPTRD },
-        { efXVG, "-eo",     "edsam",    ffOPTWR },
-        { efXVG, "-devout", "deviatie", ffOPTWR },
-        { efXVG, "-runav",  "runaver",  ffOPTWR },
-        { efXVG, "-px",     "pullx",    ffOPTWR },
-        { efXVG, "-pf",     "pullf",    ffOPTWR },
-        { efXVG, "-ro",     "rotation", ffOPTWR },
-        { efLOG, "-ra",     "rotangles", ffOPTWR },
-        { efLOG, "-rs",     "rotslabs", ffOPTWR },
-        { efLOG, "-rt",     "rottorque", ffOPTWR },
-        { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efRND, "-multidir", nullptr,      ffOPTRDMULT},
-        { efDAT, "-membed", "membed",   ffOPTRD },
-        { efTOP, "-mp",     "membed",   ffOPTRD },
-        { efNDX, "-mn",     "membed",   ffOPTRD },
-        { efXVG, "-if",     "imdforces", ffOPTWR },
-        { efXVG, "-swap",   "swapions", ffOPTWR }
-    };
-    const int     nfile = asize(fnm);
 
     /* Command line option parameters, with their default values */
     gmx_bool          bDDBondCheck  = TRUE;
     gmx_bool          bDDBondComm   = TRUE;
     gmx_bool          bTunePME      = TRUE;
-    gmx_bool          bVerbose      = FALSE;
     gmx_bool          bRerunVSite   = FALSE;
     gmx_bool          bConfout      = TRUE;
     gmx_bool          bReproducible = FALSE;
     gmx_bool          bIMDwait      = FALSE;
     gmx_bool          bIMDterm      = FALSE;
     gmx_bool          bIMDpull      = FALSE;
-
-    int               npme            = -1;
-    int               nstlist_cmdline = 0;
-    int               nmultisim       = 0;
-    int               nstglobalcomm   = -1;
-    int               nstepout        = 100;
-    int               resetstep       = -1;
-    gmx_int64_t       nsteps_cmdline  = -2;  /* the value -2 means that the mdp option will be used */
-
-    /* Special algorithms section */
-    ReplicaExchangeParameters replExParams;
-    int                       imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
 
     /* Command line options */
     rvec              realddxyz                           = {0, 0, 0};
@@ -302,18 +261,9 @@ int gmx_mdrun(int argc, char *argv[])
     { nullptr, "auto", "on", "off", nullptr };
     const char       *nbpu_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
-    real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
-    real              cpt_period            = 15.0, max_hours = -1;
     gmx_bool          bTryToAppendFiles     = TRUE;
     gmx_bool          bKeepAndNumCPT        = FALSE;
     gmx_bool          bResetCountersHalfWay = FALSE;
-    gmx_output_env_t *oenv                  = nullptr;
-
-    gmx_hw_opt_t      hw_opt = {
-        0, 0, 0, 0, threadaffSEL, 0, 0,
-        { nullptr, 0, nullptr }
-    };
 
     t_pargs           pa[] = {
 
@@ -415,11 +365,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long     Flags;
-    ivec              ddxyz;
-    int               dd_rank_order;
     gmx_bool          bDoAppendFiles, bStartFromCpt;
-    FILE             *fplog;
     int               rc;
     char            **multidir = nullptr;
 
@@ -556,13 +502,9 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    rc = gmx::mdrunner(&hw_opt, fplog, cr, nfile, fnm, oenv, bVerbose,
-                       nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
-                       dddlb_opt_choices[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                       nbpu_opt_choices[0], nstlist_cmdline,
-                       nsteps_cmdline, nstepout, resetstep,
-                       nmultisim, replExParams,
-                       pforce, cpt_period, max_hours, imdport, Flags);
+    dddlb_opt = dddlb_opt_choices[0];
+    nbpu_opt  = nbpu_opt_choices[0];
+    rc        = mdrunner();
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
@@ -573,3 +515,5 @@ int gmx_mdrun(int argc, char *argv[])
 
     return rc;
 }
+
+} // namespace
