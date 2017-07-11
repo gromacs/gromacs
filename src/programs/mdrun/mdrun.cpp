@@ -266,7 +266,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-if",     "imdforces", ffOPTWR },
         { efXVG, "-swap",   "swapions", ffOPTWR }
     };
-    const int     NFILE = asize(fnm);
+    const int     nfile = asize(fnm);
 
     /* Command line option parameters, with their default values */
     gmx_bool          bDDBondCheck  = TRUE;
@@ -280,27 +280,27 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool          bIMDterm      = FALSE;
     gmx_bool          bIMDpull      = FALSE;
 
-    int               npme          = -1;
-    int               nstlist       = 0;
-    int               nmultisim     = 0;
-    int               nstglobalcomm = -1;
-    int               nstepout      = 100;
-    int               resetstep     = -1;
-    gmx_int64_t       nsteps        = -2;   /* the value -2 means that the mdp option will be used */
+    int               npme            = -1;
+    int               nstlist_cmdline = 0;
+    int               nmultisim       = 0;
+    int               nstglobalcomm   = -1;
+    int               nstepout        = 100;
+    int               resetstep       = -1;
+    gmx_int64_t       nsteps_cmdline  = -2;  /* the value -2 means that the mdp option will be used */
 
     /* Special algorithms section */
     ReplicaExchangeParameters replExParams;
     int                       imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
 
     /* Command line options */
-    rvec              realddxyz                   = {0, 0, 0};
-    const char       *ddrank_opt[ddrankorderNR+1] =
+    rvec              realddxyz                           = {0, 0, 0};
+    const char       *ddrank_opt_choices[ddrankorderNR+1] =
     { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
-    const char       *dddlb_opt[] =
+    const char       *dddlb_opt_choices[] =
     { nullptr, "auto", "no", "yes", nullptr };
-    const char       *thread_aff_opt[threadaffNR+1] =
+    const char       *thread_aff_opt_choices[threadaffNR+1] =
     { nullptr, "auto", "on", "off", nullptr };
-    const char       *nbpu_opt[] =
+    const char       *nbpu_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
     char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
@@ -310,20 +310,16 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool          bResetCountersHalfWay = FALSE;
     gmx_output_env_t *oenv                  = nullptr;
 
-    /* Non transparent initialization of a complex gmx_hw_opt_t struct.
-     * But unfortunately we are not allowed to call a function here,
-     * since declarations follow below.
-     */
-    gmx_hw_opt_t    hw_opt = {
+    gmx_hw_opt_t      hw_opt = {
         0, 0, 0, 0, threadaffSEL, 0, 0,
         { nullptr, 0, nullptr }
     };
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
 
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
-        { "-ddorder", FALSE, etENUM, {ddrank_opt},
+        { "-ddorder", FALSE, etENUM, {ddrank_opt_choices},
           "DD rank order" },
         { "-npme",    FALSE, etINT, {&npme},
           "Number of separate ranks to be used for PME, -1 is guess" },
@@ -335,7 +331,7 @@ int gmx_mdrun(int argc, char *argv[])
           "Number of OpenMP threads per MPI rank to start (0 is guess)" },
         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
           "Number of OpenMP threads per MPI rank to start (0 is -ntomp)" },
-        { "-pin",     FALSE, etENUM, {thread_aff_opt},
+        { "-pin",     FALSE, etENUM, {thread_aff_opt_choices},
           "Whether mdrun should try to set thread affinities" },
         { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
           "The lowest logical core number to which mdrun should pin the first thread" },
@@ -351,7 +347,7 @@ int gmx_mdrun(int argc, char *argv[])
           "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
         { "-rcon",    FALSE, etREAL, {&rconstr},
           "Maximum distance for P-LINCS (nm), 0 is estimate" },
-        { "-dlb",     FALSE, etENUM, {dddlb_opt},
+        { "-dlb",     FALSE, etENUM, {dddlb_opt_choices},
           "Dynamic load balancing (with DD)" },
         { "-dds",     FALSE, etREAL, {&dlb_scale},
           "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
@@ -370,9 +366,9 @@ int gmx_mdrun(int argc, char *argv[])
           "load balancing." },
         { "-gcom",    FALSE, etINT, {&nstglobalcomm},
           "Global communication frequency" },
-        { "-nb",      FALSE, etENUM, {&nbpu_opt},
+        { "-nb",      FALSE, etENUM, {&nbpu_opt_choices},
           "Calculate non-bonded interactions on" },
-        { "-nstlist", FALSE, etINT, {&nstlist},
+        { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
         { "-tunepme", FALSE, etBOOL, {&bTunePME},
           "Optimize PME load between PP/PME ranks or GPU/CPU" },
@@ -388,7 +384,7 @@ int gmx_mdrun(int argc, char *argv[])
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bTryToAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etINT64, {&nsteps},
+        { "-nsteps",  FALSE, etINT64, {&nsteps_cmdline},
           "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
         { "-maxh",   FALSE, etREAL, {&max_hours},
           "Terminate after 0.99 times this time (hours)" },
@@ -419,13 +415,13 @@ int gmx_mdrun(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long   Flags;
-    ivec            ddxyz;
-    int             dd_rank_order;
-    gmx_bool        bDoAppendFiles, bStartFromCpt;
-    FILE           *fplog;
-    int             rc;
-    char          **multidir = nullptr;
+    unsigned long     Flags;
+    ivec              ddxyz;
+    int               dd_rank_order;
+    gmx_bool          bDoAppendFiles, bStartFromCpt;
+    FILE             *fplog;
+    int               rc;
+    char            **multidir = nullptr;
 
     cr = init_commrec();
 
@@ -451,7 +447,7 @@ int gmx_mdrun(int argc, char *argv[])
        }
      */
 
-    if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, PCA_Flags, nfile, fnm, asize(pa), pa,
                            asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(cr);
@@ -473,18 +469,18 @@ int gmx_mdrun(int argc, char *argv[])
         }
     }
 
-    dd_rank_order = nenum(ddrank_opt);
+    dd_rank_order = nenum(ddrank_opt_choices);
 
-    hw_opt.thread_affinity = nenum(thread_aff_opt);
+    hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
     /* now check the -multi and -multidir option */
-    if (opt2bSet("-multidir", NFILE, fnm))
+    if (opt2bSet("-multidir", nfile, fnm))
     {
         if (nmultisim > 0)
         {
             gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");
         }
-        nmultisim = opt2fns(&multidir, "-multidir", NFILE, fnm);
+        nmultisim = opt2fns(&multidir, "-multidir", nfile, fnm);
     }
 
 
@@ -501,14 +497,14 @@ int gmx_mdrun(int argc, char *argv[])
     if (nmultisim >= 1)
     {
 #if !GMX_THREAD_MPI
-        init_multisystem(cr, nmultisim, multidir, NFILE, fnm);
+        init_multisystem(cr, nmultisim, multidir, nfile, fnm);
 #else
         gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
                   "Please compile GROMACS with a proper external MPI library.");
 #endif
     }
 
-    if (!opt2bSet("-cpi", NFILE, fnm))
+    if (!opt2bSet("-cpi", nfile, fnm))
     {
         // If we are not starting from a checkpoint we never allow files to be appended
         // to, since that has caused a ton of strange behaviour and bugs in the past.
@@ -524,9 +520,9 @@ int gmx_mdrun(int argc, char *argv[])
         }
     }
 
-    handleRestart(cr, bTryToAppendFiles, NFILE, fnm, &bDoAppendFiles, &bStartFromCpt);
+    handleRestart(cr, bTryToAppendFiles, nfile, fnm, &bDoAppendFiles, &bStartFromCpt);
 
-    Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
+    Flags = opt2bSet("-rerun", nfile, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
@@ -548,7 +544,7 @@ int gmx_mdrun(int argc, char *argv[])
        there instead.  */
     if (MASTER(cr) && !bDoAppendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
+        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
                      Flags & MD_APPENDFILES, &fplog);
     }
     else
@@ -560,11 +556,11 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
+    rc = gmx::mdrunner(&hw_opt, fplog, cr, nfile, fnm, oenv, bVerbose,
                        nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
-                       dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                       nbpu_opt[0], nstlist,
-                       nsteps, nstepout, resetstep,
+                       dddlb_opt_choices[0], dlb_scale, ddcsx, ddcsy, ddcsz,
+                       nbpu_opt_choices[0], nstlist_cmdline,
+                       nsteps_cmdline, nstepout, resetstep,
                        nmultisim, replExParams,
                        pforce, cpt_period, max_hours, imdport, Flags);
 
