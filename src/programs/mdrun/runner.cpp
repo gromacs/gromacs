@@ -140,79 +140,41 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #define MIN_ATOMS_PER_MPI_THREAD    90
 #define MIN_ATOMS_PER_GPU           900
 
-struct mdrunner_arglist
+namespace gmx
 {
-    gmx_hw_opt_t                     hw_opt;
-    FILE                            *fplog;
-    t_commrec                       *cr;
-    int                              nfile;
-    const t_filenm                  *fnm;
-    const gmx_output_env_t          *oenv;
-    gmx_bool                         bVerbose;
-    int                              nstglobalcomm;
-    ivec                             ddxyz;
-    int                              dd_rank_order;
-    int                              npme;
-    real                             rdd;
-    real                             rconstr;
-    const char                      *dddlb_opt;
-    real                             dlb_scale;
-    const char                      *ddcsx;
-    const char                      *ddcsy;
-    const char                      *ddcsz;
-    const char                      *nbpu_opt;
-    int                              nstlist_cmdline;
-    gmx_int64_t                      nsteps_cmdline;
-    int                              nstepout;
-    int                              resetstep;
-    int                              nmultisim;
-    const ReplicaExchangeParameters *replExParams;
-    real                             pforce;
-    real                             cpt_period;
-    real                             max_hours;
-    int                              imdport;
-    unsigned long                    Flags;
-};
 
+void Mdrunner::reinitializeOnSpawnedThread()
+{
+    // TODO This duplication is formally necessary if any thread
+    // might modify any memory in fnm or the pointers it
+    // contains. If the contents are ever provably const, then we
+    // can remove this allocation (and memory leak).
+    fnm = dup_tfn(nfile, fnm);
+    cr  = reinitialize_commrec_for_this_thread(cr);
 
-/* The function used for spawning threads. Extracts the mdrunner()
-   arguments from its one argument and calls mdrunner(), after making
-   a commrec. */
+    if (!MASTER(cr))
+    {
+        // Only the master rank writes to the log files
+        fplog = nullptr;
+    }
+}
+
+/*! \brief The function used for spawning threads.
+ *
+ * Takes a pointer to the master mdrunner object as argument,
+ * extracts that, copies it to make a new runner for this thread,
+ * reinitializes necessary data, and proceeds to the simulation. */
 static void mdrunner_start_fn(void *arg)
 {
     try
     {
-        struct mdrunner_arglist *mda = (struct mdrunner_arglist*)arg;
-        struct mdrunner_arglist  mc  = *mda; /* copy the arg list to make sure
-                                                that it's thread-local. This doesn't
-                                                copy pointed-to items, of course,
-                                                but those are all const. */
-        t_commrec *cr;                       /* we need a local version of this */
-        FILE      *fplog = nullptr;
-        t_filenm  *fnm;
-
-        // TODO This duplication is formally necessary if any thread
-        // might modify any memory in fnm or the pointers it
-        // contains. If the contents are ever provably const, then we
-        // can remove this allocation (and memory leak).
-        fnm = dup_tfn(mc.nfile, mc.fnm);
-
-        cr = reinitialize_commrec_for_this_thread(mc.cr);
-
-        if (MASTER(cr))
-        {
-            fplog = mc.fplog;
-        }
-
-        gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                      mc.bVerbose, mc.nstglobalcomm,
-                      mc.ddxyz, mc.dd_rank_order, mc.npme, mc.rdd,
-                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
-                      mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                      mc.nbpu_opt, mc.nstlist_cmdline,
-                      mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-                      mc.nmultisim, *mc.replExParams, mc.pforce,
-                      mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
+        auto masterMdrunner = reinterpret_cast<const gmx::Mdrunner *>(arg);
+        /* copy the arg list to make sure that it's thread-local. This
+           doesn't copy pointed-to items, of course, but those are all
+           const. */
+        gmx::Mdrunner mdrunner = *masterMdrunner;
+        mdrunner.reinitializeOnSpawnedThread();
+        mdrunner.mdrunner();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -224,83 +186,27 @@ static void mdrunner_start_fn(void *arg)
  * (including the main thread) for thread-parallel runs. This in turn
  * calls mdrunner() for each thread. All options are the same as for
  * mdrunner(). */
-static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
-                                         FILE *fplog, t_commrec *cr, int nfile,
-                                         const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                         int nstglobalcomm,
-                                         ivec ddxyz, int dd_rank_order, int npme,
-                                         real rdd, real rconstr,
-                                         const char *dddlb_opt, real dlb_scale,
-                                         const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                         const char *nbpu_opt, int nstlist_cmdline,
-                                         gmx_int64_t nsteps_cmdline,
-                                         int nstepout, int resetstep,
-                                         int nmultisim,
-                                         const ReplicaExchangeParameters &replExParams,
-                                         real pforce, real cpt_period, real max_hours,
-                                         unsigned long Flags)
+t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
 {
-    struct mdrunner_arglist *mda;
-    t_filenm                *fnmn;
 
     /* first check whether we even need to start tMPI */
-    if (hw_opt->nthreads_tmpi < 2)
+    if (numThreadsToLaunch < 2)
     {
         return cr;
     }
 
-    /* a few small, one-time, almost unavoidable memory leaks: */
-    snew(mda, 1);
-    // TODO This duplication is formally necessary if any thread might
-    // modify any memory in fnm or the pointers it contains. If the
-    // contents are ever provably const, then we can remove this
-    // allocation (and memory leak).
-    fnmn = dup_tfn(nfile, fnm);
-
-    /* fill the data structure to pass as void pointer to thread start fn */
-    /* hw_opt contains pointers, which should all be NULL at this stage */
-    mda->hw_opt          = *hw_opt;
-    mda->fplog           = fplog;
-    mda->cr              = cr;
-    mda->nfile           = nfile;
-    mda->fnm             = fnmn;
-    mda->oenv            = oenv;
-    mda->bVerbose        = bVerbose;
-    mda->nstglobalcomm   = nstglobalcomm;
-    mda->ddxyz[XX]       = ddxyz[XX];
-    mda->ddxyz[YY]       = ddxyz[YY];
-    mda->ddxyz[ZZ]       = ddxyz[ZZ];
-    mda->dd_rank_order   = dd_rank_order;
-    mda->npme            = npme;
-    mda->rdd             = rdd;
-    mda->rconstr         = rconstr;
-    mda->dddlb_opt       = dddlb_opt;
-    mda->dlb_scale       = dlb_scale;
-    mda->ddcsx           = ddcsx;
-    mda->ddcsy           = ddcsy;
-    mda->ddcsz           = ddcsz;
-    mda->nbpu_opt        = nbpu_opt;
-    mda->nstlist_cmdline = nstlist_cmdline;
-    mda->nsteps_cmdline  = nsteps_cmdline;
-    mda->nstepout        = nstepout;
-    mda->resetstep       = resetstep;
-    mda->nmultisim       = nmultisim;
-    mda->replExParams    = &replExParams;
-    mda->pforce          = pforce;
-    mda->cpt_period      = cpt_period;
-    mda->max_hours       = max_hours;
-    mda->Flags           = Flags;
-
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
-    if (tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_NONE,
-                     mdrunner_start_fn, (void*)(mda)) != TMPI_SUCCESS)
+    if (tMPI_Init_fn(TRUE, numThreadsToLaunch, TMPI_AFFINITY_NONE,
+                     mdrunner_start_fn, static_cast<void*>(this)) != TMPI_SUCCESS)
     {
         GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
     }
 
     return reinitialize_commrec_for_this_thread(cr);
 }
+
+}      // namespace
 
 #endif /* GMX_THREAD_MPI */
 
@@ -758,19 +664,7 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
-int mdrunner(gmx_hw_opt_t *hw_opt,
-             FILE *fplog, t_commrec *cr, int nfile,
-             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             int nstglobalcomm,
-             ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
-             const char *dddlb_opt, real dlb_scale,
-             const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
-             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-             int gmx_unused nmultisim,
-             const ReplicaExchangeParameters &replExParams,
-             real pforce, real cpt_period, real max_hours,
-             int imdport, unsigned long Flags)
+int Mdrunner::mdrunner()
 {
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
@@ -815,8 +709,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * with things like whether support is compiled, or tMPI thread
      * count. */
     bool emulateGpu          = getenv("GMX_EMULATE_GPU") != nullptr;
-    gmx_parse_gpu_ids(&hw_opt->gpu_opt);
-    bool userSetGpuIds = hasUserSetGpuIds(&hw_opt->gpu_opt);
+    gmx_parse_gpu_ids(&hw_opt.gpu_opt);
+    bool userSetGpuIds = hasUserSetGpuIds(&hw_opt.gpu_opt);
     bool forceUseCpu   = (strncmp(nbpu_opt, "cpu", 3) == 0);
     if (userSetGpuIds && forceUseCpu)
     {
@@ -907,16 +801,16 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(hw_opt, cr, npme);
+    check_and_update_hw_opt_1(&hw_opt, cr, npme);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(mdlog, cr,
-                                  hw_opt, hwinfo->nthreads_hw_avail, FALSE);
+                                  &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
 
 #if GMX_THREAD_MPI
     if (SIMMASTER(cr))
     {
-        if (npme > 0 && hw_opt->nthreads_tmpi <= 0)
+        if (npme > 0 && hw_opt.nthreads_tmpi <= 0)
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
@@ -925,25 +819,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          * This is done later for normal MPI and also once more with tMPI
          * for all tMPI ranks.
          */
-        check_and_update_hw_opt_2(hw_opt, inputrec->cutoff_scheme);
+        check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
         // Determine how many thread-MPI ranks to start.
-        hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
-                                                 hw_opt,
-                                                 inputrec, mtop,
-                                                 mdlog,
-                                                 doMembed);
+        hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
+                                                &hw_opt,
+                                                inputrec, mtop,
+                                                mdlog,
+                                                doMembed);
 
         // Now start the threads for thread MPI.
-        cr = mdrunner_start_threads(hw_opt, fplog, cr, nfile, fnm,
-                                    oenv, bVerbose, nstglobalcomm,
-                                    ddxyz, dd_rank_order, npme, rdd, rconstr,
-                                    dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                    nbpu_opt, nstlist_cmdline,
-                                    nsteps_cmdline, nstepout, resetstep, nmultisim,
-                                    replExParams, pforce,
-                                    cpt_period, max_hours,
-                                    Flags);
+        cr = spawnThreads(hw_opt.nthreads_tmpi);
         /* The main thread continues here with a new cr. We don't deallocate
            the old cr because other threads may still be reading it. */
     }
@@ -1170,15 +1056,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
     /* Check and update hw_opt for the cut-off scheme */
-    check_and_update_hw_opt_2(hw_opt, inputrec->cutoff_scheme);
+    check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
     /* Check and update hw_opt for the number of MPI ranks */
-    check_and_update_hw_opt_3(hw_opt);
+    check_and_update_hw_opt_3(&hw_opt);
 
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
-                          hw_opt->nthreads_omp,
-                          hw_opt->nthreads_omp_pme,
+                          hw_opt.nthreads_omp,
+                          hw_opt.nthreads_omp_pme,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
@@ -1199,12 +1085,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         bool rankCanUseGpu = cr->duty & DUTY_PP;
         /* Map GPU IDs to ranks by filling or validating hw_opt->gpu_opt->dev_use */
         mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
-                         userSetGpuIds, &hw_opt->gpu_opt);
+                         userSetGpuIds, &hw_opt.gpu_opt);
     }
     else
     {
         /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
+        hw_opt.gpu_opt.n_dev_use = 0;
     }
 
     /* check consistency across ranks of things like SIMD
@@ -1214,7 +1100,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU && !emulateGpu);
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt, hw_opt.gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
     if (DOMAINDECOMP(cr))
@@ -1261,7 +1147,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
         fr->hwinfo         = hwinfo;
-        fr->gpu_opt        = &hw_opt->gpu_opt;
+        fr->gpu_opt        = &hw_opt.gpu_opt;
         fr->forceProviders = mdModules.initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, mtop, cr, box,
@@ -1334,14 +1220,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         snew(pmedata, 1);
     }
 
-    if (hw_opt->thread_affinity != threadaffOFF)
+    if (hw_opt.thread_affinity != threadaffOFF)
     {
         /* Before setting affinity, check whether the affinity has changed
          * - which indicates that probably the OpenMP library has changed it
          * since we first checked).
          */
         gmx_check_thread_affinity_set(mdlog, cr,
-                                      hw_opt, hwinfo->nthreads_hw_avail, TRUE);
+                                      &hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
         int nthread_local;
         /* threads on this MPI process or TMPI thread */
@@ -1355,7 +1241,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog, cr, hw_opt, *hwinfo->hardwareTopology,
+        gmx_set_thread_affinity(mdlog, cr, &hw_opt, *hwinfo->hardwareTopology,
                                 nthread_local, nullptr);
     }
 

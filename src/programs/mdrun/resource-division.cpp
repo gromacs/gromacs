@@ -184,7 +184,7 @@ static int nthreads_omp_efficient_max(int gmx_unused       nrank,
  * This is chosen such that we can always obey our own efficiency checks.
  */
 static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
-                                        const gmx_hw_opt_t  *hw_opt,
+                                        const gmx_hw_opt_t  &hw_opt,
                                         int                  nthreads_tot,
                                         int                  ngpu)
 {
@@ -208,8 +208,8 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
          * If the user does not set the number of OpenMP threads, nthreads_omp==0 and
          * this code has no effect.
          */
-        GMX_RELEASE_ASSERT(hw_opt->nthreads_omp >= 0, "nthreads_omp is negative, but previous checks should have prevented this");
-        while (nrank*hw_opt->nthreads_omp > hwinfo->nthreads_hw_avail && nrank > 1)
+        GMX_RELEASE_ASSERT(hw_opt.nthreads_omp >= 0, "nthreads_omp is negative, but previous checks should have prevented this");
+        while (nrank*hw_opt.nthreads_omp > hwinfo->nthreads_hw_avail && nrank > 1)
         {
             nrank--;
         }
@@ -243,10 +243,10 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                    (nthreads_tot/(ngpu*(nshare + 1)) >= nthreads_omp_mpi_ok_min_gpu && nthreads_tot % nrank != 0));
         }
     }
-    else if (hw_opt->nthreads_omp > 0)
+    else if (hw_opt.nthreads_omp > 0)
     {
         /* Here we could oversubscribe, when we do, we issue a warning later */
-        nrank = std::max(1, nthreads_tot/hw_opt->nthreads_omp);
+        nrank = std::max(1, nthreads_tot/hw_opt.nthreads_omp);
     }
     else
     {
@@ -437,7 +437,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     }
 
     nrank =
-        get_tmpi_omp_thread_division(hwinfo, hw_opt, nthreads_tot_max, ngpu);
+        get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu);
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
@@ -547,7 +547,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
 
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
-                                        const gmx_hw_opt_t  *hw_opt,
+                                        const gmx_hw_opt_t  &hw_opt,
                                         int                  numGpusToUseOnThisRank,
                                         gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
@@ -567,7 +567,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
      */
 #if GMX_THREAD_MPI
     GMX_RELEASE_ASSERT(nthreads_omp_faster_default >= nthreads_omp_mpi_ok_max, "Inconsistent OpenMP thread count default values");
-    GMX_RELEASE_ASSERT(hw_opt->nthreads_tmpi >= 1, "Must have at least one thread-MPI rank");
+    GMX_RELEASE_ASSERT(hw_opt.nthreads_tmpi >= 1, "Must have at least one thread-MPI rank");
 #endif
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) >= 1, "Must have at least one OpenMP thread");
 
@@ -655,7 +655,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                 sprintf(buf2, "Your choice of %d MPI rank%s and the use of %d total threads %sleads to the use of %d OpenMP threads",
                         cr->nnodes + cr->npmenodes,
                         cr->nnodes + cr->npmenodes == 1 ? "" : "s",
-                        hw_opt->nthreads_tot > 0 ? hw_opt->nthreads_tot : hwinfo->nthreads_hw_avail,
+                        hw_opt.nthreads_tot > 0 ? hw_opt.nthreads_tot : hwinfo->nthreads_hw_avail,
                         hwinfo->nphysicalnode > 1 ? "on a node " : "",
                         nth_omp_max);
             }
@@ -869,7 +869,7 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
 }
 
 /* Checks we can do when we know the thread-MPI rank count */
-void check_and_update_hw_opt_3(gmx_hw_opt_t gmx_unused *hw_opt)
+void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt)
 {
 #if GMX_THREAD_MPI
     GMX_RELEASE_ASSERT(hw_opt->nthreads_tmpi >= 1, "Must have at least one thread-MPI rank");
