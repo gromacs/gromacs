@@ -58,8 +58,11 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -76,6 +79,252 @@ static bool supportsDynamicPairlistGenerationInterval(const t_inputrec &ir)
         EI_DYNAMICS(ir.eI) &&
         !(EI_MD(ir.eI) && ir.etc == etcNO) &&
         ir.verletbuf_tol > 0;
+}
+
+/*! \brief Cost of non-bonded kernels
+ *
+ * We determine the extra cost of the non-bonded kernels compared to
+ * a reference nstlist value of 10 (which is the default in grompp).
+ */
+static const int    nbnxnReferenceNstlist = 10;
+//! The values to try when switching
+const int           nstlist_try[] = { 20, 25, 40 };
+//! Number of elements in the neighborsearch list trials.
+#define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
+/* Increase nstlist until the non-bonded cost increases more than listfac_ok,
+ * but never more than listfac_max.
+ * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
+ * needs 1.28 at rcoulomb=0.9 and 1.24 at rcoulomb=1.0 to get to nstlist=40.
+ * Note that both CPU and GPU factors are conservative. Performance should
+ * not go down due to this tuning, except with a relatively slow GPU.
+ * On the other hand, at medium/high parallelization or with fast GPUs
+ * nstlist will not be increased enough to reach optimal performance.
+ */
+/* CPU: pair-search is about a factor 1.5 slower than the non-bonded kernel */
+//! Max OK performance ratio beween force calc and neighbor searching
+static const float  nbnxn_cpu_listfac_ok    = 1.05;
+//! Too high performance ratio beween force calc and neighbor searching
+static const float  nbnxn_cpu_listfac_max   = 1.09;
+/* CPU: pair-search is about a factor 2-3 slower than the non-bonded kernel */
+//! Max OK performance ratio beween force calc and neighbor searching
+static const float  nbnxn_knl_listfac_ok    = 1.22;
+//! Too high performance ratio beween force calc and neighbor searching
+static const float  nbnxn_knl_listfac_max   = 1.3;
+/* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
+//! Max OK performance ratio beween force calc and neighbor searching
+static const float  nbnxn_gpu_listfac_ok    = 1.20;
+//! Too high performance ratio beween force calc and neighbor searching
+static const float  nbnxn_gpu_listfac_max   = 1.30;
+
+void increase_nstlist(FILE *fp, t_commrec *cr,
+                      t_inputrec *ir, int nstlist_cmdline,
+                      const gmx_mtop_t *mtop, matrix box,
+                      bool makeGpuPairList, const gmx::CpuInfo &cpuinfo)
+{
+    float                  listfac_ok, listfac_max;
+    int                    nstlist_orig, nstlist_prev;
+    verletbuf_list_setup_t ls;
+    real                   rlistWithReferenceNstlist, rlist_inc, rlist_ok, rlist_max;
+    real                   rlist_new, rlist_prev;
+    size_t                 nstlist_ind = 0;
+    gmx_bool               bBox, bDD, bCont;
+    const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
+    const char            *nve_err  = "Can not increase nstlist because an NVE ensemble is used";
+    const char            *vbd_err  = "Can not increase nstlist because verlet-buffer-tolerance is not set or used";
+    const char            *box_err  = "Can not increase nstlist because the box is too small";
+    const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
+    char                   buf[STRLEN];
+
+    if (nstlist_cmdline <= 0)
+    {
+        if (ir->nstlist == 1)
+        {
+            /* The user probably set nstlist=1 for a reason,
+             * don't mess with the settings.
+             */
+            return;
+        }
+
+        if (fp != nullptr && makeGpuPairList && ir->nstlist < nstlist_try[0])
+        {
+            fprintf(fp, nstl_gpu, ir->nstlist);
+        }
+        nstlist_ind = 0;
+        while (nstlist_ind < NNSTL && ir->nstlist >= nstlist_try[nstlist_ind])
+        {
+            nstlist_ind++;
+        }
+        if (nstlist_ind == NNSTL)
+        {
+            /* There are no larger nstlist value to try */
+            return;
+        }
+    }
+
+    if (EI_MD(ir->eI) && ir->etc == etcNO)
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "%s\n", nve_err);
+        }
+        if (fp != nullptr)
+        {
+            fprintf(fp, "%s\n", nve_err);
+        }
+
+        return;
+    }
+
+    if (ir->verletbuf_tol == 0 && makeGpuPairList)
+    {
+        gmx_fatal(FARGS, "You are using an old tpr file with a GPU, please generate a new tpr file with an up to date version of grompp");
+    }
+
+    if (ir->verletbuf_tol < 0)
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "%s\n", vbd_err);
+        }
+        if (fp != nullptr)
+        {
+            fprintf(fp, "%s\n", vbd_err);
+        }
+
+        return;
+    }
+
+    if (makeGpuPairList)
+    {
+        listfac_ok  = nbnxn_gpu_listfac_ok;
+        listfac_max = nbnxn_gpu_listfac_max;
+    }
+    else if (cpuinfo.feature(gmx::CpuInfo::Feature::X86_Avx512ER))
+    {
+        listfac_ok  = nbnxn_knl_listfac_ok;
+        listfac_max = nbnxn_knl_listfac_max;
+    }
+    else
+    {
+        listfac_ok  = nbnxn_cpu_listfac_ok;
+        listfac_max = nbnxn_cpu_listfac_max;
+    }
+
+    nstlist_orig = ir->nstlist;
+    if (nstlist_cmdline > 0)
+    {
+        if (fp)
+        {
+            sprintf(buf, "Getting nstlist=%d from command line option",
+                    nstlist_cmdline);
+        }
+        ir->nstlist = nstlist_cmdline;
+    }
+
+    verletbuf_get_list_setup(true, makeGpuPairList, &ls);
+
+    /* Allow rlist to make the list a given factor larger than the list
+     * would be with the reference value for nstlist (10).
+     */
+    nstlist_prev = ir->nstlist;
+    ir->nstlist  = nbnxnReferenceNstlist;
+    calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1,
+                            -1, &ls, nullptr, &rlistWithReferenceNstlist);
+    ir->nstlist  = nstlist_prev;
+
+    /* Determine the pair list size increase due to zero interactions */
+    rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
+                                              mtop->natoms/det(box));
+    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_ok) - rlist_inc;
+    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_max) - rlist_inc;
+    if (debug)
+    {
+        fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
+                rlist_inc, rlist_ok, rlist_max);
+    }
+
+    nstlist_prev = nstlist_orig;
+    rlist_prev   = ir->rlist;
+    do
+    {
+        if (nstlist_cmdline <= 0)
+        {
+            ir->nstlist = nstlist_try[nstlist_ind];
+        }
+
+        /* Set the pair-list buffer size in ir */
+        calc_verlet_buffer_size(mtop, det(box), ir, ir->nstlist, ir->nstlist - 1, -1, &ls, nullptr, &rlist_new);
+
+        /* Does rlist fit in the box? */
+        bBox = (gmx::square(rlist_new) < max_cutoff2(ir->ePBC, box));
+        bDD  = TRUE;
+        if (bBox && DOMAINDECOMP(cr))
+        {
+            /* Check if rlist fits in the domain decomposition */
+            if (inputrec2nboundeddim(ir) < DIM)
+            {
+                gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
+            }
+            t_state state_tmp;
+            copy_mat(box, state_tmp.box);
+            bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
+        }
+
+        if (debug)
+        {
+            fprintf(debug, "nstlist %d rlist %.3f bBox %d bDD %d\n",
+                    ir->nstlist, rlist_new, bBox, bDD);
+        }
+
+        bCont = FALSE;
+
+        if (nstlist_cmdline <= 0)
+        {
+            if (bBox && bDD && rlist_new <= rlist_max)
+            {
+                /* Increase nstlist */
+                nstlist_prev = ir->nstlist;
+                rlist_prev   = rlist_new;
+                bCont        = (nstlist_ind+1 < NNSTL && rlist_new < rlist_ok);
+            }
+            else
+            {
+                /* Stick with the previous nstlist */
+                ir->nstlist = nstlist_prev;
+                rlist_new   = rlist_prev;
+                bBox        = TRUE;
+                bDD         = TRUE;
+            }
+        }
+
+        nstlist_ind++;
+    }
+    while (bCont);
+
+    if (!bBox || !bDD)
+    {
+        gmx_warning(!bBox ? box_err : dd_err);
+        if (fp != nullptr)
+        {
+            fprintf(fp, "\n%s\n", bBox ? box_err : dd_err);
+        }
+        ir->nstlist = nstlist_orig;
+    }
+    else if (ir->nstlist != nstlist_orig || rlist_new != ir->rlist)
+    {
+        sprintf(buf, "Changing nstlist from %d to %d, rlist from %g to %g",
+                nstlist_orig, ir->nstlist,
+                ir->rlist, rlist_new);
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "%s\n\n", buf);
+        }
+        if (fp != nullptr)
+        {
+            fprintf(fp, "%s\n\n", buf);
+        }
+        ir->rlist     = rlist_new;
+    }
 }
 
 /*! \brief The interval in steps at which we perform dynamic, rolling pruning on a GPU.
