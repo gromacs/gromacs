@@ -65,11 +65,6 @@ gmx_bool gmx_multiple_gpu_per_node_supported();
  * example. */
 gmx_bool gmx_gpu_sharing_supported();
 
-/*! \internal \brief
- * Returns the GPU information text, one GPU per line.
- */
-std::string sprint_gpus(const gmx_gpu_info_t &gpu_info);
-
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
  * This routine constructs the global hwinfo structure and returns a pointer to

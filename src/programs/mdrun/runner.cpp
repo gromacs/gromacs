@@ -1193,7 +1193,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (bUseGPU && !emulateGpu)
     {
         /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, hwinfo->gpu_info,
+        gmx_select_rank_gpu_ids(cr, hwinfo->gpu_info,
                                 userSetGpuIds, &hw_opt->gpu_opt);
     }
     else
@@ -1204,6 +1204,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
+    // TODO this also makes a GPU usage report, which should be a
+    // separate responsibility.
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU && !emulateGpu);
 
     /* Now that we know the setup is consistent, check for efficiency */

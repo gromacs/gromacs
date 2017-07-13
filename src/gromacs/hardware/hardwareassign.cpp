@@ -60,44 +60,6 @@
 #define HOSTNAMELEN 80
 
 /*! \internal \brief
- * Prints GPU information strings on this node into the stderr and log.
- * Only used for logging errors in heterogenous MPI configurations.
- */
-static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
-                                      const gmx_gpu_info_t &gpu_info)
-{
-    char onhost[HOSTNAMELEN+10];
-    int  ngpu;
-
-    if (!gpu_info.bDetectGPUs)
-    {
-        /* We skipped the detection, so don't print detection stats */
-        return;
-    }
-
-    ngpu = gpu_info.n_dev;
-
-    /* We only print the detection on one, of possibly multiple, nodes */
-    std::strncpy(onhost, " on host ", 10);
-    gmx_gethostname(onhost + 9, HOSTNAMELEN);
-
-    if (ngpu > 0)
-    {
-        std::string gpuDesc = sprint_gpus(gpu_info);
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "%d GPU%s detected%s:\n%s",
-                ngpu, (ngpu > 1) ? "s" : "", onhost, gpuDesc.c_str());
-    }
-    else
-    {
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("No GPUs detected%s", onhost);
-    }
-    // FIXME: This currently only logs on the master rank, which defeats the purpose.
-    // A new MDLogger option is required for printing to stderr on all ranks.
-    // There is also a question of MPI reduction of the outputs, see Redmine issue #1505.
-}
-
-/*! \internal \brief
  * This function is responsible for mapping the GPUs to the processes on a single node
  * (filling the gpu_opt->dev_use array).
  *
@@ -220,10 +182,10 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
     return compatibleGpus;
 }
 
-void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
+void gmx_select_rank_gpu_ids(const t_commrec      *cr,
                              const gmx_gpu_info_t &gpu_info,
-                             bool userSetGpuIds,
-                             gmx_gpu_opt_t *gpu_opt)
+                             bool                  userSetGpuIds,
+                             gmx_gpu_opt_t        *gpu_opt)
 {
     if (!(cr->duty & DUTY_PP))
     {
@@ -239,11 +201,6 @@ void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
         std::string errorMessage;
         if (!checkGpuSelection(gpu_info, gpu_opt, &errorMessage))
         {
-            const bool canHaveHeterogeneousNodes = GMX_LIB_MPI && PAR(cr);
-            if (canHaveHeterogeneousNodes)
-            {
-                print_gpu_detection_stats(mdlog, gpu_info);
-            }
             gmx_fatal(FARGS, errorMessage.c_str());
         }
     }
