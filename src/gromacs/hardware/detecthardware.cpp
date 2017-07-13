@@ -156,7 +156,10 @@ gmx_bool gmx_gpu_sharing_supported()
     return bGpuSharingSupported;
 }
 
-std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
+/*! \internal \brief
+ * Returns the GPU information text, one GPU per line.
+ */
+static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
 {
     char                     stmp[STRLEN];
     std::vector<std::string> gpuStrings;
@@ -168,7 +171,7 @@ std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
     return gmx::joinStrings(gpuStrings, "\n");
 }
 
-// TODO This function should not live in detectharware.cpp
+// TODO This function should not live in detecthardware.cpp
 
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
@@ -205,27 +208,6 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
     }
 
     std::string output;
-    if (!userSetGpuIds)
-    {
-        auto        compatibleGpus    = getCompatibleGpus(gpu_info);
-        int         numCompatibleGpus = static_cast<int>(compatibleGpus.size());
-        std::string gpuIdsString      =
-            formatAndJoin(compatibleGpus,
-                          ",", gmx::StringFormatter("%d"));
-        bool bPluralGpus = numCompatibleGpus > 1;
-
-        if (bPrintHostName)
-        {
-            output += gmx::formatString("On host %s ", host);
-        }
-        output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
-                                    numCompatibleGpus,
-                                    bPluralGpus ? "s" : "",
-                                    bPluralGpus ? "are" : "is",
-                                    bPluralGpus ? "s" : "",
-                                    gpuIdsString.c_str());
-    }
-
     {
         std::vector<int> gpuIdsInUse;
         for (int i = 0; i < ngpu_use; i++)
