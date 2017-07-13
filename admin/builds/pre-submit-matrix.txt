@@ -20,7 +20,7 @@
 # Test oldest supported Ubuntu
 # Test MPI with CUDA
 # Test MPMD PME with library MPI
-# Test cmake FindCUDA functionality introduced in 3.8
+# Test latest cmake minor release
 gcc-4.8 gpu cuda-6.5 cmake-3.8.1 mpi npme=1 nranks=2 openmp
 
 # Test newest gcc supported by newest CUDA at time of release
