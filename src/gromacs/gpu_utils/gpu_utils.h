@@ -76,22 +76,22 @@ int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FU
 
 /*! \brief Return whether the GPU with given \c index is compatible, ie suitable for use.
  *
- * \param[in]   gpu_info    pointer to structure holding GPU information
+ * \param[in]   gpu_info    Information about detected GPUs
  * \param[in]   index       index of GPU to ask about
  * \returns                 Whether the GPU is compatible.
  */
 GPU_FUNC_QUALIFIER
-bool isGpuCompatible(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+bool isGpuCompatible(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                      int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN(false)
 
 /*! \brief Return a string describing how compatible the GPU with given \c index is.
  *
- * \param[in]   gpu_info    pointer to structure holding GPU information
+ * \param[in]   gpu_info    Information about detected GPUs
  * \param[in]   index       index of GPU to ask about
  * \returns                 A null-terminated C string describing the compatibility status, useful for error messages.
  */
 GPU_FUNC_QUALIFIER
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                                            int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM_WITH_RETURN("")
 
 /*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
@@ -155,13 +155,13 @@ int get_current_cuda_gpu_device_id(void) CUDA_FUNC_TERM_WITH_RETURN(-1)
  * (dev_use) -- typically an MPI rank --, returns an identifier of the
  * respective GPU.
  *
- * \param[in]    gpu_info   Pointer to structure holding GPU information
+ * \param[in]    gpu_info   Information about detected GPUs
  * \param[in]    gpu_opt    Pointer to structure holding GPU options
  * \param[in]    idx        Index into the array of used GPUs
  * \returns                 device ID of the requested GPU
  */
 GPU_FUNC_QUALIFIER
-int get_gpu_device_id(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+int get_gpu_device_id(const struct gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                       const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt),
                       int GPU_FUNC_ARGUMENT(idx)) GPU_FUNC_TERM_WITH_RETURN(-1)
 
@@ -188,12 +188,12 @@ char* get_ocl_gpu_device_name(const struct gmx_gpu_info_t *OPENCL_FUNC_ARGUMENT(
  * ID, name, compute capability, and detection status.
  *
  * \param[out]  s           pointer to output string (has to be allocated externally)
- * \param[in]   gpu_info    pointer to structure holding GPU information
+ * \param[in]   gpu_info    Information about detected GPUs
  * \param[in]   index       an index *directly* into the array of available GPUs
  */
 GPU_FUNC_QUALIFIER
 void get_gpu_device_info_string(char *GPU_FUNC_ARGUMENT(s),
-                                const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
+                                const struct gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                                 int GPU_FUNC_ARGUMENT(index)) GPU_FUNC_TERM
 
 /*! \brief Returns the size of the gpu_dev_info struct.

@@ -68,7 +68,7 @@ gmx_bool gmx_gpu_sharing_supported();
 /*! \internal \brief
  * Returns the GPU information text, one GPU per line.
  */
-std::string sprint_gpus(const gmx_gpu_info_t *gpu_info);
+std::string sprint_gpus(const gmx_gpu_info_t &gpu_info);
 
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *

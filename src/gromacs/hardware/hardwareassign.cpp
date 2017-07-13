@@ -64,18 +64,18 @@
  * Only used for logging errors in heterogenous MPI configurations.
  */
 static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
-                                      const gmx_gpu_info_t *gpu_info)
+                                      const gmx_gpu_info_t &gpu_info)
 {
     char onhost[HOSTNAMELEN+10];
     int  ngpu;
 
-    if (!gpu_info->bDetectGPUs)
+    if (!gpu_info.bDetectGPUs)
     {
         /* We skipped the detection, so don't print detection stats */
         return;
     }
 
-    ngpu = gpu_info->n_dev;
+    ngpu = gpu_info.n_dev;
 
     /* We only print the detection on one, of possibly multiple, nodes */
     std::strncpy(onhost, " on host ", 10);
@@ -172,17 +172,15 @@ static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
  * detected GPUs in \c gpu_info, return whether all selected GPUs are
  * compatible. If not, place a suitable string in \c errorMessage.
  *
- * \param[in]   gpu_info      pointer to structure holding GPU information
+ * \param[in]   gpu_info      Information about detected GPUs
  * \param[in]   gpu_opt       pointer to structure holding GPU options
  * \param[out]  errorMessage  pointer to string to hold a possible error message (is not updated when returning true)
  * \returns                   true if every requested GPU is compatible
  */
-static bool checkGpuSelection(const gmx_gpu_info_t *gpu_info,
+static bool checkGpuSelection(const gmx_gpu_info_t &gpu_info,
                               const gmx_gpu_opt_t  *gpu_opt,
                               std::string          *errorMessage)
 {
-    GMX_ASSERT(gpu_info, "Invalid gpu_info");
-
     bool        allOK   = true;
     std::string message = "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n";
     for (int i = 0; i < gpu_opt->n_dev_use; i++)
@@ -206,15 +204,14 @@ static bool checkGpuSelection(const gmx_gpu_info_t *gpu_info,
     return allOK;
 }
 
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t *gpu_info)
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 {
-    GMX_ASSERT(gpu_info, "Invalid gpu_info");
-
     // Possible minor over-allocation here, but not important for anything
     std::vector<int> compatibleGpus;
-    compatibleGpus.reserve(gpu_info->n_dev);
-    for (int i = 0; i < gpu_info->n_dev; i++)
+    compatibleGpus.reserve(gpu_info.n_dev);
+    for (int i = 0; i < gpu_info.n_dev; i++)
     {
+        GMX_ASSERT(gpu_info.gpu_dev, "Invalid gpu_info.gpu_dev");
         if (isGpuCompatible(gpu_info, i))
         {
             compatibleGpus.push_back(i);
@@ -224,7 +221,7 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t *gpu_info)
 }
 
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                             const gmx_gpu_info_t *gpu_info,
+                             const gmx_gpu_info_t &gpu_info,
                              bool userSetGpuIds,
                              gmx_gpu_opt_t *gpu_opt)
 {
