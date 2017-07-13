@@ -143,7 +143,7 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 #define HOSTNAMELEN 80
 
 /* FW decl. */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
+static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t &gpu_info,
                                        const gmx_gpu_opt_t  *gpu_opt);
 
 gmx_bool gmx_multiple_gpu_per_node_supported()
@@ -156,11 +156,11 @@ gmx_bool gmx_gpu_sharing_supported()
     return bGpuSharingSupported;
 }
 
-std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
+std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
 {
     char                     stmp[STRLEN];
     std::vector<std::string> gpuStrings;
-    for (int i = 0; i < gpu_info->n_dev; i++)
+    for (int i = 0; i < gpu_info.n_dev; i++)
     {
         get_gpu_device_info_string(stmp, gpu_info, i);
         gpuStrings.push_back(gmx::formatString("    %s", stmp));
@@ -173,7 +173,7 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
  *
- * \param[in] gpu_info       Pointer to per-node GPU info struct
+ * \param[in] gpu_info       Information detected about GPUs
  * \param[in] gpu_opt        Pointer to per-node GPU options struct
  * \param[in] userSetGpuIds  Whether the user selected the GPU ids
  * \param[in] numPpRanks     Number of PP ranks per node
@@ -181,14 +181,14 @@ std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
  * \return                   String to write to the log file
  * \throws                   std::bad_alloc if out of memory */
 static std::string
-makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
+makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
                    const gmx_gpu_opt_t  *gpu_opt,
                    bool                  userSetGpuIds,
                    size_t                numPpRanks,
                    bool                  bPrintHostName)
 {
     int  ngpu_use  = gpu_opt->n_dev_use;
-    int  ngpu_comp = gpu_info->n_dev_compatible;
+    int  ngpu_comp = gpu_info.n_dev_compatible;
     char host[HOSTNAMELEN];
 
     if (bPrintHostName)
@@ -345,7 +345,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         std::string gpuUsageReport;
         try
         {
-            gpuUsageReport = makeGpuUsageReport(&hwinfo->gpu_info,
+            gpuUsageReport = makeGpuUsageReport(hwinfo->gpu_info,
                                                 &hw_opt->gpu_opt,
                                                 userSetGpuIds,
                                                 cr->nrank_pp_intranode,
@@ -551,10 +551,9 @@ int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGpuIds)
  * GPU IDs, the number of GPUs user (per node) can be different from the
  * number of GPU IDs selected.
  */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
+static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t &gpu_info,
                                        const gmx_gpu_opt_t  *gpu_opt)
 {
-    GMX_RELEASE_ASSERT(gpu_info, "gpu_info must be a non-NULL pointer");
     GMX_RELEASE_ASSERT(gpu_opt, "gpu_opt must be a non-NULL pointer");
 
     std::set<int> uniqIds;
@@ -683,7 +682,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
          * the GPUs affects the hash. Also two identical GPUs won't give
          * a gpu_hash of zero after XORing.
          */
-        get_gpu_device_info_string(stmp, &hwinfo_g->gpu_info, i);
+        get_gpu_device_info_string(stmp, hwinfo_g->gpu_info, i);
         gpu_hash ^= gmx_string_fullhash_func(stmp, gmx_string_hash_init);
     }
 
@@ -1192,7 +1191,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                                hwinfo->gpu_info.n_dev);
         if (hwinfo->gpu_info.n_dev > 0)
         {
-            s += sprint_gpus(&hwinfo->gpu_info) + "\n";
+            s += sprint_gpus(hwinfo->gpu_info) + "\n";
         }
     }
     return s;

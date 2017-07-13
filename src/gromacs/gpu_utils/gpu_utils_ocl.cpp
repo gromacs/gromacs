@@ -343,39 +343,34 @@ void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 }
 
 //! This function is documented in the header file
-bool isGpuCompatible(const gmx_gpu_info_t *gpu_info,
+bool isGpuCompatible(const gmx_gpu_info_t &gpu_info,
                      int                   index)
 {
-    assert(gpu_info);
-
-    return (index >= gpu_info->n_dev ?
+    return (index >= gpu_info.n_dev ?
             false :
-            gpu_info->gpu_dev[index].stat == egpuCompatible);
+            gpu_info.gpu_dev[index].stat == egpuCompatible);
 }
 
 //! This function is documented in the header file
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t *gpu_info,
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
                                            int                   index)
 {
-    assert(gpu_info);
-
-    return (index >= gpu_info->n_dev ?
+    return (index >= gpu_info.n_dev ?
             gpu_detect_res_str[egpuNonexistent] :
-            gpu_detect_res_str[gpu_info->gpu_dev[index].stat]);
+            gpu_detect_res_str[gpu_info.gpu_dev[index].stat]);
 }
 
 //! This function is documented in the header file
-void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unused *gpu_info, int gmx_unused index)
+void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int index)
 {
     assert(s);
-    assert(gpu_info);
 
-    if (index < 0 && index >= gpu_info->n_dev)
+    if (index < 0 && index >= gpu_info.n_dev)
     {
         return;
     }
 
-    gmx_device_info_t  *dinfo = &gpu_info->gpu_dev[index];
+    gmx_device_info_t  *dinfo = &gpu_info.gpu_dev[index];
 
     bool                bGpuExists =
         dinfo->stat == egpuCompatible ||
@@ -434,7 +429,7 @@ void init_gpu(const gmx::MDLogger               & /*mdlog*/,
 }
 
 //! This function is documented in the header file
-int get_gpu_device_id(const gmx_gpu_info_t  *,
+int get_gpu_device_id(const gmx_gpu_info_t  &,
                       const gmx_gpu_opt_t  *gpu_opt,
                       int                   idx)
 {
