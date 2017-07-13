@@ -1195,7 +1195,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (bUseGPU && !emulateGpu)
     {
         /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info,
+        gmx_select_rank_gpu_ids(mdlog, cr, hwinfo->gpu_info,
                                 userSetGpuIds, &hw_opt->gpu_opt);
     }
     else

@@ -634,24 +634,20 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     return retval;
 }
 
-bool isGpuCompatible(const gmx_gpu_info_t *gpu_info,
+bool isGpuCompatible(const gmx_gpu_info_t &gpu_info,
                      int                   index)
 {
-    assert(gpu_info);
-
-    return (index >= gpu_info->n_dev ?
+    return (index >= gpu_info.n_dev ?
             false :
-            gpu_info->gpu_dev[index].stat == egpuCompatible);
+            gpu_info.gpu_dev[index].stat == egpuCompatible);
 }
 
-const char *getGpuCompatibilityDescription(const gmx_gpu_info_t *gpu_info,
+const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
                                            int                   index)
 {
-    assert(gpu_info);
-
-    return (index >= gpu_info->n_dev ?
+    return (index >= gpu_info.n_dev ?
             gpu_detect_res_str[egpuNonexistent] :
-            gpu_detect_res_str[gpu_info->gpu_dev[index].stat]);
+            gpu_detect_res_str[gpu_info.gpu_dev[index].stat]);
 }
 
 void free_gpu_info(const gmx_gpu_info_t *gpu_info)
@@ -664,17 +660,16 @@ void free_gpu_info(const gmx_gpu_info_t *gpu_info)
     sfree(gpu_info->gpu_dev);
 }
 
-void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index)
+void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int index)
 {
     assert(s);
-    assert(gpu_info);
 
-    if (index < 0 && index >= gpu_info->n_dev)
+    if (index < 0 && index >= gpu_info.n_dev)
     {
         return;
     }
 
-    gmx_device_info_t *dinfo = &gpu_info->gpu_dev[index];
+    gmx_device_info_t *dinfo = &gpu_info.gpu_dev[index];
 
     bool               bGpuExists =
         dinfo->stat == egpuCompatible ||

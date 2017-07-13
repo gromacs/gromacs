@@ -155,11 +155,11 @@ gmx_bool gmx_gpu_sharing_supported()
     return bGpuSharingSupported;
 }
 
-std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
+std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
 {
     char                     stmp[STRLEN];
     std::vector<std::string> gpuStrings;
-    for (int i = 0; i < gpu_info->n_dev; i++)
+    for (int i = 0; i < gpu_info.n_dev; i++)
     {
         get_gpu_device_info_string(stmp, gpu_info, i);
         gpuStrings.push_back(gmx::formatString("    %s", stmp));
@@ -680,7 +680,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
          * the GPUs affects the hash. Also two identical GPUs won't give
          * a gpu_hash of zero after XORing.
          */
-        get_gpu_device_info_string(stmp, &hwinfo_g->gpu_info, i);
+        get_gpu_device_info_string(stmp, hwinfo_g->gpu_info, i);
         gpu_hash ^= gmx_string_fullhash_func(stmp, gmx_string_hash_init);
     }
 
@@ -1189,7 +1189,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                                hwinfo->gpu_info.n_dev);
         if (hwinfo->gpu_info.n_dev > 0)
         {
-            s += sprint_gpus(&hwinfo->gpu_info) + "\n";
+            s += sprint_gpus(hwinfo->gpu_info) + "\n";
         }
     }
     return s;
