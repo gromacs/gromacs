@@ -1192,9 +1192,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (bUseGPU && !emulateGpu)
     {
-        /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(cr, hwinfo->gpu_info,
-                                userSetGpuIds, &hw_opt->gpu_opt);
+        bool rankCanUseGpu = cr->duty & DUTY_PP;
+        /* Map GPU IDs to ranks by filling or validating hw_opt->gpu_opt->dev_use */
+        mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
+                         userSetGpuIds, &hw_opt->gpu_opt);
     }
     else
     {

@@ -128,42 +128,52 @@ static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
     }
 }
 
-/*! \brief Return whether all selected GPUs are compatible.
+/*! \brief Check that all user-selected GPUs are compatible.
  *
  * Given the list of selected GPU device IDs in \c gpu_opt and
- * detected GPUs in \c gpu_info, return whether all selected GPUs are
- * compatible. If not, place a suitable string in \c errorMessage.
+ * detected GPUs in \c gpu_info, gives a fatal error unless all
+ * selected GPUs are compatible
  *
- * \param[in]   gpu_info      Information about detected GPUs
- * \param[in]   gpu_opt       pointer to structure holding GPU options
- * \param[out]  errorMessage  pointer to string to hold a possible error message (is not updated when returning true)
- * \returns                   true if every requested GPU is compatible
+ * The error is given with a suitable descriptive message, which will
+ * have context if this check is done after the hardware detection
+ * results have been reported to the user. However, note that only the
+ * GPUs detected on the master rank are reported, because of the
+ * existing limitations of that reporting.
+ *
+ * \todo Note that the selected GPUs can be different on each rank,
+ * and the IDs of compatible GPUs can be different on each node, so
+ * this routine ought to do communication to determine whether all
+ * ranks are able to proceed. Currently this relies on the MPI runtime
+ * to kill the other processes because GROMACS lacks the appropriate
+ * infrastructure to do a good job of coordinating error messages and
+ * behaviour across MPMD ranks and multiple simulations.
+ *
+ * \param[in]   gpu_info       GPU information including result of compatibility check.
+ * \param[in]   gpu_opt        Mapping of GPU IDs derived from the user, e.g. via mdrun -gpu_id.
  */
-static bool checkGpuSelection(const gmx_gpu_info_t &gpu_info,
-                              const gmx_gpu_opt_t  *gpu_opt,
-                              std::string          *errorMessage)
+static void exitUnlessGpuSelectionIsValid(const gmx_gpu_info_t &gpu_info,
+                                          const gmx_gpu_opt_t  &gpu_opt)
 {
-    bool        allOK   = true;
-    std::string message = "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n";
-    for (int i = 0; i < gpu_opt->n_dev_use; i++)
-    {
-        GMX_ASSERT(gpu_opt, "Invalid gpu_opt");
-        GMX_ASSERT(gpu_opt->dev_use, "Invalid gpu_opt->dev_use");
+    int         numIncompatibleGpuIds = 0;
+    std::string message
+        = "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n";
 
-        int id     = gpu_opt->dev_use[i];
-        if (!isGpuCompatible(gpu_info, id))
+    for (int index = 0; index < gpu_opt.n_dev_use; ++index)
+    {
+        int gpuId = gpu_opt.dev_use[index];
+        if (!isGpuCompatible(gpu_info, gpuId))
         {
-            allOK    = false;
+            numIncompatibleGpuIds++;
             message += gmx::formatString("    GPU #%d: %s\n",
-                                         id,
-                                         getGpuCompatibilityDescription(gpu_info, id));
+                                         gpuId,
+                                         getGpuCompatibilityDescription(gpu_info, gpuId));
         }
     }
-    if (!allOK && errorMessage)
+
+    if (numIncompatibleGpuIds > 0)
     {
-        *errorMessage = message;
+        gmx_fatal(FARGS, message.c_str());
     }
-    return allOK;
 }
 
 std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
@@ -182,27 +192,20 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
     return compatibleGpus;
 }
 
-void gmx_select_rank_gpu_ids(const t_commrec      *cr,
-                             const gmx_gpu_info_t &gpu_info,
-                             bool                  userSetGpuIds,
-                             gmx_gpu_opt_t        *gpu_opt)
+void mapPpRanksToGpus(bool                  rankCanUseGpu,
+                      const t_commrec      *cr,
+                      const gmx_gpu_info_t &gpu_info,
+                      bool                  userSetGpuIds,
+                      gmx_gpu_opt_t        *gpu_opt)
 {
-    if (!(cr->duty & DUTY_PP))
+    if (!rankCanUseGpu)
     {
-        /* Our rank is not doing PP, we don't use a GPU */
         return;
     }
 
     if (userSetGpuIds)
     {
-        /* Check the GPU IDs passed by the user.
-         * (GPU IDs have been parsed by gmx_parse_gpu_ids before)
-         */
-        std::string errorMessage;
-        if (!checkGpuSelection(gpu_info, gpu_opt, &errorMessage))
-        {
-            gmx_fatal(FARGS, errorMessage.c_str());
-        }
+        exitUnlessGpuSelectionIsValid(gpu_info, *gpu_opt);
     }
     else
     {
