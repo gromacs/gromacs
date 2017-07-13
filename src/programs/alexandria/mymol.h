@@ -174,12 +174,44 @@ class MyMol
          */
         //void getForceConstants(const Poldata &pd);
     public:
-        rvec                     *buf_, mu_elec_ = {0,0,0}, mu_calc_ = {0,0,0}, mu_esp_ = {0,0,0}, coc_ = {0,0,0};
+        rvec                     *buf_;
+        rvec                      coc_           = {0,0,0};
+        rvec                      mu_elec_       = {0,0,0};
+        rvec                      mu_calc_       = {0,0,0};
+        rvec                      mu_esp_        = {0,0,0};
+        rvec                      mu_mulliken_   = {0,0,0};
+        rvec                      mu_hirshfeld_  = {0,0,0};
+        rvec                      mu_cm5_        = {0,0,0};
+        double                    dip_exp_       = 0;
+        double                    dip_elec_      = 0;
+        double                    dip_calc_      = 0;
+        double                    dip_esp_       = 0;
+        double                    dip_mulliken_  = 0;
+        double                    dip_hirshfeld_ = 0;
+        double                    dip_cm5_       = 0;
         double                   *qESP_;
+        double                   *qMulliken_;
+        double                   *qCM5_;
+        double                   *qHirshfeld_;       
+        double                    mu_elec2_      = 0;
+        double                    dip_err_       = 0;
+        double                    dip_weight_    = 0;
+        double                    chieq_         = 0;
+        double                    Hform_         = 0;
+        double                    Emol_          = 0;
+        double                    Ecalc_         = 0;
+        double                    OptEcalc_      = 0;
+        double                    Force2_        = 0;
+        double                    OptForce2_     = 0;
         matrix                    box_;
-        double                    dip_exp_, mu_elec2_, dip_err_, dip_weight_, dip_calc_, dip_esp_, dip_elec_, chieq_;
-        double                    Hform_, Emol_, Ecalc_, OptEcalc_, Force2_, OptForce2_;
-        tensor                    Q_elec_, Q_calc_, Q_esp_, alpha_elec_, alpha_calc_;
+        tensor                    Q_elec_        = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    Q_calc_        = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    Q_esp_         = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    Q_mulliken_    = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    Q_hirshfeld_   = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    Q_cm5_         = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    alpha_elec_    = {{0,0,0},{0,0,0},{0,0,0}};
+        tensor                    alpha_calc_    = {{0,0,0},{0,0,0},{0,0,0}};
         eSupport                  eSupp_;
         t_state                  *state_;
         t_forcerec               *fr_;
@@ -189,7 +221,6 @@ class MyMol
         QgenResp                  Qgresp_;
         QgenEem                   Qgeem_;
         std::vector<PlistWrapper> plist_;
-
         gmx_mtop_t               *mtop_;
         gmx_localtop_t           *ltop_;
         gpp_atomtype_t            atype_;
@@ -388,6 +419,8 @@ class MyMol
          * Calculate multipoles
          */
         void CalcQuadrupole();
+
+        void CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q);
 
         /*! \brief
          * Generate Charge Groups

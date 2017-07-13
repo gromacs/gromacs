@@ -1166,6 +1166,40 @@ void MyMol::CalcQuadrupole()
     }
 }
 
+/*
+  CalcQMbasedMoments calculates total dipole moment,
+  dipole components, and quadrupoles using QM-based charges like
+  Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in 
+  QM calculations, it loops over eptAtoms, only. 
+ */
+void MyMol::CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q)
+{
+    int   i, j;
+    real  r2;
+    rvec  r;  /* distance of atoms to center of mass */
+    
+    clear_rvec(mu);
+    clear_mat(Q); 
+    for (i = j = 0; i < topology_->atoms.nr; i++)
+    {
+        if (topology_->atoms.atom[i].ptype == eptAtom)
+        {
+            rvec_sub(state_->x[i], coc_, r);
+            r2       = iprod(r, r);
+            for (auto m = 0; m < DIM; m++)
+            {
+                mu[m] += (state_->x[i][m]*e2d(q[j]));
+                for (auto n = 0; n < DIM; n++)
+                {
+                    Q[m][n] += 0.5*q[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
+                }
+            }
+            j++;
+        }
+    }       
+    *dip = norm(mu);  
+}
+
 void MyMol::CalcQPol(const Poldata &pd, rvec mu)
 
 {
@@ -1511,38 +1545,78 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     
     double q[natom];
-    snew(qESP_, natom);
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
-                              (char *)"ESP", &value, &error, &T,
+                              (char *)"ESP charges",
+                              &value, &error, &T,
                               myref, mylot, q, quadrupole))
     {
-        int   i, j;
-        real  r2;
-        rvec  r;  /* distance of atoms to center of mass */
-        
-        clear_rvec(mu_esp_);
-        clear_mat(Q_esp_); 
+        int i, j;
+        snew(qESP_, natom);
         for (i = j = 0; i < topology_->atoms.nr; i++)
         {
             if (topology_->atoms.atom[i].ptype == eptAtom)
             {
                 qESP_[j] = q[j];
-                rvec_sub(state_->x[i], coc_, r);
-                r2       = iprod(r, r);
-                for (auto m = 0; m < DIM; m++)
-                {
-                    mu_esp_[m] += (state_->x[i][m]*e2d(qESP_[j]));
-                    for (auto n = 0; n < DIM; n++)
-                    {
-                        Q_esp_[m][n] += 0.5*qESP_[j]*(3.0*r[m]*r[n] - r2*delta(m, n))*NM2A*A2CM*CM2D*10;
-                    }
-                }
                 j++;
             }
-        }       
-        dip_esp_ = norm(mu_esp_);      
-    }   
+        }
+        CalcQMbasedMoments(qESP_, &dip_esp_, mu_esp_, Q_esp_);     
+    }
+    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+                              (char *)mylot.c_str(), "", 
+                              (char *)"Mulliken charges",
+                              &value, &error, &T,
+                              myref, mylot, q, quadrupole))
+    {
+        int i, j;
+        snew(qMulliken_, natom);
+        for (i = j = 0; i < topology_->atoms.nr; i++)
+        {
+            if (topology_->atoms.atom[i].ptype == eptAtom)
+            {
+                qMulliken_[j] = q[j];
+                j++;
+            }
+        }
+        CalcQMbasedMoments(qMulliken_, &dip_mulliken_, mu_mulliken_, Q_mulliken_);     
+    }
+    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+                              (char *)mylot.c_str(), "", 
+                              (char *)"Hirshfeld charges",
+                              &value, &error, &T,
+                              myref, mylot, q, quadrupole))
+    {
+        int i, j;
+        snew(qHirshfeld_, natom);
+        for (i = j = 0; i < topology_->atoms.nr; i++)
+        {
+            if (topology_->atoms.atom[i].ptype == eptAtom)
+            {
+                qHirshfeld_[j] = q[j];
+                j++;
+            }
+        }
+        CalcQMbasedMoments(qHirshfeld_, &dip_hirshfeld_, mu_hirshfeld_, Q_hirshfeld_);     
+    }
+    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+                              (char *)mylot.c_str(), "", 
+                              (char *)"CM5 charges",
+                              &value, &error, &T,
+                              myref, mylot, q, quadrupole))
+    {
+        int i, j;
+        snew(qCM5_, natom);
+        for (i = j = 0; i < topology_->atoms.nr; i++)
+        {
+            if (topology_->atoms.atom[i].ptype == eptAtom)
+            {
+                qCM5_[j] = q[j];
+                j++;
+            }
+        }
+        CalcQMbasedMoments(qCM5_, &dip_cm5_, mu_cm5_, Q_cm5_);     
+    } 
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {

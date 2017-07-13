@@ -175,20 +175,24 @@ static void gmx_molprop_read_babel(const char          *g09,
     OpenBabel::OBMol           mol;
     OpenBabel::OBAtomIterator  OBai;
     OpenBabel::OBBondIterator  OBbi;
-    //OpenBabel::OBAtom *OBa;
     OpenBabel::OBBond         *OBb;
     OpenBabel::OBPairData     *OBpd;
     OpenBabel::OBVectorData   *dipole;
-    OpenBabel::OBMatrixData   *quadrupole, *pol_tensor;
+    OpenBabel::OBMatrixData   *quadrupole;
+    OpenBabel::OBMatrixData   *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
     OpenBabel::OBPcharges     *OBpc;
     OpenBabel::OBElementTable *OBet;
-    std::string                formula, attr, value;
-
+       
     std::vector<alexandria::ElectrostaticPotential> espv;
-
-    const char              *reference = "Ghahremanpour2016a", *unknown = "unknown";
-    char                    *charge_model, *g09ptr;
+    std::vector<std::string> charge_scheme = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
+    const char              *reference     = "Ghahremanpour2016a";
+    const char              *unknown       = "unknown";
+    char                    *charge_model  = nullptr;
+    char                    *g09ptr;
+    std::string              formula;
+    std::string              attr;
+    std::string              value;
     int                      bondid;
 
     OpenBabel::OBConversion *conv = read_babel(g09, &mol);
@@ -198,14 +202,15 @@ static void gmx_molprop_read_babel(const char          *g09,
         return;
     }
     delete conv;
-
     conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
-    // Now extract classification info.
+    
+    // Classification info.
     if (conv->SetOutFormat("fpt"))
     {
         const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", 
                                      "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", 
                                      "Trans_double_bond" };
+        
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
 
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
@@ -237,10 +242,7 @@ static void gmx_molprop_read_babel(const char          *g09,
         }
     }
 
-    // get bondorders.
-    //mol.PerceiveBondOrders();
-    //mol.ConnectTheDots();
-
+    // Basis Set
     std::string basis;
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
     if ((nullptr != basisset) && (strlen(basisset) > 0))
@@ -261,6 +263,7 @@ static void gmx_molprop_read_babel(const char          *g09,
         basis.assign(unknown);
     }
 
+    // QM Program
     std::string program(unknown);
     OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
     if (nullptr != OBpd)
@@ -268,13 +271,13 @@ static void gmx_molprop_read_babel(const char          *g09,
         program.assign(OBpd->GetValue());
     }
 
+    // Method or Level of Theory
     std::string method(unknown);
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
     if (nullptr != OBpd)
     {
         method.assign(OBpd->GetValue());
     }
-
     g09ptr = (char *) strrchr(g09, '/');
     if (nullptr == g09ptr)
     {
@@ -289,10 +292,9 @@ static void gmx_molprop_read_babel(const char          *g09,
         }
     }
 
-    alexandria::Experiment ca(program, method, basis, reference,
-                              conformation, g09ptr,
-                              jobtype);
-    mpt.AddExperiment(ca);
+    alexandria::Experiment exp(program, method, basis, reference,
+                               conformation, g09ptr, jobtype);
+    mpt.AddExperiment(exp);
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
     mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());
@@ -316,6 +318,7 @@ static void gmx_molprop_read_babel(const char          *g09,
         mpt.SetIupac(unknown);
     }
 
+    // Thermochemistry
     {
         double              temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT, ZPE;
         std::vector<double> Scomponents;
@@ -395,12 +398,12 @@ static void gmx_molprop_read_babel(const char          *g09,
         }
     }
 
-    // Get the energy as well.
+    // HF Eenergy
     alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS,
                                     convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
     mpt.LastExperiment()->AddEnergy(mes);
 
-    /* Now add properties by extracting them from the OpenBabel structure */
+    // Atoms
     OBet = new OpenBabel::OBElementTable();
     OpenBabel::OBForceField *ff = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
@@ -411,35 +414,37 @@ static void gmx_molprop_read_babel(const char          *g09,
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
             if (nullptr == type)
             {
-                gmx_fatal(FARGS, "Could not find %s atom type for atom %s",
-                          forcefield, atom->GetIdx());
+                gmx_fatal(FARGS, "Cannot find %s atom type for atom %s", forcefield, atom->GetIdx());
             }
             if (nullptr != debug)
             {
                 fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n",
                         atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
             }
-            alexandria::CalcAtom     ca(OBet->GetSymbol(atom->GetAtomicNum()),
-                                        type->GetValue(), atom->GetIdx());
+            alexandria::CalcAtom ca(OBet->GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
-
-            std::vector<std::string> charge_models = {"Mulliken Charges", "ESP Charges"};
-            for (auto cm :charge_models)
+            for (const auto& cs : charge_scheme)
             {
-                OBpd = (OpenBabel::OBPairData *) mol.GetData(cm);
+                OBpd = (OpenBabel::OBPairData *) mol.GetData(cs);
                 if (nullptr != OBpd)
                 {
+                    double q = 0;
                     charge_model = strdup(OBpd->GetValue().c_str());
-                }
-                else
-                {
-                    charge_model = strdup(unknown);
-                }                   
-                OBpc = (OpenBabel::OBPcharges *) mol.GetData(charge_model);
-                double q = 0;
-                OBpc->FindPcharge(atom->GetIdx(), &q);
-                alexandria::AtomicCharge aq(charge_model, "e", 0.0, q);                
+                    OBpc = (OpenBabel::OBPcharges *) mol.GetData(charge_model);
+                    OBpc->FindPcharge(atom->GetIdx(), &q);
+                    alexandria::AtomicCharge aq(charge_model, "e", 0.0, q);                
+                    ca.AddCharge(aq);
+                }                  
+            }
+            if (nullptr == charge_model)
+            {
+                printf("\n"
+                       "WARNING: None of the charge schemes known to Alexandria found in %s\n"
+                       "         Partial charge is assigned to zero for atom %d\n\n",
+                       g09, atom->GetIdx());
+                charge_model = strdup(unknown);
+                alexandria::AtomicCharge aq(charge_model, "e", 0.0, 0.0);
                 ca.AddCharge(aq);
             }
             mpt.LastExperiment()->AddAtom(ca);
@@ -450,7 +455,8 @@ static void gmx_molprop_read_babel(const char          *g09,
         gmx_fatal(FARGS, "Cannot read %s force field", forcefield);
     }
     delete OBet;
-    
+
+    // Bonds
     OBbi   = mol.BeginBonds();
     bondid = 1;
     for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
@@ -503,7 +509,6 @@ static void gmx_molprop_read_babel(const char          *g09,
         {
             mm[i] *= fac;
         }
-        //cout << "fac = " << fac << "\n";
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
         alexandria::MolecularPolarizability mdp("electronic",
@@ -516,7 +521,7 @@ static void gmx_molprop_read_babel(const char          *g09,
     }
 
     // Electrostatic potential
-    esp = (OpenBabel::OBFreeGrid *) mol.GetData("Optimized Electrostatic Potential");
+    esp = (OpenBabel::OBFreeGrid *) mol.GetData("Electrostatic Potential");
     if (nullptr != esp)
     {
         OpenBabel::OBFreeGridPoint        *fgp;
@@ -538,7 +543,6 @@ static void gmx_molprop_read_babel(const char          *g09,
         merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxpot);
     }
 }
-
 #endif
 
 void ReadGauss(const char          *g09,
