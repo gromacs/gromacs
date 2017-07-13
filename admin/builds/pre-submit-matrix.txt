@@ -78,7 +78,6 @@ gcc-4.8 openmp opencl cuda-7.5 mpi release simd=avx2_256
 gcc-5 openmp simd=avx_128_fma opencl amdappsdk-3.0
 
 # TODO
-# Add OpenMP support to a clang build, e.g. on a CUDA slave
 # Add OpenMP support to ASAN build (but libomp.so in clang-4 reports leaks, so might need a suitable build or suppression)
 # Test hwloc support
 # Test newest supported LTS Ubuntu
