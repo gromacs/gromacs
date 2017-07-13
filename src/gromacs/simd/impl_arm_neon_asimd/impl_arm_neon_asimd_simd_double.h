@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -345,7 +345,7 @@ maskzRsqrt(SimdDouble x, SimdDBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f64(m.simdInternal_, vdupq_n_f64(1.0, x.simdInternal_);
+    x.simdInternal_ = vbslq_f64(m.simdInternal_, x.simdInternal_, vdupq_n_f64(1.0f));
 #endif
     return {
                float64x2_t(vandq_u64(uint64x2_t(vrsqrteq_f64(x.simdInternal_)), m.simdInternal_))
@@ -358,7 +358,7 @@ maskzRcp(SimdDouble x, SimdDBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = vbslq_f64(m.simdInternal_, vdupq_n_f64(1.0, x.simdInternal_);
+    x.simdInternal_ = vbslq_f64(m.simdInternal_, x.simdInternal_, vdupq_n_f64(1.0f));
 #endif
     return {
                float64x2_t(vandq_u64(uint64x2_t(vrecpeq_f64(x.simdInternal_)), m.simdInternal_))
@@ -535,7 +535,7 @@ static inline SimdDInt32 gmx_simdcall
 operator<<(SimdDInt32 a, int n)
 {
     return {
-        vshl_n_s32(a.simdInternal_, n)
+        vshl_s32(a.simdInternal_, vdup_n_s32(n >= 32 ? 32 : n))
     };
 }
 
@@ -543,7 +543,7 @@ static inline SimdDInt32 gmx_simdcall
 operator>>(SimdDInt32 a, int n)
 {
     return {
-        vshr_n_s32(a.simdInternal_, n)
+        vshl_s32(a.simdInternal_, vdup_n_s32(n >= 32 ? -32 : -n))
     };
 }
 
