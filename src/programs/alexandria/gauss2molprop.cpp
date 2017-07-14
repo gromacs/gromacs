@@ -77,8 +77,8 @@ int alex_gauss2molprop(int argc, char *argv[])
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     static gmx_bool                  bVerbose   = FALSE;
-    static char                     *molnm      = NULL, *iupac = NULL, *jobtype = (char *)"Opt";
-    static char                     *conf       = (char *)"minimum", *basis = NULL;
+    static char                     *molnm      = nullptr, *iupac = nullptr, *jobtype = (char *)"Opt";
+    static char                     *conf       = (char *)"minimum", *basis = nullptr;
     static const char               *forcefield = "GAFF";
     static int                       maxpot     = 0;
     static int                       nsymm      = 0;

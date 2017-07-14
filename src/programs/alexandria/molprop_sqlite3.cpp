@@ -281,6 +281,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                 {
                     /* printf("Found a row\n"); */
                     cidx   = 0;
+                    cidx++; //Skipping molid
                     const char *iupac2 = (char *)sqlite3_column_text(stmt, cidx++);
                     if (strcasecmp(keyptr->iupac().c_str(), iupac2) != 0)
                     {
