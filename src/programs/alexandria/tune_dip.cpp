@@ -1086,6 +1086,10 @@ void OPtimization::print_results(FILE                   *fp,
             
             gmx_stats_add_point(lsq_dip[eprEEM], mol.dip_elec_, mol.dip_calc_, 0, 0);
             gmx_stats_add_point(lsq_dip[eprESP], mol.dip_elec_, mol.dip_esp_, 0, 0);
+            gmx_stats_add_point(lsq_dip[eprMPA], mol.dip_elec_, mol.dip_mulliken_, 0, 0);
+            gmx_stats_add_point(lsq_dip[eprHPA], mol.dip_elec_, mol.dip_hirshfeld_, 0, 0);
+            gmx_stats_add_point(lsq_dip[eprCM5], mol.dip_elec_, mol.dip_cm5_, 0, 0);
+            
             for (mm = 0; mm < DIM; mm++)
             {
                 gmx_stats_add_point(lsq_mu[eprEEM], mol.mu_elec_[mm], mol.mu_calc_[mm], 0, 0);
