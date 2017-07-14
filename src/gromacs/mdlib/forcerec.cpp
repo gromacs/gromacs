@@ -1651,9 +1651,10 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * With FMA analytical is sometimes faster for a width if 4 as well.
          * On BlueGene/Q, this is faster regardless of precision.
          * In single precision, this is faster on Bulldozer.
+         * On Skylake table is faster in single and double. TODO: Test 5xxx series.
          */
-#if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
+#if ((GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) \
+        && !GMX_SIMD_X86_AVX_512) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
