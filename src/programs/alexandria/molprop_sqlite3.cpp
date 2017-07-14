@@ -212,8 +212,8 @@ void ReadSqlite3(const char                       *sqlite_file,
 #ifdef HAVE_LIBSQLITE3
     std::string                 cas2, csid2;
 
-    sqlite3                    *db   = NULL;
-    sqlite3_stmt               *stmt = NULL;
+    sqlite3                    *db   = nullptr;
+    sqlite3_stmt               *stmt = nullptr;
     char sql_str[1024];
     const char                 *cas, *csid, *prop, *unit, *source;
     double                      value, error, temperature;
@@ -226,11 +226,11 @@ void ReadSqlite3(const char                       *sqlite_file,
         return;
     }
 
-    check_sqlite3(NULL, "Initializing sqlite",
+    check_sqlite3(nullptr, "Initializing sqlite",
                   sqlite3_initialize());
 
-    check_sqlite3(NULL, "Opening sqlite database in read-only mode",
-                  sqlite3_open_v2(sqlite_file, &db, SQLITE_OPEN_READONLY, NULL));
+    check_sqlite3(nullptr, "Opening sqlite database in read-only mode",
+                  sqlite3_open_v2(sqlite_file, &db, SQLITE_OPEN_READONLY, nullptr));
 
     /* Now database is open and everything is Hunky Dory */
     printf("Opened SQLite3 database %s\n", sqlite_file);
@@ -245,7 +245,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     nexp_prop = 0;
     sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
-                  sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
+                  sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, nullptr));
 
     if (NULL != debug)
     {
@@ -268,7 +268,7 @@ void ReadSqlite3(const char                       *sqlite_file,
         }
         else
         {
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "Going to query for '%s'\n", keyptr->iupac().c_str());
             }
@@ -281,7 +281,6 @@ void ReadSqlite3(const char                       *sqlite_file,
                 {
                     /* printf("Found a row\n"); */
                     cidx   = 0;
-                    cidx++; //Skipping molid
                     const char *iupac2 = (char *)sqlite3_column_text(stmt, cidx++);
                     if (strcasecmp(keyptr->iupac().c_str(), iupac2) != 0)
                     {
@@ -391,7 +390,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                 {
                     check_sqlite3(db, "Stepping", rc);
                 }
-                else if (NULL != debug)
+                else if (nullptr != debug)
                 {
                     fprintf(debug, "Done finding rows for %s\n", keyptr->iupac().c_str());
                 }
@@ -406,10 +405,10 @@ void ReadSqlite3(const char                       *sqlite_file,
                   sqlite3_finalize(stmt));
 
     /* Seems like we're done, close down and say goodbye */
-    check_sqlite3(NULL, "Closing sqlite database",
+    check_sqlite3(nullptr, "Closing sqlite database",
                   sqlite3_close(db));
 
-    check_sqlite3(NULL, "Shutting down sqlite. Sqlite3 code %d.",
+    check_sqlite3(nullptr, "Shutting down sqlite. Sqlite3 code %d.",
                   sqlite3_shutdown());
     printf("Extracted %d data points from sql database\n", nexp_prop);
 #else

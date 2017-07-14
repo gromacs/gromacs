@@ -195,7 +195,7 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
         }
     }
 
-    while (attr != NULL)
+    while (attr != nullptr)
     {
         char *attrname = (char *)attr->name;
         char *attrval  = (char *)attr->children->content;
@@ -203,7 +203,7 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
         int   kkk;
         if ((kkk = find_elem(attrname, exmlNR, exml_names)) != -1)
         {
-            if (attrval != NULL)
+            if (attrval != nullptr)
             {
                 xbuf[kkk].assign(attrval);
             }
@@ -224,11 +224,11 @@ static void process_children(xmlNodePtr tree, std::vector<std::string> &xbuf)
 {
     int node;
 
-    while (NULL != tree)
+    while (nullptr != tree)
     {
         if (((node = find_elem((char *)tree->name, exmlNR, exml_names)) != -1) &&
-            (NULL != tree->children) &&
-            (NULL != tree->children->content))
+            (nullptr != tree->children) &&
+            (nullptr != tree->children->content))
         {
             if (xbuf[node].size() == 0)
             {
@@ -851,17 +851,17 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
     dtdname    = (xmlChar *) "molprops.dtd";
     libdtdname = dtdname;
 
-    if ((doc = xmlNewDoc((xmlChar *)"1.0")) == NULL)
+    if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
         gmx_fatal(FARGS, "Creating XML document", "");
     }
 
-    if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == NULL)
+    if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating XML DTD", "");
     }
 
-    if ((myroot = xmlNewDocNode(doc, NULL, gmx, NULL)) == NULL)
+    if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating root element", "");
     }
@@ -871,7 +871,7 @@ void MolPropWrite(const char *fn, std::vector<alexandria::MolProp> mpt, gmx_bool
     /* Add molecule definitions */
     for (mp_it = mpt.begin(); (mp_it < mpt.end()); mp_it++)
     {
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Adding %d/%d %s\n", (int)(mp_it - mpt.begin()),
                     (int)mpt.size(), mp_it->getMolname().c_str());
