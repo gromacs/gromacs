@@ -42,9 +42,9 @@
 #define MYMOL_LOW_H
 
 #include <assert.h>
+
 #include <cstdio>
 #include <cstring>
-
 
 #include "gentop_core.h"
 #include "gentop_vsite.h"

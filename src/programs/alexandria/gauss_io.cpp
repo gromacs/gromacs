@@ -38,9 +38,13 @@
  */
  
 #include "gmxpre.h"
+
 #include "gauss_io.h"
+
 #include "config.h"
+
 #include <cstdio>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>

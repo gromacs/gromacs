@@ -38,6 +38,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "qgen_eem.h"
+
 #include <cctype>
 
 #include "gromacs/fileio/confio.h"
@@ -48,10 +50,9 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
-#include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
-#include "qgen_eem.h"
+#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {
