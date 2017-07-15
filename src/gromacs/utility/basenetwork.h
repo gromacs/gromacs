@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #ifndef GMX_UTILITY_BASENETWORK_H
 #define GMX_UTILITY_BASENETWORK_H
 
+#include <string>
+
 /*! \brief
  * Returns whether MPI has been initialized.
  *
@@ -78,6 +80,16 @@ int gmx_node_num();
  * if it the master node.
  */
 int gmx_node_rank();
+
+/*! \brief Return a string identifying the node upon which the process is running.
+ *
+ * \returns With MPI, the text from MPI_Get_processor_name. Otherwise,
+ * the text from gmx_gethostname().
+ *
+ * \todo Consolidate uses of gmx_gethostname() and this function so that
+ * hostnames that should return the node name understood by MPI do so,
+ * and/or remove duplication. */
+std::string getMpiHostname();
 
 /*! \brief
  * Return a non-negative hash that is, hopefully, unique for each physical

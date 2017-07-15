@@ -40,6 +40,8 @@
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
+// TODO
+#include "gromacs/hardware/hardwareassign.h"
 
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
@@ -75,7 +77,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
  * in the mdrun log file
  *
  * \param[in] gpu_info       Information detected about GPUs
- * \param[in] gpu_opt        Pointer to per-node GPU options struct
+ * \param[in] deviceIds      IDs of GPUs assigned to ranks on this node.
  * \param[in] userSetGpuIds  Whether the user selected the GPU ids
  * \param[in] numPpRanks     Number of PP ranks per node
  * \param[in] bPrintHostName Print the hostname in the usage information
@@ -83,7 +85,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
  * \throws                   std::bad_alloc if out of memory */
 std::string
 makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
-                   const gmx_gpu_opt_t  *gpu_opt,
+                   const std::vector<int> &deviceIds,
                    bool                  userSetGpuIds,
                    size_t                numPpRanks,
                    bool                  bPrintHostName);

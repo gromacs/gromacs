@@ -96,7 +96,7 @@ t_commrec *init_commrec()
     cr->nodeid           = cr->sim_nodeid;
 #endif
 
-    // TODO cr->duty should not be initialized here
+    // TODO cr->duty should not be initialized here, and definitely not with PME for a non-PME simulation
     cr->duty = (DUTY_PP | DUTY_PME);
 
 #if GMX_MPI && !MPI_IN_PLACE_EXISTS

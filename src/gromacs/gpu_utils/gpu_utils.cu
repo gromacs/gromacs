@@ -705,6 +705,23 @@ int get_gpu_device_id(const gmx_gpu_info_t &gpu_info,
     return gpu_info.gpu_dev[gpu_opt->dev_use[idx]].id;
 }
 
+gmx_device_info_t *getGpuDeviceInfo(const gmx_gpu_info_t &gpu_info,
+                                    const gmx_gpu_opt_t  &gpu_opt,
+                                    int                   idx)
+{
+    assert(idx >= 0 && idx < gpu_opt.n_dev_use);
+
+    return &gpu_info.gpu_dev[gpu_opt.dev_use[idx]];
+}
+
+gmx_device_info_t *getGpuDeviceInfo(const gmx_gpu_info_t &gpu_info,
+                                    int                   idx)
+{
+    assert(idx >= 0 && idx < gpu_info.n_dev);
+
+    return &gpu_info.gpu_dev[idx];
+}
+
 int get_current_cuda_gpu_device_id(void)
 {
     int gpuid;

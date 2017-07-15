@@ -53,6 +53,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -1119,6 +1120,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bcast(sizeof(box), box, cr);
     }
 
+    /* Note that the assignment of non-bonded tasks (ie. short- and
+     * long-ranged) to ranks is made here, and expressed in
+     * cr->duty. */
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
@@ -1147,6 +1151,28 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
     }
 
+    /* Build a data structure that expresses which kinds of non-bonded
+     * task are handled by this rank. */
+    /* TODO This could move before init_domain_decomposition() as part of
+     * refactoring that separates the responsibility of task assignment from
+     * setup for communication between tasks, setup for tasks handled for a
+     * domain (ie including short-ranged tasks). */
+    std::vector<NonbondedTask> nonbondedTasksOnThisRank;
+    bool rankHasShortRangedTask = false;
+    bool rankHasLongRangedTask = false;
+    bool rankCanUseGpu = false;
+    if (cr->duty & DUTY_PP)
+    {
+        rankHasShortRangedTask = true;
+        rankCanUseGpu = true;
+        nonbondedTasksOnThisRank.push_back(NonbondedTask::ShortRanged);
+    }
+    if ((EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) && (cr->duty & DUTY_PME))
+    {
+        rankHasLongRangedTask = true;
+        nonbondedTasksOnThisRank.push_back(NonbondedTask::LongRanged);
+    }
+    
     if (PAR(cr))
     {
         /* After possible communicator splitting in make_dd_communicators.
@@ -1198,21 +1224,29 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (tryUsePhysicalGpu || forceUsePhysicalGpu)
-    {
-        bool rankCanUseGpu = cr->duty & DUTY_PP;
-        /* Map GPU IDs to ranks by filling or validating hw_opt->gpu_opt->dev_use */
-        mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
-                         userSetGpuIds, &hw_opt->gpu_opt);
-    }
-    bool willUsePhysicalGpu = hw_opt->gpu_opt.n_dev_use > 0;
+    int numRanksOnThisNode = cr->nrank_intranode;
+    auto nonbondedTasksOnRanksOfThisNode =
+        findAllNonbondedTasksOnThisNode(nonbondedTasksOnThisRank, numRanksOnThisNode,
+                                        cr->mpi_comm_physicalnode);
 
-    /* If we are using GPUs, report on this rank how they are being
-     * used on this node. */
-    if (willUsePhysicalGpu)
+    auto gpuTasksOnRanksOfThisNode =
+        findAllGpuTasksOnThisNode(nonbondedTasksOnRanksOfThisNode, numRanksOnThisNode);
+
+    auto deviceIdsOnRanksOfThisNode = mapGpuTasksToDeviceIds(gpuTasksOnRanksOfThisNode,
+                                                             numRanksOnThisNode,
+                                                             forceUsePhysicalGpu,
+                                                             tryUsePhysicalGpu,
+                                                             rankHasShortRangedTask,
+                                                             userSetGpuIds,
+                                                             hwinfo->gpu_info,
+                                                             hw_opt->gpu_opt);
+
+    /* If we are using GPUs on any rank of this node, write a report
+     * from the lowest-numbered rank on this node. */
+    if (!deviceIdsOnRanksOfThisNode.empty())
     {
         auto gpuUsageReport =
-            makeGpuUsageReport(hwinfo->gpu_info, &hw_opt->gpu_opt,
+            makeGpuUsageReport(hwinfo->gpu_info, deviceIdsOnRanksOfThisNode[cr->rank_intranode],
                                userSetGpuIds, cr->nrank_pp_intranode,
                                cr->nnodes > 1);
 
@@ -1223,6 +1257,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                            "The number of PP ranks on each node must equal the number of GPU tasks used on each node");
     }
 
+    auto shortRangedTaskGpuDeviceIds =
+        getDeviceIdsForThisRank(rankCanUseGpu, numRanksOnThisNode, rankHasShortRangedTask, deviceIdsOnRanksOfThisNode, cr);
+
+    bool willUsePhysicalGpu = !shortRangedTaskGpuDeviceIds.empty();
+
+    // TODO hook shortRangedTaskGpuDeviceIds into init_forcerec
+    
     /* Prevent other ranks from continuing after an issue was found
      * and reported as a fatal error.
      *
@@ -1239,7 +1280,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt->nthreads_tot, willUsePhysicalGpu, Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
     if (DOMAINDECOMP(cr))
@@ -1282,6 +1323,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (cr->duty & DUTY_PP)
     {
         bcast_state(cr, state);
+        /* Use the intra-node PP rank to get the GPU context for this
+         * PP rank (=task). */
 
         /* Initiate forcerecord */
         fr                 = mk_forcerec();

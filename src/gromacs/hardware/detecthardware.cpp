@@ -124,16 +124,6 @@ static int                 n_hwinfo = 0;
 /* A lock to protect the hwinfo structure */
 static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
-#define HOSTNAMELEN 80
-
-/* FW decl. */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t &gpu_info,
-                                       const gmx_gpu_opt_t  *gpu_opt);
-
-/* FW decl. */
-static int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt,
-                                    bool                 userSetGpuIds);
-
 /*! \internal \brief
  * Returns the GPU information text, one GPU per line.
  */
@@ -149,25 +139,53 @@ static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
     return gmx::joinStrings(gpuStrings, "\n");
 }
 
+/*! \brief Count and return the number of unique GPUs (per node) selected. */
+static size_t countUniqueDevicesUsed(const gmx::DeviceIdForTask &deviceIds)
+{
+    std::set<int> uniqIds;
+    for (auto deviceId : deviceIds)
+    {
+        uniqIds.insert(deviceId);
+    }
+    return uniqIds.size();
+}
+
+/*! \brief Return whether any two ranks are using the same GPU device.
+ *
+ * Sharing GPUs among multiple PP ranks is possible via either user or
+ * automated selection. */
+static bool userSharedGpuAcrossTasks(const gmx::DeviceIdForTask &deviceIds,
+                             bool userSetGpuIds)
+                   
+{
+    if (userSetGpuIds)
+    {
+        for (size_t i = 0; i < deviceIds.size() - 1; ++i)
+        {
+            for (size_t j = i + 1; j < deviceIds.size(); ++j)
+            {
+                if (deviceIds[i] == deviceIds[j])
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 // TODO This function should not live in detecthardware.cpp
 std::string
 makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
-                   const gmx_gpu_opt_t  *gpu_opt,
+                   const std::vector<int> &deviceIds,
                    bool                  userSetGpuIds,
                    size_t                numPpRanks,
                    bool                  bPrintHostName)
 {
-    int  ngpu_use  = gpu_opt->n_dev_use;
     int  ngpu_comp = gpu_info.n_dev_compatible;
-    char host[HOSTNAMELEN];
-
-    if (bPrintHostName)
-    {
-        gmx_gethostname(host, HOSTNAMELEN);
-    }
 
     /* Issue a note if GPUs are available but not used */
-    if (ngpu_comp > 0 && ngpu_use < 1)
+    if (ngpu_comp > 0 && deviceIds.empty())
     {
         return gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
                                  "Consider trying GPU acceleration with the Verlet scheme!\n",
@@ -176,19 +194,14 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
 
     std::string output;
     {
-        std::vector<int> gpuIdsInUse;
-        for (int i = 0; i < ngpu_use; i++)
-        {
-            gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
-        }
         std::string gpuIdsString =
-            formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
-        size_t      numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
+            formatAndJoin(deviceIds, ",", gmx::StringFormatter("%d"));
+        size_t      numGpusInUse = countUniqueDevicesUsed(deviceIds);
         bool        bPluralGpus  = numGpusInUse > 1;
 
         if (bPrintHostName)
         {
-            output += gmx::formatString("On host %s ", host);
+            output += "On host " + getMpiHostname();
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
                                     "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
@@ -200,12 +213,9 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
                                     gpuIdsString.c_str());
     }
 
-    int same_count = gmx_count_gpu_dev_shared(gpu_opt, userSetGpuIds);
-
-    if (same_count > 0)
+    if (userSharedGpuAcrossTasks(deviceIds, userSetGpuIds))
     {
-        output += gmx::formatString("NOTE: You assigned %s to multiple ranks.\n",
-                                    same_count > 1 ? "GPU IDs" : "a GPU ID");
+        output += gmx::formatString("NOTE: You assigned the same GPU ID(s) to multiple ranks.\n");
     }
 
     if (static_cast<size_t>(ngpu_comp) > numPpRanks)
@@ -267,52 +277,6 @@ check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
                     programName, programName);
         }
     }
-}
-
-/*! \brief Return the number of PP rank pairs that share a GPU device between them.
- *
- * Sharing GPUs among multiple PP ranks is possible via either user or
- * automated selection. */
-static int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGpuIds)
-{
-    int      same_count    = 0;
-    int      ngpu          = gpu_opt->n_dev_use;
-
-    if (userSetGpuIds)
-    {
-        int      i, j;
-
-        for (i = 0; i < ngpu - 1; i++)
-        {
-            for (j = i + 1; j < ngpu; j++)
-            {
-                same_count      += (gpu_opt->dev_use[i] ==
-                                    gpu_opt->dev_use[j]);
-            }
-        }
-    }
-
-    return same_count;
-}
-
-/* Count and return the number of unique GPUs (per node) selected.
- *
- * As sharing GPUs among multiple PP ranks is possible when the user passes
- * GPU IDs, the number of GPUs user (per node) can be different from the
- * number of GPU IDs selected.
- */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t &gpu_info,
-                                       const gmx_gpu_opt_t  *gpu_opt)
-{
-    GMX_RELEASE_ASSERT(gpu_opt, "gpu_opt must be a non-NULL pointer");
-
-    std::set<int> uniqIds;
-    for (int i = 0; i < gpu_opt->n_dev_use; i++)
-    {
-        int deviceId = get_gpu_device_id(gpu_info, gpu_opt, i);
-        uniqIds.insert(deviceId);
-    }
-    return uniqIds.size();
 }
 
 static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
@@ -792,14 +756,12 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     }
 
 #if GMX_LIB_MPI
-    char host[HOSTNAMELEN];
     int  rank;
 
-    gmx_gethostname(host, HOSTNAMELEN);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     s += gmx::formatString("Hardware detected on host %s (the node of MPI rank %d):\n",
-                           host, rank);
+                           getMpiHostname().c_str(), rank);
 #else
     s += gmx::formatString("Hardware detected:\n");
 #endif

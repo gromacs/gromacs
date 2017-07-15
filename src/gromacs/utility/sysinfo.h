@@ -60,10 +60,13 @@
  * \returns 0 on success, -1 on error.
  *
  * If the value is not available, "unknown" is returned.
- * \p name should have at least size \p len.
+ * \p buf should have at least size \p len.
  *
  * Does not throw.
- */
+ *
+ * \todo Consolidate uses of getMpiHostname() and this function so that
+ * hostnames that should return the node name understood by MPI do so,
+ * and/or remove duplication. */
 int gmx_gethostname(char *buf, size_t len);
 
 /*! \brief

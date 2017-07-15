@@ -37,11 +37,44 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
+struct gmx_device_info_t;
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 struct t_commrec;
+
+namespace gmx
+{
+
+//! All types of non-bonded tasks.
+enum class NonbondedTask : int
+{
+    ShortRanged,
+    LongRanged
+};
+
+//! Types of tasks that can be run on a GPU.
+/*
+enum class GpuTask
+{
+    NonbondedTask::ShortRanged
+};
+*/
+
+/*! \libinternal \brief
+ * Describes the hardware available for a task to use.
+ *
+ * For now, this is simply a container of IDs of GPU devices. */
+using DeviceIdForTask = std::vector<int>;
+
+/*! \libinternal \brief
+ * Describes the hardware available for a task to use.
+ *
+ * For now, this is simply a container of handles to GPU devices. */
+using HardwareForTask = std::vector<gmx_device_info_t *>;
 
 /*! \brief Select the compatible GPUs
  *
@@ -51,6 +84,30 @@ struct t_commrec;
  * \param[in]     gpu_info    Information detected about GPUs, including compatibility
  * \return                    vector of IDs of GPUs already recorded as compatible */
 std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
+
+// TODO
+/* Create a vector of views into the vector of non-bonded tasks on
+ * this node, so that we have a data structure that both has all
+ * the nodes's tasks, and which can be indexed by intra-node
+ * rank. */
+std::vector< gmx::ConstArrayRef<NonbondedTask> >
+findAllNonbondedTasksOnThisNode(ConstArrayRef<NonbondedTask> nonbondedTasksOnThisRank,
+                                int numRanksOnThisNode,
+                                MPI_Comm communicator);
+
+// TODO
+std::vector< std::vector<NonbondedTask> >
+findAllGpuTasksOnThisNode(const std::vector< gmx::ConstArrayRef<NonbondedTask> > &nonbondedTasksOnRanksOfThisNode,
+                          int numRanksOnThisNode);
+
+// TODO
+std::vector< std::vector<int> >
+mapGpuTasksToDeviceIds(const std::vector< std::vector<NonbondedTask> > &gpuTasksOnRanksOfThisNode,
+                       int numRanksOnThisNode,
+                       bool rankHasShortRangedTask,
+                       bool userSetGpuids,
+                       const gmx_gpu_info_t &gpu_info,
+                       const gmx_gpu_opt_t &gpu_opt);
 
 /*! \brief Map PP ranks to GPU IDs.
  *
@@ -67,11 +124,25 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
  * \param[in]     gpu_info       Information detected about GPUs, including compatibility.
  * \param[in]     userSetGpuIds  Whether the user set the GPU IDs to use in the mapping.
  * \param[inout]  gpu_opt        Holds the mapping to validate, or to fill.
+ * \return TODO
  */
-void mapPpRanksToGpus(bool                  rankCanUseGpu,
-                      const t_commrec      *cr,
-                      const gmx_gpu_info_t &gpu_info,
-                      bool                  userSetGpuIds,
-                      gmx_gpu_opt_t        *gpu_opt);
+std::vector< std::vector<int> >
+mapGpuTasksToDeviceIds(const std::vector< std::vector<NonbondedTask> > &gpuTasksOnRanksOfThisNode,
+                       int numRanksOnThisNode,
+                       bool forceUsePhysicalGpu,
+                       bool tryUsePhysicalGpu,
+                       bool rankHasShortRangedTask,
+                       bool userSetGpuIds,
+                       const gmx_gpu_info_t &gpu_info,
+                       const gmx_gpu_opt_t &gpu_opt);
+
+// TODO
+DeviceIdForTask getDeviceIdsForThisRank(bool                         rankCanUseGpu,
+                                        int numRanksOnThisNode,
+                                        bool rankHasShortRangedTask,
+                                        const std::vector< std::vector<int> > &deviceIdsOnRanksOfThisNode,
+                                        const t_commrec      *cr);
+
+} // namespace
 
 #endif

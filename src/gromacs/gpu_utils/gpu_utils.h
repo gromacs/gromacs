@@ -50,6 +50,7 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_device_info_t;
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 
@@ -164,6 +165,28 @@ GPU_FUNC_QUALIFIER
 int get_gpu_device_id(const struct gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
                       const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt),
                       int GPU_FUNC_ARGUMENT(idx)) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+/*! \brief Returns a GPU device info handle for the GPU with a given index into the array of used GPUs.
+ *
+ * \param[in]    gpu_info   Information about detected GPUs
+ * \param[in]    gpu_opt    Structure holding GPU options
+ * \param[in]    idx        Index into the array of used GPUs
+ * \returns                 device info handle for the indicated GPU
+ */
+GPU_FUNC_QUALIFIER
+gmx_device_info_t *getGpuDeviceInfo(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
+                                    const gmx_gpu_opt_t &GPU_FUNC_ARGUMENT(gpu_opt),
+                                    int GPU_FUNC_ARGUMENT(idx)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
+
+/*! \brief Returns a GPU device info handle for the GPU with a given index into the array of compatible GPUs.
+ *
+ * \param[in]    gpu_info   Information about detected GPUs
+ * \param[in]    idx        Index into the array of used GPUs
+ * \returns                 device info handle for the indicated GPU
+ */
+GPU_FUNC_QUALIFIER
+gmx_device_info_t *getGpuDeviceInfo(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
+                                    int GPU_FUNC_ARGUMENT(idx)) GPU_FUNC_TERM_WITH_RETURN(nullptr)
 
 /*! \brief Returns the name for the OpenCL GPU with a given index into the array of used GPUs.
  *

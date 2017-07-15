@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+#include <array>
+#include <string>
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -157,6 +160,24 @@ static int bgq_nodenum()
 }
 #endif
 
+std::string getMpiHostname()
+{
+#if GMX_MPI
+    std::array<char, MPI_MAX_PROCESSOR_NAME> hostname;
+    int hostnameLength;
+    MPI_Get_processor_name(hostname.data(), &hostnameLength);
+    // hostname is not guaranteed to be null-terminated, but using the
+    // length makes it safe.
+    return std::string(hostname.data(), hostnameLength);
+#else
+    std::array<char, STRLEN> hostname;
+    gmx_gethostname(hostname.data(), hostname.size());
+    // gmx_gethostname might return "unknown" but that is
+    // OK. Regardless, the hostname is always null-terminated.
+    return std::string(hostname.data());
+#endif
+}
+
 static int mpi_hostname_hash()
 {
     int hash_int;
@@ -164,22 +185,18 @@ static int mpi_hostname_hash()
 #if GMX_TARGET_BGQ
     hash_int = bgq_nodenum();
 #elif GMX_LIB_MPI
-    int  resultlen;
-    char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
-
     /* This procedure can only differentiate nodes with different names.
      * Architectures where different physical nodes have identical names,
      * such as IBM Blue Gene, should use an architecture specific solution.
      */
-    MPI_Get_processor_name(mpi_hostname, &resultlen);
-
+    auto mpiHostname = getMpiHostname();
     /* The string hash function returns an unsigned int. We cast to an int.
      * Negative numbers are converted to positive by setting the sign bit to 0.
      * This makes the hash one bit smaller.
      * A 63-bit hash (with 64-bit int) should be enough for unique node hashes,
      * even on a million node machine. 31 bits might not be enough though!
      */
-    hash_int = static_cast<int>(gmx_string_fullhash_func(mpi_hostname, gmx_string_hash_init));
+    hash_int = static_cast<int>(gmx_string_fullhash_func(mpiHostname.c_str(), gmx_string_hash_init));
     if (hash_int < 0)
     {
         hash_int -= INT_MIN;

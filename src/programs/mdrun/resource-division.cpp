@@ -552,8 +552,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
 
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
-                                        const gmx_hw_opt_t  *hw_opt,
-                                        int                  numGpusToUseOnThisRank,
+                                        int numTotalThreads,
+                                        bool willUsePhysicalGpu,
                                         gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
                                         const gmx::MDLogger &mdlog)
@@ -572,14 +572,13 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
      */
 #if GMX_THREAD_MPI
     GMX_RELEASE_ASSERT(nthreads_omp_faster_default >= nthreads_omp_mpi_ok_max, "Inconsistent OpenMP thread count default values");
-    GMX_RELEASE_ASSERT(hw_opt->nthreads_tmpi >= 1, "Must have at least one thread-MPI rank");
 #endif
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) >= 1, "Must have at least one OpenMP thread");
 
     nth_omp_min = gmx_omp_nthreads_get(emntDefault);
     nth_omp_max = gmx_omp_nthreads_get(emntDefault);
 
-    bool anyRankIsUsingGpus = (numGpusToUseOnThisRank > 0);
+    bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
     if (cr->nnodes + cr->npmenodes > 1)
     {
@@ -587,7 +586,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
         count[0] = -nth_omp_min;
         count[1] =  nth_omp_max;
-        count[2] =  numGpusToUseOnThisRank;
+        count[2] =  willUsePhysicalGpu;
 
         MPI_Allreduce(count, count_max, 3, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
 
@@ -658,7 +657,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                 sprintf(buf2, "Your choice of %d MPI rank%s and the use of %d total threads %sleads to the use of %d OpenMP threads",
                         cr->nnodes + cr->npmenodes,
                         cr->nnodes + cr->npmenodes == 1 ? "" : "s",
-                        hw_opt->nthreads_tot > 0 ? hw_opt->nthreads_tot : hwinfo->nthreads_hw_avail,
+                        numTotalThreads > 0 ? numTotalThreads : hwinfo->nthreads_hw_avail,
                         hwinfo->nphysicalnode > 1 ? "on a node " : "",
                         nth_omp_max);
             }
@@ -681,9 +680,9 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     }
 #else /* GMX_OPENMP && GMX_MPI */
       /* No OpenMP and/or MPI: it doesn't make much sense to check */
-    GMX_UNUSED_VALUE(hw_opt);
     GMX_UNUSED_VALUE(bNtOmpOptionSet);
-    GMX_UNUSED_VALUE(numGpusToUseOnThisRank);
+    GMX_UNUSED_VALUE(numTotalThreads);
+    GMX_UNUSED_VALUE(willUsePhysicalGpu);
     GMX_UNUSED_VALUE(cr);
     /* Check if we have more than 1 physical core, if detected,
      * or more than 1 hardware thread if physical cores were not detected.

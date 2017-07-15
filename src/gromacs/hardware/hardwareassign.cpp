@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <numeric>
 #include <string>
 
 #include "gromacs/gmxlib/network.h"
@@ -48,6 +49,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -57,72 +59,8 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
-#define HOSTNAMELEN 80
-
-/*! \internal \brief
- * This function is responsible for mapping the GPUs to the processes on a single node
- * (filling the gpu_opt->dev_use array).
- *
- * \param[in]        compatibleGpus       Vector of GPUs that are compatible
- * \param[in,out]    gpu_opt              Input/output GPU assignment data.
- * \param[in]        nrank                Number of PP GPU ranks on the node.
- * \param[in]        rank                 Index of PP GPU rank on the node.
- *
- * This selects the GPUs we will use. This is an operation local to each physical node.
- * If we have less MPI ranks than GPUs, we will waste some GPUs.
- */
-static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
-                                gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
+namespace gmx
 {
-    int numCompatibleGpus = static_cast<int>(compatibleGpus.size());
-    GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
-    GMX_RELEASE_ASSERT(nrank >= 1,
-                       gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
-                                         rank, numCompatibleGpus).c_str());
-
-    if (numCompatibleGpus == 0)
-    {
-        char host[HOSTNAMELEN];
-
-        gmx_gethostname(host, HOSTNAMELEN);
-        gmx_fatal(FARGS, "A GPU was requested on host %s, but no compatible GPUs were detected. All nodes with PP ranks need to have GPUs. If you intended to use GPU acceleration in a parallel run, you can either avoid using the nodes that don't have GPUs or place PME ranks on these nodes.", host);
-    }
-
-    int nshare;
-
-    nshare = 1;
-    if (nrank > numCompatibleGpus)
-    {
-        if (nrank % numCompatibleGpus == 0)
-        {
-            nshare = nrank/numCompatibleGpus;
-        }
-        else
-        {
-            if (rank == 0)
-            {
-                gmx_fatal(FARGS, "The number of MPI ranks (%d) in a physical node is not a multiple of the number of GPUs (%d). Select a different number of MPI ranks or use the -gpu_id option to manually specify the GPU to be used.",
-                          nrank, numCompatibleGpus);
-            }
-
-#if GMX_MPI
-            /* We use a global barrier to prevent ranks from continuing with
-             * an invalid setup.
-             */
-            MPI_Barrier(MPI_COMM_WORLD);
-#endif
-        }
-    }
-
-    /* Here we will waste GPUs when nrank < numCompatibleGpus */
-    gpu_opt->n_dev_use = std::min(numCompatibleGpus*nshare, nrank);
-    snew(gpu_opt->dev_use, gpu_opt->n_dev_use);
-    for (int i = 0; i != gpu_opt->n_dev_use; ++i)
-    {
-        /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->dev_use[i] = compatibleGpus[i/nshare];
-    }
-}
 
 /*! \brief Check that all user-selected GPUs are compatible.
  *
@@ -188,24 +126,220 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
     return compatibleGpus;
 }
 
-void mapPpRanksToGpus(bool                  rankCanUseGpu,
-                      const t_commrec      *cr,
-                      const gmx_gpu_info_t &gpu_info,
-                      bool                  userSetGpuIds,
-                      gmx_gpu_opt_t        *gpu_opt)
+static std::vector<int> allgather(const int &input, int numRanks, MPI_Comm communicator)
 {
-    if (!rankCanUseGpu)
+    std::vector<int> result(numRanks);
+#if GMX_MPI
+    MPI_Allgather(&input, 1, MPI_INT,
+                  result.data(), 1, MPI_INT,
+                  communicator);
+#else
+    result[0] = data;
+#endif
+    return result;
+}
+
+static std::vector<NonbondedTask> allgatherv(ConstArrayRef<NonbondedTask> input, ConstArrayRef<int> extentOnEachRank, int numRanks, MPI_Comm communicator)
+{
+    std::vector<int> displacements(numRanks + 1);
+    displacements[0] = 0;
+    std::partial_sum(std::begin(extentOnEachRank), std::end(extentOnEachRank), std::begin(displacements) + 1);
+
+    // Now allocate the vector and do the allgatherv
+    int totalExtent = displacements.back();
+
+    std::vector<NonbondedTask> result(totalExtent);
+#if GMX_MPI
+    MPI_Allgatherv(input.data(), input.size(), MPI_INT,
+                   result.data(), extentOnEachRank.data(), displacements.data(), MPI_INT,
+                   communicator);
+#else
+    result[0] = input;
+#endif
+    return result;
+}
+
+std::vector< gmx::ConstArrayRef<NonbondedTask> >
+findAllNonbondedTasksOnThisNode(ConstArrayRef<NonbondedTask> nonbondedTasksOnThisRank,
+                                int numRanksOnThisNode,
+                                MPI_Comm communicator)
+{
+    // Find out how many non-bonded tasks are on each rank on this node.
+    int numNonbondedTasksOnThisRank = nonbondedTasksOnThisRank.size();
+    auto numNonbondedTasksOnEachRankOfThisNode =
+        allgather(numNonbondedTasksOnThisRank, numRanksOnThisNode, communicator);
+
+    /* Collect on each rank of this node a vector describing all
+     * non-bonded tasks on this node, in ascending order of rank. This
+     * requires a vector allgather. */
+    auto nonbondedTasksOnThisNode =
+        allgatherv(nonbondedTasksOnThisRank, numNonbondedTasksOnEachRankOfThisNode,
+                   numRanksOnThisNode, communicator);
+
+    std::vector< gmx::ConstArrayRef<NonbondedTask> > nonbondedTasksOnRanksOfThisNode;
+    auto start = std::begin(nonbondedTasksOnThisNode);
+    for (int rankId = 0; rankId < numRanksOnThisNode; ++rankId)
     {
-        return;
+        auto end = start + numNonbondedTasksOnEachRankOfThisNode[rankId];
+        nonbondedTasksOnRanksOfThisNode.push_back(gmx::ConstArrayRef<NonbondedTask>::fromVector(start, end));
+        start = end;
+    }
+    return nonbondedTasksOnRanksOfThisNode;
+}
+
+std::vector< std::vector<NonbondedTask> >
+findAllGpuTasksOnThisNode(const std::vector< gmx::ConstArrayRef<NonbondedTask> > &nonbondedTasksOnRanksOfThisNode,
+                          int numRanksOnThisNode)
+{
+    /* Filter the vector of non-bonded tasks on this node to become
+     * the vector of non-bonded tasks on ranks of this node that can
+     * run on GPUs. */
+    std::vector< std::vector<NonbondedTask> > gpuTasksOnRanksOfThisNode(numRanksOnThisNode);
+    for (int rankId = 0; rankId < numRanksOnThisNode; ++rankId)
+    {
+        for (auto taskOnRank : nonbondedTasksOnRanksOfThisNode[rankId])
+        {
+            // Can this task run on a GPU?
+            if (taskOnRank == NonbondedTask::ShortRanged)
+            {
+                gpuTasksOnRanksOfThisNode[rankId].push_back(taskOnRank);
+            }
+        }
+    }
+    return gpuTasksOnRanksOfThisNode;
+}
+
+std::vector< std::vector<int> >
+mapGpuTasksToDeviceIds(const std::vector< std::vector<NonbondedTask> > &gpuTasksOnRanksOfThisNode,
+                       int numRanksOnThisNode,
+                       bool forceUsePhysicalGpu,
+                       bool tryUsePhysicalGpu,
+                       bool rankHasShortRangedTask,
+                       bool userSetGpuIds,
+                       const gmx_gpu_info_t &gpu_info,
+                       const gmx_gpu_opt_t &gpu_opt)
+{
+    int numGpuTasksOnThisNode = 0;
+    for (int rankId = 0; rankId < numRanksOnThisNode; ++rankId)
+    {
+        numGpuTasksOnThisNode += gpuTasksOnRanksOfThisNode[rankId].size();
     }
 
+    /* Assign IDs of GPUs on this node to the GPU tasks on this
+     * node. */
+    std::vector< std::vector<int> > gpuDeviceIdsOnRanksOfThisNode(numRanksOnThisNode);
     if (userSetGpuIds)
     {
-        exitUnlessGpuSelectionIsValid(gpu_info, *gpu_opt);
+        if (numGpuTasksOnThisNode != gpu_opt.n_dev_use)
+        {
+            gmx_fatal(FARGS, gmx::formatString
+                      ("You selected %d GPU IDs for the GPU tasks on node %s "
+                       "but %lu GPU tasks were found on the ranks of this node",
+                       gpu_opt.n_dev_use, getMpiHostname().c_str(), numGpuTasksOnThisNode).c_str());
+        }
+        // TODO
+        /* Validate mdrun -gpu_id, now that it is known from the task
+         * assignment whether this rank needs a GPU assigned, which is the
+         * user's job if they set -gpu_id. */
+        exitUnlessGpuSelectionIsValid(gpu_info, gpu_opt);
+
+        int index = 0;
+        for (int rankId = 0; rankId < numRanksOnThisNode; ++rankId)
+        {
+            for (auto gpuTaskOnRank : gpuTasksOnRanksOfThisNode[rankId])
+            {
+                GMX_ASSERT(gpuTaskOnRank == NonbondedTask::ShortRanged, "Long-ranged tasks on GPUs are not implemented yet");
+                gpuDeviceIdsOnRanksOfThisNode[rankId].push_back(gpu_opt.dev_use[index]);
+                index++;
+            }
+        }
     }
     else
     {
         auto compatibleGpus = getCompatibleGpus(gpu_info);
-        assign_rank_gpu_ids(compatibleGpus, gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
+        if (forceUsePhysicalGpu && compatibleGpus.empty())
+        {
+            // This logic needs updating when long-ranged tasks can run
+            // on GPUs.
+            if (rankHasShortRangedTask)
+            {
+                gmx_fatal(FARGS, "Short-ranged work on GPUs was requested on a rank on node %s, but no compatible "
+                          "GPUs were detected. All nodes with such ranks need to have GPUs. If you intended to use "
+                          "GPU acceleration in a parallel run, you can either avoid using the nodes that don't have "
+                          "GPUs or place PME-only ranks on these nodes.", getMpiHostname().c_str());
+            }
+        }
+        if (tryUsePhysicalGpu && !compatibleGpus.empty())
+        {
+            if (gpuTasksOnRanksOfThisNode.size() % compatibleGpus.size() != 0)
+            {
+                gmx_fatal(FARGS, "The number of PP ranks with short-ranged GPU tasks (%lu) on node %s is not "
+                          "a multiple of the number of compatible GPUs (%lu). Select a different number of "
+                          "ranks, or use the -gpu_id option to manually specify the GPUs to be used.",
+                          gpuTasksOnRanksOfThisNode.size(), compatibleGpus.size());
+            }
+        }
+
+        /* If there are limits on whether ranks can share GPUs,
+         * they should be implemented here. */
+        auto numRanksToShareEachGpu = gpuTasksOnRanksOfThisNode.size() / compatibleGpus.size();
+
+        int index = 0;
+        for (int rankId = 0; rankId < numRanksOnThisNode; ++rankId)
+        {
+            for (auto gpuTaskOnRank : gpuTasksOnRanksOfThisNode[rankId])
+            {
+                GMX_ASSERT(gpuTaskOnRank == NonbondedTask::ShortRanged, "Long-ranged tasks on GPUs are not implemented yet");
+                gpuDeviceIdsOnRanksOfThisNode[rankId].push_back(index / numRanksToShareEachGpu);
+                index++;
+            }
+        }
     }
+    return gpuDeviceIdsOnRanksOfThisNode;
 }
+
+DeviceIdForTask getDeviceIdsForThisRank(bool                         rankCanUseGpu,
+                                        int numRanksOnThisNode,
+                                        bool rankHasShortRangedTask,
+                                        const std::vector< std::vector<int> > &deviceIdsOnRanksOfThisNode,
+                                        const t_commrec      *cr)
+{
+    DeviceIdForTask shortRangedTaskGpuIds;
+
+    if (!rankCanUseGpu)
+    {
+        return shortRangedTaskGpuIds;
+    }
+
+    /* Assign IDs of GPUs on this node to the GPU tasks on this
+     * node. */
+    int index = 0;
+    for (int rankId = 0; rankId < numRanksOnThisNode; ++rankId)
+    {
+        for (auto deviceIdsOnRank : deviceIdsOnRanksOfThisNode[rankId])
+        {
+            /* Later, there will need to be logic to put the
+               device handles into an object whose name or type
+               matches what task they will perform. */
+            if (rankId == cr->rank_intranode)
+            {
+                shortRangedTaskGpuIds.push_back(deviceIdsOnRank);
+            }
+            index++;
+        }
+    }
+
+    /* Check for a sane assignment given the current capabilities of the code */
+    if (rankHasShortRangedTask)
+    {
+        /* Later, a rank might also have a long-ranged task that could
+         * have a GPU handle assigned. */
+        GMX_RELEASE_ASSERT(shortRangedTaskGpuIds.size() == 1,
+                           gmx::formatString("PP rank %d can use only one GPU, but %lu were assigned",
+                                             cr->sim_nodeid, shortRangedTaskGpuIds.size()).c_str());
+    }
+
+    return shortRangedTaskGpuIds;
+}
+
+} // namespace

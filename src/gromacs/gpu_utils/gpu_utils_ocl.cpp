@@ -440,6 +440,25 @@ int get_gpu_device_id(const gmx_gpu_info_t  &,
 }
 
 //! This function is documented in the header file
+gmx_device_info_t *getGpuDeviceInfo(const gmx_gpu_info_t &gpu_info,
+                                    const gmx_gpu_opt_t  &gpu_opt,
+                                    int                   idx)
+{
+    assert(idx >= 0 && idx < gpu_opt.n_dev_use);
+
+    return &gpu_info.gpu_dev[gpu_opt.dev_use[idx]];
+}
+
+//! This function is documented in the header file
+gmx_device_info_t *getGpuDeviceInfo(const gmx_gpu_info_t &gpu_info,
+                                    int                   idx)
+{
+    assert(idx >= 0 && idx < gpu_info.n_dev);
+
+    return &gpu_info.gpu_dev[idx];
+}
+
+//! This function is documented in the header file
 char* get_ocl_gpu_device_name(const gmx_gpu_info_t *gpu_info,
                               const gmx_gpu_opt_t  *gpu_opt,
                               int                   idx)
