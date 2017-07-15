@@ -95,7 +95,7 @@ static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
     {
         if (nrank % numCompatibleGpus == 0)
         {
-            nshare = gmx_gpu_sharing_supported() ? nrank/numCompatibleGpus : 1;
+            nshare = nrank/numCompatibleGpus;
         }
         else
         {
@@ -116,10 +116,6 @@ static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
 
     /* Here we will waste GPUs when nrank < numCompatibleGpus */
     gpu_opt->n_dev_use = std::min(numCompatibleGpus*nshare, nrank);
-    if (!gmx_multiple_gpu_per_node_supported())
-    {
-        gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_use, 1);
-    }
     snew(gpu_opt->dev_use, gpu_opt->n_dev_use);
     for (int i = 0; i != gpu_opt->n_dev_use; ++i)
     {
