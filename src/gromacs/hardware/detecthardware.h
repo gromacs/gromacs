@@ -53,18 +53,6 @@ class HardwareTopology;
 class MDLogger;
 }
 
-/*! \brief Return whether mdrun can use more than one GPU per node
- *
- * The OpenCL implementation cannot use more than one GPU per node,
- * for example. */
-gmx_bool gmx_multiple_gpu_per_node_supported();
-
-/*! \brief Return whether PP ranks can share a GPU
- *
- * The OpenCL implementation cannot share a GPU between ranks, for
- * example. */
-gmx_bool gmx_gpu_sharing_supported();
-
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
  * This routine constructs the global hwinfo structure and returns a pointer to
