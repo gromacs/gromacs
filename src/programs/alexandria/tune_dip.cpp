@@ -567,7 +567,7 @@ double OPtimization::calcPenalty(AtomIndexIterator ai)
        
     if (ai_chi < ref_chi)
     {
-        p += 1e3;
+        p += 1e5;
     }
 
     auto *ic = indexCount();
@@ -588,14 +588,14 @@ double OPtimization::calcPenalty(AtomIndexIterator ai)
                 {
                     if (ai_chi < aj_chi)
                     {
-                        p += 1e3;
+                        p += 1e5;
                     }
                 }
                 else if (aj_atn > ai_atn) 
                 {
                     if (aj_chi < ai_chi)
                     {
-                        p += 1e3;
+                        p += 1e5;
                     }
                 }     
             }
