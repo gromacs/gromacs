@@ -240,23 +240,6 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-#if GMX_GPU != GMX_GPU_NONE
-    /* TODO Ideally, with real MPI, we could call
-     * gmx_collect_hardware_mpi() here and find out how many nodes
-     * mdrun will run on. For now, we assume that we're running on one
-     * node regardless of the number of ranks, because that's true in
-     * Jenkins and for most developers running the tests. */
-    int numberOfNodes = 1;
-    int numberOfRanks = getNumberOfTestMpiRanks();
-    if (numberOfRanks > numberOfNodes && !gmx_multiple_gpu_per_node_supported())
-    {
-        if (gmx_node_rank() == 0)
-        {
-            fprintf(stderr, "GROMACS in this build configuration cannot run on more than one GPU per node,\n so with %d ranks and %d nodes, this test will disable GPU support", numberOfRanks, numberOfNodes);
-        }
-        caller.addOption("-nb", "cpu");
-    }
-#endif
     return gmx_mdrun(caller.argc(), caller.argv());
 }
 

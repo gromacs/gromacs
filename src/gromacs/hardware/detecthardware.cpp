@@ -109,22 +109,6 @@ static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
  * array entry. */
 
-/* TODO GPU sharing is now always supported, so we can simplify things
- * and remove these constants, functions, and comments about sharing
- * below. */
-/* Both CUDA and OpenCL (on the supported/tested platforms) supports
- * GPU device sharing.
- */
-static const bool gpuSharingSupport[] = { false, true, true };
-static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
-
-/* Both CUDA and OpenCL (on the tested/supported platforms) supports everything.
- */
-static const bool multiGpuSupport[] = {
-    false, true, true
-};
-static const bool bMultiGpuPerNodeSupported = multiGpuSupport[GMX_GPU];
-
 // TODO If/when we unify CUDA and OpenCL support code, this should
 // move to a single place in gpu_utils.
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
@@ -145,16 +129,6 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 /* FW decl. */
 static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t &gpu_info,
                                        const gmx_gpu_opt_t  *gpu_opt);
-
-gmx_bool gmx_multiple_gpu_per_node_supported()
-{
-    return bMultiGpuPerNodeSupported;
-}
-
-gmx_bool gmx_gpu_sharing_supported()
-{
-    return bGpuSharingSupported;
-}
 
 /*! \internal \brief
  * Returns the GPU information text, one GPU per line.
@@ -429,7 +403,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         else
         {
             /* TODO Should we have a gpu_opt->n_dev_supported field? */
-            if (ngpu_comp > npppn && gmx_multiple_gpu_per_node_supported())
+            if (ngpu_comp > npppn)
             {
                 GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                         "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
@@ -449,26 +423,13 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                  */
                 if (cr->rank_pp_intranode == 0)
                 {
-                    std::string reasonForLimit;
-                    if (ngpu_comp > 1 &&
-                        ngpu_use == 1 &&
-                        !gmx_multiple_gpu_per_node_supported())
-                    {
-                        reasonForLimit  = "can be used by ";
-                        reasonForLimit += getGpuImplementationString();
-                        reasonForLimit += " in GROMACS";
-                    }
-                    else
-                    {
-                        reasonForLimit = "was detected";
-                    }
                     gmx_fatal(FARGS,
                               "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
-                              "%s was started with %d PP %s%s%s, but only %d GPU%s %s.",
+                              "%s was started with %d PP %s%s%s, but only %d GPU%s was detected.",
                               th_or_proc, btMPI ? "s" : "es", pernode,
                               programName, npppn, th_or_proc,
                               th_or_proc_plural, pernode,
-                              ngpu_use, gpu_use_plural, reasonForLimit.c_str());
+                              ngpu_use, gpu_use_plural);
                 }
             }
         }

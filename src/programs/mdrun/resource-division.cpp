@@ -219,9 +219,8 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
             /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
             nrank = nthreads_tot;
         }
-        else if (gmx_gpu_sharing_supported() &&
-                 (nthreads_tot > nthreads_omp_faster(cpuInfo, ngpu > 0) ||
-                  (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max)))
+        else if (nthreads_tot > nthreads_omp_faster(cpuInfo, ngpu > 0) ||
+                 (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max))
         {
             /* The high OpenMP thread count will likely result in sub-optimal
              * performance. Increase the rank count to reduce the thread count
@@ -266,7 +265,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 }
 
 
-static int getMaxGpuUsable(const gmx::MDLogger &mdlog, const gmx_hw_info_t *hwinfo,
+static int getMaxGpuUsable(const gmx_hw_info_t *hwinfo,
                            int cutoff_scheme)
 {
     /* This code relies on the fact that GPU are not detected when GPU
@@ -275,18 +274,7 @@ static int getMaxGpuUsable(const gmx::MDLogger &mdlog, const gmx_hw_info_t *hwin
     if (cutoff_scheme == ecutsVERLET &&
         hwinfo->gpu_info.n_dev_compatible > 0)
     {
-        if (gmx_multiple_gpu_per_node_supported())
-        {
-            return hwinfo->gpu_info.n_dev_compatible;
-        }
-        else
-        {
-            if (hwinfo->gpu_info.n_dev_compatible > 1)
-            {
-                GMX_LOG(mdlog.warning).asParagraph().appendText("More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI rank.");
-            }
-            return 1;
-        }
+        return hwinfo->gpu_info.n_dev_compatible;
     }
     else
     {
@@ -428,7 +416,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    ngpu = getMaxGpuUsable(mdlog, hwinfo, inputrec->cutoff_scheme);
+    ngpu = getMaxGpuUsable(hwinfo, inputrec->cutoff_scheme);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {
@@ -609,8 +597,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     if (DOMAINDECOMP(cr) && cr->nnodes > 1)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min ||
-            (!(anyRankIsUsingGpus && !gmx_gpu_sharing_supported()) &&
-             nth_omp_max > nthreads_omp_mpi_ok_max))
+            nth_omp_max > nthreads_omp_mpi_ok_max)
         {
             /* Note that we print target_max here, not ok_max */
             sprintf(buf, "Your choice of number of MPI ranks and amount of resources results in using %d OpenMP threads per rank, which is most likely inefficient. The optimum is usually between %d and %d threads per rank.",
@@ -637,8 +624,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
         const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
 
         /* No domain decomposition (or only one domain) */
-        if (!(anyRankIsUsingGpus && !gmx_gpu_sharing_supported()) &&
-            nth_omp_max > nthreads_omp_faster(cpuInfo, anyRankIsUsingGpus))
+        if (nth_omp_max > nthreads_omp_faster(cpuInfo, anyRankIsUsingGpus))
         {
             /* To arrive here, the user/system set #ranks and/or #OMPthreads */
             gmx_bool bEnvSet;
@@ -829,15 +815,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
             gmx_fatal(FARGS, "You requested %d thread-MPI ranks with %d total threads. Choose a total number of threads that is a multiple of the number of thread-MPI ranks.",
                       hw_opt->nthreads_tmpi, hw_opt->nthreads_tot);
         }
-    }
-
-    if (!gmx_multiple_gpu_per_node_supported() && 1 < hw_opt->gpu_opt.n_dev_use)
-    {
-        gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
-    }
-    if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(&hw_opt->gpu_opt))
-    {
-        gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
     }
 
     if (debug)
