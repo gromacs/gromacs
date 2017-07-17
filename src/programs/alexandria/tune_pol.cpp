@@ -341,7 +341,7 @@ static int decompose_frag(FILE                             *fplog,
                     /* No polarizability found for this one, seems unnecessary
                      * as we first lookup the polarizability ptype */
                     bUseMol = false;
-                    fprintf(stderr, "Dit mag nooit gebeuren %s %d\n", __FILE__, __LINE__);
+                    fprintf(stderr, "This should never happen %s %d\n", __FILE__, __LINE__);
                 }
                 else if (apol > 0)
                 {
