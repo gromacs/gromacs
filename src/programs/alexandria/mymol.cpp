@@ -682,10 +682,11 @@ void MyMol::addShells(const Poldata          &pd,
             p.c[0] = convert2gmx(pol, polarUnit);
             add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
         }
-    }
-    if (nshell < topology_->atoms.nr)
-    {
-        gmx_fatal(FARGS, "Numbe of shells is lower than the number of atoms.\n");
+        else
+        {
+            gmx_fatal(FARGS, "Polarizability is zero for %s atom type.\n",
+                      *topology_->atoms.atomtype[i]);
+        }
     }
     renum.resize(topology_->atoms.nr + 1, 0);
     renum[topology_->atoms.nr] = topology_->atoms.nr + nshell;
