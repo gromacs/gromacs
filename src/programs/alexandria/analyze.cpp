@@ -41,7 +41,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <string>
 
 #include "gromacs/commandline/pargs.h"
@@ -462,8 +461,8 @@ int alex_analyze(int argc, char *argv[])
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
     static real                      rtoler      = 0.15, atoler = 0, outlier = 1;
     static real                      th_toler    = 170, ph_toler = 5;
-    static gmx_bool                  bMerge      = TRUE, bAll = FALSE, bCalcPol = TRUE, bPrintBasis = TRUE, bPrintMultQ = FALSE;
-    static gmx_bool                  bStatsTable = TRUE, bCompositionTable = FALSE, bPropTable = TRUE;
+    static gmx_bool                  bMerge      = true, bAll = false, bCalcPol = true, bPrintBasis = true, bPrintMultQ = false;
+    static gmx_bool                  bStatsTable = true, bCompositionTable = false, bPropTable = true;
     static int                       catmin      = 1;
     static int                       maxwarn     = 0;
     t_pargs                          pa[]        = {

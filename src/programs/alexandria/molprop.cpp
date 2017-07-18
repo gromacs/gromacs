@@ -1005,7 +1005,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     bool   done = false;
     double Told = *T;
 
-    if (iQM == iqmExp || iQM == iqmBoth)
+    if (iQM == iqmBoth)
     {
         for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
         {
@@ -1023,8 +1023,29 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             }
         }
     }
-
-    if (iQM == iqmBoth || iQM == iqmQM)
+     if (iQM == iqmExp)
+    {
+        for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
+        {
+            if (dsExperiment != ei->dataSource())
+            {
+                continue;
+            }
+            if ((conf.size() == 0) ||
+                (ei->getConformation().compare(conf) == 0))
+            {
+                if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                    bCheckTemperature(Told, *T))
+                {
+                    ref = ei->getReference();
+                    mylot.assign("Experiment");
+                    done = true;
+                    break;
+                }
+            }
+        }
+    }
+    else if (iQM == iqmQM)
     {
         for (auto ci = BeginExperiment(); !done && (ci < EndExperiment()); ++ci)
         {

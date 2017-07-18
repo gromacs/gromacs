@@ -312,8 +312,7 @@ static int decompose_frag(FILE                             *fplog,
             {
                 fprintf(fplog, "%s nExper %d pol %g Use: %s\n", 
                         mpi->getMolname().c_str(), mpi->NExperiment(),
-                        pol,
-                        gmx::boolToString(bUseMol));
+                        pol, gmx::boolToString(bUseMol));
             }
 
             /* Now check whether all atoms have supported ptypes */
