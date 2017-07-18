@@ -146,18 +146,7 @@ static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
 }
 
 // TODO This function should not live in detecthardware.cpp
-
-/*! \brief Helper function for reporting GPU usage information
- * in the mdrun log file
- *
- * \param[in] gpu_info       Information detected about GPUs
- * \param[in] gpu_opt        Pointer to per-node GPU options struct
- * \param[in] userSetGpuIds  Whether the user selected the GPU ids
- * \param[in] numPpRanks     Number of PP ranks per node
- * \param[in] bPrintHostName Print the hostname in the usage information
- * \return                   String to write to the log file
- * \throws                   std::bad_alloc if out of memory */
-static std::string
+std::string
 makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
                    const gmx_gpu_opt_t  *gpu_opt,
                    bool                  userSetGpuIds,
@@ -296,23 +285,6 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
     bNthreadsAuto = FALSE;
 #endif
 
-    if (hwinfo->gpu_info.n_dev_compatible > 0)
-    {
-        std::string gpuUsageReport;
-        try
-        {
-            gpuUsageReport = makeGpuUsageReport(hwinfo->gpu_info,
-                                                &hw_opt->gpu_opt,
-                                                userSetGpuIds,
-                                                cr->nrank_pp_intranode,
-                                                bMPI && cr->nnodes > 1);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-        /* NOTE: this print is only for and on one physical node */
-        GMX_LOG(mdlog.warning).appendText(gpuUsageReport);
-    }
-
     /* Need to ensure that we have enough GPUs:
      * - need one GPU per PP node
      * - no GPU oversubscription with tMPI
@@ -447,16 +419,6 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
             }
         }
     }
-
-#if GMX_MPI
-    if (PAR(cr))
-    {
-        /* Avoid other ranks to continue after
-           inconsistency */
-        MPI_Barrier(cr->mpi_comm_mygroup);
-    }
-#endif
-
 }
 
 /* Return 0 if none of the GPU (per node) are shared among PP ranks.

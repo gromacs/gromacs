@@ -71,6 +71,23 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo);
 
+/*! \brief Helper function for reporting GPU usage information
+ * in the mdrun log file
+ *
+ * \param[in] gpu_info       Information detected about GPUs
+ * \param[in] gpu_opt        Pointer to per-node GPU options struct
+ * \param[in] userSetGpuIds  Whether the user selected the GPU ids
+ * \param[in] numPpRanks     Number of PP ranks per node
+ * \param[in] bPrintHostName Print the hostname in the usage information
+ * \return                   String to write to the log file
+ * \throws                   std::bad_alloc if out of memory */
+std::string
+makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
+                   const gmx_gpu_opt_t  *gpu_opt,
+                   bool                  userSetGpuIds,
+                   size_t                numPpRanks,
+                   bool                  bPrintHostName);
+
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 /* Return whether the user selected GPU ids */
@@ -82,8 +99,9 @@ bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
 /* Parse the GPU ids the user may have passed. */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
-/* Check the consistency of hw_opt with hwinfo.
-   This function should be called once on each MPI rank. */
+/*! \brief Check the consistency of hw_opt with hwinfo.
+ *
+ * This function should be called once on each MPI rank. */
 void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
