@@ -1207,11 +1207,36 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
     bool willUsePhysicalGpu = hw_opt->gpu_opt.n_dev_use > 0;
 
+    /* If we are using GPUs, report on this rank how they are being
+     * used on this node. */
+    if (willUsePhysicalGpu)
+    {
+        auto gpuUsageReport =
+            makeGpuUsageReport(hwinfo->gpu_info, &hw_opt->gpu_opt,
+                               userSetGpuIds, cr->nrank_pp_intranode,
+                               cr->nnodes > 1);
+
+        /* NOTE: this print is only for and on one physical node */
+        GMX_LOG(mdlog.warning).appendText(gpuUsageReport);
+    }
+
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    // TODO this also makes a GPU usage report, which should be a
-    // separate responsibility.
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, willUsePhysicalGpu);
+
+    /* Prevent other ranks from continuing after an inconsistency was found.
+     *
+     * TODO This function implements a barrier so that MPI runtimes
+     * can organize an orderly shutdown if one of the ranks has had to
+     * issue a fatal error in various code already run. When we have
+     * MPI-aware error handling and reporting, this should be
+     * improved. */
+#if GMX_MPI
+    if (PAR(cr))
+    {
+        MPI_Barrier(cr->mpi_comm_mysim);
+    }
+#endif
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
