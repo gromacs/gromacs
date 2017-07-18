@@ -793,8 +793,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
-    /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU            = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -823,7 +821,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
     bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || userSetGpuIds;
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu;
+    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -864,11 +862,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (compatibleGpusFound(hwinfo->gpu_info) ||
-                       emulateGpu);
-
-            if (bUseGPU &&
+            /* TODO This logic could run later, e.g. before -npme -1
+               is handled. If inputrec has already been communicated,
+               then the resulting tryUsePhysicalGpu does not need to
+               be communicated. */
+            if ((tryUsePhysicalGpu || forceUsePhysicalGpu) &&
                 !gpuAccelerationIsUseful(mdlog, inputrec, doRerun))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
@@ -876,12 +874,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 {
                     gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
                 }
-                bUseGPU = FALSE;
+                tryUsePhysicalGpu = false;
             }
-
+            /* TODO This logic could run later, e.g. after inputrec,
+               mtop, and state have been communicated, but before DD
+               is initialized. In particular, -ntmpi 0 only needs to
+               know whether the Verlet scheme is active in order to
+               choose the number of ranks (because GPUs might be
+               usable).*/
+            bool makeGpuPairList = (forceUsePhysicalGpu ||
+                                    tryUsePhysicalGpu ||
+                                    emulateGpu);
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
-                                  bUseGPU, *hwinfo->cpuInfo);
+                                  makeGpuPairList, *hwinfo->cpuInfo);
         }
         else
         {
@@ -895,6 +901,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 GMX_LOG(mdlog.warning).asParagraph().appendText(
                         "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
+                tryUsePhysicalGpu = false;
             }
 
 #if GMX_TARGET_BGQ
@@ -955,10 +962,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
 
-        /* The master rank decided on the use of GPUs,
-         * broadcast this information to all ranks.
-         */
-        gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
+        gmx_bcast_sim(sizeof(tryUsePhysicalGpu), &tryUsePhysicalGpu, cr);
     }
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
@@ -1014,7 +1018,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         npme = 0;
     }
 
-    if (bUseGPU && npme < 0)
+    if ((tryUsePhysicalGpu || forceUsePhysicalGpu) && npme < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
@@ -1190,24 +1194,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU && !emulateGpu)
+    if (tryUsePhysicalGpu || forceUsePhysicalGpu)
     {
         bool rankCanUseGpu = cr->duty & DUTY_PP;
         /* Map GPU IDs to ranks by filling or validating hw_opt->gpu_opt->dev_use */
         mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
                          userSetGpuIds, &hw_opt->gpu_opt);
     }
-    else
-    {
-        /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
-    }
+    bool willUsePhysicalGpu = hw_opt->gpu_opt.n_dev_use > 0;
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
     // TODO this also makes a GPU usage report, which should be a
     // separate responsibility.
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, bUseGPU && !emulateGpu);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, willUsePhysicalGpu);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, hw_opt->gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
