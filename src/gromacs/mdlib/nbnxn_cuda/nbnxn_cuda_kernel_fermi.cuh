@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
@@ -297,7 +298,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         imask       = pl_cj4[j4].imei[widx].imask;
         wexcl       = excl[wexcl_idx].pair[(tidx) & (warp_size - 1)];
 
+        unsigned int activemask_imask = c_fullwarp;
 #ifndef PRUNE_NBL
+        activemask_imask = gmx_ballot_sync(c_fullwarp, imask);
         if (imask)
 #endif
         {
@@ -306,6 +309,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
+            gmx_syncwarp(activemask_imask);
 
             /* Unrolling this loop with pruning leads to register spilling;
                Tested with up to nvcc 7.5 */
@@ -314,6 +318,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
+                const unsigned int activemask_superClInteractionMask = gmx_ballot_sync(activemask_imask, (imask & (superClInteractionMask << (jm * c_numClPerSupercl))));
                 if (imask & (superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
@@ -338,6 +343,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
                     for (i = 0; i < c_numClPerSupercl; i++)
                     {
+                        const unsigned int activemask_mask_ji = gmx_ballot_sync(activemask_superClInteractionMask, (imask & mask_ji));
                         if (imask & mask_ji)
                         {
                             ci      = sci * c_numClPerSupercl + i; /* i cluster index */
@@ -355,7 +361,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (!__any(r2 < rlist_sq))
+                            if (!gmx_any_sync(activemask_mask_ji, r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
@@ -521,6 +527,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     f_buf[    c_fbufStride + tidx] = fcj_buf.y;
                     f_buf[2 * c_fbufStride + tidx] = fcj_buf.z;
 
+                    gmx_syncwarp(activemask_superClInteractionMask);
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
                 }
             }
@@ -530,6 +537,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
+        //avoid shared memory WAR hazards between loop iterations
+        gmx_syncwarp();
     }
 
     /* skip central shifts when summing shift forces */
@@ -564,6 +573,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* flush the energies to shmem and reduce them */
     f_buf[               tidx] = E_lj;
     f_buf[c_fbufStride + tidx] = E_el;
+    gmx_syncwarp();
     reduce_energy_pow2(f_buf + (tidx & warp_size), e_lj, e_el, tidx & ~warp_size);
 #endif
 }
