@@ -465,14 +465,14 @@ int gmx_clustsize(int argc, char *argv[])
         "atom numbers of the largest cluster."
     };
 
-    static real       cutoff   = 0.35;
-    static int        nskip    = 0;
-    static int        nlevels  = 20;
-    static int        ndf      = -1;
-    static gmx_bool   bMol     = FALSE;
-    static gmx_bool   bPBC     = TRUE;
-    static rvec       rlo      = { 1.0, 1.0, 0.0 };
-    static rvec       rhi      = { 0.0, 0.0, 1.0 };
+    real              cutoff   = 0.35;
+    int               nskip    = 0;
+    int               nlevels  = 20;
+    int               ndf      = -1;
+    gmx_bool          bMol     = FALSE;
+    gmx_bool          bPBC     = TRUE;
+    rvec              rlo      = { 1.0, 1.0, 0.0 };
+    rvec              rhi      = { 0.0, 0.0, 1.0 };
 
     gmx_output_env_t *oenv;
 

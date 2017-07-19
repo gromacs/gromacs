@@ -38,12 +38,12 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>1.000000e+00</Real>
-          <Real>7</Real>
+          <Real>5</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>2.000000e+00</Real>
-          <Real>7</Real>
+          <Real>6</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -87,12 +87,12 @@ TYPE xy
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>1</Real>
-          <Real>6.000</Real>
+          <Real>3.000</Real>
         </Sequence>
         <Sequence Name="Row2">
           <Int Name="Length">2</Int>
           <Real>2</Real>
-          <Real>1.000</Real>
+          <Real>2.500</Real>
         </Sequence>
         <Sequence Name="Row3">
           <Int Name="Length">2</Int>
