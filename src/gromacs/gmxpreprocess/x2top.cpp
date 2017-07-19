@@ -451,17 +451,17 @@ int gmx_x2top(int argc, char *argv[])
         { efRTP, "-r", "out",  ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real        kb = 4e5, kt = 400, kp = 5;
-    static t_restp     rtp_header_settings;
-    static gmx_bool    bRemoveDihedralIfWithImproper = FALSE;
-    static gmx_bool    bGenerateHH14Interactions     = TRUE;
-    static gmx_bool    bKeepAllGeneratedDihedrals    = FALSE;
-    static int         nrexcl                        = 3;
-    static gmx_bool    bParam                        = TRUE, bRound = TRUE;
-    static gmx_bool    bPairs                        = TRUE, bPBC = TRUE;
-    static gmx_bool    bUsePDBcharge                 = FALSE, bVerbose = FALSE;
-    static const char *molnm                         = "ICE";
-    static const char *ff                            = "oplsaa";
+    real               kb                            = 4e5, kt = 400, kp = 5;
+    t_restp            rtp_header_settings           = { 0 };
+    gmx_bool           bRemoveDihedralIfWithImproper = FALSE;
+    gmx_bool           bGenerateHH14Interactions     = TRUE;
+    gmx_bool           bKeepAllGeneratedDihedrals    = FALSE;
+    int                nrexcl                        = 3;
+    gmx_bool           bParam                        = TRUE, bRound = TRUE;
+    gmx_bool           bPairs                        = TRUE, bPBC = TRUE;
+    gmx_bool           bUsePDBcharge                 = FALSE, bVerbose = FALSE;
+    const char        *molnm                         = "ICE";
+    const char        *ff                            = "oplsaa";
     t_pargs            pa[]                          = {
         { "-ff",     FALSE, etSTR, {&ff},
           "Force field for your simulation. Type \"select\" for interactive selection." },
