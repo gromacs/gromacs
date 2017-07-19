@@ -148,8 +148,14 @@ else()
     endif()
 endif()
 
-gmx_dependent_cache_variable(GMX_CUDA_TARGET_SM "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)" STRING "" GMX_CUDA_TARGET_SM)
-gmx_dependent_cache_variable(GMX_CUDA_TARGET_COMPUTE "List of CUDA virtual architecture codes to compile for (without the compute_ prefix)" STRING "" GMX_CUDA_TARGET_COMPUTE)
+if (GMX_CUDA_TARGET_SM)
+    set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY HELPSTRING "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)")
+    set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY TYPE STRING)
+endif()
+if (GMX_CUDA_TARGET_COMPUTE)
+    set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY HELPSTRING "List of CUDA virtual architecture codes to compile for (without the compute_ prefix)")
+    set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY TYPE STRING)
+endif()
 
 # assemble the CUDA flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
