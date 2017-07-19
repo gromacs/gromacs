@@ -369,30 +369,29 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             md->ptype[i]    = atom.ptype;
             if (md->cTC)
             {
-                md->cTC[i]    = groups->grpnr[egcTC][ag];
+                md->cTC[i]    = ggrpnr(groups, egcTC, ag);
             }
-            md->cENER[i]    =
-                (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
+            md->cENER[i]    = ggrpnr(groups, egcENER, ag);
             if (md->cACC)
             {
-                md->cACC[i]   = groups->grpnr[egcACC][ag];
+                md->cACC[i]       = ggrpnr(groups, egcACC, ag);
             }
             if (md->cVCM)
             {
-                md->cVCM[i]       = groups->grpnr[egcVCM][ag];
+                md->cVCM[i]       = ggrpnr(groups, egcVCM, ag);
             }
             if (md->cORF)
             {
-                md->cORF[i]       = groups->grpnr[egcORFIT][ag];
+                md->cORF[i]       = ggrpnr(groups, egcORFIT, ag);
             }
 
             if (md->cU1)
             {
-                md->cU1[i]        = groups->grpnr[egcUser1][ag];
+                md->cU1[i]        = ggrpnr(groups, egcUser1, ag);
             }
             if (md->cU2)
             {
-                md->cU2[i]        = groups->grpnr[egcUser2][ag];
+                md->cU2[i]        = ggrpnr(groups, egcUser2, ag);
             }
 
             if (ir->bQMMM)
