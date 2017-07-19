@@ -140,12 +140,12 @@ int gmx_genconf(int argc, char *argv[])
         { efTRX, "-trj", nullptr,  ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static rvec       nrbox    = {1, 1, 1};
-    static int        seed     = 0;               /* seed for random number generator */
-    static gmx_bool   bRandom  = FALSE;           /* False: no random rotations */
-    static gmx_bool   bRenum   = TRUE;            /* renumber residues */
-    static rvec       dist     = {0, 0, 0};       /* space added between molecules ? */
-    static rvec       max_rot  = {180, 180, 180}; /* maximum rotation */
+    rvec              nrbox    = {1, 1, 1};
+    int               seed     = 0;               /* seed for random number generator */
+    gmx_bool          bRandom  = FALSE;           /* False: no random rotations */
+    gmx_bool          bRenum   = TRUE;            /* renumber residues */
+    rvec              dist     = {0, 0, 0};       /* space added between molecules ? */
+    rvec              max_rot  = {180, 180, 180}; /* maximum rotation */
     t_pargs           pa[]     = {
         { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
         { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },

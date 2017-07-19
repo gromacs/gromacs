@@ -933,10 +933,10 @@ int gmx_solvate(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    static real       defaultDistance = 0.105, r_shell = 0, scaleFactor = 0.57;
-    static rvec       new_box         = {0.0, 0.0, 0.0};
-    static gmx_bool   bReadV          = FALSE;
-    static int        max_sol         = 0;
+    real              defaultDistance = 0.105, r_shell = 0, scaleFactor = 0.57;
+    rvec              new_box         = {0.0, 0.0, 0.0};
+    gmx_bool          bReadV          = FALSE;
+    int               max_sol         = 0;
     gmx_output_env_t *oenv;
     t_pargs           pa[]              = {
         { "-box",    FALSE, etRVEC, {new_box},
