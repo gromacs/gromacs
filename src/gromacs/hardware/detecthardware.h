@@ -99,14 +99,4 @@ bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
 /* Parse the GPU ids the user may have passed. */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
-/*! \brief Check the consistency of hw_opt with hwinfo.
- *
- * This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      bool                 userSetGpuIds,
-                                      bool                 willUsePhysicalGpu);
-
 #endif

@@ -349,25 +349,26 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
+    int numGpuIdsSupplied = (hasUserSetGpuIds(&hw_opt->gpu_opt) ? hw_opt->gpu_opt.n_dev_use : 0);
+
     /* TODO Here we handle the case where the user set GPU IDs, and
        further below we handle the case where the algorithm does not
        support multiple ranks. We need also to handle the case where
        the user set multiple GPU IDs for an algorithm that cannot
        handle multiple ranks. */
-    if (hw_opt->nthreads_tmpi < 1 && hasUserSetGpuIds(&hw_opt->gpu_opt))
+    if (hw_opt->nthreads_tmpi < 1 && numGpuIdsSupplied > 0)
     {
         /* Set the number of thread-MPI ranks equal to the number of GPU
            ranks that the user chose. */
-        int numGpuRanks = hw_opt->gpu_opt.n_dev_use;
 
         /* If the user chose both mdrun -nt -gpu_id, is that consistent? */
         if (hw_opt->nthreads_tot > 0 &&
-            (hw_opt->nthreads_tot % numGpuRanks) != 0)
+            (hw_opt->nthreads_tot % numGpuIdsSupplied) != 0)
         {
-            gmx_fatal(FARGS, "Cannot run %d total threads with %d GPU ranks. Choose the total number of threads to be a multiple of the number of GPU ranks.", hw_opt->nthreads_tot, numGpuRanks);
+            gmx_fatal(FARGS, "Cannot run %d total threads with %d GPU ranks. Choose the total number of threads to be a multiple of the number of GPU ranks.", hw_opt->nthreads_tot, numGpuIdsSupplied);
         }
 
-        return numGpuRanks;
+        return numGpuIdsSupplied;
     }
 
     {
@@ -387,15 +388,31 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                 gmx_fatal(FARGS, "%s However, you asked for more than 1 thread-MPI rank, so mdrun cannot continue. Choose a single rank, or a different algorithm.", message.c_str());
             }
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("%s Choosing to use only a single thread-MPI rank.", message.c_str());
+
+            if (numGpuIdsSupplied > 1)
+            {
+                gmx_fatal(FARGS, "You supplied %d GPU IDs but only 1 rank can be used "
+                          "by this simulation. Supply only one GPU ID.", numGpuIdsSupplied);
+            }
             return 1;
         }
     }
 
     if (hw_opt->nthreads_tmpi > 0)
     {
+        if ((numGpuIdsSupplied > 0) &&
+            (numGpuIdsSupplied != hw_opt->nthreads_tmpi))
+        {
+            gmx_fatal(FARGS, "Cannot run %d thread-MPI ranks with %d GPU IDs supplied. "
+                      "The number of ranks and the number of GPU IDs must match.",
+                      hw_opt->nthreads_tmpi, numGpuIdsSupplied);
+        }
+
         /* Trivial, return the user's choice right away */
         return hw_opt->nthreads_tmpi;
     }
+    GMX_RELEASE_ASSERT(numGpuIdsSupplied == 0,
+                       "If mdrun -gpu_id had information, the number of ranks should have already been chosen");
 
     // Now implement automatic selection of number of thread-MPI ranks
     nthreads_hw = hwinfo->nthreads_hw_avail;
