@@ -1668,7 +1668,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
 int gmx_grompp(int argc, char *argv[])
 {
-    static const char *desc[] = {
+    const char        *desc[] = {
         "[THISMODULE] (the gromacs preprocessor)",
         "reads a molecular topology file, checks the validity of the",
         "file, expands the topology from a molecular description to an atomic",
@@ -1804,10 +1804,10 @@ int gmx_grompp(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options */
-    static gmx_bool bRenum   = TRUE;
-    static gmx_bool bRmVSBds = TRUE, bZero = FALSE;
-    static int      i, maxwarn = 0;
-    static real     fr_time = -1;
+    gmx_bool        bRenum   = TRUE;
+    gmx_bool        bRmVSBds = TRUE, bZero = FALSE;
+    int             i, maxwarn = 0;
+    real            fr_time = -1;
     t_pargs         pa[]    = {
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
