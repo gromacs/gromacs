@@ -1312,23 +1312,21 @@ int gmx_pdb2gmx(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-
-    /* Command line arguments must be static */
-    static gmx_bool    bNewRTP        = FALSE;
-    static gmx_bool    bInter         = FALSE, bCysMan = FALSE;
-    static gmx_bool    bLysMan        = FALSE, bAspMan = FALSE, bGluMan = FALSE, bHisMan = FALSE;
-    static gmx_bool    bGlnMan        = FALSE, bArgMan = FALSE;
-    static gmx_bool    bTerMan        = FALSE, bUnA = FALSE, bHeavyH;
-    static gmx_bool    bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
-    static gmx_bool    bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
-    static gmx_bool    bRenumRes      = FALSE, bRTPresname = FALSE;
-    static real        angle          = 135.0, distance = 0.3, posre_fc = 1000;
-    static real        long_bond_dist = 0.25, short_bond_dist = 0.05;
-    static const char *vsitestr[]     = { nullptr, "none", "hydrogens", "aromatics", nullptr };
-    static const char *watstr[]       = { nullptr, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", nullptr };
-    static const char *chainsep[]     = { nullptr, "id_or_ter", "id_and_ter", "ter", "id", "interactive", nullptr };
-    static const char *merge[]        = {nullptr, "no", "all", "interactive", nullptr };
-    static const char *ff             = "select";
+    gmx_bool           bNewRTP        = FALSE;
+    gmx_bool           bInter         = FALSE, bCysMan = FALSE;
+    gmx_bool           bLysMan        = FALSE, bAspMan = FALSE, bGluMan = FALSE, bHisMan = FALSE;
+    gmx_bool           bGlnMan        = FALSE, bArgMan = FALSE;
+    gmx_bool           bTerMan        = FALSE, bUnA = FALSE, bHeavyH = FALSE;
+    gmx_bool           bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
+    gmx_bool           bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
+    gmx_bool           bRenumRes      = FALSE, bRTPresname = FALSE;
+    real               angle          = 135.0, distance = 0.3, posre_fc = 1000;
+    real               long_bond_dist = 0.25, short_bond_dist = 0.05;
+    const char        *vsitestr[]     = { nullptr, "none", "hydrogens", "aromatics", nullptr };
+    const char        *watstr[]       = { nullptr, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", nullptr };
+    const char        *chainsep[]     = { nullptr, "id_or_ter", "id_and_ter", "ter", "id", "interactive", nullptr };
+    const char        *merge[]        = {nullptr, "no", "all", "interactive", nullptr };
+    const char        *ff             = "select";
 
     t_pargs            pa[] = {
         { "-newrtp", FALSE, etBOOL, {&bNewRTP},
