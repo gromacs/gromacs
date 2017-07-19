@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 #ifndef CUDA_ARCH_UTILS_CUH_
 #define CUDA_ARCH_UTILS_CUH_
 
+#include "config.h"
+
 /*! \file
  *  \brief CUDA arch dependent definitions.
  *
@@ -57,5 +59,79 @@
  */
 static const int warp_size      = 32;
 static const int warp_size_log2 = 5;
+/*! \brief Bitmask corresponding to all threads active in a warp.
+ *  NOTE that here too we assume 32-wide warps.
+ */
+static const unsigned int c_fullWarpMask = 0xffffffff;
+
+/* Below are backward-compatibility wrappers for CUDA 9 warp-wide intrinsics. */
+
+/*! \brief Compatibility wrapper around the CUDA __syncwarp() instrinsic.  */
+static __forceinline__ __device__
+void gmx_syncwarp(const unsigned int activeMask = c_fullWarpMask)
+{
+#if GMX_CUDA_VERSION < 9000
+    /* no sync needed on pre-Volta. */
+    GMX_UNUSED_VALUE(activeMask);
+#else
+    __syncwarp(activeMask);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __ballot()/__ballot_sync() instrinsic.  */
+static __forceinline__ __device__
+unsigned int gmx_ballot_sync(const unsigned int activeMask,
+                             const int          pred)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __ballot(pred);
+#else
+    return __ballot_sync(activeMask, pred);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __any()/__any_sync() instrinsic.  */
+static __forceinline__ __device__
+int gmx_any_sync(const unsigned int activeMask,
+                 const int          pred)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __any(pred);
+#else
+    return __any_sync(activeMask, pred);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __shfl_up()/__shfl_up_sync() instrinsic.  */
+template <typename T>
+static __forceinline__ __device__
+T gmx_shfl_up_sync(const unsigned int activeMask,
+                   const T            var,
+                   unsigned int       offset)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __shfl_up(var, offset);
+#else
+    return __shfl_up_sync(activeMask, var, offset);
+#endif
+}
+
+/*! \brief Compatibility wrapper around the CUDA __shfl_down()/__shfl_down_sync() instrinsic.  */
+template <typename T>
+static __forceinline__ __device__
+T gmx_shfl_down_sync(const unsigned int activeMask,
+                     const T            var,
+                     unsigned int       offset)
+{
+#if GMX_CUDA_VERSION < 9000
+    GMX_UNUSED_VALUE(activeMask);
+    return __shfl_down(var, offset);
+#else
+    return __shfl_down_sync(activeMask, var, offset);
+#endif
+}
 
 #endif /* CUDA_ARCH_UTILS_CUH_ */
