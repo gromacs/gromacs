@@ -356,7 +356,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         imask       = pl_cj4[j4].imei[widx].imask;
         wexcl       = excl[wexcl_idx].pair[(tidx) & (warp_size - 1)];
 
+        unsigned int activemask_imask = 0xffffffff;
 #ifndef PRUNE_NBL
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+        activemask_imask = __ballot_sync(0xffffffff, imask);
+#endif
         if (imask)
 #endif
         {
@@ -365,6 +369,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+            __syncwarp(activemask_imask);
+#endif
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
@@ -372,6 +379,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                Tested with up to nvcc 7.5 */
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+                const unsigned int activemask_superClInteractionMask = __ballot_sync(activemask_imask, (imask & (superClInteractionMask << (jm * c_numClPerSupercl))));
+#else
+                const unsigned int activemask_superClInteractionMask = activemask_imask;
+#endif
                 if (imask & (superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
@@ -396,6 +408,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
                     for (i = 0; i < c_numClPerSupercl; i++)
                     {
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+                        const unsigned int activemask_mask_ji = __ballot_sync(activemask_superClInteractionMask, (imask & mask_ji));
+#endif
                         if (imask & mask_ji)
                         {
                             ci      = sci * c_numClPerSupercl + i; /* i cluster index */
@@ -412,7 +427,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+                            if (!__any_sync(activemask_mask_ji,r2 < rlist_sq))
+#else
                             if (!__any(r2 < rlist_sq))
+#endif
                             {
                                 imask &= ~mask_ji;
                             }
@@ -573,7 +592,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     }
 
                     /* reduce j forces */
-                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj);
+                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj,activemask_superClInteractionMask);
                 }
             }
 #ifdef PRUNE_NBL
@@ -582,6 +601,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
+        //avoid shared memory WAR hazards between loop iterations
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+        __syncwarp();
+#endif
     }
 
     /* skip central shifts when summing shift forces */
@@ -598,7 +621,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ai  = (sci * c_numClPerSupercl + i) * c_clSize + tidxi;
         reduce_force_i_warp_shfl(fci_buf[i], f,
                                  &fshift_buf, bCalcFshift,
-                                 tidxj, ai);
+                                 tidxj, ai,0xffffffff);
     }
 
     /* add up local shift forces into global mem, tidxj indexes x,y,z */
@@ -609,7 +632,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef CALC_ENERGIES
     /* reduce the energies over warps and store into global memory */
-    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx);
+    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx,0xffffffff);
 #endif
 }
 #endif /* FUNCTION_DECLARATION_ONLY */

@@ -535,26 +535,46 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 #if GMX_PTX_ARCH >= 300 || GMX_PTX_ARCH == 0
 static __forceinline__ __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
-                              int tidxi, int aidx)
+                              int tidxi, int aidx,
+                             const unsigned int 
+#if !defined(GMX_CUDA_VERSION) || GMX_CUDA_VERSION < 9000
+                             gmx_unused
+#endif
+                             activemask)
 {
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+    f.x += __shfl_down_sync(activemask,f.x, 1);
+    f.y += __shfl_up_sync  (activemask,f.y, 1);
+    f.z += __shfl_down_sync(activemask,f.z, 1);
+#else
     f.x += __shfl_down(f.x, 1);
     f.y += __shfl_up  (f.y, 1);
     f.z += __shfl_down(f.z, 1);
+#endif
 
     if (tidxi & 1)
     {
         f.x = f.y;
     }
 
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+    f.x += __shfl_down_sync(activemask,f.x, 2);
+    f.z += __shfl_up_sync  (activemask,f.z, 2);
+#else
     f.x += __shfl_down(f.x, 2);
     f.z += __shfl_up  (f.z, 2);
+#endif
 
     if (tidxi & 2)
     {
         f.x = f.z;
     }
 
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+    f.x += __shfl_down_sync(activemask,f.x, 4);
+#else
     f.x += __shfl_down(f.x, 4);
+#endif
 
     if (tidxi < 3)
     {
@@ -662,19 +682,35 @@ void reduce_force_i(float *f_buf, float3 *f,
 static __forceinline__ __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
-                              int tidxj, int aidx)
+                              int tidxj, int aidx,
+                             const unsigned int 
+#if !defined(GMX_CUDA_VERSION) || GMX_CUDA_VERSION < 9000
+                             gmx_unused
+#endif
+                             activemask)
 {
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+    fin.x += __shfl_down_sync(activemask,fin.x, c_clSize);
+    fin.y += __shfl_up_sync  (activemask,fin.y, c_clSize);
+    fin.z += __shfl_down_sync(activemask,fin.z, c_clSize);
+#else
     fin.x += __shfl_down(fin.x, c_clSize);
     fin.y += __shfl_up  (fin.y, c_clSize);
     fin.z += __shfl_down(fin.z, c_clSize);
+#endif
 
     if (tidxj & 1)
     {
         fin.x = fin.y;
     }
 
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+    fin.x += __shfl_down_sync(activemask,fin.x, 2*c_clSize);
+    fin.z += __shfl_up_sync  (activemask,fin.z, 2*c_clSize);
+#else
     fin.x += __shfl_down(fin.x, 2*c_clSize);
     fin.z += __shfl_up  (fin.z, 2*c_clSize);
+#endif
 
     if (tidxj & 2)
     {
@@ -739,7 +775,12 @@ void reduce_energy_pow2(volatile float *buf,
 static __forceinline__ __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
-                             int tidx)
+                             int tidx,
+                             const unsigned int 
+#if !defined(GMX_CUDA_VERSION) || GMX_CUDA_VERSION < 9000
+                             gmx_unused
+#endif
+                             activemask)
 {
     int i, sh;
 
@@ -747,8 +788,13 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
 #pragma unroll 5
     for (i = 0; i < 5; i++)
     {
+#if defined(GMX_CUDA_VERSION) && GMX_CUDA_VERSION >= 9000
+        E_lj += __shfl_down_sync(activemask,E_lj, sh);
+        E_el += __shfl_down_sync(activemask,E_el, sh);
+#else
         E_lj += __shfl_down(E_lj, sh);
         E_el += __shfl_down(E_el, sh);
+#endif
         sh   += sh;
     }
 
