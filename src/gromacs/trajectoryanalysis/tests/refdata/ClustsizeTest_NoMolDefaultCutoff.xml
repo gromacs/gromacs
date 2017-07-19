@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">clustsize</String>
+  <String Name="CommandLine">clustsize -nomol -cut 0.35 -nlevels 20</String>
   <OutputFiles Name="Files">
     <File Name="-mc">
       <XvgLegend Name="Legend">

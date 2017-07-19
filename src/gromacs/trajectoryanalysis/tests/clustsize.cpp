@@ -98,7 +98,7 @@ class ClustsizeTest : public CommandLineTestBase
 
 TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 {
-    const char *const command[] = { "clustsize" };
+    const char *const command[] = { "clustsize", "-nomol", "-cut", "0.35", "-nlevels", "20" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-n", "clustsize.ndx");
@@ -108,7 +108,7 @@ TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 
 TEST_F(ClustsizeTest, NoMolShortCutoff)
 {
-    const char *const command[] = { "clustsize", "-cut", "0.3" };
+    const char *const command[] = { "clustsize", "-nomol", "-cut", "0.3", "-nlevels", "20" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-n", "clustsize.ndx");
@@ -118,7 +118,7 @@ TEST_F(ClustsizeTest, NoMolShortCutoff)
 
 TEST_F(ClustsizeTest, MolDefaultCutoff)
 {
-    const char *const command[] = { "clustsize", "-mol" };
+    const char *const command[] = { "clustsize", "-mol", "-cut", "0.35", "-nlevels", "20" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-s", "clustsize.tpr");
@@ -128,7 +128,7 @@ TEST_F(ClustsizeTest, MolDefaultCutoff)
 
 TEST_F(ClustsizeTest, MolShortCutoff)
 {
-    const char *const command[] = { "clustsize", "-mol", "-cut", "0.3" };
+    const char *const command[] = { "clustsize", "-mol", "-cut", "0.3", "-nlevels", "20" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-s", "clustsize.tpr");
@@ -138,7 +138,7 @@ TEST_F(ClustsizeTest, MolShortCutoff)
 
 TEST_F(ClustsizeTest, MolCSize)
 {
-    const char *const command[] = { "clustsize", "-mol", "-nlevels", "6" };
+    const char *const command[] = { "clustsize", "-mol", "-nlevels", "6", "-cut", "0.35" };
     CommandLine       args      = CommandLine(command);
 
     setOutputFile("-o", ".xpm", ExactTextMatch());
