@@ -60,14 +60,14 @@ endif()
 
 # Set library optimizations
 set(_fftw_simd_support_level "")
-if(${GMX_SIMD} MATCHES "^(SSE|AVX)" AND APPLE)
+if(${GMX_SIMD_ACTIVE} MATCHES "^(SSE|AVX)" AND APPLE)
     # OS X and --enable-avx causes compilation issues (fftw always picks gcc by default). It's
     # not an important enough performance loss to bother warning the
     # user about.
     set(_fftw_simd_support_level "--enable-sse2")
-elseif(${GMX_SIMD} MATCHES "^(SSE)")
+elseif(${GMX_SIMD_ACTIVE} MATCHES "^(SSE)")
     set(_fftw_simd_support_level "--enable-sse2")
-elseif(${GMX_SIMD} MATCHES "^(AVX)")
+elseif(${GMX_SIMD_ACTIVE} MATCHES "^(AVX)")
     # Testing shows FFTW configured with --enable-sse2 --enable-avx is
     # slightly faster on most architectures than --enable-sse2 alone.
     # Support for --enable-avx2 was only added in 3.3.5, but
@@ -82,7 +82,7 @@ if(MSVC OR (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.
 else()
     set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2;--enable-avx512)
 endif()
-elseif(${GMX_SIMD} MATCHES "^(VSX)")
+elseif(${GMX_SIMD_ACTIVE} MATCHES "^(VSX)")
     set(_fftw_simd_support_level --enable-vsx)
 endif()
 set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION ${_fftw_simd_support_level} CACHE INTERNAL "Optimization flags for FFTW compilation")
