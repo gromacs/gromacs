@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,6 +108,14 @@
  *
  * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
  * shuffle-based reduction, hence CC >= 3.0.
+ *
+ *
+ * NOTEs / TODO on Volta / CUDA 9 support extensions:
+ * - the current way of computing active mask using ballot_sync() should be
+ *   reconsidered: we can compute most of the masks with bitwise ops;
+ * - reconsider the use of __syncwarp(): its only role is currently to prevent
+ *   WAR hazard due to the cj preload; we should try to replace it with direct
+ *   loads (which may be faster given the improved L1 on Volta).
  */
 
 /* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
@@ -342,6 +350,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #endif                                  /* CALC_ENERGIES */
 
+    unsigned int j4LoopThreadMask = gmx_ballot_sync(c_fullWarpMask, (cij4_start + tidxz) < cij4_end);
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
@@ -349,7 +358,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         imask       = pl_cj4[j4].imei[widx].imask;
         wexcl       = excl[wexcl_idx].pair[(tidx) & (warp_size - 1)];
 
+        unsigned int imaskSkipConditionThreadMask = j4LoopThreadMask;
 #ifndef PRUNE_NBL
+        imaskSkipConditionThreadMask = gmx_ballot_sync(j4LoopThreadMask, imask);
         if (imask)
 #endif
         {
@@ -358,6 +369,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             {
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
+            gmx_syncwarp(imaskSkipConditionThreadMask);
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
@@ -365,7 +377,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                Tested with up to nvcc 7.5 */
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                if (imask & (superClInteractionMask << (jm * c_numClPerSupercl)))
+                const unsigned int jmSkipCondition           = imask & (superClInteractionMask << (jm * c_numClPerSupercl));
+                const unsigned int jmSkipConditionThreadMask = gmx_ballot_sync(imaskSkipConditionThreadMask, jmSkipCondition);
+                if (jmSkipCondition)
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
 
@@ -389,7 +403,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
                     for (i = 0; i < c_numClPerSupercl; i++)
                     {
-                        if (imask & mask_ji)
+                        const unsigned int iInnerSkipCondition           = imask & mask_ji;
+                        const unsigned int iInnerSkipConditionThreadMask = gmx_ballot_sync(jmSkipConditionThreadMask, iInnerSkipCondition);
+                        if (iInnerSkipCondition)
                         {
                             ci      = sci * c_numClPerSupercl + i; /* i cluster index */
 
@@ -405,7 +421,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
                                cluster-pair in imask gets set to 0. */
-                            if (!__any(r2 < rlist_sq))
+                            if (!gmx_any_sync(iInnerSkipConditionThreadMask, r2 < rlist_sq))
                             {
                                 imask &= ~mask_ji;
                             }
@@ -568,7 +584,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     }
 
                     /* reduce j forces */
-                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj);
+                    reduce_force_j_warp_shfl(fcj_buf, f, tidxi, aj, jmSkipConditionThreadMask);
                 }
             }
 #ifdef PRUNE_NBL
@@ -577,6 +593,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
+        // avoid shared memory WAR hazards between loop iterations
+        gmx_syncwarp(j4LoopThreadMask);
+        // update thread mask for next loop iteration
+        j4LoopThreadMask = gmx_ballot_sync(c_fullWarpMask, (j4 + NTHREAD_Z) < cij4_end);
     }
 
     /* skip central shifts when summing shift forces */
@@ -593,7 +613,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ai  = (sci * c_numClPerSupercl + i) * c_clSize + tidxi;
         reduce_force_i_warp_shfl(fci_buf[i], f,
                                  &fshift_buf, bCalcFshift,
-                                 tidxj, ai);
+                                 tidxj, ai, c_fullWarpMask);
     }
 
     /* add up local shift forces into global mem, tidxj indexes x,y,z */
@@ -604,7 +624,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef CALC_ENERGIES
     /* reduce the energies over warps and store into global memory */
-    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx);
+    reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx, c_fullWarpMask);
 #endif
 }
 #endif /* FUNCTION_DECLARATION_ONLY */
