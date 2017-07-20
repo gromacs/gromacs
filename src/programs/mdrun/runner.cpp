@@ -1192,9 +1192,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (bUseGPU && !emulateGpu)
     {
-        /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(cr, hwinfo->gpu_info,
-                                userSetGpuIds, &hw_opt->gpu_opt);
+        /* Currently the DD code assigns duty to ranks that can include PP work
+         * that currently can be executed on a single GPU, if present and compatible.
+         * This has to be coordinated across PP ranks on a node, with possible
+         * multiple devices or sharing devices on a node. */
+        bool rankCanUseGpu = cr->duty & DUTY_PP;
+        /* Map GPU IDs to ranks by filling or validating hw_opt->gpu_opt->dev_use */
+        mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
+                         userSetGpuIds, &hw_opt->gpu_opt);
     }
     else
     {
