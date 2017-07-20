@@ -820,7 +820,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb) / ic->rcoulomb;
     }
     if (EVDW_PME(ic->vdwtype))
     {
