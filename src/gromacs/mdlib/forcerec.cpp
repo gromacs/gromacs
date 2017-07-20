@@ -2097,7 +2097,7 @@ init_interaction_const(FILE                       *fp,
 
     if (fr->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb) / ic->rcoulomb;
     }
     else
     {
