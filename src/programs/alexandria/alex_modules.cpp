@@ -58,6 +58,7 @@ int alex_merge_mp(int argc, char *argv[]);
 int alex_mp2csv(int argc, char *argv[]);
 int alex_molprop_test(int argc, char *argv[]);
 int alex_molprop_check(int argc, char *argv[]);
+int alex_tune_zeta(int argc, char *argv[]);
 
 /*! \brief
  * Convenience function for creating and registering a module.
@@ -82,7 +83,9 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &alex_tune_fc, "tune_fc",
                    "Optimize force field parameters");
     registerModule(manager, &alex_tune_pol, "tune_pol",
-                   "Optimize polarizabilities");
+                   "Optimize atomic polarizabilities");
+    registerModule(manager, &alex_tune_zeta, "tune_zeta",
+                   "Optimize the distribution of Gaussian and Slater charges");
     registerModule(manager, &alex_tune_dip, "tune_dip",
                    "Optimize electrostatics parameters");
     registerModule(manager, &alex_bastat, "bastat",
@@ -109,6 +112,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Alexandria core tools");
         group.addModule("bastat");
         group.addModule("tune_pol");
+        group.addModule("tune_zeta");
         group.addModule("tune_dip");
         group.addModule("tune_fc");
         group.addModule("gauss2molprop");

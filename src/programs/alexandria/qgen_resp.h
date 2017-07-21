@@ -230,6 +230,8 @@ class QgenResp
 
         real myWeight(int iatom) const;
 
+        void updateZeta(t_atoms *atoms, const Poldata &pd);
+
     private:
         //! Return the charge for one "shell" of an atom
         double getCharge(int atom, size_t zz) const;

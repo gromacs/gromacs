@@ -1165,4 +1165,18 @@ void QgenResp::setZeta(int atom, int zz, double zeta)
     (rat->beginRZ()+zz)->setZeta(zeta);
 }
 
+void QgenResp::updateZeta(t_atoms *atoms, const Poldata &pd)
+{
+    for (size_t i = 0; i < nAtom(); i++)
+    {
+        int zz = 0;
+        if (atoms->atom[i].ptype == eptShell)
+        {
+            zz = 1;
+        }
+        auto zeta  = pd.getZeta(iDistributionModel_, *(atoms->atomtype[i]), zz);
+        setZeta(static_cast<int>(i), zz, zeta);
+    }
+}
+
 } // namespace
