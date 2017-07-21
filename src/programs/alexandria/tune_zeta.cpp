@@ -227,7 +227,10 @@ void OptZeta::calcDeviation()
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
             {
                 mymol.mtop_->moltype[0].atoms.atom[j].q = 
-                  mymol.mtop_->moltype[0].atoms.atom[j].qB = mymol.Qgresp_.getAtomCharge(j);     
+                  mymol.mtop_->moltype[0].atoms.atom[j].qB = mymol.Qgresp_.getAtomCharge(j);
+
+                mymol.topology_->atoms.atom[j].q      =
+                    mymol.topology_->atoms.atom[j].qB = mymol.Qgresp_.getAtomCharge(j);
                     
             }            
             mymol.Qgresp_.calcPot();
