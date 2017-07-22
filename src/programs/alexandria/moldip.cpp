@@ -242,7 +242,7 @@ int IndexCount::cleanIndex(int   minimum_data,
 {
     int nremove = 0;
 
-    for (auto ai = atomIndex_.begin(); ai < atomIndex_.end(); ++ai)
+    for (auto ai = atomIndex_.begin(); ai < atomIndex_.end();)
     {
         if (!ai->isConst() && (ai->count() < minimum_data))
         {
@@ -253,6 +253,10 @@ int IndexCount::cleanIndex(int   minimum_data,
             }
             ai = atomIndex_.erase(ai);
             nremove++;
+        }
+        else
+        {
+            ++ai;
         }
     }
     return nremove;
@@ -406,13 +410,17 @@ void MolDip::Read(FILE            *fp,
     if (MASTER(cr_))
     {
         MolPropRead(fn, mp);
-        for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
+        for (auto mpi = mp.begin(); mpi < mp.end();)
         {
+            mpi->CheckConsistency();
             if (false == mpi->GenerateComposition(pd_))
             {
                 mpi = mp.erase(mpi);
             }
-            mpi->CheckConsistency();
+            else
+            {
+                ++mpi;
+            }
         }
         nmol_cpu = mp.size()/cr_->nnodes + 1;
     }
