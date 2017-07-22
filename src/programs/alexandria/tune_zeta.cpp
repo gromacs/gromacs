@@ -366,10 +366,11 @@ void OptZeta::tuneZeta2PolData()
             for (auto i = 0; i < nzeta; i++)
             {
                 auto zeta = param_[n++];
-                sprintf(buf, "  %10g", zeta);
+                sprintf(buf, "%g ", zeta);
                 strcat(zstr, buf);
             }                
             ei->setRowZetaQ(rowstr, zstr, qstr);
+            ei->setZetastr(zstr);
         }               
     }
     if (bOptHfac_)
@@ -1146,7 +1147,7 @@ int alex_tune_zeta(int argc, char *argv[])
     t_filenm                    fnm[] = {
         { efDAT, "-f",         "allmols",       ffREAD  },
         { efDAT, "-d",         "gentop",        ffOPTRD },
-        { efDAT, "-o",         "tunedip",       ffWRITE },
+        { efDAT, "-o",         "tunezeta",       ffWRITE },
         { efDAT, "-sel",       "molselect",     ffREAD  },
         { efXVG, "-table",     "table",         ffOPTRD },
         { efLOG, "-g",         "charges",       ffWRITE },

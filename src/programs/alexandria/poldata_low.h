@@ -804,6 +804,8 @@ class Eemprops
                          const std::string &zetastr,
                          const std::string &qstr);
 
+        void setZetastr(const std::string &zetastr) {zetastr_ = zetastr;}
+
         void setJ0(double J0) { J0_ = J0; }
         
         void setJ0_sigma(double J0_sigma) { J0_sigma_ = J0_sigma;}

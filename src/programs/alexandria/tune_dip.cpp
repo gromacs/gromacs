@@ -503,10 +503,11 @@ void OPtimization::tuneDip2PolData()
                 for (auto zz = 0; zz < nzeta; zz++)
                 {
                     auto zeta = param_[n++];
-                    sprintf(buf, "  %10g", zeta);
+                    sprintf(buf, "%g ", zeta);
                     strcat(zstr, buf);
                 }                
                 ei->setRowZetaQ(rowstr, zstr, qstr);
+                ei->setZetastr(zstr);
             }
             if (bFitAlpha_)
             {
