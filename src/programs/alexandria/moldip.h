@@ -34,6 +34,7 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * \author  Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef MOLDIP_H
@@ -151,25 +152,38 @@ class MolDip
 {
     private:
     public:
-        bool                            bDone_, bFinal_, bGaussianBug_;
-        bool                            bFitZeta_, bfullTensor_;
-        std::vector<alexandria::MyMol>  mymol_;
-        int                             nmol_support_, mindata_;
+        int                             nmol_support_;
+        int                             mindata_;
+        real                            J0_min_;
+        real                            Chi0_min_;
+        real                            zeta_min_;
+        real                            J0_max_;
+        real                            Chi0_max_;
+        real                            zeta_max_;
+        real                            hfac_;
+        real                            hfac0_;
+        real                            decrzeta_;
+        real                            ener_[ermsNR];
+        real                            fc_[ermsNR];
+        char                           *fixchi_;
+        gmx_bool                        bOptHfac_;
+        gmx_bool                        bPol_;
+        gmx_bool                        bQM_;
+        gmx_bool                        bDone_;
+        gmx_bool                        bFinal_;
+        gmx_bool                        bGaussianBug_;
+        gmx_bool                        bFitZeta_;
+        gmx_bool                        bfullTensor_;
+        Poldata                         pd_;
+        t_commrec                      *cr_;
+        t_inputrec                     *inputrec_;
+        IndexCount                      indexCount_;
+        gmx_hw_info_t                  *hwinfo_;
+        gmx_atomprop_t                  atomprop_;
         ChargeDistributionModel         iChargeDistributionModel_;
         ChargeGenerationAlgorithm       iChargeGenerationAlgorithm_;
-        IndexCount                      indexCount_;
-        real                            J0_0_, Chi0_0_, w_0_, J0_1_, Chi0_1_, w_1_;
-        real                            hfac_, hfac0_, decrzeta_;
-        real                            ener_[ermsNR], fc_[ermsNR];
-        gmx_bool                        bOptHfac_, bPol_, bQM_;
-        char                           *fixchi_;
-        Poldata                         pd_;
-        gmx_atomprop_t                  atomprop_;
-        t_commrec                      *cr_;
         gmx::MDModules                  mdModules_;
-        t_inputrec                     *inputrec_;
-        gmx_hw_info_t                  *hwinfo_;
-
+        std::vector<alexandria::MyMol>  mymol_;
 
         MolDip();
 
@@ -180,24 +194,49 @@ class MolDip
         immStatus check_data_sufficiency(alexandria::MyMol  mymol, 
                                          IndexCount        *ic);
                                                  
-        void Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
-                  ChargeDistributionModel iChargeDistributionModel,
+        void Init(t_commrec                *cr,
+                  gmx_bool                  bQM,
+                  gmx_bool                  bGaussianBug,
+                  ChargeDistributionModel   iChargeDistributionModel,
                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                  real rDecrZeta,
-                  real J0_0, real Chi0_0, real w_0,
-                  real J0_1, real Chi0_1, real w_1,
-                  real fc_bound, real fc_mu, real fc_quad, real fc_charge,
-                  real fc_esp, real fc_epot, real fc_force, char *fixchi,
-                  gmx_bool bOptHfac, real hfac,
-                  gmx_bool bPol, gmx_bool bFitZeta, 
-                  gmx_hw_info_t *hwinfo, gmx_bool bfullTensor, int mindata);
+                  real                      rDecrZeta,
+                  real                      J0_min,
+                  real                      Chi0_min,
+                  real                      zeta_min,
+                  real                      J0_max,
+                  real                      Chi0_max,
+                  real                      zeta_max,
+                  real                      fc_bound,
+                  real                      fc_mu,
+                  real                      fc_quad,
+                  real                      fc_charge,
+                  real                      fc_esp,
+                  real                      fc_epot,
+                  real                      fc_force,
+                  char                     *fixchi,
+                  gmx_bool                  bOptHfac,
+                  real                      hfac,
+                  gmx_bool                  bPol,
+                  gmx_bool                  bFitZeta, 
+                  gmx_hw_info_t            *hwinfo,
+                  gmx_bool                  bfullTensor,
+                  int                       mindata);
 
-        void Read(FILE *fp, const char *fn, const char *pd_fn,
-                  gmx_bool bZero, char *opt_elem, char *const_elem,
-                  char *lot, const MolSelect &gms,
-                  real watoms, gmx_bool bCheckSupport,
-                  bool bPairs, bool bDihedral,
-                  bool bPolar, bool bZPE, const char *tabfn);
+        void Read(FILE                      *fp,
+                  const char                *fn,
+                  const char                *pd_fn,
+                  gmx_bool                   bZero,
+                  char                      *opt_elem,
+                  char                      *const_elem,
+                  char                      *lot,
+                  const MolSelect           &gms,
+                  real                       watoms,
+                  gmx_bool                   bCheckSupport,
+                  bool                       bPairs,
+                  bool                       bDihedral,
+                  bool                       bPolar,
+                  bool                       bZPE,
+                  const char                *tabfn);
 
 };
 

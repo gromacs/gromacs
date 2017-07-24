@@ -1956,15 +1956,15 @@ int alex_tune_fc(int argc, char *argv[])
     static real           tol           = 1e-3;
     static real           stol          = 1e-6;
     static real           watoms        = 0;   
-    static real           J0_0          = 5;
-    static real           Chi0_0        = 1;
-    static real           w_0           = 5;
+    static real           J0_min        = 5;
+    static real           Chi0_min      = 1;
+    static real           zeta_min      = 5;
     static real           step          = 0.01;
     static real           hfac          = 0.0;
     static real           rDecrZeta     = -1;
-    static real           J0_1          = 30;
-    static real           Chi0_1        = 30;
-    static real           w_1           = 50;
+    static real           J0_max        = 30;
+    static real           Chi0_max      = 30;
+    static real           zeta_max      = 50;
     static real           fc_mu         = 1;
     static real           fc_bound      = 1;
     static real           fc_quad       = 1;
@@ -2135,7 +2135,7 @@ int alex_tune_fc(int argc, char *argv[])
     
     opt.Init(cr, bQM, bGaussianBug, iChargeDistributionModel,
              iChargeGenerationAlgorithm, rDecrZeta,
-             J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
+             J0_min, Chi0_min, zeta_min, J0_max, Chi0_max, zeta_max,
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi,
              bOptHfac, hfac, bPolar, bFitZeta, 

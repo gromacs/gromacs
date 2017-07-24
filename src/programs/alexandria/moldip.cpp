@@ -311,19 +311,33 @@ immStatus MolDip::check_data_sufficiency(alexandria::MyMol    mymol,
     return imm;
 }
 
-void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
-                  ChargeDistributionModel iChargeDistributionModel,
+void MolDip::Init(t_commrec                *cr,
+                  gmx_bool                  bQM,
+                  gmx_bool                  bGaussianBug,
+                  ChargeDistributionModel   iChargeDistributionModel,
                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                  real rDecrZeta,
-                  real J0_0, real Chi0_0, real w_0,
-                  real J0_1, real Chi0_1, real w_1,
-                  real fc_bound, real fc_mu, real fc_quad, real fc_charge,
-                  real fc_esp, real fc_epot, real fc_force, char *fixchi,
-                  gmx_bool bOptHfac, real hfac,
-                  gmx_bool bPol, gmx_bool bFitZeta, 
-                  gmx_hw_info_t *hwinfo,
-                  gmx_bool bfullTensor,
-                  int      mindata)
+                  real                      rDecrZeta,
+                  real                      J0_min,
+                  real                      Chi0_min,
+                  real                      zeta_min,
+                  real                      J0_max,
+                  real                      Chi0_max,
+                  real                      zeta_max,
+                  real                      fc_bound,
+                  real                      fc_mu,
+                  real                      fc_quad,
+                  real                      fc_charge,
+                  real                      fc_esp,
+                  real                      fc_epot,
+                  real                      fc_force,
+                  char                     *fixchi,
+                  gmx_bool                  bOptHfac,
+                  real                      hfac,
+                  gmx_bool                  bPol,
+                  gmx_bool                  bFitZeta, 
+                  gmx_hw_info_t            *hwinfo,
+                  gmx_bool                  bfullTensor,
+                  int                       mindata)
 {
     cr_                         = cr;
     bQM_                        = bQM;
@@ -334,12 +348,12 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     iChargeDistributionModel_   = iChargeDistributionModel;
     iChargeGenerationAlgorithm_ = iChargeGenerationAlgorithm;
     decrzeta_                   = rDecrZeta;
-    J0_0_                       = J0_0;
-    Chi0_0_                     = Chi0_0;
-    w_0_                        = w_0;
-    J0_1_                       = J0_1;
-    Chi0_1_                     = Chi0_1;
-    w_1_                        = w_1;
+    J0_min_                     = J0_min;
+    Chi0_min_                   = Chi0_min;
+    zeta_min_                   = zeta_min;
+    J0_max_                     = J0_max;
+    Chi0_max_                   = Chi0_max;
+    zeta_max_                   = zeta_max;
     fc_[ermsMU]                 = fc_mu;
     fc_[ermsBOUNDS]             = fc_bound;
     fc_[ermsQUAD]               = fc_quad;
@@ -373,9 +387,10 @@ void MolDip::Read(FILE            *fp,
                   bool             bZPE,
                   const char      *tabfn)
 {
-    int                              nwarn = 0, nmol_cpu = 0;
+    int                              nwarn    = 0;
+    int                              nmol_cpu = 0;
     int                              imm_count[immNR];
-    immStatus                        imm = immOK;
+    immStatus                        imm      = immOK;
     std::vector<alexandria::MolProp> mp;
 
     atomprop_  = gmx_atomprop_init();    

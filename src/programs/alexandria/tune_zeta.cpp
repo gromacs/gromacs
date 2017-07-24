@@ -424,7 +424,7 @@ double OptZeta::objFunction(const double v[])
             for (auto i = 0; i < nzeta; i++)
             {
                 auto zeta = param_[n++];
-                bounds += harmonic(zeta, w_0_, w_1_);
+                bounds += harmonic(zeta, zeta_min_, zeta_max_);
             }       
         }
     }   
@@ -1172,15 +1172,15 @@ int alex_tune_zeta(int argc, char *argv[])
     static real                 tol           = 1e-3;
     static real                 stol          = 1e-6;
     static real                 watoms        = 0;
-    static real                 J0_0          = 5;
-    static real                 Chi0_0        = 1;
-    static real                 w_0           = 5;
+    static real                 J0_min        = 5;
+    static real                 Chi0_min      = 1;
+    static real                 zeta_min      = 5;
     static real                 step          = 0.01;
     static real                 hfac          = 0;
     static real                 rDecrZeta     = -1;
-    static real                 J0_1          = 30;
-    static real                 Chi0_1        = 30;
-    static real                 w_1           = 50;
+    static real                 J0_max        = 30;
+    static real                 Chi0_max      = 30;
+    static real                 zeta_max      = 50;
     static real                 fc_mu         = 1;
     static real                 fc_bound      = 1;
     static real                 fc_quad       = 1;
@@ -1240,17 +1240,17 @@ int alex_tune_zeta(int argc, char *argv[])
           "Electronegativity for this atom type is fixed. Set to FALSE if you want this variable as well, but read the help text above." },
         { "-seed",   FALSE, etINT,  {&seed},
           "Random number seed. If zero, a seed will be generated." },
-        { "-j0",    FALSE, etREAL, {&J0_0},
+        { "-j0",    FALSE, etREAL, {&J0_min},
           "Minimum value that J0 (eV) can obtain in fitting" },
-        { "-chi0",    FALSE, etREAL, {&Chi0_0},
+        { "-chi0",    FALSE, etREAL, {&Chi0_min},
           "Minimum value that Chi0 (eV) can obtain in fitting" },
-        { "-z0",    FALSE, etREAL, {&w_0},
+        { "-z0",    FALSE, etREAL, {&zeta_min},
           "Minimum value that inverse radius (1/nm) can obtain in fitting" },
-        { "-j1",    FALSE, etREAL, {&J0_1},
+        { "-j1",    FALSE, etREAL, {&J0_max},
           "Maximum value that J0 (eV) can obtain in fitting" },
-        { "-chi1",    FALSE, etREAL, {&Chi0_1},
+        { "-chi1",    FALSE, etREAL, {&Chi0_max},
           "Maximum value that Chi0 (eV) can obtain in fitting" },
-        { "-z1",    FALSE, etREAL, {&w_1},
+        { "-z1",    FALSE, etREAL, {&zeta_max},
           "Maximum value that inverse radius (1/nm) can obtain in fitting" },
         { "-decrzeta", FALSE, etREAL, {&rDecrZeta},
           "Generate decreasing zeta with increasing row numbers for atoms that have multiple distributed charges. In this manner the 1S electrons are closer to the nucleus than 2S electrons and so on. If this number is < 0, nothing is done, otherwise a penalty is imposed in fitting if the Z2-Z1 < this number." },
@@ -1364,8 +1364,8 @@ int alex_tune_zeta(int argc, char *argv[])
     opt.Init(cr, bQM, bGaussianBug,
              iChargeDistributionModel,
              iChargeGenerationAlgorithm,
-             rDecrZeta, J0_0, Chi0_0, w_0, 
-             J0_1, Chi0_1, w_1, fc_bound, 
+             rDecrZeta, J0_min, Chi0_min, zeta_min, 
+             J0_max, Chi0_max, zeta_max, fc_bound, 
              fc_mu, fc_quad, fc_charge,
              fc_esp, 1, 1, fixchi, bOptHfac, hfac, 
              bPolar, false, hwinfo, bfullTensor, mindata);
