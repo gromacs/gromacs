@@ -1167,16 +1167,31 @@ void QgenResp::setZeta(int atom, int zz, double zeta)
 
 void QgenResp::updateZeta(t_atoms *atoms, const Poldata &pd)
 {
+    int     zz = 0;
+    double zeta = 0;
     for (size_t i = 0; i < nAtom(); i++)
     {
-        int zz = 0;
+        zz   = 0;
+        zeta = 0;
         if (atoms->atom[i].ptype == eptShell)
         {
-            zz = 1;
+            std::string atomtype     = *(atoms->atomtype[i]);
+            size_t      shell_name   = atomtype.find("_s");
+            std::string atomtype_new = atomtype;
+            if (shell_name != std::string::npos)
+            {
+                zz = 1;
+                atomtype_new = atomtype.substr(0, shell_name);
+            }
+            zeta = pd.getZeta(iDistributionModel_, atomtype_new, zz);
         }
-        auto zeta  = pd.getZeta(iDistributionModel_, *(atoms->atomtype[i]), zz);
-        setZeta(static_cast<int>(i), zz, zeta);
+        else if (atoms->atom[i].ptype == eptAtom)
+        {
+            zeta = pd.getZeta(iDistributionModel_, *(atoms->atomtype[i]), zz);
+        }        
+        setZeta(static_cast<int>(i), 0, zeta);
     }
 }
 
 } // namespace
+
