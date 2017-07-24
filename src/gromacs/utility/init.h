@@ -56,6 +56,7 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
+ * \ingroup group_utilitymodules
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_INIT_H
