@@ -39,9 +39,7 @@
  */
 
 #include "moldip.h"
-
 #include <cmath>
-
 #include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
@@ -380,8 +378,7 @@ void MolDip::Read(FILE            *fp,
     immStatus                        imm = immOK;
     std::vector<alexandria::MolProp> mp;
 
-    atomprop_  = gmx_atomprop_init();
-    
+    atomprop_  = gmx_atomprop_init();    
     for (int i = 0; i < immNR; i++)
     {
         imm_count[i] = 0;
@@ -413,7 +410,7 @@ void MolDip::Read(FILE            *fp,
         for (auto mpi = mp.begin(); mpi < mp.end();)
         {
             mpi->CheckConsistency();
-            if (false == mpi->GenerateComposition(pd_))
+            if (false == mpi->GenerateComposition(pd_) || imsTrain != gms.status(mpi->getIupac()))
             {
                 mpi = mp.erase(mpi);
             }
@@ -439,7 +436,6 @@ void MolDip::Read(FILE            *fp,
                          iChargeDistributionModel_, 
                          bFitZeta_);
     }
-
     int ntopol = 0;
     if (MASTER(cr_))
     {
@@ -448,22 +444,18 @@ void MolDip::Read(FILE            *fp,
             if (imsTrain == gms.status(mpi->getIupac()))
             {
                 int               dest = (ntopol % cr_->nnodes);
-                alexandria::MyMol mymol;
-                
+                alexandria::MyMol mymol;                
                 printf("%s\n", mpi->getMolname().c_str());
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
-
                 imm = mymol.GenerateTopology(atomprop_, pd_, lot,
                                              iChargeDistributionModel_,
                                              false, bPairs, bDihedral, 
-                                             bPolar, tabfn);
-                                             
+                                             bPolar, tabfn);                                             
                 if (bCheckSupport && immOK == imm)
                 {
                     imm = check_data_sufficiency(mymol, &indexCount_);
                 }
-
                 if (immOK == imm)
                 {
                     gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
@@ -543,7 +535,7 @@ void MolDip::Read(FILE            *fp,
             imm_count[imm]++;
         }
         /* Send signal done with transferring molecules */
-        for (int i = 1; (i < cr_->nnodes); i++)
+        for (int i = 1; i < cr_->nnodes; i++)
         {
             gmx_send_int(cr_, i, 0);
         }
@@ -551,15 +543,14 @@ void MolDip::Read(FILE            *fp,
     else
     {
         /***********************************************
-         *
-         *           S L A V E   N O D E S
-         *
+         *                                             *
+         *           S L A V E   N O D E S             *
+         *                                             *
          ***********************************************/
         ntopol = 0;
         while (gmx_recv_int(cr_, 0) == 1)
         {
-            alexandria::MyMol mymol;
-            
+            alexandria::MyMol mymol;          
             if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new molecule\n");
@@ -574,9 +565,7 @@ void MolDip::Read(FILE            *fp,
                 fprintf(debug, "Succesfully retrieved %s\n", mymol.molProp()->getMolname().c_str());
                 fflush(debug);
             }
-
             mymol.setInputrec(inputrec_);
-
             imm = mymol.GenerateTopology(atomprop_, pd_, lot, 
                                          iChargeDistributionModel_,
                                          false, false, bDihedral, 
@@ -600,7 +589,6 @@ void MolDip::Read(FILE            *fp,
             {
                 imm = mymol.getExpProps(bQM_, bZero, bZPE, lot, pd_);
             }
-
             mymol.eSupp_ = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
@@ -613,8 +601,7 @@ void MolDip::Read(FILE            *fp,
             }
             gmx_send_int(cr_, 0, imm);
         }
-    }
-    
+    }   
     int              nnn = nmol_cpu;
     std::vector<int> nmolpar;
     if (PAR(cr_))
@@ -631,7 +618,7 @@ void MolDip::Read(FILE            *fp,
         {
             for (int i = 0; (i < cr_->nnodes); i++)
             {
-                fprintf(fp, "node %d has %d molecules\n", i, nmolpar[i]);
+                fprintf(fp, "Node %d has %d molecules\n", i, nmolpar[i]);
                 nmoltot += nmolpar[i];
             }
         }
@@ -653,13 +640,11 @@ void MolDip::Read(FILE            *fp,
         {
             fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
         }
-    }
-    
+    }    
     if (bCheckSupport && MASTER(cr_))
     {                     
         indexCount_.cleanIndex(mindata_, fp);
-    }
-    
+    }    
     nmol_support_ = mymol_.size();
     if (nmol_support_ == 0)
     {
