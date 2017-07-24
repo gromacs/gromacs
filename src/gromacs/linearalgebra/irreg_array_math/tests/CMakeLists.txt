@@ -1,8 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,
-# by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,26 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB LINEARALGEBRA_SOURCES *.cpp)
-
-if (NOT GMX_EXTERNAL_BLAS)
-    file(GLOB BLAS_SOURCES gmx_blas/*.cpp)
-endif()
-
-if (NOT GMX_EXTERNAL_LAPACK)
-    file(GLOB LAPACK_SOURCES gmx_lapack/*.cpp)
-endif()
-
-set(LINEARALGEBRA_SOURCES
-    ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
-
-set(LIBGROMACS_SOURCES
-    ${LIBGROMACS_SOURCES} ${LINEARALGEBRA_SOURCES} PARENT_SCOPE)
-
-gmx_install_headers(
-    eigensolver.h
-    matrix.h
-    sparsematrix.h
-    )
-
-add_subdirectory(irreg_array_math)
+gmx_add_unit_test(IrregArrayMathUnitTests irreg-array-math-test
+                  irreg_array_math_test_commons.cpp
+                  irreg_array_math.cpp
+                  )
