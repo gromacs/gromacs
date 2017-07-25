@@ -927,7 +927,9 @@ void Poldata::broadcast(t_commrec *cr)
     {
         for (int dest = 1; dest < cr->nnodes; dest++)
         {
+            gmx_send_int(cr, dest, 1);
             Send(cr, dest);
+            gmx_send_int(cr, dest, 0);
         }
     }
     else
@@ -936,7 +938,10 @@ void Poldata::broadcast(t_commrec *cr)
         {
             fprintf(debug, "Going to update poldata on node %d\n", cr->nodeid);
         }
-        Receive(cr, src);
+        while (gmx_recv_int(cr, 0) == 1)
+        {
+            Receive(cr, src);
+        }
     }
 }
 
