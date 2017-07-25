@@ -85,9 +85,9 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
         return;
     }
 
-    if (DOMAINDECOMP(cr))
+    if (PAR(cr))
     {
-        gmx_fatal(FARGS, "Orientation restraints do not work with more than one domain (ie. MPI rank).");
+        gmx_fatal(FARGS, "Orientation restraints do not work with MPI parallelization. Choose 1 MPI rank, if possible.");
     }
     /* Orientation restraints */
     if (!MASTER(cr))
