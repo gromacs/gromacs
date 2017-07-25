@@ -371,8 +371,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             {
                 md->cTC[i]    = groups->grpnr[egcTC][ag];
             }
-            md->cENER[i]    =
-                (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
+            md->cENER[i]    = ggrpnr(groups, egcENER, ag);
             if (md->cACC)
             {
                 md->cACC[i]   = groups->grpnr[egcACC][ag];
@@ -383,7 +382,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             if (md->cORF)
             {
-                md->cORF[i]       = groups->grpnr[egcORFIT][ag];
+                md->cORF[i]       = ggrpnr(groups, egcORFIT, ag);
             }
 
             if (md->cU1)
