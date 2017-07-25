@@ -927,21 +927,40 @@ void Poldata::broadcast(t_commrec *cr)
     {
         for (int dest = 1; dest < cr->nnodes; dest++)
         {
-            gmx_send_int(cr, dest, 1);
-            Send(cr, dest);
-            gmx_send_int(cr, dest, 0);
+            auto cs = gmx_send_data(cr, dest);
+            if (CS_OK == cs)
+            {
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Going to update Poldata on node %d\n", dest);
+                }
+                Send(cr, dest);
+            }
+            gmx_send_done(cr, dest);
         }
     }
     else
     {
-        if (nullptr != debug)
+        auto cs = gmx_recv_data(cr, src);
+        if (CS_OK == cs)
         {
-            fprintf(debug, "Going to update poldata on node %d\n", cr->nodeid);
+            auto cs = Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Poldata is updated on node %d\n", cr->nodeid);
+                }
+            }
+            else
+            {
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Could not update Poldata on node %d\n", cr->nodeid);
+                }
+            }
         }
-        while (gmx_recv_int(cr, 0) == 1)
-        {
-            Receive(cr, src);
-        }
+        gmx_recv_data(cr, src);
     }
 }
 
