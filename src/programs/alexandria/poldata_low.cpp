@@ -38,13 +38,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "poldata_low.h"
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <algorithm>
 #include <vector>
 
@@ -54,7 +51,7 @@
 
 #include "gmx_simple_comm.h"
 #include "plistwrapper.h"
-
+#include "poldata_low.h"
 
 namespace alexandria
 {

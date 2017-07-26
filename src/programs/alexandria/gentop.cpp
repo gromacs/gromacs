@@ -144,7 +144,7 @@ int alex_gentop(int argc, char *argv[])
 
     const  int                       NFILE          = asize(fnm);
 
-    static int                       maxpot         = 0;
+    static int                       maxpot         = 100;
     static int                       seed           = 0;
     static int                       nsymm          = 0;
     static int                       maxiter        = 25000;
