@@ -34,7 +34,8 @@ gcc-5 gpu cuda-8.0 thread-mpi openmp cmake-3.6.1 release simd=avx2_256
 #   Redmine #1850 is unresolved, which causes more suspected
 #   false positives than races detected)
 # Test fftpack fallback
-gcc-7 tsan no-openmp fftpack
+# Test simd (parly beause runs are faster)
+gcc-7 tsan no-openmp fftpack simd=sse4.1
 
 # Test newest gcc at time of release
 gcc-7 mpi
