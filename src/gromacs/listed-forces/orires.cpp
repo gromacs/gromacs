@@ -86,6 +86,13 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
         return;
     }
 
+    const int numFitParams = 5;
+    if (od->nr <= numFitParams)
+    {
+        gmx_fatal(FARGS, "The system has %d orientation restraints, but at least %d are required, since there are %d fitting parameters.",
+                  od->nr, numFitParams + 1, numFitParams);
+    }
+
     if (PAR(cr))
     {
         gmx_fatal(FARGS, "Orientation restraints do not work with MPI parallelization. Choose 1 MPI rank, if possible.");
