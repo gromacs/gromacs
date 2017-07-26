@@ -475,10 +475,12 @@ void calc_listed(const t_commrec             *cr,
         if (fcd->orires.nr > 0)
         {
             enerd->term[F_ORIRESDEV] =
-                calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
+                calc_orires_dev(cr,
+                                idef->il[F_ORIRES].nr,
                                 idef->il[F_ORIRES].iatoms,
                                 idef->iparams, md, x,
-                                pbc_null, fcd, hist);
+                                pbc_null, fcd, hist,
+                                force_flags & GMX_FORCE_ENERGY);
         }
         if (fcd->disres.nres > 0)
         {

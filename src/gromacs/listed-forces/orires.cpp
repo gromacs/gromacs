@@ -41,6 +41,7 @@
 #include <climits>
 #include <cmath>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
@@ -85,17 +86,6 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                   od->nr, numFitParams + 1, numFitParams);
     }
 
-    if (PAR(cr))
-    {
-        gmx_fatal(FARGS, "Orientation restraints do not work with MPI parallelization. Choose 1 MPI rank, if possible.");
-    }
-    /* Orientation restraints */
-    if (!MASTER(cr))
-    {
-        /* Nothing to do */
-        return;
-    }
-
     od->fc  = ir->orires_fc;
     od->nex = 0;
     od->S   = nullptr;
@@ -103,12 +93,20 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     od->eig = nullptr;
     od->v   = nullptr;
 
-    int                  *nr_ex = nullptr;
-    gmx_mtop_ilistloop_t  iloop = gmx_mtop_ilistloop_init(mtop);
+    od->sumKfac                   = 0;
+    int                  *nr_ex   = nullptr;
+    int                   typeMin = INT_MAX;
+    int                   typeMax = 0;
+    gmx_mtop_ilistloop_t  iloop   = gmx_mtop_ilistloop_init(mtop);
     t_ilist              *il;
     int                   nmol;
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {
+        if (nmol > 1)
+        {
+            gmx_fatal(FARGS, "Found %d copies of a molecule with orientation restrains while the current code only supports a single copy. If you want to ensemble average, run multiple copies of the system using the multi-sim feature of mdrun.", nmol);
+        }
+
         for (int i = 0; i < il[F_ORIRES].nr; i += 3)
         {
             int type = il[F_ORIRES].iatoms[i];
@@ -123,8 +121,18 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                 od->nex = ex+1;
             }
             nr_ex[ex]++;
+
+            typeMin = std::min(typeMin, type);
+            typeMax = std::max(typeMax, type);
+
+            od->sumKfac += mtop->ffparams.iparams[type].orires.kfac;
         }
     }
+    /* With domain decomposition we use the type index for indexing in global arrays */
+    GMX_RELEASE_ASSERT(typeMax - typeMin + 1 == od->nr, "All orientation restraint parameter entries in the topology should be consecutive");
+    /* Store typeMin so we can index array with the type offset */
+    od->typeMin = typeMin;
+
     snew(od->S, od->nex);
     /* When not doing time averaging, the instaneous and time averaged data
      * are indentical and the pointers can point to the same memory.
@@ -149,6 +157,16 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     }
     else
     {
+        /* Making time averaging work with domain decomposition with more
+         * than one rank is rather tedious, since the history for each
+         * restraint needs to be communicated at domain decomposition and
+         * checkpointing.
+         */
+        if (PAR(cr))
+        {
+            gmx_fatal(FARGS, "Orientation restraints with time averaging do not work with MPI parallelization. Choose 1 MPI rank, if possible.");
+        }
+
         snew(od->Dtav, od->nr);
         od->edt   = std::exp(-ir->delta_t/ir->orires_tau);
         od->edt_1 = 1.0 - od->edt;
@@ -194,58 +212,91 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
 
     snew(od->eig, od->nex*12);
 
-    /* Determine the reference structure on the master node.
+    /* Make a reverse index for the reference atoms.
+     * Determine the reference structure on the master node and only
+     * on the master simulation when using multi-sim.
      * Copy it to the other nodes after checking multi compatibility,
      * so we are sure the subsystems match before copying.
      */
-    rvec                     com   = { 0, 0, 0 };
-    double                   mtot  = 0.0;
-    int                      j     = 0;
-    gmx_mtop_atomloop_all_t  aloop = gmx_mtop_atomloop_all_init(mtop);
-    int                      i     = -1;
+    snew(od->invRefIndex, mtop->natoms);
+    bool                     calcReferenceStructure = (MASTER(cr) &&
+                                                       (ms == nullptr || MASTERSIM(ms)));
+    dvec                     sumMX   = { 0, 0, 0 };
+    double                   refMass = 0;
+    int                      j       = 0;
+    gmx_mtop_atomloop_all_t  aloop   = gmx_mtop_atomloop_all_init(mtop);
+    int                      i       = -1;
     const t_atom            *atom;
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
         if (mtop->groups.grpnr[egcORFIT] == nullptr ||
             mtop->groups.grpnr[egcORFIT][i] == 0)
         {
+            od->invRefIndex[i]  = j;
             /* Not correct for free-energy with changing masses */
-            od->mref[j] = atom->m;
-            if (ms == nullptr || MASTERSIM(ms))
+            od->mref[j]         = atom->m;
+            refMass            += atom->m;
+            if (calcReferenceStructure)
             {
                 copy_rvec(xref[i], od->xref[j]);
                 for (int d = 0; d < DIM; d++)
                 {
-                    com[d] += od->mref[j]*xref[i][d];
+                    sumMX[d] += atom->m*xref[i][d];
                 }
             }
-            mtot += od->mref[j];
             j++;
         }
-    }
-    svmul(1.0/mtot, com, com);
-    if (ms == nullptr || MASTERSIM(ms))
-    {
-        for (int j = 0; j < od->nref; j++)
+        else
         {
-            rvec_dec(od->xref[j], com);
+            od->invRefIndex[i] = -1;
         }
     }
-
-    fprintf(fplog, "Found %d orientation experiments\n", od->nex);
-    for (int i = 0; i < od->nex; i++)
+    GMX_RELEASE_ASSERT(refMass > 0, "The mass of the reference group should be > 0");
+    od->invRefMass = 1.0/refMass;
+    if (calcReferenceStructure)
     {
-        fprintf(fplog, "  experiment %d has %d restraints\n", i+1, nr_ex[i]);
+        rvec com;
+        for (int d = 0; d > DIM; d++)
+        {
+            com[d] = sumMX[d]*od->invRefMass;
+        }
+        if (ms == nullptr || MASTERSIM(ms))
+        {
+            for (int j = 0; j < od->nref; j++)
+            {
+                rvec_dec(od->xref[j], com);
+            }
+        }
+    }
+    if (ms)
+    {
+        gmx_bcast_sim(od->nref*sizeof(od->xref[0]), od->xref, cr);
+    }
+    if (PAR(cr))
+    {
+        gmx_bcast(od->nref*sizeof(od->xref[0]), od->xref, cr);
+    }
+
+    if (fplog)
+    {
+        fprintf(fplog, "Found %d orientation experiments\n", od->nex);
+        for (int i = 0; i < od->nex; i++)
+        {
+            fprintf(fplog, "  experiment %d has %d restraints\n", i+1, nr_ex[i]);
+        }
+
+        fprintf(fplog, "  the fit group consists of %d atoms and has total mass %g\n",
+                od->nref, refMass);
     }
 
     sfree(nr_ex);
 
-    fprintf(fplog, "  the fit group consists of %d atoms and has total mass %g\n",
-            od->nref, mtot);
-
     if (ms)
     {
-        fprintf(fplog, "  the orientation restraints are ensemble averaged over %d systems\n", ms->nsim);
+        if (fplog)
+        {
+            fprintf(fplog, "  the orientation restraints are ensemble averaged over %d systems\n", ms->nsim);
+        }
 
         check_multi_int(fplog, ms, od->nr,
                         "the number of orientation restraints",
@@ -254,6 +305,11 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                         "the number of fit atoms for orientation restraining",
                         FALSE);
         check_multi_int(fplog, ms, ir->nsteps, "nsteps", FALSE);
+
+        if (PAR(cr))
+        {
+            gmx_fatal(FARGS, "With ensemble averaging over multiple simulations, MPI parallelization within a simulation is not supported");
+        }
         /* Copy the reference coordinates from the master to the other nodes */
         gmx_sum_sim(DIM*od->nref, od->xref[0], ms);
     }
@@ -350,29 +406,24 @@ void print_orires_log(FILE *log, t_oriresdata *od)
     }
 }
 
-real calc_orires_dev(const gmx_multisim_t *ms,
+real calc_orires_dev(const t_commrec *cr,
                      int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                      const t_mdatoms *md, const rvec x[], const t_pbc *pbc,
-                     t_fcdata *fcd, history_t *hist)
+                     t_fcdata *fcd, history_t *hist,
+                     bool calculateRmsDev)
 {
     int              nref;
-    real             edt, edt_1, invn, pfac, r2, invr, corrfac, wsv2, sw, dev;
+    real             edt, edt_1, invn, pfac, r2, invr, corrfac;
     rvec5           *Dinsl, *Dins, *Dtav;
     OriresMatEq     *matEq;
-    real            *mref;
-    double           mtot;
-    rvec            *xref, *xtmp, com, r_unrot, r;
+    rvec            *xref, *xtmp, r_unrot, r;
     t_oriresdata    *od;
     gmx_bool         bTAV;
     const real       two_thr = 2.0/3.0;
 
     od = &(fcd->orires);
 
-    if (od->nr == 0)
-    {
-        /* This means that this is not the master node */
-        gmx_fatal(FARGS, "Orientation restraints are only supported on the master rank, use fewer ranks");
-    }
+    GMX_RELEASE_ASSERT(od->nr > 0, "We should have restraints in this call");
 
     bTAV  = (od->edt != 0);
     edt   = od->edt;
@@ -382,7 +433,6 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     Dtav  = od->Dtav;
     matEq = od->tmpEq;
     nref  = od->nref;
-    mref  = od->mref;
     xref  = od->xref;
     xtmp  = od->xtmp;
 
@@ -400,6 +450,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         corrfac = 1.0;
     }
 
+    const gmx_multisim_t *ms = cr->ms;
     if (ms)
     {
         invn = 1.0/ms->nsim;
@@ -409,36 +460,59 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         invn = 1.0;
     }
 
-    clear_rvec(com);
-    mtot  = 0;
-    int j = 0;
-    for (int i = 0; i < md->nr; i++)
+    /* Note that we can have domain decomposition with a single PP rank */
+    bool useDD             = DOMAINDECOMP(cr);
+    bool haveMultipleRanks = (useDD && PAR(cr));
+
+    if (haveMultipleRanks)
+    {
+        /* We sum xtmp over ranks, so we need to clear xtmp */
+        for (int j = 0; j < nref; j++)
+        {
+            clear_rvec(xtmp[j]);
+        }
+
+    }
+
+    const int *globalAtomIndex = (useDD ? cr->dd->gatindex : nullptr);
+    dvec       sumMX           = { 0, 0, 0 };
+    for (int i = 0; i < md->homenr; i++)
     {
         if (md->cORF[i] == 0)
         {
+            int j = od->invRefIndex[useDD ? globalAtomIndex[i] : i];
             copy_rvec(x[i], xtmp[j]);
-            mref[j] = md->massT[i];
             for (int d = 0; d < DIM; d++)
             {
-                com[d] += mref[j]*xref[j][d];
+                sumMX[d] += md->massT[i]*xref[j][d];
             }
-            mtot += mref[j];
-            j++;
         }
     }
-    svmul(1.0/mtot, com, com);
+    /* Store the partial sum m*x in the last element for reduction */
+    for (int d = 0; d < DIM; d++)
+    {
+        xtmp[nref][d] = sumMX[d];
+    }
+    if (haveMultipleRanks)
+    {
+        /* "Broadcast" the reference coordinates set on each rank using sum
+         * and sum the COM contributions.
+         */
+        gmx_sum((nref + 1)*DIM, xtmp[0], cr);
+    }
+    rvec com;
+    svmul(od->invRefMass, xtmp[nref], com);
     for (int j = 0; j < nref; j++)
     {
         rvec_dec(xtmp[j], com);
     }
     /* Calculate the rotation matrix to rotate x to the reference orientation */
-    calc_fit_R(DIM, nref, mref, xref, xtmp, od->R);
+    calc_fit_R(DIM, nref, od->mref, xref, xtmp, od->R);
 
-    /* Index restraint data in order of appearance in forceatoms */
-    int res = 0;
     for (int fa = 0; fa < nfa; fa += 3)
     {
         int type = forceatoms[fa];
+        int res  = type - od->typeMin;
         if (pbc)
         {
             pbc_dx_aiuc(pbc, x[forceatoms[fa+1]], x[forceatoms[fa+2]], r_unrot);
@@ -475,6 +549,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
     if (ms)
     {
+        GMX_RELEASE_ASSERT(!PAR(cr), "Parallelization not implemented with ensemble averaging");
         gmx_sum_sim(5*od->nr, Dins[0], ms);
     }
 
@@ -490,11 +565,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
             }
         }
     }
-
-    /* Index restraint data in order of appearance in forceatoms */
-    res = 0;
     for (int fa = 0; fa < nfa; fa += 3)
     {
+        int type = forceatoms[fa];
+        int res  = type - od->typeMin;
         if (bTAV)
         {
             /* Here we update Dtav in t_fcdata using the data in history_t.
@@ -507,7 +581,6 @@ real calc_orires_dev(const gmx_multisim_t *ms,
             }
         }
 
-        int  type   = forceatoms[fa];
         int  ex     = ip[type].orires.ex;
         real weight = ip[type].orires.kfac;
         /* Calculate the vector rhs and half the matrix T for the 5 equations */
@@ -519,8 +592,14 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                 matEq[ex].mat[i][j] += Dtav[res][i]*Dtav[res][j]*weight;
             }
         }
-        res++;
     }
+
+    if (haveMultipleRanks)
+    {
+        /* Reduce all coefficients, rhs[0] is the first real in OriresMatEq */
+        gmx_sum(od->nex*sizeof(matEq[0])/sizeof(real), &matEq[0].rhs[0], cr);
+    }
+
     /* Now we have all the data we can calculate S */
     for (int ex = 0; ex < od->nex; ex++)
     {
@@ -558,16 +637,14 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         S[2][2] = -S[0][0] - S[1][1];
     }
 
-    const matrix *S = od->S;
+    const matrix *S        = od->S;
 
-    wsv2            = 0;
-    sw              = 0;
+    real          sumWDev2 = 0;
 
-    /* Index restraint data in order of appearance in forceatoms */
-    res = 0;
     for (int fa = 0; fa < nfa; fa += 3)
     {
         int type = forceatoms[fa];
+        int res  = type - od->typeMin;
         int ex   = ip[type].orires.ex;
 
         od->otav[res] = two_thr*
@@ -591,14 +668,26 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                  S[ex][1][2]*Dinsl[res][4]);
         }
 
-        dev = od->otav[res] - ip[type].orires.obs;
+        real dev = od->otav[res] - ip[type].orires.obs;
 
-        wsv2 += ip[type].orires.kfac*gmx::square(dev);
-        sw   += ip[type].orires.kfac;
-
-        res++;
+        sumWDev2 += ip[type].orires.kfac*gmx::square(dev);
     }
-    od->rmsdev = std::sqrt(wsv2/sw);
+
+    real rmsDev = 0;
+    if (calculateRmsDev)
+    {
+        /* This reduction and conditional is inconvenient.
+         * They could be avoided if we would return MSD instead of RMSD.
+         */
+        if (haveMultipleRanks)
+        {
+            gmx_sum(1, &sumWDev2, cr);
+        }
+        if (MASTER(cr))
+        {
+            rmsDev = std::sqrt(sumWDev2/od->sumKfac);
+        }
+    }
 
     /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
     for (int ex = 0; ex < od->nex; ex++)
@@ -608,7 +697,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         mmul(RS, od->R, od->S[ex]);
     }
 
-    return od->rmsdev;
+    return rmsDev;
 
     /* Approx. 120*nfa/3 flops */
 }
@@ -642,11 +731,10 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             smooth_fc *= (1.0 - od->exp_min_t_tau);
         }
 
-        /* Index restraint data in order of appearance in forceatoms */
-        int res = 0;
         for (int fa = 0; fa < nfa; fa += 3)
         {
             int type = forceatoms[fa];
+            int res  = type - od->typeMin;
             int ai   = forceatoms[fa + 1];
             int aj   = forceatoms[fa + 2];
             if (pbc)
@@ -713,8 +801,6 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 fshift[ki][i]      += fij[i];
                 fshift[CENTRAL][i] -= fij[i];
             }
-
-            res++;
         }
     }
 

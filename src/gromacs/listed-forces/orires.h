@@ -49,7 +49,6 @@
 #include "gromacs/topology/ifunc.h"
 
 struct gmx_mtop_t;
-struct gmx_multisim_t;
 class history_t;
 struct t_inputrec;
 struct t_pbc;
@@ -72,12 +71,14 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
 /*! \brief
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  *
- * Returns the weighted RMS deviation of the orientation restraints.
+ * \returns the weighted RMS deviation of the orientation restraints when
+ * calculateRmsDev=true and we are the master rank, 0 otherwise.
  */
-real calc_orires_dev(const gmx_multisim_t *ms,
+real calc_orires_dev(const t_commrec *cr,
                      int nfa, const t_iatom fa[], const t_iparams ip[],
                      const t_mdatoms *md, const rvec x[],
-                     const t_pbc *pbc, t_fcdata *fcd, history_t *hist);
+                     const t_pbc *pbc, t_fcdata *fcd, history_t *hist,
+                     bool calculateRmsDev);
 
 /*! \brief
  * Diagonalizes the order tensor(s) of the orienation restraints.

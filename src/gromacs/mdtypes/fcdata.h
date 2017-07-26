@@ -90,10 +90,14 @@ typedef struct t_oriresdata {
     real         exp_min_t_tau; /* Factor for slowly switching on the force         */
     int          nr;            /* The number of orientation restraints               */
     int          nex;           /* The number of experiments                          */
+    int          typeMin;       /* The minimum iparam type index for restraints       */
+    real         sumKfac;       /* The sum of kfac over all restraints                */
     int          nref;          /* The number of atoms for the fit                    */
+    int         *invRefIndex;   /* Index of global atoms into the reference group, index is -1 when an atom in not in the reference group */
     real        *mref;          /* The masses of the reference atoms                  */
     rvec        *xref;          /* The reference coordinates for the fit (nref)       */
-    rvec        *xtmp;          /* Temporary array for fitting (nref)                 */
+    double       invRefMass;    /* The reciprocal total mass of the reference group   */
+    rvec        *xtmp;          /* Temporary array for fitting (nref + 1)             */
     matrix       R;             /* Rotation matrix to rotate to the reference coor.   */
     tensor      *S;             /* Array of order tensors for each experiment (nexp)  */
     rvec5       *Dinsl;         /* The order matrix D for all restraints (nr x 5)     */
