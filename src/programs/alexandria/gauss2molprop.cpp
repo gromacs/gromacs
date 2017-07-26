@@ -76,13 +76,18 @@ int alex_gauss2molprop(int argc, char *argv[])
         { efDAT, "-o",    "molprop", ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-    static gmx_bool                  bVerbose   = FALSE;
-    static char                     *molnm      = nullptr, *iupac = nullptr, *jobtype = (char *)"Opt";
-    static char                     *conf       = (char *)"minimum", *basis = nullptr;
-    static const char               *forcefield = "GAFF";
-    static int                       maxpot     = 0;
+
+    static int                       maxpot     = 100;
     static int                       nsymm      = 0;
-    static gmx_bool                  compress   = FALSE;
+    static char                     *molnm      = nullptr;
+    static char                     *iupac      = nullptr;
+    static char                     *basis      = nullptr;
+    static char                     *jobtype    = (char *)"Opt";
+    static char                     *conf       = (char *)"minimum";
+    static gmx_bool                  bVerbose   = false;
+    static gmx_bool                  compress   = false;
+    static const char               *forcefield = "GAFF";
+    
     t_pargs                          pa[]       = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose terminal output." },

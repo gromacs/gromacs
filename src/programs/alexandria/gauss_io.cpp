@@ -37,14 +37,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
-#include "gmxpre.h"
-
-#include "gauss_io.h"
-
-#include "config.h"
-
 #include <cstdio>
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -60,6 +53,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "config.h"
+#include "gmxpre.h"
+#include "gauss_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "poldata.h"
@@ -68,26 +64,26 @@
 static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
                                           int                                              natom,
-                                          int                                              maxpot)
+                                          int                                              espFraction)
 {
-    int mymod = 1;
-    if ((maxpot > 0) && (maxpot < (int)espv.size()))
+    if (espFraction > 100)
     {
-        std::sort(espv.begin()+natom, espv.end(),
-                  [](const alexandria::ElectrostaticPotential &a,
-                     const alexandria::ElectrostaticPotential &b)
-        {
-            return (a.getV() < b.getV());
-        });
-
-        int npot = espv.size() - natom;
-        mymod = npot / maxpot;
+        gmx_fatal(FARGS, "You cannot have more than 100 percent of the available ESP points.\n");
     }
+    std::sort(espv.begin()+natom, espv.end(),
+              [](const alexandria::ElectrostaticPotential &a,
+                 const alexandria::ElectrostaticPotential &b)
+              {
+                return (a.getV() < b.getV());
+              });
 
-    int i  = 0;
-    for (auto esi = espv.begin(); (esi < espv.end()); esi++, i++)
+    int npot   = espv.size() - natom;
+    int maxpot = (npot * espFraction)/100;
+    int mymode = npot / maxpot;
+    int i      = 0;
+    for (auto esi = espv.begin(); esi < espv.end(); esi++, i++)
     {
-        if ((i < natom) || (((i-natom) % mymod) == 0))
+        if ((i < natom) || (((i-natom) % mymode) == 0))
         {
             mpt.LastExperiment()->AddPotential(*esi);
         }
@@ -170,7 +166,7 @@ static void gmx_molprop_read_babel(const char          *g09,
                                    const char          *iupac,
                                    const char          *conformation,
                                    const char          *basisset,
-                                   int                  maxpot,
+                                   int                  espFraction,
                                    int                  nsymm,
                                    const char          *forcefield,
                                    alexandria::jobType  jobtype)
@@ -544,7 +540,7 @@ static void gmx_molprop_read_babel(const char          *g09,
                                                   fgp->GetV());
             espv.push_back(ep);
         }
-        merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), maxpot);
+        merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), espFraction);
     }
 }
 #endif
