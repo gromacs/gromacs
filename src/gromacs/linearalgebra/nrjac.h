@@ -53,8 +53,8 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot);
  * int      *irot = number of jacobi rotations
  */
 
-int m_inv_gen(real **m, int n, real **minv);
-/* Produces minv, a generalized inverse of m.
+int m_inv_gen(real *m, int n, real *minv);
+/* Produces minv, a generalized inverse of m, both stored as linear arrays.
  * Inversion is done via diagonalization,
  * eigenvalues smaller than 1e-6 times the average diagonal element
  * are assumed to be zero.

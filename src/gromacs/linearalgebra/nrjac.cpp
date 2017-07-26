@@ -165,7 +165,7 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
     gmx_fatal(FARGS, "Error: Too many iterations in routine JACOBI\n");
 }
 
-int m_inv_gen(real **m, int n, real **minv)
+int m_inv_gen(real *m, int n, real *minv)
 {
     double **md, **v, *eig, tol, s;
     int      nzero, i, j, k, nrot;
@@ -185,7 +185,7 @@ int m_inv_gen(real **m, int n, real **minv)
     {
         for (j = 0; j < n; j++)
         {
-            md[i][j] = m[i][j];
+            md[i][j] = m[i*n + j];
         }
     }
 
@@ -221,7 +221,7 @@ int m_inv_gen(real **m, int n, real **minv)
             {
                 s += eig[k]*v[i][k]*v[j][k];
             }
-            minv[i][j] = s;
+            minv[i*n + j] = s;
         }
     }
 

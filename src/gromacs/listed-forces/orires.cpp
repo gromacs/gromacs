@@ -178,16 +178,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     {
         snew(od->otav, od->nr);
     }
-    snew(od->tmp, od->nex);
-    snew(od->TMP, od->nex);
-    for (int ex = 0; ex < od->nex; ex++)
-    {
-        snew(od->TMP[ex], 5);
-        for (int i = 0; i < 5; i++)
-        {
-            snew(od->TMP[ex][i], 5);
-        }
-    }
+    snew(od->tmpEq, od->nex);
 
     od->nref = 0;
     for (int i = 0; i < mtop->natoms; i++)
@@ -366,9 +357,9 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 {
     int              nref;
     real             edt, edt_1, invn, pfac, r2, invr, corrfac, wsv2, sw, dev;
-    tensor          *S, R, TMP;
-    rvec5           *Dinsl, *Dins, *Dtav, *rhs;
-    real            *mref, ***T;
+    rvec5           *Dinsl, *Dins, *Dtav;
+    OriresMatEq     *matEq;
+    real            *mref;
     double           mtot;
     rvec            *xref, *xtmp, com, r_unrot, r;
     t_oriresdata    *od;
@@ -386,12 +377,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     bTAV  = (od->edt != 0);
     edt   = od->edt;
     edt_1 = od->edt_1;
-    S     = od->S;
     Dinsl = od->Dinsl;
     Dins  = od->Dins;
     Dtav  = od->Dtav;
-    T     = od->TMP;
-    rhs   = od->tmp;
+    matEq = od->tmpEq;
     nref  = od->nref;
     mref  = od->mref;
     xref  = od->xref;
@@ -443,8 +432,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         rvec_dec(xtmp[j], com);
     }
     /* Calculate the rotation matrix to rotate x to the reference orientation */
-    calc_fit_R(DIM, nref, mref, xref, xtmp, R);
-    copy_mat(R, od->R);
+    calc_fit_R(DIM, nref, mref, xref, xtmp, od->R);
 
     /* Index restraint data in order of appearance in forceatoms */
     int res = 0;
@@ -459,7 +447,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         {
             rvec_sub(x[forceatoms[fa+1]], x[forceatoms[fa+2]], r_unrot);
         }
-        mvmul(R, r_unrot, r);
+        mvmul(od->R, r_unrot, r);
         r2   = norm2(r);
         invr = gmx::invsqrt(r2);
         /* Calculate the prefactor for the D tensor, this includes the factor 3! */
@@ -495,10 +483,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     {
         for (int i = 0; i < 5; i++)
         {
-            rhs[ex][i] = 0;
+            matEq[ex].rhs[i] = 0;
             for (int j = 0; j <= i; j++)
             {
-                T[ex][i][j] = 0;
+                matEq[ex].mat[i][j] = 0;
             }
         }
     }
@@ -525,10 +513,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         /* Calculate the vector rhs and half the matrix T for the 5 equations */
         for (int i = 0; i < 5; i++)
         {
-            rhs[ex][i] += Dtav[res][i]*ip[type].orires.obs*weight;
+            matEq[ex].rhs[i] += Dtav[res][i]*ip[type].orires.obs*weight;
             for (int j = 0; j <= i; j++)
             {
-                T[ex][i][j] += Dtav[res][i]*Dtav[res][j]*weight;
+                matEq[ex].mat[i][j] += Dtav[res][i]*Dtav[res][j]*weight;
             }
         }
         res++;
@@ -536,40 +524,44 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     /* Now we have all the data we can calculate S */
     for (int ex = 0; ex < od->nex; ex++)
     {
+        OriresMatEq &eq = matEq[ex];
         /* Correct corrfac and copy one half of T to the other half */
         for (int i = 0; i < 5; i++)
         {
-            rhs[ex][i]  *= corrfac;
-            T[ex][i][i] *= gmx::square(corrfac);
+            eq.rhs[i]    *= corrfac;
+            eq.mat[i][i] *= gmx::square(corrfac);
             for (int j = 0; j < i; j++)
             {
-                T[ex][i][j] *= gmx::square(corrfac);
-                T[ex][j][i]  = T[ex][i][j];
+                eq.mat[i][j] *= gmx::square(corrfac);
+                eq.mat[j][i]  = eq.mat[i][j];
             }
         }
-        m_inv_gen(T[ex], 5, T[ex]);
+        m_inv_gen(&eq.mat[0][0], 5, &eq.mat[0][0]);
         /* Calculate the orientation tensor S for this experiment */
-        S[ex][0][0] = 0;
-        S[ex][0][1] = 0;
-        S[ex][0][2] = 0;
-        S[ex][1][1] = 0;
-        S[ex][1][2] = 0;
+        matrix &S = od->S[ex];
+        S[0][0] = 0;
+        S[0][1] = 0;
+        S[0][2] = 0;
+        S[1][1] = 0;
+        S[1][2] = 0;
         for (int i = 0; i < 5; i++)
         {
-            S[ex][0][0] += 1.5*T[ex][0][i]*rhs[ex][i];
-            S[ex][0][1] += 1.5*T[ex][1][i]*rhs[ex][i];
-            S[ex][0][2] += 1.5*T[ex][2][i]*rhs[ex][i];
-            S[ex][1][1] += 1.5*T[ex][3][i]*rhs[ex][i];
-            S[ex][1][2] += 1.5*T[ex][4][i]*rhs[ex][i];
+            S[0][0] += 1.5*eq.mat[0][i]*eq.rhs[i];
+            S[0][1] += 1.5*eq.mat[1][i]*eq.rhs[i];
+            S[0][2] += 1.5*eq.mat[2][i]*eq.rhs[i];
+            S[1][1] += 1.5*eq.mat[3][i]*eq.rhs[i];
+            S[1][2] += 1.5*eq.mat[4][i]*eq.rhs[i];
         }
-        S[ex][1][0] = S[ex][0][1];
-        S[ex][2][0] = S[ex][0][2];
-        S[ex][2][1] = S[ex][1][2];
-        S[ex][2][2] = -S[ex][0][0] - S[ex][1][1];
+        S[1][0] = S[0][1];
+        S[2][0] = S[0][2];
+        S[2][1] = S[1][2];
+        S[2][2] = -S[0][0] - S[1][1];
     }
 
-    wsv2 = 0;
-    sw   = 0;
+    const matrix *S = od->S;
+
+    wsv2            = 0;
+    sw              = 0;
 
     /* Index restraint data in order of appearance in forceatoms */
     res = 0;
@@ -611,8 +603,9 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
     for (int ex = 0; ex < od->nex; ex++)
     {
-        tmmul(R, S[ex], TMP);
-        mmul(TMP, R, S[ex]);
+        matrix RS;
+        tmmul(od->R, od->S[ex], RS);
+        mmul(RS, od->R, od->S[ex]);
     }
 
     return od->rmsdev;

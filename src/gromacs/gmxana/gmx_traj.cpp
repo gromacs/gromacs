@@ -261,26 +261,12 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
 
 static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
 {
-    static real **TCM = nullptr, **L;
+    real          TCM[5][5], L[5][5];
     double        tm, m0, lxx, lxy, lxz, lyy, lyz, lzz, ekrot;
     rvec          a0, ocm;
     dvec          dx, b0;
     dvec          xcm, vcm, acm;
     int           i, j, m, n;
-
-    if (TCM == nullptr)
-    {
-        snew(TCM, DIM);
-        for (i = 0; i < DIM; i++)
-        {
-            snew(TCM[i], DIM);
-        }
-        snew(L, DIM);
-        for (i = 0; i < DIM; i++)
-        {
-            snew(L[i], DIM);
-        }
-    }
 
     clear_dvec(xcm);
     clear_dvec(vcm);
@@ -334,7 +320,7 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
     L[YY][ZZ] = -lyz;
     L[ZZ][ZZ] =  lxx + lyy;
 
-    m_inv_gen(L, DIM, TCM);
+    m_inv_gen(&L[0][0], DIM, &TCM[0][0]);
 
     /* Compute omega (hoeksnelheid) */
     clear_rvec(ocm);

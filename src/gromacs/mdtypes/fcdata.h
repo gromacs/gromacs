@@ -75,31 +75,36 @@ typedef struct t_disresdata {
     const t_iatom *forceatomsStart; /* Pointer to the start of the disre forceatoms */
 } t_disresdata;
 
+/* All coefficients for the matrix equation for the orientation tensor */
+struct OriresMatEq
+{
+    real rhs[5];    /* The right hand side of the matrix equation */
+    real mat[5][5]; /* The matrix                                 */
+};
 
 /* Orientation restraining stuff */
 typedef struct t_oriresdata {
-    real      fc;            /* Force constant for the restraints                  */
-    real      edt;           /* Multiplication factor for time averaging           */
-    real      edt_1;         /* 1 - edt                                            */
-    real      exp_min_t_tau; /* Factor for slowly switching on the force         */
-    int       nr;            /* The number of orientation restraints               */
-    int       nex;           /* The number of experiments                          */
-    int       nref;          /* The number of atoms for the fit                    */
-    real     *mref;          /* The masses of the reference atoms                  */
-    rvec     *xref;          /* The reference coordinates for the fit (nref)       */
-    rvec     *xtmp;          /* Temporary array for fitting (nref)                 */
-    matrix    R;             /* Rotation matrix to rotate to the reference coor.   */
-    tensor   *S;             /* Array of order tensors for each experiment (nexp)  */
-    rvec5    *Dinsl;         /* The order matrix D for all restraints (nr x 5)     */
-    rvec5    *Dins;          /* The ensemble averaged D (nr x 5)                   */
-    rvec5    *Dtav;          /* The time and ensemble averaged D (nr x 5)          */
-    real     *oinsl;         /* The calculated instantaneous orientations          */
-    real     *oins;          /* The calculated emsemble averaged orientations      */
-    real     *otav;          /* The calculated time and ensemble averaged orient.  */
-    real      rmsdev;        /* The weighted (using kfac) RMS deviation            */
-    rvec5    *tmp;           /* An array of temporary 5-vectors (nex);             */
-    real   ***TMP;           /* An array of temporary 5x5 matrices (nex);          */
-    real     *eig;           /* Eigenvalues/vectors, for output only (nex x 12)    */
+    real         fc;            /* Force constant for the restraints                  */
+    real         edt;           /* Multiplication factor for time averaging           */
+    real         edt_1;         /* 1 - edt                                            */
+    real         exp_min_t_tau; /* Factor for slowly switching on the force         */
+    int          nr;            /* The number of orientation restraints               */
+    int          nex;           /* The number of experiments                          */
+    int          nref;          /* The number of atoms for the fit                    */
+    real        *mref;          /* The masses of the reference atoms                  */
+    rvec        *xref;          /* The reference coordinates for the fit (nref)       */
+    rvec        *xtmp;          /* Temporary array for fitting (nref)                 */
+    matrix       R;             /* Rotation matrix to rotate to the reference coor.   */
+    tensor      *S;             /* Array of order tensors for each experiment (nexp)  */
+    rvec5       *Dinsl;         /* The order matrix D for all restraints (nr x 5)     */
+    rvec5       *Dins;          /* The ensemble averaged D (nr x 5)                   */
+    rvec5       *Dtav;          /* The time and ensemble averaged D (nr x 5)          */
+    real        *oinsl;         /* The calculated instantaneous orientations          */
+    real        *oins;          /* The calculated emsemble averaged orientations      */
+    real        *otav;          /* The calculated time and ensemble averaged orient.  */
+    real         rmsdev;        /* The weighted (using kfac) RMS deviation            */
+    OriresMatEq *tmpEq;         /* An temporary array of matrix + rhs                 */
+    real        *eig;           /* Eigenvalues/vectors, for output only (nex x 12)    */
 
     /* variables for diagonalization with diagonalize_orires_tensors()*/
     double **M;
