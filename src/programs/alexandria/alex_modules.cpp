@@ -60,6 +60,11 @@ int alex_molprop_test(int argc, char *argv[]);
 int alex_molprop_check(int argc, char *argv[]);
 int alex_tune_zeta(int argc, char *argv[]);
 
+//! Initializer for a module that defaults to nice level zero.
+void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
+{
+    settings->setDefaultNiceLevel(0);
+}
 /*! \brief
  * Convenience function for creating and registering a module.
  *
@@ -72,7 +77,8 @@ void registerModule(gmx::CommandLineModuleManager                *manager,
                     gmx::CommandLineModuleManager::CMainFunction  mainFunction,
                     const char *name, const char *shortDescription)
 {
-    manager->addModuleCMain(name, shortDescription, mainFunction);
+    manager->addModuleCMainWithSettings(name, shortDescription, mainFunction,
+                                        &initSettingsNoNice);
 }
 
 void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
