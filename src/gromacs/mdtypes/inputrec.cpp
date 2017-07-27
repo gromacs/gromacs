@@ -299,8 +299,8 @@ static void done_lambdas(t_lambda *fep)
         {
             sfree(fep->all_lambda[i]);
         }
-        sfree(fep->all_lambda);
     }
+    sfree(fep->all_lambda);
 }
 
 void done_inputrec(t_inputrec *ir)
