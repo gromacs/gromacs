@@ -428,7 +428,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
             mref[j] = md->massT[i];
             for (d = 0; d < DIM; d++)
             {
-                com[d] += mref[j]*xref[j][d];
+                com[d] += mref[j]*xtmp[j][d];
             }
             mtot += mref[j];
             j++;
