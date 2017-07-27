@@ -124,6 +124,24 @@ static double mypow(double x, double y)
     }
 }
 
+static real blk_value(t_enxblock *blk, int sub, int index)
+{
+    range_check(index, 0, blk->sub[sub].nr);
+    if (blk->sub[sub].type == xdr_datatype_float)
+    {
+        return blk->sub[sub].fval[index];
+    }
+    else if (blk->sub[sub].type == xdr_datatype_double)
+    {
+        return blk->sub[sub].dval[index];
+    }
+    else
+    {
+        gmx_incons("Unknown datatype in t_enxblock");
+    }
+    return 0.0;
+}
+
 static int *select_it(int nre, char *nm[], int *nset)
 {
     gmx_bool *bE;
@@ -387,7 +405,7 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
                              int *nor, int *nex, int **label, real **obs)
 {
     gmx_mtop_t      mtop;
-    gmx_localtop_t *top;
+    t_topology      top;
     t_iparams      *ip;
     int             natoms, i;
     t_iatom        *iatom;
@@ -395,13 +413,13 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
     matrix          box;
 
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
-    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
+    top = gmx_mtop_t_to_t_topology(&mtop, FALSE);
 
-    ip       = top->idef.iparams;
-    iatom    = top->idef.il[F_ORIRES].iatoms;
+    ip       = top.idef.iparams;
+    iatom    = top.idef.il[F_ORIRES].iatoms;
 
     /* Count how many distance restraint there are... */
-    nb = top->idef.il[F_ORIRES].nr;
+    nb = top.idef.il[F_ORIRES].nr;
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No orientation restraints in topology!\n");
@@ -422,6 +440,7 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
     }
     fprintf(stderr, "Found %d orientation restraints with %d experiments",
             *nor, *nex);
+    done_top_mtop(&top, &mtop);
 }
 
 static int get_bounds(const char *topnm,
@@ -2031,7 +2050,6 @@ int gmx_energy(int argc, char *argv[])
     const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
     char               buf[256];
     gmx_output_env_t  *oenv;
-    t_enxblock        *blk       = nullptr;
     t_enxblock        *blk_disre = nullptr;
     int                ndisre    = 0;
     int                dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
@@ -2287,6 +2305,10 @@ int gmx_energy(int argc, char *argv[])
                     }
                     xvgr_legend(fodt, norsel, (const char**)odtleg, oenv);
                 }
+                for (i = 0; i < norsel; i++)
+                {
+                    sfree(odtleg[i]);
+                }
                 sfree(odtleg);
             }
         }
@@ -2312,6 +2334,11 @@ int gmx_energy(int argc, char *argv[])
                 }
             }
             xvgr_legend(foten, bOvec ? nex*12 : nex*3, (const char**)otenleg, oenv);
+            for (j = 0; j < 3; j++)
+            {
+                sfree(otenleg[j]);
+            }
+            sfree(otenleg);
         }
     }
     else if (bDisRe)
@@ -2628,25 +2655,13 @@ int gmx_energy(int argc, char *argv[])
                             fprintf(out, "\n");
                         }
                     }
-                    blk = find_block_id_enxframe(fr, enx_i, nullptr);
+                    t_enxblock *blk = find_block_id_enxframe(fr, enx_i, nullptr);
                     if (bORIRE && blk)
                     {
-#if !GMX_DOUBLE
-                        xdr_datatype dt = xdr_datatype_float;
-#else
-                        xdr_datatype dt = xdr_datatype_double;
-#endif
-                        real        *vals;
-
-                        if ( (blk->nsub != 1) || (blk->sub[0].type != dt) )
+                        if (blk->nsub != 1)
                         {
-                            gmx_fatal(FARGS, "Orientational restraints read in incorrectly");
+                            gmx_fatal(FARGS, "Orientational restraints read in incorrectly.");
                         }
-#if !GMX_DOUBLE
-                        vals = blk->sub[0].fval;
-#else
-                        vals = blk->sub[0].dval;
-#endif
 
                         if (blk->sub[0].nr != nor)
                         {
@@ -2656,14 +2671,15 @@ int gmx_energy(int argc, char *argv[])
                         {
                             for (i = 0; i < nor; i++)
                             {
-                                orient[i] += vals[i];
+                                orient[i] += blk_value(blk, 0, i);
                             }
                         }
                         if (bODR)
                         {
                             for (i = 0; i < nor; i++)
                             {
-                                odrms[i] += gmx::square(vals[i]-oobs[i]);
+                                real v = blk_value(blk, 0, i);
+                                odrms[i] += gmx::square(v - oobs[i]);
                             }
                         }
                         if (bORT)
@@ -2671,7 +2687,7 @@ int gmx_energy(int argc, char *argv[])
                             fprintf(fort, "  %10f", fr->t);
                             for (i = 0; i < norsel; i++)
                             {
-                                fprintf(fort, " %g", vals[orsel[i]]);
+                                fprintf(fort, " %g", blk_value(blk, 0, orsel[i]));
                             }
                             fprintf(fort, "\n");
                         }
@@ -2680,7 +2696,7 @@ int gmx_energy(int argc, char *argv[])
                             fprintf(fodt, "  %10f", fr->t);
                             for (i = 0; i < norsel; i++)
                             {
-                                fprintf(fodt, " %g", vals[orsel[i]]-oobs[orsel[i]]);
+                                fprintf(fodt, " %g", blk_value(blk, 0, orsel[i])-oobs[orsel[i]]);
                             }
                             fprintf(fodt, "\n");
                         }
@@ -2689,22 +2705,10 @@ int gmx_energy(int argc, char *argv[])
                     blk = find_block_id_enxframe(fr, enxORT, nullptr);
                     if (bOTEN && blk)
                     {
-#if !GMX_DOUBLE
-                        xdr_datatype dt = xdr_datatype_float;
-#else
-                        xdr_datatype dt = xdr_datatype_double;
-#endif
-                        real        *vals;
-
-                        if ( (blk->nsub != 1) || (blk->sub[0].type != dt) )
+                        if (blk->nsub != 1)
                         {
                             gmx_fatal(FARGS, "Orientational restraints read in incorrectly");
                         }
-#if !GMX_DOUBLE
-                        vals = blk->sub[0].fval;
-#else
-                        vals = blk->sub[0].dval;
-#endif
 
                         if (blk->sub[0].nr != nex*12)
                         {
@@ -2716,7 +2720,7 @@ int gmx_energy(int argc, char *argv[])
                         {
                             for (j = 0; j < (bOvec ? 12 : 3); j++)
                             {
-                                fprintf(foten, " %g", vals[i*12+j]);
+                                fprintf(foten, " %g", blk_value(blk, 0, i*12+j));
                             }
                         }
                         fprintf(foten, "\n");
@@ -2793,6 +2797,12 @@ int gmx_energy(int argc, char *argv[])
         }
         xvgrclose(out);
     }
+    // Clean up orires variables.
+    sfree(or_label);
+    sfree(oobs);
+    sfree(orient);
+    sfree(odrms);
+    sfree(orsel);
     if (bOTEN)
     {
         xvgrclose(foten);
