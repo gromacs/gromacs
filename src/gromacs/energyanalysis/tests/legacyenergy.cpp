@@ -86,6 +86,38 @@ TEST_F(DhdlTest, ExtractDhdl)
     runTest();
 }
 
+class OriresTest : public CommandLineTestBase
+{
+    public:
+        void runTest(const char *stringForStdin)
+        {
+            auto &cmdline = commandLine();
+            cmdline.append("energy");
+
+            setInputFile("-s", "orires.tpr");
+            setInputFile("-f", "orires.edr");
+            test::XvgMatch    xvg;
+            test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-4));
+
+            setOutputFile("-oten", ".xvg", toler);
+            setOutputFile("-ora", ".xvg", toler);
+            setOutputFile("-ort", ".xvg", toler);
+            setOutputFile("-oda", ".xvg", toler);
+            setOutputFile("-odr", ".xvg", toler);
+
+            StdioTestHelper stdioHelper(&fileManager());
+            stdioHelper.redirectStringToStdin(stringForStdin);
+            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+
+            checkOutputFiles();
+        }
+};
+
+TEST_F(OriresTest, ExtractOrires)
+{
+    runTest("Orient.-Rest.\nOri.-R.-RMSD\n0\n-1\n");
+}
+
 class EnergyTest : public CommandLineTestBase
 {
     public:
