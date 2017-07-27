@@ -150,6 +150,11 @@ void done_mtop(gmx_mtop_t *mtop)
 
     sfree(mtop->ffparams.functype);
     sfree(mtop->ffparams.iparams);
+    for (int i = 0; i < mtop->ffparams.cmap_grid.ngrid; i++)
+    {
+        sfree(mtop->ffparams.cmap_grid.cmapdata[i].cmap);
+    }
+    sfree(mtop->ffparams.cmap_grid.cmapdata);
 
     for (int i = 0; i < mtop->nmoltype; i++)
     {
