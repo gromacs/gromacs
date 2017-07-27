@@ -387,7 +387,7 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
                              int *nor, int *nex, int **label, real **obs)
 {
     gmx_mtop_t      mtop;
-    gmx_localtop_t *top;
+    t_topology      top;
     t_iparams      *ip;
     int             natoms, i;
     t_iatom        *iatom;
@@ -395,13 +395,13 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
     matrix          box;
 
     read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
-    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
+    top = gmx_mtop_t_to_t_topology(&mtop, FALSE);
 
-    ip       = top->idef.iparams;
-    iatom    = top->idef.il[F_ORIRES].iatoms;
+    ip       = top.idef.iparams;
+    iatom    = top.idef.il[F_ORIRES].iatoms;
 
     /* Count how many distance restraint there are... */
-    nb = top->idef.il[F_ORIRES].nr;
+    nb = top.idef.il[F_ORIRES].nr;
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No orientation restraints in topology!\n");
@@ -422,6 +422,7 @@ static void get_orires_parms(const char *topnm, t_inputrec *ir,
     }
     fprintf(stderr, "Found %d orientation restraints with %d experiments",
             *nor, *nex);
+    done_top_mtop(&top, &mtop);
 }
 
 static int get_bounds(const char *topnm,
@@ -2286,6 +2287,10 @@ int gmx_energy(int argc, char *argv[])
                         fprintf(fodt, "%s", orinst_sub);
                     }
                     xvgr_legend(fodt, norsel, (const char**)odtleg, oenv);
+                }
+                for (i = 0; i < norsel; i++)
+                {
+                    sfree(odtleg[i]);
                 }
                 sfree(odtleg);
             }
