@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: M. Eric Irrgang <ericirrgang@gmail.com>
+Verified+1: M. Eric Irrgang <ericirrgang@gmail.com>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Thu, 27 Jul 2017 21:41:34 +0200
+Reviewed-on: https://gerrit.gromacs.org/6749
+Project: gromacs
+Branch: refs/heads/master
