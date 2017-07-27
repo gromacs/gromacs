@@ -79,11 +79,11 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
 
     int npot   = espv.size() - natom;
     int maxpot = (npot * espFraction)/100;
-    int mymode = npot / maxpot;
+    int mod    = npot / maxpot;
     int i      = 0;
     for (auto esi = espv.begin(); esi < espv.end(); esi++, i++)
     {
-        if ((i < natom) || (((i-natom) % mymode) == 0))
+        if ((i < natom) || (((i-natom) % mod) == 0))
         {
             mpt.LastExperiment()->AddPotential(*esi);
         }
