@@ -41,6 +41,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/typetraits.h"
 
 #include "pme-internal.h"
 #include "pme-simd.h"
@@ -67,6 +68,9 @@ static inline RVec
 do_fspline(Int order, const struct gmx_pme_t *pme, const real *grid,
            const pme_atomcomm_t *atc, const splinedata_t *spline, int nn)
 {
+    static_assert(isIntegralConstant<Int, int>::value || std::is_same<Int, int>::value,
+                  "'order' needs to be either of type integral_constant<int,N> or int.");
+
     const int  pny   = pme->pmegrid_ny;
     const int  pnz   = pme->pmegrid_nz;
 
