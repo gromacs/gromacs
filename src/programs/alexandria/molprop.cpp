@@ -129,8 +129,8 @@ CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, type_.c_str());
-        gmx_send_str(cr, dest, unit_.c_str());
+        gmx_send_str(cr, dest, &type_);
+        gmx_send_str(cr, dest, &unit_);
         gmx_send_double(cr, dest, T_);
         gmx_send_int(cr, dest, (int) eP_);
     }
@@ -1551,17 +1551,19 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
     CalcAtomIterator               cai;
     CommunicationStatus            cs;
     ElectrostaticPotentialIterator epi;
+    std::string                    jobtype;
    
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, reference_.c_str());
-        gmx_send_str(cr, dest, conformation_.c_str());      
-        gmx_send_str(cr, dest, _program.c_str());
-        gmx_send_str(cr, dest, _method.c_str());
-        gmx_send_str(cr, dest, _basisset.c_str());
-        gmx_send_str(cr, dest, _datafile.c_str());
-        gmx_send_str(cr, dest, jobType2string(jobtype_));        
+        gmx_send_str(cr, dest, &reference_);
+        gmx_send_str(cr, dest, &conformation_);      
+        gmx_send_str(cr, dest, &_program);
+        gmx_send_str(cr, dest, &_method);
+        gmx_send_str(cr, dest, &_basisset);
+        gmx_send_str(cr, dest, &_datafile);
+        jobtype.assign(jobType2string(jobtype_));
+        gmx_send_str(cr, dest, &jobtype);        
         gmx_send_int(cr, dest, polar_.size());
         gmx_send_int(cr, dest, dipole_.size());
         gmx_send_int(cr, dest, energy_.size());
@@ -1638,8 +1640,8 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, xyzUnit_.c_str());
-        gmx_send_str(cr, dest, vUnit_.c_str());
+        gmx_send_str(cr, dest, &xyzUnit_);
+        gmx_send_str(cr, dest, &vUnit_);
         gmx_send_int(cr, dest, espID_);
         gmx_send_double(cr, dest, x_);
         gmx_send_double(cr, dest, y_);
@@ -1741,10 +1743,10 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, name_.c_str());
-        gmx_send_str(cr, dest, obType_.c_str());
+        gmx_send_str(cr, dest, &name_);
+        gmx_send_str(cr, dest, &obType_);
         gmx_send_int(cr, dest, atomID_);
-        gmx_send_str(cr, dest, unit_.c_str());
+        gmx_send_str(cr, dest, &unit_);
         gmx_send_double(cr, dest, x_);
         gmx_send_double(cr, dest, y_);
         gmx_send_double(cr, dest, z_);
@@ -1770,7 +1772,7 @@ CommunicationStatus AtomNum::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, _catom.c_str());
+        gmx_send_str(cr, dest, &_catom);
         gmx_send_int(cr, dest, _cnumber);
         if (nullptr != debug)
         {
@@ -1807,7 +1809,7 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, _atomnum.size());
-        gmx_send_str(cr, dest, _compname.c_str());
+        gmx_send_str(cr, dest, &_compname);
         for (auto ani = BeginAtomNum(); (CS_OK == cs) && (ani < EndAtomNum()); ani++)
         {
             cs = ani->Send(cr, dest);
@@ -1865,12 +1867,12 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, _mass);
         gmx_send_int(cr, dest, _charge);
         gmx_send_int(cr, dest, _multiplicity);
-        gmx_send_str(cr, dest, _formula.c_str());
-        gmx_send_str(cr, dest, _molname.c_str());
-        gmx_send_str(cr, dest, _iupac.c_str());
-        gmx_send_str(cr, dest, _cas.c_str());
-        gmx_send_str(cr, dest, _cid.c_str());
-        gmx_send_str(cr, dest, _inchi.c_str());
+        gmx_send_str(cr, dest, &_formula);
+        gmx_send_str(cr, dest, &_molname);
+        gmx_send_str(cr, dest, &_iupac);
+        gmx_send_str(cr, dest, &_cas);
+        gmx_send_str(cr, dest, &_cid);
+        gmx_send_str(cr, dest, &_inchi);
         gmx_send_int(cr, dest, _bond.size());
         gmx_send_int(cr, dest, _mol_comp.size());
         gmx_send_int(cr, dest, category_.size());
@@ -1894,7 +1896,8 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
             cs = gmx_send_data(cr, dest);
             if (CS_OK == cs)
             {
-                gmx_send_str(cr, dest, si->c_str());
+                std::string sii = si->c_str();
+                gmx_send_str(cr, dest, &sii);
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Sent category %s\n", si->c_str());

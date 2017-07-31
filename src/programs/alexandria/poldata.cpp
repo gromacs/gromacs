@@ -691,22 +691,22 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, filename_.c_str());
-        gmx_send_str(cr, dest, alexandriaPolarUnit_.c_str());
-        gmx_send_str(cr, dest, alexandriaPolarRef_.c_str());
-        gmx_send_str(cr, dest, alexandriaForcefield_.c_str());
+        gmx_send_str(cr, dest, &filename_);
+        gmx_send_str(cr, dest, &alexandriaPolarUnit_);
+        gmx_send_str(cr, dest, &alexandriaPolarRef_);
+        gmx_send_str(cr, dest, &alexandriaForcefield_);
         gmx_send_int(cr, dest, nexcl_);
         gmx_send_double(cr, dest, fudgeQQ_);
         gmx_send_double(cr, dest, fudgeLJ_);
-        gmx_send_str(cr, dest, gtVdwFunction_.c_str());
-        gmx_send_str(cr, dest, gtCombinationRule_.c_str());
+        gmx_send_str(cr, dest, &gtVdwFunction_);
+        gmx_send_str(cr, dest, &gtCombinationRule_);
         gmx_send_int(cr, dest, gtVdwFtype_);
         gmx_send_int(cr, dest, gtCombRule_);
-        gmx_send_str(cr, dest, millerTauUnit_.c_str());
-        gmx_send_str(cr, dest, millerAhpUnit_.c_str());
-        gmx_send_str(cr, dest, millerRef_.c_str());
-        gmx_send_str(cr, dest, bosquePolarUnit_.c_str());
-        gmx_send_str(cr, dest, bosqueRef_.c_str());       
+        gmx_send_str(cr, dest, &millerTauUnit_);
+        gmx_send_str(cr, dest, &millerAhpUnit_);
+        gmx_send_str(cr, dest, &millerRef_);
+        gmx_send_str(cr, dest, &bosquePolarUnit_);
+        gmx_send_str(cr, dest, &bosqueRef_);       
         gmx_send_int(cr, dest, ptype_.size());
         gmx_send_int(cr, dest, alexandria_.size());
         gmx_send_int(cr, dest, btype_.size());
@@ -732,7 +732,7 @@ CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
         /*Send btype*/
         for (auto &btype : btype_)
         {
-            gmx_send_str(cr, dest, btype.c_str());
+            gmx_send_str(cr, dest, &btype);
         }
         
         /*Send Listed Forces*/

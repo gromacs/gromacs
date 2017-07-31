@@ -181,8 +181,8 @@ CommunicationStatus AtomTypes::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, ncopies_);
-        gmx_send_str(cr, dest, name_.c_str());
-        gmx_send_str(cr, dest, vdwParams_.c_str());
+        gmx_send_str(cr, dest, &name_);
+        gmx_send_str(cr, dest, &vdwParams_);
         gmx_send_int(cr, dest, poldataIndex_);
         gmx_send_int(cr, dest, p_.size());
         for (auto &p : p_)
@@ -283,11 +283,13 @@ class NonBondParams
 CommunicationStatus NonBondParams::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
+    std::string         itype;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, bOpt_);
-        gmx_send_str(cr, dest, iType2string(itype_));
+        itype.assign(iType2string(itype_));
+        gmx_send_str(cr, dest, &itype);
         gmx_send_int(cr, dest, at_.size());
         gmx_send_int(cr, dest, reverseIndex_.size());
         gmx_send_int(cr, dest, params_.size());
@@ -482,8 +484,8 @@ CommunicationStatus BondNames::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, ncopies_);
-        gmx_send_str(cr, dest, name_.c_str());
-        gmx_send_str(cr, dest, params_.c_str());
+        gmx_send_str(cr, dest, &name_);
+        gmx_send_str(cr, dest, &params_);
         gmx_send_double(cr, dest, bondorder_);
         gmx_send_int(cr, dest, poldataIndex_);
         gmx_send_int(cr, dest, p_.size());
@@ -604,12 +606,15 @@ class ForceConstants
 CommunicationStatus ForceConstants::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
+    std::string         itype;
+    
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, bt_);
         gmx_send_int(cr, dest, ftype_);
-        gmx_send_str(cr, dest, iType2string(itype_));
+        itype.assign(iType2string(itype_));
+        gmx_send_str(cr, dest, &itype);
         gmx_send_int(cr, dest, bOpt_);
         gmx_send_int(cr, dest, bn_.size());
         gmx_send_int(cr, dest, reverseIndex_.size());

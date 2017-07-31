@@ -104,9 +104,9 @@ CommunicationStatus Ptype::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, type_.c_str());
-        gmx_send_str(cr, dest, miller_.c_str());
-        gmx_send_str(cr, dest, bosque_.c_str());
+        gmx_send_str(cr, dest, &type_);
+        gmx_send_str(cr, dest, &miller_);
+        gmx_send_str(cr, dest, &bosque_);
         gmx_send_double(cr, dest, polarizability_);
         gmx_send_double(cr, dest, sigPol_);
         if (nullptr != debug)
@@ -167,13 +167,13 @@ CommunicationStatus Ffatype::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, desc_.c_str());
-        gmx_send_str(cr, dest, type_.c_str());
-        gmx_send_str(cr, dest, ptype_.c_str());
-        gmx_send_str(cr, dest, btype_.c_str());
-        gmx_send_str(cr, dest, elem_.c_str());
-        gmx_send_str(cr, dest, vdwparams_.c_str());
-        gmx_send_str(cr, dest, refEnthalpy_.c_str());
+        gmx_send_str(cr, dest, &desc_);
+        gmx_send_str(cr, dest, &type_);
+        gmx_send_str(cr, dest, &ptype_);
+        gmx_send_str(cr, dest, &btype_);
+        gmx_send_str(cr, dest, &elem_);
+        gmx_send_str(cr, dest, &vdwparams_);
+        gmx_send_str(cr, dest, &refEnthalpy_);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Fftype %s %s %s %s %s %s %s, status %s\n",
@@ -233,7 +233,7 @@ CommunicationStatus ListedForce::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, params_.c_str());
+        gmx_send_str(cr, dest, &params_);
         gmx_send_double(cr, dest, refValue_);
         gmx_send_double(cr, dest, sigma_);
         gmx_send_int(cr, dest, static_cast<int>(ntrain_));
@@ -241,7 +241,7 @@ CommunicationStatus ListedForce::Send(t_commrec *cr, int dest)
         
         for (auto &atom : atoms_)
         {
-            gmx_send_str(cr, dest, atom.c_str());
+            gmx_send_str(cr, dest, &atom);
         }
         
         if (nullptr != debug)
@@ -320,12 +320,15 @@ ListedForces::ListedForces(const std::string   iType,
 CommunicationStatus ListedForces::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
+    std::string         itype;
+    
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, iType2string(iType_));
-        gmx_send_str(cr, dest, function_.c_str());
-        gmx_send_str(cr, dest, unit_.c_str());
+        itype.assign(iType2string(iType_));
+        gmx_send_str(cr, dest, &itype);
+        gmx_send_str(cr, dest, &function_);
+        gmx_send_str(cr, dest, &unit_);
         gmx_send_int(cr, dest, static_cast<int>(fType_));
         gmx_send_int(cr, dest, force_.size());
         
@@ -473,7 +476,7 @@ CommunicationStatus Bosque::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, bosque_.c_str());
+        gmx_send_str(cr, dest, &bosque_);
         gmx_send_double(cr, dest, polarizability_);       
         if (nullptr != debug)
         {
@@ -522,11 +525,11 @@ CommunicationStatus Miller::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, miller_.c_str());
+        gmx_send_str(cr, dest, &miller_);
         gmx_send_int(cr, dest, atomnumber_);
         gmx_send_double(cr, dest, tauAhc_);
         gmx_send_double(cr, dest, alphaAhp_);
-        gmx_send_str(cr, dest, alexandria_equiv_.c_str());
+        gmx_send_str(cr, dest, &alexandria_equiv_);
        
         if (nullptr != debug)
         {
@@ -576,8 +579,8 @@ CommunicationStatus Symcharges::Send(t_commrec *cr, int dest)
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, central_.c_str());
-        gmx_send_str(cr, dest, attached_.c_str());
+        gmx_send_str(cr, dest, &central_);
+        gmx_send_str(cr, dest, &attached_);
         gmx_send_int(cr, dest, numattach_);
         
         if (nullptr != debug)
@@ -623,11 +626,14 @@ Epref::Epref(ChargeDistributionModel eqdModel,
 CommunicationStatus Epref::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
+    std::string         eqdModel;
+    
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, getEemtypeName(eqdModel_));
-        gmx_send_str(cr, dest, epref_.c_str());
+        eqdModel.assign(getEemtypeName(eqdModel_));
+        gmx_send_str(cr, dest, &eqdModel);
+        gmx_send_str(cr, dest, &epref_);
         
         if (nullptr != debug)
         {
@@ -756,14 +762,16 @@ Eemprops::Eemprops(ChargeDistributionModel  eqdModel,
 CommunicationStatus Eemprops::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs;
+    std::string         eqdModel;
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        gmx_send_str(cr, dest, getEemtypeName(eqdModel_));
-        gmx_send_str(cr, dest, name_.c_str());
-        gmx_send_str(cr, dest, rowstr_.c_str());
-        gmx_send_str(cr, dest, zetastr_.c_str());
-        gmx_send_str(cr, dest, qstr_.c_str());
+        eqdModel.assign(getEemtypeName(eqdModel_));
+        gmx_send_str(cr, dest, &eqdModel);
+        gmx_send_str(cr, dest, &name_);
+        gmx_send_str(cr, dest, &rowstr_);
+        gmx_send_str(cr, dest, &zetastr_);
+        gmx_send_str(cr, dest, &qstr_);
         gmx_send_double(cr, dest, J0_);
         gmx_send_double(cr, dest, J0_sigma_);
         gmx_send_double(cr, dest, chi0_);

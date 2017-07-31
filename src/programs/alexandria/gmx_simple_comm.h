@@ -20,9 +20,9 @@ void gmx_send(const t_commrec *cr, int dest, void *buf, int bufsize);
 
 void gmx_recv(const t_commrec *cr, int src, void *buf, int bufsize);
 
-void gmx_send_str(t_commrec *cr, int dest, const char *ptr);
+void gmx_send_str(t_commrec *cr, int dest, const std::string *str);
 
-void gmx_recv_str(t_commrec *cr, int src, std::string *ptr);
+void gmx_recv_str(t_commrec *cr, int src, std::string *str);
 
 void gmx_send_double(t_commrec *cr, int dest, double d);
 

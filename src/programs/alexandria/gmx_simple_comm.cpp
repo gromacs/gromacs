@@ -56,26 +56,18 @@ void gmx_recv(const t_commrec *cr, int src, void *buf, int bufsize)
 #endif
 }
 
-void gmx_send_str(t_commrec *cr, int dest, const char *ptr)
+void gmx_send_str(t_commrec *cr, int dest, const std::string *str)
 {
-    int len;
+    int len = str->size();
 
-    if (nullptr == ptr)
-    {
-        len = 0;
-    }
-    else
-    {
-        len = strlen(ptr)+1;
-    }
     if (nullptr != debug)
     {
-        fprintf(debug, "Sending string '%s' to %d\n", ptr, dest);
+      fprintf(debug, "Sending string '%s' to %d\n", str->c_str(), dest);
     }
     gmx_send(cr, dest, &len, sizeof(len));
-    if (nullptr != ptr)
+    if (!str->empty())
     {
-        gmx_send(cr, dest, (void *)ptr, len);
+        gmx_send(cr, dest, (void *)str->data(), len);
     }
 }
 
@@ -90,7 +82,7 @@ void gmx_recv_str(t_commrec *cr, int src, std::string *str)
     }
     else
     {
-        str->resize(len-1);
+        str->resize(len);
         gmx_recv(cr, src, (void*)str->data(), len);
     }
 }
