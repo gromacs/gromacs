@@ -44,6 +44,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/typetraits.h"
 
 #include "pme-internal.h"
 #include "pme-simd.h"
@@ -86,6 +87,9 @@ struct do_fspline
     template <typename Int>
     RVec operator()(Int order) const
     {
+        static_assert(isIntegralConstant<Int, int>::value || std::is_same<Int, int>::value,
+                      "'order' needs to be either of type integral_constant<int,N> or int.");
+
         const int  norder = nn*order;
 
         /* Pointer arithmetic alert, next six statements */
