@@ -76,92 +76,6 @@ const char *iType2string(InteractionType iType);
  */
 InteractionType string2iType(const char *string);
 
-/*! \brief
- * Contains all the information realted to
- * polarizability.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Ptype
-{
-    public:
-    
-        Ptype () {}
-            
-        /*! \brief
-         * Ptype constructor
-         *
-         * \param[in] ptype           Polarizability type
-         * \param[in] miller          Miller equivalent of the polarizability type
-         * \param[in] bosque          Bosque equivalent of the polarizability type
-         * \param[in] polarizability  Polarizability value
-         * \param[in] sigPol          Uncertainty in the calulated polarizability
-         */
-        
-        Ptype(const std::string &ptype,
-              const std::string &miller,
-              const std::string &bosque,
-              double             polarizability,
-              double             sigPol);
-
-        /*! \brief
-         * Return the polarizability type
-         */
-        const std::string &getType() const { return type_; }
-
-        /*! \brief
-         * Return Miller equivalent of the polarizability type
-         */
-        const std::string &getMiller() const { return miller_; }
-
-        /*! \brief
-         * Return Bosque equivalent of the polarizability type
-         */
-        const std::string &getBosque() const { return bosque_; }
-
-        /*! \brief
-         * Set the polarizability value
-         *
-         * \param[in] polarizability  Polarizability value
-         */
-        void setPolarizability(double polarizability) { polarizability_ = polarizability; }
-
-        /*! \brief
-         * Return the polarizability value
-         *
-         */
-        double getPolarizability() const { return polarizability_; }
-
-        /*! \brief
-         * Set the uncertainty in the calulated polarizability
-         *
-         * \param[in] sigPol  uncertainty
-         */
-        void setSigPol(double sigPol) { sigPol_ = sigPol; }
-
-        /*! \brief
-         * Return the uncertainty in the calulated polarizability
-         *
-         */
-        double getSigPol() const { return sigPol_; }
-        
-        CommunicationStatus Send(t_commrec *cr, int dest);
-        
-        CommunicationStatus Receive(t_commrec *cr, int src);
-
-    private:
-        std::string type_;
-        std::string miller_;
-        std::string bosque_;
-        double      polarizability_;
-        double      sigPol_;
-
-
-};
-
-using PtypeIterator      = typename std::vector<Ptype>::iterator;
-using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 
 /*! \brief
  * Contains all the information realted to
@@ -251,6 +165,94 @@ class Ffatype
 
 using FfatypeIterator      = typename std::vector<Ffatype>::iterator;
 using FfatypeConstIterator = typename std::vector<Ffatype>::const_iterator;
+
+ 
+/*! \brief
+ * Contains all the information realted to
+ * polarizability.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Ptype
+{
+    public:
+    
+        Ptype () {}
+            
+        /*! \brief
+         * Ptype constructor
+         *
+         * \param[in] ptype           Polarizability type
+         * \param[in] miller          Miller equivalent of the polarizability type
+         * \param[in] bosque          Bosque equivalent of the polarizability type
+         * \param[in] polarizability  Polarizability value
+         * \param[in] sigPol          Uncertainty in the calulated polarizability
+         */
+        
+        Ptype(const std::string &ptype,
+              const std::string &miller,
+              const std::string &bosque,
+              double             polarizability,
+              double             sigPol);
+
+        /*! \brief
+         * Return the polarizability type
+         */
+        const std::string &getType() const { return type_; }
+
+        /*! \brief
+         * Return Miller equivalent of the polarizability type
+         */
+        const std::string &getMiller() const { return miller_; }
+
+        /*! \brief
+         * Return Bosque equivalent of the polarizability type
+         */
+        const std::string &getBosque() const { return bosque_; }
+
+        /*! \brief
+         * Set the polarizability value
+         *
+         * \param[in] polarizability  Polarizability value
+         */
+        void setPolarizability(double polarizability) { polarizability_ = polarizability; }
+
+        /*! \brief
+         * Return the polarizability value
+         *
+         */
+        double getPolarizability() const { return polarizability_; }
+
+        /*! \brief
+         * Set the uncertainty in the calulated polarizability
+         *
+         * \param[in] sigPol  uncertainty
+         */
+        void setSigPol(double sigPol) { sigPol_ = sigPol; }
+
+        /*! \brief
+         * Return the uncertainty in the calulated polarizability
+         *
+         */
+        double getSigPol() const { return sigPol_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
+
+    private:
+        std::string type_;
+        std::string miller_;
+        std::string bosque_;
+        double      polarizability_;
+        double      sigPol_;
+
+
+};
+
+using PtypeIterator      = typename std::vector<Ptype>::iterator;
+using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 
 
 /*! \brief

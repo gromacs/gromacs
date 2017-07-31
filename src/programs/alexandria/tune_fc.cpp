@@ -200,8 +200,8 @@ CommunicationStatus AtomTypes::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         ncopies_      = gmx_recv_int(cr, src);
-        name_         = gmx_recv_str(cr, src);
-        vdwParams_    = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &name_);
+        gmx_recv_str(cr, src, &vdwParams_);
         poldataIndex_ = gmx_recv_int(cr, src);
         int np        = gmx_recv_int(cr, src);
         for (int n = 0; n < np; n++)
@@ -310,11 +310,14 @@ CommunicationStatus NonBondParams::Send(t_commrec *cr, int dest)
 CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
+    std::string itype;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         bOpt_      = gmx_recv_int(cr, src);
-        itype_     = string2iType(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &itype);
+        itype_     = string2iType(itype.c_str());
         int nat    = gmx_recv_int(cr, src);
         int nri    = gmx_recv_int(cr, src);
         int nparam = gmx_recv_int(cr, src);
@@ -499,8 +502,8 @@ CommunicationStatus BondNames::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         ncopies_      = gmx_recv_int(cr, src);
-        name_         = gmx_recv_str(cr, src);
-        params_       = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &name_);
+        gmx_recv_str(cr, src, &params_);
         bondorder_    = gmx_recv_double(cr, src);
         poldataIndex_ = gmx_recv_int(cr, src);
         int np        = gmx_recv_int(cr, src);
@@ -631,12 +634,15 @@ CommunicationStatus ForceConstants::Send(t_commrec *cr, int dest)
 CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
+    std::string itype;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
         bt_           = gmx_recv_int(cr, src);
         ftype_        = gmx_recv_int(cr, src);
-        itype_        = string2iType(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &itype);
+        itype_        = string2iType(itype.c_str());
         bOpt_         = gmx_recv_int(cr, src);
         int nbn       = gmx_recv_int(cr, src);
         int nri       = gmx_recv_int(cr, src);

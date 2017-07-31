@@ -245,7 +245,7 @@ class Poldata
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
                                 [atype](Ffatype const &f)
-                                { return (atype.compare(f.getType()) == 0); });
+                                { return (atype == f.getType()); });
         }
 
         /*! \brief
@@ -257,7 +257,7 @@ class Poldata
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
                                 [atype](Ffatype const &f)
-                                { return (atype.compare(f.getType()) == 0); });
+                                { return (atype == f.getType()); });
         }
 
         /*! \brief
@@ -269,7 +269,7 @@ class Poldata
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
                                 [btype](Ffatype const &f)
-                                { return (f.getBtype().compare(btype) == 0); });
+                                { return (btype == f.getBtype()); });
         }
 
         /*! \brief
@@ -291,7 +291,7 @@ class Poldata
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
                                 [ptype](Ffatype const &f)
-                                { return (f.getPtype().compare(ptype) == 0); });
+                                { return (ptype == f.getPtype()); });
         }
 
         PtypeConstIterator getPtypeBegin() const { return ptype_.begin(); }
@@ -307,7 +307,7 @@ class Poldata
         {
             return std::find_if(ptype_.begin(), ptype_.end(),
                                 [ptype](Ptype const &p)
-                                { return (ptype.compare(p.getType()) == 0); });
+                                { return (ptype == p.getType()); });
         }
 
 

@@ -149,8 +149,8 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        type_.assign(gmx_recv_str(cr, src));
-        unit_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &type_);
+        gmx_recv_str(cr, src, &unit_);
         T_  = gmx_recv_double(cr, src);
         eP_ = (ePhase) gmx_recv_int(cr, src);
     }
@@ -1462,18 +1462,20 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     CalcAtomIterator               cai;
     CommunicationStatus            cs;
     ElectrostaticPotentialIterator epi;
+    std::string                    jobtype;
     int                            Npolar, Ndipole, Nenergy, Npotential, Natom;
     
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        reference_    = gmx_recv_str(cr, src);
-        conformation_ = gmx_recv_str(cr, src);
-        _program.assign(gmx_recv_str(cr, src));
-        _method.assign(gmx_recv_str(cr, src));
-        _basisset.assign(gmx_recv_str(cr, src));
-        _datafile.assign(gmx_recv_str(cr, src));
-        jobtype_   = string2jobType(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &reference_);
+        gmx_recv_str(cr, src, &conformation_);
+        gmx_recv_str(cr, src, &_program);
+        gmx_recv_str(cr, src, &_method);
+        gmx_recv_str(cr, src, &_basisset);
+        gmx_recv_str(cr, src, &_datafile);
+        gmx_recv_str(cr, src, &jobtype);
+        jobtype_   = string2jobType(jobtype);
         Npolar     = gmx_recv_int(cr, src);
         Ndipole    = gmx_recv_int(cr, src);
         Nenergy    = gmx_recv_int(cr, src);
@@ -1613,8 +1615,8 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        xyzUnit_.assign(gmx_recv_str(cr, src));
-        vUnit_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &xyzUnit_);
+        gmx_recv_str(cr, src, &vUnit_);
         espID_ = gmx_recv_int(cr, src);
         x_     = gmx_recv_double(cr, src);
         y_     = gmx_recv_double(cr, src);
@@ -1704,10 +1706,10 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        name_.assign(gmx_recv_str(cr, src));
-        obType_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &name_);
+        gmx_recv_str(cr, src, &obType_);
         atomID_ = gmx_recv_int(cr, src);
-        unit_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &unit_);
         x_ = gmx_recv_double(cr, src);
         y_ = gmx_recv_double(cr, src);
         z_ = gmx_recv_double(cr, src);
@@ -1787,7 +1789,7 @@ CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        _catom.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &_catom);
         _cnumber = gmx_recv_int(cr, src);
         if (nullptr != debug)
         {
@@ -1827,7 +1829,7 @@ CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         Natomnum = gmx_recv_int(cr, src); 
-        _compname.assign(gmx_recv_str(cr, src));      
+        gmx_recv_str(cr, src, &_compname);      
         CommunicationStatus cs2;
         for(int n = 0; n < Natomnum; n++)
         {
@@ -1930,12 +1932,12 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         _mass         = gmx_recv_double(cr, src);
         _charge       = gmx_recv_int(cr, src);
         _multiplicity = gmx_recv_int(cr, src);
-        _formula.assign(gmx_recv_str(cr, src));
-        _molname.assign(gmx_recv_str(cr, src));
-        _iupac.assign(gmx_recv_str(cr, src));
-        _cas.assign(gmx_recv_str(cr, src));
-        _cid.assign(gmx_recv_str(cr, src));
-        _inchi.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &_formula);
+        gmx_recv_str(cr, src, &_molname);
+        gmx_recv_str(cr, src, &_iupac);
+        gmx_recv_str(cr, src, &_cas);
+        gmx_recv_str(cr, src, &_cid);
+        gmx_recv_str(cr, src, &_inchi);
         Nbond     = gmx_recv_int(cr, src);
         Nmol_comp = gmx_recv_int(cr, src);
         Ncategory = gmx_recv_int(cr, src);
@@ -1973,16 +1975,16 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             cs = gmx_recv_data(cr, src);
             if (CS_OK == cs)
             {
-                char *ptr = gmx_recv_str(cr, src);
-                if (nullptr != ptr)
+                std::string str;
+                gmx_recv_str(cr, src, &str);
+                if (!str.empty())
                 {
-                    AddCategory(ptr);
+                    AddCategory(str);
                     if (nullptr != debug)
                     {
-                        fprintf(debug, "Received a category %s\n", ptr);
+                      fprintf(debug, "Received a category %s\n", str.c_str());
                         fflush(debug);
                     }
-                    free(ptr);
                 }
                 else
                 {

@@ -44,7 +44,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <algorithm>
 #include <vector>
 
@@ -783,22 +782,22 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        filename_             = gmx_recv_str(cr, src);
-        alexandriaPolarUnit_  = gmx_recv_str(cr, src);
-        alexandriaPolarRef_   = gmx_recv_str(cr, src);
-        alexandriaForcefield_ = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &filename_);
+        gmx_recv_str(cr, src, &alexandriaPolarUnit_);
+        gmx_recv_str(cr, src, &alexandriaPolarRef_);
+        gmx_recv_str(cr, src, &alexandriaForcefield_);
         nexcl_                = gmx_recv_int(cr, src);
         fudgeQQ_              = gmx_recv_double(cr, src);
         fudgeLJ_              = gmx_recv_double(cr, src);
-        gtVdwFunction_        = gmx_recv_str(cr, src);
-        gtCombinationRule_    = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &gtVdwFunction_);
+        gmx_recv_str(cr, src, &gtCombinationRule_);
         gtVdwFtype_           = gmx_recv_int(cr, src);
         gtCombRule_           = gmx_recv_int(cr, src);
-        millerTauUnit_        = gmx_recv_str(cr, src);
-        millerAhpUnit_        = gmx_recv_str(cr, src);
-        millerRef_            = gmx_recv_str(cr, src);
-        bosquePolarUnit_      = gmx_recv_str(cr, src);
-        bosqueRef_            = gmx_recv_str(cr, src);     
+        gmx_recv_str(cr, src, &millerTauUnit_);
+        gmx_recv_str(cr, src, &millerAhpUnit_);
+        gmx_recv_str(cr, src, &millerRef_);
+        gmx_recv_str(cr, src, &bosquePolarUnit_);
+        gmx_recv_str(cr, src, &bosqueRef_);     
         nptype                = gmx_recv_int(cr, src);
         nalexandria           = gmx_recv_int(cr, src);
         nbtype                = gmx_recv_int(cr, src);
@@ -838,8 +837,9 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
         btype_.clear();
         for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
         {
-            char *btype = gmx_recv_str(cr, src);
-            if (nullptr == btype)
+            std::string btype;
+            gmx_recv_str(cr, src, &btype);
+            if (!btype.empty())
             {
                 btype_.push_back(btype);
             }

@@ -60,7 +60,7 @@ void gmx_send_str(t_commrec *cr, int dest, const char *ptr)
 {
     int len;
 
-    if (NULL == ptr)
+    if (nullptr == ptr)
     {
         len = 0;
     }
@@ -68,39 +68,36 @@ void gmx_send_str(t_commrec *cr, int dest, const char *ptr)
     {
         len = strlen(ptr)+1;
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Sending string '%s' to %d\n", ptr, dest);
     }
     gmx_send(cr, dest, &len, sizeof(len));
-    if (NULL != ptr)
+    if (nullptr != ptr)
     {
         gmx_send(cr, dest, (void *)ptr, len);
     }
 }
 
-char *gmx_recv_str(t_commrec *cr, int src)
+void gmx_recv_str(t_commrec *cr, int src, std::string *str)
 {
     int   len;
-    char *buf;
-
+    
     gmx_recv(cr, src, &len, sizeof(len));
     if (len == 0)
     {
-        return NULL;
+        str->clear();
     }
     else
     {
-        snew(buf, len);
-        gmx_recv(cr, src, buf, len);
-
-        return buf;
+        str->resize(len-1);
+        gmx_recv(cr, src, (void*)str->data(), len);
     }
 }
 
 void gmx_send_double(t_commrec *cr, int dest, double d)
 {
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Sending double '%g' to %d\n", d, dest);
     }
@@ -118,7 +115,7 @@ double gmx_recv_double(t_commrec *cr, int src)
 
 void gmx_send_int(t_commrec *cr, int dest, int d)
 {
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Sending int '%d' to %d\n", d, dest);
     }

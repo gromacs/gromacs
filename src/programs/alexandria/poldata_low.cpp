@@ -127,9 +127,9 @@ CommunicationStatus Ptype::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        type_.assign(gmx_recv_str(cr, src));
-        miller_.assign(gmx_recv_str(cr, src));
-        bosque_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &type_);
+        gmx_recv_str(cr, src, &miller_);
+        gmx_recv_str(cr, src, &bosque_);
         polarizability_ = gmx_recv_double(cr, src);
         sigPol_ = gmx_recv_double(cr, src);
         if (nullptr != debug)
@@ -193,16 +193,17 @@ CommunicationStatus Ffatype::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        desc_.assign(gmx_recv_str(cr, src));
-        type_.assign(gmx_recv_str(cr, src));
-        ptype_.assign(gmx_recv_str(cr, src));        
-        btype_.assign(gmx_recv_str(cr, src));
-        elem_.assign(gmx_recv_str(cr, src));
-        vdwparams_.assign(gmx_recv_str(cr, src));
-        refEnthalpy_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &desc_);
+        gmx_recv_str(cr, src, &type_);
+        gmx_recv_str(cr, src, &ptype_);        
+        gmx_recv_str(cr, src, &btype_);
+        gmx_recv_str(cr, src, &elem_);
+        gmx_recv_str(cr, src, &vdwparams_);
+        gmx_recv_str(cr, src, &refEnthalpy_);
+
         if (nullptr != debug)
         {
-            fprintf(debug, "Receive Fftype %s %s %s %s %s %s %s, status %s\n",
+            fprintf(debug, "Received Fftype %s %s %s %s %s %s %s, status %s\n",
                     desc_.c_str(), type_.c_str(), ptype_.c_str(),
                     btype_.c_str(), elem_.c_str(), vdwparams_.c_str() ,
                     refEnthalpy_.c_str(), cs_name(cs));
@@ -261,7 +262,7 @@ CommunicationStatus ListedForce::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        params_.assign(gmx_recv_str(cr, src));
+        gmx_recv_str(cr, src, &params_);
         refValue_ = gmx_recv_double(cr, src);
         sigma_    = gmx_recv_double(cr, src);       
         ntrain_   = static_cast<size_t>(gmx_recv_double(cr, src));
@@ -269,11 +270,11 @@ CommunicationStatus ListedForce::Receive(t_commrec *cr, int src)
         
         for(auto n = 0; n < natom; n++)
         {
-            char *atom = gmx_recv_str(cr, src);
-            if (nullptr != atom)
+            std::string atom;
+            gmx_recv_str(cr, src, &atom);
+            if (!atom.empty())
             {
                 const_cast<std::vector<std::string>&>(atoms_).push_back(atom);
-                free(atom);
             }
             else
             {
@@ -348,12 +349,17 @@ CommunicationStatus ListedForces::Receive(t_commrec *cr, int src)
 {
     size_t nforce;
     CommunicationStatus cs;
+    std::string iType, function, unit;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        iType_    = string2iType(gmx_recv_str(cr, src));
-        const_cast<std::string&>(function_) = gmx_recv_str(cr, src);
-        const_cast<std::string&>(unit_)     = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &iType);
+        gmx_recv_str(cr, src, &function);
+        gmx_recv_str(cr, src, &unit);
+        iType_    = string2iType(iType.c_str());        
+        const_cast<std::string&>(function_) = function;        
+        const_cast<std::string&>(unit_) = unit;
         fType_    = static_cast<unsigned int>(gmx_recv_int(cr, src));
         nforce    = gmx_recv_int(cr, src);
               
@@ -485,7 +491,7 @@ CommunicationStatus Bosque::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        bosque_ = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &bosque_);
         polarizability_ = gmx_recv_double(cr, src);        
         if (nullptr != debug)
         {
@@ -539,11 +545,11 @@ CommunicationStatus Miller::Receive(t_commrec *cr, int src)
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        miller_     = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &miller_);
         atomnumber_ = gmx_recv_int(cr, src);
         tauAhc_     = gmx_recv_double(cr, src);
         alphaAhp_   = gmx_recv_double(cr, src);
-        alexandria_equiv_ = gmx_recv_str(cr, src);        
+        gmx_recv_str(cr, src, &alexandria_equiv_);        
         if (nullptr != debug)
         {
             fprintf(debug, "Received Miller %s %d %g %g %s, status %s\n",
@@ -587,11 +593,14 @@ CommunicationStatus Symcharges::Send(t_commrec *cr, int dest)
 CommunicationStatus Symcharges::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
+    std::string central, attached;
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        const_cast<std::string&>(central_)   = gmx_recv_str(cr, src);
-        const_cast<std::string&>(attached_)  = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &central);
+        gmx_recv_str(cr, src, &attached);
+        const_cast<std::string&>(central_)   = central;
+        const_cast<std::string&>(attached_)  = attached;
         numattach_ = gmx_recv_int(cr, src);        
         if (nullptr != debug)
         {
@@ -633,11 +642,14 @@ CommunicationStatus Epref::Send(t_commrec *cr, int dest)
 CommunicationStatus Epref::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
+    std::string eqdModel;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        eqdModel_ = name2eemtype(gmx_recv_str(cr, src));
-        epref_    = gmx_recv_str(cr, src);
+      gmx_recv_str(cr, src, &eqdModel);
+      eqdModel_ = name2eemtype(eqdModel);
+      gmx_recv_str(cr, src, &epref_);
         
         if (nullptr != debug)
         {
@@ -777,14 +789,17 @@ CommunicationStatus Eemprops::Receive(t_commrec *cr, int src)
 {
     size_t nrzq;
     CommunicationStatus cs;
+    std::string eqdModel;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        eqdModel_   = name2eemtype(gmx_recv_str(cr, src));
-        name_       = gmx_recv_str(cr, src);
-        rowstr_     = gmx_recv_str(cr, src);
-        zetastr_    = gmx_recv_str(cr, src);
-        qstr_       = gmx_recv_str(cr, src);
+        gmx_recv_str(cr, src, &eqdModel);
+        eqdModel_   = name2eemtype(eqdModel);
+        gmx_recv_str(cr, src, &name_);
+        gmx_recv_str(cr, src, &rowstr_);
+        gmx_recv_str(cr, src, &zetastr_);
+        gmx_recv_str(cr, src, &qstr_);
         J0_         = gmx_recv_double(cr, src);
         J0_sigma_   = gmx_recv_double(cr, src);
         chi0_       = gmx_recv_double(cr, src);
