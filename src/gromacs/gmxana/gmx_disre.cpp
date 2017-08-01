@@ -207,17 +207,17 @@ static void check_viol(FILE *log,
         calc_disres_R_6(nullptr, n, &forceatoms[i],
                         (const rvec*)x, pbc, fcd, nullptr);
 
-        if (fcd->disres.Rt_6[0] <= 0)
+        if (fcd->disres.Rt_6[label] <= 0)
         {
-            gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[0]);
+            gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[label]);
         }
 
-        rt = gmx::invsixthroot(fcd->disres.Rt_6[0]);
+        rt = gmx::invsixthroot(fcd->disres.Rt_6[label]);
         dr[clust_id].aver1[ndr]  += rt;
         dr[clust_id].aver2[ndr]  += gmx::square(rt);
         drt = 1.0/gmx::power3(rt);
         dr[clust_id].aver_3[ndr] += drt;
-        dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
+        dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[label];
 
         snew(fshift, SHIFTS);
         interaction_function[F_DISRES].ifunc(n, &forceatoms[i], forceparams,
@@ -242,7 +242,7 @@ static void check_viol(FILE *log,
             {
                 if (index[j] == forceparams[type].disres.label)
                 {
-                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[0]);
+                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[label]);
                 }
             }
         }
