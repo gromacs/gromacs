@@ -38,7 +38,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "moldip.h"
 #include <cmath>
 #include <vector>
 
@@ -53,6 +52,7 @@
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
+#include "moldip.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 
@@ -166,13 +166,13 @@ void IndexCount::addName(const std::string &name,
     {
         if (ai->isConst() == bConst)
         {
-            fprintf(stderr, "Trying to add %s twice\n", name.c_str());
-            // ai.increment();
+            gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized",
+                      name.c_str());
         }
         else
         {
-            gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized",
-                      name.c_str());
+            fprintf(stderr, "Trying to add %s twice\n", name.c_str());
+            // ai.increment();
         }
     }
 }
@@ -440,17 +440,30 @@ void MolDip::Read(FILE            *fp,
     {
         nmol_cpu = 0;
     }
+    /*Sort Molecules based on the number of atoms*/
+    if (MASTER(cr_))
+    {
+        std::sort(mp.begin(), mp.end(),
+                  [](alexandria::MolProp &mp1,
+                     alexandria::MolProp &mp2)
+                  {
+                    return (mp1.NAtom() < mp2.NAtom());
+                  });
+    }
     if (PAR(cr_))
     {
         gmx_sumi(1, &nmol_cpu, cr_);
     }    
     if (bCheckSupport && MASTER(cr_))
     {                     
-        make_index_count(&indexCount_, pd_,
-                         opt_elem, const_elem, 
+        make_index_count(&indexCount_,
+                         pd_,
+                         opt_elem,
+                         const_elem, 
                          iChargeDistributionModel_, 
                          bFitZeta_);
     }
+    /*Generate topology for Molecules and distribute them among the nodes*/
     int ntopol = 0;
     if (MASTER(cr_))
     {
@@ -463,7 +476,8 @@ void MolDip::Read(FILE            *fp,
                 printf("%s\n", mpi->getMolname().c_str());
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
-                imm = mymol.GenerateTopology(atomprop_, pd_, lot,
+                imm = mymol.GenerateTopology(atomprop_,
+                                             pd_, lot,
                                              iChargeDistributionModel_,
                                              false, bPairs, bDihedral, 
                                              bPolar, tabfn);                                             
@@ -631,7 +645,7 @@ void MolDip::Read(FILE            *fp,
         int nmoltot = 0;
         if (PAR(cr_))
         {
-            for (int i = 0; (i < cr_->nnodes); i++)
+            for (int i = 0; i < cr_->nnodes; i++)
             {
                 fprintf(fp, "Node %d has %d molecules\n", i, nmolpar[i]);
                 nmoltot += nmolpar[i];

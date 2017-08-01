@@ -38,10 +38,8 @@
  * \author  David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "mymol.h"
 
 #include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 
@@ -76,6 +74,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
+#include "mymol.h"
 #include "mymol_low.h"
       
 namespace alexandria

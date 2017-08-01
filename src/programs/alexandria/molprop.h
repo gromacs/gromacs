@@ -50,7 +50,6 @@
 #define MOLPROP_H
 
 #include <string.h>
-
 #include <string>
 #include <vector>
 
@@ -959,18 +958,6 @@ DataSource dataSourceFromName(const std::string &name);
  */
 class Experiment
 {
-    private:
-        DataSource                           dataSource_;
-        std::string                          reference_, conformation_;
-        std::string                          _program, _method, _basisset, _datafile;
-	    jobType                              jobtype_;
-        std::vector<CalcAtom>                _catom;
-        std::vector<ElectrostaticPotential>  _potential;
-        std::vector<MolecularDipole>         dipole_;
-        std::vector<MolecularEnergy>         energy_;
-        std::vector<MolecularQuadrupole>     quadrupole_;
-        std::vector<MolecularPolarizability> polar_;
-
     public:
         //! Empty constructor
         Experiment() { }
@@ -1051,40 +1038,40 @@ class Experiment
         void AddAtom(CalcAtom ca);
 
         //! Return the number of atoms
-        int NAtom() { return _catom.size(); }
+        int NAtom() { return catom_.size(); }
 
         //! Iterator Begin over CalcAtom objects
-        CalcAtomIterator BeginAtom() { return _catom.begin(); }
+        CalcAtomIterator BeginAtom() { return catom_.begin(); }
 
         //! Iterator End over CalcAtom objects
-        CalcAtomIterator EndAtom() { return _catom.end(); }
+        CalcAtomIterator EndAtom() { return catom_.end(); }
 
         //! Return iterator pointint to this particular atom or EndAtom() if not found
         CalcAtomIterator SearchAtom(CalcAtom ca);
 
         //! Add ElectrostaticPotential element to the array
-        void AddPotential(ElectrostaticPotential ep) { _potential.push_back(ep); }
+        void AddPotential(ElectrostaticPotential ep) { potential_.push_back(ep); }
 
         //! Return the number of potential points
-        int NPotential() { return _potential.size(); };
+        int NPotential() { return potential_.size(); };
 
         //! Iterator Begin over ElectrostaticPotential objects
-        ElectrostaticPotentialIterator BeginPotential() { return _potential.begin(); }
+        ElectrostaticPotentialIterator BeginPotential() { return potential_.begin(); }
 
         //! Iterator End over ElectrostaticPotential objects
-        ElectrostaticPotentialIterator EndPotential() { return _potential.end(); }
+        ElectrostaticPotentialIterator EndPotential() { return potential_.end(); }
 
         //! Return the program used to perform the calculation
-        const std::string &getProgram() const { return _program; }
+        const std::string &getProgram() const { return program_; }
 
         //! Return the basis set used to perform the calculation
-        const std::string &getBasisset() const { return _basisset; }
+        const std::string &getBasisset() const { return basisset_; }
 
         //! Return the method used to perform the calculation
-        const std::string &getMethod() const { return _method; }
+        const std::string &getMethod() const { return method_; }
 
         //! Return the datafile from which the calculation output was extracted
-        const std::string &getDatafile() const { return _datafile; }
+        const std::string &getDatafile() const { return datafile_; }
 
         /*! \brief
          * Convenience function that fetches a value from this experiment
@@ -1129,6 +1116,22 @@ class Experiment
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
+
+    private:
+        DataSource                           dataSource_;
+        std::string                          reference_;
+        std::string                          conformation_;
+        std::string                          program_;
+        std::string                          method_;
+        std::string                          basisset_;
+        std::string                          datafile_;
+	      jobType                              jobtype_;
+        std::vector<CalcAtom>                catom_;
+        std::vector<ElectrostaticPotential>  potential_;
+        std::vector<MolecularDipole>         dipole_;
+        std::vector<MolecularEnergy>         energy_;
+        std::vector<MolecularQuadrupole>     quadrupole_;
+        std::vector<MolecularPolarizability> polar_;
 };
 //! Iterates over Experiment items
 using  ExperimentIterator = typename std::vector<Experiment>::iterator;

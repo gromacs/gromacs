@@ -38,10 +38,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include "molprop.h"
-
 #include <cmath>
-
 #include <string>
 #include <vector>
 
@@ -51,7 +48,7 @@
 #include "communication.h"
 #include "composition.h"
 #include "gmx_simple_comm.h"
-
+#include "molprop.h"
 
 const char *mpo_name[MPO_NR] =
 {
@@ -344,10 +341,10 @@ Experiment::Experiment(std::string program, std::string method,
     dataSource_(dsTheory),
     reference_(reference),
     conformation_(conformation),
-    _program(program),
-    _method(method),
-    _basisset(basisset),
-    _datafile(datafile),
+    program_(program),
+    method_(method),
+    basisset_(basisset),
+    datafile_(datafile),
     jobtype_(jtype)
 
 {}
@@ -365,10 +362,10 @@ void Experiment::Dump(FILE *fp)
         }
         else
         {
-            fprintf(fp, "program    = %s\n", _program.c_str());
-            fprintf(fp, "method     = %s\n", _method.c_str());
-            fprintf(fp, "basisset   = %s\n", _basisset.c_str());
-            fprintf(fp, "datafile   = %s\n", _datafile.c_str());
+            fprintf(fp, "program    = %s\n", program_.c_str());
+            fprintf(fp, "method     = %s\n", method_.c_str());
+            fprintf(fp, "basisset   = %s\n", basisset_.c_str());
+            fprintf(fp, "datafile   = %s\n", datafile_.c_str());
             for (CalcAtomIterator cai = BeginAtom(); (cai < EndAtom()); ++cai)
             {
                 double   x, y, z;
@@ -518,12 +515,12 @@ void Experiment::AddAtom(CalcAtom ca)
 
     if (cai == EndAtom())
     {
-        _catom.push_back(ca);
+        catom_.push_back(ca);
     }
     else
     {
         printf("Trying to add identical atom %s (%s) twice. N = %d\n",
-               ca.getName().c_str(), ca.getObtype().c_str(), (int)_catom.size());
+               ca.getName().c_str(), ca.getObtype().c_str(), (int)catom_.size());
     }
 }
 
@@ -1470,10 +1467,10 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
     {
         gmx_recv_str(cr, src, &reference_);
         gmx_recv_str(cr, src, &conformation_);
-        gmx_recv_str(cr, src, &_program);
-        gmx_recv_str(cr, src, &_method);
-        gmx_recv_str(cr, src, &_basisset);
-        gmx_recv_str(cr, src, &_datafile);
+        gmx_recv_str(cr, src, &program_);
+        gmx_recv_str(cr, src, &method_);
+        gmx_recv_str(cr, src, &basisset_);
+        gmx_recv_str(cr, src, &datafile_);
         gmx_recv_str(cr, src, &jobtype);
         jobtype_   = string2jobType(jobtype);
         Npolar     = gmx_recv_int(cr, src);
@@ -1558,17 +1555,17 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
     {
         gmx_send_str(cr, dest, &reference_);
         gmx_send_str(cr, dest, &conformation_);      
-        gmx_send_str(cr, dest, &_program);
-        gmx_send_str(cr, dest, &_method);
-        gmx_send_str(cr, dest, &_basisset);
-        gmx_send_str(cr, dest, &_datafile);
+        gmx_send_str(cr, dest, &program_);
+        gmx_send_str(cr, dest, &method_);
+        gmx_send_str(cr, dest, &basisset_);
+        gmx_send_str(cr, dest, &datafile_);
         jobtype.assign(jobType2string(jobtype_));
         gmx_send_str(cr, dest, &jobtype);        
         gmx_send_int(cr, dest, polar_.size());
         gmx_send_int(cr, dest, dipole_.size());
         gmx_send_int(cr, dest, energy_.size());
-        gmx_send_int(cr, dest, _potential.size());
-        gmx_send_int(cr, dest, _catom.size());
+        gmx_send_int(cr, dest, potential_.size());
+        gmx_send_int(cr, dest, catom_.size());
         
 
         //! Send Polarizabilities
