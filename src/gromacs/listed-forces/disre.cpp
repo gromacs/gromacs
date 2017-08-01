@@ -132,7 +132,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     iloop     = gmx_mtop_ilistloop_init(mtop);
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {
-        if (nmol > 1 && ir->eDisre != edrEnsemble)
+        if (nmol > 1 && il[F_DISRES].nr > 0 && ir->eDisre != edrEnsemble)
         {
             gmx_fatal(FARGS, "NMR distance restraints with multiple copies of the same molecule are currently only supported with ensemble averaging. If you just want to restrain distances between atom pairs using a flat-bottomed potential, use a restraint potential (bonds type 10) instead.");
         }
