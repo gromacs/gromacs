@@ -863,7 +863,7 @@ void OptZeta::print_results(FILE                   *fp,
             auto EspPoint = mol.Qgresp_.espPoint();
             for (size_t i = 0; i < nEsp; i++)
             {
-                gmx_stats_add_point(lsq_esp, EspPoint[i].v(), EspPoint[i].vCalc(), 0, 0);
+                gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(),eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
             }
             
             gmx_stats_add_point(lsq_dip[eprDESP], mol.dip_elec_, mol.dip_calc_, 0, 0);
@@ -961,10 +961,10 @@ void OptZeta::print_results(FILE                   *fp,
     fprintf(fp, "Quadrupoles are %s in EEM Parametrization.\n", (bQuadrupole_ ? "used" : "not used"));
     fprintf(fp, "\n");
 
-    print_stats(fp, (char *)"ESP",           lsq_esp,           true,  (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Dipoles",       lsq_mu[eprDESP],   false, (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[eprDESP],  false, (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprDESP], false, (char *)"QM", (char *)"DESP");      
+    print_stats(fp, (char *)"ESP           (Hartree/e)",  lsq_esp,           true,  (char *)"QM", (char *)"DESP");
+    print_stats(fp, (char *)"Dipoles       (Debye)",      lsq_mu[eprDESP],   false, (char *)"QM", (char *)"DESP");
+    print_stats(fp, (char *)"Dipole Moment (Debye)",      lsq_dip[eprDESP],  false, (char *)"QM", (char *)"DESP");
+    print_stats(fp, (char *)"Quadrupoles   (Buckingham)", lsq_quad[eprDESP], false, (char *)"QM", (char *)"DESP");      
     fprintf(fp, "\n");
 
     print_stats(fp, (char *)"Dipoles",       lsq_mu[eprESP],   true,  (char *)"QM", (char *)"ESP");
@@ -1049,14 +1049,14 @@ void OptZeta::print_results(FILE                   *fp,
     print_lsq_set(Qc, lsq_quad[eprCM5]);
     fclose(Qc);
     
-    espc = xvgropen(EspCorr, "Electrostatic Potential (Hartree/e)", "QM", "EEM", oenv);
+    espc = xvgropen(EspCorr, "Electrostatic Potential (Hartree/e)", "QM", "DESP", oenv);
     xvgr_symbolize(espc, 1, eprnm, oenv);
     print_lsq_set(espc, lsq_esp);
     fclose(espc);
     
     if (bPolar)
     {
-        alphac = xvgropen(alphaCorr, "Isotropic Polarizability (A^3)", "QM", "EEM", oenv);
+        alphac = xvgropen(alphaCorr, "Isotropic Polarizability (A^3)", "QM", "DESP", oenv);
         xvgr_symbolize(alphac, 1, eprnm, oenv);
         print_lsq_set(alphac, lsq_alpha);
         fclose(alphac);
