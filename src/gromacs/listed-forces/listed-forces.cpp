@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -361,6 +361,17 @@ calc_one_bond(int thread,
             v = 0;
         }
 #endif
+        else if (ftype == F_ORIRES)
+        {
+            if (thread == 0)
+            {
+                v = interaction_function[ftype].ifunc(nbonds*nat1, iatoms,
+                                                      idef->iparams,
+                                                      x, f, fshift,
+                                                      pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
+                                                      md, fcd, global_atom_index);
+            }
+        }
         else
         {
             v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
