@@ -45,7 +45,6 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
