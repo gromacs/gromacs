@@ -867,7 +867,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 {
     std::string                  s;
 
-    const gmx::CpuInfo          &cpuInfo = *hwinfo_g->cpuInfo;
+    const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
     s  = gmx::formatString("\n");
@@ -1095,7 +1095,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo)
 {
-    const gmx::CpuInfo &cpuInfo = *hwinfo_g->cpuInfo;
+    const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
 
     if (fplog != nullptr)
     {
