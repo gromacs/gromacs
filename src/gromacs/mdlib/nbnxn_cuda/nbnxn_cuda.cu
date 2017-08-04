@@ -148,7 +148,7 @@ static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_kernel_nblock(int nwork_units, gmx_device_info_t *dinfo)
+static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t *dinfo)
 {
     int max_grid_x_size;
 
@@ -231,7 +231,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                      
                                                        int                                  evdwtype,
                                                        bool                                 bDoEne,
                                                        bool                                 bDoPrune,
-                                                       struct gmx_device_info_t gmx_unused *devInfo)
+                                                       const gmx_device_info_t gmx_unused  *devInfo)
 {
     nbnxn_cu_kfunc_ptr_t res;
 
@@ -271,7 +271,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                      
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t gmx_unused *dinfo, const cu_nbparam_t *nbp)
+static inline int calc_shmem_required(const int num_threads_z, const gmx_device_info_t gmx_unused *dinfo, const cu_nbparam_t *nbp)
 {
     int shmem;
 
@@ -725,7 +725,7 @@ const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_
 
 /*! Set up the cache configuration for the non-bonded kernels,
  */
-void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo)
+void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
 {
     cudaError_t stat;
 

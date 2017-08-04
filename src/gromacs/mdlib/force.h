@@ -45,6 +45,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
+struct gmx_device_info_t;
 struct gmx_edsam;
 struct gmx_gpu_info_t;
 struct gmx_groups_t;
@@ -214,7 +215,6 @@ void do_force_lowlevel(t_forcerec   *fr,
 
 void free_gpu_resources(const t_forcerec            *fr,
                         const t_commrec             *cr,
-                        const gmx_gpu_info_t        *gpu_info,
-                        const gmx_gpu_opt_t         *gpu_opt);
+                        const gmx_device_info_t     *deviceInfo);
 
 #endif

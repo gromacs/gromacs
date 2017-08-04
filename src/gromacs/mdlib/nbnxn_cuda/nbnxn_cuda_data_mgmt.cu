@@ -78,7 +78,7 @@ static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 static unsigned int gpu_min_ci_balanced_factor = 44;
 
 /* Functions from nbnxn_cuda.cu */
-extern void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo);
+extern void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo);
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
@@ -584,18 +584,14 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
 }
 
 void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
-                    const gmx_gpu_info_t      *gpu_info,
-                    const gmx_gpu_opt_t       *gpu_opt,
+                    const gmx_device_info_t   *deviceInfo,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
-                    int                        my_gpu_index,
                     int                        /*rank*/,
                     gmx_bool                   bLocalAndNonlocal)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
-
-    assert(gpu_info);
 
     if (p_nb == NULL)
     {
@@ -624,7 +620,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     init_plist(nb->plist[eintLocal]);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = &gpu_info->gpu_dev[get_gpu_device_id(*gpu_info, gpu_opt, my_gpu_index)];
+    nb->dev_info = deviceInfo;
 
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);

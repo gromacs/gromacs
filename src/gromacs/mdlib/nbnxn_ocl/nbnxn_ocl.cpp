@@ -94,7 +94,7 @@ static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
 /*! \brief Validates the input global work size parameter.
  */
-static inline void validate_global_work_size(size_t *global_work_size, int work_dim, gmx_device_info_t *dinfo)
+static inline void validate_global_work_size(size_t *global_work_size, int work_dim, const gmx_device_info_t *dinfo)
 {
     cl_uint device_size_t_size_bits;
     cl_uint host_size_t_size_bits;

@@ -1144,10 +1144,21 @@ int Mdrunner::mdrunner()
     check_resource_division_efficiency(hwinfo, hw_opt, hw_opt.gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
+    gmx_device_info_t *shortRangedDeviceInfo = nullptr;
+    int                shortRangedDeviceId   = -1;
+    if (cr->duty & DUTY_PP)
+    {
+        if (willUsePhysicalGpu)
+        {
+            shortRangedDeviceId   = hw_opt.gpu_opt.dev_use[cr->nrank_pp_intranode];
+            shortRangedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, shortRangedDeviceId);
+        }
+    }
+
     if (DOMAINDECOMP(cr))
     {
         /* When we share GPUs over ranks, we need to know this for the DLB */
-        dd_setup_dlb_resource_sharing(cr, hwinfo, hw_opt);
+        dd_setup_dlb_resource_sharing(cr, shortRangedDeviceId);
     }
 
     /* getting number of PP/PME threads
@@ -1187,8 +1198,6 @@ int Mdrunner::mdrunner()
 
         /* Initiate forcerecord */
         fr                 = mk_forcerec();
-        fr->hwinfo         = hwinfo;
-        fr->gpu_opt        = &hw_opt.gpu_opt;
         fr->forceProviders = mdModules.initForceProviders();
         init_forcerec(fplog, mdlog, fr, fcd,
                       inputrec, mtop, cr, box,
@@ -1196,6 +1205,7 @@ int Mdrunner::mdrunner()
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
                       nbpu_opt,
+                      shortRangedDeviceInfo,
                       FALSE,
                       pforce);
 
@@ -1425,7 +1435,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : nullptr);
+    free_gpu_resources(fr, cr, shortRangedDeviceInfo);
 
     if (doMembed)
     {
