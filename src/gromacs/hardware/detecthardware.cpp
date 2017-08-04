@@ -120,12 +120,12 @@ static int                 n_hwinfo = 0;
 /* A lock to protect the hwinfo structure */
 static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  &hw_opt,
-                                      bool                 userSetGpuIds,
-                                      bool                 willUsePhysicalGpu)
+void gmx_check_hw_runconf_consistency(const gmx::MDLogger    &mdlog,
+                                      const gmx_hw_info_t    *hwinfo,
+                                      const t_commrec        *cr,
+                                      const gmx_hw_opt_t     &hw_opt,
+                                      bool                    userSetGpuIds,
+                                      const std::vector<int> &gpuTaskAssignment)
 {
     int      npppn;
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
@@ -151,10 +151,12 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
     bMPI          = TRUE;
     btMPI         = FALSE;
     bNthreadsAuto = FALSE;
+    GMX_UNUSED_VALUE(hw_opt);
 #else
     bMPI          = FALSE;
     btMPI         = FALSE;
     bNthreadsAuto = FALSE;
+    GMX_UNUSED_VALUE(hw_opt);
 #endif
 
     /* Need to ensure that we have enough GPUs:
@@ -189,13 +191,13 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         sprintf(th_or_proc, "process");
     }
 
-    if (willUsePhysicalGpu)
+    if (!gpuTaskAssignment.empty())
     {
         int  ngpu_comp, ngpu_use;
         char gpu_comp_plural[2], gpu_use_plural[2];
 
         ngpu_comp = hwinfo->gpu_info.n_dev_compatible;
-        ngpu_use  = hw_opt.gpu_opt.n_dev_use;
+        ngpu_use  = static_cast<int>(gpuTaskAssignment.size());
 
         sprintf(gpu_comp_plural, "%s", (ngpu_comp > 1) ? "s" : "");
         sprintf(gpu_use_plural,  "%s", (ngpu_use > 1) ? "s" : "");
@@ -671,33 +673,9 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
     return hwinfo_g;
 }
 
-bool hasUserSetGpuIds(const gmx_gpu_opt_t *gpu_opt)
-{
-    return gpu_opt->gpu_id != nullptr;
-}
-
 bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info)
 {
     return gpu_info.n_dev_compatible > 0;
-}
-
-void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
-{
-    if (!hasUserSetGpuIds(gpu_opt))
-    {
-        return;
-    }
-
-    /* Parse a "plain" or comma-separated GPU ID string which contains a
-     * sequence of digits corresponding to GPU IDs; the order will
-     * indicate the process/tMPI thread - GPU assignment. */
-    parse_digits_from_string(gpu_opt->gpu_id, &gpu_opt->n_dev_use, &gpu_opt->dev_use);
-
-    if (gpu_opt->n_dev_use == 0)
-    {
-        gmx_fatal(FARGS, "Empty GPU ID string encountered.\n"
-                  "An empty, delimiter-free, or comma-separated sequence of valid numeric IDs of available GPUs is required.\n");
-    }
 }
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,6 +34,8 @@
  */
 #ifndef GMX_HARDWARE_HWINFO_H
 #define GMX_HARDWARE_HWINFO_H
+
+#include <string>
 
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -85,7 +87,8 @@ enum {
 };
 
 /* Threading and GPU options, can be set automatically or by the user */
-typedef struct gmx_hw_opt_t {
+struct gmx_hw_opt_t
+{
     int           nthreads_tot;        /* Total number of threads requested (TMPI) */
     int           nthreads_tmpi;       /* Number of TMPI threads requested         */
     int           nthreads_omp;        /* Number of OpenMP threads requested       */
@@ -94,7 +97,7 @@ typedef struct gmx_hw_opt_t {
     int           core_pinning_stride; /* Logical core pinning stride              */
     int           core_pinning_offset; /* Logical core pinning offset              */
 
-    gmx_gpu_opt_t gpu_opt;             /* The GPU options                          */
-} gmx_hw_opt_t;
+    std::string   gpuIdTaskAssignment; /* Empty, or a GPU task-assignment string provided by the user */
+};
 
 #endif
