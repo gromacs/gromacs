@@ -1,6 +1,20 @@
+What is this?
+=============
+This a version of the GROMACS molecular dynamics simulation package that allows you to save the local pressure contribution from each particle in the system. Please refer to the original GROMACS README file (also included here) about the license.
 
-Caveats for the local virial version of GROMACS
-===============================================
+Most widely used potential terms (but not all!) are supported: Lennard-Jones, Coulomb (including PME!), harmonic bonds & angles, dihedral angles, constraints (SHAKE, LINCS).
+
+Please refer to 
+
+      Sega, Marcello, Balázs Fábián, and Pál Jedlovszky. 
+      "Pressure Profile Calculation with Mesh Ewald Methods." 
+      Journal of Chemical Theory and Computation 12.9 (2016): 4509-4515.
+     
+DOI: [10.1021/acs.jctc.6b00576](http://dx.doi.org/10.1021/acs.jctc.6b00576)
+
+
+Caveats 
+=======
 
 * SIMD kernels are not supported, and one can only run single core,
 single thread. To this end, invoke ```mdrun```, e.g., like this: 
