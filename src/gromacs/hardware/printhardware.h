@@ -32,19 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_HARDWARE_DETECTHARDWARE_H
-#define GMX_HARDWARE_DETECTHARDWARE_H
+#ifndef GMX_HARDWARE_PRINTHARDWARE_H
+#define GMX_HARDWARE_PRINTHARDWARE_H
 
 #include <cstdio>
 
 #include <string>
 
-#include "gromacs/utility/basedefinitions.h"
-
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_hw_info_t;
-struct gmx_hw_opt_t;
 struct t_commrec;
 
 namespace gmx
@@ -52,36 +49,28 @@ namespace gmx
 class MDLogger;
 }
 
-/*! \brief Run detection, consistency checks, and make available on all ranks.
- *
- * This routine constructs the global hwinfo structure and returns a pointer to
- * it. It will run a preamble before executing cpu and hardware checks, and
- * then run consistency checks afterwards. The results will also be made
- * available on all nodes.
- * Caller is responsible for freeing this pointer.
+/* Print information about the detected hardware to fplog (if != NULL)
+ * and to stderr the master rank.
  */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
-                                   const t_commrec *cr, gmx_bool bDetectGPUs);
+void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx::MDLogger &mdlog,
+                                 const gmx_hw_info_t *hwinfo);
 
-void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
-
-/* Return whether the user selected GPU ids */
-bool hasUserSetGpuIds(const gmx_gpu_opt_t *gpu_opt);
-
-//! Return whether compatible GPUs were found.
-bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
-
-/* Parse the GPU ids the user may have passed. */
-void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
-
-/*! \brief Check the consistency of hw_opt with hwinfo.
+/*! \brief Helper function for reporting GPU usage information
+ * in the mdrun log file
  *
- * This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  &hw_opt,
-                                      bool                 userSetGpuIds,
-                                      bool                 willUsePhysicalGpu);
+ * \param[in] gpu_info       Information detected about GPUs
+ * \param[in] gpu_opt        Pointer to per-node GPU options struct
+ * \param[in] userSetGpuIds  Whether the user selected the GPU ids
+ * \param[in] numPpRanks     Number of PP ranks per node
+ * \param[in] bPrintHostName Print the hostname in the usage information
+ * \return                   String to write to the log file
+ * \throws                   std::bad_alloc if out of memory */
+std::string
+makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
+                   const gmx_gpu_opt_t  *gpu_opt,
+                   bool                  userSetGpuIds,
+                   size_t                numPpRanks,
+                   bool                  bPrintHostName);
 
 #endif
