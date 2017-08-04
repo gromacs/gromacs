@@ -5388,27 +5388,23 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
 }
 #endif
 
-void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
-                                   const gmx_hw_info_t gmx_unused *hwinfo,
-                                   const gmx_hw_opt_t  gmx_unused &hw_opt)
+void dd_setup_dlb_resource_sharing(t_commrec            *cr,
+                                   int                   gpu_id)
 {
 #if GMX_MPI
     int           physicalnode_id_hash;
-    int           gpu_id;
     gmx_domdec_t *dd;
     MPI_Comm      mpi_comm_pp_physicalnode;
 
-    if (!(cr->duty & DUTY_PP) || hw_opt.gpu_opt.n_dev_use == 0)
+    if (!(cr->duty & DUTY_PP) || gpu_id < 0)
     {
-        /* Only PP nodes (currently) use GPUs.
-         * If we don't have GPUs, there are no resources to share.
+        /* Only ranks with short-ranged tasks (currently) use GPUs.
+         * If we don't have GPUs assigned, there are no resources to share.
          */
         return;
     }
 
     physicalnode_id_hash = gmx_physicalnode_id_hash();
-
-    gpu_id = get_gpu_device_id(hwinfo->gpu_info, &hw_opt.gpu_opt, cr->rank_pp_intranode);
 
     dd = cr->dd;
 
@@ -5440,6 +5436,9 @@ void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
     {
         MPI_Comm_free(&dd->comm->mpi_comm_gpu_shared);
     }
+#else
+    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(gpu_id);
 #endif
 }
 

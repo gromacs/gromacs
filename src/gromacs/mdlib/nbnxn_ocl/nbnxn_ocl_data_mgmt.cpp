@@ -687,11 +687,9 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
 
 //! This function is documented in the header file
 void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
-                    const gmx_gpu_info_t      *gpu_info,
-                    const gmx_gpu_opt_t       *gpu_opt,
+                    const gmx_device_info_t   *deviceInfo,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
-                    int                        my_gpu_index,
                     int                        rank,
                     gmx_bool                   bLocalAndNonlocal)
 {
@@ -699,8 +697,6 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
 
-    assert(gpu_info);
-    assert(gpu_opt);
     assert(ic);
 
     if (p_nb == NULL)
@@ -723,7 +719,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     snew(nb->timings, 1);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = gpu_info->gpu_dev + gpu_opt->dev_use[my_gpu_index];
+    nb->dev_info = deviceInfo;
     snew(nb->dev_rundata, 1);
 
     /* init to NULL the debug buffer */
