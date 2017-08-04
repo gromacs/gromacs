@@ -98,7 +98,7 @@ const char *immsg(immStatus imm)
         "Charge generation", "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
         "Not in training set", "No experimental data",
-        "Generating shells", "Generating bonds", "Communicating MolProp"
+        "Generating shells", "Generating bonds", "Communicating MolProp", "No Dipole"
     };
 
     return msg[imm];
@@ -1528,13 +1528,15 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             error = 0.1*value;
         }
         dip_weight_ = gmx::square(1.0/error);
-    }
-    else
-    {
-        if (!bZero)
+        
+        if (!bZero && dip_elec_ == 0.0)
         {
             imm = immZeroDip;
         }
+    }
+    else
+    {
+        imm = immNoDipole;
     }
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
                               lot, "", (char *)"electronic",
@@ -1548,8 +1550,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 Q_elec_[m][n] = quadrupole[m][n];
             }
         }
-    }
-    
+    }  
     double q[natom];
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 

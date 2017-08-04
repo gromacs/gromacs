@@ -503,7 +503,6 @@ void MolDip::Read(FILE            *fp,
                 {
                     imm = mymol.getExpProps(bQM_, bZero, bZPE, lot, pd_);
                 }
-
                 if (immOK == imm)
                 {
                     if (dest > 0)

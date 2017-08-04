@@ -74,7 +74,8 @@ enum immStatus {
     immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder, immRespInit,
     immChargeGeneration, immLOT,
     immQMInconsistency, immTest, immNoData,
-    immGenShells, immGenBonds, immCommProblem, immZeroZeta, immInsufficientDATA, immNR
+    immGenShells, immGenBonds, immCommProblem, immZeroZeta, immInsufficientDATA,
+    immNoDipole, immNR
 };
 
 enum eDih {
