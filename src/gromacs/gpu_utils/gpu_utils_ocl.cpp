@@ -393,29 +393,17 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
 
 //! This function is documented in the header file
 void init_gpu(const gmx::MDLogger               & /*mdlog*/,
-              int                               rank,
-              int                               mygpu,
-              const gmx_gpu_info_t             *gpu_info,
-              const gmx_gpu_opt_t              *gpu_opt
-              )
+              int                               /* rank */,
+              gmx_device_info_t                *deviceInfo)
 {
-    assert(gpu_opt);
-
-    if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
-    {
-        char        sbuf[STRLEN];
-        sprintf(sbuf, "On rank %d trying to initialize an non-existent GPU: "
-                "there are %d selected GPU(s), but #%d was requested.",
-                rank, gpu_opt->n_dev_use, mygpu);
-        gmx_incons(sbuf);
-    }
+    assert(deviceInfo);
 
     // If the device is NVIDIA, for safety reasons we disable the JIT
     // caching as this is known to be broken at least until driver 364.19;
     // the cache does not always get regenerated when the source code changes,
     // e.g. if the path to the kernel sources remains the same
 
-    if (gpu_info->gpu_dev[mygpu].vendor_e == OCL_VENDOR_NVIDIA)
+    if (deviceInfo->vendor_e == OCL_VENDOR_NVIDIA)
     {
         // Ignore return values, failing to set the variable does not mean
         // that something will go wrong later.
@@ -437,6 +425,17 @@ int get_gpu_device_id(const gmx_gpu_info_t  &,
     assert(idx >= 0 && idx < gpu_opt->n_dev_use);
 
     return gpu_opt->dev_use[idx];
+}
+
+//! This function is documented in the header file
+gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &gpu_info,
+                                 int                   deviceId)
+{
+    if (deviceId < 0 || deviceId >= gpu_info.n_dev)
+    {
+        gmx_incons("Invalid GPU deviceId requested");
+    }
+    return &gpu_info.gpu_dev[deviceId];
 }
 
 //! This function is documented in the header file

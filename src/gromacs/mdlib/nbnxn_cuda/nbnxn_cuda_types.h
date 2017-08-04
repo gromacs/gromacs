@@ -237,7 +237,7 @@ struct cu_timers
  */
 struct gmx_nbnxn_cuda_t
 {
-    struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
+    const gmx_device_info_t  *dev_info;       /**< CUDA device information                              */
     bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
     cu_atomdata_t            *atdat;          /**< atom data                                            */
     cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */

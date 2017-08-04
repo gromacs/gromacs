@@ -2024,6 +2024,10 @@ init_interaction_const(FILE                       *fp,
     *interaction_const = ic;
 }
 
+/* TODO deviceInfo should be logically const, but currently
+ * init_gpu modifies it to set up NVML support. This could
+ * happen during the detection phase, and deviceInfo could
+ * the become const. */
 static void init_nb_verlet(FILE                *fp,
                            const gmx::MDLogger &mdlog,
                            nonbonded_verlet_t **nb_verlet,
@@ -2031,7 +2035,8 @@ static void init_nb_verlet(FILE                *fp,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
-                           const char          *nbpu_opt)
+                           const char          *nbpu_opt,
+                           gmx_device_info_t   *deviceInfo)
 {
     nonbonded_verlet_t *nbv;
     int                 i;
@@ -2044,17 +2049,14 @@ static void init_nb_verlet(FILE                *fp,
     snew(nbv, 1);
 
     nbv->emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
-    nbv->bUseGPU    = (fr->gpu_opt->n_dev_use > 0);
+    nbv->bUseGPU    = deviceInfo != nullptr;
+
     GMX_RELEASE_ASSERT(!(nbv->emulateGpu && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
 
     if (nbv->bUseGPU)
     {
-        /* This PP MPI rank uses the GPU that the GPU assignment
-         * prepared for it, which is the entry in gpu_opt->dev_use
-         * corresponding to the index of this PP MPI rank within the
-         * set of such ranks on this node. */
-        init_gpu(mdlog, cr->nodeid, cr->rank_pp_intranode,
-                 &fr->hwinfo->gpu_info, fr->gpu_opt);
+        /* Use the assigned GPU. */
+        init_gpu(mdlog, cr->nodeid, deviceInfo);
     }
 
     nbv->nbs             = nullptr;
@@ -2170,11 +2172,9 @@ static void init_nb_verlet(FILE                *fp,
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         nbnxn_gpu_init(&nbv->gpu_nbv,
-                       &fr->hwinfo->gpu_info,
-                       fr->gpu_opt,
+                       deviceInfo,
                        fr->ic,
                        nbv->grp,
-                       cr->rank_pp_intranode,
                        cr->nodeid,
                        (nbv->ngrp > 1) && !bHybridGPURun);
 
@@ -2245,6 +2245,7 @@ void init_forcerec(FILE                *fp,
                    const char          *tabpfn,
                    const t_filenm      *tabbfnm,
                    const char          *nbpu_opt,
+                   gmx_device_info_t   *deviceInfo,
                    gmx_bool             bNoSolvOpt,
                    real                 print_force)
 {
@@ -2257,15 +2258,6 @@ void init_forcerec(FILE                *fp,
     gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
     int           *nm_ind, egp_flags;
-
-    if (fr->hwinfo == nullptr)
-    {
-        /* Detect hardware, gather information.
-         * In mdrun, hwinfo has already been set before calling init_forcerec.
-         * Here we ignore GPUs, as tools will not use them anyhow.
-         */
-        fr->hwinfo = gmx_detect_hardware(mdlog, cr, FALSE);
-    }
 
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
     fr->use_simd_kernels = TRUE;
@@ -3136,7 +3128,7 @@ void init_forcerec(FILE                *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt, deviceInfo);
     }
 
     if (ir->eDispCorr != edispcNO)
@@ -3175,10 +3167,9 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
  * in this run because the PME ranks have no knowledge of whether GPUs
  * are used or not, but all ranks need to enter the barrier below.
  */
-void free_gpu_resources(const t_forcerec     *fr,
-                        const t_commrec      *cr,
-                        const gmx_gpu_info_t *gpu_info,
-                        const gmx_gpu_opt_t  *gpu_opt)
+void free_gpu_resources(const t_forcerec        *fr,
+                        const t_commrec         *cr,
+                        const gmx_device_info_t *deviceInfo)
 {
     gmx_bool bIsPPrankUsingGPU;
     char     gpu_err_str[STRLEN];
@@ -3213,7 +3204,7 @@ void free_gpu_resources(const t_forcerec     *fr,
     if (bIsPPrankUsingGPU)
     {
         /* uninitialize GPU (by destroying the context) */
-        if (!free_cuda_gpu(cr->rank_pp_intranode, gpu_err_str, gpu_info, gpu_opt))
+        if (!free_cuda_gpu(deviceInfo, gpu_err_str))
         {
             gmx_warning("On rank %d failed to free GPU #%d: %s",
                         cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);

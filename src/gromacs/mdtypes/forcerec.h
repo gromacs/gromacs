@@ -59,8 +59,6 @@ struct t_forcetable;
 struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;
-struct gmx_hw_info_t;
-struct gmx_gpu_opt_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -174,8 +172,6 @@ struct t_forcerec {
     rvec                        posres_com;
     rvec                        posres_comB;
 
-    const struct gmx_hw_info_t *hwinfo;
-    const struct gmx_gpu_opt_t *gpu_opt;
     gmx_bool                    use_simd_kernels;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
