@@ -35,43 +35,52 @@
 #ifndef GMX_HARDWARE_HARDWAREASSIGN_H
 #define GMX_HARDWARE_HARDWAREASSIGN_H
 
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_gpu_info_t;
-struct gmx_gpu_opt_t;
 struct t_commrec;
 
-/*! \brief Select the compatible GPUs
- *
- * This function filters gpu_info.gpu_dev for compatible GPUs based
- * on the previously run compatibility tests.
- *
- * \param[in]     gpu_info    Information detected about GPUs, including compatibility
- * \return                    vector of IDs of GPUs already recorded as compatible */
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
+namespace gmx
+{
 
-/*! \brief Map PP ranks to GPU IDs.
+/*! \brief Parse a GPU assignment string into digits
  *
- * After this call, gpu_opt->dev_use will contain a validated mapping
- * from PP ranks (ie tasks that can run on GPUs) to the device IDs of
- * compatible GPUs on their node.
+ * \param[in]   gpuTaskAssignment  String like "013" or "0,1,3" typically
+ *                                 supplied by the user to mdrun -gpu_id.
+ *
+ * \returns  A vector of integer GPU ids, like {0, 1, 3}.
+ *
+ * \throws   std::bad_alloc     If out of memory.
+ *           InvalidInputError  If an invalid character is found (ie not a digit or ',').
+ */
+std::vector<int> parseGpuTaskAssignment(const std::string &gpuTaskAssignment);
+
+/*! \brief Assign PP ranks to valid GPU IDs.
+ *
+ * Will return a validated mapping from PP ranks (ie tasks that can
+ * run on GPUs) to the device IDs of compatible GPUs on their node.
+ * This will be the \c userGpuTaskAssignment if non-empty, otherwise
+ * a default automated mapping is generated.
  *
  * Note that PME-only ranks have always ignored mdrun -gpu_id, so do
  * not attempt to validate -gpu_id. They should continue this behaviour
  * until PME tasks can use GPUs.
  *
- * \param[in]     rankCanUseGpu  Whether this rank can execute a task on a GPU.
- * \param[in]     cr             Communication record.
- * \param[in]     gpu_info       Information detected about GPUs, including compatibility.
- * \param[in]     userSetGpuIds  Whether the user set the GPU IDs to use in the mapping.
- * \param[inout]  gpu_opt        Holds the mapping to validate, or to fill.
+ * \param[in]     rankCanUseGpu          Whether this rank can execute a task on a GPU.
+ * \param[in]     cr                     Communication record.
+ * \param[in]     gpu_info               Information detected about GPUs, including compatibility.
+ * \param[in]     userGpuTaskAssignment  Any GPU IDs required by the user.
+ *
+ * \returns  A valid GPU selection.
  */
-void mapPpRanksToGpus(bool                  rankCanUseGpu,
-                      const t_commrec      *cr,
-                      const gmx_gpu_info_t &gpu_info,
-                      bool                  userSetGpuIds,
-                      gmx_gpu_opt_t        *gpu_opt);
+std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
+                                  const t_commrec        *cr,
+                                  const gmx_gpu_info_t   &gpu_info,
+                                  const std::vector<int> &userGpuTaskAssignment);
+
+} // namespace
 
 #endif

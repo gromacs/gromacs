@@ -38,9 +38,9 @@
 #include <cstdio>
 
 #include <string>
+#include <vector>
 
 struct gmx_gpu_info_t;
-struct gmx_gpu_opt_t;
 struct gmx_hw_info_t;
 struct t_commrec;
 
@@ -59,18 +59,18 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
  *
- * \param[in] gpu_info       Information detected about GPUs
- * \param[in] gpu_opt        Pointer to per-node GPU options struct
- * \param[in] userSetGpuIds  Whether the user selected the GPU ids
- * \param[in] numPpRanks     Number of PP ranks per node
- * \param[in] bPrintHostName Print the hostname in the usage information
- * \return                   String to write to the log file
- * \throws                   std::bad_alloc if out of memory */
+ * \param[in] gpu_info           Information detected about GPUs
+ * \param[in] userSetGpuIds      Whether the user selected the GPU ids
+ * \param[in] gpuTaskAssignment  The selected GPU IDs.
+ * \param[in] numPpRanks         Number of PP ranks per node
+ * \param[in] bPrintHostName     Print the hostname in the usage information
+ * \return                       String to write to the log file
+ * \throws                       std::bad_alloc if out of memory */
 std::string
-makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
-                   const gmx_gpu_opt_t  *gpu_opt,
-                   bool                  userSetGpuIds,
-                   size_t                numPpRanks,
-                   bool                  bPrintHostName);
+makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
+                   bool                    userSetGpuIds,
+                   const std::vector<int> &gpuTaskAssignment,
+                   size_t                  numPpRanks,
+                   bool                    bPrintHostName);
 
 #endif
