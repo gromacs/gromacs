@@ -1066,22 +1066,20 @@ void OptZeta::print_results(FILE                   *fp,
     gmx_stats_get_ase(lsq_mu[eprDESP], &aver, &sigma, &error);
     sigma = sqrt(sse/n);
     nout  = 0;
-    fprintf(fp, "Overview of outliers (> %.3f off)\n", 2*sigma);
+    fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
     fprintf(fp, "----------------------------------\n");
-    fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "EEM", "QM", "Mu-Deviation (Debye)");
+    fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "DESP", "QM", "Deviation (Debye)");
             
     for (auto &mol : mymol_)
     {
-        rvec dmu;
-        rvec_sub(mol.mu_elec_, mol.mu_calc_, dmu);
+        auto rmsd = gmx::square(mol.dip_calc_ - mol.dip_elec_);
         if ((mol.eSupp_ != eSupportNo) &&
             (mol.dip_elec_ > sigma) &&
-            (norm(dmu) > 2*sigma))
+            (rmsd > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
                     mol.molProp()->getMolname().c_str(),
-                    mol.dip_calc_, mol.dip_elec_,
-                    mol.dip_calc_ - mol.dip_elec_);
+                    mol.dip_calc_, mol.dip_elec_, rmsd);
             nout++;
         }
     }

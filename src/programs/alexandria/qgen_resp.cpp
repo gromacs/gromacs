@@ -309,7 +309,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
     FILE       *fp;
     int         i, m, ix, iy, iz;
     real        pp, q, r, rmin;
-    gmx_stats_t gst = NULL, ppcorr = NULL;
+    gmx_stats_t gst = nullptr, ppcorr = nullptr;
 
     if (0 != histFn.size())
     {

@@ -1083,7 +1083,7 @@ void OPtimization::print_results(FILE                   *fp,
             auto EspPoint = mol.Qgresp_.espPoint();
             for (size_t i = 0; i < nEsp; i++)
             {
-                gmx_stats_add_point(lsq_esp, EspPoint[i].v(), EspPoint[i].vCalc(), 0, 0);
+                gmx_stats_add_point(lsq_esp, gmx2convert(EspPoint[i].v(),eg2cHartree_e), gmx2convert(EspPoint[i].vCalc(), eg2cHartree_e), 0, 0);
             }
             
             gmx_stats_add_point(lsq_dip[eprEEM], mol.dip_elec_, mol.dip_calc_, 0, 0);
@@ -1182,12 +1182,12 @@ void OPtimization::print_results(FILE                   *fp,
     fprintf(fp, "ESP points are %s in EEM Parametrization.\n",  (bESP_ ?        "used" : "not used"));
     fprintf(fp, "\n");
     
-    print_stats(fp, (char *)"Dipoles",       lsq_mu[eprEEM],   true,  (char *)"QM", (char *)"EEM");
-    print_stats(fp, (char *)"Dipole Moment", lsq_dip[eprEEM],  false, (char *)"QM", (char *)"EEM");
-    print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprEEM], false, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Dipoles       (Debye)",       lsq_mu[eprEEM],   true,  (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Dipole Moment (Debye)",       lsq_dip[eprEEM],  false, (char *)"QM", (char *)"EEM");
+    print_stats(fp, (char *)"Quadrupoles   (Buckingham)",  lsq_quad[eprEEM], false, (char *)"QM", (char *)"EEM");
     if (bESP_ || (!bESP_ && iChargeGenerationAlgorithm_ == eqgEEM))
     {
-        print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"EEM");
+        print_stats(fp, (char *)"ESP (Hartree/e)", lsq_esp, false, (char *)"QM", (char *)"EEM");
     }        
     fprintf(fp, "\n");
 
@@ -1196,7 +1196,7 @@ void OPtimization::print_results(FILE                   *fp,
     print_stats(fp, (char *)"Quadrupoles",   lsq_quad[eprESP], false, (char *)"QM", (char *)"ESP");    
     if (!bESP_ && iChargeGenerationAlgorithm_ == eqgESP)
     {
-        print_stats(fp, (char *)"ESP", lsq_esp, false, (char *)"QM", (char *)"ESP");
+        print_stats(fp, (char *)"ESP (Hartree/e)", lsq_esp, false, (char *)"QM", (char *)"ESP");
     }   
     fprintf(fp, "\n");
 
@@ -1297,22 +1297,20 @@ void OPtimization::print_results(FILE                   *fp,
     gmx_stats_get_ase(lsq_mu[0], &aver, &sigma, &error);
     sigma = sqrt(sse/n);
     nout  = 0;
-    fprintf(fp, "Overview of outliers (> %.3f off)\n", 2*sigma);
+    fprintf(fp, "Overview of dipole moment outliers (> %.3f off)\n", 2*sigma);
     fprintf(fp, "----------------------------------\n");
-    fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "EEM", "QM", "Mu-Deviation (Debye)");
+    fprintf(fp, "%-20s  %12s  %12s  %12s\n", "Name", "EEM", "QM", "Deviation (Debye)");
             
     for (auto &mol : mymol_)
     {
-        rvec dmu;
-        rvec_sub(mol.mu_elec_, mol.mu_calc_, dmu);
+        auto rmsd = gmx::square(mol.dip_calc_ - mol.dip_elec_);
         if ((mol.eSupp_ != eSupportNo) &&
             (mol.dip_elec_ > sigma) &&
-            (norm(dmu) > 2*sigma))
+            (rmsd > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
                     mol.molProp()->getMolname().c_str(),
-                    mol.dip_calc_, mol.dip_elec_,
-                    mol.dip_calc_ - mol.dip_elec_);
+                    mol.dip_calc_, mol.dip_elec_, rmsd);
             nout++;
         }
     }
