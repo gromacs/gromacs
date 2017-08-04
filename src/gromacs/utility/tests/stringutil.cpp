@@ -54,6 +54,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "testutils/refdata.h"
 #include "testutils/stringtest.h"
@@ -428,6 +429,22 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
     wrapper.settings().setKeepFinalSpaces(true);
     checkText(wrapper.wrapToString(g_wrapTextWhitespace),
               "WrappedAt14WithTrailingWhitespace");
+}
+
+TEST(StringUtilityTest, ParseDigitsFromString)
+{
+    using ::testing::ElementsAre;
+    using ::testing::IsEmpty;
+    EXPECT_THAT(parseDigitsFromString("01"), ElementsAre(0, 1));
+    EXPECT_THAT(parseDigitsFromString("0,1"), ElementsAre(0, 1));
+    EXPECT_THAT(parseDigitsFromString(",0,1"), ElementsAre(0, 1));
+    EXPECT_THAT(parseDigitsFromString("0,1,"), ElementsAre(0, 1));
+    EXPECT_THAT(parseDigitsFromString(",0,1,"), ElementsAre(0, 1));
+    EXPECT_THAT(parseDigitsFromString(","), IsEmpty());
+    EXPECT_THAT(parseDigitsFromString(",,"), IsEmpty());
+    EXPECT_THAT(parseDigitsFromString(""), IsEmpty());
+    EXPECT_THROW(parseDigitsFromString("a"), InvalidInputError);
+    EXPECT_THROW(parseDigitsFromString("0a"), InvalidInputError);
 }
 
 } // namespace

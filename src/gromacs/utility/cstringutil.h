@@ -186,52 +186,6 @@ gmx_int64_t str_to_int64_t(const char *str, char **endptr);
  */
 char *gmx_step_str(gmx_int64_t i, char *buf);
 
-/*! \brief Construct an array of digits found in the input string
- *
- * \param[in]  digitstring  String that must contain only digits
- * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digitlist    Array of digits found in
- *                          digitstring. Allocated by this function
- *                          with size *ndigits. Calling code is
- *                          responsible for deallocation.
- *
- * If digitstring is NULL, then ndigits is set to zero and digitlist
- * to NULL. If digitstring contains a non-digit character, a fatal
- * error results.
- */
-void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist);
-
-/*! \brief Construct an array of digits from a comma separated input string
- *
- * \param[in]  digitstring  String that must contain only digits and commas
- * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digitlist    Array of digits found in
- *                          digitstring. Allocated by this function
- *                          with size *ndigits. Calling code is
- *                          responsible for deallocation.
- *
- * If digitstring is NULL, then ndigits is set to zero and digitlist
- * to NULL. If digitstring contains a non digit-or-comma character, a fatal
- * error results.
- */
-void parse_digits_from_csv_string(const char *digitstring, int *ndigits, int **digitlist);
-
-/*! \brief Construct an array of digits an input string
- *
- *
- * \param[in]  digitstring  String that must contain only digits, or only
- *                          digits and commas
- * \param[out] ndigits      Size of return array with the values of the digits
- * \param[out] digitlist    Array of digits found in
- *                          digitstring. Allocated by this function
- *                          with size *ndigits. Calling code is
- *                          responsible for deallocation.
- * If digitstring is NULL, then ndigits is set to zero and digitlist
- * to NULL. If digitstring contains a non digit-or-comma character, a fatal
- * error results.
- */
-void parse_digits_from_string(const char *digitstring, int *ndigits, int **digitlist);
-
 #ifdef __cplusplus
 }
 #endif
