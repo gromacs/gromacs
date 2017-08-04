@@ -46,7 +46,6 @@
 
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
-#include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -336,12 +335,13 @@ class SingleRankChecker
  * Thus all options should be internally consistent and consistent
  * with the hardware, except that ntmpi could be larger than #GPU.
  */
-int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
-                     gmx_hw_opt_t        *hw_opt,
-                     const t_inputrec    *inputrec,
-                     const gmx_mtop_t    *mtop,
-                     const gmx::MDLogger &mdlog,
-                     bool                 doMembed)
+int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
+                     gmx_hw_opt_t           *hw_opt,
+                     const std::vector<int> &userGpuTaskAssignment,
+                     const t_inputrec       *inputrec,
+                     const gmx_mtop_t       *mtop,
+                     const gmx::MDLogger    &mdlog,
+                     bool                    doMembed)
 {
     int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int                          min_atoms_per_mpi_rank;
@@ -354,11 +354,11 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
        support multiple ranks. We need also to handle the case where
        the user set multiple GPU IDs for an algorithm that cannot
        handle multiple ranks. */
-    if (hw_opt->nthreads_tmpi < 1 && hasUserSetGpuIds(&hw_opt->gpu_opt))
+    if (hw_opt->nthreads_tmpi < 1 && !userGpuTaskAssignment.empty())
     {
         /* Set the number of thread-MPI ranks equal to the number of GPU
            ranks that the user chose. */
-        int numGpuRanks = hw_opt->gpu_opt.n_dev_use;
+        int numGpuRanks = static_cast<int>(userGpuTaskAssignment.size());
 
         /* If the user chose both mdrun -nt -gpu_id, is that consistent? */
         if (hw_opt->nthreads_tot > 0 &&
@@ -685,28 +685,7 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->nthreads_tmpi,
             hw_opt->nthreads_omp,
             hw_opt->nthreads_omp_pme,
-            hw_opt->gpu_opt.gpu_id != nullptr ? hw_opt->gpu_opt.gpu_id : "");
-}
-
-//! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
-static gmx_bool anyGpuIdIsRepeated(const gmx_gpu_opt_t *gpu_opt)
-{
-    /* Loop over IDs in the string */
-    for (int i = 0; i < gpu_opt->n_dev_use - 1; ++i)
-    {
-        /* Look for the ID in location i in the following part of the
-           string */
-        for (int j = i + 1; j < gpu_opt->n_dev_use; ++j)
-        {
-            if (gpu_opt->dev_use[i] == gpu_opt->dev_use[j])
-            {
-                /* Same ID found in locations i and j */
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
+            hw_opt->gpuIdTaskAssignment.c_str());
 }
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */

@@ -83,10 +83,7 @@ class Mdrunner
 {
     private:
         //! Parallelism-related user options.
-        gmx_hw_opt_t hw_opt {
-            0, 0, 0, 0, threadaffSEL, 0, 0,
-            { nullptr, 0, nullptr }
-        };
+        gmx_hw_opt_t             hw_opt;
         //! Filenames and properties from command-line argument values.
         std::array<t_filenm, 34> filenames =
         {{{ efTPR, nullptr,     nullptr,     ffREAD },
