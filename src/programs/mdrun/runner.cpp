@@ -720,15 +720,14 @@ int Mdrunner::mdrunner()
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
      * count. */
-    bool emulateGpu          = getenv("GMX_EMULATE_GPU") != nullptr;
-    gmx_parse_gpu_ids(&hw_opt.gpu_opt);
-    bool userSetGpuIds = hasUserSetGpuIds(&hw_opt.gpu_opt);
-    bool forceUseCpu   = (strncmp(nbpu_opt, "cpu", 3) == 0);
-    if (userSetGpuIds && forceUseCpu)
+    bool emulateGpu            = getenv("GMX_EMULATE_GPU") != nullptr;
+    auto userGpuTaskAssignment = parseGpuTaskAssignment(hw_opt.gpuIdTaskAssignment);
+    bool forceUseCpu           = (strncmp(nbpu_opt, "cpu", 3) == 0);
+    if (!userGpuTaskAssignment.empty() && forceUseCpu)
     {
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
-    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || userSetGpuIds;
+    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !userGpuTaskAssignment.empty();
     bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
 
     // Here we assume that SIMMASTER(cr) does not change even after the
@@ -845,6 +844,7 @@ int Mdrunner::mdrunner()
         // Determine how many thread-MPI ranks to start.
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
+                                                userGpuTaskAssignment,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);
@@ -1097,26 +1097,30 @@ int Mdrunner::mdrunner()
     }
 #endif
 
+    // Contains the ID of the GPU used by each PP rank on this node,
+    // indexed by that rank. Empty if no GPUs are selected for use on
+    // this node.
+    std::vector<int> gpuTaskAssignment;
     if (tryUsePhysicalGpu || forceUsePhysicalGpu)
     {
-        /* Currently the DD code assigns duty to ranks that can include PP work
-         * that currently can be executed on a single GPU, if present and compatible.
-         * This has to be coordinated across PP ranks on a node, with possible
-         * multiple devices or sharing devices on a node. */
+        /* Currently the DD code assigns duty to ranks that can
+         * include PP work that currently can be executed on a single
+         * GPU, if present and compatible.  This has to be coordinated
+         * across PP ranks on a node, with possible multiple devices
+         * or sharing devices on a node, either from the user
+         * selection, or automatically. */
         bool rankCanUseGpu = cr->duty & DUTY_PP;
-        /* Map GPU IDs to ranks by filling or validating hw_opt->gpu_opt->dev_use */
-        mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
-                         userSetGpuIds, &hw_opt.gpu_opt);
+        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
+                                             userGpuTaskAssignment);
     }
-    bool willUsePhysicalGpu = hw_opt.gpu_opt.n_dev_use > 0;
 
     /* If we are using GPUs, report on this rank how they are being
      * used on this node. */
-    if (willUsePhysicalGpu)
+    if (!gpuTaskAssignment.empty())
     {
         auto gpuUsageReport =
-            makeGpuUsageReport(hwinfo->gpu_info, &hw_opt.gpu_opt,
-                               userSetGpuIds, cr->nrank_pp_intranode,
+            makeGpuUsageReport(hwinfo->gpu_info, !userGpuTaskAssignment.empty(),
+                               gpuTaskAssignment, cr->nrank_pp_intranode,
                                cr->nnodes > 1);
 
         /* NOTE: this print is only for and on one physical node */
@@ -1125,7 +1129,8 @@ int Mdrunner::mdrunner()
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, userSetGpuIds, willUsePhysicalGpu);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, !userGpuTaskAssignment.empty(), gpuTaskAssignment);
+    /* From now on, the userGpuTaskAssignment should never be used */
 
     /* Prevent other ranks from continuing after an inconsistency was found.
      *
@@ -1142,16 +1147,16 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, hw_opt.gpu_opt.n_dev_use > 0, Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
     gmx_device_info_t *shortRangedDeviceInfo = nullptr;
     int                shortRangedDeviceId   = -1;
     if (cr->duty & DUTY_PP)
     {
-        if (willUsePhysicalGpu)
+        if (!gpuTaskAssignment.empty())
         {
-            shortRangedDeviceId   = hw_opt.gpu_opt.dev_use[cr->nrank_pp_intranode];
+            shortRangedDeviceId   = gpuTaskAssignment[cr->rank_pp_intranode];
             shortRangedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, shortRangedDeviceId);
         }
     }

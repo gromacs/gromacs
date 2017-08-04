@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -58,23 +59,51 @@
 
 #define HOSTNAMELEN 80
 
-/*! \internal \brief
- * This function is responsible for mapping the GPUs to the processes on a single node
- * (filling the gpu_opt->dev_use array).
- *
- * \param[in]        compatibleGpus       Vector of GPUs that are compatible
- * \param[in,out]    gpu_opt              Input/output GPU assignment data.
- * \param[in]        nrank                Number of PP GPU ranks on the node.
- * \param[in]        rank                 Index of PP GPU rank on the node.
+namespace gmx
+{
+
+std::vector<int> parseGpuTaskAssignment(const std::string &gpuTaskAssignment)
+{
+    std::vector<int> digits;
+    if (gpuTaskAssignment.empty())
+    {
+        return digits;
+    }
+
+    /* Parse a "plain" or comma-separated GPU ID string which contains
+     * a sequence of digits corresponding to GPU IDs; the order will
+     * indicate the assignment of GPU tasks on this node to GPU
+     * device IDs on this node. */
+    try
+    {
+        digits = parseDigitsFromString(gpuTaskAssignment);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    if (digits.empty())
+    {
+        gmx_fatal(FARGS, "Empty GPU ID string encountered.\n"
+                  "An empty, delimiter-free, or comma-separated sequence of valid numeric IDs of available GPUs is required.\n");
+    }
+    return digits;
+}
+
+/*! \brief This function is responsible for the automated mapping the
+ * GPUs to the processes on a single node.
  *
  * This selects the GPUs we will use. This is an operation local to each physical node.
  * If we have less MPI ranks than GPUs, we will waste some GPUs.
+ *
+ * \param[in]        compatibleGpus       Vector of GPUs that are compatible
+ * \param[in]        nrank                Number of PP GPU ranks on the node.
+ * \param[in]        rank                 Index of PP GPU rank on the node.
+ *
+ * \returns The assignment of GPU tasks on ranks of this node to GPU devices on this node.
  */
-static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
-                                gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
+static std::vector<int> assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
+                                            int nrank, int rank)
 {
     int numCompatibleGpus = static_cast<int>(compatibleGpus.size());
-    GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
     GMX_RELEASE_ASSERT(nrank >= 1,
                        gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
                                          rank, numCompatibleGpus).c_str());
@@ -114,20 +143,20 @@ static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
     }
 
     /* Here we will waste GPUs when nrank < numCompatibleGpus */
-    gpu_opt->n_dev_use = std::min(numCompatibleGpus*nshare, nrank);
-    snew(gpu_opt->dev_use, gpu_opt->n_dev_use);
-    for (int i = 0; i != gpu_opt->n_dev_use; ++i)
+    std::vector<int> taskAssignment;
+    taskAssignment.resize(std::min(numCompatibleGpus*nshare, nrank));
+    for (size_t i = 0; i != taskAssignment.size(); ++i)
     {
         /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->dev_use[i] = compatibleGpus[i/nshare];
+        taskAssignment[i] = compatibleGpus[i/nshare];
     }
+    return taskAssignment;
 }
 
 /*! \brief Check that all user-selected GPUs are compatible.
  *
- * Given the list of selected GPU device IDs in \c gpu_opt and
- * detected GPUs in \c gpu_info, gives a fatal error unless all
- * selected GPUs are compatible
+ * Given the \c userGpuTaskAssignment and \c compatibleGPUs, give a fatal
+ * error if any selected GPUs is not compatible
  *
  * The error is given with a suitable descriptive message, which will
  * have context if this check is done after the hardware detection
@@ -143,20 +172,21 @@ static void assign_rank_gpu_ids(const std::vector<int> &compatibleGpus,
  * infrastructure to do a good job of coordinating error messages and
  * behaviour across MPMD ranks and multiple simulations.
  *
- * \param[in]   gpu_info       GPU information including result of compatibility check.
- * \param[in]   gpu_opt        Mapping of GPU IDs derived from the user, e.g. via mdrun -gpu_id.
+ * \param[in]   gpu_info               GPU information including device description.
+ * \param[in]   compatibleGpus         Vector of compatible GPUs
+ * \param[in]   userGpuTaskAssignment  The GPU selection from the user.
  */
-static void exitUnlessGpuSelectionIsValid(const gmx_gpu_info_t &gpu_info,
-                                          const gmx_gpu_opt_t  &gpu_opt)
+static void exitUnlessUserGpuTaskAssignmentIsValid(const gmx_gpu_info_t   &gpu_info,
+                                                   const std::vector<int> &compatibleGpus,
+                                                   const std::vector<int> &userGpuTaskAssignment)
 {
     int         numIncompatibleGpuIds = 0;
     std::string message
         = "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n";
 
-    for (int index = 0; index < gpu_opt.n_dev_use; ++index)
+    for (const auto &gpuId : userGpuTaskAssignment)
     {
-        int gpuId = gpu_opt.dev_use[index];
-        if (!isGpuCompatible(gpu_info, gpuId))
+        if (std::find(compatibleGpus.begin(), compatibleGpus.end(), gpuId) == compatibleGpus.end())
         {
             numIncompatibleGpuIds++;
             message += gmx::formatString("    GPU #%d: %s\n",
@@ -171,7 +201,14 @@ static void exitUnlessGpuSelectionIsValid(const gmx_gpu_info_t &gpu_info,
     }
 }
 
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
+/*! \brief Filter the compatible GPUs
+ *
+ * This function filters gpu_info.gpu_dev for compatible GPUs based
+ * on the previously run compatibility tests.
+ *
+ * \param[in]     gpu_info    Information detected about GPUs, including compatibility
+ * \return                    vector of IDs of GPUs already recorded as compatible */
+static std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 {
     // Possible minor over-allocation here, but not important for anything
     std::vector<int> compatibleGpus;
@@ -187,24 +224,29 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
     return compatibleGpus;
 }
 
-void mapPpRanksToGpus(bool                  rankCanUseGpu,
-                      const t_commrec      *cr,
-                      const gmx_gpu_info_t &gpu_info,
-                      bool                  userSetGpuIds,
-                      gmx_gpu_opt_t        *gpu_opt)
+std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
+                                  const t_commrec        *cr,
+                                  const gmx_gpu_info_t   &gpu_info,
+                                  const std::vector<int> &userGpuTaskAssignment)
 {
+    std::vector<int> taskAssignment;
+
     if (!rankCanUseGpu)
     {
-        return;
+        return taskAssignment;
     }
 
-    if (userSetGpuIds)
+    auto compatibleGpus = getCompatibleGpus(gpu_info);
+    if (!userGpuTaskAssignment.empty())
     {
-        exitUnlessGpuSelectionIsValid(gpu_info, *gpu_opt);
+        exitUnlessUserGpuTaskAssignmentIsValid(gpu_info, compatibleGpus, userGpuTaskAssignment);
+        taskAssignment = userGpuTaskAssignment;
     }
     else
     {
-        auto compatibleGpus = getCompatibleGpus(gpu_info);
-        assign_rank_gpu_ids(compatibleGpus, gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
+        taskAssignment = assign_rank_gpu_ids(compatibleGpus, cr->nrank_pp_intranode, cr->rank_pp_intranode);
     }
+    return taskAssignment;
 }
+
+} // namespace

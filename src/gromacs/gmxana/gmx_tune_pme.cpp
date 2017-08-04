@@ -70,6 +70,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
@@ -750,16 +751,8 @@ static void check_mdrun_works(gmx_bool    bThreads,
     sfree(command);
 }
 
-/*! \brief Helper struct so we can parse the string with eligible GPU
-    IDs outside do_the_tests. */
-typedef struct eligible_gpu_ids
-{
-    int  n;        /**< Length of ids */
-    int *ids;      /**< Array of length n. NULL if no GPUs in use */
-} t_eligible_gpu_ids;
-
 /* Handles the no-GPU case by emitting an empty string. */
-static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eligible_gpu_ids *gpu_ids)
+static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const std::vector<int> &gpu_ids)
 {
     char       *command_line, *ptr;
     const char *flag = "-gpu_id ";
@@ -775,18 +768,17 @@ static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eli
     /* If the user has given no eligible GPU IDs, or we're trying the
      * default behaviour, then there is nothing for g_tune_pme to give
      * to mdrun -gpu_id */
-    if (gpu_ids->n > 0 && numPmeRanks > -1)
+    if (!gpu_ids.empty() && numPmeRanks > -1)
     {
-        int   numPpRanks, max_num_ranks_for_each_GPU;
-        int   gpu_id, rank;
+        size_t numPpRanks, max_num_ranks_for_each_GPU;
 
         /* Write the option flag */
         std::strcpy(ptr, flag);
         ptr += flag_length;
 
         numPpRanks                 = numRanks - numPmeRanks;
-        max_num_ranks_for_each_GPU = numPpRanks / gpu_ids->n;
-        if (max_num_ranks_for_each_GPU * gpu_ids->n != numPpRanks)
+        max_num_ranks_for_each_GPU = numPpRanks / gpu_ids.size();
+        if (max_num_ranks_for_each_GPU * gpu_ids.size() != numPpRanks)
         {
             /* Some GPUs will receive more work than others, which
              * we choose to be those with the lowest indices */
@@ -794,16 +786,16 @@ static char *make_gpu_id_command_line(int numRanks, int numPmeRanks, const t_eli
         }
 
         /* Loop over all eligible GPU ids */
-        for (gpu_id = 0, rank = 0; gpu_id < gpu_ids->n; gpu_id++)
+        for (size_t gpu_id = 0, rank = 0; gpu_id < gpu_ids.size(); gpu_id++)
         {
-            int rank_for_this_GPU;
+            size_t rank_for_this_GPU;
             /* Loop over all PP ranks for GPU with ID gpu_id, building the
                assignment string. */
             for (rank_for_this_GPU = 0;
                  rank_for_this_GPU < max_num_ranks_for_each_GPU && rank < numPpRanks;
                  rank++, rank_for_this_GPU++)
             {
-                *ptr = '0' + gpu_ids->ids[gpu_id];
+                *ptr = '0' + gpu_ids[gpu_id];
                 ptr++;
             }
         }
@@ -824,7 +816,7 @@ static void launch_simulation(
         const char               *simulation_tpr, /* This tpr will be simulated */
         int                       nnodes,         /* Number of ranks to use */
         int                       nPMEnodes,      /* Number of PME ranks to use */
-        const t_eligible_gpu_ids *gpu_ids)        /* Struct containing GPU IDs for
+        const std::vector<int>   &gpu_ids)        /* Vector of GPU IDs for
                                                    * constructing mdrun command lines */
 {
     char  *command, *cmd_gpu_ids;
@@ -1443,7 +1435,7 @@ static void do_the_tests(
         int                       presteps,       /* DLB equilibration steps, is checked    */
         gmx_int64_t               cpt_steps,      /* Time step counter in the checkpoint    */
         gmx_bool                  bCheck,         /* Check whether benchmark mdrun works    */
-        const t_eligible_gpu_ids *gpu_ids)        /* Struct containing GPU IDs for
+        const std::vector<int>   &gpu_ids)        /* Vector of GPU IDs for
                                                    * constructing mdrun command lines */
 {
     int      i, nr, k, ret, count = 0, totaltests;
@@ -2222,7 +2214,6 @@ int gmx_tune_pme(int argc, char *argv[])
 
     /* IDs of GPUs that are eligible for computation */
     char               *eligible_gpu_ids = nullptr;
-    t_eligible_gpu_ids *gpu_ids          = nullptr;
 
     t_perf            **perfdata = nullptr;
     t_inputinfo        *info;
@@ -2464,8 +2455,7 @@ int gmx_tune_pme(int argc, char *argv[])
                 bench_nsteps, fnm, NFILE, sim_part, presteps,
                 asize(pa), pa);
     /* Check any GPU IDs passed make sense, and fill the data structure for them */
-    snew(gpu_ids, 1);
-    parse_digits_from_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
+    auto gpu_ids = gmx::parseDigitsFromString(eligible_gpu_ids);
 
     /* Determine the maximum and minimum number of PME nodes to test,
      * the actual list of settings is build in do_the_tests(). */
