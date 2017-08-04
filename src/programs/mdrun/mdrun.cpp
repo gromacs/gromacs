@@ -264,6 +264,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     gmx_bool          bTryToAppendFiles     = TRUE;
     gmx_bool          bKeepAndNumCPT        = FALSE;
     gmx_bool          bResetCountersHalfWay = FALSE;
+    const char       *gpuIdTaskAssignment   = "";
 
     t_pargs           pa[] = {
 
@@ -287,7 +288,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "The lowest logical core number to which mdrun should pin the first thread" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
+        { "-gpu_id",  FALSE, etSTR, {&gpuIdTaskAssignment},
           "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
         { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
           "Check for all bonded interactions with DD" },
@@ -400,18 +401,24 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         return 0;
     }
 
-    // Handle option that parses GPU ids, which could be in an
-    // environment variable, so that there is a way to customize it
-    // when using MPI in heterogeneous contexts.
+    // Handle the option that permits the user to select a GPU task
+    // assignment, which could be in an environment variable (so that
+    // there is a way to customize it, when using MPI in heterogeneous
+    // contexts).
     {
-        char *env = getenv("GMX_GPU_ID");
-        if (env != nullptr && hw_opt.gpu_opt.gpu_id != nullptr)
-        {
-            gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
-        }
+        // TODO Argument parsing can't handle std::string. We should
+        // fix that by changing the parsing, once more of the roles of
+        // handling, validating and implementing defaults for user
+        // command-line options have been seperated.
+        hw_opt.gpuIdTaskAssignment = gpuIdTaskAssignment;
+        const char *env = getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
-            hw_opt.gpu_opt.gpu_id = env;
+            if (!hw_opt.gpuIdTaskAssignment.empty())
+            {
+                gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
+            }
+            hw_opt.gpuIdTaskAssignment = env;
         }
     }
 
