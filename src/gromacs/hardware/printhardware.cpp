@@ -68,21 +68,23 @@ static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
  *
  * Sharing GPUs among multiple PP ranks is possible via either user or
  * automated selection. */
-static int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGpuIds)
+static int gmx_count_gpu_dev_shared(const std::vector<int> &gpuTaskAssignment,
+                                    bool                    userSetGpuIds)
 {
     int      same_count    = 0;
-    int      ngpu          = gpu_opt->n_dev_use;
 
     if (userSetGpuIds)
     {
-        int      i, j;
+        GMX_RELEASE_ASSERT(!gpuTaskAssignment.empty(),
+                           "The user cannot choose an empty set of GPU IDs, code is wrong somewhere");
+        size_t ngpu = gpuTaskAssignment.size();
 
-        for (i = 0; i < ngpu - 1; i++)
+        for (size_t i = 0; i < ngpu - 1; i++)
         {
-            for (j = i + 1; j < ngpu; j++)
+            for (size_t j = i + 1; j < ngpu; j++)
             {
-                same_count      += (gpu_opt->dev_use[i] ==
-                                    gpu_opt->dev_use[j]);
+                same_count      += (gpuTaskAssignment[i] ==
+                                    gpuTaskAssignment[j]);
             }
         }
     }
@@ -96,12 +98,10 @@ static int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGp
  * GPU IDs, the number of GPUs user (per node) can be different from the
  * number of GPU IDs selected.
  */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_opt_t  *gpu_opt)
+static size_t gmx_count_gpu_dev_unique(const std::vector<int> &userGpuTaskAssignment)
 {
-    GMX_RELEASE_ASSERT(gpu_opt, "gpu_opt must be a non-NULL pointer");
-
     std::set<int> uniqIds;
-    for (int deviceId = 0; deviceId < gpu_opt->n_dev_use; deviceId++)
+    for (const auto &deviceId : userGpuTaskAssignment)
     {
         uniqIds.insert(deviceId);
     }
@@ -124,13 +124,12 @@ static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
 }
 
 std::string
-makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
-                   const gmx_gpu_opt_t  *gpu_opt,
-                   bool                  userSetGpuIds,
-                   size_t                numPpRanks,
-                   bool                  bPrintHostName)
+makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
+                   bool                    userSetGpuIds,
+                   const std::vector<int> &gpuTaskAssignment,
+                   size_t                  numPpRanks,
+                   bool                    bPrintHostName)
 {
-    int  ngpu_use  = gpu_opt->n_dev_use;
     int  ngpu_comp = gpu_info.n_dev_compatible;
     char host[STRLEN];
 
@@ -140,7 +139,7 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
     }
 
     /* Issue a note if GPUs are available but not used */
-    if (ngpu_comp > 0 && ngpu_use < 1)
+    if (ngpu_comp > 0 && gpuTaskAssignment.empty())
     {
         return gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
                                  "Consider trying GPU acceleration with the Verlet scheme!\n",
@@ -149,11 +148,10 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
 
     std::string output;
     {
-        std::vector<int> gpuIdsInUse(gpu_opt->dev_use, gpu_opt->dev_use + ngpu_use);
-        std::string      gpuIdsString =
-            formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
-        size_t           numGpusInUse = gmx_count_gpu_dev_unique(gpu_opt);
-        bool             bPluralGpus  = numGpusInUse > 1;
+        std::string gpuIdsString =
+            formatAndJoin(gpuTaskAssignment, ",", gmx::StringFormatter("%d"));
+        size_t      numGpusInUse = gmx_count_gpu_dev_unique(gpuTaskAssignment);
+        bool        bPluralGpus  = numGpusInUse > 1;
 
         if (bPrintHostName)
         {
@@ -169,7 +167,7 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
                                     gpuIdsString.c_str());
     }
 
-    int same_count = gmx_count_gpu_dev_shared(gpu_opt, userSetGpuIds);
+    int same_count = gmx_count_gpu_dev_shared(gpuTaskAssignment, userSetGpuIds);
 
     if (same_count > 0)
     {
