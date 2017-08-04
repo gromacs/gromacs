@@ -1142,7 +1142,7 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt, hw_opt.gpu_opt.n_dev_use, Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, hw_opt.gpu_opt.n_dev_use > 0, Flags & MD_NTOMPSET,
                                        cr, mdlog);
 
     gmx_device_info_t *shortRangedDeviceInfo = nullptr;
