@@ -52,7 +52,6 @@
 
 struct gmx_device_info_t;
 struct gmx_gpu_info_t;
-struct gmx_gpu_opt_t;
 
 namespace gmx
 {
@@ -153,38 +152,6 @@ gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_inf
  */
 CUDA_FUNC_QUALIFIER
 int get_current_cuda_gpu_device_id(void) CUDA_FUNC_TERM_WITH_RETURN(-1)
-
-/*! \brief Returns an identifier for the GPU with a given index into the array of used GPUs.
- *
- * Getter function which, given an index into the array of GPUs in use
- * (dev_use) -- typically an MPI rank --, returns an identifier of the
- * respective GPU.
- *
- * \param[in]    gpu_info   Information about detected GPUs
- * \param[in]    gpu_opt    Pointer to structure holding GPU options
- * \param[in]    idx        Index into the array of used GPUs
- * \returns                 device ID of the requested GPU
- */
-GPU_FUNC_QUALIFIER
-int get_gpu_device_id(const struct gmx_gpu_info_t &GPU_FUNC_ARGUMENT(gpu_info),
-                      const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt),
-                      int GPU_FUNC_ARGUMENT(idx)) GPU_FUNC_TERM_WITH_RETURN(-1)
-
-/*! \brief Returns the name for the OpenCL GPU with a given index into the array of used GPUs.
- *
- * Getter function which, given an index into the array of GPUs in use
- * (dev_use) -- typically a tMPI/MPI rank --, returns the device name for the
- * respective OpenCL GPU.
- *
- * \param[in]    gpu_info   Pointer to structure holding GPU information
- * \param[in]    gpu_opt    Pointer to structure holding GPU options
- * \param[in]    idx        Index into the array of used GPUs
- * \returns                 A string with the name of the requested OpenCL GPU
- */
-OPENCL_FUNC_QUALIFIER
-char* get_ocl_gpu_device_name(const struct gmx_gpu_info_t *OPENCL_FUNC_ARGUMENT(gpu_info),
-                              const gmx_gpu_opt_t  *OPENCL_FUNC_ARGUMENT(gpu_opt),
-                              int                  OPENCL_FUNC_ARGUMENT(idx)) OPENCL_FUNC_TERM_WITH_RETURN(NULL)
 
 /*! \brief Formats and returns a device information string for a given GPU.
  *

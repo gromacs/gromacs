@@ -94,15 +94,13 @@ static int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt, bool userSetGp
  * GPU IDs, the number of GPUs user (per node) can be different from the
  * number of GPU IDs selected.
  */
-static size_t gmx_count_gpu_dev_unique(const gmx_gpu_info_t &gpu_info,
-                                       const gmx_gpu_opt_t  *gpu_opt)
+static size_t gmx_count_gpu_dev_unique(const gmx_gpu_opt_t  *gpu_opt)
 {
     GMX_RELEASE_ASSERT(gpu_opt, "gpu_opt must be a non-NULL pointer");
 
     std::set<int> uniqIds;
-    for (int i = 0; i < gpu_opt->n_dev_use; i++)
+    for (int deviceId = 0; deviceId < gpu_opt->n_dev_use; deviceId++)
     {
-        int deviceId = get_gpu_device_id(gpu_info, gpu_opt, i);
         uniqIds.insert(deviceId);
     }
     return uniqIds.size();
@@ -149,15 +147,11 @@ makeGpuUsageReport(const gmx_gpu_info_t &gpu_info,
 
     std::string output;
     {
-        std::vector<int> gpuIdsInUse;
-        for (int i = 0; i < ngpu_use; i++)
-        {
-            gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
-        }
-        std::string gpuIdsString =
+        std::vector<int> gpuIdsInUse(gpu_opt->dev_use, gpu_opt->dev_use + ngpu_use);
+        std::string      gpuIdsString =
             formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
-        size_t      numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
-        bool        bPluralGpus  = numGpusInUse > 1;
+        size_t           numGpusInUse = gmx_count_gpu_dev_unique(gpu_opt);
+        bool             bPluralGpus  = numGpusInUse > 1;
 
         if (bPrintHostName)
         {
