@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,18 +83,6 @@ int cu_copy_D2H(void * h_dest, void * d_src, size_t bytes)
 int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s = 0)
 {
     return cu_copy_D2H_generic(h_dest, d_src, bytes, true, s);
-}
-
-int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
-{
-    if (h_dest == NULL || d_src == NULL || bytes == 0)
-    {
-        return -1;
-    }
-
-    smalloc(*h_dest, bytes);
-
-    return cu_copy_D2H(*h_dest, d_src, bytes);
 }
 
 /*! Launches synchronous or asynchronous device to host memory copy.
