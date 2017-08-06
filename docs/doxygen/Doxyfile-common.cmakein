@@ -30,7 +30,8 @@ EXCLUDE_SYMBOLS       += MOCK_METHOD* MOCK_CONST_METHOD*
 FULL_PATH_NAMES        = YES
 STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
 STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
-INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
+INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/legacyheaders
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
 MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
@@ -73,6 +74,7 @@ ALIASES               += linktodevmanual{3}="<A HREF=\"../../dev-manual/\1.html#
 
 DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES
+USE_MATHJAX            = YES
 # According to Doxygen docs, this is required for svg support on IE
 HTML_FILE_EXTENSION    = .xhtml
 
