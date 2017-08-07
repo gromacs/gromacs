@@ -38,6 +38,8 @@
 
 #include "config.h"
 
+#include <cstdlib>
+
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -375,7 +377,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     if (!hwTop.isThisSystem())
     {
         s += gmx::formatString("  NOTE: Hardware topology cached or synthetic, not detected.\n");
-        if (char *p = getenv("HWLOC_XMLFILE"))
+        if (char *p = std::getenv("HWLOC_XMLFILE"))
         {
             s += gmx::formatString("        HWLOC_XMLFILE=%s\n", p);
         }
