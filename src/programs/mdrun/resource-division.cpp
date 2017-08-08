@@ -46,6 +46,7 @@
 
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -337,7 +338,6 @@ class SingleRankChecker
  */
 int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                      gmx_hw_opt_t           *hw_opt,
-                     const std::vector<int> &userGpuTaskAssignment,
                      const t_inputrec       *inputrec,
                      const gmx_mtop_t       *mtop,
                      const gmx::MDLogger    &mdlog,
@@ -348,6 +348,8 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
 
     const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
+
+    auto userGpuTaskAssignment = gmx::parseGpuTaskAssignment(hw_opt->gpuIdTaskAssignment);
 
     /* TODO Here we handle the case where the user set GPU IDs, and
        further below we handle the case where the algorithm does not

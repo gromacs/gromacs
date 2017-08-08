@@ -41,6 +41,7 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_gpu_info_t;
+struct gmx_hw_opt_t;
 struct t_commrec;
 
 namespace gmx
@@ -62,8 +63,8 @@ std::vector<int> parseGpuTaskAssignment(const std::string &gpuTaskAssignment);
  *
  * Will return a validated mapping from PP ranks (ie tasks that can
  * run on GPUs) to the device IDs of compatible GPUs on their node.
- * This will be the \c userGpuTaskAssignment if non-empty, otherwise
- * a default automated mapping is generated.
+ * This will be from any non-empty assignment in hw_opt, otherwise a
+ * default automated mapping is generated.
  *
  * Note that PME-only ranks have always ignored mdrun -gpu_id, so do
  * not attempt to validate -gpu_id. They should continue this behaviour
@@ -72,14 +73,14 @@ std::vector<int> parseGpuTaskAssignment(const std::string &gpuTaskAssignment);
  * \param[in]     rankCanUseGpu          Whether this rank can execute a task on a GPU.
  * \param[in]     cr                     Communication record.
  * \param[in]     gpu_info               Information detected about GPUs, including compatibility.
- * \param[in]     userGpuTaskAssignment  Any GPU IDs required by the user.
+ * \param[in]     hw_opt                 Parallelisation options, including any user-specified GPU task assignment.
  *
  * \returns  A valid GPU selection.
  */
 std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
                                   const t_commrec        *cr,
                                   const gmx_gpu_info_t   &gpu_info,
-                                  const std::vector<int> &userGpuTaskAssignment);
+                                  const gmx_hw_opt_t     &hw_opt);
 
 } // namespace
 

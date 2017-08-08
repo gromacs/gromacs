@@ -47,6 +47,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
@@ -227,7 +228,7 @@ static std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
                                   const t_commrec        *cr,
                                   const gmx_gpu_info_t   &gpu_info,
-                                  const std::vector<int> &userGpuTaskAssignment)
+                                  const gmx_hw_opt_t     &hw_opt)
 {
     std::vector<int> taskAssignment;
 
@@ -237,8 +238,9 @@ std::vector<int> mapPpRanksToGpus(bool                    rankCanUseGpu,
     }
 
     auto compatibleGpus = getCompatibleGpus(gpu_info);
-    if (!userGpuTaskAssignment.empty())
+    if (!hw_opt.gpuIdTaskAssignment.empty())
     {
+        auto userGpuTaskAssignment = parseGpuTaskAssignment(hw_opt.gpuIdTaskAssignment);
         exitUnlessUserGpuTaskAssignmentIsValid(gpu_info, compatibleGpus, userGpuTaskAssignment);
         taskAssignment = userGpuTaskAssignment;
     }
