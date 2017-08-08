@@ -73,6 +73,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -1561,6 +1562,15 @@ static void calc_pull_coord_vector_force(pull_coord_work_t *pcrd)
 }
 
 
+/* We use a global mutex for locking access to the pull data structure
+ * during registration of external pull potential providers.
+ * We could use a different, local mutex for each pull object, but the overhead
+ * is extremely small here and registration is only done during initialization.
+ */
+static gmx::Mutex registrationMutex;
+
+using Lock = gmx::lock_guard<gmx::Mutex>;
+
 void register_external_pull_potential(struct pull_t *pull,
                                       int            coord_index,
                                       const char    *provider)
@@ -1590,16 +1600,22 @@ void register_external_pull_potential(struct pull_t *pull,
                   provider, coord_index + 1, pcrd->params.externalPotentialProvider);
     }
 
+    /* Lock to avoid (extremely unlikely) simultaneous reading and writing of
+     * pcrd->bExternalPotentialProviderHasBeenRegistered and
+     * pull->numUnregisteredExternalPotentials.
+     */
+    Lock registrationLock(registrationMutex);
+
     if (pcrd->bExternalPotentialProviderHasBeenRegistered)
     {
-        gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d multiple times",
+        gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d more than once",
                   provider, coord_index + 1);
     }
 
     pcrd->bExternalPotentialProviderHasBeenRegistered = true;
     pull->numUnregisteredExternalPotentials--;
 
-    GMX_RELEASE_ASSERT(pull->numUnregisteredExternalPotentials >= 0, "Negative unregisterd potentials, the pull code in inconsistent");
+    GMX_RELEASE_ASSERT(pull->numUnregisteredExternalPotentials >= 0, "Negative unregistered potentials, the pull code is inconsistent");
 }
 
 
