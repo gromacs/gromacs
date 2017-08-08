@@ -389,7 +389,7 @@ posres_wrapper(t_nrnb             *nrnb,
                const struct t_pbc *pbc,
                const rvec          x[],
                gmx_enerdata_t     *enerd,
-               real               *lambda,
+               const real         *lambda,
                t_forcerec         *fr)
 {
     real  v, dvdl;
@@ -416,7 +416,7 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
                       const struct t_pbc   *pbc,
                       const rvec            x[],
                       gmx_enerdata_t       *enerd,
-                      real                 *lambda,
+                      const real           *lambda,
                       t_forcerec           *fr)
 {
     real  v;
