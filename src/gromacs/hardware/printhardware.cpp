@@ -130,27 +130,8 @@ void reportGpuUsage(const gmx::MDLogger    &mdlog,
                     size_t                  numPpRanks,
                     bool                    bPrintHostName)
 {
-    int  ngpu_comp = gpu_info.n_dev_compatible;
-    char host[STRLEN];
-
     if (gpuTaskAssignment.empty())
     {
-        return;
-    }
-
-    if (bPrintHostName)
-    {
-        gmx_gethostname(host, STRLEN);
-    }
-
-    // TODO The logic for gpuTaskAssignment here and just above is faulty
-    /* Issue a note if GPUs are available but not used */
-    if (ngpu_comp > 0 && gpuTaskAssignment.empty())
-    {
-        auto message = gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
-                                         "Consider trying GPU acceleration with the Verlet scheme!\n",
-                                         ngpu_comp, (ngpu_comp > 1) ? "s" : "");
-        GMX_LOG(mdlog.warning).appendText(message);
         return;
     }
 
@@ -163,6 +144,8 @@ void reportGpuUsage(const gmx::MDLogger    &mdlog,
 
         if (bPrintHostName)
         {
+            char host[STRLEN];
+            gmx_gethostname(host, STRLEN);
             output += gmx::formatString("On host %s", host);
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
@@ -183,7 +166,7 @@ void reportGpuUsage(const gmx::MDLogger    &mdlog,
                                     same_count > 1 ? "GPU IDs" : "a GPU ID");
     }
 
-    if (static_cast<size_t>(ngpu_comp) > numPpRanks)
+    if (static_cast<size_t>(gpu_info.n_dev_compatible) > numPpRanks)
     {
         /* TODO In principle, this warning could be warranted only on
          * ranks on some nodes, but we lack the infrastructure to do a
