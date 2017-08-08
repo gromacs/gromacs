@@ -172,6 +172,8 @@ void print_top_header2(FILE *fp, const Poldata &pd,
                        gmx_atomprop_t aps, bool bPol,
                        std::vector<std::string> commercials,
                        bool bItp);
+
+void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
                 
 }// namespace alexandria
 #endif

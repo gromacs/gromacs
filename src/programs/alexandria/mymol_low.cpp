@@ -1173,4 +1173,23 @@ void print_top_header2(FILE *fp, const Poldata &pd,
     }
 }
 
+void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
+{
+    rvec au = {0, 0 ,0};
+    rvec bu = {0, 0, 0};
+
+    svmul((1.0/norm(target_vec)), target_vec, au);
+    svmul((1.0/norm(ref_vec)), ref_vec, bu);
+
+    rotmatrix[0][0] = bu[0]*au[0];
+    rotmatrix[0][1] = bu[0]*au[1];
+    rotmatrix[0][2] = bu[0]*au[2];
+    rotmatrix[1][0] = bu[1]*au[0];
+    rotmatrix[1][1] = bu[1]*au[1];
+    rotmatrix[1][2] = bu[1]*au[2];
+    rotmatrix[2][0] = bu[2]*au[0];
+    rotmatrix[2][1] = bu[2]*au[1];
+    rotmatrix[2][2] = bu[2]*au[2];     
+}
+
 }// namespace alexandria
