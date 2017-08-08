@@ -721,13 +721,12 @@ int Mdrunner::mdrunner()
      * with things like whether support is compiled, or tMPI thread
      * count. */
     bool emulateGpu            = getenv("GMX_EMULATE_GPU") != nullptr;
-    auto userGpuTaskAssignment = parseGpuTaskAssignment(hw_opt.gpuIdTaskAssignment);
     bool forceUseCpu           = (strncmp(nbpu_opt, "cpu", 3) == 0);
-    if (!userGpuTaskAssignment.empty() && forceUseCpu)
+    if (!hw_opt.gpuIdTaskAssignment.empty() && forceUseCpu)
     {
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
-    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !userGpuTaskAssignment.empty();
+    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
     bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
 
     // Here we assume that SIMMASTER(cr) does not change even after the
@@ -844,7 +843,6 @@ int Mdrunner::mdrunner()
         // Determine how many thread-MPI ranks to start.
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
-                                                userGpuTaskAssignment,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);
@@ -1110,18 +1108,16 @@ int Mdrunner::mdrunner()
          * or sharing devices on a node, either from the user
          * selection, or automatically. */
         bool rankCanUseGpu = cr->duty & DUTY_PP;
-        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info,
-                                             userGpuTaskAssignment);
+        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hw_opt);
     }
 
-    reportGpuUsage(mdlog, hwinfo->gpu_info, !userGpuTaskAssignment.empty(),
+    reportGpuUsage(mdlog, hwinfo->gpu_info, !hw_opt.gpuIdTaskAssignment.empty(),
                    gpuTaskAssignment, cr->nrank_pp_intranode,
                    cr->nnodes > 1);
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, !userGpuTaskAssignment.empty(), gpuTaskAssignment);
-    /* From now on, the userGpuTaskAssignment should never be used */
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, !hw_opt.gpuIdTaskAssignment.empty(), gpuTaskAssignment);
 
     /* Prevent other ranks from continuing after an inconsistency was found.
      *

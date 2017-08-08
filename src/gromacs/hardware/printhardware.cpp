@@ -94,14 +94,14 @@ static int gmx_count_gpu_dev_shared(const std::vector<int> &gpuTaskAssignment,
 
 /* Count and return the number of unique GPUs (per node) selected.
  *
- * As sharing GPUs among multiple PP ranks is possible when the user passes
- * GPU IDs, the number of GPUs user (per node) can be different from the
- * number of GPU IDs selected.
+ * As sharing GPUs among multiple PP ranks is possible, the number of
+ * GPUs used (per node) can be different from the number of GPU IDs
+ * used.
  */
-static size_t gmx_count_gpu_dev_unique(const std::vector<int> &userGpuTaskAssignment)
+static size_t gmx_count_gpu_dev_unique(const std::vector<int> &gpuTaskAssignment)
 {
     std::set<int> uniqIds;
-    for (const auto &deviceId : userGpuTaskAssignment)
+    for (const auto &deviceId : gpuTaskAssignment)
     {
         uniqIds.insert(deviceId);
     }
