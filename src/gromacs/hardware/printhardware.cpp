@@ -130,27 +130,21 @@ void reportGpuUsage(const gmx::MDLogger    &mdlog,
                     size_t                  numPpRanks,
                     bool                    bPrintHostName)
 {
-    int  ngpu_comp = gpu_info.n_dev_compatible;
-    char host[STRLEN];
+    int ngpu_comp = gpu_info.n_dev_compatible;
 
     if (gpuTaskAssignment.empty())
     {
-        return;
-    }
-
-    if (bPrintHostName)
-    {
-        gmx_gethostname(host, STRLEN);
-    }
-
-    // TODO The logic for gpuTaskAssignment here and just above is faulty
-    /* Issue a note if GPUs are available but not used */
-    if (ngpu_comp > 0 && gpuTaskAssignment.empty())
-    {
-        auto message = gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
-                                         "Consider trying GPU acceleration with the Verlet scheme!\n",
-                                         ngpu_comp, (ngpu_comp > 1) ? "s" : "");
-        GMX_LOG(mdlog.warning).appendText(message);
+        // Issue a note if compatible GPUs are found but cannot be used.
+        if (ngpu_comp > 0)
+        {
+            // TODO Ideally the reason why GPUs are not being used
+            // would be reported here, because the user might wish to
+            // change their choices, but we lack the modularity to
+            // find out why (without duplicated or complex logic).
+            GMX_LOG(mdlog.warning).
+                appendTextFormatted("%d compatible GPU%s detected in the system, but none will be used.\n",
+                                    ngpu_comp, (ngpu_comp > 1) ? "s" : "");
+        }
         return;
     }
 
@@ -163,6 +157,8 @@ void reportGpuUsage(const gmx::MDLogger    &mdlog,
 
         if (bPrintHostName)
         {
+            char host[STRLEN];
+            gmx_gethostname(host, STRLEN);
             output += gmx::formatString("On host %s", host);
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
