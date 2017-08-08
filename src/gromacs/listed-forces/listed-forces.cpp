@@ -485,6 +485,13 @@ void calc_listed(const t_commrec             *cr,
         /* Do pre force calculation stuff which might require communication */
         if (fcd->orires.nr > 0)
         {
+            /* This assertion is to ensure we have whole molecules.
+             * Unfortunately we do not have an mdrun state variable that tells
+             * us if molecules in x are not broken over PBC, so we have to make
+             * do with checking graph!=nullptr, which should tell us if we made
+             * molecules whole before calling the current function.
+             */
+            GMX_RELEASE_ASSERT(fr->ePBC == epbcNONE || g != nullptr, "With orientation restraints molecules should be whole");
             enerd->term[F_ORIRESDEV] =
                 calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
                                 idef->il[F_ORIRES].iatoms,

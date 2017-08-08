@@ -2464,7 +2464,10 @@ void init_forcerec(FILE                *fp,
             }
             else
             {
-                fr->bMolPBC = TRUE;
+                /* Not making molecules whole is faster in most cases,
+                 * but With orientation restraints we need whole molecules.
+                 */
+                fr->bMolPBC = (fcd->orires.nr == 0);
 
                 if (getenv("GMX_USE_GRAPH") != nullptr)
                 {
@@ -2479,6 +2482,8 @@ void init_forcerec(FILE                *fp,
                         GMX_LOG(mdlog.warning).asParagraph().appendText("WARNING: Molecules linked by intermolecular interactions have to reside in the same periodic image, otherwise artifacts will occur!");
                     }
                 }
+
+                GMX_RELEASE_ASSERT(fr->bMolPBC || !mtop->bIntermolecularInteractions, "We need to use PBC within molecules with inter-molecular interactions");
 
                 if (bSHAKE && fr->bMolPBC)
                 {
