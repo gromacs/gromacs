@@ -1114,18 +1114,9 @@ int Mdrunner::mdrunner()
                                              userGpuTaskAssignment);
     }
 
-    /* If we are using GPUs, report on this rank how they are being
-     * used on this node. */
-    if (!gpuTaskAssignment.empty())
-    {
-        auto gpuUsageReport =
-            makeGpuUsageReport(hwinfo->gpu_info, !userGpuTaskAssignment.empty(),
-                               gpuTaskAssignment, cr->nrank_pp_intranode,
-                               cr->nnodes > 1);
-
-        /* NOTE: this print is only for and on one physical node */
-        GMX_LOG(mdlog.warning).appendText(gpuUsageReport);
-    }
+    reportGpuUsage(mdlog, hwinfo->gpu_info, !userGpuTaskAssignment.empty(),
+                   gpuTaskAssignment, cr->nrank_pp_intranode,
+                   cr->nnodes > 1);
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */

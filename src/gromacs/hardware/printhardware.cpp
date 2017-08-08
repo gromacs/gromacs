@@ -123,27 +123,29 @@ static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
     return gmx::joinStrings(gpuStrings, "\n");
 }
 
-std::string
-makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
-                   bool                    userSetGpuIds,
-                   const std::vector<int> &gpuTaskAssignment,
-                   size_t                  numPpRanks,
-                   bool                    bPrintHostName)
+void reportGpuUsage(const gmx::MDLogger    &mdlog,
+                    const gmx_gpu_info_t   &gpu_info,
+                    bool                    userSetGpuIds,
+                    const std::vector<int> &gpuTaskAssignment,
+                    size_t                  numPpRanks,
+                    bool                    bPrintHostName)
 {
     int  ngpu_comp = gpu_info.n_dev_compatible;
-    char host[STRLEN];
 
-    if (bPrintHostName)
+    if (gpuTaskAssignment.empty())
     {
-        gmx_gethostname(host, STRLEN);
-    }
-
-    /* Issue a note if GPUs are available but not used */
-    if (ngpu_comp > 0 && gpuTaskAssignment.empty())
-    {
-        return gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
-                                 "Consider trying GPU acceleration with the Verlet scheme!\n",
-                                 ngpu_comp, (ngpu_comp > 1) ? "s" : "");
+        // Issue a note if compatible GPUs are found but cannot be used.
+        if (ngpu_comp > 0)
+        {
+            auto message = gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
+                                             "Consider trying GPU acceleration with the Verlet scheme!\n",
+                                             ngpu_comp, (ngpu_comp > 1) ? "s" : "");
+            GMX_LOG(mdlog.warning).appendText(message);
+        }
+        else
+        {
+            return;
+        }
     }
 
     std::string output;
@@ -155,6 +157,8 @@ makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
 
         if (bPrintHostName)
         {
+            char host[STRLEN];
+            gmx_gethostname(host, STRLEN);
             output += gmx::formatString("On host %s", host);
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
@@ -183,8 +187,9 @@ makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
         output += gmx::formatString("NOTE: potentially sub-optimal launch configuration using fewer\n"
                                     "      PP ranks on a node than GPUs available on that node.\n");
     }
+    GMX_LOG(mdlog.warning).appendText(output);
 
-    return output;
+    return;
 }
 
 /* Give a suitable fatal error or warning if the build configuration
