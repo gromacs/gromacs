@@ -122,6 +122,8 @@ void get_pull_coord_value(struct pull_t      *pull,
  * will exit with a (release) assertion failure when used incorrely or
  * with a fatal error when the user (mdp) input in inconsistent.
  *
+ * Thread-safe for simultaneous registration from multiple threads.
+ *
  * \param[in,out] pull         The pull struct.
  * \param[in]     coord_index  The pull coordinate index to register the external potential for.
  * \param[in]     provider     Provider string, should match the potential-provider pull coordinate mdp option.
