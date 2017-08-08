@@ -361,17 +361,6 @@ calc_one_bond(int thread,
             v = 0;
         }
 #endif
-        else if (ftype == F_ORIRES)
-        {
-            if (thread == 0)
-            {
-                v = interaction_function[ftype].ifunc(nbonds*nat1, iatoms,
-                                                      idef->iparams,
-                                                      x, f, fshift,
-                                                      pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                                                      md, fcd, global_atom_index);
-            }
-        }
         else
         {
             v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
