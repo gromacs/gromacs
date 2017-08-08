@@ -249,7 +249,12 @@ void OptZeta::calcDeviation()
                                       (atomnr == 35) || (atomnr == 53))))
                     {
                         ener_[ermsBOUNDS] += fabs(qq);
-                    }                    
+                    }
+                    if(nullptr != mymol.shellfc_)
+                    {
+                        qq += mymol.topology_->atoms.atom[j+1].q;
+                    }
+                    ener_[ermsCHARGE]  += gmx::square(qq - mymol.qESP_[j]);
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -412,9 +417,7 @@ double OptZeta::objFunction(const double v[])
     {
         param_[i] = v[i];
     }
-
-    tuneZeta2PolData();
-    
+    tuneZeta2PolData();    
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
@@ -441,10 +444,8 @@ double OptZeta::objFunction(const double v[])
         }
     }      
     calcDeviation();
-
     ener_[ermsBOUNDS] += bounds;
-    ener_[ermsTOT]    += bounds;
-    
+    ener_[ermsTOT]    += bounds;    
     return ener_[ermsTOT];
 }
 
@@ -461,8 +462,7 @@ void OptZeta::optRun(FILE *fp, FILE *fplog, int maxiter,
     
     auto func = [&] (const double v[]) {
         return objFunction(v);
-    };
-    
+    };    
     if (MASTER(cr_))
     {    
         if (PAR(cr_))
@@ -471,25 +471,21 @@ void OptZeta::optRun(FILE *fp, FILE *fplog, int maxiter,
             {
                 gmx_send_int(cr_, dest, (nrun*maxiter*param_.size()));
             }
-        }
-        
+        }        
         chi2 = chi2_min = GMX_REAL_MAX;
         Bayes <double> TuneZeta(func, param_, lower_, upper_, &chi2);
         TuneZeta.Init(xvgconv, xvgepot, oenv, seed, stepsize, 
-                      maxiter, nprint,temperature, bBound);
-                     
+                      maxiter, nprint,temperature, bBound);                     
         for (auto n = 0; n < nrun; n++)
         {
             if ((nullptr != fp) && (0 == n))
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
-            }
-            
+            }            
             TuneZeta.simulate();
             TuneZeta.getBestParam(optb);
             TuneZeta.getPsigma(opts);
             TuneZeta.getPmean(optm);
-
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
@@ -829,8 +825,7 @@ void OptZeta::print_results(FILE                   *fp,
         k.atomtype.assign(ai->name());
         k.lsq = gmx_stats_init();
         lsqt.push_back(std::move(k));
-    }
-        
+    }       
     for (auto &mol: mymol_)
     {
         if (mol.eSupp_ != eSupportNo)
@@ -857,8 +852,7 @@ void OptZeta::print_results(FILE                   *fp,
             print_quadrapole(fp, &mol, (char *)"CM5",  quad_toler);
             
             rms = mol.espRms();
-            fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);           
-                        
+            fprintf(fp,   "ESP rms: %g (Hartree/e)\n", rms);                                  
             auto nEsp     = mol.Qgresp_.nEsp();
             auto EspPoint = mol.Qgresp_.espPoint();
             for (size_t i = 0; i < nEsp; i++)
@@ -901,9 +895,7 @@ void OptZeta::print_results(FILE                   *fp,
 
                 }
             }
-
-            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
-            
+            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);           
             if(bPolar)
             {
                 mol.CalcPolarizability(1, cr_, nullptr);
@@ -911,8 +903,7 @@ void OptZeta::print_results(FILE                   *fp,
                 {
                     gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
                 }
-            }
-            
+            }            
             fprintf(fp, "Atom   Type      q_DESP     q_ESP     q_MPA     q_HPA     q_CM5       x       y       z\n");
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
@@ -934,8 +925,7 @@ void OptZeta::print_results(FILE                   *fp,
                                 qDESP += mol.topology_->atoms.atom[j+1].q;
                             }
                             gmx_stats_add_point(k->lsq, mol.qESP_[i], qDESP, 0, 0);
-                        } 
-                        
+                        }                        
                         fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
                                 mol.topology_->atoms.atom[j].atomnumber,
                                 j+1,
@@ -1105,7 +1095,7 @@ void OptZeta::print_results(FILE                   *fp,
 int alex_tune_zeta(int argc, char *argv[])
 {
     static const char          *desc[] = {
-        "tune_dip read a series of molecules and corresponding experimental",
+        "tune_zeta reads a series of molecules and corresponding experimental",
         "dipole moments from a file, and tunes parameters in an algorithm",
         "until the experimental dipole moments are reproduced by the",
         "charge generating algorithm AX as implemented in the gentop program.[PAR]",
@@ -1182,7 +1172,7 @@ int alex_tune_zeta(int argc, char *argv[])
     static real                 fc_mu         = 1;
     static real                 fc_bound      = 1;
     static real                 fc_quad       = 1;
-    static real                 fc_charge     = 0;
+    static real                 fc_charge     = 1;
     static real                 fc_esp        = 1;
     static real                 th_toler      = 170;
     static real                 ph_toler      = 5;

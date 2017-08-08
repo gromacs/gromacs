@@ -245,7 +245,7 @@ void Bayes<T>::simulate()
 {
 
     parm_t                           sum, sum_of_sq;
-    int                              iter, j, nsum = 0, nParam = 0, ncycle;
+    int                              iter, j, nsum = 0, nParam = 0, ncycle = 0;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
