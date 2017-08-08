@@ -85,6 +85,14 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                   od->nr, numFitParams + 1, numFitParams);
     }
 
+    if (ir->bPeriodicMols)
+    {
+        /* Since we apply fitting, we need to make molecules whole and this
+         * can not be done when periodic molecules are present.
+         */
+        gmx_fatal(FARGS, "Orientation restraints can not be applied when periodic molecules are present in the system");
+    }
+
     if (PAR(cr))
     {
         gmx_fatal(FARGS, "Orientation restraints do not work with MPI parallelization. Choose 1 MPI rank, if possible.");
