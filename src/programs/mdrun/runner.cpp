@@ -840,7 +840,11 @@ int Mdrunner::mdrunner()
          */
         check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
-        // Determine how many thread-MPI ranks to start.
+        /* Determine how many thread-MPI ranks to start.
+         *
+         * TODO Over-writing the user-supplied value here does
+         * prevent any possible subsequent checks from working
+         * correctly. */
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
                                                 inputrec, mtop,
@@ -1115,11 +1119,14 @@ int Mdrunner::mdrunner()
                    gpuTaskAssignment, cr->nrank_pp_intranode,
                    cr->nnodes > 1);
 
-    /* check consistency across ranks of things like SIMD
-     * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, !hw_opt.gpuIdTaskAssignment.empty(), gpuTaskAssignment);
+    if (!gpuTaskAssignment.empty())
+    {
+        GMX_RELEASE_ASSERT(cr->nrank_pp_intranode == static_cast<int>(gpuTaskAssignment.size()),
+                           "The number of PP ranks on each node must equal the number of GPU tasks used on each node");
+    }
 
-    /* Prevent other ranks from continuing after an inconsistency was found.
+    /* Prevent other ranks from continuing after an issue was found
+     * and reported as a fatal error.
      *
      * TODO This function implements a barrier so that MPI runtimes
      * can organize an orderly shutdown if one of the ranks has had to
