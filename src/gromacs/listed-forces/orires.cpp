@@ -103,12 +103,19 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     od->eig = nullptr;
     od->v   = nullptr;
 
-    int                  *nr_ex = nullptr;
-    gmx_mtop_ilistloop_t  iloop = gmx_mtop_ilistloop_init(mtop);
+    int                  *nr_ex   = nullptr;
+    int                   typeMin = INT_MAX;
+    int                   typeMax = 0;
+    gmx_mtop_ilistloop_t  iloop   = gmx_mtop_ilistloop_init(mtop);
     t_ilist              *il;
     int                   nmol;
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {
+        if (nmol > 1)
+        {
+            gmx_fatal(FARGS, "Found %d copies of a molecule with orientation restrains while the current code only supports a single copy. If you want to ensemble average, run multiple copies of the system using the multi-sim feature of mdrun.", nmol);
+        }
+ 
         for (int i = 0; i < il[F_ORIRES].nr; i += 3)
         {
             int type = il[F_ORIRES].iatoms[i];
@@ -123,8 +130,16 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                 od->nex = ex+1;
             }
             nr_ex[ex]++;
+
+            typeMin = std::min(typeMin, type);
+            typeMax = std::max(typeMax, type);
         }
     }
+    /* With domain decomposition we use the type index for indexing in global arrays */
+    GMX_RELEASE_ASSERT(typeMax - typeMin + 1 == od->nr, "All orientation restraint parameter entries in the topology should be consecutive");
+    /* Store typeMin so we can index array with the type offset */
+    od->typeMin = typeMin;
+
     snew(od->S, od->nex);
     /* When not doing time averaging, the instaneous and time averaged data
      * are indentical and the pointers can point to the same memory.
@@ -430,11 +445,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     /* Calculate the rotation matrix to rotate x to the reference orientation */
     calc_fit_R(DIM, nref, mref, xref, xtmp, od->R);
 
-    /* Index restraint data in order of appearance in forceatoms */
-    int restraintIndex = 0;
     for (int fa = 0; fa < nfa; fa += 3)
     {
-        int type = forceatoms[fa];
+        const int type           = forceatoms[fa];
+        const int restraintIndex = type - od->typeMin;
         if (pbc)
         {
             pbc_dx_aiuc(pbc, x[forceatoms[fa+1]], x[forceatoms[fa+2]], r_unrot);
@@ -466,8 +480,6 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                 od->Dins[restraintIndex][i] = Dinsl[i]*invn;
             }
         }
-
-        restraintIndex++;
     }
 
     if (ms)
@@ -488,11 +500,11 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         }
     }
 
-    /* Index restraint data in order of appearance in forceatoms */
-    restraintIndex = 0;
     for (int fa = 0; fa < nfa; fa += 3)
     {
-        rvec5 &Dtav = od->Dtav[restraintIndex];
+        const int  type           = forceatoms[fa];
+        const int  restraintIndex = type - od->typeMin;
+        rvec5     &Dtav           = od->Dtav[restraintIndex];
         if (bTAV)
         {
             /* Here we update Dtav in t_fcdata using the data in history_t.
@@ -507,7 +519,6 @@ real calc_orires_dev(const gmx_multisim_t *ms,
             }
         }
 
-        int  type   = forceatoms[fa];
         int  ex     = ip[type].orires.ex;
         real weight = ip[type].orires.kfac;
         /* Calculate the vector rhs and half the matrix T for the 5 equations */
@@ -519,7 +530,6 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                 matEq[ex].mat[i][j] += Dtav[i]*Dtav[j]*weight;
             }
         }
-        restraintIndex++;
     }
     /* Now we have all the data we can calculate S */
     for (int ex = 0; ex < od->nex; ex++)
@@ -563,15 +573,14 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     wsv2            = 0;
     sw              = 0;
 
-    /* Index restraint data in order of appearance in forceatoms */
-    restraintIndex = 0;
     for (int fa = 0; fa < nfa; fa += 3)
     {
-        int          type = forceatoms[fa];
-        int          ex   = ip[type].orires.ex;
-
-        const rvec5 &Dtav = od->Dtav[restraintIndex];
-        od->otav[restraintIndex] = two_thr*
+        const int    type           = forceatoms[fa];
+        const int    restraintIndex = type - od->typeMin;
+        const int    ex             = ip[type].orires.ex;
+        
+        const rvec5 &Dtav           = od->Dtav[restraintIndex];
+        od->otav[restraintIndex]    = two_thr*
             corrfac*(S[ex][0][0]*Dtav[0] + S[ex][0][1]*Dtav[1] +
                      S[ex][0][2]*Dtav[2] + S[ex][1][1]*Dtav[3] +
                      S[ex][1][2]*Dtav[4]);
@@ -599,8 +608,6 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
         wsv2 += ip[type].orires.kfac*gmx::square(dev);
         sw   += ip[type].orires.kfac;
-
-        restraintIndex++;
     }
     od->rmsdev = std::sqrt(wsv2/sw);
 
@@ -646,13 +653,12 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             smooth_fc *= (1.0 - od->exp_min_t_tau);
         }
 
-        /* Index restraint data in order of appearance in forceatoms */
-        int restraintIndex = 0;
         for (int fa = 0; fa < nfa; fa += 3)
         {
-            int type = forceatoms[fa];
-            int ai   = forceatoms[fa + 1];
-            int aj   = forceatoms[fa + 2];
+            const int type           = forceatoms[fa];
+            const int ai             = forceatoms[fa + 1];
+            const int aj             = forceatoms[fa + 2];
+            const int restraintIndex = type - od->typeMin;
             if (pbc)
             {
                 ki = pbc_dx_aiuc(pbc, x[ai], x[aj], r);
@@ -717,8 +723,6 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 fshift[ki][i]      += fij[i];
                 fshift[CENTRAL][i] -= fij[i];
             }
-
-            restraintIndex++;
         }
     }
 
