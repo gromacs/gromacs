@@ -90,6 +90,7 @@ typedef struct t_oriresdata {
     real         exp_min_t_tau; /* Factor for slowly switching on the force         */
     int          nr;            /* The number of orientation restraints               */
     int          nex;           /* The number of experiments                          */
+    int          typeMin;       /* The minimum iparam type index for restraints       */
     int          nref;          /* The number of atoms for the fit                    */
     real        *mref;          /* The masses of the reference atoms                  */
     rvec        *xref;          /* The reference coordinates for the fit (nref)       */
