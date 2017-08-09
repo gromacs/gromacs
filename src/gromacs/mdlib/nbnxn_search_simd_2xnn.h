@@ -111,7 +111,8 @@ makeClusterListSimd2xnn(const nbnxn_grid_t *      gridj,
     int                                 xind_f, xind_l;
 
     int jclusterFirst = ci_to_cj_simd_2xnn(firstCell);
-    int jclusterLast  = ci_to_cj_simd_2xnn(lastCell + 1) - 1;
+    int jclusterLast  = ci_to_cj_simd_2xnn(lastCell);
+    GMX_ASSERT(jclusterLast >= jclusterFirst, "We should have a non-empty j-cluster range, since the calling code should have ensured a non-empty cell range");
 
     rc2_S   = SimdReal(rlist2);
 
