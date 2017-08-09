@@ -73,7 +73,7 @@
 #define NOFLAGS 0
 #endif
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;

@@ -46,7 +46,7 @@
 
 #include "gromacs/mdlib/constr.h"
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 struct gmx_mtop_t;
 struct t_ilist;
 
@@ -54,7 +54,7 @@ struct t_ilist;
 void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 
 /*! \brief Sets up communication and atom indices for all local+connected constraints */
-int dd_make_local_constraints(struct gmx_domdec_t *dd, int at_start,
+int dd_make_local_constraints(class gmx_domdec_t *dd, int at_start,
                               const struct gmx_mtop_t *mtop,
                               const int *cginfo,
                               gmx_constr_t constr, int nrec,

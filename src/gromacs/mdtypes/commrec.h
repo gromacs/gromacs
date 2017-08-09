@@ -44,7 +44,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 
 typedef struct {
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't

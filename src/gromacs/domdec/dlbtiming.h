@@ -46,7 +46,7 @@
 #define GMX_DOMDEC_DLBTIMING_H
 
 struct BalanceRegion;
-struct gmx_domdec_t;
+class gmx_domdec_t;
 
 /*! \brief Tells if we should open the balancing region */
 enum class DdOpenBalanceRegionBeforeForceComputation

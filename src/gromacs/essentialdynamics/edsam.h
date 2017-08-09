@@ -58,7 +58,7 @@
  */
 typedef struct gmx_edsam *gmx_edsam_t;
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct ObservablesHistory;

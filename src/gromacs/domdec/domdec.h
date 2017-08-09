@@ -90,12 +90,6 @@ int ddglatnr(const gmx_domdec_t *dd, int i);
 /*! \brief Return a block struct for the charge groups of the whole system */
 t_block *dd_charge_groups_global(class gmx_domdec_t *dd);
 
-/*! \brief Store the global cg indices of the home cgs in state,
- *
- * This means it can be reset, even after a new DD partitioning.
- */
-//void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
-
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t *domdec_zones(class gmx_domdec_t *dd);
 
@@ -223,32 +217,32 @@ enum {
 void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl);
 
 /*! \brief Start the force flop count */
-void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+void dd_force_flop_start(class gmx_domdec_t *dd, t_nrnb *nrnb);
 
 /*! \brief Stop the force flop count */
-void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+void dd_force_flop_stop(class gmx_domdec_t *dd, t_nrnb *nrnb);
 
 /*! \brief Return the PME/PP force load ratio, or -1 if nothing was measured.
  *
  * Should only be called on the DD master node.
  */
-float dd_pme_f_ratio(struct gmx_domdec_t *dd);
+float dd_pme_f_ratio(class gmx_domdec_t *dd);
 
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
-void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[]);
+void dd_move_x(class gmx_domdec_t *dd, matrix box, rvec x[]);
 
 /*! \brief Sum the forces over the neighboring cells.
  *
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
-void dd_move_f(struct gmx_domdec_t *dd, rvec f[], rvec *fshift);
+void dd_move_f(class gmx_domdec_t *dd, rvec f[], rvec *fshift);
 
 /*! \brief Communicate a real for each atom to the neighboring cells. */
-void dd_atom_spread_real(struct gmx_domdec_t *dd, real v[]);
+void dd_atom_spread_real(class gmx_domdec_t *dd, real v[]);
 
 /*! \brief Sum the contributions to a real for each atom over the neighboring cells. */
-void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
+void dd_atom_sum_real(class gmx_domdec_t *dd, real v[]);
 
 /*! \brief Partition the system over the nodes.
  *
@@ -277,7 +271,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_bool             bVerbose);
 
 /*! \brief Reset all the statistics and counters for total run counting */
-void reset_dd_statistics_counters(struct gmx_domdec_t *dd);
+void reset_dd_statistics_counters(class gmx_domdec_t *dd);
 
 /*! \brief Print statistics for domain decomposition communication */
 void print_dd_statistics(struct t_commrec *cr, const t_inputrec *ir, FILE *fplog);
@@ -285,17 +279,17 @@ void print_dd_statistics(struct t_commrec *cr, const t_inputrec *ir, FILE *fplog
 /* In domdec_con.c */
 
 /*! \brief Communicates the virtual site forces, reduces the shift forces when \p fshift != NULL */
-void dd_move_f_vsites(struct gmx_domdec_t *dd, rvec *f, rvec *fshift);
+void dd_move_f_vsites(class gmx_domdec_t *dd, rvec *f, rvec *fshift);
 
 /*! \brief Clears the forces for virtual sites */
-void dd_clear_f_vsites(struct gmx_domdec_t *dd, rvec *f);
+void dd_clear_f_vsites(class gmx_domdec_t *dd, rvec *f);
 
 /*! \brief Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
-void dd_move_x_constraints(struct gmx_domdec_t *dd, matrix box,
+void dd_move_x_constraints(class gmx_domdec_t *dd, matrix box,
                            rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
 
 /*! \brief Communicates the coordinates involved in virtual sites */
-void dd_move_x_vsites(struct gmx_domdec_t *dd, matrix box, rvec *x);
+void dd_move_x_vsites(class gmx_domdec_t *dd, matrix box, rvec *x);
 
 /*! \brief Returns the local atom count array for all constraints
  *
@@ -303,7 +297,7 @@ void dd_move_x_vsites(struct gmx_domdec_t *dd, matrix box, rvec *x);
  * to avoid not/double-counting contributions linked to the Lagrange
  * multiplier, such as the virial and free-energy derivatives.
  */
-int *dd_constraints_nlocalatoms(struct gmx_domdec_t *dd);
+int *dd_constraints_nlocalatoms(class gmx_domdec_t *dd);
 
 /* In domdec_top.c */
 
@@ -321,10 +315,10 @@ void dd_make_reverse_top(FILE *fplog,
                          const t_inputrec *ir, gmx_bool bBCheck);
 
 /*! \brief Store the local charge group index in \p lcgs */
-void dd_make_local_cgs(struct gmx_domdec_t *dd, t_block *lcgs);
+void dd_make_local_cgs(class gmx_domdec_t *dd, t_block *lcgs);
 
 /*! \brief Generate the local topology and virtual site data */
-void dd_make_local_top(struct gmx_domdec_t *dd, struct gmx_domdec_zones_t *zones,
+void dd_make_local_top(class gmx_domdec_t *dd, struct gmx_domdec_zones_t *zones,
                        int npbcdim, matrix box,
                        rvec cellsize_min, ivec npulse,
                        t_forcerec *fr,
@@ -340,7 +334,7 @@ void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
 gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global);
 
 /*! \brief Construct local state */
-void dd_init_local_state(struct gmx_domdec_t *dd,
+void dd_init_local_state(class gmx_domdec_t *dd,
                          t_state *state_global, t_state *local_state);
 
 /*! \brief Generate a list of links between charge groups that are linked by bonded interactions */

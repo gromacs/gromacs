@@ -52,7 +52,7 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
  *

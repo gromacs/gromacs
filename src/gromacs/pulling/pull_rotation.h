@@ -53,7 +53,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_commrec;
@@ -99,7 +99,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
  * \param dd      Structure containing domain decomposition data.
  * \param rot     Pointer to all the enforced rotation data.
  */
-extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
+extern void dd_make_local_rotation_groups(class gmx_domdec_t *dd, t_rot *rot);
 
 
 /*! \brief Calculates the enforced rotation potential(s).

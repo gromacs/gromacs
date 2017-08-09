@@ -43,7 +43,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 
 #ifdef __cplusplus
 extern "C" {
