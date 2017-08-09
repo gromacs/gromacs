@@ -37,8 +37,6 @@
 
 #include "nbnxn_grid.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <string.h>
 
@@ -1557,101 +1555,6 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                           0, nullptr,
                           nb_kernel_type,
                           nbat);
-    }
-}
-
-/* Add simple grid type information to the local super/sub grid */
-void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
-                           nbnxn_atomdata_t *nbat)
-{
-    nbnxn_grid_t *grid;
-    float        *bbcz;
-    nbnxn_bb_t   *bb;
-    int           ncd;
-
-    grid = &nbs->grid[0];
-
-    if (grid->bSimple)
-    {
-        gmx_incons("nbnxn_grid_simple called with a simple grid");
-    }
-
-    ncd = grid->na_sc/NBNXN_CPU_CLUSTER_I_SIZE;
-
-    if (grid->nc*ncd > grid->nc_nalloc_simple)
-    {
-        grid->nc_nalloc_simple = over_alloc_large(grid->nc*ncd);
-        srenew(grid->bbcz_simple, grid->nc_nalloc_simple*NNBSBB_D);
-        srenew(grid->bb_simple, grid->nc_nalloc_simple);
-        srenew(grid->flags_simple, grid->nc_nalloc_simple);
-        if (nbat->XFormat)
-        {
-            sfree_aligned(grid->bbj);
-            snew_aligned(grid->bbj, grid->nc_nalloc_simple/2, 16);
-        }
-    }
-
-    bbcz = grid->bbcz_simple;
-    bb   = grid->bb_simple;
-
-#if GMX_OPENMP && !(defined __clang_analyzer__)
-    // cppcheck-suppress unreadVariable
-    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
-#endif
-
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int sc = 0; sc < grid->nc; sc++)
-    {
-        try
-        {
-            for (int c = 0; c < ncd; c++)
-            {
-                int tx = sc*ncd + c;
-                int na = NBNXN_CPU_CLUSTER_I_SIZE;
-                while (na > 0 &&
-                       nbat->type[tx*NBNXN_CPU_CLUSTER_I_SIZE+na-1] == nbat->ntype-1)
-                {
-                    na--;
-                }
-
-                if (na > 0)
-                {
-                    switch (nbat->XFormat)
-                    {
-                        case nbatX4:
-                            /* c_packX4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
-                            calc_bounding_box_x_x4(na, nbat->x+tx*STRIDE_P4,
-                                                   bb+tx);
-                            break;
-                        case nbatX8:
-                            /* c_packX8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
-                            calc_bounding_box_x_x8(na, nbat->x + atom_to_x_index<c_packX8>(tx*NBNXN_CPU_CLUSTER_I_SIZE),
-                                                   bb+tx);
-                            break;
-                        default:
-                            calc_bounding_box(na, nbat->xstride,
-                                              nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
-                                              bb+tx);
-                            break;
-                    }
-                    bbcz[tx*NNBSBB_D+0] = bb[tx].lower[BB_Z];
-                    bbcz[tx*NNBSBB_D+1] = bb[tx].upper[BB_Z];
-
-                    /* No interaction optimization yet here */
-                    grid->flags_simple[tx] = NBNXN_CI_DO_LJ(0) | NBNXN_CI_DO_COUL(0);
-                }
-                else
-                {
-                    grid->flags_simple[tx] = 0;
-                }
-            }
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-
-    if (grid->bSimple && nbat->XFormat == nbatX8)
-    {
-        combine_bounding_box_pairs(grid, grid->bb_simple);
     }
 }
 

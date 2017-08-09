@@ -2146,7 +2146,6 @@ static void init_nb_verlet(FILE                *fp,
                            const t_inputrec    *ir,
                            const t_forcerec    *fr,
                            const t_commrec     *cr,
-                           const char          *nbpu_opt,
                            gmx_device_info_t   *deviceInfo,
                            const gmx_mtop_t    *mtop,
                            matrix               box)
@@ -2192,23 +2191,9 @@ static void init_nb_verlet(FILE                *fp,
         }
         else /* non-local */
         {
-            if (nbpu_opt != nullptr && strcmp(nbpu_opt, "gpu_cpu") == 0)
-            {
-                /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
-                                  FALSE, EmulateGpuNonbonded::No, ir,
-                                  &nbv->grp[i].kernel_type,
-                                  &nbv->grp[i].ewald_excl,
-                                  fr->bNonbonded);
-
-                bHybridGPURun = TRUE;
-            }
-            else
-            {
-                /* Use the same kernel for local and non-local interactions */
-                nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
-                nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
-            }
+            /* Use the same kernel for local and non-local interactions */
+            nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
+            nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
         }
     }
 
@@ -2362,7 +2347,6 @@ void init_forcerec(FILE                *fp,
                    const char          *tabfn,
                    const char          *tabpfn,
                    const t_filenm      *tabbfnm,
-                   const char          *nbpu_opt,
                    gmx_device_info_t   *deviceInfo,
                    gmx_bool             bNoSolvOpt,
                    real                 print_force)
@@ -3166,7 +3150,7 @@ void init_forcerec(FILE                *fp,
         }
 
         init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr,
-                       cr, nbpu_opt, deviceInfo,
+                       cr, deviceInfo,
                        mtop, box);
     }
 

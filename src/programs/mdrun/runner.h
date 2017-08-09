@@ -137,7 +137,7 @@ class Mdrunner
         MdrunOptions                     mdrunOptions;
         //! Options for the domain decomposition.
         DomdecOptions                    domdecOptions;
-        //! Target short-range interations for "cpu", "gpu", "gpu_cpu", or "auto". Default is "auto".
+        //! Target short-range interations for "cpu", "gpu", or "auto". Default is "auto".
         const char                      *nbpu_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                              nstlist_cmdline = 0;
