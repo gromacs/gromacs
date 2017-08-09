@@ -183,11 +183,6 @@ typedef struct {
     unsigned int *fep;              /* FEP signal bits for sub cells               */
     int           nc_nalloc;        /* Allocation size for the pointers above      */
 
-    float        *bbcz_simple;      /* bbcz for simple grid converted from super   */
-    nbnxn_bb_t   *bb_simple;        /* bb for simple grid converted from super     */
-    int          *flags_simple;     /* flags for simple grid converted from super  */
-    int           nc_nalloc_simple; /* Allocation size for the pointers above   */
-
     int           nsubc_tot;        /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
 
