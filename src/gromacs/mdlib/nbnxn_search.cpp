@@ -3579,13 +3579,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                  * if the j-cell is below the i-cell and if so,
                                  * if it is within range.
                                  */
-                                int cFirst = cs;
-                                while (cFirst > c0 &&
-                                       (bbcz_j[cFirst*NNBSBB_D + 1] >= bz0 ||
-                                        d2xy + gmx::square(bbcz_j[cFirst*NNBSBB_D + 1] - bz0) < rlist2))
+                                int cfTest = cs;
+                                while (cfTest >= c0 &&
+                                       (bbcz_j[cfTest*NNBSBB_D + 1] >= bz0 ||
+                                        d2xy + gmx::square(bbcz_j[cfTest*NNBSBB_D + 1] - bz0) < rlist2))
                                 {
-                                    cFirst--;
+                                    cfTest--;
                                 }
+                                int cFirst = cfTest + 1;
 
                                 /* Find the highest cell that can possibly
                                  * be within range.
@@ -3593,13 +3594,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                  * if the j-cell is above the i-cell and if so,
                                  * if it is within range.
                                   */
-                                int cLast = cs;
-                                while (cLast < c1 - 1 &&
-                                       (bbcz_j[cLast*NNBSBB_D] <= bz1 ||
-                                        d2xy + gmx::square(bbcz_j[cLast*NNBSBB_D] - bz1) < rlist2))
+                                int clTest = cs + 1;
+                                while (clTest < c1 &&
+                                       (bbcz_j[clTest*NNBSBB_D] <= bz1 ||
+                                        d2xy + gmx::square(bbcz_j[clTest*NNBSBB_D] - bz1) < rlist2))
                                 {
-                                    cLast++;
+                                    clTest++;
                                 }
+                                int cLast = clTest - 1;
 
 #define NBNXN_REFCODE 0
 #if NBNXN_REFCODE
