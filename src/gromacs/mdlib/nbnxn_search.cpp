@@ -3583,13 +3583,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                  * if the j-cell is below the i-cell and if so,
                                  * if it is within range.
                                  */
-                                int firstCell = midCell;
-                                while (firstCell > columnStart &&
-                                       (bbcz_j[firstCell*NNBSBB_D + 1] >= bz0 ||
-                                        d2xy + gmx::square(bbcz_j[firstCell*NNBSBB_D + 1] - bz0) < rlist2))
+                                int downTestCell = midCell;
+                                while (downTestCell >= columnStart &&
+                                       (bbcz_j[downTestCell*NNBSBB_D + 1] >= bz0 ||
+                                        d2xy + gmx::square(bbcz_j[downTestCell*NNBSBB_D + 1] - bz0) < rlist2))
                                 {
-                                    firstCell--;
+                                    downTestCell--;
                                 }
+                                int firstCell = downTestCell + 1;
 
                                 /* Find the highest cell that can possibly
                                  * be within range.
@@ -3597,13 +3598,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                  * if the j-cell is above the i-cell and if so,
                                  * if it is within range.
                                  */
-                                int lastCell = midCell;
-                                while (lastCell < columnEnd - 1 &&
-                                       (bbcz_j[lastCell*NNBSBB_D] <= bz1 ||
-                                        d2xy + gmx::square(bbcz_j[lastCell*NNBSBB_D] - bz1) < rlist2))
+                                int upTestCell = midCell + 1;
+                                while (upTestCell < columnEnd &&
+                                       (bbcz_j[upTestCell*NNBSBB_D] <= bz1 ||
+                                        d2xy + gmx::square(bbcz_j[upTestCell*NNBSBB_D] - bz1) < rlist2))
                                 {
-                                    lastCell++;
+                                    upTestCell++;
                                 }
+                                int lastCell = upTestCell - 1;
 
 #define NBNXN_REFCODE 0
 #if NBNXN_REFCODE
