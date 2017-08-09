@@ -730,7 +730,6 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
-    gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
     float               cycles_pme, cycles_wait_gpu;
     nonbonded_verlet_t *nbv = fr->nbv;
@@ -970,33 +969,10 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
        do non-local pair search */
     if (DOMAINDECOMP(cr))
     {
-        bDiffKernels = (nbv->grp[eintNonlocal].kernel_type !=
-                        nbv->grp[eintLocal].kernel_type);
-
-        if (bDiffKernels)
-        {
-            /* With GPU+CPU non-bonded calculations we need to copy
-             * the local coordinates to the non-local nbat struct
-             * (in CPU format) as the non-local kernel call also
-             * calculates the local - non-local interactions.
-             */
-            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
-            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
-            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, TRUE, x,
-                                            nbv->grp[eintNonlocal].nbat);
-            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
-        }
-
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
-
-            if (bDiffKernels)
-            {
-                nbnxn_grid_add_simple(nbv->nbs, nbv->grp[eintNonlocal].nbat);
-            }
 
             nbnxn_make_pairlist(nbv->nbs, nbv->grp[eintNonlocal].nbat,
                                 &top->excls,
@@ -1036,7 +1012,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
 
-        if (bUseGPU && !bDiffKernels)
+        if (bUseGPU)
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1053,7 +1029,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* launch D2H copy-back F */
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-        if (DOMAINDECOMP(cr) && !bDiffKernels)
+        if (DOMAINDECOMP(cr))
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintNonlocal].nbat,
                                      flags, eatNonlocal);
@@ -1195,14 +1171,13 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (!bUseOrEmulGPU || bDiffKernels)
+    if (!bUseOrEmulGPU)
     {
         int aloc;
 
         if (DOMAINDECOMP(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
-                         bDiffKernels ? enbvClearFYes : enbvClearFNo,
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          step, nrnb, wcycle);
         }
 
@@ -1259,7 +1234,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         do_flood(cr, inputrec, x, f, ed, box, step, bNS);
     }
 
-    if (bUseOrEmulGPU && !bDiffKernels)
+    if (bUseOrEmulGPU)
     {
         /* wait for non-local forces (or calculate in emulation mode) */
         if (DOMAINDECOMP(cr))

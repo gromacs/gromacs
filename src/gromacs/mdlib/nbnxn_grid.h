@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,10 +77,6 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 rvec                            *x,
                                 int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat);
-
-/* Add simple grid type information to the local super/sub grid */
-void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
-                           nbnxn_atomdata_t *nbat);
 
 /* Return the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
