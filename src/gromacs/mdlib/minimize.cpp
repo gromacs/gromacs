@@ -388,8 +388,8 @@ static void init_em(FILE *fplog, const char *title,
                             &ems->s, &ems->f, mdatoms, *top,
                             fr, vsite, constr,
                             nrnb, nullptr, FALSE);
-        dd_store_state(cr->dd, &ems->s);
-
+        //dd_store_state(cr->dd, &ems->s);
+        cr->dd->dd_store_state(&ems->s);
         *graph = nullptr;
     }
     else
@@ -700,7 +700,8 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
                         &ems->s, &ems->f,
                         mdatoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
-    dd_store_state(cr->dd, &ems->s);
+    //dd_store_state(cr->dd, &ems->s);
+    cr->dd->dd_store_state(&ems->s);
 }
 
 //! De one energy evaluation

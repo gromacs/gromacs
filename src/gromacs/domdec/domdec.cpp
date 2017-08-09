@@ -303,22 +303,22 @@ static void vec_rvec_check_alloc(vec_rvec_t *v, int n)
     }
 }
 
-void dd_store_state(gmx_domdec_t *dd, t_state *state)
+void gmx_domdec_t::dd_store_state(t_state *state)
 {
     int i;
 
-    if (state->ddp_count != dd->ddp_count)
+    if (state->ddp_count != ddp_count)
     {
         gmx_incons("The MD state does not match the domain decomposition state");
     }
 
-    state->cg_gl.resize(dd->ncg_home);
-    for (i = 0; i < dd->ncg_home; i++)
+    state->cg_gl.resize(ncg_home);
+    for (i = 0; i < ncg_home; i++)
     {
-        state->cg_gl[i] = dd->index_gl[i];
+        state->cg_gl[i] = index_gl[i];
     }
 
-    state->ddp_count_cg_gl = dd->ddp_count;
+    state->ddp_count_cg_gl = ddp_count;
 }
 
 gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd)

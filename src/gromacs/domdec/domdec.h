@@ -72,7 +72,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
 struct t_commrec;
@@ -88,16 +88,16 @@ class t_state;
 int ddglatnr(const gmx_domdec_t *dd, int i);
 
 /*! \brief Return a block struct for the charge groups of the whole system */
-t_block *dd_charge_groups_global(struct gmx_domdec_t *dd);
+t_block *dd_charge_groups_global(class gmx_domdec_t *dd);
 
 /*! \brief Store the global cg indices of the home cgs in state,
  *
  * This means it can be reset, even after a new DD partitioning.
  */
-void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
+//void dd_store_state(struct gmx_domdec_t *dd, t_state *state);
 
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
-struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
+struct gmx_domdec_zones_t *domdec_zones(class gmx_domdec_t *dd);
 
 /*! \brief Sets the j-charge-group range for i-charge-group \p icg */
 void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
@@ -114,7 +114,7 @@ void dd_get_constraint_range(const gmx_domdec_t *dd,
                              int *at_start, int *at_end);
 
 /*! \brief Get the number of PME nodes along x and y, can be called with dd=NULL */
-void get_pme_nnodes(const struct gmx_domdec_t *dd,
+void get_pme_nnodes(const class gmx_domdec_t *dd,
                     int *npmenodes_x, int *npmenodes_y);
 
 /*! \brief Returns the set of DD nodes that communicate with pme node cr->nodeid */
@@ -181,16 +181,16 @@ gmx_bool change_dd_cutoff(struct t_commrec *cr,
 void set_dd_dlb_max_cutoff(struct t_commrec *cr, real cutoff);
 
 /*! \brief Return if we are currently using dynamic load balancing */
-gmx_bool dd_dlb_is_on(const struct gmx_domdec_t *dd);
+gmx_bool dd_dlb_is_on(const class gmx_domdec_t *dd);
 
 /*! \brief Return if the DLB lock is set */
-gmx_bool dd_dlb_is_locked(const struct gmx_domdec_t *dd);
+gmx_bool dd_dlb_is_locked(const class gmx_domdec_t *dd);
 
 /*! \brief Set a lock such that with DLB=auto DLB cannot get turned on */
-void dd_dlb_lock(struct gmx_domdec_t *dd);
+void dd_dlb_lock(class gmx_domdec_t *dd);
 
 /*! \brief Clear a lock such that with DLB=auto DLB may get turned on later */
-void dd_dlb_unlock(struct gmx_domdec_t *dd);
+void dd_dlb_unlock(class gmx_domdec_t *dd);
 
 /*! \brief Set up communication for averaging GPU wait times over domains
  *
@@ -203,15 +203,15 @@ void dd_setup_dlb_resource_sharing(t_commrec           *cr,
                                    int                  gpu_id);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
-void dd_collect_vec(struct gmx_domdec_t *dd,
+void dd_collect_vec(class gmx_domdec_t *dd,
                     t_state *state_local, const PaddedRVecVector *lv, rvec *v);
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
-void dd_collect_vec(struct gmx_domdec_t *dd,
+void dd_collect_vec(class gmx_domdec_t *dd,
                     t_state *state_local, const PaddedRVecVector *lv, PaddedRVecVector *v);
 
 /*! \brief Collects the local state \p state_local to \p state on the master rank */
-void dd_collect_state(struct gmx_domdec_t *dd,
+void dd_collect_state(class gmx_domdec_t *dd,
                       t_state *state_local, t_state *state);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */

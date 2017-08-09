@@ -50,7 +50,7 @@
 
 #include "gromacs/math/vectypes.h"
 
-struct gmx_domdec_t;
+class gmx_domdec_t;
 
 /* \brief */
 enum {

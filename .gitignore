@@ -17,3 +17,4 @@ lib*.pc
 CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing
+/.idea

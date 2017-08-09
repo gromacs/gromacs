@@ -50,6 +50,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/mdtypes/state.h"
 
 //! Max number of zones in domain decomposition
 #define DD_MAXZONE  8
@@ -116,11 +117,12 @@ struct gmx_ddbox_t {
 };
 
 
-struct gmx_domdec_t {
+class gmx_domdec_t {
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
      */
+public:
     int                    nnodes;
     MPI_Comm               mpi_comm_all;
     /* Use MPI_Sendrecv communication instead of non-blocking calls */
@@ -206,6 +208,14 @@ struct gmx_domdec_t {
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc;
     rvec *pme_recv_f_buf;
+
+public:
+
+/*! \brief Store the global cg indices of the home cgs in state,
+ *
+ * This means it can be reset, even after a new DD partitioning.
+ */
+    void dd_store_state(t_state *state);
 
 };
 
