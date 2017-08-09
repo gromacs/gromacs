@@ -2885,8 +2885,9 @@ load imbalance when the change in load in the measured region correlates
 with the change in domain volume and the load outside
 the measured region does not depend strongly on the domain volume.
 In CPU-only simulations, the load is measured between the coordinate
-and the force communication. In hybrid CPU-GPU simulations we overlap
-communication on the CPU with calculation on the GPU. Therefore we
+and the force communication. In simulations with non-bonded
+work on GPUs, we overlap communication and
+work on the CPU with calculation on the GPU. Therefore we
 measure from the last communication before the force calculation to
 when the CPU or GPU is finished, whichever is last.
 When not using PME ranks, we subtract the time in PME from the CPU time,

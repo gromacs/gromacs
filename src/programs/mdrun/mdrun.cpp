@@ -249,7 +249,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     const char       *thread_aff_opt_choices[threadaffNR+1] =
     { nullptr, "auto", "on", "off", nullptr };
     const char       *nbpu_opt_choices[] =
-    { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
+    { nullptr, "auto", "cpu", "gpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
     const char       *gpuIdTaskAssignment   = "";
 
