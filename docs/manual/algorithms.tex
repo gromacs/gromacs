@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -2375,12 +2375,12 @@ Then, {\tt mdrun} computes the Hessian.  {\bf Note} that for generating
 the run input file, one should use the minimized conformation from
 the full precision trajectory file, as the structure file is not
 accurate enough.
-{\tt \normindex{g_nmeig}} does the diagonalization and
+{\tt \normindex{gmx nmeig}} does the diagonalization and
 the sorting of the normal modes according to their frequencies.
-Both {\tt mdrun} and {\tt g_nmeig} should be run in double precision.
-The normal modes can be analyzed with the program {\tt g_anaeig}.
+Both {\tt mdrun} and {\tt gmx nmeig} should be run in double precision.
+The normal modes can be analyzed with the program {\tt gmx anaeig}.
 Ensembles of structures at any temperature and for any subset of
-normal modes can be generated with {\tt \normindex{g_nmens}}.
+normal modes can be generated with {\tt \normindex{gmx nmens}}.
 An overview of normal-mode analysis and the related principal component
 analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 % } % Brace matches ifthenelse test for gmxlite
@@ -2525,7 +2525,7 @@ by an appropriate numerical integration procedure.
 
 {\gromacs} now also supports the use of Bennett's Acceptance Ratio~\cite{Bennett1976}
 for calculating values of $\Delta$G for transformations from state A to state B using
-the program {\tt \normindex{g_bar}}. The same data can also be used to calculate free
+the program {\tt \normindex{gmx bar}}. The same data can also be used to calculate free
 energies using MBAR~\cite{Shirts2008}, though the analysis currently requires external tools from
 the external {\tt pymbar} package, at https://SimTK.org/home/pymbar.
 
@@ -2666,8 +2666,8 @@ of a region of phase space \cite{Lange2006a}.
 
 The procedure for essential dynamics sampling or flooding is as follows.
 First, the eigenvectors and eigenvalues need to be determined
-using covariance analysis ({\tt g_covar})
-or normal-mode analysis ({\tt g_nmeig}).
+using covariance analysis ({\tt gmx covar})
+or normal-mode analysis ({\tt gmx nmeig}).
 Then, this information is fed into {\tt make_edi},
 which has many options for selecting vectors and setting parameters,
 see {\tt gmx make_edi -h}.
