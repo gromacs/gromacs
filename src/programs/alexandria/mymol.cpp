@@ -98,12 +98,12 @@ const char *immsg(immStatus imm)
         "Charge generation", "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
         "Not in training set", "No experimental data",
-        "Generating shells", "Generating bonds", "Communicating MolProp", "No Dipole"
+        "Generating shells", "Generating bonds", "Communicating MolProp",
+        "Zeta is zero", "The number of data is lower than mindata", "No Dipole moment"
     };
 
     return msg[imm];
 } 
-
 
 MyMol::MyMol() : gvt_(egvtALL)
 {
@@ -1661,7 +1661,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         
         if (!bZero && dip_elec_ == 0.0)
         {
-            imm = immZeroDip;
+          imm = immZeroDip;
         }
         if (immOK == imm && esp_dipole_found)
         {
@@ -1674,7 +1674,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     else
     {
-        imm = immNoDipole;
+      imm = immNoDipole;
     }
     if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
                               lot, "", (char *)"electronic",
