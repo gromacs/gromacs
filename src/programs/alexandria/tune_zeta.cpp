@@ -250,11 +250,6 @@ void OptZeta::calcDeviation()
                     {
                         ener_[ermsBOUNDS] += fabs(qq);
                     }
-                    if(nullptr != mymol.shellfc_)
-                    {
-                        qq += mymol.topology_->atoms.atom[j+1].q;
-                    }
-                    ener_[ermsCHARGE]  += gmx::square(qq - mymol.qESP_[j]);
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -947,8 +942,8 @@ void OptZeta::print_results(FILE                   *fp,
         }
     }
 
-    fprintf(fp, "Dipoles are %s in EEM Parametrization.\n",     (bDipole_ ?     "used" : "not used"));
-    fprintf(fp, "Quadrupoles are %s in EEM Parametrization.\n", (bQuadrupole_ ? "used" : "not used"));
+    fprintf(fp, "Dipoles are %s in DESP Parametrization.\n",     (bDipole_ ?     "used" : "not used"));
+    fprintf(fp, "Quadrupoles are %s in DESP Parametrization.\n", (bQuadrupole_ ? "used" : "not used"));
     fprintf(fp, "\n");
 
     print_stats(fp, (char *)"ESP           (Hartree/e)",  lsq_esp,           true,  (char *)"QM", (char *)"DESP");
@@ -1370,18 +1365,20 @@ int alex_tune_zeta(int argc, char *argv[])
     {
         fprintf(fp, "In the total data set of %zu molecules we have:\n", opt.mymol_.size());
     }
-    if (MASTER(cr))
+    if (iChargeDistributionModel != eqdAXp  && iChargeDistributionModel != eqdAXpp)
     {
-        opt.InitOpt(factor);
-    }    
-       
-    opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
-               maxiter, nrun, step, seed,
-               oenv, nprint,
-               opt2fn("-conv", NFILE, fnm),
-               opt2fn("-epot", NFILE, fnm),
-               temperature, bBound);
-               
+        if (MASTER(cr))
+        {
+            opt.InitOpt(factor);
+        }    
+        
+        opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
+                   maxiter, nrun, step, seed,
+                   oenv, nprint,
+                   opt2fn("-conv", NFILE, fnm),
+                   opt2fn("-epot", NFILE, fnm),
+                   temperature, bBound);
+    }
     if (MASTER(cr))
     {
         opt.print_results(fp,  

@@ -70,12 +70,12 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
     {
         gmx_fatal(FARGS, "You cannot have more than 100 percent of the available ESP points.\n");
     }
-    std::sort(espv.begin()+natom, espv.end(),
+    /*std::sort(espv.begin()+natom, espv.end(),
               [](const alexandria::ElectrostaticPotential &a,
                  const alexandria::ElectrostaticPotential &b)
               {
                 return (a.getV() < b.getV());
-              });
+                });*/
 
     int npot   = espv.size() - natom;
     int maxpot = (npot * espFraction)/100;
@@ -538,6 +538,9 @@ static void gmx_molprop_read_babel(const char          *g09,
                                                   100*fgp->GetY(),
                                                   100*fgp->GetZ(),
                                                   fgp->GetV());
+
+            //printf("ESP[%zu] x = %g y = %g z = %g pot= %g\n", 
+            //      espid, 100*fgp->GetX(), 100*fgp->GetY(), 100*fgp->GetZ(), fgp->GetV());
             espv.push_back(ep);
         }
         merge_electrostatic_potential(mpt, espv, mol.NumAtoms(), espFraction);

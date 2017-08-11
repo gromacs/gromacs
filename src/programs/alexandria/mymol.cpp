@@ -522,7 +522,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         fprintf(debug, "Generating topology_ for %s\n", molProp()->getMolname().c_str());
     }
-
     nexcl_ = pd.getNexcl();
     molProp()->GenerateComposition(pd);
     if (molProp()->NAtom() <= 0)
@@ -858,7 +857,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         {
             symmetric_charges_.push_back(i);
         }
-    } 
+    }
     switch (iChargeGenerationAlgorithm)
     {
         case eqgNONE:
@@ -876,11 +875,11 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             Qgresp_.setAtomSymmetry(symmetric_charges_);
             Qgresp_.setMolecularCharge(molProp()->getCharge());
             Qgresp_.summary(debug);
-
+            
             auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
             if (ci != molProp()->EndExperiment())
             {
-                size_t iesp = 0;
+                int iesp = 0;
                 for (auto epi = ci->BeginPotential(); epi < ci->EndPotential(); ++epi, ++iesp)
                 {
                     if (Qgresp_.myWeight(iesp) == 0)
@@ -911,7 +910,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             double chi2[2]   = {1e8, 1e8};
             real   rrms      = 0, wtot;
-            int    cur       = 0;
+            int    cur       = 0; 
             EspRms_          = 0;
             iter             = 0;
             do
@@ -1550,7 +1549,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                 j++;
             }
         }
-        CalcQMbasedMoments(qMulliken_, &dip_mulliken_, mu_mulliken_, Q_mulliken_);     
+        CalcQMbasedMoments(qMulliken_, &dip_mulliken_, mu_mulliken_, Q_mulliken_);
     }
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
                               (char *)mylot.c_str(), "", 
@@ -1687,6 +1686,17 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             for (n = 0; n < DIM; n++)
             {
                 Q_elec_[m][n] = quadrupole[m][n];
+            }
+        }
+        if (immOK == imm && esp_dipole_found)
+        {
+            matrix rotmatrix;
+            rvec   tmpvec;
+            for(m = 0; m < DIM; m++)
+            {
+                calc_rotmatrix(Q_elec_[m], Q_esp_[m], rotmatrix);
+                mvmul(rotmatrix, Q_elec_[m], tmpvec);
+                copy_rvec(tmpvec, Q_elec_[m]);
             }
         }
     }  

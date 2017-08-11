@@ -87,7 +87,7 @@ QgenResp::QgenResp()
     qmax_               = 3; /* e */
     bRandQ_             = false;
 }
-
+  
 void QgenResp::updateAtomCoords(const PaddedRVecVector x)
 {
     for (size_t i = 0; i < ra_.size(); i++)
