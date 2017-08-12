@@ -55,50 +55,44 @@
 
 t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
-    int                     a;
-    double                  tmA, tmB;
-    const t_atom           *atom;
-    t_mdatoms              *md;
-    gmx_mtop_atomloop_all_t aloop;
-
+    t_mdatoms *md;
     snew(md, 1);
 
     md->nenergrp = mtop->groups.grps[egcENER].nr;
-    md->bVCMgrps = FALSE;
-    tmA          = 0.0;
-    tmB          = 0.0;
+    md->bVCMgrps = (mtop->groups.grps[egcVCM].nr > 1);
 
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    /* Determine the total system mass and perturbed atom counts */
+    double                     totalMassA = 0.0;
+    double                     totalMassB = 0.0;
+
+    gmx_mtop_atomloop_block_t  aloop = gmx_mtop_atomloop_block_init(mtop);
+    const t_atom              *atom;
+    int                        nmol;
+    while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
     {
-        if (ggrpnr(&mtop->groups, egcVCM, a) > 0)
-        {
-            md->bVCMgrps = TRUE;
-        }
+        totalMassA += nmol*atom->m;
+        totalMassB += nmol*atom->mB;
 
         if (bFreeEnergy && PERTURBED(*atom))
         {
             md->nPerturbed++;
             if (atom->mB != atom->m)
             {
-                md->nMassPerturbed++;
+                md->nMassPerturbed += nmol;
             }
             if (atom->qB != atom->q)
             {
-                md->nChargePerturbed++;
+                md->nChargePerturbed += nmol;
             }
             if (atom->typeB != atom->type)
             {
-                md->nTypePerturbed++;
+                md->nTypePerturbed += nmol;
             }
         }
-
-        tmA += atom->m;
-        tmB += atom->mB;
     }
 
-    md->tmassA = tmA;
-    md->tmassB = tmB;
+    md->tmassA = totalMassA;
+    md->tmassB = totalMassB;
 
     if (bFreeEnergy && fp)
     {
