@@ -74,6 +74,9 @@ Output Control
         :ref:`pdb` file, which allows to check whether multimeric channels have
         the correct PBC representation.
 
+``GMX_NO_FRAMECOUNT``
+        Do not print frame count when reading trajectory files.
+
 Debugging
 ---------
 ``GMX_PRINT_DEBUG_LINES``
