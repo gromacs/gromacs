@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,9 @@ struct gmx_output_env_t;
 
 /* output_env member functions */
 
-/* The output_env structure holds information about program name, cmd line,
-   default times, etc.
+/* The output_env structure holds information about program name, cmd
+   line, default times, etc. along with verbosity levels for code
+   components that use this structure for regulating output.
 
    There are still legacy functions for the program name, and the command
    line, but the output_env versions are now preferred.*/
@@ -76,6 +77,9 @@ void output_env_done(gmx_output_env_t *oenv);
 
 int output_env_get_verbosity(const gmx_output_env_t *oenv);
 /* return the verbosity */
+
+int output_env_get_trajectory_io_verbosity(const gmx_output_env_t *oenv);
+/* return the verbosity for trajectory IO handling */
 
 const char *output_env_get_time_unit(const gmx_output_env_t *oenv);
 /* return time unit (e.g. ps or ns) */
