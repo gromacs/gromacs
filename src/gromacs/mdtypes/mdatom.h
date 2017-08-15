@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,30 +48,13 @@
 #include "gromacs/utility/real.h"
 
 typedef struct t_mdatoms {
-    //! Total mass in state A
-    real                   tmassA;
-    //! Total mass in state B
-    real                   tmassB;
-    //! Total mass
-    real                   tmass;
     //! Number of atoms in arrays
     int                    nr;
     //! Number of elements in arrays
     int                    nalloc;
-    //! Number of energy groups
-    int                    nenergrp;
-    //! Do we have multiple center of mass motion removal groups
-    gmx_bool               bVCMgrps;
-    //! Number of perturbed atoms
-    int                    nPerturbed;
-    //! Number of atoms for which the mass is perturbed
-    int                    nMassPerturbed;
-    //! Number of atoms for which the charge is perturbed
-    int                    nChargePerturbed;
-    //! Number of atoms for which the type is perturbed
-    int                    nTypePerturbed;
-    //! Do we have orientation restraints
-    gmx_bool               bOrires;
+    //! Number of atoms on this processor
+    int                    homenr;
+
     //! Atomic mass in A state
     real                  *massA;
     //! Atomic mass in B state
@@ -124,10 +107,34 @@ typedef struct t_mdatoms {
     unsigned short        *cORF;
     //! QMMM atoms
     gmx_bool              *bQM;
-    //! Number of atoms on this processor. TODO is this still used?
-    int                    homenr;
     //! The lambda value used to create the contents of the struct
     real                   lambda;
+
+    /* Properties of the whole system */
+    //! Total mass in state A
+    real                   tmassA;
+    //! Total mass in state B
+    real                   tmassB;
+    //! Total mass
+    real                   tmass;
+    //! Number of energy groups
+    int                    nenergrp;
+    //! Do we have multiple center of mass motion removal groups
+    gmx_bool               bVCMgrps;
+    //! Number of perturbed atoms
+    int                    nPerturbed;
+    //! Number of atoms for which the mass is perturbed
+    int                    nMassPerturbed;
+    //! Number of atoms for which the charge is perturbed
+    int                    nChargePerturbed;
+    //! Number of atoms for which the type is perturbed
+    int                    nTypePerturbed;
+    //! Number of atoms with charge (in state A or B)
+    int                    nWithCharge;
+    //! Number of atoms with Van der Waals (in state A or B)
+    int                    nWithVdw;
+    //! Do we have orientation restraints
+    gmx_bool               bOrires;
 } t_mdatoms;
 
 #endif

@@ -53,6 +53,33 @@
 
 #define ALMOST_ZERO 1e-30
 
+static std::vector<bool>typeHasVdw(const gmx_ffparams_t &ffparams)
+{
+    const bool haveBuckingham = (ffparams.functype[0] == F_BHAM);
+    const int  numTypes       = ffparams.atnr;
+
+    std::vector<bool> hasVdw(numTypes, false);
+
+    for (int i = 0; i < numTypes; i++)
+    {
+        for (int j = 0; j < numTypes; j++)
+        {
+            const int k = i*numTypes + j;
+            if ((!haveBuckingham && (ffparams.iparams[k].lj.c6  != 0 ||
+                                     ffparams.iparams[k].lj.c12 != 0)) ||
+                (haveBuckingham  && (ffparams.iparams[k].bham.a != 0 ||
+                                     ffparams.iparams[k].bham.b != 0 ||
+                                     ffparams.iparams[k].bham.c != 0)))
+            {
+                hasVdw[i] = true;
+                break;
+            }
+        }
+    }
+
+    return hasVdw;
+}
+
 t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
     t_mdatoms *md;
@@ -64,6 +91,8 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
     /* Determine the total system mass and perturbed atom counts */
     double                     totalMassA = 0.0;
     double                     totalMassB = 0.0;
+
+    const std::vector<bool>    hasVdw = typeHasVdw(mtop->ffparams);
 
     gmx_mtop_atomloop_block_t  aloop = gmx_mtop_atomloop_block_init(mtop);
     const t_atom              *atom;
@@ -88,6 +117,15 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
             {
                 md->nTypePerturbed += nmol;
             }
+        }
+
+        if (atom->q != 0 || atom->qB != 0)
+        {
+            md->nWithCharge += nmol;
+        }
+        if (hasVdw[atom->type] || hasVdw[atom->typeB])
+        {
+            md->nWithVdw += nmol;
         }
     }
 

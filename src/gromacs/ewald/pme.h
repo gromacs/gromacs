@@ -84,6 +84,15 @@ bool gmx_pme_check_restrictions(int pme_order,
                                 bool useThreads,
                                 bool errorsAreFatal);
 
+struct PmeSystemInfo
+{
+    int  numAtoms;
+    bool havePerturbedCharges;
+    bool havePerturbedVdw;
+    int  numAtomsWithCharge;
+    int  numAtomsWithVdw;
+};
+
 /*! \brief Initialize \p pmedata
  *
  * \returns  0 indicates all well, non zero is an error code.
@@ -91,8 +100,8 @@ bool gmx_pme_check_restrictions(int pme_order,
  */
 int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
-                 const t_inputrec *ir, int homenr,
-                 gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
+                 const t_inputrec *ir,
+                 const PmeSystemInfo &systemInfo,
                  gmx_bool bReproducible,
                  real ewaldcoeff_q, real ewaldcoeff_lj,
                  int nthread);

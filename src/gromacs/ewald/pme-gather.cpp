@@ -40,8 +40,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme-gather.h"
 #include "pme-internal.h"
 #include "pme-simd.h"
 #include "pme-spline-work.h"
@@ -64,12 +66,10 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
  */
 template <typename Int>
 static inline RVec
-do_fspline(Int order, const struct gmx_pme_t *pme, const real *grid,
+do_fspline(Int order,
+           int gridNY, int gridNZ, const real *grid,
            const pme_atomcomm_t *atc, const splinedata_t *spline, int nn)
 {
-    const int  pny   = pme->pmegrid_ny;
-    const int  pnz   = pme->pmegrid_nz;
-
     const int *idxptr = atc->idx[spline->ind[nn]];
     const int  norder = nn*order;
 
@@ -85,13 +85,13 @@ do_fspline(Int order, const struct gmx_pme_t *pme, const real *grid,
 
     for (int ithx = 0; (ithx < order); ithx++)
     {
-        const int  index_x = (idxptr[XX]+ithx)*pny*pnz;
+        const int  index_x = (idxptr[XX] + ithx)*gridNY*gridNZ;
         const real tx      = thx[ithx];
         const real dx      = dthx[ithx];
 
         for (int ithy = 0; (ithy < order); ithy++)
         {
-            const int  index_xy = index_x+(idxptr[YY]+ithy)*pnz;
+            const int  index_xy = index_x+(idxptr[YY]+ithy)*gridNZ;
             const real ty       = thy[ithy];
             const real dy       = dthy[ithy];
             real       fxy1     = 0, fz1 = 0;
@@ -116,12 +116,10 @@ do_fspline(Int order, const struct gmx_pme_t *pme, const real *grid,
  * This code does not assume any memory alignment for the grid.
  */
 static inline RVec
-do_fspline(std::integral_constant<int, 4>, const struct gmx_pme_t *pme, const real *grid,
+do_fspline(std::integral_constant<int, 4>,
+           int gridNY, int gridNZ, const real *grid,
            const pme_atomcomm_t *atc, const splinedata_t *spline, int nn)
 {
-    const int  pny   = pme->pmegrid_ny;
-    const int  pnz   = pme->pmegrid_nz;
-
     const int *idxptr = atc->idx[spline->ind[nn]];
     const int  norder = nn*4;
 
@@ -143,13 +141,13 @@ do_fspline(std::integral_constant<int, 4>, const struct gmx_pme_t *pme, const re
 
     for (int ithx = 0; (ithx < 4); ithx++)
     {
-        const int       index_x = (idxptr[XX]+ithx)*pny*pnz;
+        const int       index_x = (idxptr[XX] + ithx)*gridNY*gridNZ;
         const Simd4Real tx_S    = Simd4Real(thx[ithx]);
         const Simd4Real dx_S    = Simd4Real(dthx[ithx]);
 
         for (int ithy = 0; (ithy < 4); ithy++)
         {
-            const int       index_xy = index_x+(idxptr[YY]+ithy)*pnz;
+            const int       index_xy = index_x+(idxptr[YY]+ithy)*gridNZ;
             const Simd4Real ty_S     = Simd4Real(thy[ithy]);
             const Simd4Real dy_S     = Simd4Real(dthy[ithy]);
 
@@ -271,37 +269,44 @@ do_fspline(std::integral_constant<int, Order> order, const struct gmx_pme_t *pme
 #endif
 
 
-void gather_f_bsplines(const struct gmx_pme_t *pme, const real *grid,
-                       gmx_bool bClearF, const pme_atomcomm_t *atc,
-                       const splinedata_t *spline,
-                       real scale)
+template<bool checkCoefficients, ForceAddOrSet addOrSet, typename Int>
+static void
+gather_f_bsplines_template1(Int                                 order,
+                            const struct gmx_pme_t*             pme,
+                            const real * gmx_restrict           grid,
+                            const pme_atomcomm_t * gmx_restrict atc,
+                            const splinedata_t * gmx_restrict   spline,
+                            real                                scale)
 {
-    /* sum forces for local particles */
+    const int  nx     = pme->nkx;
+    const int  ny     = pme->nky;
+    const int  nz     = pme->nkz;
 
-    const int  order = pme->pme_order;
-    const int  nx    = pme->nkx;
-    const int  ny    = pme->nky;
-    const int  nz    = pme->nkz;
+    const real rxx    = pme->recipbox[XX][XX];
+    const real ryx    = pme->recipbox[YY][XX];
+    const real ryy    = pme->recipbox[YY][YY];
+    const real rzx    = pme->recipbox[ZZ][XX];
+    const real rzy    = pme->recipbox[ZZ][YY];
+    const real rzz    = pme->recipbox[ZZ][ZZ];
 
-    const real rxx   = pme->recipbox[XX][XX];
-    const real ryx   = pme->recipbox[YY][XX];
-    const real ryy   = pme->recipbox[YY][YY];
-    const real rzx   = pme->recipbox[ZZ][XX];
-    const real rzy   = pme->recipbox[ZZ][YY];
-    const real rzz   = pme->recipbox[ZZ][ZZ];
+    const int  gridNY = pme->pmegrid_ny;
+    const int  gridNZ = pme->pmegrid_nz;
+
+    /* Extract the buffer for force output */
+    rvec * gmx_restrict force = atc->f;
 
     for (int nn = 0; nn < spline->n; nn++)
     {
         const int  n           = spline->ind[nn];
         const real coefficient = scale*atc->coefficient[n];
 
-        if (bClearF)
+        if (addOrSet == ForceAddOrSet::set)
         {
-            atc->f[n][XX] = 0;
-            atc->f[n][YY] = 0;
-            atc->f[n][ZZ] = 0;
+            force[n][XX] = 0;
+            force[n][YY] = 0;
+            force[n][ZZ] = 0;
         }
-        if (coefficient != 0)
+        if (!checkCoefficients || coefficient != 0)
         {
             RVec f;
 
@@ -309,21 +314,21 @@ void gather_f_bsplines(const struct gmx_pme_t *pme, const real *grid,
             {
                 case 4:
                     f = do_fspline(std::integral_constant<int, 4>(),
-                                   pme, grid, atc, spline, nn);
+                                   gridNY, gridNZ, grid, atc, spline, nn);
                     break;
                 case 5:
                     f = do_fspline(std::integral_constant<int, 5>(),
-                                   pme, grid, atc, spline, nn);
+                                   gridNY, gridNZ, grid, atc, spline, nn);
                     break;
                 default:
                     f = do_fspline(order,
-                                   pme, grid, atc, spline, nn);
+                                   gridNY, gridNZ, grid, atc, spline, nn);
                     break;
             }
 
-            atc->f[n][XX] += -coefficient*( f[XX]*nx*rxx );
-            atc->f[n][YY] += -coefficient*( f[XX]*nx*ryx + f[YY]*ny*ryy );
-            atc->f[n][ZZ] += -coefficient*( f[XX]*nx*rzx + f[YY]*ny*rzy + f[ZZ]*nz*rzz );
+            force[n][XX] += -coefficient*( f[XX]*nx*rxx );
+            force[n][YY] += -coefficient*( f[XX]*nx*ryx + f[YY]*ny*ryy );
+            force[n][ZZ] += -coefficient*( f[XX]*nx*rzx + f[YY]*ny*rzy + f[ZZ]*nz*rzz );
         }
     }
     /* Since the energy and not forces are interpolated
@@ -337,6 +342,69 @@ void gather_f_bsplines(const struct gmx_pme_t *pme, const real *grid,
      */
 }
 
+template<bool checkCoefficients, typename Int>
+static void
+gather_f_bsplines_template2(Int                       order,
+                            const struct gmx_pme_t   *pme,
+                            const real * gmx_restrict grid,
+                            const ForceAddOrSet       addOrSet,
+                            const pme_atomcomm_t     *atc,
+                            const splinedata_t       *spline,
+                            real                      scale)
+{
+    if (addOrSet == ForceAddOrSet::add)
+    {
+        gather_f_bsplines_template1<checkCoefficients, ForceAddOrSet::add>(order, pme, grid, atc, spline, scale);
+    }
+    else
+    {
+        gather_f_bsplines_template1<checkCoefficients, ForceAddOrSet::set>(order, pme, grid, atc, spline, scale);
+    }
+}
+
+void
+gather_f_bsplines(const struct gmx_pme_t    *pme,
+                  const real * gmx_restrict  grid,
+                  const ForceAddOrSet        addOrSet,
+                  const pme_atomcomm_t      *atc,
+                  float                      fractionNonzeroCoefficients,
+                  const splinedata_t        *spline,
+                  real                       scale)
+{
+    const int order = pme->pme_order;
+
+    if (order == 4)
+    {
+        typedef std::integral_constant<int, 4> order4;
+
+        /* When the order is an integral constant, the coefficient!=0 check
+         * in the inner-loop of spreading prevents efficient loop unrolling.
+         * With order=4, the check costs about 10% performance with order=4
+         * with gcc5 and gcc6, so we use switch it off above a fraction of 0.9.
+         * With order=5 the difference is much smaller, so we always check.
+         */
+        const float coefficientFractionSwitch = 0.90f;
+
+        if (fractionNonzeroCoefficients >= coefficientFractionSwitch)
+        {
+            gather_f_bsplines_template2<false>(order4(), pme, grid, addOrSet, atc, spline, scale);
+        }
+        else
+        {
+            gather_f_bsplines_template2<true>(order4(), pme, grid, addOrSet, atc, spline, scale);
+        }
+    }
+    else if (order == 5)
+    {
+        typedef std::integral_constant<int, 5> order5;
+
+        gather_f_bsplines_template2<true>(order5(), pme, grid, addOrSet, atc, spline, scale);
+    }
+    else
+    {
+        gather_f_bsplines_template2<true>(order, pme, grid, addOrSet, atc, spline, scale);
+    }
+}
 
 real gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
                             pme_atomcomm_t *atc)
