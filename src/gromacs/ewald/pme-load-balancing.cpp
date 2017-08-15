@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,6 +163,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
 {
+    GMX_RELEASE_ASSERT(ir->cutoff_scheme != ecutsGROUP, "PME tuning is not supported with cutoff-scheme=group (because it contains bugs)");
+
     pme_load_balancing_t *pme_lb;
     real                  spm, sp;
     int                   d;
@@ -359,8 +361,13 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     }
     else
     {
+        /* TODO Remove these lines and pme_lb->cutoff_scheme */
         tmpr_coulomb          = set->rcut_coulomb + pme_lb->rbuf_coulomb;
         tmpr_vdw              = pme_lb->rcut_vdw + pme_lb->rbuf_vdw;
+        /* Two (known) bugs with cutoff-scheme=group here:
+         * - This modification of rlist results in incorrect DD comunication.
+         * - We should set fr->bTwinRange = (fr->rlistlong > fr->rlist).
+         */
         set->rlist            = std::min(tmpr_coulomb, tmpr_vdw);
     }
 
@@ -768,7 +775,8 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
+        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q*ic->rcoulomb) / ic->rcoulomb;
     }
     if (EVDW_PME(ic->vdwtype))
     {
