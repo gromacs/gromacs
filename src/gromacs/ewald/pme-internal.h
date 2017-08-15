@@ -319,6 +319,10 @@ typedef struct gmx_pme_t {
     real                 *bufr;          /* Communication buffer */
     int                   buf_nalloc;    /* The communication buffer size */
 
+    /* Parameters for optimization */
+    float                 fractionAtomsCharged; /* The fraction of atoms that have a non-zero charge */
+    float                 fractionAtomsWithVdw; /* The fraction of atoms that have Van der Waals Interactions */
+
     /* thread local work data for solve_pme */
     struct pme_solve_work_t *solve_work;
 

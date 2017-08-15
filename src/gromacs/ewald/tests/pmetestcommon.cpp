@@ -71,9 +71,11 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       real                      ewaldCoeff_lj = 1.0f
                                       )
 {
-    gmx_pme_t *pmeDataRaw = nullptr;
+    /* System has atomCount atoms with charge, without VdW */
+    const PmeSystemInfo systemInfo = { static_cast<int>(atomCount), false, false, static_cast<int>(atomCount), 0 };
+    gmx_pme_t          *pmeDataRaw = nullptr;
     gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec,
-                 atomCount, false, false, true, ewaldCoeff_q, ewaldCoeff_lj, 1);
+                 systemInfo, true, ewaldCoeff_q, ewaldCoeff_lj, 1);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -266,6 +268,7 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                       PmeGatherInputHandling inputTreatment, ForcesVector &forces)
 {
+<<<<<<< HEAD
     pme_atomcomm_t *atc                     = &(pme->atc[0]);
     const size_t    atomCount               = atc->n;
     GMX_RELEASE_ASSERT(forces.size() == atomCount, "Invalid force buffer size");
@@ -274,6 +277,16 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
     const size_t    threadIndex             = 0;
     const size_t    gridIndex               = 0;
     real           *grid                    = pme->pmegrid[gridIndex].grid.grid;
+=======
+    pme_atomcomm_t      *atc                = &(pme->atc[0]);
+    const size_t         atomCount          = atc->n;
+    GMX_RELEASE_ASSERT(forces.size() == atomCount, "Bad force buffer size");
+    const ForceAddOrSet  forceAddOrSet      = (inputTreatment == PmeGatherInputHandling::ReduceWith ? ForceAddOrSet::add : ForceAddOrSet::set);
+    const real           scale              = 1.0;
+    const size_t         threadIndex        = 0;
+    const size_t         gridIndex          = 0;
+    real                *grid               = pme->pmegrid[gridIndex].grid.grid;
+>>>>>>> 43d55e892... [RFC] More PME gather templating
     switch (mode)
     {
         case CodePath::CPU:
@@ -285,7 +298,7 @@ void pmePerformGather(gmx_pme_t *pme, CodePath mode,
             }
             copy_fftgrid_to_pmegrid(pme, pme->fftgrid[gridIndex], grid, gridIndex, pme->nthread, threadIndex);
             unwrap_periodic_pmegrid(pme, grid);
-            gather_f_bsplines(pme, grid, !forceReductionWithInput, atc, &atc->spline[threadIndex], scale);
+            gather_f_bsplines(pme, grid, forceAddOrSet, atc, pme->fractionAtomsCharged, &atc->spline[threadIndex], scale);
             break;
 
         default:
