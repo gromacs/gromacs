@@ -502,18 +502,17 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-int gmx_pme_init(struct gmx_pme_t **pmedata,
-                 t_commrec *        cr,
-                 int                nnodes_major,
-                 int                nnodes_minor,
-                 const t_inputrec * ir,
-                 int                homenr,
-                 gmx_bool           bFreeEnergy_q,
-                 gmx_bool           bFreeEnergy_lj,
-                 gmx_bool           bReproducible,
-                 real               ewaldcoeff_q,
-                 real               ewaldcoeff_lj,
-                 int                nthread)
+int
+gmx_pme_init(struct gmx_pme_t    **pmedata,
+             t_commrec *           cr,
+             int                   nnodes_major,
+             int                   nnodes_minor,
+             const t_inputrec *    ir,
+             const PmeSystemInfo  &systemInfo,
+             gmx_bool              bReproducible,
+             real                  ewaldcoeff_q,
+             real                  ewaldcoeff_lj,
+             int                   nthread)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -647,8 +646,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
      */
     pme->doCoulomb     = EEL_PME(ir->coulombtype);
     pme->doLJ          = EVDW_PME(ir->vdwtype);
-    pme->bFEP_q        = ((ir->efep != efepNO) && bFreeEnergy_q);
-    pme->bFEP_lj       = ((ir->efep != efepNO) && bFreeEnergy_lj);
+    pme->bFEP_q        = ((ir->efep != efepNO) && systemInfo.havePerturbedCharges);
+    pme->bFEP_lj       = ((ir->efep != efepNO) && systemInfo.havePerturbedVdw);
     pme->bFEP          = (pme->bFEP_q || pme->bFEP_lj);
     pme->nkx           = ir->nkx;
     pme->nky           = ir->nky;
@@ -790,9 +789,9 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     for (i = 0; i < pme->ngrids; ++i)
     {
         if ((i <  DO_Q && pme->doCoulomb && (i == 0 ||
-                                             bFreeEnergy_q)) ||
+                                             pme->bFEP_q)) ||
             (i >= DO_Q && pme->doLJ && (i == 2 ||
-                                        bFreeEnergy_lj ||
+                                        pme->bFEP_lj ||
                                         ir->ljpme_combination_rule == eljpmeLB)))
         {
             pmegrids_init(&pme->pmegrid[i],
@@ -832,13 +831,25 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
 
     if (pme->nnodes == 1)
     {
-        pme->atc[0].n = homenr;
+        /* TODO: Move this to a general atom-set setting function */
+        pme->atc[0].n = systemInfo.numAtoms;
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
 
     pme->lb_buf1       = nullptr;
     pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
+
+    if (systemInfo.numAtoms > 0)
+    {
+        pme->fractionAtomsCharged = systemInfo.numAtomsWithCharge/static_cast<float>(systemInfo.numAtoms);
+        pme->fractionAtomsWithVdw = systemInfo.numAtomsWithVdw/static_cast<float>(systemInfo.numAtoms);
+    }
+    else
+    {
+        pme->fractionAtomsCharged = 0;
+        pme->fractionAtomsWithVdw = 0;
+    }
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
@@ -856,7 +867,6 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    real               ewaldcoeff_q,
                    real               ewaldcoeff_lj)
 {
-    int        homenr;
     int        ret;
 
     // Create a copy of t_inputrec fields that are used in gmx_pme_init().
@@ -874,19 +884,22 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
     irc.nky                    = grid_size[YY];
     irc.nkz                    = grid_size[ZZ];
 
-    if (pme_src->nnodes == 1)
-    {
-        homenr = pme_src->atc[0].n;
-    }
-    else
-    {
-        homenr = -1;
-    }
-
     try
     {
+        PmeSystemInfo systemInfo;
+
+        systemInfo.numAtoms             = (pme_src->nnodes == 1 ? pme_src->atc[0].n : 1);
+        systemInfo.havePerturbedCharges = pme_src->bFEP_q;
+        systemInfo.havePerturbedVdw     = pme_src->bFEP_lj;
+        /* Set atom counts to 1 and copy correct fractions later */
+        systemInfo.numAtomsWithCharge   = 1;
+        systemInfo.numAtomsWithVdw      = 1;
+
         ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                           &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+                           &irc, systemInfo, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+
+        (*pmedata)->fractionAtomsCharged = pme_src->fractionAtomsCharged;
+        (*pmedata)->fractionAtomsWithVdw = pme_src->fractionAtomsWithVdw;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -989,7 +1002,6 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     real                 energy_AB[4];
     matrix               vir_AB[4];
     real                 scale, lambda;
-    gmx_bool             bClearF;
     gmx_parallel_3dfft_t pfft_setup;
     real              *  fftgrid;
     t_complex          * cfftgrid;
@@ -1274,13 +1286,17 @@ int gmx_pme_do(struct gmx_pme_t *pme,
              * therefore we should not clear it.
              */
             lambda  = grid_index < DO_Q ? lambda_q : lambda_lj;
-            bClearF = (bFirst && PAR(cr));
+            const ForceAddOrSet forceAddOrSet = (bFirst && PAR(cr) ? ForceAddOrSet::set : ForceAddOrSet::add);
+
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
             for (thread = 0; thread < pme->nthread; thread++)
             {
                 try
                 {
-                    gather_f_bsplines(pme, grid, bClearF, atc,
+                    const bool doCharge = (grid_index <= 1);
+
+                    gather_f_bsplines(pme, grid, forceAddOrSet, atc,
+                                      doCharge ? pme->fractionAtomsCharged : pme->fractionAtomsWithVdw,
                                       &atc->spline[thread],
                                       pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0);
                 }
@@ -1554,7 +1570,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         /* interpolate forces for our local atoms */
                         where();
-                        bClearF = (bFirst && PAR(cr));
+                        const ForceAddOrSet forceAddOrSet = (bFirst && PAR(cr) ? ForceAddOrSet::set : ForceAddOrSet::add);
                         scale   = pme->bFEP ? (fep_state < 1 ? 1.0-lambda_lj : lambda_lj) : 1.0;
                         scale  *= lb_scale_factor[grid_index-2];
 
@@ -1563,7 +1579,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         {
                             try
                             {
-                                gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
+                                const bool doCharge = (grid_index <= 1);
+
+                                gather_f_bsplines(pme, grid, forceAddOrSet,  &pme->atc[0],
+                                                  doCharge ? pme->fractionAtomsCharged : pme->fractionAtomsWithVdw,
                                                   &pme->atc[0].spline[thread],
                                                   scale);
                             }

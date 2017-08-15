@@ -693,7 +693,6 @@ int Mdrunner::mdrunner()
     struct gmx_pme_t        **pmedata       = nullptr;
     gmx_vsite_t              *vsite         = nullptr;
     gmx_constr_t              constr;
-    int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
     int                       rc;
@@ -1306,27 +1305,30 @@ int Mdrunner::mdrunner()
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {
+        PmeSystemInfo systemInfo;
+
         if (mdatoms)
         {
-            nChargePerturbed = mdatoms->nChargePerturbed;
-            if (EVDW_PME(inputrec->vdwtype))
-            {
-                nTypePerturbed   = mdatoms->nTypePerturbed;
-            }
+            systemInfo.numAtoms             = mtop->natoms;
+            systemInfo.havePerturbedCharges = (mdatoms->nChargePerturbed > 0);
+            systemInfo.havePerturbedVdw     = (mdatoms->nTypePerturbed > 0);
+            systemInfo.numAtomsWithCharge   = mdatoms->nWithCharge;
+            systemInfo.numAtomsWithVdw      = mdatoms->nWithVdw;
         }
         if (cr->npmenodes > 0)
         {
-            /* The PME only nodes need to know nChargePerturbed(FEP on Q) and nTypePerturbed(FEP on LJ)*/
-            gmx_bcast_sim(sizeof(nChargePerturbed), &nChargePerturbed, cr);
-            gmx_bcast_sim(sizeof(nTypePerturbed), &nTypePerturbed, cr);
+            /* The PME only nodes need to know systemInfo */
+            gmx_bcast_sim(sizeof(systemInfo), &systemInfo, cr);
         }
 
         if (cr->duty & DUTY_PME)
         {
+            int status;
+
             try
             {
                 status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
-                                      mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
+                                      systemInfo,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme);
