@@ -40,6 +40,8 @@
 
 #include "config.h"
 
+#include <cstring>
+
 #include <algorithm>
 
 #include "gromacs/math/vec.h"
@@ -141,20 +143,19 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
 static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
 {
     const int padding = 4;
-    int       i;
 
+    /* We need to initialize all elements of theta and dtheta,
+     * because we usually skip their calculation for atoms with charge=0.
+     * but then we might use them for spreading and multiply with charge=0.
+     */
     srenew(th[XX], nalloc);
+    std::memset(th[XX], 0, nalloc*sizeof(th[XX][0]));
     srenew(th[YY], nalloc);
+    std::memset(th[YY], 0, nalloc*sizeof(th[YY][0]));
     /* In z we add padding, this is only required for the aligned SIMD code */
     sfree_aligned(*ptr_z);
     snew_aligned(*ptr_z, nalloc+2*padding, SIMD4_ALIGNMENT);
     th[ZZ] = *ptr_z + padding;
-
-    for (i = 0; i < padding; i++)
-    {
-        (*ptr_z)[               i] = 0;
-        (*ptr_z)[padding+nalloc+i] = 0;
-    }
 }
 
 static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
