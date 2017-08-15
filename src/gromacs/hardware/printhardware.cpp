@@ -123,27 +123,35 @@ static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
     return gmx::joinStrings(gpuStrings, "\n");
 }
 
-std::string
-makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
-                   bool                    userSetGpuIds,
-                   const std::vector<int> &gpuTaskAssignment,
-                   size_t                  numPpRanks,
-                   bool                    bPrintHostName)
+void reportGpuUsage(const gmx::MDLogger    &mdlog,
+                    const gmx_gpu_info_t   &gpu_info,
+                    bool                    userSetGpuIds,
+                    const std::vector<int> &gpuTaskAssignment,
+                    size_t                  numPpRanks,
+                    bool                    bPrintHostName)
 {
     int  ngpu_comp = gpu_info.n_dev_compatible;
     char host[STRLEN];
+
+    if (gpuTaskAssignment.empty())
+    {
+        return;
+    }
 
     if (bPrintHostName)
     {
         gmx_gethostname(host, STRLEN);
     }
 
+    // TODO The logic for gpuTaskAssignment here and just above is faulty
     /* Issue a note if GPUs are available but not used */
     if (ngpu_comp > 0 && gpuTaskAssignment.empty())
     {
-        return gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
-                                 "Consider trying GPU acceleration with the Verlet scheme!\n",
-                                 ngpu_comp, (ngpu_comp > 1) ? "s" : "");
+        auto message = gmx::formatString("%d compatible GPU%s detected in the system, but none will be used.\n"
+                                         "Consider trying GPU acceleration with the Verlet scheme!\n",
+                                         ngpu_comp, (ngpu_comp > 1) ? "s" : "");
+        GMX_LOG(mdlog.warning).appendText(message);
+        return;
     }
 
     std::string output;
@@ -184,7 +192,8 @@ makeGpuUsageReport(const gmx_gpu_info_t   &gpu_info,
                                     "      PP ranks on a node than GPUs available on that node.\n");
     }
 
-    return output;
+    /* NOTE: this print is only for and on one physical node */
+    GMX_LOG(mdlog.warning).appendText(output);
 }
 
 /* Give a suitable fatal error or warning if the build configuration
