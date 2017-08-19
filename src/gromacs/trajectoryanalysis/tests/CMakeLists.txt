@@ -45,6 +45,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   select.cpp
                   surfacearea.cpp
                   trajectory.cpp
+                  unionfind.cpp
                   $<TARGET_OBJECTS:analysisdata-test-shared>)
 
 add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
