@@ -89,7 +89,7 @@ void add_excl_pair(t_excls excls[], int e1, int e2);
 
 void remove_excl(t_excls *excls, int remove);
 
-void prune_excl(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype);
+void let_shells_see_shells(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype);
 
 void copy_atoms(t_atoms *src, t_atoms *dest);
 

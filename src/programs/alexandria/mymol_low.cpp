@@ -158,18 +158,17 @@ void remove_excl(t_excls *excls, int remove)
     excls->nr--;
 }
 
-void prune_excl(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype)
+void let_shells_see_shells(t_excls excls[], t_atoms *atoms, gpp_atomtype_t atype)
 {
     int i, k, ak;
-
-    for (i = 0; (i < atoms->nr); i++)
+    for (i = 0; i < atoms->nr; i++)
     {
-        if (get_atomtype_ptype(atoms->atom[i].type, atype) != eptShell)
+        if (get_atomtype_ptype(atoms->atom[i].type, atype) == eptShell)
         {
-            for (k = 0; (k < excls[i].nr); )
+            for (k = 0; k < excls[i].nr; )
             {
                 ak = excls[i].e[k];
-                if (get_atomtype_ptype(atoms->atom[ak].type, atype) != eptShell)
+                if (get_atomtype_ptype(atoms->atom[ak].type, atype) == eptShell)
                 {
                     remove_excl(&(excls[i]), k);
                 }

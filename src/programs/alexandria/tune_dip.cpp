@@ -350,7 +350,7 @@ void OPtimization::calcDeviation()
             }            
             if (bDipole_)
             {
-                mymol.CalcDipole(mymol.mu_calc_);
+                mymol.CalcDipole();
                 if (bQM_)
                 {
                     rvec dmu;                    
@@ -1059,13 +1059,15 @@ void OPtimization::print_results(FILE                   *fp,
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
             
-            mol.CalcDipole(mol.mu_calc_);
+            mol.CalcDipole();
             print_dipole(fp, &mol, (char *)"QM",  dip_toler);
             print_dipole(fp, &mol, (char *)"EEM", dip_toler);
             print_dipole(fp, &mol, (char *)"ESP", dip_toler);
             print_dipole(fp, &mol, (char *)"MPA", dip_toler);
             print_dipole(fp, &mol, (char *)"HPA", dip_toler);
             print_dipole(fp, &mol, (char *)"CM5", dip_toler);
+
+            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
 
             mol.CalcQuadrupole();
             print_quadrapole(fp, &mol, (char *)"QM",  quad_toler);
@@ -1120,12 +1122,9 @@ void OPtimization::print_results(FILE                   *fp,
 
                 }
             }
-
-            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
-            
             if(bPolar)
             {
-                mol.CalcPolarizability(1, cr_, nullptr);
+                mol.CalcPolarizability(10, cr_, nullptr);
                 for (mm = 0; mm < DIM; mm++)
                 {
                     gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
@@ -1302,14 +1301,14 @@ void OPtimization::print_results(FILE                   *fp,
             
     for (auto &mol : mymol_)
     {
-        auto rmsd = gmx::square(mol.dip_calc_ - mol.dip_elec_);
+      auto deviation = std::abs(mol.dip_calc_ - mol.dip_elec_);
         if ((mol.eSupp_ != eSupportNo) &&
             (mol.dip_elec_ > sigma) &&
-            (rmsd > 2*sigma))
+            (deviation > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
                     mol.molProp()->getMolname().c_str(),
-                    mol.dip_calc_, mol.dip_elec_, rmsd);
+                    mol.dip_calc_, mol.dip_elec_, deviation);
             nout++;
         }
     }

@@ -261,7 +261,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             /* Coulomb interaction. ielec==0 means no interaction */
             if (ielec != GMX_NBKERNEL_ELEC_NONE)
             {
-	           qq            = iq*charge[jnr];
+	             qq            = iq*charge[jnr];
                jzeta         = zeta[jnr];
                 switch (ielec)
                 {
@@ -273,7 +273,12 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         if (izeta == 0 && jzeta == 0)
                         {
                             velec        = qq*rinv;
-                            felec        = velec*rinvsq;                           
+                            felec        = velec*rinvsq;
+
+                            if (debug)
+                            {
+                                fprintf(debug, "Zeta: local ai = %d aj = %d izeta = %.3f jzeta = %.3f zeff = %.3f r = %.3f qq = %.3f velec = %.3f, felec = %.3f\n", ii, jnr, izeta, jzeta, zeff, r, qq, velec, felec);
+                            }
                         }
                         else
                         {
@@ -292,6 +297,12 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             r           = rsq*rinv;
                             velec       = qq*erf(r*zeff)*rinv;
                             felec       = (qq*rinv)*(erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv));
+
+                            if (debug)
+                            {
+                              fprintf(debug, "Zeta: local ai = %d aj = %d izeta = %.3f jzeta = %.3f zeff = %.3f r = %.3f qq = %.3f velec = %.3f, felec = %.3f erf = %.3f\n",
+                                      ii, jnr, izeta, jzeta, zeff, r, qq, velec, felec, erf(r*zeff));
+                            }
                         }
                         /* The shift for the Coulomb potential is stored in
                          * the RF parameter c_rf, which is 0 without shift

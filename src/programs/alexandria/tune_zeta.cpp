@@ -195,7 +195,7 @@ class OptZeta : public MolDip
 
 void OptZeta::calcDeviation()
 {
-    int    j;
+    int    i, j;
     double qtot = 0;
     real   rrms = 0;
     real   wtot = 0; 
@@ -235,8 +235,8 @@ void OptZeta::calcDeviation()
             }            
             mymol.Qgresp_.calcPot();
             ener_[ermsESP] += convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms), eg2cHartree_e);            
-            qtot = 0;                       
-            for (j = 0; j < mymol.topology_->atoms.nr; j++)
+            qtot  = 0;
+            for (j = i = 0; j < mymol.topology_->atoms.nr; j++)
             {
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
                 auto qq     = mymol.topology_->atoms.atom[j].q;
@@ -250,6 +250,11 @@ void OptZeta::calcDeviation()
                     {
                         ener_[ermsBOUNDS] += fabs(qq);
                     }
+                    /*if(nullptr != mymol.shellfc_)
+                    {
+                       qq += mymol.topology_->atoms.atom[j+1].q;
+                    }
+                    ener_[ermsCHARGE] += gmx::square(qq - mymol.qESP_[i++]);*/
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -260,7 +265,7 @@ void OptZeta::calcDeviation()
             }            
             if (bDipole_)
             {
-                mymol.CalcDipole(mymol.mu_calc_);
+                mymol.CalcDipole();
                 if (bQM_)
                 {
                     rvec dmu;                    
@@ -829,8 +834,8 @@ void OptZeta::print_results(FILE                   *fp,
                     mol.molProp()->getMolname().c_str(),
                     mol.molProp()->getCharge(),
                     mol.molProp()->getMultiplicity());
-            
-            mol.CalcDipole(mol.mu_calc_);
+                        
+            mol.CalcDipole();
             print_dipole(fp, &mol, (char *)"QM",   dip_toler);
             print_dipole(fp, &mol, (char *)"DESP", dip_toler);
             print_dipole(fp, &mol, (char *)"ESP",  dip_toler);
@@ -838,6 +843,8 @@ void OptZeta::print_results(FILE                   *fp,
             print_dipole(fp, &mol, (char *)"HPA",  dip_toler);
             print_dipole(fp, &mol, (char *)"CM5",  dip_toler);
 
+            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);
+            
             mol.CalcQuadrupole();
             print_quadrapole(fp, &mol, (char *)"QM",   quad_toler);
             print_quadrapole(fp, &mol, (char *)"DESP", quad_toler);
@@ -890,15 +897,15 @@ void OptZeta::print_results(FILE                   *fp,
 
                 }
             }
-            sse += gmx::square(mol.dip_elec_ - mol.dip_calc_);           
             if(bPolar)
             {
-                mol.CalcPolarizability(1, cr_, nullptr);
+                mol.CalcPolarizability(10, cr_, nullptr);
                 for (mm = 0; mm < DIM; mm++)
                 {
                     gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
                 }
-            }            
+            }
+            
             fprintf(fp, "Atom   Type      q_DESP     q_ESP     q_MPA     q_HPA     q_CM5       x       y       z\n");
             for (j = i = 0; j < mol.topology_->atoms.nr; j++)
             {
@@ -949,7 +956,11 @@ void OptZeta::print_results(FILE                   *fp,
     print_stats(fp, (char *)"ESP           (Hartree/e)",  lsq_esp,           true,  (char *)"QM", (char *)"DESP");
     print_stats(fp, (char *)"Dipoles       (Debye)",      lsq_mu[eprDESP],   false, (char *)"QM", (char *)"DESP");
     print_stats(fp, (char *)"Dipole Moment (Debye)",      lsq_dip[eprDESP],  false, (char *)"QM", (char *)"DESP");
-    print_stats(fp, (char *)"Quadrupoles   (Buckingham)", lsq_quad[eprDESP], false, (char *)"QM", (char *)"DESP");      
+    print_stats(fp, (char *)"Quadrupoles   (Buckingham)", lsq_quad[eprDESP], false, (char *)"QM", (char *)"DESP");
+    if (bPolar)
+    {
+        print_stats(fp, (char *)"Polarizability (A^3)",  lsq_alpha, false,  (char *)"QM", (char *)"DESP");
+    }
     fprintf(fp, "\n");
 
     print_stats(fp, (char *)"Dipoles",       lsq_mu[eprESP],   true,  (char *)"QM", (char *)"ESP");
@@ -1057,14 +1068,14 @@ void OptZeta::print_results(FILE                   *fp,
             
     for (auto &mol : mymol_)
     {
-        auto rmsd = gmx::square(mol.dip_calc_ - mol.dip_elec_);
+        auto deviation = std::abs(mol.dip_calc_ - mol.dip_elec_);
         if ((mol.eSupp_ != eSupportNo) &&
             (mol.dip_elec_ > sigma) &&
-            (rmsd > 2*sigma))
+            (deviation > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
                     mol.molProp()->getMolname().c_str(),
-                    mol.dip_calc_, mol.dip_elec_, rmsd);
+                    mol.dip_calc_, mol.dip_elec_, deviation);
             nout++;
         }
     }
@@ -1157,13 +1168,13 @@ int alex_tune_zeta(int argc, char *argv[])
     static real                 watoms        = 0;
     static real                 J0_min        = 5;
     static real                 Chi0_min      = 1;
-    static real                 zeta_min      = 5;
+    static real                 zeta_min      = 1;
     static real                 step          = 0.01;
     static real                 hfac          = 0;
     static real                 rDecrZeta     = -1;
     static real                 J0_max        = 30;
     static real                 Chi0_max      = 30;
-    static real                 zeta_max      = 50;
+    static real                 zeta_max      = 10;
     static real                 fc_mu         = 1;
     static real                 fc_bound      = 1;
     static real                 fc_quad       = 1;

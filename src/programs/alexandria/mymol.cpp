@@ -734,7 +734,7 @@ void MyMol::addShells(const Poldata          &pd,
                     add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
                 }
             }
-            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
+            for (auto j = pw->beginParam(); j < pw->endParam(); ++j)
             {
                 for (auto j0 = 0; j0 < newexcls[j->a[0]].nr; j0++)
                 {
@@ -800,12 +800,12 @@ void MyMol::addShells(const Poldata          &pd,
         /* Copy exclusions, may need to empty the original first */
         sfree(excls_);
         excls_ = newexcls;
-
+        //let_shells_see_shells(excls_, &topology_->atoms, atype_);
         for (auto i = plist_.begin(); i < plist_.end(); ++i)
         {
             if (i->getFtype() != F_POLARIZATION)
             {
-                for (auto j = i->beginParam(); (j < i->endParam()); ++j)
+                for (auto j = i->beginParam(); j < i->endParam(); ++j)
                 {
                     for (k = 0; (k < NRAL(i->getFtype())); k++)
                     {
@@ -909,13 +909,18 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
             }
             double chi2[2]   = {1e8, 1e8};
-            real   rrms      = 0, wtot;
+            real   rrms      = 0;
+            real   wtot      = 0;
             int    cur       = 0; 
             EspRms_          = 0;
             iter             = 0;
+
+            Qgresp_.optimizeCharges();
+            Qgresp_.calcPot();
+            EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
+            printf("RESP: RMS %g\n", chi2[cur]);
             do
             {
-                Qgresp_.updateAtomCoords(state_->x);
                 Qgresp_.optimizeCharges();
                 for (auto i = 0; i < topology_->atoms.nr; i++)
                 {
@@ -926,6 +931,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 {
                     computeForces(nullptr, cr);
                 }
+                Qgresp_.updateAtomCoords(state_->x);
                 Qgresp_.calcPot();
                 EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms);
                 printf("RESP: RMS %g\n", chi2[cur]);
@@ -1136,6 +1142,20 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     return opt;
 }
 
+void MyMol::CalcDipole()
+{
+    clear_rvec(mu_calc_);
+    for (auto i = 0; i < topology_->atoms.nr; i++)
+    {
+        auto q = e2d(topology_->atoms.atom[i].q);
+        for (auto m = 0; m < DIM; m++)
+        {
+            mu_calc_[m] += state_->x[i][m]*q;
+        }
+    }
+    dip_calc_ = norm(mu_calc_);
+}
+
 void MyMol::CalcDipole(rvec mu)
 {
     clear_rvec(mu);
@@ -1147,7 +1167,6 @@ void MyMol::CalcDipole(rvec mu)
             mu[m] += state_->x[i][m]*q;
         }
     }
-    dip_calc_ = norm(mu);
 }
 
 void MyMol::CalcQuadrupole()
@@ -1171,17 +1190,11 @@ void MyMol::CalcQuadrupole()
     }
 }
 
-/*
-  CalcQMbasedMoments calculates total dipole moment,
-  dipole components, and quadrupoles using QM-based charges like
-  Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in 
-  QM calculations, it loops over eptAtoms, only. 
- */
 void MyMol::CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q)
 {
     int   i, j;
     real  r2;
-    rvec  r;  /* distance of atoms to center of mass */
+    rvec  r;  /* distance of atoms to center of charge */
     
     clear_rvec(mu);
     clear_mat(Q); 
@@ -1215,7 +1228,7 @@ void MyMol::CalcQPol(const Poldata &pd, rvec mu)
     sptot   = 0;
     ereftot = 0;
     np      = 0;
-    for (i = 0; (i < topology_->atoms.nr); i++)
+    for (i = 0; i < topology_->atoms.nr; i++)
     {
         if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol))
         {
@@ -1223,8 +1236,7 @@ void MyMol::CalcQPol(const Poldata &pd, rvec mu)
             poltot += pol;
             sptot  += gmx::square(sigpol);
         }
-        if (1 ==
-            pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))
+        if (pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))
         {
             ereftot += eref;
         }

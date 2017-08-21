@@ -369,6 +369,8 @@ class MyMol
          * \param[in] pd   Data structure containing atomic properties
          */
         void CalcQPol(const Poldata &pd, rvec mu);
+
+        void CalcDipole();
         
         void CalcDipole(rvec mu);
 
@@ -417,10 +419,16 @@ class MyMol
         std::string getForceField() { return forcefield_; }
 
         /*! \brief
-         * Calculate multipoles
+         * Calculate quadrupole tensor
          */
         void CalcQuadrupole();
 
+        /*! \brief
+          CalcQMbasedMoments calculates total dipole moment,
+          dipole components, and quadrupoles using QM-based charges like
+          Mulliken, Hirshfeld, CM5, etc. Since there is no Shell particle in 
+          QM calculations, it loops over eptAtoms, only. 
+        */
         void CalcQMbasedMoments(double *q, double *dip, rvec mu, tensor Q);
 
         /*! \brief

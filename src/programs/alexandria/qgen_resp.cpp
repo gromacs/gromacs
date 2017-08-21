@@ -899,7 +899,7 @@ void QgenResp::calcPot()
         int thread_id = gmx_omp_get_thread_num();
         int i0        = thread_id*nEsp()/nthreads;
         int i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
-        for (int i = i0; (i < i1); i++)
+        for (int i = i0; i < i1; i++)
         {
             double vv = 0;
             for (auto &ra : ra_)
@@ -944,8 +944,7 @@ void QgenResp::optimizeCharges()
     for (size_t j = 0; j < nEsp(); j++)
     {
         rhs.push_back(ep_[j].v());
-    }
-    
+    }    
     int i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
@@ -961,11 +960,12 @@ void QgenResp::optimizeCharges()
                 {
                     auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
                     lhs[i][j] += pot;
-                }
-                if (debug && i == 0 && j < 4*nAtom())
-                {
-                    fprintf(debug, "ESP[%zu] x = %g y = %g z = %g pot= %g\n", 
-                            j, espx[XX], espx[YY], espx[ZZ], ep_[j].v());
+
+                    if (debug && j < 4*nAtom())
+                    {
+                        fprintf(debug, "Core[%zu] ESP[%zu] espx = %g espy = %g espz = %g V= %g  CalcV=%g\n", 
+                                ii, j, espx[XX], espx[YY], espx[ZZ], ep_[j].v(), pot);
+                    }
                 }
             }
             lhs[i][factor] = factor;
@@ -982,6 +982,12 @@ void QgenResp::optimizeCharges()
                     auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), k->row());
                     auto q   = k->q();
                     rhs[j]  -= (q*pot);
+                    
+                    if (debug && j < 4*nAtom())
+                    {
+                        fprintf(debug, "Shell[%zu] ESP[%zu] Shellx = %g shelly = %g shellz = %g pot= %g q=%g qpot=%g\n", 
+                                ii, j, rax[XX], rax[YY], rax[ZZ], pot, q, q*pot);
+                    }
                 }
             }
         }

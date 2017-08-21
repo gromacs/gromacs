@@ -544,10 +544,7 @@ real polarize(int nbonds,
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
         ksh  = gmx::square(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].polarize.alpha;
-        if (debug)
-        {
-            fprintf(debug, "POL: local ai = %d aj = %d ksh = %.3f\n", ai, aj, ksh);
-        }
+        
 
         ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                         /*   3      */
         dr2  = iprod(dx, dx);                                               /*   5		*/
@@ -555,6 +552,11 @@ real polarize(int nbonds,
 
         *dvdlambda += harmonic(ksh, ksh, 0, 0, dr, lambda, &vbond, &fbond); /*  19  */
 
+        if (debug)
+        {
+            fprintf(debug, "POL: local ai = %d aj = %d ksh = %.3f shell_charge = %f alpha = %f r = %.3f vobond = %.3f\n", ai, aj, ksh, md->chargeA[aj], forceparams[type].polarize.alpha, dr, vbond);
+        }
+        
         if (dr2 == 0.0)
         {
             continue;
