@@ -1955,7 +1955,7 @@ static void check_match(FILE *fplog,
 
 static void read_checkpoint(const char *fn, FILE **pfplog,
                             const t_commrec *cr,
-                            ivec dd_nc, int *npme,
+                            ivec dd_nc,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadEkin,
                             ObservablesHistory *observablesHistory,
@@ -1973,7 +1973,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     ivec                 dd_nc_f;
     int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_dfh;
     int                  nED, eSwapCoords;
-    int                  d;
     int                  ret;
     gmx_file_position_t *outputfiles;
     int                  nfiles;
@@ -2073,29 +2072,6 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         if (fplog)
         {
             fprintf(fplog, int_warn, EI(eIntegrator_f), EI(eIntegrator));
-        }
-    }
-
-    if (!PAR(cr))
-    {
-        *npme = 0;
-    }
-    else if (cr->nnodes == nppnodes_f + npmenodes_f)
-    {
-        if (*npme < 0)
-        {
-            *npme = npmenodes_f;
-        }
-        int nppnodes = cr->nnodes - *npme;
-        if (nppnodes == nppnodes_f)
-        {
-            for (d = 0; d < DIM; d++)
-            {
-                if (dd_nc[d] == 0)
-                {
-                    dd_nc[d] = dd_nc_f[d];
-                }
-            }
         }
     }
 
@@ -2370,7 +2346,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
 
 void load_checkpoint(const char *fn, FILE **fplog,
-                     const t_commrec *cr, ivec dd_nc, int *npme,
+                     const t_commrec *cr, ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
@@ -2384,7 +2360,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
     {
         /* Read the state from the checkpoint file */
         read_checkpoint(fn, fplog,
-                        cr, dd_nc, npme,
+                        cr, dd_nc,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t,
                         state, bReadEkin, observablesHistory,
                         &ir->simulation_part, bAppend, bForceAppend,
@@ -2392,8 +2368,6 @@ void load_checkpoint(const char *fn, FILE **fplog,
     }
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(*npme), npme, cr);
-        gmx_bcast(DIM*sizeof(dd_nc[0]), dd_nc, cr);
         gmx_bcast(sizeof(step), &step, cr);
         gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);
     }
