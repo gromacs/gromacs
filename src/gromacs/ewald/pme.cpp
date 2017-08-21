@@ -1118,7 +1118,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
         if (flags & GMX_PME_SPREAD)
         {
-            wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+            wallcycle_start(wcycle, ewcPME_SPREAD);
 
             /* Spread the coefficients on a grid */
             spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
@@ -1146,7 +1146,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 copy_pmegrid_to_fftgrid(pme, grid, fftgrid, grid_index);
             }
 
-            wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
+            wallcycle_stop(wcycle, ewcPME_SPREAD);
 
             /* TODO If the OpenMP and single-threaded implementations
                converge, then spread_on_grid() and
@@ -1238,7 +1238,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         /* Note: this wallcycle region is closed below
                            outside an OpenMP region, so take care if
                            refactoring code here. */
-                        wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+                        wallcycle_start(wcycle, ewcPME_GATHER);
                     }
 
                     copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
@@ -1293,7 +1293,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
             /* Note: this wallcycle region is opened above inside an OpenMP
                region, so take care if refactoring code here. */
-            wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
+            wallcycle_stop(wcycle, ewcPME_GATHER);
         }
 
         if (bCalcEnerVir)
@@ -1401,7 +1401,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                 if (flags & GMX_PME_SPREAD)
                 {
-                    wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+                    wallcycle_start(wcycle, ewcPME_SPREAD);
                     /* Spread the c6 on a grid */
                     spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
 
@@ -1425,7 +1425,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 #endif
                         copy_pmegrid_to_fftgrid(pme, grid, fftgrid, grid_index);
                     }
-                    wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
+                    wallcycle_stop(wcycle, ewcPME_SPREAD);
                 }
                 /*Here we start a large thread parallel region*/
 #pragma omp parallel num_threads(pme->nthread) private(thread)
@@ -1531,7 +1531,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                                     npme  = static_cast<int>(ntot*std::log(ntot)/std::log(2.0));
                                     inc_nrnb(nrnb, eNR_FFT, 2*npme);
                                 }
-                                wallcycle_start(wcycle, ewcPME_SPREADGATHER);
+                                wallcycle_start(wcycle, ewcPME_GATHER);
                             }
 
                             copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
@@ -1575,7 +1575,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         inc_nrnb(nrnb, eNR_GATHERFBSP,
                                  pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
                     }
-                    wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
+                    wallcycle_stop(wcycle, ewcPME_GATHER);
 
                     bFirst = FALSE;
                 } /* for (grid_index = 8; grid_index >= 2; --grid_index) */
