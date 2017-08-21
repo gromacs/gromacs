@@ -512,11 +512,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                         replExParams);
     }
 
-    /* PME tuning is only supported with PME for Coulomb. Is is not supported
-     * with only LJ PME, or for reruns.
-     */
+    /* PME tuning is only supported in the Verlet scheme, with PME for
+     * Coulomb. It is not supported with only LJ PME, or for
+     * reruns. */
     bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD &&
-                !(Flags & MD_REPRODUCIBLE));
+                !(Flags & MD_REPRODUCIBLE) && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,

@@ -372,6 +372,8 @@ maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 static inline SimdFloat gmx_simdcall
 maskzRsqrt(SimdFloat x, SimdFBool m)
 {
+    // The result will always be correct since we mask the result with m, but
+    // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
     x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
 #endif
@@ -384,6 +386,8 @@ maskzRsqrt(SimdFloat x, SimdFBool m)
 static inline SimdFloat gmx_simdcall
 maskzRcp(SimdFloat x, SimdFBool m)
 {
+    // The result will always be correct since we mask the result with m, but
+    // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
     x.simdInternal_ = vbslq_f32(m.simdInternal_, x.simdInternal_, vdupq_n_f32(1.0f));
 #endif
@@ -572,7 +576,7 @@ static inline SimdFInt32 gmx_simdcall
 operator<<(SimdFInt32 a, int n)
 {
     return {
-               vshlq_n_s32(a.simdInternal_, n)
+               vshlq_s32(a.simdInternal_, vdupq_n_s32(n >= 32 ? 32 : n))
     };
 }
 
@@ -580,7 +584,7 @@ static inline SimdFInt32 gmx_simdcall
 operator>>(SimdFInt32 a, int n)
 {
     return {
-               vshrq_n_s32(a.simdInternal_, n)
+               vshlq_s32(a.simdInternal_, vdupq_n_s32(n >= 32 ? -32 : -n))
     };
 }
 

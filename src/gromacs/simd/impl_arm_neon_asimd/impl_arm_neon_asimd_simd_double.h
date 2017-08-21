@@ -535,7 +535,7 @@ static inline SimdDInt32 gmx_simdcall
 operator<<(SimdDInt32 a, int n)
 {
     return {
-               vshl_n_s32(a.simdInternal_, n)
+               vshl_s32(a.simdInternal_, vdup_n_s32(n >= 32 ? 32 : n))
     };
 }
 
@@ -543,7 +543,7 @@ static inline SimdDInt32 gmx_simdcall
 operator>>(SimdDInt32 a, int n)
 {
     return {
-               vshr_n_s32(a.simdInternal_, n)
+               vshl_s32(a.simdInternal_, vdup_n_s32(n >= 32 ? -32 : -n))
     };
 }
 
