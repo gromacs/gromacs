@@ -181,7 +181,9 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                               "Checkpointing is merely intended for plain continuation of runs. "
                               "For safety reasons you must specify all file names (e.g. with -deffnm), "
                               "and all these files must match the names used in the run prior to checkpointing "
-                              "since we will append to them by default. If the files are not available, you "
+                              "since we will append to them by default. If you used -deffnm and the files listed above as not "
+                              "present are in fact present, try explicitly specifying them in respective mdrun options. "
+                              "If the files are not available, you "
                               "can add the -noappend flag to mdrun and write separate new parts. "
                               "For mere concatenation of files, you should use the gmx trjcat tool instead.",
                               nfiles-nexist, nfiles);

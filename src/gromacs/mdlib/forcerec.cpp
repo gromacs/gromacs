@@ -1967,9 +1967,10 @@ init_interaction_const(FILE                       *fp,
     ic->epsfac           = fr->epsfac;
     ic->ewaldcoeff_q     = fr->ewaldcoeff_q;
 
-    if (fr->coulomb_modifier == eintmodPOTSHIFT)
+    if (EEL_PME_EWALD(ic->eeltype) && ic->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
+        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q*ic->rcoulomb) / ic->rcoulomb;
     }
     else
     {

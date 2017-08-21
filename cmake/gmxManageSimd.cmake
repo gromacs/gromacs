@@ -353,6 +353,10 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512_KNL")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON")
 
+    if (GMX_DOUBLE)
+        message(FATAL_ERROR "ARM_NEON SIMD support is not available for a double precision build because the architecture lacks double-precision support")
+    endif()
+
     gmx_find_flags(
         "#include<arm_neon.h>
          int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
