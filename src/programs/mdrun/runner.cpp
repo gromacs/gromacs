@@ -738,7 +738,7 @@ int Mdrunner::mdrunner()
         gmx_bool bReadEkin;
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                        cr, ddxyz, &npme,
+                        cr, ddxyz,
                         inputrec, state, &bReadEkin, &observablesHistory,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET),

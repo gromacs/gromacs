@@ -74,7 +74,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
  * The master node reads the file
- * and communicates all the modified number of steps and the parallel setup,
+ * and communicates all the modified number of steps,
  * but not the state itself.
  * When bAppend is set, lock the log file and truncate the existing output
  * files so they can be appended.
@@ -83,7 +83,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
 void load_checkpoint(const char *fn, FILE **fplog,
-                     const t_commrec *cr, ivec dd_nc, int *npme,
+                     const t_commrec *cr, const ivec dd_nc,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      ObservablesHistory *observablesHistory,
