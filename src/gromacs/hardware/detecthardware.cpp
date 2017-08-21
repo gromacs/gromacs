@@ -120,6 +120,7 @@ static int                 n_hwinfo = 0;
 /* A lock to protect the hwinfo structure */
 static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
+//! Detect GPUs, if that makes sense to attempt.
 static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
 #if GMX_LIB_MPI
@@ -127,6 +128,13 @@ static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
     MPI_Comm         physicalnode_comm;
 #endif
     int              rank_local;
+
+    hwinfo_g->gpu_info.bDetectGPUs =
+        (bGPUBinary && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
+    if (!hwinfo_g->gpu_info.bDetectGPUs)
+    {
+        return;
+    }
 
     /* Under certain circumstances MPI ranks on the same physical node
      * can not simultaneously access the same GPU(s). Therefore we run
@@ -462,8 +470,7 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
 }
 
 
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                                   gmx_bool bDetectGPUs)
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
     int ret;
 
@@ -498,17 +505,7 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
         hwinfo_g->gpu_info.n_dev_compatible = 0;
         hwinfo_g->gpu_info.gpu_dev          = nullptr;
 
-        /* Run the detection if the binary was compiled with GPU support
-         * and we requested detection.
-         */
-        hwinfo_g->gpu_info.bDetectGPUs =
-            (bGPUBinary && bDetectGPUs &&
-             getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
-        if (hwinfo_g->gpu_info.bDetectGPUs)
-        {
-            gmx_detect_gpus(mdlog, cr);
-        }
-
+        gmx_detect_gpus(mdlog, cr);
         gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
     }
     /* increase the reference counter */

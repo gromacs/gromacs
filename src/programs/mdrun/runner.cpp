@@ -487,10 +487,7 @@ int Mdrunner::mdrunner()
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
-    /* Detect hardware, gather information. This is an operation that is
-     * global for this process (MPI rank). */
-    bool detectGpus = forceUsePhysicalGpu || tryUsePhysicalGpu;
-    hwinfo = gmx_detect_hardware(mdlog, cr, detectGpus);
+    hwinfo = gmx_detect_hardware(mdlog, cr);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 

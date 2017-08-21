@@ -61,7 +61,7 @@ class MDLogger;
  * Caller is responsible for freeing this pointer.
  */
 gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
-                                   const t_commrec *cr, gmx_bool bDetectGPUs);
+                                   const t_commrec     *cr);
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
