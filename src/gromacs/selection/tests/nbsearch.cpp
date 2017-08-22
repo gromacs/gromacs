@@ -153,6 +153,7 @@ class NeighborhoodSearchTestData
         std::vector<int> generateIndex(int count, gmx_uint64_t seed) const;
         void generateRandomRefPositions(int count);
         void generateRandomTestPositions(int count);
+        void useRefPositionsAsTestPositions();
         void computeReferences(t_pbc *pbc)
         {
             computeReferencesInternal(pbc, false);
@@ -259,6 +260,15 @@ void NeighborhoodSearchTestData::generateRandomTestPositions(int count)
     }
 }
 
+void NeighborhoodSearchTestData::useRefPositionsAsTestPositions()
+{
+    testPositions_.reserve(refPosCount_);
+    for (const auto &refPos : refPos_)
+    {
+        addTestPosition(refPos);
+    }
+}
+
 void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc *pbc, bool bXY)
 {
     real cutoff = cutoff_;
@@ -292,7 +302,7 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc *pbc, bool bXY)
                 testPos.refMinDist      = dist;
                 testPos.refNearestPoint = j;
             }
-            if (dist <= cutoff)
+            if (dist > 0 && dist <= cutoff)
             {
                 RefPair pair(j, dist);
                 GMX_RELEASE_ASSERT(testPos.refPairs.empty() || testPos.refPairs.back() < pair,
@@ -425,7 +435,8 @@ class NeighborhoodSearchTest : public ::testing::Test
                                 const gmx::AnalysisNeighborhoodPositions &pos,
                                 const t_blocka                           *excls,
                                 const gmx::ConstArrayRef<int>            &refIndices,
-                                const gmx::ConstArrayRef<int>            &testIndices);
+                                const gmx::ConstArrayRef<int>            &testIndices,
+                                bool                                      selfPairs);
 
         gmx::AnalysisNeighborhood        nb_;
 };
@@ -519,7 +530,7 @@ void NeighborhoodSearchTest::testPairSearch(
         const NeighborhoodSearchTestData &data)
 {
     testPairSearchFull(search, data, data.testPositions(), nullptr,
-                       gmx::EmptyArrayRef(), gmx::EmptyArrayRef());
+                       gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), false);
 }
 
 void NeighborhoodSearchTest::testPairSearchIndexed(
@@ -533,7 +544,7 @@ void NeighborhoodSearchTest::testPairSearchIndexed(
         nb->initSearch(&data.pbc_,
                        data.refPositions().indexed(refIndices));
     testPairSearchFull(&search, data, data.testPositions(), nullptr,
-                       refIndices, testIndices);
+                       refIndices, testIndices, false);
 }
 
 void NeighborhoodSearchTest::testPairSearchFull(
@@ -542,12 +553,12 @@ void NeighborhoodSearchTest::testPairSearchFull(
         const gmx::AnalysisNeighborhoodPositions &pos,
         const t_blocka                           *excls,
         const gmx::ConstArrayRef<int>            &refIndices,
-        const gmx::ConstArrayRef<int>            &testIndices)
+        const gmx::ConstArrayRef<int>            &testIndices,
+        bool                                      selfPairs)
 {
     std::map<int, RefPairList> refPairs;
     // TODO: Some parts of this code do not work properly if pos does not
     // initially contain all the test positions.
-    gmx::AnalysisNeighborhoodPositions  posCopy(pos);
     if (testIndices.empty())
     {
         for (size_t i = 0; i < data.testPositions_.size(); ++i)
@@ -561,10 +572,10 @@ void NeighborhoodSearchTest::testPairSearchFull(
         {
             refPairs[index] = data.testPositions_[index].refPairs;
         }
-        posCopy.indexed(testIndices);
     }
     if (excls != nullptr)
     {
+        GMX_RELEASE_ASSERT(!selfPairs, "Self-pairs testing not implemented with exclusions");
         for (auto &entry : refPairs)
         {
             const int testIndex = entry.first;
@@ -573,6 +584,7 @@ void NeighborhoodSearchTest::testPairSearchFull(
     }
     if (!refIndices.empty())
     {
+        GMX_RELEASE_ASSERT(!selfPairs, "Self-pairs testing not implemented with indexing");
         for (auto &entry : refPairs)
         {
             for (auto &refPair : entry.second)
@@ -598,8 +610,15 @@ void NeighborhoodSearchTest::testPairSearchFull(
         }
     }
 
+    gmx::AnalysisNeighborhoodPositions  posCopy(pos);
+    if (!testIndices.empty())
+    {
+        posCopy.indexed(testIndices);
+    }
     gmx::AnalysisNeighborhoodPairSearch pairSearch
-        = search->startPairSearch(posCopy);
+        = selfPairs
+            ? search->startSelfPairSearch()
+            : search->startPairSearch(posCopy);
     gmx::AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
@@ -655,6 +674,16 @@ void NeighborhoodSearchTest::testPairSearchFull(
 
             EXPECT_REAL_EQ_TOL(foundRefPair->distance, searchPair.distance, data.relativeTolerance())
             << "Distance computed by the neighborhood search does not match.";
+            if (selfPairs)
+            {
+                searchPair = NeighborhoodSearchTestData::RefPair(testIndex, 0.0);
+                const auto otherRefPair
+                    = std::lower_bound(refPairs[refIndex].begin(), refPairs[refIndex].end(),
+                                       searchPair);
+                GMX_RELEASE_ASSERT(otherRefPair != refPairs[refIndex].end(),
+                                   "Precomputed reference data is not symmetric");
+                otherRefPair->bFound = true;
+            }
         }
     }
 
@@ -688,6 +717,30 @@ class TrivialTestData
             data_.box_[ZZ][ZZ] = 3.0;
             data_.generateRandomRefPositions(10);
             data_.generateRandomTestPositions(5);
+            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+            data_.computeReferences(&data_.pbc_);
+        }
+
+    private:
+        NeighborhoodSearchTestData data_;
+};
+
+class TrivialSelfPairsTestData
+{
+    public:
+        static const NeighborhoodSearchTestData &get()
+        {
+            static TrivialSelfPairsTestData singleton;
+            return singleton.data_;
+        }
+
+        TrivialSelfPairsTestData() : data_(12345, 1.0)
+        {
+            data_.box_[XX][XX] = 3.0;
+            data_.box_[YY][YY] = 3.0;
+            data_.box_[ZZ][ZZ] = 3.0;
+            data_.generateRandomRefPositions(20);
+            data_.useRefPositionsAsTestPositions();
             set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
             data_.computeReferences(&data_.pbc_);
         }
@@ -734,6 +787,30 @@ class RandomBoxFullPBCData
             // test coverage.
             data_.generateRandomRefPositions(1000);
             data_.generateRandomTestPositions(100);
+            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+            data_.computeReferences(&data_.pbc_);
+        }
+
+    private:
+        NeighborhoodSearchTestData data_;
+};
+
+class RandomBoxSelfPairsData
+{
+    public:
+        static const NeighborhoodSearchTestData &get()
+        {
+            static RandomBoxSelfPairsData singleton;
+            return singleton.data_;
+        }
+
+        RandomBoxSelfPairsData() : data_(12345, 1.0)
+        {
+            data_.box_[XX][XX] = 10.0;
+            data_.box_[YY][YY] = 5.0;
+            data_.box_[ZZ][ZZ] = 7.0;
+            data_.generateRandomRefPositions(1000);
+            data_.useRefPositionsAsTestPositions();
             set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
             data_.computeReferences(&data_.pbc_);
         }
@@ -967,6 +1044,34 @@ TEST_F(NeighborhoodSearchTest, GridSearchXYBox)
     testPairSearch(&search, data);
 }
 
+TEST_F(NeighborhoodSearchTest, SimpleSelfPairsSearch)
+{
+    const NeighborhoodSearchTestData &data = TrivialSelfPairsTestData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Simple);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_, data.refPositions());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
+
+    testPairSearchFull(&search, data, data.testPositions(), nullptr,
+                       gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), true);
+}
+
+TEST_F(NeighborhoodSearchTest, GridSelfPairsSearch)
+{
+    const NeighborhoodSearchTestData &data = RandomBoxSelfPairsData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_, data.refPositions());
+    ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
+
+    testPairSearchFull(&search, data, data.testPositions(), nullptr,
+                       gmx::EmptyArrayRef(), gmx::EmptyArrayRef(), true);
+}
+
 TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
 {
     const NeighborhoodSearchTestData &data = TrivialTestData::get();
@@ -1081,7 +1186,8 @@ TEST_F(NeighborhoodSearchTest, SimpleSearchExclusions)
 
     testPairSearchFull(&search, data,
                        data.testPositions().exclusionIds(helper.testPosIds()),
-                       helper.exclusions(), gmx::EmptyArrayRef(), gmx::EmptyArrayRef());
+                       helper.exclusions(), gmx::EmptyArrayRef(),
+                       gmx::EmptyArrayRef(), false);
 }
 
 TEST_F(NeighborhoodSearchTest, GridSearchExclusions)
@@ -1101,7 +1207,8 @@ TEST_F(NeighborhoodSearchTest, GridSearchExclusions)
 
     testPairSearchFull(&search, data,
                        data.testPositions().exclusionIds(helper.testPosIds()),
-                       helper.exclusions(), gmx::EmptyArrayRef(), gmx::EmptyArrayRef());
+                       helper.exclusions(), gmx::EmptyArrayRef(),
+                       gmx::EmptyArrayRef(), false);
 }
 
 } // namespace

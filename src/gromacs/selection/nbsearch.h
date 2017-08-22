@@ -415,8 +415,8 @@ class AnalysisNeighborhoodPair
  * variable (see sm_distance.cpp).
  *
  * \todo
- * Consider merging nearestPoint() and minimumDistance() by adding the distance
- * to AnalysisNeighborhoodPair.
+ * Consider removing minimumDistance(), as nearestPoint() already returns the
+ * distance.
  *
  * \inpublicapi
  * \ingroup module_selection
@@ -470,7 +470,7 @@ class AnalysisNeighborhoodSearch
         AnalysisNeighborhood::SearchMode mode() const;
 
         /*! \brief
-         * Check whether a point is within a neighborhood.
+         * Checks whether a point is within a neighborhood.
          *
          * \param[in] positions  Set of test positions to use.
          * \returns   true if any of the test positions is within the cutoff of
@@ -500,12 +500,33 @@ class AnalysisNeighborhoodSearch
         nearestPoint(const AnalysisNeighborhoodPositions &positions) const;
 
         /*! \brief
-         * Start a search to find reference positions within a cutoff.
+         * Starts a search to find all reference position pairs within a cutoff.
+         *
+         * \returns   Initialized search object to loop through all reference
+         *     position pairs within the configured cutoff.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This works as if the reference positions were passed to
+         * startPairSearch(), except that it only returns each pair once,
+         * instead of returning both i-j and j-i pairs, as startPairSearch()
+         * does.  i-i pairs are not returned.  Note that the order of ref/test
+         * indices in the returned pairs is not predictable.  That is, one of
+         * i-j or j-i is always returned, but there is no control which one.
+         */
+        AnalysisNeighborhoodPairSearch
+        startSelfPairSearch() const;
+
+        /*! \brief
+         * Starts a search to find reference positions within a cutoff.
          *
          * \param[in] positions  Set of test positions to use.
          * \returns   Initialized search object to loop through all reference
          *     positions within the configured cutoff.
          * \throws    std::bad_alloc if out of memory.
+         *
+         * If you want to pass the same positions here as you used for the
+         * reference positions, consider using startSelfPairSearch().
+         * It can be up to 50% faster.
          */
         AnalysisNeighborhoodPairSearch
         startPairSearch(const AnalysisNeighborhoodPositions &positions) const;
