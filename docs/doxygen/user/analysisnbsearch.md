@@ -21,6 +21,8 @@ performance improvement this allows).  The main features that it provides:
    density and not limited by the cutoff.
  - Transparent fallback to a simple all-pairs search if the cutoff is too long
    for the algorithm or grid searching is not otherwise supported.
+ - Support for either N-vs-M pair search with two sets of coordinates, or for
+   all pairs within a single set of coordinates.
  - Support for computing all distances in the XY plane only (and still
    grid-based).
  - Convenience functions for finding the shortest distance or the nearest pair
@@ -83,18 +85,14 @@ PBC information:
    falls back automatically to an all-pairs search.  For correct operation, the
    grid algorithm needs three cells in each dimension, but the code can fall
    back to a non-gridded search for each dimension separately.
- - If the resulting grid has so few cells that the search would anyways
-   consider all (or nearly all) cell pairs, the search falls back to a
-   simple search.
  - The initialization also pre-calculates the shifts required across the
    periodic boundaries for triclinic cells, i.e., the fractional number of
    cells that the grid origin is shifted when crossing the periodic boundary in
    Y or Z directions.
  - Finally, all the reference positions are mapped to the grid cells.
 
-There are a few heuristic numbers in the above logic: the average number of
-particles within a cell, and the cutover point from grid to an all-pairs
-search.  These have not been particularly optimized for best performance.
+The average number of particles within a cell is somewhat heuristic in the
+above logic.  This has not been particularly optimized for best performance.
 
 When doing the search for test positions, each test position is considered
 independently:

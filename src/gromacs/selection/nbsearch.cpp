@@ -189,6 +189,13 @@ class AnalysisNeighborhoodSearchImpl
          */
         int getGridCellIndex(const ivec cell) const;
         /*! \brief
+         * Calculates linear index of a grid cell from fractional coordinates.
+         *
+         * \param[in]  cell Cell indices (must be within the grid).
+         * \returns    Linear index of \p cell.
+         */
+        int getGridCellIndex(const rvec cell) const;
+        /*! \brief
          * Adds an index into a grid cell.
          *
          * \param[in]  cell Fractional cell coordinates into which \p i should
@@ -327,6 +334,7 @@ class AnalysisNeighborhoodPairSearchImpl
         explicit AnalysisNeighborhoodPairSearchImpl(const AnalysisNeighborhoodSearchImpl &search)
             : search_(search)
         {
+            selfSearchMode_   = false;
             testPosCount_     = 0;
             testPositions_    = nullptr;
             testExclusionIds_ = nullptr;
@@ -342,6 +350,8 @@ class AnalysisNeighborhoodPairSearchImpl
 
         //! Initializes a search to find reference positions neighboring \p x.
         void startSearch(const AnalysisNeighborhoodPositions &positions);
+        //! Initializes a search to find reference position pairs.
+        void startSelfSearch();
         //! Searches for the next neighbor.
         template <class Action>
         bool searchNext(Action action);
@@ -358,6 +368,8 @@ class AnalysisNeighborhoodPairSearchImpl
 
         //! Parent search object.
         const AnalysisNeighborhoodSearchImpl   &search_;
+        //! Whether we are searching for ref-ref pairs.
+        bool                                    selfSearchMode_;
         //! Number of test positions.
         int                                     testPosCount_;
         //! Reference to the test positions.
@@ -376,14 +388,16 @@ class AnalysisNeighborhoodPairSearchImpl
         rvec                                    xtest_;
         //! Stores the previous returned position during a pair loop.
         int                                     previ_;
-        //! Stores the pair distance corresponding to previ_;
+        //! Stores the pair distance corresponding to previ_.
         real                                    prevr2_;
-        //! Stores the shortest distance vector corresponding to previ_;
+        //! Stores the shortest distance vector corresponding to previ_.
         rvec                                    prevdx_;
         //! Stores the current exclusion index during loops.
         int                                     exclind_;
         //! Stores the fractional test particle cell location during loops.
         rvec                                    testcell_;
+        //! Stores the cell index corresponding to testcell_.
+        int                                     testCellIndex_;
         //! Stores the current cell during pair loops.
         ivec                                    currCell_;
         //! Stores the current loop upper bounds for each dimension during pair loops.
@@ -685,7 +699,7 @@ int AnalysisNeighborhoodSearchImpl::getGridCellIndex(const ivec cell) const
            + cell[ZZ] * ncelldim_[XX] * ncelldim_[YY];
 }
 
-void AnalysisNeighborhoodSearchImpl::addToGridCell(const rvec cell, int i)
+int AnalysisNeighborhoodSearchImpl::getGridCellIndex(const rvec cell) const
 {
     ivec icell;
     for (int dd = 0; dd < DIM; ++dd)
@@ -705,7 +719,12 @@ void AnalysisNeighborhoodSearchImpl::addToGridCell(const rvec cell, int i)
         }
         icell[dd] = cellIndex;
     }
-    const int ci = getGridCellIndex(icell);
+    return getGridCellIndex(icell);
+}
+
+void AnalysisNeighborhoodSearchImpl::addToGridCell(const rvec cell, int i)
+{
+    const int ci = getGridCellIndex(cell);
     cells_[ci].push_back(i);
 }
 
@@ -951,7 +970,13 @@ void AnalysisNeighborhoodSearchImpl::init(
 
 void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
 {
-    testIndex_ = testIndex;
+    testIndex_     = testIndex;
+    testCellIndex_ = -1;
+    previ_         = -1;
+    prevr2_        = 0.0;
+    clear_rvec(prevdx_);
+    exclind_       = 0;
+    prevcai_       = -1;
     if (testIndex_ >= 0 && testIndex_ < testPosCount_)
     {
         const int index =
@@ -962,10 +987,18 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
             search_.initCellRange(testcell_, currCell_, cellBound_, ZZ);
             search_.initCellRange(testcell_, currCell_, cellBound_, YY);
             search_.initCellRange(testcell_, currCell_, cellBound_, XX);
+            if (selfSearchMode_)
+            {
+                testCellIndex_ = search_.getGridCellIndex(testcell_);
+            }
         }
         else
         {
             copy_rvec(testPositions_[index], xtest_);
+            if (selfSearchMode_)
+            {
+                previ_ = testIndex_;
+            }
         }
         if (search_.excls_ != nullptr)
         {
@@ -983,11 +1016,6 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
             }
         }
     }
-    previ_     = -1;
-    prevr2_    = 0.0;
-    clear_rvec(prevdx_);
-    exclind_   = 0;
-    prevcai_   = -1;
 }
 
 void AnalysisNeighborhoodPairSearchImpl::nextTestPosition()
@@ -1022,6 +1050,7 @@ bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
 void AnalysisNeighborhoodPairSearchImpl::startSearch(
         const AnalysisNeighborhoodPositions &positions)
 {
+    selfSearchMode_   = false;
     testPosCount_     = positions.count_;
     testPositions_    = positions.x_;
     testExclusionIds_ = positions.exclusionIds_;
@@ -1041,6 +1070,18 @@ void AnalysisNeighborhoodPairSearchImpl::startSearch(
     }
 }
 
+void AnalysisNeighborhoodPairSearchImpl::startSelfSearch()
+{
+    selfSearchMode_   = true;
+    testPosCount_     = search_.nref_;
+    testPositions_    = search_.xref_;
+    testExclusionIds_ = search_.refExclusionIds_;
+    testIndices_      = search_.refIndices_;
+    GMX_RELEASE_ASSERT(search_.excls_ == nullptr || testIndices_ == nullptr,
+                       "Exclusion IDs not implemented with indexed ref positions");
+    reset(0);
+}
+
 template <class Action>
 bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
 {
@@ -1054,10 +1095,18 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
             {
                 rvec      shift;
                 const int ci       = search_.shiftCell(currCell_, shift);
+                if (selfSearchMode_ && ci > testCellIndex_)
+                {
+                    continue;
+                }
                 const int cellSize = static_cast<int>(search_.cells_[ci].size());
                 for (; cai < cellSize; ++cai)
                 {
                     const int i = search_.cells_[ci][cai];
+                    if (selfSearchMode_ && ci == testCellIndex_ && i >= testIndex_)
+                    {
+                        continue;
+                    }
                     if (isExcluded(i))
                     {
                         continue;
@@ -1376,6 +1425,15 @@ AnalysisNeighborhoodSearch::nearestPoint(
     MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
     return AnalysisNeighborhoodPair(closestPoint, 0, minDist2, dx);
+}
+
+AnalysisNeighborhoodPairSearch
+AnalysisNeighborhoodSearch::startSelfPairSearch() const
+{
+    GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
+    Impl::PairSearchImplPointer pairSearch(impl_->getPairSearch());
+    pairSearch->startSelfSearch();
+    return AnalysisNeighborhoodPairSearch(pairSearch);
 }
 
 AnalysisNeighborhoodPairSearch
