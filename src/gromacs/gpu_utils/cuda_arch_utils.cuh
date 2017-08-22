@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include "gromacs/utility/basedefinitions.h"
+
 /*! \file
  *  \brief CUDA arch dependent definitions.
  *
