@@ -600,6 +600,7 @@ int Mdrunner::mdrunner()
          * correctly. */
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
+                                                npme,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);

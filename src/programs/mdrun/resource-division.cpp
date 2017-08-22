@@ -338,6 +338,7 @@ class SingleRankChecker
  */
 int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                      gmx_hw_opt_t           *hw_opt,
+                     int                     numPmeRanks,
                      const t_inputrec       *inputrec,
                      const gmx_mtop_t       *mtop,
                      const gmx::MDLogger    &mdlog,
@@ -361,13 +362,21 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     if (hw_opt->nthreads_tmpi < 1 && numGpuIdsSupplied > 0)
     {
         /* If the user chose both mdrun -nt -gpu_id, is that consistent? */
-        if (hw_opt->nthreads_tot > 0 &&
-            (hw_opt->nthreads_tot % numGpuIdsSupplied) != 0)
+        if (numPmeRanks <= 0)
         {
-            gmx_fatal(FARGS, "Cannot run %d total threads with %d GPU ranks. Choose the total number of threads to be a multiple of the number of GPU ranks.", hw_opt->nthreads_tot, numGpuIdsSupplied);
+            if (hw_opt->nthreads_tot > 0 &&
+                (hw_opt->nthreads_tot % numGpuIdsSupplied) != 0)
+            {
+                gmx_fatal(FARGS, "Cannot run %d total threads with %d GPU ranks. Choose the total number of threads to be a multiple of the number of GPU ranks.", hw_opt->nthreads_tot, numGpuIdsSupplied);
+            }
+            return numGpuIdsSupplied;
         }
-
-        return numGpuIdsSupplied;
+        else
+        {
+            gmx_fatal(FARGS, "The combination of choosing a number of PME ranks, and specific GPU IDs "
+                      "is not supported. Use also -ntmpi and/or -ntomp and -ntomp_pme to specify what "
+                      "distribution of threads to ranks you require.");
+        }
     }
 
     {
@@ -399,14 +408,28 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
 
     if (hw_opt->nthreads_tmpi > 0)
     {
-        if ((numGpuIdsSupplied > 0) &&
-            (numGpuIdsSupplied != hw_opt->nthreads_tmpi))
+        if (numPmeRanks <= 0)
         {
-            gmx_fatal(FARGS, "Cannot run %d thread-MPI ranks with %d GPU IDs supplied. "
-                      "The number of ranks and the number of GPU IDs must match.",
-                      hw_opt->nthreads_tmpi, numGpuIdsSupplied);
+            int numPpRanks = hw_opt->nthreads_tmpi;
+            if ((numGpuIdsSupplied > 0) &&
+                (numGpuIdsSupplied != numPpRanks))
+            {
+                gmx_fatal(FARGS, "Cannot run %d thread-MPI total ranks with %d "
+                          "GPU IDs supplied. The number of particle-particle (PP) ranks and the "
+                          "number of GPU IDs must match.", hw_opt->nthreads_tmpi, numGpuIdsSupplied);
+            }
         }
-
+        else
+        {
+            int numPpRanks = hw_opt->nthreads_tmpi - numPmeRanks;
+            if ((numGpuIdsSupplied > 0) &&
+                (numGpuIdsSupplied != numPpRanks))
+            {
+                gmx_fatal(FARGS, "Cannot run %d thread-MPI total ranks with %d PME ranks and %d "
+                          "GPU IDs supplied. The number of particle-particle ranks and the "
+                          "number of GPU IDs must match.", hw_opt->nthreads_tmpi, numPmeRanks, numGpuIdsSupplied);
+            }
+        }
         /* Trivial, return the user's choice right away */
         return hw_opt->nthreads_tmpi;
     }
