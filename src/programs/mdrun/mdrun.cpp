@@ -251,7 +251,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     const char       *nbpu_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
-    const char       *gpuIdTaskAssignment   = "";
+    const char       *gpuIdsAvailable       = "";
+    const char       *userGpuTaskAssignment = "";
 
     ImdOptions       &imdOptions = mdrunOptions.imdOptions;
 
@@ -277,8 +278,10 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "The lowest logical core number to which mdrun should pin the first thread" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&gpuIdTaskAssignment},
-          "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
+        { "-gpu_id",  FALSE, etSTR, {&gpuIdsAvailable},
+          "List of GPU device IDs available to use" },
+        { "-gputasks",  FALSE, etSTR, {&userGpuTaskAssignment},
+          "List of GPU device IDs, mapping each PP task on each node to a device" },
         { "-ddcheck", FALSE, etBOOL, {&domdecOptions.checkBondedInteractions},
           "Check for all bonded interactions with DD" },
         { "-ddbondcomm", FALSE, etBOOL, {&domdecOptions.useBondedCommunication},
@@ -389,24 +392,42 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         return 0;
     }
 
-    // Handle the option that permits the user to select a GPU task
-    // assignment, which could be in an environment variable (so that
-    // there is a way to customize it, when using MPI in heterogeneous
-    // contexts).
+    // Handle the options that permits the user to either declare
+    // which compatible GPUs are availble for use, or to select a GPU
+    // task assignment. Either could be in an environment variable (so
+    // that there is a way to customize it, when using MPI in
+    // heterogeneous contexts).
     {
         // TODO Argument parsing can't handle std::string. We should
         // fix that by changing the parsing, once more of the roles of
         // handling, validating and implementing defaults for user
         // command-line options have been seperated.
-        hw_opt.gpuIdTaskAssignment = gpuIdTaskAssignment;
+        hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
+        hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
+
         const char *env = getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
-            if (!hw_opt.gpuIdTaskAssignment.empty())
+            if (!hw_opt.gpuIdsAvailable.empty())
             {
                 gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
             }
-            hw_opt.gpuIdTaskAssignment = env;
+            hw_opt.gpuIdsAvailable = env;
+        }
+
+        env = getenv("GMX_GPUTASKS");
+        if (env != nullptr)
+        {
+            if (!hw_opt.userGpuTaskAssignment.empty())
+            {
+                gmx_fatal(FARGS, "GMX_GPUTASKS and -gputasks can not be used at the same time");
+            }
+            hw_opt.userGpuTaskAssignment = env;
+        }
+
+        if (!hw_opt.gpuIdsAvailable.empty() && !hw_opt.userGpuTaskAssignment.empty())
+        {
+            gmx_fatal(FARGS, "-gpu_id and -gputasks cannot be used at the same time");
         }
     }
 
