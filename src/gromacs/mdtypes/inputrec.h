@@ -461,6 +461,9 @@ gmx_bool inputrecNvtTrotter(const t_inputrec *ir);
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir);
 
+//! Returns whether any PME method is in use.
+bool usingAnyPme(const t_inputrec &inputrec);
+
 /* Returns true for MD integator with T and/or P-coupling that supports
  * calculating the conserved energy quantity.
  */

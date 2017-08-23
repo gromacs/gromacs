@@ -1,0 +1,824 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <InputCase>
+    <String Name="GpuIdString"></String>
+    <String Name="Given GPU compatibilities">Device 0 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString"></String>
+    <String Name="Given GPU compatibilities">Device 1 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString"></String>
+    <String Name="Given GPU compatibilities">Devices 0 and 1 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString"></String>
+    <String Name="Given GPU compatibilities">Devices 0 and 2 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString"></String>
+    <String Name="Given GPU compatibilities">No compatible devices</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">0</String>
+    <String Name="Given GPU compatibilities">Device 0 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">0</String>
+    <String Name="Given GPU compatibilities">Device 1 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">0</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 1 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">0</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 2 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">0</String>
+    <String Name="Given GPU compatibilities">No compatible devices</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">1</String>
+    <String Name="Given GPU compatibilities">Device 0 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">1</String>
+    <String Name="Given GPU compatibilities">Device 1 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">1</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">1</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">1</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 1 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">1</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">1</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">1</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 2 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">1</String>
+    <String Name="Given GPU compatibilities">No compatible devices</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">01</String>
+    <String Name="Given GPU compatibilities">Device 0 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">01</String>
+    <String Name="Given GPU compatibilities">Device 1 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">01</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 1 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">1</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">3</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">1</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">01</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 2 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">01</String>
+    <String Name="Given GPU compatibilities">No compatible devices</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">02</String>
+    <String Name="Given GPU compatibilities">Device 0 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">02</String>
+    <String Name="Given GPU compatibilities">Device 1 is compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">02</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 1 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">02</String>
+    <String Name="Given GPU compatibilities">Devices 0 and 2 are compatible</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks Each With One Nonbonded Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">2</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks Each With One Nonbonded Task And Rank With No Task</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">3</Int>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">1</Int>
+          <String Name="Type">Nonbonded</String>
+          <Int Name="Device ID">2</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+  <InputCase>
+    <String Name="GpuIdString">02</String>
+    <String Name="Given GPU compatibilities">No compatible devices</String>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">One Rank No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">1</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+    <AssignmentResults>
+      <String Name="Given Gpu Tasks On Ranks">Two Ranks No Tasks</String>
+      <Sequence Name="Produced Assignments On Ranks">
+        <Int Name="Length">2</Int>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+        <Sequence>
+          <Int Name="Length">0</Int>
+        </Sequence>
+      </Sequence>
+    </AssignmentResults>
+  </InputCase>
+</ReferenceData>
