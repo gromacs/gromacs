@@ -59,7 +59,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/taskassignment/hardwareassign.h"
+#include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"

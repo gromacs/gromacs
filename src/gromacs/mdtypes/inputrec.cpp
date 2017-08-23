@@ -1351,6 +1351,11 @@ gmx_bool inputrecNphTrotter(const t_inputrec *ir)
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }
 
+bool usingAnyPme(const t_inputrec &inputrec)
+{
+    return (EEL_PME(inputrec.coulombtype) || EVDW_PME(inputrec.vdwtype));
+}
+
 bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
 {
     if (!EI_MD(ir->eI))
