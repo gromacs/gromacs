@@ -343,12 +343,20 @@ void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 }
 
 //! This function is documented in the header file
-bool isGpuCompatible(const gmx_gpu_info_t &gpu_info,
-                     int                   index)
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 {
-    return (index >= gpu_info.n_dev ?
-            false :
-            gpu_info.gpu_dev[index].stat == egpuCompatible);
+    // Possible minor over-allocation here, but not important for anything
+    std::vector<int> compatibleGpus;
+    compatibleGpus.reserve(gpu_info.n_dev);
+    for (int i = 0; i < gpu_info.n_dev; i++)
+    {
+        assert(gpu_info.gpu_dev);
+        if (gpu_info.gpu_dev[i].stat == egpuCompatible)
+        {
+            compatibleGpus.push_back(i);
+        }
+    }
+    return compatibleGpus;
 }
 
 //! This function is documented in the header file

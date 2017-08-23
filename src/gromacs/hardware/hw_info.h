@@ -36,6 +36,7 @@
 #define GMX_HARDWARE_HWINFO_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -50,10 +51,11 @@ class HardwareTopology;
  * It is initialized by gmx_detect_hardware().
  * NOTE: this structure may only contain structures that are globally valid
  *       (i.e. must be able to be shared among all threads) */
-typedef struct gmx_hw_info_t
+struct gmx_hw_info_t
 {
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
+    std::vector<int>      compatibleGpus;          /* Contains the device IDs of all GPUs that are compatible */
 
     int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
                                                       is based on the number of CPUs reported as available
@@ -78,7 +80,7 @@ typedef struct gmx_hw_info_t
     int                 simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
 
     gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
-} gmx_hw_info_t;
+};
 
 
 /* The options for the thread affinity setting, default: auto */

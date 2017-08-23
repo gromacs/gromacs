@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,42 +32,53 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_HARDWARE_DETECTHARDWARE_H
-#define GMX_HARDWARE_DETECTHARDWARE_H
+/*! \internal \file
+ * \brief
+ * Defines gmx::INodeTaskAssigner interface, its concrete classes, and factory function.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_taskassignment
+ */
+#include "gmxpre.h"
 
-#include <cstdio>
-
-#include <string>
-#include <vector>
-
-#include "gromacs/utility/basedefinitions.h"
-
-struct gmx_gpu_info_t;
-struct gmx_hw_info_t;
-struct gmx_hw_opt_t;
-struct t_commrec;
+#include "nonbondedoncpu.h"
 
 namespace gmx
 {
-class MDLogger;
 
-/*! \brief Run detection, consistency checks, and make available on all ranks.
- *
- * This routine constructs the global hwinfo structure and returns a pointer to
- * it. It will run a preamble before executing cpu and hardware checks, and
- * then run consistency checks afterwards. The results will also be made
- * available on all nodes.
- * Caller is responsible for calling gmx_hardware_info_free() when finished.
- */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
-                                   const t_commrec     *cr);
+NonbondedOnCpu::NonbondedOnCpu() {};
 
-/*! \brief Free the hwinfo structure */
-void gmx_hardware_info_free();
+void
+NonbondedOnCpu::decideWhetherToUseGpus(const bool /*usingVerletScheme*/,
+                                       const bool /*gpuAccelerationIsUseful*/)
+{
+    // Trivially, this task assigner never will compute on GPUs.
+}
 
-//! Return whether compatible GPUs were found.
-bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
+bool NonbondedOnCpu::areNonbondedOnGpu() const
+{
+    return false;
+}
 
-#endif
+GpuTaskAssignments
+NonbondedOnCpu::assignGpuTasksToDeviceIds(const GpuTasksOnRanks &gpuTasksOnRanks) const
+{
+    GpuTaskAssignments gpuTaskAssignmentOnRanksOfThisNode(gpuTasksOnRanks.size());
+    return gpuTaskAssignmentOnRanksOfThisNode;
+}
 
-} // namespace gmx
+bool
+NonbondedOnCpu::didUserAssignGpus() const
+{
+    return false;
+}
+
+void
+NonbondedOnCpu::logPerformanceHints(const MDLogger           & /*mdlog*/,
+                                    const GpuTaskAssignments & /*gpuTaskAssignments*/) const
+{
+    // The user required computation on CPUs, so we should not warn them if
+    // we did not detect GPUs.
+}
+
+} // namespace
