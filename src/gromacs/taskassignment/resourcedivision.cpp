@@ -51,6 +51,7 @@
 
 #include <algorithm>
 
+#include "gromacs/ewald/pme.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -59,7 +60,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/taskassignment/hardwareassign.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
@@ -82,13 +82,16 @@
 //! Constant used to help minimize preprocessed code
 static const bool bHasOmpSupport = GMX_OPENMP;
 
-#if GMX_THREAD_MPI
-/* The minimum number of atoms per tMPI thread. With fewer atoms than this,
- * the number of threads will get lowered.
+/*! \brief The minimum number of atoms per thread-MPI thread when GPUs
+ * are present. With fewer atoms than this, the number of thread-MPI
+ * ranks will get lowered.
  */
 static const int min_atoms_per_mpi_thread =  90;
+/*! \brief The minimum number of atoms per GPU with thread-MPI
+ * active. With fewer atoms than this, the number of thread-MPI ranks
+ * will get lowered.
+ */
 static const int min_atoms_per_gpu        = 900;
-#endif /* GMX_THREAD_MPI */
 
 /**@{*/
 /*! \brief Constants for implementing default divisions of threads */
@@ -276,9 +279,7 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     return nrank;
 }
 
-
-#if GMX_THREAD_MPI
-
+//! Return whether hyper threading is enabled.
 static bool
 gmxSmtIsEnabled(const gmx::HardwareTopology &hwTop)
 {
@@ -288,6 +289,7 @@ gmxSmtIsEnabled(const gmx::HardwareTopology &hwTop)
 namespace
 {
 
+//! Handles checks for algorithms that must use a single rank.
 class SingleRankChecker
 {
     public:
@@ -332,9 +334,10 @@ class SingleRankChecker
  */
 int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                      gmx_hw_opt_t           *hw_opt,
-                     const std::vector<int> &userGpuIds,
-                     int                     numPmeRanks,
+                     const std::vector<int> &gpuIdsToUse,
+                     const std::vector<int> &userGpuTaskAssignment,
                      bool                    nonbondedOnGpu,
+                     bool                    pmeOnGpu,
                      const t_inputrec       *inputrec,
                      const gmx_mtop_t       *mtop,
                      const gmx::MDLogger    &mdlog,
@@ -346,31 +349,22 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
-    /* If the user made a GPU task assignment, that sets the number of thread-MPI ranks. */
-    int  numGpuIdsSupplied = static_cast<int>(userGpuIds.size());
+    GMX_RELEASE_ASSERT(hw_opt->nthreads_tmpi > 0 || userGpuTaskAssignment.empty(), "User GPU task assignment must also specify the number of ranks");
 
-    /* TODO Here we handle the case where the user set GPU IDs, and
-       further below we handle the case where the algorithm does not
-       support multiple ranks. We need also to handle the case where
-       the user set multiple GPU IDs for an algorithm that cannot
-       handle multiple ranks. */
-    if (hw_opt->nthreads_tmpi < 1 && numGpuIdsSupplied > 0)
+    if (pmeOnGpu)
     {
-        /* If the user chose both mdrun -nt -gpu_id, is that consistent? */
-        if (numPmeRanks <= 0)
+        GMX_RELEASE_ASSERT((EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)) &&
+                           pme_gpu_supports_input(inputrec, nullptr),
+                           "PME can't be on GPUs unless we are using PME");
+
+        // A single rank is all that is supported with PME on GPUs
+        if (hw_opt->nthreads_tmpi < 1)
         {
-            if (hw_opt->nthreads_tot > 0 &&
-                (hw_opt->nthreads_tot % numGpuIdsSupplied) != 0)
-            {
-                gmx_fatal(FARGS, "Cannot run %d total threads with %d GPU ranks. Choose the total number of threads to be a multiple of the number of GPU ranks.", hw_opt->nthreads_tot, numGpuIdsSupplied);
-            }
-            return numGpuIdsSupplied;
+            return 1;
         }
-        else
+        if (hw_opt->nthreads_tmpi > 1)
         {
-            gmx_fatal(FARGS, "The combination of choosing a number of PME ranks, and specific GPU IDs "
-                      "is not supported. Use also -ntmpi and/or -ntomp and -ntomp_pme to specify what "
-                      "distribution of threads to ranks you require.");
+            gmx_fatal(FARGS, "PME on GPUs is only supported with a single rank");
         }
     }
 
@@ -393,45 +387,15 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                 gmx_fatal(FARGS, "%s However, you asked for more than 1 thread-MPI rank, so mdrun cannot continue. Choose a single rank, or a different algorithm.", message.c_str());
             }
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("%s Choosing to use only a single thread-MPI rank.", message.c_str());
-
-            if (numGpuIdsSupplied > 1)
-            {
-                gmx_fatal(FARGS, "You supplied %d GPU IDs but only 1 rank can be used "
-                          "by this simulation. Supply only one GPU ID.", numGpuIdsSupplied);
-            }
             return 1;
         }
     }
 
     if (hw_opt->nthreads_tmpi > 0)
     {
-        if (numPmeRanks <= 0)
-        {
-            int numPpRanks = hw_opt->nthreads_tmpi;
-            if ((numGpuIdsSupplied > 0) &&
-                (numGpuIdsSupplied != numPpRanks))
-            {
-                gmx_fatal(FARGS, "Cannot run %d thread-MPI total ranks with %d "
-                          "GPU IDs supplied. The number of particle-particle (PP) ranks and the "
-                          "number of GPU IDs must match.", hw_opt->nthreads_tmpi, numGpuIdsSupplied);
-            }
-        }
-        else
-        {
-            int numPpRanks = hw_opt->nthreads_tmpi - numPmeRanks;
-            if ((numGpuIdsSupplied > 0) &&
-                (numGpuIdsSupplied != numPpRanks))
-            {
-                gmx_fatal(FARGS, "Cannot run %d thread-MPI total ranks with %d PME ranks and %d "
-                          "GPU IDs supplied. The number of particle-particle ranks and the "
-                          "number of GPU IDs must match.", hw_opt->nthreads_tmpi, numPmeRanks, numGpuIdsSupplied);
-            }
-        }
         /* Trivial, return the user's choice right away */
         return hw_opt->nthreads_tmpi;
     }
-    GMX_RELEASE_ASSERT(numGpuIdsSupplied == 0,
-                       "If mdrun -gpu_id had information, the number of ranks should have already been chosen");
 
     // Now implement automatic selection of number of thread-MPI ranks
     nthreads_hw = hwinfo->nthreads_hw_avail;
@@ -454,7 +418,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
 
     /* nonbondedOnGpu might be false e.g. because this simulation uses
      * the group scheme, or is a rerun with energy groups. */
-    ngpu = (nonbondedOnGpu ? hwinfo->gpu_info.n_dev_compatible : 0);
+    ngpu = (nonbondedOnGpu ? static_cast<int>(gpuIdsToUse.size()) : 0);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {
@@ -569,7 +533,6 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
 
     return nrank;
 }
-#endif /* GMX_THREAD_MPI */
 
 
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
@@ -719,12 +682,13 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 //! Dump a \c hw_opt to \c fp.
 static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 {
-    fprintf(fp, "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s'\n",
+    fprintf(fp, "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s' gputasks '%s'\n",
             hw_opt->nthreads_tot,
             hw_opt->nthreads_tmpi,
             hw_opt->nthreads_omp,
             hw_opt->nthreads_omp_pme,
-            hw_opt->gpuIdTaskAssignment.c_str());
+            hw_opt->gpuIdsAvailable.c_str(),
+            hw_opt->userGpuTaskAssignment.c_str());
 }
 
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
