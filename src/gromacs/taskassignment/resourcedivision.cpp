@@ -59,7 +59,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/taskassignment/hardwareassign.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
@@ -334,6 +333,7 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                      const std::vector<int> &userGpuIds,
                      int                     numPmeRanks,
                      bool                    nonbondedOnGpu,
+                     bool                    pmeOnGpu,
                      const t_inputrec       *inputrec,
                      const gmx_mtop_t       *mtop,
                      const gmx::MDLogger    &mdlog,
@@ -348,11 +348,27 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
     /* If the user made a GPU task assignment, that sets the number of thread-MPI ranks. */
     int  numGpuIdsSupplied = static_cast<int>(userGpuIds.size());
 
-    /* TODO Here we handle the case where the user set GPU IDs, and
-       further below we handle the case where the algorithm does not
-       support multiple ranks. We need also to handle the case where
-       the user set multiple GPU IDs for an algorithm that cannot
-       handle multiple ranks. */
+    if (pmeOnGpu)
+    {
+        // TODO Use something provided by PME module for GPU support test
+        GMX_RELEASE_ASSERT(EEL_PME(inputrec->coulombtype), "PME can't be on GPUs unless we are using PME");
+
+        // A single rank is all that is supported with PME on GPUs
+        if (hw_opt->nthreads_tmpi < 1)
+        {
+            return 1;
+        }
+        if (hw_opt->nthreads_tmpi > 1)
+        {
+            gmx_fatal(FARGS, "PME on GPUs is only supported with a single rank");
+        }
+    }
+
+    /* TODO Here we handle the case where the user set GPU IDs for NB
+       tasks, and further below we handle the case where the algorithm
+       does not support multiple ranks. We need also to handle the
+       case where the user set multiple GPU IDs for an algorithm that
+       cannot handle multiple PP ranks. */
     if (hw_opt->nthreads_tmpi < 1 && numGpuIdsSupplied > 0)
     {
         /* If the user chose both mdrun -nt -gpu_id, is that consistent? */
