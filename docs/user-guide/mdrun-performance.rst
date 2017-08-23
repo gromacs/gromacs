@@ -203,12 +203,6 @@ behavior.
     the total number of OpenMP threads per separate PME ranks.
     The default, 0, copies the value from ``-ntomp``.
 
-``-gpu_id``
-    A string that specifies the ID numbers of the GPUs to be
-    used by corresponding PP ranks on this node. For example,
-    "0011" specifies that the lowest two PP ranks use GPU 0,
-    and the other two use GPU 1.
-
 ``-pin``
     Can be set to "auto," "on" or "off" to control whether
     mdrun will attempt to set the affinity of threads to cores.
@@ -250,6 +244,29 @@ behavior.
     Defaults to "auto," which uses a compatible GPU if available.
     Setting "cpu" requires that no GPU is used. Setting "gpu" requires
     that a compatible GPU be available and will be used.
+
+``-gpu_id``
+    A string that specifies the ID numbers of the GPUs that
+    are available to be used by ranks on this node. For example,
+    "12" specifies that the GPUs with IDs 1 and 2 (as reported
+    by the GPU runtime) can be used by mdrun. This is useful
+    when sharing a node with other computations, or if a GPU
+    is best used to support a display. If many GPUs are
+    present, a comma may be used to separate the IDs, so
+    "12,13" would make GPUs 12 and 13 available to mdrun.
+    It could be necessary to use different GPUs on different
+    nodes of a simulation, in which case the environment
+    variable ``GMX_GPU_ID`` can be set differently for the ranks
+    on different nodes to achieve that result.
+
+``-gputasks``
+    A string that specifies the ID numbers of the GPUs to be
+    used by corresponding GPU tasks on this node. For example,
+    "0011" specifies that the first two GPU tasks will use GPU 0,
+    and the other two use GPU 1. When using this option, the
+    number of ranks must be known to mdrun, as well as where
+    tasks of different types should be run, such as by using
+    ``-nb gpu``.
 
 Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -296,7 +313,7 @@ CPU cores between them using OpenMP threads.
 
 ::
 
-    gmx mdrun -ntmpi 4 -gpu_id "1122"
+    gmx mdrun -ntmpi 4 -nb gpu -gputasks 1122
 
 Starts mdrun using four thread-MPI ranks, and maps them
 to GPUs with IDs 1 and 2. The CPU cores available will
@@ -435,7 +452,7 @@ each.
 
 ::
 
-    mpirun -np 4 gmx mdrun -ntomp 6 -gpu_id 00
+    mpirun -np 4 gmx mdrun -ntomp 6 -nb gpu -gputasks 00
 
 Starts :ref:`mdrun_mpi` on a machine with two nodes, using
 four total ranks, each rank with six OpenMP threads,
@@ -443,7 +460,7 @@ and both ranks on a node sharing GPU with ID 0.
 
 ::
 
-    mpirun -np 8 gmx mdrun -ntomp 3 -gpu_id 0000
+    mpirun -np 8 gmx mdrun -ntomp 3 -gputasks 0000
 
 Using a same/similar hardware as above,
 starts :ref:`mdrun_mpi` on a machine with two nodes, using
@@ -454,21 +471,23 @@ on the same hardware.
 
 ::
 
-    mpirun -np 20 gmx_mpi mdrun -ntomp 4 -gpu_id 0
+    mpirun -np 20 gmx_mpi mdrun -ntomp 4 -gputasks 00
 
 Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
 across ranks each to one OpenMP thread. This setup is likely to be
 suitable when there are ten nodes, each with one GPU, and each node
-has two sockets.
+has two sockets each of four cores.
 
 ::
 
-    mpirun -np 20 gmx_mpi mdrun -gpu_id 00
+    mpirun -np 10 gmx_mpi mdrun -gpu_id 1
 
 Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
 across ranks each to one OpenMP thread. This setup is likely to be
-suitable when there are ten nodes, each with one GPU, and each node
-has two sockets.
+suitable when there are ten nodes, each with two GPUs, but another
+job on each node is using GPU 0. The job scheduler should set the
+affinity of threads of both jobs to their allocated cores, or the
+performance of mdrun will suffer greatly.
 
 ::
 
@@ -476,15 +495,9 @@ has two sockets.
 
 Starts :ref:`mdrun_mpi` with 20 ranks. This setup is likely
 to be suitable when there are ten nodes, each with two
-GPUs.
-
-::
-
-    mpirun -np 40 gmx_mpi mdrun -gpu_id 0011
-
-Starts :ref:`mdrun_mpi` with 40 ranks. This setup is likely
-to be suitable when there are ten nodes, each with two
-GPUs, and OpenMP performs poorly on the hardware.
+GPUs, but there is no need to specify ``-gpu_id`` for the
+normal case where all the GPUs on the node are available
+for use.
 
 Controlling the domain decomposition algorithm
 ----------------------------------------------
@@ -796,7 +809,7 @@ of 2. So it can be useful go through the checklist.
   * For CUDA, use the newest CUDA availabe for your GPU to take advantage of the
     latest performance enhancements.
   * Use a recent GPU driver.
-  * If compiling on a cluster head node, make sure that ``GMX_CPU_ACCELERATION``
+  * If compiling on a cluster head node, make sure that ``GMX_SIMD``
     is appropriate for the compute nodes.
 
 Run setup

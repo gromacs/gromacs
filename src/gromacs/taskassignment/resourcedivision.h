@@ -71,9 +71,10 @@ class MDLogger;
  */
 int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
                      gmx_hw_opt_t           *hw_opt,
-                     const std::vector<int> &userGpuIds,
-                     int                     numPmeRanks,
+                     const std::vector<int> &gpuIdsToUse,
+                     const std::vector<int> &userGpuTaskAssignment,
                      bool                    nonbondedOnGpu,
+                     bool                    pmeOnGpu,
                      const t_inputrec       *inputrec,
                      const gmx_mtop_t       *mtop,
                      const gmx::MDLogger    &mdlog,

@@ -98,7 +98,7 @@ and output files are found in directories ``a``, ``b``, ``c``, and ``d``.
 
 ::
 
-    mpirun -np 32 gmx_mpi mdrun -multidir a b c d -gpu_id 0000000011111111
+    mpirun -np 32 gmx_mpi mdrun -multidir a b c d -gputasks 0000000011111111
 
 Starts the same multi-simulation as before. On a machine with two
 physical nodes and two GPUs per node, there will be 16 MPI ranks per
