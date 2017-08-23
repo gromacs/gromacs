@@ -55,7 +55,6 @@ struct gmx_hw_info_t
 {
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
-    std::vector<int>      compatibleGpus;          /* Contains the device IDs of all GPUs that are compatible */
 
     int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
                                                       is based on the number of CPUs reported as available
@@ -113,8 +112,10 @@ struct gmx_hw_opt_t
     int           core_pinning_stride = 0;
     //! Logical core pinning offset.
     int           core_pinning_offset = 0;
-    //! Empty, or a GPU task-assignment string provided by the user.
-    std::string   gpuIdTaskAssignment = "";
+    //! Empty, or a string provided by the user declaring (unique) GPU IDs available for mdrun to use.
+    std::string   gpuIdsAvailable = "";
+    //! Empty, or a string provided by the user mapping GPU tasks to devices.
+    std::string   userGpuTaskAssignment = "";
 };
 
 #endif
