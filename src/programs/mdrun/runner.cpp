@@ -100,8 +100,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/taskassignment/hardwareassign.h"
+#include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/resourcedivision.h"
+#include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/taskassignment/usergpuids.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
@@ -133,13 +134,6 @@ gmx_int64_t         deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
 //! MPI variable for use in pressure scaling
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
-#if GMX_THREAD_MPI
-/* The minimum number of atoms per tMPI thread. With fewer atoms than this,
- * the number of threads will get lowered.
- */
-#define MIN_ATOMS_PER_MPI_THREAD    90
-#define MIN_ATOMS_PER_GPU           900
 
 namespace gmx
 {
@@ -209,6 +203,7 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
     // Mdrunner.
     spawnedMdrunner.fnm = dup_tfn(this->nfile, fnm);
 
+#if GMX_THREAD_MPI
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
     if (tMPI_Init_fn(TRUE, numThreadsToLaunch, TMPI_AFFINITY_NONE,
@@ -216,13 +211,14 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
     {
         GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
     }
+#else
+    GMX_UNUSED_VALUE(mdrunner_start_fn);
+#endif
 
     return reinitialize_commrec_for_this_thread(cr);
 }
 
 }      // namespace
-
-#endif /* GMX_THREAD_MPI */
 
 /*! \brief Initialize variables for Verlet scheme simulation */
 static void prepare_verlet_scheme(FILE                           *fplog,
@@ -318,47 +314,12 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
 namespace gmx
 {
 
-//! Halt the run if there are inconsistences between user choices to run with GPUs and/or hardware detection.
-static void exitIfCannotForceGpuRun(bool                requirePhysicalGpu,
-                                    EmulateGpuNonbonded emulateGpuNonbonded,
-                                    bool                useVerletScheme,
-                                    bool                compatibleGpusFound)
-{
-    /* Was GPU acceleration either explicitly (-nb gpu) or implicitly
-     * (gpu ID passed) requested? */
-    if (!requirePhysicalGpu)
-    {
-        return;
-    }
-
-    if (GMX_GPU == GMX_GPU_NONE)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
-                  gmx::getProgramContext().displayName());
-    }
-
-    if (emulateGpuNonbonded == EmulateGpuNonbonded::Yes)
-    {
-        gmx_fatal(FARGS, "GPU emulation cannot be requested together with GPU acceleration!");
-    }
-
-    if (!useVerletScheme)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but can't be used without cutoff-scheme=Verlet");
-    }
-
-    if (!compatibleGpusFound)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but no compatible GPUs were detected.");
-    }
-}
-
-/*! \brief Return whether GPU acceleration is useful with the given settings.
+/*! \brief Return whether GPU acceleration of nonbondeds is useful with the given settings.
  *
  * If not, logs a message about falling back to CPU code. */
-static bool gpuAccelerationIsUseful(const MDLogger   &mdlog,
-                                    const t_inputrec *ir,
-                                    bool              doRerun)
+static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger   &mdlog,
+                                               const t_inputrec *ir,
+                                               bool              doRerun)
 {
     if (doRerun && ir->opts.ngener > 1)
     {
@@ -430,6 +391,31 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
+//! Make a TaskTarget from an mdrun argument string.
+static TaskTarget findTaskTarget(const char *optionString)
+{
+    TaskTarget returnValue = TaskTarget::Auto;
+
+    if (strncmp(optionString, "auto", 3) == 0)
+    {
+        returnValue = TaskTarget::Auto;
+    }
+    else if (strncmp(optionString, "cpu", 3) == 0)
+    {
+        returnValue = TaskTarget::Cpu;
+    }
+    else if (strncmp(optionString, "gpu", 3) == 0)
+    {
+        returnValue = TaskTarget::Gpu;
+    }
+    else
+    {
+        GMX_ASSERT(false, "Option string should have been checked for sanity already");
+    }
+
+    return returnValue;
+}
+
 int Mdrunner::mdrunner()
 {
     matrix                    box;
@@ -469,9 +455,7 @@ int Mdrunner::mdrunner()
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bool doRerun  = mdrunOptions.rerun;
 
-    /* Handle GPU-related user options. Later, we check consistency
-     * with things like whether support is compiled, or tMPI thread
-     * count. */
+    // Handle task-assignment related user options.
     EmulateGpuNonbonded emulateGpuNonbonded = (getenv("GMX_EMULATE_GPU") != nullptr ?
                                                EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
     std::vector<int>    userGpuIds;
@@ -480,16 +464,17 @@ int Mdrunner::mdrunner()
         userGpuIds = parseUserGpuIds(hw_opt.gpuIdTaskAssignment);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    auto             nonbondedTarget = findTaskTarget(nbpu_opt);
+    // TODO Connect these to actual mdrun arguments and some functionality
+    const char      *pme_opt     = "cpu";
+    auto             pmeTarget   = findTaskTarget(pme_opt);
 
-    bool                forceUseCpu           = (strncmp(nbpu_opt, "cpu", 3) == 0);
-    if (!userGpuIds.empty() && forceUseCpu)
-    {
-        gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
-    }
-    bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !userGpuIds.empty();
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && userGpuIds.empty() && (emulateGpuNonbonded == EmulateGpuNonbonded::No);
-    GMX_RELEASE_ASSERT(!(forceUsePhysicalGpu && tryUsePhysicalGpu), "Must either force use of "
-                       "GPUs for short-ranged interactions, or try to use them, not both.");
+    // TODO find a sensible home and behaviour for this
+    const char      *pme_fft_opt = "auto";
+    GMX_UNUSED_VALUE(pme_fft_opt);
+    //auto pmeFftTarget    = findTaskTarget(pme_fft_opt);
+    //GMX_UNUSED_VALUE(pmeFftOptionString);
+
     const PmeRunMode pmeRunMode = PmeRunMode::CPU;
     //TODO this is a placeholder as PME on GPU is not permitted yet
     //TODO should there exist a PmeRunMode::None value for consistency?
@@ -525,45 +510,21 @@ int Mdrunner::mdrunner()
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, globalState.get(), mtop);
 
-        exitIfCannotForceGpuRun(forceUsePhysicalGpu,
-                                emulateGpuNonbonded,
-                                inputrec->cutoff_scheme == ecutsVERLET,
-                                compatibleGpusFound(hwinfo->gpu_info));
-
-        if (inputrec->cutoff_scheme == ecutsVERLET)
-        {
-            /* TODO This logic could run later, e.g. before -npme -1
-               is handled. If inputrec has already been communicated,
-               then the resulting tryUsePhysicalGpu does not need to
-               be communicated. */
-            if ((tryUsePhysicalGpu || forceUsePhysicalGpu) &&
-                !gpuAccelerationIsUseful(mdlog, inputrec, doRerun))
-            {
-                /* Fallback message printed by nbnxn_acceleration_supported */
-                if (forceUsePhysicalGpu)
-                {
-                    gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
-                }
-                tryUsePhysicalGpu = false;
-            }
-        }
-        else
+        if (inputrec->cutoff_scheme != ecutsVERLET)
         {
             if (nstlist_cmdline > 0)
             {
                 gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
             }
 
-            if (compatibleGpusFound(hwinfo->gpu_info))
+            if (!hwinfo->compatibleGpus.empty())
             {
                 GMX_LOG(mdlog.warning).asParagraph().appendText(
                         "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
             }
-            tryUsePhysicalGpu = false;
         }
     }
-    bool nonbondedOnGpu = (tryUsePhysicalGpu || forceUsePhysicalGpu) && compatibleGpusFound(hwinfo->gpu_info);
 
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(&hw_opt, cr, domdecOptions.numPmeRanks);
@@ -572,8 +533,7 @@ int Mdrunner::mdrunner()
     gmx_check_thread_affinity_set(mdlog, cr,
                                   &hw_opt, hwinfo->nthreads_hw_avail, FALSE);
 
-#if GMX_THREAD_MPI
-    if (SIMMASTER(cr))
+    if (GMX_THREAD_MPI && SIMMASTER(cr))
     {
         if (domdecOptions.numPmeRanks > 0 && hw_opt.nthreads_tmpi <= 0)
         {
@@ -586,6 +546,26 @@ int Mdrunner::mdrunner()
          */
         check_and_update_hw_opt_2(&hw_opt, inputrec->cutoff_scheme);
 
+        bool useGpuForNonbonded = false;
+        bool useGpuForPme       = false;
+        try
+        {
+            // If the user specified the number of ranks, then we must
+            // respect that, but in default mode, we need to allow for
+            // the number of GPUs to choose the number of ranks.
+
+            useGpuForNonbonded = decideWhetherToUseGpusForNonbondedWithThreadMpi
+                    (nonbondedTarget, userGpuIds, emulateGpuNonbonded, *hwinfo,
+                    inputrec->cutoff_scheme == ecutsVERLET,
+                    gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun),
+                    hw_opt.nthreads_tmpi);
+            auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
+            auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
+            useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi
+                    (useGpuForNonbonded, pmeTarget, userGpuIds,
+                    *hwinfo, canUseGpuForPme, hw_opt.nthreads_tmpi);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         /* Determine how many thread-MPI ranks to start.
          *
          * TODO Over-writing the user-supplied value here does
@@ -595,7 +575,8 @@ int Mdrunner::mdrunner()
                                                 &hw_opt,
                                                 userGpuIds,
                                                 domdecOptions.numPmeRanks,
-                                                nonbondedOnGpu,
+                                                useGpuForNonbonded,
+                                                useGpuForPme,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);
@@ -608,16 +589,34 @@ int Mdrunner::mdrunner()
         // reinitialize_commrec_for_this_thread. Find a way to express
         // this better.
     }
-#endif
     /* END OF CAUTION: cr is now reliable */
 
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
-
-        gmx_bcast_sim(sizeof(nonbondedOnGpu), &nonbondedOnGpu, cr);
     }
+
+    // Ensure that each rank on a node uses the same approach to task
+    // assignment, now that each rank knows the inputrec that
+    // SIMMASTER read and used, and cr->nnodes has been assigned the
+    // number of thread-MPI ranks that have been chosen.
+    //
+    // Note that these variables describe only their own node.
+    bool useGpuForNonbonded = false;
+    bool useGpuForPme       = false;
+    try
+    {
+        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget, userGpuIds,
+                                                                emulateGpuNonbonded, inputrec->cutoff_scheme == ecutsVERLET,
+                                                                gpuAccelerationOfNonbondedIsUseful(mdlog, inputrec, doRerun),
+                                                                cr->nnodes);
+        auto inputSystemHasPme = EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype);
+        auto canUseGpuForPme   = inputSystemHasPme && pme_gpu_supports_input(inputrec, nullptr);
+        useGpuForPme = decideWhetherToUseGpusForPme(useGpuForNonbonded, pmeTarget, userGpuIds, canUseGpuForPme, cr->nnodes);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
 
@@ -689,7 +688,7 @@ int Mdrunner::mdrunner()
         domdecOptions.numPmeRanks = 0;
     }
 
-    if (nonbondedOnGpu && domdecOptions.numPmeRanks < 0)
+    if (useGpuForNonbonded && domdecOptions.numPmeRanks < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
@@ -792,7 +791,7 @@ int Mdrunner::mdrunner()
     if (inputrec->cutoff_scheme == ecutsVERLET)
     {
         prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, mtop, box,
-                              nonbondedOnGpu || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
+                              useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
     }
 
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
@@ -873,44 +872,72 @@ int Mdrunner::mdrunner()
     }
 #endif
 
-    // Contains the ID of the GPU used by each PP rank on this node,
-    // indexed by that rank. Empty if no GPUs are selected for use on
-    // this node.
-    std::vector<int> gpuTaskAssignment;
-    if (nonbondedOnGpu)
+    // Build a data structure that expresses which kinds of non-bonded
+    // task are handled by this rank.
+    //
+    // TODO Later, this might become a loop over all registered modules
+    // relevant to the mdp inputs, to find those that have such tasks.
+    //
+    // TODO This could move before init_domain_decomposition() as part
+    // of refactoring that separates the responsibility for duty
+    // assignment from setup for communication between tasks, and
+    // setup for tasks handled with a domain (ie including short-ranged
+    // tasks, bonded tasks, etc.).
+    //
+    // Note that in general useGpuForNonbonded, etc. can have a value
+    // that is inconsistent with the presence of actual GPUs on any
+    // rank, and that is not known to be a problem until the
+    // duty of the ranks on a node become node.
+    //
+    // TODO Later we might need the concept of computeTasksOnThisRank,
+    // from which we construct gpuTasksOnThisRank.
+    //
+    // Currently the DD code assigns duty to ranks that can
+    // include PP work that currently can be executed on a single
+    // GPU, if present and compatible.  This has to be coordinated
+    // across PP ranks on a node, with possible multiple devices
+    // or sharing devices on a node, either from the user
+    // selection, or automatically.
+    auto                 haveGpus = !hwinfo->compatibleGpus.empty();
+    std::vector<GpuTask> gpuTasksOnThisRank;
+    if (thisRankHasDuty(cr, DUTY_PP))
     {
-        // Currently the DD code assigns duty to ranks that can
-        // include PP work that currently can be executed on a single
-        // GPU, if present and compatible.  This has to be coordinated
-        // across PP ranks on a node, with possible multiple devices
-        // or sharing devices on a node, either from the user
-        // selection, or automatically.
-        //
-        // GPU ID assignment strings, if provided, cover all the ranks on
-        // a node. If nodes or the process placement on them are
-        // heterogeneous, then the GMX_GPU_ID environment variable must be
-        // set by a user who also wishes to direct GPU ID assignment.
-        // Thus the implementation of task assignment can assume it has a
-        // GPU ID assignment appropriate for the node upon which its
-        // process is running.
-        //
-        // Valid GPU ID assignments are an ordered set of digits that
-        // identify GPU device IDs (e.g. as understood by the GPU runtime,
-        // and subject to environment modification such as with
-        // CUDA_VISIBLE_DEVICES) that will be used for the GPU-suitable
-        // tasks on all of the ranks of that node.
-        bool rankCanUseGpu = thisRankHasDuty(cr, DUTY_PP);
-        gpuTaskAssignment = mapPpRanksToGpus(rankCanUseGpu, cr, hwinfo->gpu_info, hwinfo->compatibleGpus, userGpuIds);
+        if (useGpuForNonbonded)
+        {
+            if (haveGpus)
+            {
+                gpuTasksOnThisRank.push_back(GpuTask::Nonbonded);
+            }
+            else if (nonbondedTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because there is none detected.");
+            }
+        }
+    }
+    // TODO cr->duty & DUTY_PME should imply that a PME algorithm is active, but currently does not.
+    if (EEL_PME(inputrec->coulombtype) && (thisRankHasDuty(cr, DUTY_PME)))
+    {
+        if (useGpuForPme)
+        {
+            if (haveGpus)
+            {
+                gpuTasksOnThisRank.push_back(GpuTask::Pme);
+            }
+            else if (pmeTarget == TaskTarget::Gpu)
+            {
+                gmx_fatal(FARGS, "Cannot run PME on a GPU because there is none detected.");
+            }
+        }
     }
 
-    reportGpuUsage(mdlog, hwinfo->gpu_info, !userGpuIds.empty(),
-                   gpuTaskAssignment, cr->nrank_pp_intranode, cr->nnodes > 1);
-
-    if (!gpuTaskAssignment.empty())
+    GpuTaskAssignment gpuTaskAssignment;
+    try
     {
-        GMX_RELEASE_ASSERT(cr->nrank_pp_intranode == static_cast<int>(gpuTaskAssignment.size()),
-                           "The number of PP ranks on each node must equal the number of GPU tasks used on each node");
+        // Produce the task assignment for this rank.
+        gpuTaskAssignment = runTaskAssignment(userGpuIds, *hwinfo,
+                                              mdlog, cr, gpuTasksOnThisRank);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* Prevent other ranks from continuing after an issue was found
      * and reported as a fatal error.
@@ -925,6 +952,10 @@ int Mdrunner::mdrunner()
     {
         MPI_Barrier(cr->mpi_comm_mysim);
     }
+    if (MULTISIM(cr))
+    {
+        MPI_Barrier(cr->ms->mpi_comm_masters);
+    }
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
@@ -937,7 +968,9 @@ int Mdrunner::mdrunner()
     {
         if (!gpuTaskAssignment.empty())
         {
-            shortRangedDeviceId   = gpuTaskAssignment[cr->rank_pp_intranode];
+            GMX_RELEASE_ASSERT(gpuTaskAssignment.size() == 1, "A valid GPU assignment can only have one task per rank");
+            GMX_RELEASE_ASSERT(gpuTaskAssignment[0].task_ == gmx::GpuTask::Nonbonded, "A valid GPU assignment can only include short-ranged tasks");
+            shortRangedDeviceId   = gpuTaskAssignment[0].deviceId_;
             shortRangedDeviceInfo = getDeviceInfo(hwinfo->gpu_info, shortRangedDeviceId);
         }
     }
