@@ -623,14 +623,20 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     return retval;
 }
 
-bool isGpuCompatible(const gmx_gpu_info_t &gpu_info,
-                     int                   index)
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 {
-    assert(gpu_info.n_dev == 0 || gpu_info.gpu_dev);
-
-    return (index >= gpu_info.n_dev ?
-            false :
-            gpu_info.gpu_dev[index].stat == egpuCompatible);
+    // Possible minor over-allocation here, but not important for anything
+    std::vector<int> compatibleGpus;
+    compatibleGpus.reserve(gpu_info.n_dev);
+    for (int i = 0; i < gpu_info.n_dev; i++)
+    {
+        assert(gpu_info.gpu_dev);
+        if (gpu_info.gpu_dev[i].stat == egpuCompatible)
+        {
+            compatibleGpus.push_back(i);
+        }
+    }
+    return compatibleGpus;
 }
 
 const char *getGpuCompatibilityDescription(const gmx_gpu_info_t &gpu_info,
