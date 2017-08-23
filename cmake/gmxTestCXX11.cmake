@@ -47,7 +47,9 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
     if(WIN32 AND NOT MINGW)
         set(CXX11_CXX_FLAG "/Qstd=c++11")
     elseif(CYGWIN)
-        set(CXX11_CXX_FLAG "-std=gnu++11") #required for strdup
+        set(CXX11_CXX_FLAG "-std=gnu++1y") #required for strdup
+    elseif(CMAKE_COMPILER_IS_GNUCXX)
+        set(CXX11_CXX_FLAG "-std=c++1y") #required for decltype workaround
     else()
         set(CXX11_CXX_FLAG "-std=c++11")
     endif()

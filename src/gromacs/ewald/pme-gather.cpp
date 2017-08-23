@@ -279,9 +279,12 @@ do_fspline(std::integral_constant<int, Order> order, const struct gmx_pme_t *pme
 #endif
 
 
-template<bool checkCoefficients, ForceAddOrSet addOrSet, typename Int>
-static void
-gather_f_bsplines_template1(Int                                 order,
+struct gather_f_bsplines_template {
+template<bool checkCoefficients, bool forceClear, typename Int>
+void
+operator()(std::integral_constant<bool, checkCoefficients>,
+           std::integral_constant<bool, forceClear>,
+                            Int                                 order,
                             const struct gmx_pme_t*             pme,
                             const real * gmx_restrict           grid,
                             const pme_atomcomm_t * gmx_restrict atc,
@@ -310,7 +313,7 @@ gather_f_bsplines_template1(Int                                 order,
         const int  n           = spline->ind[nn];
         const real coefficient = scale*atc->coefficient[n];
 
-        if (addOrSet == ForceAddOrSet::set)
+        if (forceClear)
         {
             force[n][XX] = 0;
             force[n][YY] = 0;
@@ -351,24 +354,39 @@ gather_f_bsplines_template1(Int                                 order,
      * in parallel. Don't know how important it is?  EL 990726
      */
 }
+};
 
-template<bool checkCoefficients, typename Int>
-static void
-gather_f_bsplines_template2(Int                       order,
-                            const struct gmx_pme_t   *pme,
-                            const real * gmx_restrict grid,
-                            const ForceAddOrSet       addOrSet,
-                            const pme_atomcomm_t     *atc,
-                            const splinedata_t       *spline,
-                            real                      scale)
+//TODO: move to some utility header
+
+// Recursion stop for function below.
+// Convert parameters passed as temeplate arguments into integral_constant<bool> arguments
+template<bool...Bs, typename F, typename ...T>
+auto dispatch(F &&f, T&&...t) noexcept(noexcept(f(std::integral_constant<bool,Bs>()..., t...))) -> decltype(f(std::integral_constant<bool,Bs>()..., t...))
 {
-    if (addOrSet == ForceAddOrSet::add)
+    return std::forward<F>(f)(std::integral_constant<bool,Bs>()..., std::forward<T>(t)...);
+}
+
+/* Converts the leading bool arguments into compile time bool constants. Wraps function call
+ * with a if statement for each bool argument to call function with correct compile-time
+ * value based on the runtime value. 
+ *
+ * The Bs are only used as implementation detail and should not be set by caller (could be hidden by another wrapper function).
+ * the std::forward and noexcept can be ignored for understanding the function. They are there only for perfect forwarding.
+ */
+template<bool...Bs, typename F, typename ...T>
+auto dispatch(F &&f, bool b, T&&...t) noexcept(noexcept(dispatch<Bs..., true>(f, t...)))
+//GCC (4.8-7.2) has a bug with decltype. And versions <5 don't yet define __cplusplus for 14.
+#if __cplusplus == 201103L && !(defined(__GNUC__) && __GNUC__ < 5 && !defined(__clang__) && !defined(__INTEL_COMPILER))
+    -> decltype(dispatch<Bs..., true>(f, t...))
+#endif
+{
+    if (b)
     {
-        gather_f_bsplines_template1<checkCoefficients, ForceAddOrSet::add>(order, pme, grid, atc, spline, scale);
+        return dispatch<Bs..., true>(std::forward<F>(f), std::forward<T>(t)...);
     }
     else
     {
-        gather_f_bsplines_template1<checkCoefficients, ForceAddOrSet::set>(order, pme, grid, atc, spline, scale);
+        return dispatch<Bs..., false>(std::forward<F>(f), std::forward<T>(t)...);
     }
 }
 
@@ -395,24 +413,24 @@ gather_f_bsplines(const struct gmx_pme_t    *pme,
          */
         const float coefficientFractionSwitch = 0.90f;
 
-        if (fractionNonzeroCoefficients >= coefficientFractionSwitch)
-        {
-            gather_f_bsplines_template2<false>(order4(), pme, grid, addOrSet, atc, spline, scale);
-        }
-        else
-        {
-            gather_f_bsplines_template2<true>(order4(), pme, grid, addOrSet, atc, spline, scale);
-        }
+        dispatch(gather_f_bsplines_template(),
+                 fractionNonzeroCoefficients >= coefficientFractionSwitch,
+                 addOrSet==ForceAddOrSet::set, order4(),
+                 pme, grid, atc, spline, scale);
     }
     else if (order == 5)
     {
         typedef std::integral_constant<int, 5> order5;
 
-        gather_f_bsplines_template2<true>(order5(), pme, grid, addOrSet, atc, spline, scale);
+        dispatch(gather_f_bsplines_template(),
+                 true, addOrSet==ForceAddOrSet::set,
+                 order5(), pme, grid, atc, spline, scale);
     }
     else
     {
-        gather_f_bsplines_template2<true>(order, pme, grid, addOrSet, atc, spline, scale);
+        dispatch(gather_f_bsplines_template(),
+                 true, addOrSet==ForceAddOrSet::set,
+                 order, pme, grid, atc, spline, scale);
     }
 }
 
