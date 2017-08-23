@@ -33,8 +33,11 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
-    hardwareassign.cpp
+    decidegpuusage.cpp
+    findallgputasks.cpp
+    reportgpuusage.cpp
     resourcedivision.cpp
+    taskassignment.cpp
     usergpuids.cpp
     )
 
