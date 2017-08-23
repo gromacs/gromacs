@@ -104,7 +104,7 @@ void PmeTestEnvironment::SetUp()
 
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     TestHardwareContexts gpuContexts;
-    for (int gpuIndex : hardwareInfo_->compatibleGpus)
+    for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
     {
         char        stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);

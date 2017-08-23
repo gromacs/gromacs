@@ -209,8 +209,14 @@ Performance and Run Control
 
 ``GMX_GPU_ID``
         set in the same way as ``mdrun -gpu_id``, ``GMX_GPU_ID``
-        allows the user to specify different GPU id-s, which can be useful for selecting different
+        allows the user to specify different GPU IDs for different ranks, which can be useful for selecting different
         devices on different compute nodes in a cluster.  Cannot be used in conjunction with ``mdrun -gpu_id``.
+
+``GMX_GPUTASKS``
+        set in the same way as ``mdrun -gputasks``, ``GMX_GPUTASKS`` allows the mapping
+        of GPU tasks to GPU device IDs to be different on different ranks, if e.g. the MPI
+        runtime permits this variable to be different for different ranks. Cannot be used
+        in conjunction with ``mdrun -gputasks``. Has all the same requirements as ``mdrun -gputasks``.
 
 ``GMX_IGNORE_FSYNC_FAILURE_ENV``
         allow :ref:`gmx mdrun` to continue even if
