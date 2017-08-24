@@ -192,67 +192,6 @@ static void copy_int_to_nbat_int(const int *a, int na, int na_round,
     }
 }
 
-static void clear_nbat_real(int na, int nbatFormat, real *xnb, int a0)
-{
-    int j, c;
-
-    switch (nbatFormat)
-    {
-        case nbatXYZ:
-            for (int a = 0; a < na; a++)
-            {
-                for (int d = 0; d < DIM; d++)
-                {
-                    xnb[(a0+a)*STRIDE_XYZ+d] = 0;
-                }
-            }
-            break;
-        case nbatXYZQ:
-            for (int a = 0; a < na; a++)
-            {
-                for (int d = 0; d < DIM; d++)
-                {
-                    xnb[(a0+a)*STRIDE_XYZQ+d] = 0;
-                }
-            }
-            break;
-        case nbatX4:
-            j = atom_to_x_index<c_packX4>(a0);
-            c = a0 & (c_packX4 - 1);
-            for (int a = 0; a < na; a++)
-            {
-                xnb[j+XX*c_packX4] = 0;
-                xnb[j+YY*c_packX4] = 0;
-                xnb[j+ZZ*c_packX4] = 0;
-                j++;
-                c++;
-                if (c == c_packX4)
-                {
-                    j += (DIM-1)*c_packX4;
-                    c  = 0;
-                }
-            }
-            break;
-        case nbatX8:
-            j = atom_to_x_index<c_packX8>(a0);
-            c = a0 & (c_packX8-1);
-            for (int a = 0; a < na; a++)
-            {
-                xnb[j+XX*c_packX8] = 0;
-                xnb[j+YY*c_packX8] = 0;
-                xnb[j+ZZ*c_packX8] = 0;
-                j++;
-                c++;
-                if (c == c_packX8)
-                {
-                    j += (DIM-1)*c_packX8;
-                    c  = 0;
-                }
-            }
-            break;
-    }
-}
-
 void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                             const rvec *x, int nbatFormat,
                             real *xnb, int a0)
@@ -1220,7 +1159,7 @@ nbnxn_atomdata_clear_reals(real * gmx_restrict dest,
     }
 }
 
-static void
+gmx_unused static void
 nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
                             gmx_bool bDestSet,
                             real ** gmx_restrict src,
@@ -1252,7 +1191,7 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
     }
 }
 
-static void
+gmx_unused static void
 nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
                                  gmx_bool gmx_unused bDestSet,
                                  real gmx_unused ** gmx_restrict src,

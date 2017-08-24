@@ -102,36 +102,6 @@ static int lfactor(int z)
 }
 #endif
 
-/* largest factor */
-static int l2factor(int z)
-{
-    int i;
-    if (z == 1)
-    {
-        i = 1;
-    }
-    else
-    {
-        i = z/2;
-        while (z%i != 0)
-        {
-            i--;
-        }
-    }
-    return i;
-}
-
-/* largest prime factor: WARNING: slow recursion, only use for small numbers */
-static int lpfactor(int z)
-{
-    int f = l2factor(z);
-    if (f == 1)
-    {
-        return z;
-    }
-    return std::max(lpfactor(f), lpfactor(z/f));
-}
-
 #if !GMX_MPI
 #if HAVE_GETTIMEOFDAY
 #include <sys/time.h>

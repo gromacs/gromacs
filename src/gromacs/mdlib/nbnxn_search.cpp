@@ -121,7 +121,7 @@ static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
     fprintf(fp, "\n");
 }
 
-static gmx_inline int ci_to_cj(int ci, int na_cj_2log)
+gmx_unused static gmx_inline int ci_to_cj(int ci, int na_cj_2log)
 {
     switch (na_cj_2log)
     {
@@ -386,10 +386,11 @@ static void get_cell_range(real b0, real b1,
 }
 
 /* Reference code calculating the distance^2 between two bounding boxes */
-static float box_dist2(float bx0, float bx1, float by0,
+/*
+   static float box_dist2(float bx0, float bx1, float by0,
                        float by1, float bz0, float bz1,
                        const nbnxn_bb_t *bb)
-{
+   {
     float d2;
     float dl, dh, dm, dm0;
 
@@ -414,7 +415,8 @@ static float box_dist2(float bx0, float bx1, float by0,
     d2 += dm0*dm0;
 
     return d2;
-}
+   }
+ */
 
 /* Plain C code calculating the distance^2 between two bounding boxes */
 static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
@@ -1134,7 +1136,7 @@ static unsigned int get_imask(gmx_bool rdiag, int ci, int cj)
 }
 
 /* Returns a diagonal or off-diagonal interaction mask for cj-size=2 */
-static unsigned int get_imask_simd_j2(gmx_bool rdiag, int ci, int cj)
+gmx_unused static unsigned int get_imask_simd_j2(gmx_bool rdiag, int ci, int cj)
 {
     return (rdiag && ci*2 == cj ? NBNXN_INTERACTION_MASK_DIAG_J2_0 :
             (rdiag && ci*2+1 == cj ? NBNXN_INTERACTION_MASK_DIAG_J2_1 :
@@ -1142,13 +1144,13 @@ static unsigned int get_imask_simd_j2(gmx_bool rdiag, int ci, int cj)
 }
 
 /* Returns a diagonal or off-diagonal interaction mask for cj-size=4 */
-static unsigned int get_imask_simd_j4(gmx_bool rdiag, int ci, int cj)
+gmx_unused static unsigned int get_imask_simd_j4(gmx_bool rdiag, int ci, int cj)
 {
     return (rdiag && ci == cj ? NBNXN_INTERACTION_MASK_DIAG : NBNXN_INTERACTION_MASK_ALL);
 }
 
 /* Returns a diagonal or off-diagonal interaction mask for cj-size=8 */
-static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
+gmx_unused static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
 {
     return (rdiag && ci == cj*2 ? NBNXN_INTERACTION_MASK_DIAG_J8_0 :
             (rdiag && ci == cj*2+1 ? NBNXN_INTERACTION_MASK_DIAG_J8_1 :
@@ -2464,9 +2466,9 @@ static void set_icell_bbxxxx_supersub(const float *bb, int ci,
 #endif
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-static void set_icell_bb_supersub(const nbnxn_bb_t *bb, int ci,
-                                  real shx, real shy, real shz,
-                                  nbnxn_bb_t *bb_ci)
+gmx_unused static void set_icell_bb_supersub(const nbnxn_bb_t *bb, int ci,
+                                             real shx, real shy, real shz,
+                                             nbnxn_bb_t *bb_ci)
 {
     for (int i = 0; i < c_gpuNumClusterPerCell; i++)
     {
