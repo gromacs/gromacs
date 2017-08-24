@@ -2,22 +2,24 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <NonZeroGridValues Name="ComplexSpaceGrid">
-    <Real Name="Cell 0 0 0 re">-0.00050094915954292444</Real>
-    <Real Name="Cell 0 0 0 im">-0.00095895979239689257</Real>
-    <Real Name="Cell 3 1 2 re">-6.7180429642686536e-17</Real>
-    <Real Name="Cell 3 1 2 im">-8.8454229915819465e-16</Real>
-    <Real Name="Cell 6 2 4 re">-4.0219318277835495e-30</Real>
-    <Real Name="Cell 6 2 4 im">-3.2736654634451577e-31</Real>
-    <Real Name="Cell 7 0 0 re">5.2771744681693101e-09</Real>
-    <Real Name="Cell 7 0 0 im">1.4776088259238779e-09</Real>
+    <Real Name="Cell 0 0 0 re">-0.00079548871168158802</Real>
+    <Real Name="Cell 0 0 0 im">-0.0015227926332969169</Real>
+    <Real Name="Cell 3 1 2 re">-1.667480161763893e-13</Real>
+    <Real Name="Cell 3 1 2 im">-2.1955154855843952e-12</Real>
+    <Real Name="Cell 3 5 7 re">3.1345459472996126e-31</Real>
+    <Real Name="Cell 3 5 7 im">-5.2242431683382485e-37</Real>
+    <Real Name="Cell 6 2 4 re">-9.9644680913312154e-23</Real>
+    <Real Name="Cell 6 2 4 im">-8.1106136177770712e-24</Real>
+    <Real Name="Cell 7 0 0 re">1.4003793077296991e-07</Real>
+    <Real Name="Cell 7 0 0 im">3.9210619948678688e-08</Real>
   </NonZeroGridValues>
-  <Real Name="Energy">-0.0040891833559143697</Real>
+  <Real Name="Energy">-0.0064936492103374634</Real>
   <Matrix Name="Virial">
-    <Real Name="Cell 0 0">0.002044522620163693</Real>
-    <Real Name="Cell 1 0">-8.3341076355721297e-14</Real>
-    <Real Name="Cell 1 1">0.0020445916779097549</Real>
-    <Real Name="Cell 2 0">1.9811620023306347e-08</Real>
-    <Real Name="Cell 2 1">-1.9438457977681831e-16</Real>
-    <Real Name="Cell 2 2">0.0020445859942955147</Real>
+    <Real Name="Cell 0 0">0.0032454477765799612</Real>
+    <Real Name="Cell 1 0">-1.5362635061597805e-10</Real>
+    <Real Name="Cell 1 1">0.0032468245177390991</Real>
+    <Real Name="Cell 2 0">3.9491374202272383e-07</Real>
+    <Real Name="Cell 2 1">-3.5831787477844501e-13</Real>
+    <Real Name="Cell 2 2">0.0032467113100588746</Real>
   </Matrix>
 </ReferenceData>
