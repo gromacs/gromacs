@@ -82,7 +82,7 @@ int gmx_omp_nthreads_get(int mod);
  * the reduction in computional cost due to parallelization. This routine
  * returns 1 when the overhead is expected to be higher than the gain.
  */
-static int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
+static inline int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
 {
     /* There can be a relatively large overhead to an OpenMP parallel for loop.
      * This overhead increases, slowly, with the numbe of threads used.

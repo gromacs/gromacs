@@ -108,22 +108,6 @@ static size_t get_nharm_mt(const gmx_moltype_t *mt)
     return nh;
 }
 
-static size_t get_nvsite_mt(gmx_moltype_t *mt)
-{
-    static int   vs_func[] = {
-        F_VSITE2, F_VSITE3, F_VSITE3FD, F_VSITE3FAD,
-        F_VSITE3OUT, F_VSITE4FD, F_VSITE4FDN, F_VSITEN
-    };
-    int          i, ft;
-    size_t       nh = 0;
-    for (i = 0; (i < asize(vs_func)); i++)
-    {
-        ft  = vs_func[i];
-        nh += mt->ilist[ft].nr/(interaction_function[ft].nratoms+1);
-    }
-    return nh;
-}
-
 static int get_nharm(const gmx_mtop_t *mtop)
 {
     int nh = 0;

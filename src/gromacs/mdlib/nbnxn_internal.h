@@ -226,13 +226,6 @@ typedef void
                        int stride, const real *x,
                        nbnxn_list_work_t *work);
 
-static gmx_icell_set_x_t icell_set_x_simple;
-#if GMX_SIMD
-static gmx_icell_set_x_t icell_set_x_simple_simd_4xn;
-static gmx_icell_set_x_t icell_set_x_simple_simd_2xnn;
-#endif
-static gmx_icell_set_x_t icell_set_x_supersub;
-
 /* Local cycle count struct for profiling */
 typedef struct {
     int          count;
@@ -298,12 +291,12 @@ typedef struct nbnxn_search {
 } nbnxn_search_t_t;
 
 
-static void nbs_cycle_start(nbnxn_cycle_t *cc)
+static inline void nbs_cycle_start(nbnxn_cycle_t *cc)
 {
     cc->start = gmx_cycles_read();
 }
 
-static void nbs_cycle_stop(nbnxn_cycle_t *cc)
+static inline void nbs_cycle_stop(nbnxn_cycle_t *cc)
 {
     cc->c += gmx_cycles_read() - cc->start;
     cc->count++;

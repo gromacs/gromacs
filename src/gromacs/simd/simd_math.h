@@ -3658,7 +3658,7 @@ atan2SingleAccuracy(SimdDouble y, SimdDouble x)
  * added to \f$1/r\f$ the error will be insignificant.
  *
  */
-static SimdDouble gmx_simdcall
+static inline SimdDouble gmx_simdcall
 pmeForceCorrectionSingleAccuracy(SimdDouble z2)
 {
     const SimdDouble  FN6(-1.7357322914161492954e-8);
@@ -3730,7 +3730,7 @@ pmeForceCorrectionSingleAccuracy(SimdDouble z2)
  * This approximation achieves an accuracy slightly lower than 1e-6; when
  * added to \f$1/r\f$ the error will be insignificant.
  */
-static SimdDouble gmx_simdcall
+static inline SimdDouble gmx_simdcall
 pmePotentialCorrectionSingleAccuracy(SimdDouble z2)
 {
     const SimdDouble  VN6(1.9296833005951166339e-8);

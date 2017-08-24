@@ -58,7 +58,7 @@ static t_complex rcmul(real r, t_complex c)
     return d;
 }
 
-static t_complex rcexp(real r)
+static inline t_complex rcexp(real r)
 {
     t_complex c;
 
@@ -69,7 +69,7 @@ static t_complex rcexp(real r)
 }
 
 
-static t_complex cadd(t_complex a, t_complex b)
+static inline t_complex cadd(t_complex a, t_complex b)
 {
     t_complex c;
 
@@ -79,7 +79,7 @@ static t_complex cadd(t_complex a, t_complex b)
     return c;
 }
 
-static t_complex csub(t_complex a, t_complex b)
+static inline t_complex csub(t_complex a, t_complex b)
 {
     t_complex c;
 
@@ -109,7 +109,7 @@ static t_complex conjugate(t_complex c)
     return d;
 }
 
-static real cabs2(t_complex c)
+static inline real cabs2(t_complex c)
 {
     real abs2;
     abs2 = (c.re*c.re)+(c.im*c.im);
@@ -117,7 +117,7 @@ static real cabs2(t_complex c)
     return abs2;
 }
 
-static t_complex cdiv(t_complex teller, t_complex noemer)
+static inline t_complex cdiv(t_complex teller, t_complex noemer)
 {
     t_complex res, anoemer;
 

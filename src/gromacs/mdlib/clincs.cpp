@@ -753,7 +753,8 @@ calc_dr_x_xp_simd(int                       b0,
 #endif // GMX_SIMD_HAVE_REAL
 
 /* Determine the distances and right-hand side for the next iteration */
-static void calc_dist_iter(int                       b0,
+gmx_unused static void calc_dist_iter(
+                           int                       b0,
                            int                       b1,
                            const int *               bla,
                            const rvec * gmx_restrict xp,

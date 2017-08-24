@@ -87,7 +87,7 @@ namespace internal
  *        gmx::alignedMalloc(). Just like system-provided routines, it provides
  *        memory that is aligned - but not padded.
  */
-static void *
+gmx_unused static void *
 alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
 {
     // The amount of extra memory (beyound what the user asked for) we need is:
@@ -127,7 +127,7 @@ alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
  * \note  This is an internal routine that should only be called from
  *        gmx::alignedFree().
  */
-static void
+gmx_unused static void
 alignedFreeGeneric(void *p)
 {
     if (p)

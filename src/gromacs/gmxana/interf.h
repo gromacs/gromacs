@@ -43,7 +43,7 @@ typedef struct {
     real t; /* Interface thickness */
 } t_interf;
 
-static void init_interf(t_interf *surf)
+static inline void init_interf(t_interf *surf)
 {
     surf->Z = 0;
     surf->t = 0;
