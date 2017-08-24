@@ -382,37 +382,6 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
     return sc;
 }
 
-/* Calculate the potential and force for an r value
- * in exactly the same way it is done in the inner loop.
- * VFtab is a pointer to the table data, offset is
- * the point where we should begin and stride is
- * 4 if we have a buckingham table, 3 otherwise.
- * If you want to evaluate table no N, set offset to 4*N.
- *
- * We use normal precision here, since that is what we
- * will use in the inner loops.
- */
-static void evaluate_table(real VFtab[], int offset, int stride,
-                           real tabscale, real r, real *y, real *yp)
-{
-    int  n;
-    real rt, eps, eps2;
-    real Y, F, Geps, Heps2, Fp;
-
-    rt       =  r*tabscale;
-    n        =  (int)rt;
-    eps      =  rt - n;
-    eps2     =  eps*eps;
-    n        =  offset+stride*n;
-    Y        =  VFtab[n];
-    F        =  VFtab[n+1];
-    Geps     =  eps*VFtab[n+2];
-    Heps2    =  eps2*VFtab[n+3];
-    Fp       =  F+Geps+Heps2;
-    *y       =  Y+eps*Fp;
-    *yp      =  (Fp+Geps+2.0*Heps2)*tabscale;
-}
-
 static void copy2table(int n, int offset, int stride,
                        double x[], double Vtab[], double Ftab[], real scalefactor,
                        real dest[])

@@ -164,9 +164,9 @@ static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
 }
 
 /* Returns that maximum OpenMP thread count that passes the efficiency check */
-static int nthreads_omp_efficient_max(int gmx_unused       nrank,
-                                      const gmx::CpuInfo  &cpuInfo,
-                                      gmx_bool             bUseGPU)
+gmx_unused static int nthreads_omp_efficient_max(int gmx_unused       nrank,
+                                                 const gmx::CpuInfo  &cpuInfo,
+                                                 gmx_bool             bUseGPU)
 {
 #if GMX_OPENMP && GMX_MPI
     if (nrank > 1)
@@ -183,10 +183,10 @@ static int nthreads_omp_efficient_max(int gmx_unused       nrank,
 /* Return the number of thread-MPI ranks to use.
  * This is chosen such that we can always obey our own efficiency checks.
  */
-static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
-                                        const gmx_hw_opt_t  &hw_opt,
-                                        int                  nthreads_tot,
-                                        int                  ngpu)
+gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
+                                                   const gmx_hw_opt_t  &hw_opt,
+                                                   int                  nthreads_tot,
+                                                   int                  ngpu)
 {
     int                 nrank;
     const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
@@ -265,8 +265,8 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 }
 
 
-static int getMaxGpuUsable(const gmx_hw_info_t *hwinfo,
-                           int                  cutoff_scheme)
+gmx_unused static int getMaxGpuUsable(const gmx_hw_info_t *hwinfo,
+                                      int                  cutoff_scheme)
 {
     /* This code relies on the fact that GPU are not detected when GPU
      * acceleration was disabled at run time by the user, either with

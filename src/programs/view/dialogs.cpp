@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,17 +253,6 @@ enum {
     eg0, egTOPOL, egCONFIN, egPARAM, eg1, eg1PROC, eg32PROC
 };
 
-static void Extract(t_dlg *dlg, int ID, char *buf)
-{
-    char *et;
-
-    et = EditText(dlg, ID);
-    if (et)
-    {
-        std::strcpy(buf, et);
-    }
-}
-
 enum bond_set {
     ebShowH = 11, ebDPlus, ebRMPBC, ebCue, ebSkip, ebWait
 };
@@ -412,19 +401,6 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
 enum {
     esFUNCT = 1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL
 };
-
-static bool in_set(int i, int n, int set[])
-{
-    int j;
-    for (j = 0; (j < n); j++)
-    {
-        if (set[j] == i)
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 typedef t_dlg *t_mmb (t_x11 *x11, t_gmx *gmx);
 

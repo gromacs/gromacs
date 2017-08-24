@@ -505,8 +505,8 @@ static void calc_bounding_box_x_x8(int na, const real *x, nbnxn_bb_t *bb)
 }
 
 /* Packed coordinates, bb order xyz0 */
-static void calc_bounding_box_x_x4_halves(int na, const real *x,
-                                          nbnxn_bb_t *bb, nbnxn_bb_t *bbj)
+gmx_unused static void calc_bounding_box_x_x4_halves(int na, const real *x,
+                                                     nbnxn_bb_t *bb, nbnxn_bb_t *bbj)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
@@ -1406,21 +1406,6 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 
             print_bbsizes_supersub(debug, grid);
         }
-    }
-}
-
-static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
-                              int                   natoms)
-{
-    flags->nflag = (natoms + NBNXN_BUFFERFLAG_SIZE - 1)/NBNXN_BUFFERFLAG_SIZE;
-    if (flags->nflag > flags->flag_nalloc)
-    {
-        flags->flag_nalloc = over_alloc_large(flags->nflag);
-        srenew(flags->flag, flags->flag_nalloc);
-    }
-    for (int b = 0; b < flags->nflag; b++)
-    {
-        bitmask_clear(&(flags->flag[b]));
     }
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ int gmx_omp_nthreads_get(int mod);
  * the reduction in computional cost due to parallelization. This routine
  * returns 1 when the overhead is expected to be higher than the gain.
  */
-static int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
+static inline int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
 {
     /* There can be a relatively large overhead to an OpenMP parallel for loop.
      * This overhead increases, slowly, with the numbe of threads used.
