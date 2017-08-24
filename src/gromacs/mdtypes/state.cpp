@@ -82,24 +82,6 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
     clear_mat(ekin_total);
 };
 
-static void init_swapstate(swaphistory_t *swapstate)
-{
-    /* Ion/water position swapping */
-    swapstate->eSwapCoords            = 0;
-    swapstate->nIonTypes              = 0;
-    swapstate->nAverage               = 0;
-    swapstate->fluxleak               = 0;
-    swapstate->fluxleak_p             = nullptr;
-    swapstate->bFromCpt               = 0;
-    swapstate->nat[eChan0]            = 0;
-    swapstate->nat[eChan1]            = 0;
-    swapstate->xc_old_whole[eChan0]   = nullptr;
-    swapstate->xc_old_whole[eChan1]   = nullptr;
-    swapstate->xc_old_whole_p[eChan0] = nullptr;
-    swapstate->xc_old_whole_p[eChan1] = nullptr;
-    swapstate->ionType                = nullptr;
-}
-
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 {
     state->ngtc          = ngtc;

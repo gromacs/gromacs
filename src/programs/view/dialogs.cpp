@@ -253,17 +253,6 @@ enum {
     eg0, egTOPOL, egCONFIN, egPARAM, eg1, eg1PROC, eg32PROC
 };
 
-static void Extract(t_dlg *dlg, int ID, char *buf)
-{
-    char *et;
-
-    et = EditText(dlg, ID);
-    if (et)
-    {
-        std::strcpy(buf, et);
-    }
-}
-
 enum bond_set {
     ebShowH = 11, ebDPlus, ebRMPBC, ebCue, ebSkip, ebWait
 };
@@ -412,19 +401,6 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
 enum {
     esFUNCT = 1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL
 };
-
-static bool in_set(int i, int n, int set[])
-{
-    int j;
-    for (j = 0; (j < n); j++)
-    {
-        if (set[j] == i)
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 typedef t_dlg *t_mmb (t_x11 *x11, t_gmx *gmx);
 

@@ -167,7 +167,7 @@ static const int c_ftypeVsiteEnd   = F_VSITEN + 1;
 
 
 /* Returns the sum of the vsite ilist sizes over all vsite types */
-static int vsiteIlistNrCount(const t_ilist *ilist)
+gmx_unused static int vsiteIlistNrCount(const t_ilist *ilist)
 {
     int nr = 0;
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
