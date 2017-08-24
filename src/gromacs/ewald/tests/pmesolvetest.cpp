@@ -305,9 +305,11 @@ INSTANTIATE_TEST_CASE_P(DifferentEwaldCoeffQ, PmeSolveTest, ::testing::Combine(c
                                                                                c_inputEpsilon_r, ::testing::Values(0.4), c_inputEwaldCoeff_lj,
                                                                                    ::testing::Values(PmeSolveAlgorithm::Coulomb)));
 
-//! A few more instances to check that different ewaldCoeff_lj actually affects results of the Lennard-Jones solver
+//! A few more instances to check that different ewaldCoeff_lj actually affects results of the Lennard-Jones solver.
+//! The value has to be approximately larger than 1 / (box dimensions) to have a meaningful output grid.
+//! Previous value of 0.3 caused one of the grid cells to be less or greater than GMX_FLOAT_MIN, depending on the architecture.
 INSTANTIATE_TEST_CASE_P(DifferentEwaldCoeffLJ, PmeSolveTest, ::testing::Combine(c_inputBoxes, c_inputGridSizes, c_inputGrids,
-                                                                                c_inputEpsilon_r, c_inputEwaldCoeff_q, ::testing::Values(0.3),
+                                                                                c_inputEpsilon_r, c_inputEwaldCoeff_q, ::testing::Values(2.35),
                                                                                     ::testing::Values(PmeSolveAlgorithm::LennardJones)));
 
 //! A few more instances to check that different epsilon_r actually affects results of all solvers
