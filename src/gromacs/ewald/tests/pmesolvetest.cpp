@@ -307,7 +307,7 @@ INSTANTIATE_TEST_CASE_P(DifferentEwaldCoeffQ, PmeSolveTest, ::testing::Combine(c
 
 //! A few more instances to check that different ewaldCoeff_lj actually affects results of the Lennard-Jones solver
 INSTANTIATE_TEST_CASE_P(DifferentEwaldCoeffLJ, PmeSolveTest, ::testing::Combine(c_inputBoxes, c_inputGridSizes, c_inputGrids,
-                                                                                c_inputEpsilon_r, c_inputEwaldCoeff_q, ::testing::Values(0.3),
+                                                                                c_inputEpsilon_r, c_inputEwaldCoeff_q, ::testing::Values(2.35),
                                                                                     ::testing::Values(PmeSolveAlgorithm::LennardJones)));
 
 //! A few more instances to check that different epsilon_r actually affects results of all solvers
