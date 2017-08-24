@@ -1,0 +1,9 @@
+Verified+1: Mark Abraham <mark.j.abraham@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Berk Hess <hess@kth.se>
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Submitted-by: Aleksei Iupinov <a.yupinov@gmail.com>
+Submitted-at: Thu, 24 Aug 2017 18:20:37 +0200
+Reviewed-on: https://gerrit.gromacs.org/6854
+Project: gromacs
+Branch: refs/heads/master
