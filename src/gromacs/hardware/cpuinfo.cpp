@@ -827,7 +827,7 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
  *  much more fragile than our x86 detection, but it does not depend on
  *  specific system calls, intrinsics or assembly instructions.
  */
-void
+gmx_unused void
 detectProcCpuInfo(CpuInfo::Vendor *              vendor,
                   std::string   *                brand,
                   int   *                        family,

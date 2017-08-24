@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3658,7 +3658,7 @@ atan2SingleAccuracy(SimdDouble y, SimdDouble x)
  * added to \f$1/r\f$ the error will be insignificant.
  *
  */
-static SimdDouble gmx_simdcall
+static inline SimdDouble gmx_simdcall
 pmeForceCorrectionSingleAccuracy(SimdDouble z2)
 {
     const SimdDouble  FN6(-1.7357322914161492954e-8);
@@ -3730,7 +3730,7 @@ pmeForceCorrectionSingleAccuracy(SimdDouble z2)
  * This approximation achieves an accuracy slightly lower than 1e-6; when
  * added to \f$1/r\f$ the error will be insignificant.
  */
-static SimdDouble gmx_simdcall
+static inline SimdDouble gmx_simdcall
 pmePotentialCorrectionSingleAccuracy(SimdDouble z2)
 {
     const SimdDouble  VN6(1.9296833005951166339e-8);

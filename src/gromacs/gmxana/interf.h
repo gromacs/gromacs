@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@ typedef struct {
     real t; /* Interface thickness */
 } t_interf;
 
-static void init_interf(t_interf *surf)
+static inline void init_interf(t_interf *surf)
 {
     surf->Z = 0;
     surf->t = 0;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #define REAL_FUNC_TERM ;
 #define REAL_FUNC_TERM_WITH_RETURN(arg) ;
 
-#define NULL_FUNC_QUALIFIER static
+#define NULL_FUNC_QUALIFIER gmx_unused static
 #define NULL_FUNC_ARGUMENT(arg) /*arg*/
 #define NULL_FUNC_TERM {}
 #define NULL_FUNC_TERM_WITH_RETURN(arg) { return (arg); }
