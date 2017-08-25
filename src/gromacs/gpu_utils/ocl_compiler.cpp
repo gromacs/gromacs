@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -366,7 +366,7 @@ static std::string makeKernelIncludePathOption(const std::string &unescapedKerne
 /*! \brief Builds a string with build options for the OpenCL kernels
  *
  * \throws std::bad_alloc  if out of memory. */
-std::string
+static std::string
 makePreprocessorOptions(const std::string   &kernelRootPath,
                         size_t               warpSize,
                         ocl_vendor_id_t      deviceVendorId,

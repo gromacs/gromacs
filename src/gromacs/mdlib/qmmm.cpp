@@ -109,15 +109,7 @@ real
 call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 #elif GMX_QMMM_ORCA
-/* ORCA interface */
-
-void
-init_orca(t_QMrec *qm);
-
-real
-call_orca(t_forcerec *fr, t_QMrec *qm,
-          t_MMrec *mm, rvec f[], rvec fshift[]);
-
+#include "gromacs/mdlib/qm_orca.h"
 #endif
 
 
@@ -139,8 +131,8 @@ static int struct_comp(const void *a, const void *b)
 
 } /* struct_comp */
 
-real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
-                    t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
+static real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
+                           t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
      * Note that f is actually the gradient, i.e. -f
@@ -192,7 +184,7 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
     return (QMener);
 }
 
-void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
+static void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
      */
@@ -220,7 +212,7 @@ void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gm
     }
 } /* init_QMroutine */
 
-void update_QMMM_coord(rvec x[], t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+static void update_QMMM_coord(rvec x[], t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     /* shifts the QM and MM particles into the central box and stores
      * these shifted coordinates in the coordinate arrays of the
@@ -297,14 +289,14 @@ static void punch_QMMM_excl(t_QMrec *qm, t_MMrec *mm, t_blocka *excls)
 
 /* QMMM core routines */
 
-t_QMrec *mk_QMrec(void)
+static t_QMrec *mk_QMrec(void)
 {
     t_QMrec *qm;
     snew(qm, 1);
     return qm;
 } /* mk_QMrec */
 
-t_MMrec *mk_MMrec(void)
+static t_MMrec *mk_MMrec(void)
 {
     t_MMrec *mm;
     snew(mm, 1);
@@ -370,7 +362,7 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
 
 } /* init_QMrec */
 
-t_QMrec *copy_QMrec(t_QMrec *qm)
+static t_QMrec *copy_QMrec(t_QMrec *qm)
 {
     /* copies the contents of qm into a new t_QMrec struct */
     t_QMrec

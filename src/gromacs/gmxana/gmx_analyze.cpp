@@ -237,8 +237,8 @@ static void regression_analysis(int n, gmx_bool bXYdy,
     }
 }
 
-void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
-               const gmx_output_env_t *oenv)
+static void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
+                      const gmx_output_env_t *oenv)
 {
     FILE          *fp;
     int            i, s;

@@ -1755,8 +1755,8 @@ static void do_harm(t_fileio *fio, t_iparams *iparams)
     gmx_fio_do_real(fio, iparams->harmonic.krB);
 }
 
-void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
-                gmx_bool bRead, int file_version)
+static void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
+                       gmx_bool bRead, int file_version)
 {
     int      idum;
     real     rdum;

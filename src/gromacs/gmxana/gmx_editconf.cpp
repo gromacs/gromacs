@@ -67,7 +67,7 @@
 #include "gromacs/utility/strdb.h"
 
 
-real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
+static real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 {
     real tmass;
     int  i;
@@ -87,8 +87,8 @@ real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
     return tmass;
 }
 
-real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
-               rvec maxval, gmx_bool bDiam)
+static real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
+                      rvec maxval, gmx_bool bDiam)
 {
     real  diam2, d;
     int   ii, i, j;
@@ -162,7 +162,7 @@ real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
     return std::sqrt(diam2);
 }
 
-void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
+static void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
 {
     int  i;
     rvec shift;
@@ -178,7 +178,7 @@ void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
     }
 }
 
-void scale_conf(int natom, rvec x[], matrix box, rvec scale)
+static void scale_conf(int natom, rvec x[], matrix box, rvec scale)
 {
     int i, j;
 
@@ -198,7 +198,7 @@ void scale_conf(int natom, rvec x[], matrix box, rvec scale)
     }
 }
 
-void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
+static void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 {
     int    i;
     char **bfac_lines;
@@ -216,8 +216,8 @@ void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 
 }
 
-void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
-                       double *bfac, int *bfac_nr, gmx_bool peratom)
+static void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
+                              double *bfac, int *bfac_nr, gmx_bool peratom)
 {
     real     bfac_min, bfac_max;
     int      i, n;
@@ -306,7 +306,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     }
 }
 
-void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
+static void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
 {
     real bfac_min, bfac_max, xmin, ymin, zmin;
     int  i;
@@ -336,7 +336,7 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
     }
 }
 
-void visualize_images(const char *fn, int ePBC, matrix box)
+static void visualize_images(const char *fn, int ePBC, matrix box)
 {
     t_atoms atoms;
     rvec   *img;
@@ -366,7 +366,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
     sfree(img);
 }
 
-void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
+static void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
 {
     int  *edge;
     rvec *vert, shift;
@@ -451,7 +451,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
     }
 }
 
-void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
+static void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
 {
     rvec rotvec;
     real ux, uy, uz, costheta, sintheta;

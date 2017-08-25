@@ -1131,8 +1131,8 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
     return vctot;
 }
 
-real calc_gb_selfcorrections(t_commrec *cr, int natoms,
-                             real *charge, gmx_genborn_t *born, real *dvda, double facel)
+static real calc_gb_selfcorrections(t_commrec *cr, int natoms,
+                                    real *charge, gmx_genborn_t *born, real *dvda, double facel)
 {
     int  i, ai, at0, at1;
     real rai, e, derb, q, q2, fi, rai_inv, vtot;
@@ -1177,8 +1177,8 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
 
 }
 
-real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *born, gmx_localtop_t *top,
-                      real *dvda, t_mdatoms *md)
+static real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *born, gmx_localtop_t *top,
+                             real *dvda, t_mdatoms *md)
 {
     int  ai, i, at0, at1;
     real e, es, rai, term, probe, tmp, factor;
@@ -1224,8 +1224,8 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
 
 
 
-real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
-                       rvec shift_vec[], int gb_algorithm, gmx_genborn_t *born)
+static real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
+                              rvec shift_vec[], int gb_algorithm, gmx_genborn_t *born)
 {
     int          i, k, n, ai, aj, nj0, nj1, n0, n1;
     int          shift;

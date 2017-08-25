@@ -144,7 +144,7 @@ void gmx_set_max_backup_count(int count)
     s_maxBackupCount = count;
 }
 
-void push_ps(FILE *fp)
+static void push_ps(FILE *fp)
 {
     t_pstack *ps;
 

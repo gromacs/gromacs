@@ -56,7 +56,7 @@
 #include "gromacs/utility/smalloc.h"
 
 
-void
+static void
 calc_principal_axes(const t_topology *top,
                     rvec             *x,
                     int              *index,

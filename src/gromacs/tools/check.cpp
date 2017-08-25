@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "check.h"
+
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -376,7 +378,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
     }
 }
 
-void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
+static void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
 {
     t_trxframe       fr;
     t_count          count;
@@ -512,7 +514,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     PRINTITEM ( "Box",        bBox );
 }
 
-void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
+static void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
     int            natom, i, j, k;
     t_topology     top;
@@ -713,7 +715,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     }
 }
 
-void chk_ndx(const char *fn)
+static void chk_ndx(const char *fn)
 {
     t_blocka *grps;
     char    **grpname;
@@ -745,7 +747,7 @@ void chk_ndx(const char *fn)
     done_blocka(grps);
 }
 
-void chk_enx(const char *fn)
+static void chk_enx(const char *fn)
 {
     int            nre, fnr;
     ener_file_t    in;

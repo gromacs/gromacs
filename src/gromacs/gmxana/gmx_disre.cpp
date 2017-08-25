@@ -106,7 +106,7 @@ static void reset5(void)
     }
 }
 
-int tpcomp(const void *a, const void *b)
+static int tpcomp(const void *a, const void *b)
 {
     t_toppop *tpa;
     t_toppop *tpb;

@@ -463,7 +463,7 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
     std::strcat(out_file, ext);
 }
 
-void check_trr(const char *fn)
+static void check_trr(const char *fn)
 {
     if (fn2ftp(fn) != efTRR)
     {
@@ -471,7 +471,7 @@ void check_trr(const char *fn)
     }
 }
 
-void do_trunc(const char *fn, real t0)
+static void do_trunc(const char *fn, real t0)
 {
     t_fileio        *in;
     FILE            *fp;

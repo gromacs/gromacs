@@ -71,7 +71,7 @@ typedef struct {
 /****************************************************************************/
 
 /* used for sorting the list */
-int compare(void *a, void *b)
+static int compare(void *a, void *b)
 {
     t_electron *tmp1, *tmp2;
     tmp1 = (t_electron *)a; tmp2 = (t_electron *)b;
@@ -79,7 +79,7 @@ int compare(void *a, void *b)
     return std::strcmp(tmp1->atomname, tmp2->atomname);
 }
 
-int get_electrons(t_electron **eltab, const char *fn)
+static int get_electrons(t_electron **eltab, const char *fn)
 {
     char  buffer[256];  /* to read in a line   */
     char  tempname[80]; /* buffer to hold name */
@@ -129,8 +129,8 @@ int get_electrons(t_electron **eltab, const char *fn)
     return nr;
 }
 
-void center_coords(t_atoms *atoms, int *index_center, int ncenter,
-                   matrix box, rvec x0[])
+static void center_coords(t_atoms *atoms, int *index_center, int ncenter,
+                          matrix box, rvec x0[])
 {
     int  i, k, m;
     real tmass, mm;
@@ -167,13 +167,13 @@ void center_coords(t_atoms *atoms, int *index_center, int ncenter,
     }
 }
 
-void calc_electron_density(const char *fn, int **index, int gnx[],
-                           double ***slDensity, int *nslices, t_topology *top,
-                           int ePBC,
-                           int axis, int nr_grps, real *slWidth,
-                           t_electron eltab[], int nr, gmx_bool bCenter,
-                           int *index_center, int ncenter,
-                           gmx_bool bRelative, const gmx_output_env_t *oenv)
+static void calc_electron_density(const char *fn, int **index, int gnx[],
+                                  double ***slDensity, int *nslices, t_topology *top,
+                                  int ePBC,
+                                  int axis, int nr_grps, real *slWidth,
+                                  t_electron eltab[], int nr, gmx_bool bCenter,
+                                  int *index_center, int ncenter,
+                                  gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -326,11 +326,11 @@ void calc_electron_density(const char *fn, int **index, int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-void calc_density(const char *fn, int **index, int gnx[],
-                  double ***slDensity, int *nslices, t_topology *top, int ePBC,
-                  int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
-                  int *index_center, int ncenter,
-                  gmx_bool bRelative, const gmx_output_env_t *oenv)
+static void calc_density(const char *fn, int **index, int gnx[],
+                         double ***slDensity, int *nslices, t_topology *top, int ePBC,
+                         int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
+                         int *index_center, int ncenter,
+                         gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -475,11 +475,11 @@ void calc_density(const char *fn, int **index, int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-void plot_density(double *slDensity[], const char *afile, int nslices,
-                  int nr_grps, char *grpname[], real slWidth,
-                  const char **dens_opt,
-                  gmx_bool bCenter, gmx_bool bRelative, gmx_bool bSymmetrize,
-                  const gmx_output_env_t *oenv)
+static void plot_density(double *slDensity[], const char *afile, int nslices,
+                         int nr_grps, char *grpname[], real slWidth,
+                         const char **dens_opt,
+                         gmx_bool bCenter, gmx_bool bRelative, gmx_bool bSymmetrize,
+                         const gmx_output_env_t *oenv)
 {
     FILE       *den;
     const char *title  = nullptr;

@@ -51,6 +51,8 @@
 #endif
 
 
+#include "nbnxn_cuda.h"
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
