@@ -50,7 +50,6 @@ struct t_commrec;
 namespace gmx
 {
 class MDLogger;
-}
 
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
@@ -63,6 +62,7 @@ class MDLogger;
 gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
                                    const t_commrec     *cr);
 
+/*! \brief Free the hwinfo structure */
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 //! Return whether compatible GPUs were found.
@@ -79,3 +79,5 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger    &mdlog,
                                       const std::vector<int> &gpuSelection);
 
 #endif
+
+} // namespace gmx
