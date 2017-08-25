@@ -111,13 +111,14 @@ template <typename T>
 static __forceinline__ __device__
 T gmx_shfl_up_sync(const unsigned int activeMask,
                    const T            var,
-                   unsigned int       offset)
+                   unsigned int       offset,
+                   int                width = warp_size)
 {
 #if GMX_CUDA_VERSION < 9000
     GMX_UNUSED_VALUE(activeMask);
-    return __shfl_up(var, offset);
+    return __shfl_up(var, offset, width);
 #else
-    return __shfl_up_sync(activeMask, var, offset);
+    return __shfl_up_sync(activeMask, var, offset, width);
 #endif
 }
 
@@ -126,13 +127,14 @@ template <typename T>
 static __forceinline__ __device__
 T gmx_shfl_down_sync(const unsigned int activeMask,
                      const T            var,
-                     unsigned int       offset)
+                     unsigned int       offset,
+                     int                width = warp_size)
 {
 #if GMX_CUDA_VERSION < 9000
     GMX_UNUSED_VALUE(activeMask);
-    return __shfl_down(var, offset);
+    return __shfl_down(var, offset, width);
 #else
-    return __shfl_down_sync(activeMask, var, offset);
+    return __shfl_down_sync(activeMask, var, offset, width);
 #endif
 }
 
