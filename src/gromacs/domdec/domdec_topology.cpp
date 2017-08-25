@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1267,10 +1267,21 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             if (ftype == F_POSRES || ftype == F_FBPOSRES)
             {
                 int nposres = dest->il[ftype].nr/2;
-                if (nposres > dest->iparams_posres_nalloc)
+                if (ftype == F_POSRES)
                 {
-                    dest->iparams_posres_nalloc = over_alloc_large(nposres);
-                    srenew(dest->iparams_posres, dest->iparams_posres_nalloc);
+                    if (nposres > dest->iparams_posres_nalloc)
+                    {
+                        dest->iparams_posres_nalloc = over_alloc_large(nposres);
+                        srenew(dest->iparams_posres, dest->iparams_posres_nalloc);
+                    }
+                }
+                else
+                {
+                    if (nposres > dest->iparams_fbposres_nalloc)
+                    {
+                        dest->iparams_fbposres_nalloc = over_alloc_large(nposres);
+                        srenew(dest->iparams_fbposres, dest->iparams_fbposres_nalloc);
+                    }
                 }
                 /* Set nposres to the number of original position restraints in dest */
                 for (int s = 1; s < nsrc; s++)
