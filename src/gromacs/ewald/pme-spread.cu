@@ -44,6 +44,8 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <cassert>
 
 #include "gromacs/ewald/pme.h"
@@ -532,6 +534,10 @@ __global__ void pme_spline_and_spread_kernel(const pme_gpu_cuda_kernel_params_t 
         __syncthreads();
         calculate_splines<order, atomsPerBlock>(kernelParams, atomIndexOffset, (const float3 *)sm_coordinates,
                                                 sm_coefficients, sm_theta, sm_gridlineIndices);
+#if GMX_CUDA_VERSION >= 9000
+        assert(c_fullWarpMask == __activemask());
+#endif
+        gmx_syncwarp();
     }
     else
     {
