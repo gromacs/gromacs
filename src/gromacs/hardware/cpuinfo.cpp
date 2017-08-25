@@ -99,6 +99,8 @@
 #    include "gromacs/utility/basedefinitions.h"
 #endif
 
+#include "architecture.h"
+
 namespace gmx
 {
 
@@ -152,62 +154,60 @@ executeX86CpuID(unsigned int     gmx_unused level,
                 unsigned int *              ecx,
                 unsigned int *              edx)
 {
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
-    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+    if (c_architecture == Architecture::X86)
+    {
+#if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
 
-#    if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
+        // any compiler that understands gcc inline assembly
+        *eax = level;
+        *ecx = ecxval;
+        *ebx = 0;
+        *edx = 0;
 
-    // any compiler that understands gcc inline assembly
-    *eax = level;
-    *ecx = ecxval;
-    *ebx = 0;
-    *edx = 0;
-
-#        if (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86) && defined(__PIC__)
-    // Avoid clobbering the global offset table in 32-bit pic code (ebx register)
-    __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
-                          "cpuid            \n\t"
-                          "xchgl %%ebx, %1  \n\t"
-                          : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
-#        else
-    // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
-    __asm__ __volatile__ ("cpuid            \n\t"
-                          : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
-#        endif
-    return 0;
-
-#    elif defined _MSC_VER
-
-    // MSVC (and icc on windows) on ia32 or x86-64
-    int cpuInfo[4];
-    __cpuidex(cpuInfo, level, ecxval);
-    *eax = static_cast<unsigned int>(cpuInfo[0]);
-    *ebx = static_cast<unsigned int>(cpuInfo[1]);
-    *ecx = static_cast<unsigned int>(cpuInfo[2]);
-    *edx = static_cast<unsigned int>(cpuInfo[3]);
-    return 0;
-
+#    if (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86) && defined(__PIC__)
+        // Avoid clobbering the global offset table in 32-bit pic code (ebx register)
+        __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
+                              "cpuid            \n\t"
+                              "xchgl %%ebx, %1  \n\t"
+                              : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
 #    else
+        // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
+        __asm__ __volatile__ ("cpuid            \n\t"
+                              : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
+#    endif
+        return 0;
 
-    // We are on x86, but without compiler support for cpuid if we get here
-    *eax = 0;
-    *ebx = 0;
-    *ecx = 0;
-    *edx = 0;
-    return 1;
+#elif defined _MSC_VER
 
-#    endif  // check for inline asm on x86
+        // MSVC (and icc on windows) on ia32 or x86-64
+        int cpuInfo[4];
+        __cpuidex(cpuInfo, level, ecxval);
+        *eax = static_cast<unsigned int>(cpuInfo[0]);
+        *ebx = static_cast<unsigned int>(cpuInfo[1]);
+        *ecx = static_cast<unsigned int>(cpuInfo[2]);
+        *edx = static_cast<unsigned int>(cpuInfo[3]);
+        return 0;
 
 #else
 
-    // We are not on x86
-    *eax = 0;
-    *ebx = 0;
-    *ecx = 0;
-    *edx = 0;
-    return 1;
+        // We are on x86, but without compiler support for cpuid if we get here
+        *eax = 0;
+        *ebx = 0;
+        *ecx = 0;
+        *edx = 0;
+        return 1;
 
-#endif      // x86
+#endif          // check for inline asm on x86
+    }
+    else
+    {
+        // We are not on x86
+        *eax = 0;
+        *ebx = 0;
+        *ecx = 0;
+        *edx = 0;
+        return 1;
+    }
 }
 
 
@@ -827,7 +827,7 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
  *  much more fragile than our x86 detection, but it does not depend on
  *  specific system calls, intrinsics or assembly instructions.
  */
-gmx_unused void
+void
 detectProcCpuInfo(CpuInfo::Vendor *              vendor,
                   std::string   *                brand,
                   int   *                        family,
@@ -872,41 +872,44 @@ CpuInfo CpuInfo::detect()
 {
     CpuInfo result;
 
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
-    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
-
-    result.vendor_            = detectX86Vendor();
-
-    if (result.vendor_ == CpuInfo::Vendor::Intel)
+    if (c_architecture == Architecture::X86)
     {
-        result.features_.insert(CpuInfo::Feature::X86_Intel);
+        result.vendor_ = detectX86Vendor();
+
+        if (result.vendor_ == CpuInfo::Vendor::Intel)
+        {
+            result.features_.insert(CpuInfo::Feature::X86_Intel);
+        }
+        else if (result.vendor_ == CpuInfo::Vendor::Amd)
+        {
+            result.features_.insert(CpuInfo::Feature::X86_Amd);
+        }
+        detectX86Features(&result.brandString_, &result.family_, &result.model_,
+                          &result.stepping_, &result.features_);
+        result.logicalProcessors_ = detectX86LogicalProcessors();
     }
-    else if (result.vendor_ == CpuInfo::Vendor::Amd)
+    else
     {
-        result.features_.insert(CpuInfo::Feature::X86_Amd);
+        // Not x86
+        if (c_architecture == Architecture::Arm)
+        {
+            result.vendor_  = CpuInfo::Vendor::Arm;
+        }
+        else if (c_architecture == Architecture::PowerPC)
+        {
+            result.vendor_  = CpuInfo::Vendor::Ibm;
+        }
+
+#if defined __aarch64__ || ( defined _M_ARM && _M_ARM >= 8 )
+        result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
+        result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
+#endif
+
+        // On Linux we might be able to find information in /proc/cpuinfo. If vendor or brand
+        // is set to a known value this routine will not overwrite it.
+        detectProcCpuInfo(&result.vendor_, &result.brandString_, &result.family_,
+                          &result.model_, &result.stepping_, &result.features_);
     }
-    detectX86Features(&result.brandString_, &result.family_, &result.model_,
-                      &result.stepping_, &result.features_);
-    result.logicalProcessors_ = detectX86LogicalProcessors();
-#else   // not x86
-
-#    if defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
-    result.vendor_  = CpuInfo::Vendor::Arm;
-#    elif defined __powerpc__ || defined __ppc__ || defined __PPC__
-    result.vendor_  = CpuInfo::Vendor::Ibm;
-#    endif
-
-#    if defined __aarch64__ || ( defined _M_ARM && _M_ARM >= 8 )
-    result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
-    result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
-#    endif
-
-    // On Linux we might be able to find information in /proc/cpuinfo. If vendor or brand
-    // is set to a known value this routine will not overwrite it.
-    detectProcCpuInfo(&result.vendor_, &result.brandString_, &result.family_,
-                      &result.model_, &result.stepping_, &result.features_);
-
-#endif  // x86 or not
 
     if (!result.logicalProcessors_.empty())
     {
