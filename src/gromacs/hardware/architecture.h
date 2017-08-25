@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,51 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_HARDWARE_DETECTHARDWARE_H
-#define GMX_HARDWARE_DETECTHARDWARE_H
-
-#include <cstdio>
-
-#include <string>
-#include <vector>
-
-#include "gromacs/utility/basedefinitions.h"
-
-struct gmx_gpu_info_t;
-struct gmx_hw_info_t;
-struct gmx_hw_opt_t;
-struct t_commrec;
+/*! \internal \file
+ * \brief
+ * Declares and defines architecture booleans to minimize preprocessed code
+ *
+ * \ingroup module_hardware
+ */
+#ifndef GMX_ARCHITECTURE_H
+#define GMX_ARCHITECTURE_H
 
 namespace gmx
 {
-class MDLogger;
 
-/*! \brief Run detection, consistency checks, and make available on all ranks.
- *
- * This routine constructs the global hwinfo structure and returns a pointer to
- * it. It will run a preamble before executing cpu and hardware checks, and
- * then run consistency checks afterwards. The results will also be made
- * available on all nodes.
- * Caller is responsible for freeing this pointer.
- */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
-                                   const t_commrec     *cr);
+enum class Architecture
+{
+    x86,
+    arm,
+    powerPc,
+    unknown
+};
 
-void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
-
-//! Return whether compatible GPUs were found.
-bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
-
-/*! \brief Check the consistency of hw_opt with hwinfo.
- *
- * This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger    &mdlog,
-                                      const gmx_hw_info_t    *hwinfo,
-                                      const t_commrec        *cr,
-                                      const gmx_hw_opt_t     &hw_opt,
-                                      bool                    userSetGpuIds,
-                                      const std::vector<int> &gpuSelection);
-
+//! Constant that tells if the architecture is x86
+static constexpr Architecture architecture =
+#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
+    defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+    Architecture::x86;
+#elif defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64_
+    Architecture::arm;
+#elif defined __powerpc__ || defined __ppc__ || defined __PPC__
+    Architecture::powerPc;
+#else
+    Architecture::unknown;
 #endif
 
-} // namespace gmx
+}      // namespace gmx
+
+#endif // GMX_ARCHITECTURE_H
