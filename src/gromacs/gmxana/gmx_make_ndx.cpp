@@ -1483,7 +1483,7 @@ static int block2natoms(t_blocka *block)
     return natoms;
 }
 
-void merge_blocks(t_blocka *dest, t_blocka *source)
+static void merge_blocks(t_blocka *dest, t_blocka *source)
 {
     int     i, nra0, i0;
 

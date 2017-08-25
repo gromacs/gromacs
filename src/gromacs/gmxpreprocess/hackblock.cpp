@@ -200,7 +200,7 @@ static gmx_bool contains_char(t_rbonded *s, char c)
     return bRet;
 }
 
-int
+static int
 rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
 {
     int      i, k;

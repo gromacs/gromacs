@@ -63,7 +63,7 @@
 
 #define FARAWAY 10000
 
-int *res_ndx(t_atoms *atoms)
+static int *res_ndx(t_atoms *atoms)
 {
     int *rndx;
     int  i, r0;
@@ -82,7 +82,7 @@ int *res_ndx(t_atoms *atoms)
     return rndx;
 }
 
-int *res_natm(t_atoms *atoms)
+static int *res_natm(t_atoms *atoms)
 {
     int *natm;
     int  i, j, r0;

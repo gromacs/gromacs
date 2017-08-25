@@ -1716,8 +1716,8 @@ static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
     }
 }
 
-void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
-                         t_expanded *expand, warninp_t wi)
+static void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
+                                t_expanded *expand, warninp_t wi)
 {
     int        ninp;
     t_inpfile *inp;
@@ -3197,7 +3197,7 @@ static void make_swap_groups(
 }
 
 
-void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
+static void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
     int      ig, i;
 

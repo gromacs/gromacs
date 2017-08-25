@@ -178,7 +178,7 @@ static gmx_bool read_atoms(FILE *in, char *line,
     return TRUE;
 }
 
-gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
+static gmx_bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
 {
     char str[STRLEN];
     int  j, n, ni, maxrb;
@@ -260,7 +260,7 @@ static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
     }
 }
 
-int get_bt(char* header)
+static int get_bt(char* header)
 {
     int i;
 
@@ -274,13 +274,13 @@ int get_bt(char* header)
     return NOTSET;
 }
 
-void clear_t_restp(t_restp *rrtp)
+static void clear_t_restp(t_restp *rrtp)
 {
     memset((void *)rrtp, 0, sizeof(t_restp));
 }
 
 /* print all the ebtsNR type numbers */
-void print_resall_header(FILE *out, t_restp rtp[])
+static void print_resall_header(FILE *out, t_restp rtp[])
 {
     fprintf(out, "[ bondedtypes ]\n");
     fprintf(out, "; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");

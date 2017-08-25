@@ -564,7 +564,7 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
     return NRE;
 }
 
-gmx_bool is_hydro(t_atoms *atoms, int ai)
+static gmx_bool is_hydro(t_atoms *atoms, int ai)
 {
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }

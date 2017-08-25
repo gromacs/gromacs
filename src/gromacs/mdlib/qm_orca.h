@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,54 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "qmmm.h"
 
-/*! \internal \file
- * \brief
- * Tests for the mdrun termination functionality
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun_integration_tests
- */
-#include "gmxpre.h"
+#ifndef GMX_MDLIB_QM_ORCA_H
+#define GMX_MDLIB_QM_ORCA_H
 
-#include <gtest/gtest.h>
+void
+init_orca(t_QMrec *qm);
 
-#include "testutils/testfilemanager.h"
+real
+call_orca(t_forcerec *fr, t_QMrec *qm,
+          t_MMrec *mm, rvec f[], rvec fshift[]);
 
-#include "moduletest.h"
-#include "terminationhelper.h"
-
-namespace gmx
-{
-namespace test
-{
-
-//! Build a simple .mdp file
-static void organizeMdpFile(SimulationRunner *runner)
-{
-    // Make sure -maxh has a chance to propagate
-    runner->useStringAsMdpFile("nsteps = 100\n"
-                               "tcoupl = v-rescale\n"
-                               "tc-grps = System\n"
-                               "tau-t = 1\n"
-                               "ref-t = 298\n");
-}
-
-//! Convenience typedef
-typedef MdrunTestFixture MdrunTerminationTest;
-
-TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
-{
-    CommandLine       mdrunCaller;
-    mdrunCaller.append("mdrun");
-    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
-
-    organizeMdpFile(&runner_);
-    EXPECT_EQ(0, runner_.callGrompp());
-
-    helper.runFirstMdrun(runner_.cptFileName_);
-    helper.runSecondMdrun();
-}
-
-} // namespace
-} // namespace
+#endif

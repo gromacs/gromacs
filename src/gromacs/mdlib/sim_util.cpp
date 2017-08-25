@@ -707,24 +707,24 @@ static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
     }
 }
 
-void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
-                         t_inputrec *inputrec,
-                         gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                         gmx_localtop_t *top,
-                         gmx_groups_t gmx_unused *groups,
-                         matrix box, rvec x[], history_t *hist,
-                         PaddedRVecVector *force,
-                         tensor vir_force,
-                         t_mdatoms *mdatoms,
-                         gmx_enerdata_t *enerd, t_fcdata *fcd,
-                         real *lambda, t_graph *graph,
-                         t_forcerec *fr, interaction_const_t *ic,
-                         gmx_vsite_t *vsite, rvec mu_tot,
-                         double t, gmx_edsam_t ed,
-                         gmx_bool bBornRadii,
-                         int flags,
-                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
+                                t_inputrec *inputrec,
+                                gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                                gmx_localtop_t *top,
+                                gmx_groups_t gmx_unused *groups,
+                                matrix box, rvec x[], history_t *hist,
+                                PaddedRVecVector *force,
+                                tensor vir_force,
+                                t_mdatoms *mdatoms,
+                                gmx_enerdata_t *enerd, t_fcdata *fcd,
+                                real *lambda, t_graph *graph,
+                                t_forcerec *fr, interaction_const_t *ic,
+                                gmx_vsite_t *vsite, rvec mu_tot,
+                                double t, gmx_edsam_t ed,
+                                gmx_bool bBornRadii,
+                                int flags,
+                                DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                                DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int                 cg1, i, j;
     double              mu[2*DIM];
@@ -1465,23 +1465,23 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 }
 
-void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
-                        t_inputrec *inputrec,
-                        gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        gmx_localtop_t *top,
-                        gmx_groups_t *groups,
-                        matrix box, rvec x[], history_t *hist,
-                        PaddedRVecVector *force,
-                        tensor vir_force,
-                        t_mdatoms *mdatoms,
-                        gmx_enerdata_t *enerd, t_fcdata *fcd,
-                        real *lambda, t_graph *graph,
-                        t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
-                        double t, gmx_edsam_t ed,
-                        gmx_bool bBornRadii,
-                        int flags,
-                        DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
-                        DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
+static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
+                               t_inputrec *inputrec,
+                               gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                               gmx_localtop_t *top,
+                               gmx_groups_t *groups,
+                               matrix box, rvec x[], history_t *hist,
+                               PaddedRVecVector *force,
+                               tensor vir_force,
+                               t_mdatoms *mdatoms,
+                               gmx_enerdata_t *enerd, t_fcdata *fcd,
+                               real *lambda, t_graph *graph,
+                               t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
+                               double t, gmx_edsam_t ed,
+                               gmx_bool bBornRadii,
+                               int flags,
+                               DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                               DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int        cg0, cg1, i, j;
     double     mu[2*DIM];

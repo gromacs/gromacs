@@ -1254,7 +1254,7 @@ static void set_lincs_matrix_task(struct gmx_lincsdata *li,
 }
 
 /* Sets the elements in the LINCS matrix */
-void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
+static void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
 {
     int        i;
     const real invsqrt2 = 0.7071067811865475244;

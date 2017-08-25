@@ -269,7 +269,7 @@ static void norm_acc(t_atoms *atoms, int nres,
     }
 }
 
-void prune_ss_legend(t_matrix *mat)
+static void prune_ss_legend(t_matrix *mat)
 {
     gmx_bool  *present;
     int       *newnum;
@@ -314,7 +314,7 @@ void prune_ss_legend(t_matrix *mat)
     }
 }
 
-void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *mat)
+static void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *mat)
 {
     real  lo, hi;
     int   i, j, nlev;
@@ -341,8 +341,8 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
     }
 }
 
-void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
-                const gmx_output_env_t *oenv)
+static void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
+                       const gmx_output_env_t *oenv)
 {
     FILE        *fp;
     t_mapping   *map;

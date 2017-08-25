@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
+static void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
 {
     int i;
     for (i = 0; i < size; i++)
