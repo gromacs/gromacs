@@ -325,13 +325,13 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
     *rmax = std::sqrt(rmax2);
 }
 
-void dist_plot(const char *fn, const char *afile, const char *dfile,
-               const char *nfile, const char *rfile, const char *xfile,
-               real rcut, gmx_bool bMat, const t_atoms *atoms,
-               int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
-               gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
-               gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
-               const gmx_output_env_t *oenv)
+static void dist_plot(const char *fn, const char *afile, const char *dfile,
+                      const char *nfile, const char *rfile, const char *xfile,
+                      real rcut, gmx_bool bMat, const t_atoms *atoms,
+                      int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
+                      gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
+                      gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
+                      const gmx_output_env_t *oenv)
 {
     FILE            *atm, *dist, *num;
     t_trxstatus     *trxout;
@@ -597,7 +597,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     sfree(x0);
 }
 
-int find_residues(const t_atoms *atoms, int n, int index[], int **resindex)
+static int find_residues(const t_atoms *atoms, int n, int index[], int **resindex)
 {
     int  i;
     int  nres      = 0, resnr, presnr = 0;
@@ -629,7 +629,7 @@ int find_residues(const t_atoms *atoms, int n, int index[], int **resindex)
     return nres;
 }
 
-void dump_res(FILE *out, int nres, int *resindex, int index[])
+static void dump_res(FILE *out, int nres, int *resindex, int index[])
 {
     int i, j;
 

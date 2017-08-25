@@ -57,12 +57,12 @@
 
 
 void
-calc_principal_axes(const t_topology *top,
-                    rvec             *x,
-                    int              *index,
-                    int               n,
-                    matrix            axes,
-                    rvec              inertia)
+static calc_principal_axes(const t_topology *top,
+                           rvec             *x,
+                           int              *index,
+                           int               n,
+                           matrix            axes,
+                           rvec              inertia)
 {
     rvec   xcm;
 

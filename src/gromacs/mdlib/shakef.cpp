@@ -202,13 +202,13 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
     *nerror = error;
 }
 
-int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
-               real invmass[], int ncon,
-               t_iparams ip[], t_iatom *iatom,
-               real tol, rvec x[], rvec prime[], real omega,
-               gmx_bool bFEP, real lambda, real scaled_lagrange_multiplier[],
-               real invdt, rvec *v,
-               gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
+static int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
+                      real invmass[], int ncon,
+                      t_iparams ip[], t_iatom *iatom,
+                      real tol, rvec x[], rvec prime[], real omega,
+                      gmx_bool bFEP, real lambda, real scaled_lagrange_multiplier[],
+                      real invdt, rvec *v,
+                      gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;

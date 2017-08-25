@@ -1344,7 +1344,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     at->nr++;
 }
 
-void push_cg(t_block *block, int *lastindex, int index, int a)
+static void push_cg(t_block *block, int *lastindex, int index, int a)
 {
     if (debug)
     {

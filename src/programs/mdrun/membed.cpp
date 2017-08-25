@@ -824,7 +824,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 }
 
 /* remove al bonded interactions from mtop for the molecule to be embedded */
-int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
+static int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 {
     int       i, j, m;
     int       type, natom, nmol, at, atom1 = 0, rm_at = 0;

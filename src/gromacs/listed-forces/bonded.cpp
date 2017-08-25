@@ -330,8 +330,8 @@ real FENE_bonds(int nbonds,
     return vtot;
 }
 
-real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
-              real *V, real *F)
+static real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
+                     real *V, real *F)
 {
     const real half = 0.5;
     real       L1, kk, x0, dx, dx2;
@@ -1659,8 +1659,8 @@ do_dih_fup_noshiftf_simd(const int *ai, const int *aj, const int *ak, const int 
 }
 #endif // GMX_SIMD_HAVE_REAL
 
-real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
-             real phi, real lambda, real *V, real *F)
+static real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
+                    real phi, real lambda, real *V, real *F)
 {
     real v, dvdlambda, mdphi, v1, sdphi, ddphi;
     real L1   = 1.0 - lambda;
@@ -3259,8 +3259,8 @@ cmap_dihs(int nbonds,
  *   G R O M O S  9 6   F U N C T I O N S
  *
  ***********************************************************/
-real g96harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
-                 real *V, real *F)
+static real g96harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
+                        real *V, real *F)
 {
     const real half = 0.5;
     real       L1, kk, x0, dx, dx2;
@@ -3340,9 +3340,9 @@ real g96bonds(int nbonds,
     return vtot;
 }
 
-real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
-                   rvec r_ij, rvec r_kj,
-                   int *t1, int *t2)
+static real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
+                          rvec r_ij, rvec r_kj,
+                          int *t1, int *t2)
 /* Return value is the angle between the bonds i-j and j-k */
 {
     real costh;

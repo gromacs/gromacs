@@ -2029,7 +2029,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     return nns;
 }
 
-void ns_realloc_natoms(gmx_ns_t *ns, int natoms)
+static void ns_realloc_natoms(gmx_ns_t *ns, int natoms)
 {
     int i;
 

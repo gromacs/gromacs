@@ -108,7 +108,7 @@ static void hacksearch_atom(int *ii, int *jj, char *name,
     return;
 }
 
-void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
+static void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
 {
     int i, j;
 

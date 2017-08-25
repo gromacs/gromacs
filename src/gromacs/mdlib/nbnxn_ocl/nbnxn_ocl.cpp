@@ -345,30 +345,12 @@ static void fillin_ocl_structures(cl_nbparam_t        *nbp,
     nbparams_params->vdw_switch        = nbp->vdw_switch;
 }
 
-/*! \brief Waits for the commands associated with the input event to finish.
- * Then it releases the event and sets it to 0.
- * Don't use this function when more than one wait will be issued for the event.
- */
-void wait_ocl_event(cl_event *ocl_event)
-{
-    cl_int gmx_unused cl_error;
-
-    /* Blocking wait for the event */
-    cl_error = clWaitForEvents(1, ocl_event);
-    assert(CL_SUCCESS == cl_error);
-
-    /* Release event and reset it to 0 */
-    cl_error = clReleaseEvent(*ocl_event);
-    assert(CL_SUCCESS == cl_error);
-    *ocl_event = 0;
-}
-
 /*! \brief Enqueues a wait for event completion.
  *
  * Then it releases the event and sets it to 0.
  * Don't use this function when more than one wait will be issued for the event.
  * Equivalent to Cuda Stream Sync. */
-void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
+static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
 {
     cl_int gmx_unused cl_error;
 
@@ -395,7 +377,7 @@ void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
  * The function returns 0.0 if the input event, *ocl_event, is 0.
  * Don't use this function when more than one wait will be issued for the event.
  */
-double ocl_event_elapsed_ms(cl_event *ocl_event)
+static double ocl_event_elapsed_ms(cl_event *ocl_event)
 {
     cl_int gmx_unused cl_error;
     cl_ulong          start_ns, end_ns;

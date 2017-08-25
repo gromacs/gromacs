@@ -62,7 +62,7 @@ static int             icon_height = 0;
 static unsigned long   icon_fg     = 0;
 static unsigned long   icon_bg     = 0;
 
-void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long bg)
+static void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long bg)
 {
     icon_bits   = (bmchar *)bits;
     icon_width  = w;

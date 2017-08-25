@@ -95,8 +95,8 @@ warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, r
 
 /*! \brief Compute the energy and force for a single pair interaction */
 real
-evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
-                real qq, real c6, real c12, real *velec, real *vvdw)
+static evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
+                       real qq, real c6, real c12, real *velec, real *vvdw)
 {
     real       rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
     int        ntab;
@@ -144,14 +144,14 @@ evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
 
 /*! \brief Compute the energy and force for a single pair interaction under FEP */
 real
-free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
-                            real alpha_vdw, real tabscale, real *vftab, real tableStride,
-                            real qqA, real c6A, real c12A, real qqB,
-                            real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
-                            real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
-                            real dlfac_vdw[2], real sigma6_def, real sigma6_min,
-                            real sigma2_def, real sigma2_min,
-                            real *velectot, real *vvdwtot, real *dvdl)
+static free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
+                                   real alpha_vdw, real tabscale, real *vftab, real tableStride,
+                                   real qqA, real c6A, real c12A, real qqB,
+                                   real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
+                                   real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
+                                   real dlfac_vdw[2], real sigma6_def, real sigma6_min,
+                                   real sigma2_def, real sigma2_min,
+                                   real *velectot, real *vvdwtot, real *dvdl)
 {
     real       rp, rpm2, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
     real       qq[2], c6[2], c12[2], sigma6[2], sigma2[2], sigma_pow[2];

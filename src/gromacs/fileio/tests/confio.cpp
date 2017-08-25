@@ -65,7 +65,7 @@
 /*! \brief
  * Google Test formatter for GromacsFileType values.
  */
-void PrintTo(const GromacsFileType &ftp, std::ostream *os)
+static void PrintTo(const GromacsFileType &ftp, std::ostream *os)
 {
     *os << "'" << ftp2ext(ftp) << "'";
 }

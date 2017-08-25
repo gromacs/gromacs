@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -76,13 +77,6 @@ static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
  * a target of 44 instead of the ideal value of 48.
  */
 static unsigned int gpu_min_ci_balanced_factor = 44;
-
-/* Functions from nbnxn_cuda.cu */
-extern void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo);
-extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
-extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
-extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
-
 
 /* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);

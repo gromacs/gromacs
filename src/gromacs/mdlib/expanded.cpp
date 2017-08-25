@@ -169,36 +169,7 @@ static void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *p
     sfree(nene);
 }
 
-real do_logsum(int N, real *a_n)
-{
-
-    /*     RETURN VALUE */
-    /* log(\sum_{i=0}^(N-1) exp[a_n]) */
-    real maxarg;
-    real sum;
-    int  i;
-    real logsum;
-    /*     compute maximum argument to exp(.) */
-
-    maxarg = a_n[0];
-    for (i = 1; i < N; i++)
-    {
-        maxarg = std::max(maxarg, a_n[i]);
-    }
-
-    /* compute sum of exp(a_n - maxarg) */
-    sum = 0.0;
-    for (i = 0; i < N; i++)
-    {
-        sum = sum + std::exp(a_n[i] - maxarg);
-    }
-
-    /*     compute log sum */
-    logsum = std::log(sum) + maxarg;
-    return logsum;
-}
-
-int FindMinimum(real *min_metric, int N)
+static int FindMinimum(real *min_metric, int N)
 {
 
     real min_val;

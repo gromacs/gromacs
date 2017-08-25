@@ -138,7 +138,7 @@ static gmx_bool bAllowed(real phi, real psi)
     return (map[x][y] == '1') ? TRUE : FALSE;
 }
 
-int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
+static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
 {
     int     *id;
     int      i, Xi, n;
@@ -210,14 +210,6 @@ int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
 
     return id;
 }
-
-int bin(real chi, int mult)
-{
-    mult = 3;
-
-    return static_cast<int>(chi*mult/360.0);
-}
-
 
 static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
                        int nlist, t_dlist dlist[], real time[], int maxchi,

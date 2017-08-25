@@ -426,7 +426,7 @@ void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rve
     sfree(index);
 }
 
-int line2type(char *line)
+static int line2type(char *line)
 {
     int  k;
     char type[8];

@@ -985,8 +985,8 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
 }
 
 /* write a collection of histograms to a file */
-void sim_data_histogram(sim_data_t *sd, const char *filename,
-                        int nbin_default, const gmx_output_env_t *oenv)
+static void sim_data_histogram(sim_data_t *sd, const char *filename,
+                               int nbin_default, const gmx_output_env_t *oenv)
 {
     char           label_x[STRLEN];
     const char    *dhdl    = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";

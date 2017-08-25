@@ -63,11 +63,11 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
-                  real **slOrder, real *slWidth, int *nslices,
-                  const t_topology *top, int ePBC,
-                  int axis, gmx_bool bMicel, int micel[], int nmic,
-                  const gmx_output_env_t *oenv)
+static void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
+                         real **slOrder, real *slWidth, int *nslices,
+                         const t_topology *top, int ePBC,
+                         int axis, gmx_bool bMicel, int micel[], int nmic,
+                         const gmx_output_env_t *oenv)
 {
     rvec *x0,            /* coordinates with pbc */
           dipole,        /* dipole moment due to one molecules */
@@ -232,8 +232,8 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
     sfree(x0);       /* free memory used by coordinate arrays */
 }
 
-void h2order_plot(rvec dipole[], real order[], const char *afile,
-                  int nslices, real slWidth, const gmx_output_env_t *oenv)
+static void h2order_plot(rvec dipole[], real order[], const char *afile,
+                         int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
     FILE       *ord;              /* xvgr files with order parameters  */
     int         slice;            /* loop index     */
