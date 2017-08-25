@@ -458,6 +458,7 @@ __global__ void pme_spline_and_spread_kernel(const pme_gpu_cuda_kernel_params_t 
         __syncthreads();
         calculate_splines<order, atomsPerBlock>(kernelParams, atomIndexOffset, (const float3 *)sm_coordinates,
                                                 sm_coefficients, sm_theta, sm_gridlineIndices);
+        gmx_syncwarp();
     }
     else
     {
