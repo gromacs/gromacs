@@ -70,9 +70,14 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#include "architecture.h"
+
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>       // sysconf()
 #endif
+
+namespace gmx
+{
 
 //! Convenience macro to help us avoid ifdefs each time we use sysconf
 #if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
@@ -82,20 +87,6 @@
 //! Convenience macro to help us avoid ifdefs each time we use sysconf
 #if !defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROC_CONF)
 #    define _SC_NPROCESSORS_CONF _SC_NPROC_CONF
-#endif
-
-#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
-//! Constant used to help minimize preprocessed code
-static const bool isX86 = true;
-#else
-//! Constant used to help minimize preprocessed code
-static const bool isX86 = false;
-#endif
-
-#if defined __powerpc__ || defined __ppc__ || defined __PPC__
-static const bool isPowerPC = true;
-#else
-static const bool isPowerPC = false;
 #endif
 
 //! Constant used to help minimize preprocessed code
@@ -407,7 +398,8 @@ hardwareTopologyPrepareDetection()
     (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
 
     // Modify this conditional when/if x86 or PowerPC starts to sleep some cores
-    if (!isX86 && !isPowerPC)
+    if (architecture != Architecture::x86 &&
+        architecture != Architecture::powerPc)
     {
         int                      countConfigured  = sysconf(_SC_NPROCESSORS_CONF);
         std::vector<std::thread> workThreads(countConfigured);
@@ -453,14 +445,16 @@ hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused         &mdl
         GMX_LOG(mdlog.info).
             appendTextFormatted("Note: %d CPUs configured, but only %d were detected to be online.\n", countConfigured, countFromDetection);
 
-        if (isX86 && countConfigured == 2*countFromDetection)
+        if (architecture == Architecture::x86 &&
+            countConfigured == 2*countFromDetection)
         {
             GMX_LOG(mdlog.info).
                 appendText("      X86 Hyperthreading is likely disabled; enable it for better performance.");
         }
         // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
         // We only warn if it is completely disabled since default performance drops with SMT8.
-        if (isPowerPC && countConfigured == 8*countFromDetection)
+        if (architecture == Architecture::powerPc &&
+            countConfigured == 8*countFromDetection)
         {
             GMX_LOG(mdlog.info).
                 appendText("      PowerPC SMT is likely disabled; enable SMT2/SMT4 for better performance.");
@@ -563,3 +557,5 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
 }
+
+}  // namespace gmx
