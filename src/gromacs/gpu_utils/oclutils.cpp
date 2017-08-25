@@ -115,11 +115,11 @@ int ocl_copy_H2D(cl_mem d_dest, void * h_src,
  *  identifying this particular device to host operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
-int ocl_copy_D2H_generic(void * h_dest, cl_mem d_src,
-                         size_t offset, size_t bytes,
-                         bool bAsync,
-                         cl_command_queue command_queue,
-                         cl_event *copy_event)
+static int ocl_copy_D2H_generic(void * h_dest, cl_mem d_src,
+                                size_t offset, size_t bytes,
+                                bool bAsync,
+                                cl_command_queue command_queue,
+                                cl_event *copy_event)
 {
     cl_int gmx_unused cl_error;
 

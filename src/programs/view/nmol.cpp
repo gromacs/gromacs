@@ -98,7 +98,7 @@ static bool MWCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     return false;
 }
 
-void set_def (t_molwin *mw, int ePBC, matrix box)
+static void set_def (t_molwin *mw, int ePBC, matrix box)
 {
     mw->bShowHydrogen = true;
     mw->bond_type     = eBFat;
@@ -368,10 +368,10 @@ int filter_vis(t_manager *man)
     return nvis;
 }
 
-void draw_objects(Display *disp, Window w, GC gc, int nobj,
-                  t_object objs[], iv2 vec2[], rvec x[],
-                  unsigned long col[], int size[], bool bShowHydro, int bond_type,
-                  bool bPlus)
+static void draw_objects(Display *disp, Window w, GC gc, int nobj,
+                         t_object objs[], iv2 vec2[], rvec x[],
+                         unsigned long col[], int size[], bool bShowHydro, int bond_type,
+                         bool bPlus)
 {
     bool         bBalls;
     int          i;

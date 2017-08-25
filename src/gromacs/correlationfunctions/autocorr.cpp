@@ -244,7 +244,7 @@ static void do_ac_core(int nframes, int nout,
 }
 
 /*! \brief Routine to normalize ACF, dividing by corr[0]. */
-void normalize_acf(int nout, real corr[])
+static void normalize_acf(int nout, real corr[])
 {
     int    j;
     double c0;
@@ -285,7 +285,7 @@ void normalize_acf(int nout, real corr[])
 }
 
 /*! \brief Routine that averages ACFs. */
-void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
+static void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
 {
     real c0;
     int  i, j;
@@ -307,7 +307,7 @@ void average_acf(gmx_bool bVerbose, int n, int nitem, real **c1)
 }
 
 /*! \brief Normalize ACFs. */
-void norm_and_scale_vectors(int nframes, real c1[], real scale)
+static void norm_and_scale_vectors(int nframes, real c1[], real scale)
 {
     int   j, m;
     real *rij;

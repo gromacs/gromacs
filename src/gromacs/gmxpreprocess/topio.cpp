@@ -396,7 +396,7 @@ static char ** cpp_opts(const char *define, const char *include,
 }
 
 
-int
+static int
 find_gb_bondlength(t_params *plist, int ai, int aj, real *length)
 {
     int i, j, a1, a2;
@@ -428,7 +428,7 @@ find_gb_bondlength(t_params *plist, int ai, int aj, real *length)
 }
 
 
-int
+static int
 find_gb_anglelength(t_params *plist, int ai, int ak, real *length)
 {
     int  i, j, a1, a2, a3;
@@ -472,7 +472,7 @@ find_gb_anglelength(t_params *plist, int ai, int ak, real *length)
     return status;
 }
 
-int
+static int
 generate_gb_exclusion_interactions(t_molinfo *mi, gpp_atomtype_t atype, t_nextnb *nnb)
 {
     int          j, n, ai, aj, ti, tj;

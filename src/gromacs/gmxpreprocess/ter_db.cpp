@@ -62,7 +62,7 @@ const char *kw_names[ekwNR] = {
     "replace", "add", "delete"
 };
 
-int find_kw(char *keyw)
+static int find_kw(char *keyw)
 {
     int i;
 

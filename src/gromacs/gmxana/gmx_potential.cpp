@@ -75,7 +75,7 @@ static int ce = 0, cb = 0;
 
 /* this routine integrates the array data and returns the resulting array */
 /* routine uses simple trapezoid rule                                     */
-void p_integrate(double *result, double data[], int ndata, double slWidth)
+static void p_integrate(double *result, double data[], int ndata, double slWidth)
 {
     int    i, slice;
     double sum;
@@ -100,13 +100,13 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
     return;
 }
 
-void calc_potential(const char *fn, int **index, int gnx[],
-                    double ***slPotential, double ***slCharge,
-                    double ***slField, int *nslices,
-                    const t_topology *top, int ePBC,
-                    int axis, int nr_grps, double *slWidth,
-                    double fudge_z, gmx_bool bSpherical, gmx_bool bCorrect,
-                    const gmx_output_env_t *oenv)
+static void calc_potential(const char *fn, int **index, int gnx[],
+                           double ***slPotential, double ***slCharge,
+                           double ***slField, int *nslices,
+                           const t_topology *top, int ePBC,
+                           int axis, int nr_grps, double *slWidth,
+                           double fudge_z, gmx_bool bSpherical, gmx_bool bCorrect,
+                           const gmx_output_env_t *oenv)
 {
     rvec        *x0;     /* coordinates without pbc */
     matrix       box;    /* box (3x3) */
@@ -360,10 +360,10 @@ void calc_potential(const char *fn, int **index, int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-void plot_potential(double *potential[], double *charge[], double *field[],
-                    const char *afile, const char *bfile, const char *cfile,
-                    int nslices, int nr_grps, const char *grpname[], double slWidth,
-                    const gmx_output_env_t *oenv)
+static void plot_potential(double *potential[], double *charge[], double *field[],
+                           const char *afile, const char *bfile, const char *cfile,
+                           int nslices, int nr_grps, const char *grpname[], double slWidth,
+                           const gmx_output_env_t *oenv)
 {
     FILE       *pot,     /* xvgr file with potential */
     *cha,                /* xvgr file with charges   */

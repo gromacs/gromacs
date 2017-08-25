@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "convert_tpr.h"
+
 #include <cmath>
 
 #include "gromacs/commandline/pargs.h"

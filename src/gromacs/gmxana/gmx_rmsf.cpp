@@ -89,8 +89,8 @@ static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
     return atoms->pdbinfo[i].bfac;
 }
 
-void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
-                     const gmx_output_env_t *oenv)
+static void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
+                            const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i, j;
@@ -153,7 +153,7 @@ static void average_residues(double f[], double **U, int uind,
     }
 }
 
-void print_dir(FILE *fp, real *Uaver)
+static void print_dir(FILE *fp, real *Uaver)
 {
     real eigvec[DIM*DIM];
     real tmp[DIM*DIM];

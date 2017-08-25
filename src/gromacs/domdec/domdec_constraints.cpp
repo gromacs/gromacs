@@ -66,6 +66,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "domdec_specatomcomm.h"
+#include "domdec_vsite.h"
 #include "hash.h"
 
 /*! \brief Struct used during constraint setup with domain decomposition */

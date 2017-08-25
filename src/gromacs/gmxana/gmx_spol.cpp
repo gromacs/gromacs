@@ -115,7 +115,7 @@ static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc
     }
 }
 
-void spol_atom2molindex(int *n, int *index, const t_block *mols)
+static void spol_atom2molindex(int *n, int *index, const t_block *mols)
 {
     int nmol, i, j, m;
 

@@ -140,20 +140,10 @@ typedef struct {
     int *nb;
 } t_nnb;
 
-void cp_index(int nn, int from[], int to[])
-{
-    int i;
-
-    for (i = 0; (i < nn); i++)
-    {
-        to[i] = from[i];
-    }
-}
-
-void mc_optimize(FILE *log, t_mat *m, real *time,
-                 int maxiter, int nrandom,
-                 int seed, real kT,
-                 const char *conv, gmx_output_env_t *oenv)
+static void mc_optimize(FILE *log, t_mat *m, real *time,
+                        int maxiter, int nrandom,
+                        int seed, real kT,
+                        const char *conv, gmx_output_env_t *oenv)
 {
     FILE      *fp = nullptr;
     real       ecur, enext, emin, prob, enorm;
@@ -347,7 +337,7 @@ static bool nrnb_comp(const t_nnb &a, const t_nnb &b)
     return b.nr < a.nr;
 }
 
-void gather(t_mat *m, real cutoff, t_clusters *clust)
+static void gather(t_mat *m, real cutoff, t_clusters *clust)
 {
     t_clustid *c;
     t_dist    *d;
@@ -437,7 +427,7 @@ void gather(t_mat *m, real cutoff, t_clusters *clust)
     sfree(d);
 }
 
-gmx_bool jp_same(int **nnb, int i, int j, int P)
+static gmx_bool jp_same(int **nnb, int i, int j, int P)
 {
     gmx_bool bIn;
     int      k, ii, jj, pp;
@@ -762,8 +752,8 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
     clust->ncl = k-1;
 }
 
-rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
-                      int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
+static rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
+                             int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;
     matrix       box;
@@ -1394,7 +1384,7 @@ int gmx_cluster(int argc, char *argv[])
     };
 
     FILE              *fp, *log;
-    int                nf, i, i1, i2, j;
+    int                nf   = 0, i, i1, i2, j;
     gmx_int64_t        nrms = 0;
 
     matrix             box;

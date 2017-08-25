@@ -114,8 +114,8 @@ static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
     return ld;
 }
 
-real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
-              real fac_lj, real fac_qq)
+static real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
+                     real fac_lj, real fac_qq)
 {
     int  i;
     real lj_tot, qq_tot;

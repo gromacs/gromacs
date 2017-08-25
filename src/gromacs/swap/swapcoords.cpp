@@ -1336,7 +1336,7 @@ static real getRequestedChargeImbalance(t_swap *s)
  * This routine should be called for the 'anions' and 'cations' group,
  * of which the indices were lumped together in the older version of the code.
  */
-void copyIndicesToGroup(
+static void copyIndicesToGroup(
         int         *indIons,
         int          nIons,
         t_swapGroup *g,
@@ -1380,7 +1380,7 @@ void copyIndicesToGroup(
  * #4 cations        - empty before conversion
  *
  */
-void convertOldToNewGroupFormat(
+static void convertOldToNewGroupFormat(
         t_swapcoords *sc,
         gmx_mtop_t   *mtop,
         gmx_bool      bVerbose,
@@ -1437,7 +1437,7 @@ void convertOldToNewGroupFormat(
 /*! \brief Returns TRUE if we started from an old .tpr
  *
  * Then we need to re-sort anions and cations into separate groups */
-gmx_bool bConvertFromOldTpr(t_swapcoords *sc)
+static gmx_bool bConvertFromOldTpr(t_swapcoords *sc)
 {
     // If the last group has no atoms it means we need to convert!
     if ( (sc->ngrp >= 5) && (0 == sc->grp[4].nat) )

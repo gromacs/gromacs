@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,54 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \internal \file
  * \brief
- * Tests for the mdrun termination functionality
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun_integration_tests
+ * Declares nbnxn cuda cache and texture helper functions
  */
-#include "gmxpre.h"
+#ifndef GMX_MDLIB_NBNXN_CUDA_NBNXN_CUDA_H
+#define GMX_MDLIB_NBNXN_CUDA_NBNXN_CUDA_H
 
-#include <gtest/gtest.h>
+#include "nbnxn_cuda_types.h"
 
-#include "testutils/testfilemanager.h"
+//! Set up the cache configuration for the non-bonded kernels.
+void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo);
+//! Return the reference to the nbfp texture.
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
+//! Return the reference to the nbfp_comb texture.
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
+//! Return the reference to the coulomb_tab.
+const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
 
-#include "moduletest.h"
-#include "terminationhelper.h"
-
-namespace gmx
-{
-namespace test
-{
-
-//! Build a simple .mdp file
-static void organizeMdpFile(SimulationRunner *runner)
-{
-    // Make sure -maxh has a chance to propagate
-    runner->useStringAsMdpFile("nsteps = 100\n"
-                               "tcoupl = v-rescale\n"
-                               "tc-grps = System\n"
-                               "tau-t = 1\n"
-                               "ref-t = 298\n");
-}
-
-//! Convenience typedef
-typedef MdrunTestFixture MdrunTerminationTest;
-
-TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
-{
-    CommandLine       mdrunCaller;
-    mdrunCaller.append("mdrun");
-    TerminationHelper helper(&fileManager_, &mdrunCaller, &runner_);
-
-    organizeMdpFile(&runner_);
-    EXPECT_EQ(0, runner_.callGrompp());
-
-    helper.runFirstMdrun(runner_.cptFileName_);
-    helper.runSecondMdrun();
-}
-
-} // namespace
-} // namespace
+#endif

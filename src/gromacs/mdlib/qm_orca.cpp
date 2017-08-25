@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "qm_orca.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,7 +97,7 @@ void init_orca(t_QMrec *qm)
 }
 
 
-void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+static void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     int        i;
     t_QMMMrec *QMMMrec;
@@ -251,8 +253,8 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fclose(out);
 }  /* write_orca_input */
 
-real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
-                      t_QMrec *qm, t_MMrec *mm)
+static real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
+                             t_QMrec *qm, t_MMrec *mm)
 {
     int
         i, j, atnum;
@@ -424,7 +426,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
     return(QMener);
 }
 
-void do_orca(char *orca_dir, char *basename)
+static void do_orca(char *orca_dir, char *basename)
 {
 
     /* make the call to the orca binary through system()

@@ -50,17 +50,17 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
-real pot(real x, real qq, real c6, real cn, int npow)
+static real pot(real x, real qq, real c6, real cn, int npow)
 {
     return cn*pow(x, -npow)-c6/gmx::power6(x)+qq*ONE_4PI_EPS0/x;
 }
 
-real bhpot(real x, real A, real B, real C)
+static real bhpot(real x, real A, real B, real C)
 {
     return A*std::exp(-B*x) - C/gmx::power6(x);
 }
 
-real dpot(real x, real qq, real c6, real cn, int npow)
+static real dpot(real x, real qq, real c6, real cn, int npow)
 {
     return -(npow*cn*std::pow(x, -npow-1)-6*c6/(x*gmx::power6(x))+qq*ONE_4PI_EPS0/gmx::square(x));
 }

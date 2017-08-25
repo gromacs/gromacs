@@ -37,6 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "add_par.h"
+
 #include <string.h>
 
 #include <algorithm>

@@ -410,8 +410,8 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
     xvgrclose(fp);
 }
 
-gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
-                          real *t, int nre, t_enxframe *fr)
+static gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
+                                 real *t, int nre, t_enxframe *fr)
 {
     int          i;
     gmx_bool     bCont;
@@ -621,7 +621,7 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
 /*
  * Calculates epsilon according to M. Neumann, Mol. Phys. 50, 841 (1983)
  */
-real calc_eps(double M_diff, double volume, double epsRF, double temp)
+static real calc_eps(double M_diff, double volume, double epsRF, double temp)
 {
     double eps, A, teller, noemer;
     double eps_0 = 8.854187817e-12;   /* epsilon_0 in C^2 J^-1 m^-1 */
@@ -1469,7 +1469,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
     }
 }
 
-void dipole_atom2molindex(int *n, int *index, const t_block *mols)
+static void dipole_atom2molindex(int *n, int *index, const t_block *mols)
 {
     int nmol, i, j, m;
 
