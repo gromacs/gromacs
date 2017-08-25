@@ -104,22 +104,24 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
 #if (GMX_PTX_ARCH >= 300)
     if (!(order & (order - 1))) // Only for orders of power of 2
     {
+        const unsigned int activeMask = c_fullWarpMask;
+
         // A tricky shuffle reduction inspired by reduce_force_j_warp_shfl
         static_assert(order == 4, "Only order of 4 is implemented");
         static_assert(atomDataSize <= warp_size, "TODO: rework for atomDataSize > warp_size (order 8 or larger)");
         const int width = atomDataSize;
 
-        fx += __shfl_down(fx, 1, width);
-        fy += __shfl_up  (fy, 1, width);
-        fz += __shfl_down(fz, 1, width);
+        fx += gmx_shfl_down_sync(activeMask, fx, 1, width);
+        fy += gmx_shfl_up_sync  (activeMask, fy, 1, width);
+        fz += gmx_shfl_down_sync(activeMask, fz, 1, width);
 
         if (splineIndex & 1)
         {
             fx = fy;
         }
 
-        fx += __shfl_down(fx, 2, width);
-        fz += __shfl_up  (fz, 2, width);
+        fx += gmx_shfl_down_sync(activeMask, fx, 2, width);
+        fz += gmx_shfl_up_sync  (activeMask, fz, 2, width);
 
         if (splineIndex & 2)
         {
@@ -133,7 +135,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3 * __restrict__ sm_forc
         // We have to just further reduce those groups of 4
         for (int delta = 4; delta < atomDataSize; delta <<= 1)
         {
-            fx += __shfl_down(fx, delta, width);
+            fx += gmx_shfl_down_sync(activeMask, fx, delta, width);
         }
 
         const int dimIndex = splineIndex;
@@ -351,7 +353,6 @@ __global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelPa
             fz += tdx.x * tdy.x * fz1;
         }
     }
-    //__syncthreads(); //not needed
 
     // Reduction of partial force contributions
     __shared__ float3 sm_forces[atomsPerBlock];
@@ -376,7 +377,7 @@ __global__ void pme_gather_kernel(const pme_gpu_cuda_kernel_params_t    kernelPa
         sm_forces[forceIndexLocal] = result;
     }
 
-    // No sync here
+    gmx_syncwarp();
     assert(atomsPerBlock <= warp_size);
 
     /* Writing or adding the final forces component-wise, single warp */
