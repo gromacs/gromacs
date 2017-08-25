@@ -1404,7 +1404,7 @@ internal::CartesianProductHolder10<Generator1, Generator2, Generator3,
   void GTEST_TEST_CLASS_NAME_(test_case_name, test_name)::TestBody()
 
 # define INSTANTIATE_TEST_CASE_P(prefix, test_case_name, generator) \
-  ::testing::internal::ParamGenerator<test_case_name::ParamType> \
+  static ::testing::internal::ParamGenerator<test_case_name::ParamType> \
       gtest_##prefix##test_case_name##_EvalGenerator_() { return generator; } \
   int gtest_##prefix##test_case_name##_dummy_ = \
       ::testing::UnitTest::GetInstance()->parameterized_test_registry(). \

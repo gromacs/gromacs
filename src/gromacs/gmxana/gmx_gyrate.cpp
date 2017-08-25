@@ -59,8 +59,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
-               rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
+static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
+                      rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
 {
     int    i, ii, m;
     real   gyro, dx2, m0, Itot;
@@ -108,9 +108,9 @@ real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
     return std::sqrt(gyro/tm);
 }
 
-void calc_gyro_z(rvec x[], matrix box,
-                 int gnx, int index[], t_atom atom[],
-                 int nz, real time, FILE *out)
+static void calc_gyro_z(rvec x[], matrix box,
+                        int gnx, int index[], t_atom atom[],
+                        int nz, real time, FILE *out)
 {
     static dvec   *inertia = nullptr;
     static double *tm      = nullptr;

@@ -137,9 +137,9 @@ static char *aname(const char *mname)
     return str;
 }
 
-void sort_ions(int nsa, int nw, int repl[], int index[],
-               t_atoms *atoms, rvec x[],
-               const char *p_name, const char *n_name)
+static void sort_ions(int nsa, int nw, int repl[], int index[],
+                      t_atoms *atoms, rvec x[],
+                      const char *p_name, const char *n_name)
 {
     int    i, j, k, r, np, nn, starta, startr, npi, nni;
     rvec  *xt;

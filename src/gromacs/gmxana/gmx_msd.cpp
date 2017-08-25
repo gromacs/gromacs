@@ -109,9 +109,9 @@ static gmx_bool in_data(t_corr *curr, int nx00)
     return curr->nframes-curr->n_offs[nx00];
 }
 
-t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
-                  int nmol, gmx_bool bTen, gmx_bool bMass, real dt, const t_topology *top,
-                  real beginfit, real endfit)
+static t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
+                         int nmol, gmx_bool bTen, gmx_bool bMass, real dt, const t_topology *top,
+                         real beginfit, real endfit)
 {
     t_corr  *curr;
     int      i;
@@ -635,11 +635,11 @@ static void printmol(t_corr *curr, const char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
-              gmx_bool bMol, int gnx[], int *index[],
-              t_calc_func *calc1, gmx_bool bTen, int *gnx_com, int *index_com[],
-              real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
-              const gmx_output_env_t *oenv)
+static int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
+                     gmx_bool bMol, int gnx[], int *index[],
+                     t_calc_func *calc1, gmx_bool bTen, int *gnx_com, int *index_com[],
+                     real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
+                     const gmx_output_env_t *oenv)
 {
     rvec            *x[2];  /* the coordinates to read */
     rvec            *xa[2]; /* the coordinates to calculate displacements for */
@@ -867,12 +867,12 @@ static void index_atom2mol(int *n, int *index, const t_block *mols)
     *n = nmol;
 }
 
-void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
-             const char *mol_file, const char *pdb_file, real t_pdb,
-             int nrgrp, t_topology *top, int ePBC,
-             gmx_bool bTen, gmx_bool bMW, gmx_bool bRmCOMM,
-             int type, real dim_factor, int axis,
-             real dt, real beginfit, real endfit, const gmx_output_env_t *oenv)
+static void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
+                    const char *mol_file, const char *pdb_file, real t_pdb,
+                    int nrgrp, t_topology *top, int ePBC,
+                    gmx_bool bTen, gmx_bool bMW, gmx_bool bRmCOMM,
+                    int type, real dim_factor, int axis,
+                    real dt, real beginfit, real endfit, const gmx_output_env_t *oenv)
 {
     t_corr        *msd;
     int           *gnx;   /* the selected groups' sizes */

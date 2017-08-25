@@ -51,6 +51,8 @@
 #endif
 
 
+#include "nbnxn_cuda.h"
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -929,29 +931,24 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
     plist->haveFreshList = false;
 }
 
-/*! Return the reference to the nbfp texture. */
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref()
 {
     assert(!c_disableCudaTextures);
     return nbfp_texref;
 }
 
-/*! Return the reference to the nbfp_comb texture. */
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref()
 {
     assert(!c_disableCudaTextures);
     return nbfp_comb_texref;
 }
 
-/*! Return the reference to the coulomb_tab. */
 const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref()
 {
     assert(!c_disableCudaTextures);
     return coulomb_tab_texref;
 }
 
-/*! Set up the cache configuration for the non-bonded kernels,
- */
 void nbnxn_cuda_set_cacheconfig(const gmx_device_info_t *devinfo)
 {
     cudaError_t stat;

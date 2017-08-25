@@ -52,8 +52,8 @@ static const char *type[] = {
     "pixmap", "statictext",   "edittext", "defbutton"
 };
 
-void ReadDlgError(const char *infile, eDLGERR err, const char *s,
-                  const char *file, int line)
+static void ReadDlgError(const char *infile, eDLGERR err, const char *s,
+                         const char *file, int line)
 {
     std::fprintf(stderr, "Error: ");
     switch (err)

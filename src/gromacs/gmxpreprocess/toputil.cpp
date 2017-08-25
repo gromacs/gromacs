@@ -182,7 +182,7 @@ void init_molinfo(t_molinfo *mol)
 
 /* FREEING MEMORY */
 
-void done_bt (t_params *pl)
+static void done_bt (t_params *pl)
 {
     sfree(pl->param);
 }
@@ -202,9 +202,9 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-void print_bt(FILE *out, directive d, gpp_atomtype_t at,
-              int ftype, int fsubtype, t_params plist[],
-              gmx_bool bFullDih)
+static void print_bt(FILE *out, directive d, gpp_atomtype_t at,
+                     int ftype, int fsubtype, t_params plist[],
+                     gmx_bool bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.

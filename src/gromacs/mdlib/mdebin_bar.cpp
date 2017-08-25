@@ -208,7 +208,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
 }
 
 
-void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
+static void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 {
     /* first check which type we should use: histogram or raw data */
     if (dh->nhist == 0)

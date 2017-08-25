@@ -105,14 +105,14 @@ typedef struct edipar
 
 
 
-void make_t_edx(struct edix *edx, int natoms, rvec *pos, int index[])
+static void make_t_edx(struct edix *edx, int natoms, rvec *pos, int index[])
 {
     edx->nr   = natoms;
     edx->anrs = index;
     edx->x    = pos;
 }
 
-void write_t_edx(FILE *fp, struct edix edx, const char *comment)
+static void write_t_edx(FILE *fp, struct edix edx, const char *comment)
 {
     /*here we copy only the pointers into the t_edx struct
        no data is copied and edx.box is ignored  */
@@ -124,7 +124,7 @@ void write_t_edx(FILE *fp, struct edix edx, const char *comment)
     }
 }
 
-int sscan_list(int *list[], const char *str, const char *listname)
+static int sscan_list(int *list[], const char *str, const char *listname)
 {
     /*this routine scans a string of the form 1,3-6,9 and returns the
        selected numbers (in this case 1 3 4 5 6 9) in NULL-terminated array of integers.
@@ -304,7 +304,7 @@ int sscan_list(int *list[], const char *str, const char *listname)
     return nvecs;
 } /*sscan_list*/
 
-void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, const char *grouptitle, real steps[])
+static void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, const char *grouptitle, real steps[])
 {
 /* eig_list is a zero-terminated list of indices into the eigvecs array.
    eigvecs are coordinates of eigenvectors
@@ -359,8 +359,8 @@ enum {
 #define MAGIC 670
 
 
-void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
-                           int nvec, int *eig_listen[], real* evStepList[])
+static void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
+                                  int nvec, int *eig_listen[], real* evStepList[])
 {
 /* write edi-file */
 
@@ -393,7 +393,7 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
 }
 
-int read_conffile(const char *confin, rvec **x)
+static int read_conffile(const char *confin, rvec **x)
 {
     t_topology  top;
     matrix      box;
@@ -404,8 +404,8 @@ int read_conffile(const char *confin, rvec **x)
 }
 
 
-void read_eigenvalues(int vecs[], const char *eigfile, real values[],
-                      gmx_bool bHesse, real kT, int natoms_average_struct)
+static void read_eigenvalues(int vecs[], const char *eigfile, real values[],
+                             gmx_bool bHesse, real kT, int natoms_average_struct)
 {
     int      neig, nrow, i;
     double **eigval;
@@ -497,15 +497,15 @@ static real *scan_vecparams(const char *str, const char * par, int nvecs)
 }
 
 
-void init_edx(struct edix *edx)
+static void init_edx(struct edix *edx)
 {
     edx->nr = 0;
     snew(edx->x, 1);
     snew(edx->anrs, 1);
 }
 
-void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                int igro[], const rvec *x, const char* structure)
+static void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
+                       int igro[], const rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */
@@ -530,9 +530,9 @@ void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
     }
 }
 
-void get_structure(const t_atoms *atoms, const char *IndexFile,
-                   const char *StructureFile, struct edix *edx, int nfit,
-                   int ifit[], int nav, int index[])
+static void get_structure(const t_atoms *atoms, const char *IndexFile,
+                          const char *StructureFile, struct edix *edx, int nfit,
+                          int ifit[], int nav, int index[])
 {
     int     *igro; /*index corresponding to target or origin structure*/
     int      ngro;

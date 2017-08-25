@@ -611,7 +611,7 @@ static void calc_rms(int nind, int nframes,
     }
 }
 
-real rms_diff(int natom, real **d, real **d_r)
+static real rms_diff(int natom, real **d, real **d_r)
 {
     int  i, j;
     real r, r2;
