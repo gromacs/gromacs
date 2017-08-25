@@ -96,9 +96,9 @@ static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
     }
 }
 
-void get_nsgrid_boundaries_vac(real av, real stddev,
-                               real *bound0, real *bound1,
-                               real *bdens0, real *bdens1)
+static void get_nsgrid_boundaries_vac(real av, real stddev,
+                                      real *bound0, real *bound1,
+                                      real *bdens0, real *bdens1)
 {
     /* Set the grid to 2 times the standard deviation of
      * the charge group centers in both directions.

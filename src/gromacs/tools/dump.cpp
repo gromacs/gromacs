@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "dump.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -276,7 +278,7 @@ static void list_trr(const char *fn)
     gmx_trr_close(fpread);
 }
 
-void list_xtc(const char *fn)
+static void list_xtc(const char *fn)
 {
     t_fileio   *xd;
     int         indent;
@@ -406,7 +408,7 @@ static void list_tng(const char gmx_unused *fn)
 #endif
 }
 
-void list_trx(const char *fn)
+static void list_trx(const char *fn)
 {
     switch (fn2ftp(fn))
     {
@@ -425,7 +427,7 @@ void list_trx(const char *fn)
     }
 }
 
-void list_ene(const char *fn)
+static void list_ene(const char *fn)
 {
     ener_file_t    in;
     gmx_bool       bCont;

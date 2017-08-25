@@ -49,6 +49,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "keywords.h"
 #include "selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */

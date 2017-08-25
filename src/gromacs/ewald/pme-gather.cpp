@@ -37,6 +37,8 @@
 
 #include "gmxpre.h"
 
+#include "pme-gather.h"
+
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"

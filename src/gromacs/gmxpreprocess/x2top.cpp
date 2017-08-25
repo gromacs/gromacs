@@ -101,9 +101,9 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
     return FALSE;
 }
 
-void mk_bonds(int nnm, t_nm2type nmt[],
-              t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
-              gmx_bool bPBC, matrix box)
+static void mk_bonds(int nnm, t_nm2type nmt[],
+                     t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
+                     gmx_bool bPBC, matrix box)
 {
     t_param b;
     int     i, j;
@@ -164,7 +164,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
     fflush(stderr);
 }
 
-int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
+static int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
 {
     int     i, n = 1;
     int    *cgnr;
@@ -191,8 +191,8 @@ int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
     return cgnr;
 }
 
-gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
-                             int *nbonds, int nnm, t_nm2type nm2t[])
+static gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
+                                    int *nbonds, int nnm, t_nm2type nm2t[])
 {
     gpp_atomtype_t atype;
     int            nresolved;
@@ -212,8 +212,8 @@ gpp_atomtype_t set_atom_type(t_symtab *tab, t_atoms *atoms, t_params *bonds,
     return atype;
 }
 
-void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
-                        gmx_bool bDih, gmx_bool bParam)
+static void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
+                               gmx_bool bDih, gmx_bool bParam)
 {
     int    i, j;
     double cc;
@@ -262,8 +262,8 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
     }
 }
 
-void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRound,
-                     gmx_bool bParam)
+static void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRound,
+                            gmx_bool bParam)
 {
     real c[MAXFORCEPARAM];
 
@@ -277,8 +277,8 @@ void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRoun
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
-                      matrix box)
+static void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
+                             matrix box)
 {
     int    i, ai, aj, ak, al, t1, t2, t3;
     rvec   r_ij, r_kj, r_kl, m, n;

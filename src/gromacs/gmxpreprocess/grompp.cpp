@@ -1070,7 +1070,7 @@ static int nrdf_internal(t_atoms *atoms)
     return nrdf;
 }
 
-void
+static void
 spline1d( double        dx,
           double *      y,
           int           n,
@@ -1100,7 +1100,7 @@ spline1d( double        dx,
 }
 
 
-void
+static void
 interpolate1d( double     xmin,
                double     dx,
                double *   ya,
@@ -1122,7 +1122,7 @@ interpolate1d( double     xmin,
 }
 
 
-void
+static void
 setup_cmap (int              grid_spacing,
             int              nc,
             real *           grid,
@@ -1200,7 +1200,7 @@ setup_cmap (int              grid_spacing,
     }
 }
 
-void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
+static void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 {
     int i, nelem;
 

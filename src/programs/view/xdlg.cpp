@@ -598,7 +598,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
  * the item itself may not be freed until the dlg is done with
  *
  ****************************/
-void DoCreateDlg(t_dlg *dlg)
+static void DoCreateDlg(t_dlg *dlg)
 {
     XSizeHints           hints;
     XSetWindowAttributes attr;

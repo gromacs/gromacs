@@ -962,7 +962,7 @@ static void check_restp_types(t_restp *r0, t_restp *r1)
     }
 }
 
-void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
+static void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
 {
     char        buf[STRLEN];
     int         k;

@@ -63,7 +63,7 @@
 
 static const int NOTSET = -9368163;
 
-void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm)
+static void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm)
 {
     int  i, d;
     real tm, m;
@@ -87,7 +87,7 @@ void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm
     }
 }
 
-int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
+static int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
 {
     int i, r;
 
@@ -106,7 +106,7 @@ int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
     return r;
 }
 
-int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
+static int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
 {
     int rnr;
 
@@ -118,7 +118,7 @@ int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
     return i;
 }
 
-int debug_strcmp(char s1[], char s2[])
+static int debug_strcmp(char s1[], char s2[])
 {
     if (debug)
     {
@@ -127,10 +127,10 @@ int debug_strcmp(char s1[], char s2[])
     return std::strcmp(s1, s2);
 }
 
-int find_next_match_atoms_in_res(int *i1, int index1[],
-                                 int m1, char **atnms1[],
-                                 int *i2, int index2[],
-                                 int m2, char **atnms2[])
+static int find_next_match_atoms_in_res(int *i1, int index1[],
+                                        int m1, char **atnms1[],
+                                        int *i2, int index2[],
+                                        int m2, char **atnms2[])
 {
     int      dx, dy, dmax, cmp;
     gmx_bool bFW = FALSE;
@@ -309,7 +309,7 @@ static int find_next_match_res(int *rnr1, int isize1,
     return cmp;
 }
 
-int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
+static int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
 {
     int i;
 
@@ -329,8 +329,8 @@ int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
     }
 }
 
-void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
-                         int *isize2, int index2[], const t_atoms *atoms2)
+static void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
+                                int *isize2, int index2[], const t_atoms *atoms2)
 {
     int        i1, i2, ii1, ii2, m1, m2;
     int        atcmp, rescmp;

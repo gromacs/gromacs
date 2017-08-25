@@ -500,7 +500,7 @@ static void check_occupancy(t_atoms *atoms, const char *filename, gmx_bool bVerb
     }
 }
 
-void write_posres(char *fn, t_atoms *pdba, real fc)
+static void write_posres(char *fn, t_atoms *pdba, real fc)
 {
     FILE *fp;
     int   i;
@@ -598,12 +598,12 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     return natom;
 }
 
-void process_chain(t_atoms *pdba, rvec *x,
-                   gmx_bool bTrpU, gmx_bool bPheU, gmx_bool bTyrU,
-                   gmx_bool bLysMan, gmx_bool bAspMan, gmx_bool bGluMan,
-                   gmx_bool bHisMan, gmx_bool bArgMan, gmx_bool bGlnMan,
-                   real angle, real distance, t_symtab *symtab,
-                   int nrr, const rtprename_t *rr)
+static void process_chain(t_atoms *pdba, rvec *x,
+                          gmx_bool bTrpU, gmx_bool bPheU, gmx_bool bTyrU,
+                          gmx_bool bLysMan, gmx_bool bAspMan, gmx_bool bGluMan,
+                          gmx_bool bHisMan, gmx_bool bArgMan, gmx_bool bGlnMan,
+                          real angle, real distance, t_symtab *symtab,
+                          int nrr, const rtprename_t *rr)
 {
     /* Rename aromatics, lys, asp and histidine */
     if (bTyrU)
@@ -677,7 +677,7 @@ typedef struct {
     char altloc; /* alternate location indicator */
 } t_pdbindex;
 
-int pdbicomp(const void *a, const void *b)
+static int pdbicomp(const void *a, const void *b)
 {
     t_pdbindex *pa, *pb;
     int         d;
@@ -859,8 +859,8 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], gmx_bool bVerbose)
     return pdba->nr;
 }
 
-void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
-                 gmx_residuetype_t *rt)
+static void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
+                        gmx_residuetype_t *rt)
 {
     int         i;
     const char *p_startrestype;

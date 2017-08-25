@@ -96,7 +96,7 @@ bool useLjCombRule(int vdwType)
  *
  * If the pointers to the size variables are NULL no resetting happens.
  */
-void ocl_free_buffered(cl_mem d_ptr, int *n, int *nalloc)
+static void ocl_free_buffered(cl_mem d_ptr, int *n, int *nalloc)
 {
     cl_int gmx_unused cl_error;
 
@@ -131,14 +131,14 @@ void ocl_free_buffered(cl_mem d_ptr, int *n, int *nalloc)
  *  for this operation or to query profiling information.
  *  OpenCL equivalent of cu_realloc_buffered.
  */
-void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
-                          size_t type_size,
-                          int *curr_size, int *curr_alloc_size,
-                          int req_size,
-                          cl_context context,
-                          cl_command_queue s,
-                          bool bAsync = true,
-                          cl_event *copy_event = NULL)
+static void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
+                                 size_t type_size,
+                                 int *curr_size, int *curr_alloc_size,
+                                 int req_size,
+                                 cl_context context,
+                                 cl_command_queue s,
+                                 bool bAsync = true,
+                                 cl_event *copy_event = NULL)
 {
     if (d_dest == NULL || req_size < 0)
     {
@@ -1056,7 +1056,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
 }
 
 /*! \brief Releases an OpenCL kernel pointer */
-void free_kernel(cl_kernel *kernel_ptr)
+static void free_kernel(cl_kernel *kernel_ptr)
 {
     cl_int gmx_unused cl_error;
 
@@ -1072,7 +1072,7 @@ void free_kernel(cl_kernel *kernel_ptr)
 }
 
 /*! \brief Releases a list of OpenCL kernel pointers */
-void free_kernels(cl_kernel *kernels, int count)
+static void free_kernels(cl_kernel *kernels, int count)
 {
     int i;
 
