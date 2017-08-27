@@ -231,7 +231,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   t_inputrec                     *ir,
                                   int                             nstlist_cmdline,
                                   const gmx_mtop_t               *mtop,
-                                  matrix                          box,
+                                  const matrix                    box,
                                   bool                            makeGpuPairList,
                                   const gmx::CpuInfo             &cpuinfo)
 {

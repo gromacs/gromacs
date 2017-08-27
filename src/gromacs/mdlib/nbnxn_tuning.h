@@ -74,7 +74,8 @@ struct t_inputrec;
  */
 void increaseNstlist(FILE *fplog, t_commrec *cr,
                      t_inputrec *ir, int nstlistOnCmdline,
-                     const gmx_mtop_t *mtop, matrix box,
+                     const gmx_mtop_t *mtop,
+                     const matrix box,
                      bool useOrEmulateGpuForNonbondeds,
                      const gmx::CpuInfo &cpuinfo);
 
