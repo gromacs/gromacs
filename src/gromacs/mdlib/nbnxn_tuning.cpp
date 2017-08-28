@@ -488,6 +488,10 @@ void setupDynamicPairlistPruning(FILE                      *fplog,
              * rolling pruning interval slightly shorter than nstlistTune,
              * thus giving correct results, but a slightly lower efficiency.
              */
+            GMX_RELEASE_ASSERT(listParams->nstlistPrune >= c_nbnxnGpuRollingListPruningInterval,
+                               ( "With dynamic list pruning on GPUs pruning frequency must be at least as large as the rolling pruning list lifetime (" +
+                                 std::to_string(c_nbnxnGpuRollingListPruningInterval) +
+                                 ").").c_str() );
             listParams->numRollingParts = listParams->nstlistPrune/c_nbnxnGpuRollingListPruningInterval;
         }
         else
