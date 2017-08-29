@@ -205,7 +205,7 @@ transposeScatterStoreU(float *              base,
 {
     SimdFInt32 simdoffset;
 
-    assert(sdt::size_t(offset) % 64 == 0);
+    assert(std::size_t(offset) % 64 == 0);
 
     simdoffset = simdLoadFI(offset);
 
