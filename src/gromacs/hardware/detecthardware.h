@@ -68,14 +68,4 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 //! Return whether compatible GPUs were found.
 bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
 
-/*! \brief Check the consistency of hw_opt with hwinfo.
- *
- * This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(const gmx::MDLogger    &mdlog,
-                                      const gmx_hw_info_t    *hwinfo,
-                                      const t_commrec        *cr,
-                                      const gmx_hw_opt_t     &hw_opt,
-                                      bool                    userSetGpuIds,
-                                      const std::vector<int> &gpuSelection);
-
 #endif
