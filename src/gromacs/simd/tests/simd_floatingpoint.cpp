@@ -510,7 +510,7 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
     // This will check elements in pd1 too when double width is 2*single width
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        EXPECT_REAL_EQ_TOL(d[i], f[i], tolerance);
+        EXPECT_FLOAT_EQ_TOL(d[i], f[i], tolerance);
     }
 }
 #endif      // GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
