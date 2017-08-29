@@ -97,14 +97,23 @@ TEST_F(SimdVectorOperationsTest, cprod)
     SimdReal bX    = rSimd_c3c0c4;
     SimdReal bY    = rSimd_c4c6c8;
     SimdReal bZ    = rSimd_c7c2c3;
-    SimdReal refcX = setSimdRealFrom3R( c3*c7-c6*c4, c4*c2-c7*c6, c5*c3-c8*c8 );
-    SimdReal refcY = setSimdRealFrom3R( c6*c3-c0*c7, c7*c0-c1*c2, c8*c4-c2*c3 );
-    SimdReal refcZ = setSimdRealFrom3R( c0*c4-c3*c3, c1*c6-c4*c0, c2*c8-c5*c4 );
+    //The SIMD version might use FMA. If we don't force FMA for the reference value, the compiler is free to use FMA
+    //for either product. If the compiler uses FMA for one product and the SIMD version uses FMA for the other, the
+    //rounding error of each product adds up and the total possible ulp-error is 12.
+    SimdReal refcX = setSimdRealFrom3R( std::fma(-c6, c4, c3*c7), std::fma(-c7, c6, c4*c2), std::fma(-c8, c8, c5*c3));
+    SimdReal refcY = setSimdRealFrom3R( std::fma(-c0, c7, c6*c3), std::fma(-c1, c2, c7*c0), std::fma(-c2, c3, c8*c4));
+    SimdReal refcZ = setSimdRealFrom3R( std::fma(-c3, c3, c0*c4), std::fma(-c4, c0, c1*c6), std::fma(-c5, c4, c2*c8));
     SimdReal cX, cY, cZ;
 
+    //The test assumes that cprod uses FMA on architectures which have FMA so that the compiler can't choose which
+    //product is computed with FMA.
     cprod(aX, aY, aZ, bX, bY, bZ, &cX, &cY, &cZ);
 
-    setUlpTol(2);
+    //The test values cannot be computed without FMA for the case that SIMD has no FMA. Even if no explicit FMA were
+    //used, the compiler could choose to use FMA. This causes up to 6upl error because of the product is up to 6 times
+    //larger than the final result after the difference.
+    setUlpTol(GMX_SIMD_HAVE_FMA ? 0 : 6);
+    
     GMX_EXPECT_SIMD_REAL_NEAR(refcX, cX);
     GMX_EXPECT_SIMD_REAL_NEAR(refcY, cY);
     GMX_EXPECT_SIMD_REAL_NEAR(refcZ, cZ);
