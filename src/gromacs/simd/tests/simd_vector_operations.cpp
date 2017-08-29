@@ -104,7 +104,7 @@ TEST_F(SimdVectorOperationsTest, cprod)
 
     cprod(aX, aY, aZ, bX, bY, bZ, &cX, &cY, &cZ);
 
-    setUlpTol(2);
+    setUlpTol(8);
     GMX_EXPECT_SIMD_REAL_NEAR(refcX, cX);
     GMX_EXPECT_SIMD_REAL_NEAR(refcY, cY);
     GMX_EXPECT_SIMD_REAL_NEAR(refcZ, cZ);
