@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,13 +140,13 @@ cprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
       SimdFloat *cx, SimdFloat *cy, SimdFloat *cz)
 {
     *cx = ay * bz;
-    *cx = *cx - az * by;
+    *cx = fnma(az, by, *cx);
 
     *cy = az * bx;
-    *cy = *cy - ax * bz;
+    *cy = fnma(ax, bz, *cy);
 
     *cz = ax * by;
-    *cz = *cz - ay * bx;
+    *cz = fnma(ay, bx, *cz);
 }
 #endif // GMX_SIMD_HAVE_FLOAT
 
