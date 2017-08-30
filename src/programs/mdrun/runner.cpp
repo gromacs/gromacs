@@ -753,7 +753,8 @@ int Mdrunner::mdrunner()
     if (SIMMASTER(cr) && (Flags & MD_APPENDFILES))
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags, &fplog);
+                     (Flags & MD_APPENDFILES),
+                     &fplog);
         logOwner = buildLogger(fplog, nullptr);
         mdlog    = logOwner.logger();
     }
