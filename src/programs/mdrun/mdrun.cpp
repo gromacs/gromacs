@@ -241,15 +241,16 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     };
 
     /* Command line option parameters, with their default values */
-    gmx_bool          bDDBondCheck  = TRUE;
-    gmx_bool          bDDBondComm   = TRUE;
-    gmx_bool          bTunePME      = TRUE;
-    gmx_bool          bRerunVSite   = FALSE;
-    gmx_bool          bConfout      = TRUE;
-    gmx_bool          bReproducible = FALSE;
-    gmx_bool          bIMDwait      = FALSE;
-    gmx_bool          bIMDterm      = FALSE;
-    gmx_bool          bIMDpull      = FALSE;
+    gmx_bool          bDoAppendFiles = Flags.test(appendFiles);
+    gmx_bool          bDDBondCheck   = Flags.test(ddBondCheck);
+    gmx_bool          bDDBondComm    = Flags.test(ddBondComm);
+    gmx_bool          bTunePME       = Flags.test(tunePME);
+    gmx_bool          bRerunVSite    = Flags.test(rerunVSite);
+    gmx_bool          bConfout       = Flags.test(confOut);
+    gmx_bool          bReproducible  = Flags.test(reproducible);
+    gmx_bool          bIMDwait       = Flags.test(imdWait);
+    gmx_bool          bIMDterm       = Flags.test(imdTerm);
+    gmx_bool          bIMDpull       = Flags.test(imdPull);
 
     /* Command line options */
     rvec              realddxyz                           = {0, 0, 0};
@@ -262,8 +263,8 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     const char       *nbpu_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
-    gmx_bool          bKeepAndNumCPT        = FALSE;
-    gmx_bool          bResetCountersHalfWay = FALSE;
+    gmx_bool          bKeepAndNumCPT        = Flags.test(keepAndNumCpt);
+    gmx_bool          bResetCountersHalfWay = Flags.test(resetCountersHalfWay);
     const char       *gpuIdTaskAssignment   = "";
 
     t_pargs           pa[] = {
@@ -366,7 +367,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    gmx_bool          bDoAppendFiles, bStartFromCpt;
+    gmx_bool          bStartFromCpt = Flags.test(startFromCpt);
     int               rc;
     char            **multidir = nullptr;
 
@@ -475,30 +476,31 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     handleRestart(cr, bTryToAppendFiles, nfile, fnm, &bDoAppendFiles, &bStartFromCpt);
 
-    Flags = opt2bSet("-rerun", nfile, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
-    Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
-    Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
-    Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
-    Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
-    Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
-    Flags = Flags | (bDoAppendFiles  ? MD_APPENDFILES  : 0);
-    Flags = Flags | (opt2parg_bSet("-append", asize(pa), pa) ? MD_APPENDFILESSET : 0);
-    Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
-    Flags = Flags | (bStartFromCpt ? MD_STARTFROMCPT : 0);
-    Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-    Flags = Flags | (opt2parg_bSet("-ntomp", asize(pa), pa) ? MD_NTOMPSET : 0);
-    Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
-    Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
-    Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
+    // Note: We cannot extract e.g. opt2parg_bSet("-append", asize(pa), pa) from this block.
+    Flags.set(rerun, opt2bSet("-rerun", nfile, fnm));
+    Flags.set(ddBondCheck, bDDBondCheck);
+    Flags.set(ddBondComm, bDDBondComm);
+    Flags.set(tunePME, bTunePME);
+    Flags.set(confOut, bConfout);
+    Flags.set(rerunVSite, bRerunVSite);
+    Flags.set(reproducible, bReproducible);
+    Flags.set(appendFiles, bDoAppendFiles);
+    Flags.set(appendFilesSet, opt2parg_bSet("-append", asize(pa), pa));
+    Flags.set(keepAndNumCpt, bKeepAndNumCPT);
+    Flags.set(startFromCpt, bStartFromCpt);
+    Flags.set(resetCountersHalfWay, bResetCountersHalfWay);
+    Flags.set(ntompSet, opt2parg_bSet("-ntomp", asize(pa), pa));
+    Flags.set(imdWait, bIMDwait);
+    Flags.set(imdTerm, bIMDterm);
+    Flags.set(imdPull, bIMDpull);
 
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(cr) && !(Flags.test(appendFiles)))
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags & MD_APPENDFILES, &fplog);
+                     Flags.test(appendFiles), &fplog);
     }
     else
     {
