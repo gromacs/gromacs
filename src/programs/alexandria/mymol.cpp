@@ -1272,8 +1272,10 @@ void MyMol::CalcPolarizability(double     efield,
         computeForces(fplog, cr);
         CalcDipole(mu_tot);
         alpha_calc_[m][m] = ((mu_tot[m]-mu_ref[m])/efield)*(POLFAC);
+        isoPol_calc_     += alpha_calc_[m][m];
         field[m] = 0.0;
     }
+    isoPol_calc_ /= DIM;
 }
 
 void MyMol::PrintConformation(const char *fn)
@@ -1719,11 +1721,13 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     {
         for (m = 0; m < DIM; m++)
         {
+            isoPol_elec_ += polar[m][m];
             for (n = 0; n < DIM; n++)
             {
                 alpha_elec_[m][n] = polar[m][n];
             }
         }
+        isoPol_elec_ /=DIM;
     } 
     return imm;
 }

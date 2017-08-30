@@ -804,7 +804,7 @@ void OptZeta::print_results(FILE                   *fp,
         eprDESP, eprESP, eprMPA, eprHPA, eprCM5, eprNR
     };
     
-    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp, lsq_alpha;
+    gmx_stats_t               lsq_mu[eprNR], lsq_dip[eprNR], lsq_quad[eprNR], lsq_esp, lsq_alpha, lsq_isoPol;
     const char               *eprnm[eprNR] = {"DESP", "ESP", "MPA", "HPA", "CM5"};
     std::vector<AtomTypeLsq>  lsqt;
 
@@ -816,6 +816,7 @@ void OptZeta::print_results(FILE                   *fp,
     }
     lsq_esp     = gmx_stats_init();
     lsq_alpha   = gmx_stats_init();
+    lsq_isoPol  = gmx_stats_init();
     n           = 0;
     
     auto *ic = indexCount();
@@ -900,6 +901,8 @@ void OptZeta::print_results(FILE                   *fp,
             if(bPolar)
             {
                 mol.CalcPolarizability(10, cr_, nullptr);
+
+                gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_, 0, 0);
                 for (mm = 0; mm < DIM; mm++)
                 {
                     gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
@@ -960,6 +963,7 @@ void OptZeta::print_results(FILE                   *fp,
     if (bPolar)
     {
         print_stats(fp, (char *)"Polarizability (A^3)",  lsq_alpha, false,  (char *)"QM", (char *)"DESP");
+        print_stats(fp, (char *)"Isotropic Polarizability (A^3)",  lsq_isoPol, false,  (char *)"QM", (char *)"DESP");
     }
     fprintf(fp, "\n");
 
@@ -1052,7 +1056,7 @@ void OptZeta::print_results(FILE                   *fp,
     
     if (bPolar)
     {
-        alphac = xvgropen(alphaCorr, "Isotropic Polarizability (A^3)", "QM", "DESP", oenv);
+        alphac = xvgropen(alphaCorr, "Isotropic Polarizability (A\\S3\\N)", "QM", "DESP", oenv);
         xvgr_symbolize(alphac, 1, eprnm, oenv);
         print_lsq_set(alphac, lsq_alpha);
         fclose(alphac);
@@ -1094,7 +1098,8 @@ void OptZeta::print_results(FILE                   *fp,
         gmx_stats_free(lsq_dip[i]);    
     }
     gmx_stats_free(lsq_esp);
-    gmx_stats_free(lsq_alpha);    
+    gmx_stats_free(lsq_alpha);
+    gmx_stats_free(lsq_isoPol);
 }
 }
 

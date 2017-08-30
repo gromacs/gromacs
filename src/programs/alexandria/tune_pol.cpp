@@ -40,7 +40,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -175,17 +174,17 @@ static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
     return false;
 }
 
-static void dump_csv(const alexandria::Poldata        &pd,
-                     std::vector<alexandria::MolProp> &mp,
-                     const alexandria::MolSelect      &gms,
-                     std::vector<pType>               &ptypes,
-                     int                               nusemol,
-                     double                            x[],
-                     double                          **a,
-                     double                          **at)
+static void fill_matrices_and_dump_csv(const alexandria::Poldata        &pd,
+                                       std::vector<alexandria::MolProp> &mp,
+                                       const alexandria::MolSelect      &gms,
+                                       std::vector<pType>               &ptypes,
+                                       int                               nusemol,
+                                       double                            x[],
+                                       double                          **a,
+                                       double                          **at)
 {
     alexandria::CompositionSpecs cs;
-    FILE *csv = gmx_ffopen("out.csv", "w");
+    FILE *csv = gmx_ffopen("tune_pol.csv", "w");
 
     fprintf(csv, "\"molecule\",\"formula\",");
     for (size_t i = 0; i < ptypes.size(); i++)
@@ -205,7 +204,7 @@ static void dump_csv(const alexandria::Poldata        &pd,
             fprintf(csv, "\"%d %s\",\"%s\",", nn, mpi->getMolname().c_str(), mpi->formula().c_str());
             
             std::vector<int> count;
-            count.resize(ptypes.size());           
+            count.resize(ptypes.size());
             for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ani++)
             {
                 std::string  ptype;
@@ -268,7 +267,7 @@ static int decompose_frag(FILE                             *fplog,
     int                          j, niter = 0;
     int                          row, nusemol;
     alexandria::CompositionSpecs cs;
-    const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    const char                  *alexandria = cs.searchCS(alexandria::iCalexandria)->name();
 
     x.resize(mp.size()+1);
     // Copy all atom types into array. Set usage array.
@@ -293,7 +292,7 @@ static int decompose_frag(FILE                             *fplog,
         }
         nusemol  = 0;
         poltot   = 0;
-        for (auto mpi = mp.begin(); (mpi < mp.end()); )
+        for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             iMolSelect ims  = gms.status(mpi->getIupac());
             double T        = -1;
@@ -301,13 +300,12 @@ static int decompose_frag(FILE                             *fplog,
             double sig_pol  = 0;
             bool   bPol     = mpi->getProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
-                                           lot, "", exp_type, &pol, &sig_pol, &T);
+                                           lot, "", exp_type,
+                                           &pol, &sig_pol, &T);
                                            
-            auto mci        = mpi->SearchMolecularComposition(alex);
-
-            bool bHaveComposition = mci != mpi->EndMolecularComposition();
-            bool bUseMol          = ((imsIgnore != ims) && bPol && (pol > 0) &&
-                                     bHaveComposition);
+            auto mci              = mpi->SearchMolecularComposition(alexandria);
+            bool bHaveComposition = (mci != mpi->EndMolecularComposition());
+            bool bUseMol          = ((imsIgnore != ims) && bPol && (pol > 0) && bHaveComposition);
             if (nullptr != fplog)
             {
                 fprintf(fplog, "%s nExper %d pol %g Use: %s\n", 
@@ -389,15 +387,18 @@ static int decompose_frag(FILE                             *fplog,
             {
                 for (auto &mpi : mp)
                 {
-                    auto mci = mpi.SearchMolecularComposition(alex);
+                    auto mci = mpi.SearchMolecularComposition(alexandria);
                     for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ++ani)
                     {
                         std::string p;
                         if (pd.atypeToPtype(ani->getAtom(), p))
                         {
-                            if (p.compare(pi->name()) == 0)
+                            if (p == pi->name())
                             {
-                                pi->incCopies();
+                                for (int i = 0; i < ani->getNumber(); i++)
+                                {
+                                    pi->incCopies();
+                                }
                             }
                         }
                     }
@@ -436,8 +437,7 @@ static int decompose_frag(FILE                             *fplog,
     }
     if (ptypes.size() == 0)
     {
-        printf("No polarization types to optimize, but before compaction %zu.\n",
-               ptstart);
+        printf("No polarization types to optimize, but before compaction %zu.\n", ptstart);
         return 0;
     }
     /* Now we know how many atomtypes there are (ptypes.size()) and
@@ -448,13 +448,12 @@ static int decompose_frag(FILE                             *fplog,
     at     = alloc_matrix(ptypes.size(), nusemol);
     if (nullptr != fplog)
     {
-        fprintf(fplog, "There are %d different atomtypes to optimize the polarizabilities\n",
-                (int)ptypes.size());
+        fprintf(fplog, "There are %d different atomtypes to optimize the polarizabilities\n", (int)ptypes.size());
         fprintf(fplog, "There are %d (experimental) reference polarizabilities.\n", nusemol);
         fflush(fplog);
     }
-    // As a side effect this function fills a and at and probably x.
-    dump_csv(pd, mp, gms, ptypes, nusemol, x.data(), a, at);
+
+    fill_matrices_and_dump_csv(pd, mp, gms, ptypes, nusemol, x.data(), a, at);
 
     if (fplog)
     {
@@ -464,11 +463,9 @@ static int decompose_frag(FILE                             *fplog,
                     pi->name().c_str(), pi->nCopies());
         }
     }
-
-    // Check for linear dependencies
     if (!check_matrix(a, x.data(), nusemol, ptypes))
     {
-        fprintf(stderr, "Matrix is linearly dependent. Sorry.\n");
+        fprintf(stderr, "Matrix is linearly dependent. Sorry!.\n");
     }
 
     // Now loop over the number of bootstrap loops
@@ -486,9 +483,8 @@ static int decompose_frag(FILE                             *fplog,
         x_copy.resize(nusemol);
         for (int ii = 0; ii < nusemol; ii++)
         {
-            // Pick random molecule uu out of stack
+            // Pick random molecule uu out of the stack.
             int uu = dis(gen);
-
             for (size_t jj = 0; jj < ptypes.size(); jj++)
             {
                 // Make row ii equal to uu in the original matrix

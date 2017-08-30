@@ -659,9 +659,9 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
     double                          ahc, ahp, bos_pol;
     char                            longbuf[STRLEN];
     MolPropObservable               mpo = MPO_POLARIZABILITY;
-    LongTable                       lt(fp, false, NULL);
+    LongTable                       lt(fp, false, nullptr);
     CompositionSpecs                cs;
-    const char                     *alex = cs.searchCS(iCalexandria)->name();
+    const char                     *alexandria = cs.searchCS(iCalexandria)->name();
 
     /* Prepare printing it! */
     atomtype_tab_header(lt);
@@ -671,8 +671,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
      * do not need to have the same sets of types,
      * as we check for the type name.
      */
-    for (PtypeConstIterator pType = pd.getPtypeBegin();
-         pType != pd.getPtypeEnd(); pType++)
+    for (auto pType = pd.getPtypeBegin(); pType != pd.getPtypeEnd(); pType++)
     {
         if (pType->getPolarizability() > 0)
         {
@@ -685,13 +684,12 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
              */
             for (auto &mpi : mp)
             {
-                MolecularCompositionIterator mci = mpi.SearchMolecularComposition(alex);
+                auto mci = mpi.SearchMolecularComposition(alexandria);
 
                 if (mci != mpi.EndMolecularComposition())
                 {
                     bool bFound = false;
-
-                    for (AtomNumIterator ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
+                    for (auto ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
                     {
                         std::string pt;
                         if (pd.atypeToPtype(ani->getAtom(), pt))
@@ -717,8 +715,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
             /* Determine Miller and Bosque polarizabilities for this Alexandria element */
             ahc = ahp = bos_pol = 0;
             std::string aequiv;
-            if (1 == pd.getMillerPol(pType->getMiller(),
-                                     &atomnumber, &ahc, &ahp, aequiv))
+            if (1 == pd.getMillerPol(pType->getMiller(), &atomnumber, &ahc, &ahp, aequiv))
             {
                 ahc = (4.0/atomnumber)*gmx::square(ahc);
             }
@@ -755,13 +752,13 @@ static void gmx_molprop_atomtype_dip_table(FILE          *fp,
     std::string gt_type[2] = { "", "" };
 
 #define prev (1-cur)
-#define NEQG 5
-    ChargeDistributionModel eqgcol[NEQG] = { eqdAXp, eqdAXs, eqdAXg };
+#define NEQG 6
+    ChargeDistributionModel eqgcol[NEQG] = { eqdAXp, eqdAXpp, eqdAXg, eqdAXpg,  eqdAXs, eqdAXps};
     char                    longbuf[STRLEN], buf[256];
     int                     npcol[NEQG]  = { 2, 3, 3 };
     const char             *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
     int                     ncol;
-    LongTable               lt(fp, true, NULL);
+    LongTable               lt(fp, true, nullptr);
 
     ncol = 1;
     for (i = 0; (i < NEQG); i++)

@@ -131,7 +131,7 @@ double DNuclear_GG(double r, double z)
     }
     else
     {
-        dngg = (2.0/sqrt(M_PI))*exp(-sqr(rz))*(z/r) - erf(rz)/sqr(r);
+        dngg = (-1)*((2.0/sqrt(M_PI))*exp(-sqr(rz))*(z/r) - erf(rz)/sqr(r));
     }
 
     return dngg;

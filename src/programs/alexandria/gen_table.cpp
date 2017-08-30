@@ -12,6 +12,7 @@
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -26,6 +27,48 @@ using namespace alexandria;
 enum {
     mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mDEC, mDEC_pair, mDEC_qd_q, mDEC_qd_qd, mDEC_q_q, mNR
 };
+
+static void filter_eemprops(std::vector<Eemprops>    *eemprops,
+                            ChargeDistributionModel   iDistributionModel,
+                            char                     *atypes)
+{
+    for (auto eep = eemprops->begin(); eep != eemprops->end();)
+    {   
+        if (eep->getEqdModel() != iDistributionModel)
+        {
+            eep = eemprops->erase(eep);
+        }
+        else
+        {
+            ++eep;
+        }
+    }
+    if (nullptr != atypes)
+    {
+        std::vector<std::string> ptr = gmx::splitString(atypes);
+        for (auto eep = eemprops->begin(); eep != eemprops->end();)
+        {
+            if (std::find(ptr.begin(), ptr.end(), eep->getName()) == ptr.end())
+            {
+                eep = eemprops->erase(eep);
+            }
+            else
+            {
+                ++eep;
+            }
+        }
+    }
+}
+
+static double Coulomb_PP(double r)
+{
+    return 1/r;
+}
+
+static double DCoulomb_PP(double r)
+{
+    return -1/gmx::square(r);
+}
 
 static int faculty(int n)
 {
@@ -903,268 +946,6 @@ static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double xi)
     }
 }
 
-static void gen_alexandria_rho(Poldata &pd, const char *fn,
-                               ChargeDistributionModel iDistributionModel,
-                               real rcut, real spacing, const gmx_output_env_t *oenv)
-{
-    FILE                         *fp;
-    int                           j, n, nmax;
-    ChargeDistributionModel       eqd_model;
-    std::string                   name;
-    double                        rho, rr, *A, *zeta, *q, qtot;
-    int                          *row, nzeta;
-    char                          buf[STRLEN];
-
-    nmax = 1+(int)(rcut/spacing);
-
-    for (EempropsIterator eep = pd.BeginEemprops();
-         eep != pd.EndEemprops(); eep++)
-    {
-        eqd_model = eep->getEqdModel();
-        name      = eep->getName();
-        if (eqd_model == iDistributionModel)
-        {
-            nzeta = pd.getNzeta( iDistributionModel, name);
-            snew(zeta, nzeta);
-            snew(q, nzeta);
-            snew(row, nzeta);
-            snew(A, nzeta);
-            qtot = 0;
-            for (j = 0; (j < nzeta); j++)
-            {
-                zeta[j] = pd.getZeta( iDistributionModel, name, j);
-                q[j]    = pd.getQ( iDistributionModel, name, j);
-                qtot   += q[j];
-                row[j]  = pd.getRow( iDistributionModel, name, j);
-                switch (iDistributionModel)
-                {
-                    case eqdAXg:
-                        A[j] = pow(zeta[j]*zeta[j]/M_PI, 1.5);
-                        break;
-                    case eqdAXs:
-                        A[j] = pow(2*zeta[j], 2*row[j]+1)/(4*M_PI*faculty(2*row[j]));
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  getEemtypeName(iDistributionModel));
-                }
-            }
-            if (q[nzeta-1] == 0)
-            {
-                q[nzeta-1] = -qtot;
-            }
-
-            sprintf(buf, "%s_%s", name.c_str(), fn);
-
-            fp = xvgropen(buf, "Rho", "r (nm)", "rho(r)", oenv);
-            for (n = 0; (n <= nmax); n++)
-            {
-                rr  = n*spacing;
-                rho = 0;
-                for (j = 0; (j < nzeta); j++)
-                {
-                    if (zeta[j] > 0)
-                    {
-                        switch (iDistributionModel)
-                        {
-                            case eqdAXg:
-                                rho += A[j]*exp(-gmx::square(rr*zeta[j]));
-                                break;
-                            case eqdAXs:
-                                rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
-                                break;
-                            default:
-                                gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                          getEemtypeName(iDistributionModel));
-                        }
-                    }
-                }
-                fprintf(fp, "%10.5e  %10.5e\n", rr, rho);
-            }
-            fclose(fp);
-            sfree(q);
-            sfree(zeta);
-            sfree(row);
-            sfree(A);
-        }
-    }
-}
-
-/*
-  gen_table overstimates the eel enery and force by a factor of 4. 
-  The code is hacked for now but then it needs to be fixed properly. 
- */
-static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributionModel iDistributionModel,
-                                  real rcut, real spacing, const gmx_output_env_t *oenv)
-{
-    FILE                      *fp, *fp2;
-    int                        i, j, k, l, n, nmax, bi, bk;
-    ChargeDistributionModel    eqg_model;
-    gmx_bool                  *bSplit;
-    std::vector<std::string>   name;
-    double                     dV, V, dVp, Vp, rr, **zeta, **q, qij, qkl, vc, vd, fd, fc, vr, fr;
-    int                      **row, *nzeta;
-    int                        natypemax = 32, natype = 0;
-    int                        nzi0, nzi1, nzk0, nzk1;
-    char                       buf[STRLEN], buf2[STRLEN], fnbuf[STRLEN];
-    const char                *ns[2] = {"", "_s"};
-
-    gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv);
-    name.resize(natypemax);
-    snew(zeta, natypemax);
-    snew(q, natypemax);
-    snew(row, natypemax);
-    for (EempropsIterator eep = pd.BeginEemprops();
-         eep != pd.EndEemprops(); eep++)
-    {
-        eqg_model    = eep->getEqdModel();
-        name[natype] = eep->getName();
-        
-        if (eqg_model == iDistributionModel)
-        {
-            natype++;
-        }
-        if (natype >= natypemax)
-        {
-            natypemax += 32;
-            name.resize(natypemax);
-            srenew(zeta, natypemax);
-            srenew(q, natypemax);
-            srenew(row, natypemax);
-        }
-    }
-    snew(nzeta, natype);
-    snew(bSplit, natype);
-    for (i = 0; (i < natype); i++)
-    {
-        nzeta[i] = pd.getNzeta( iDistributionModel, name[i]);
-        snew(zeta[i], nzeta[i]);
-        snew(q[i], nzeta[i]);
-        snew(row[i], nzeta[i]);
-        for (j = 0; (j < nzeta[i]); j++)
-        {
-            zeta[i][j] = pd.getZeta( iDistributionModel, name[i], j);
-            q[i][j]    = pd.getQ( iDistributionModel, name[i], j);
-            row[i][j]  = pd.getRow( iDistributionModel, name[i], j);
-        }
-        /* The bSplit array determines whether a particle is split in a nucleus
-           and a shell, by checking whether there are more than one charges. */
-        bSplit[i] = (nzeta[i] > 1) && (q[i][nzeta[i]-1] == 0);
-    }
-    nmax = 1+(int)(rcut/spacing);
-    for (i = 0; (i < natype); i++)
-    {
-        for (bi = 0; (bi < (bSplit[i] ? 2 : 1)); bi++)
-        {
-            nzi0 = 0;
-            nzi1 = nzeta[i];
-            if (bSplit[i])
-            {
-                if (bi == 0)
-                {
-                    nzi1 = nzeta[i]-1;
-                }
-                else
-                {
-                    nzi0 = nzeta[i]-1;
-                }
-            }
-            for (k = 0; (k <= i); k++)
-            {
-                for (bk = 0; (bk < (bSplit[k] ? 2 : 1)); bk++)
-                {
-                    nzk0 = 0;
-                    nzk1 = nzeta[k];
-                    if (bSplit[k])
-                    {
-                        if (bk == 0)
-                        {
-                            nzk1 = nzeta[k]-1;
-                        }
-                        else
-                        {
-                            nzk0 = nzeta[k]-1;
-                        }
-                    }
-                    strncpy(fnbuf, fn, strlen(fn)-4);
-                    fnbuf[strlen(fn)-4] = '\0';
-                    sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[k].c_str(), ns[bk], 
-                            name[i].c_str(), ns[bi]);
-                    sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, name[i].c_str(), ns[bi],
-                            name[k].c_str(), ns[bk]);
-                    
-                    fp = xvgropen(buf, buf, "r (nm)", "V (kJ/mol e)", oenv);
-                    fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
-                    
-                    for (n = 0; (n <= nmax); n++)
-                    {
-                        rr = n*spacing;
-                        V  = 0;
-                        Vp = 0;
-                        for (j = nzi0; (j < nzi1); j++)
-                        {
-                            for (l = nzk0; (l < nzk1); l++)
-                            {
-                                switch (iDistributionModel)
-                                {
-                                    case eqdAXp:
-                                        dV  = 1/rr;
-                                        dVp = -1/gmx::square(rr);
-                                        break;
-                                    case eqdAXg:
-                                        dV  = Coulomb_GG(rr, zeta[i][j], zeta[k][l]);
-                                        dVp = -1*DCoulomb_GG(rr, zeta[i][j], zeta[k][l]);
-                                        break;
-                                    case eqdAXs:
-                                        dV  = Coulomb_SS(rr, row[i][j], row[k][l],
-                                                         zeta[i][j], zeta[k][l]);
-                                        dVp = -1*DCoulomb_SS(rr, row[i][j], row[k][l],
-                                                             zeta[i][j], zeta[k][l]);
-                                        break;
-                                    default:
-                                        gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                                  getEemtypeName(iDistributionModel));
-                                }
-                                /* Note how charges are being handled:
-                                   The "shell" charge is taken to be 1, because
-                                   mdrun multiplies the table with the charge of
-                                   the particle. The other charges go straight
-                                   into the table, so there, in contrast, the
-                                   charges should be 1 in the topology. */
-                                qij = q[i][j];
-                                if (bSplit[i] && (bi == 1))
-                                {
-                                    qij = 1;
-                                }
-                                qkl = q[k][l];
-                                if (bSplit[k] && (bk == 1))
-                                {
-                                    qkl = 1;
-                                }
-                                V  += dV*(qij*qkl);
-                                Vp += dVp*(qij*qkl);
-                            }
-                        }
-                        double r = rr;
-                        if (r > 0)
-                        {
-                            lo_do_ljc(r, &vc, &fc, &vd, &fd, &vr, &fr);
-                        }
-                        else
-                        {
-                            vc = fc = vd = fd = vr = fr = 0;
-                        }
-                        fprintf(fp, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, (V/4.0), (Vp/4.0), vd, fd, vr, fr);
-                        fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, (V/4.0), (Vp/4.0), vd, fd, vr, fr);
-                    }
-                    fclose(fp);
-                    fclose(fp2);
-                }
-            }
-        }
-    }
-}
-
 static void do_DEC_qd_qd(FILE *fp, int eel, int pts_nm, double xi)
 {
     int    i, imax;
@@ -1221,6 +1002,201 @@ static void do_maaren(FILE *fp, int pts_nm, int npow)
     }
 }
 
+static void gen_alexandria_rho(Poldata                 &pd,
+                               const char             *fn,
+                               ChargeDistributionModel iDistributionModel,
+                               real                    rcut,
+                               real                    spacing,
+                               const gmx_output_env_t *oenv,
+                               std::vector<Eemprops>  *eemprops)
+{
+    FILE                         *fp;
+    int                           j     = 0;
+    int                           n     = 0;
+    int                           nmax  = 0;
+    int                           nzeta = 0;
+    int                          *row;
+    std::string                   name;
+    double                        rho  = 0;
+    double                        rr   = 0;
+    double                        qtot = 0;
+    double                       *A;
+    double                       *zeta;
+    double                       *q;
+    
+    char                          buf[STRLEN];
+
+    nmax = 1+(int)(rcut/spacing);
+    for (auto eep = eemprops->begin(); eep != eemprops->end(); eep++)
+    {
+        name      = eep->getName();        
+        nzeta = pd.getNzeta( iDistributionModel, name);
+        snew(zeta, nzeta);
+        snew(q, nzeta);
+        snew(row, nzeta);
+        snew(A, nzeta);
+        qtot = 0;
+        for (j = 0; j < nzeta; j++)
+        {
+            zeta[j] = pd.getZeta(iDistributionModel, name, j);
+            q[j]    = pd.getQ(iDistributionModel, name, j);
+            qtot   += q[j];
+            row[j]  = pd.getRow(iDistributionModel, name, j);
+            switch (iDistributionModel)
+            {
+                case eqdAXg:
+                case eqdAXpg:
+                    A[j] = pow(zeta[j]*zeta[j]/M_PI, 1.5);
+                    break;
+                case eqdAXs:
+                case eqdAXps:
+                    A[j] = pow(2*zeta[j], 2*row[j]+1)/(4*M_PI*faculty(2*row[j]));
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Don't know how to handle model %s",
+                              getEemtypeName(iDistributionModel));
+            }
+        }
+        if (q[nzeta-1] == 0)
+        {
+            q[nzeta-1] = -qtot;
+        }
+        sprintf(buf, "%s_%s", name.c_str(), fn);
+        fp = xvgropen(buf, "Rho", "r (nm)", "rho(r)", oenv);
+        for (n = 0; n <= nmax; n++)
+        {
+            rr  = n*spacing;
+            rho = 0;
+            for (j = 0; j < nzeta; j++)
+            {
+                if (zeta[j] > 0)
+                {
+                    switch (iDistributionModel)
+                    {
+                        case eqdAXg:
+                        case eqdAXpg:
+                            rho += A[j]*exp(-gmx::square(rr*zeta[j]));
+                            break;
+                        case eqdAXs:
+                        case eqdAXps:
+                            rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
+                            break;
+                        default:
+                            gmx_fatal(FARGS, "Don't know how to handle model %s",
+                                      getEemtypeName(iDistributionModel));
+                    }
+                }
+            }
+            fprintf(fp, "%10.5e  %10.5e\n", rr, rho);
+        }
+        fclose(fp);
+        sfree(q);
+        sfree(zeta);
+        sfree(row);
+        sfree(A);
+    }
+}
+
+static void gen_alexandria_tables(Poldata                 &pd,
+                                  const char              *fn,
+                                  ChargeDistributionModel  iDistributionModel,
+                                  real                     rcut,
+                                  real                     spacing,
+                                  const gmx_output_env_t  *oenv,
+                                  char                    *atypes)
+{
+    double       cv = 0;
+    double       cf = 0;
+    double       rr = 0;
+    double       vc = 0;
+    double       vd = 0;
+    double       fd = 0;
+    double       fc = 0;
+    double       vr = 0;
+    double       fr = 0;
+    
+    const char  *ns[2]  = {"", "_s"};
+    
+    char         buf1[STRLEN];
+    char         buf2[STRLEN];
+    char         fnbuf[STRLEN];
+    FILE        *fp1;
+    FILE        *fp2;
+
+    auto eemprops = pd.getEemprops();
+    filter_eemprops(&eemprops, iDistributionModel, atypes);
+    
+    gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv, &eemprops);
+    
+    auto nmax = 1+(int)(rcut/spacing);
+    int  k = 0;
+    for (auto eei = eemprops.begin(); eei != eemprops.end(); ++eei)
+    {
+        auto nzetaI =  pd.getNzeta(iDistributionModel, eei->getName());
+        for (auto eej = std::next(eemprops.begin(), ++k); eej != eemprops.end(); ++eej)
+        {
+            auto nzetaJ =  pd.getNzeta( iDistributionModel, eej->getName());
+            for (int i = 0; i < nzetaI; i++)
+            {
+                auto zetaI = pd.getZeta(iDistributionModel, eei->getName(), i);
+                auto rowI  = pd.getRow(iDistributionModel,  eei->getName(), i);
+                for (int j = 0; j < nzetaJ; j++)
+                {
+                    auto zetaJ = pd.getZeta(iDistributionModel, eej->getName(), j);
+                    auto rowJ  = pd.getRow(iDistributionModel,  eej->getName(), j);
+
+                    strncpy(fnbuf, fn, strlen(fn)-4);
+                    fnbuf[strlen(fn)-4] = '\0';
+                    sprintf(buf1, "%s_%s%s_%s%s.xvg", fnbuf, eei->getName(), ns[i], eej->getName(), ns[j]);
+                    sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, eej->getName(), ns[j], eei->getName(), ns[i]);
+                    fp1 = xvgropen(buf1, buf1, "r (nm)", "V (kJ/mol e)", oenv);
+                    fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
+
+                    for (int n = 0; n <= nmax; n++)
+                    {
+                        rr = n*spacing;
+                        switch (iDistributionModel)
+                        {
+                            case eqdAXp:
+                            case eqdAXpp:
+                                cv = Coulomb_PP(rr);
+                                cf = DCoulomb_PP(rr);
+                                break;
+                            case eqdAXg:
+                            case eqdAXpg:
+                                cv = Coulomb_GG(rr, zetaI, zetaJ);
+                                cf = DCoulomb_GG(rr, zetaI, zetaJ);
+                                break;
+                            case eqdAXs:
+                            case eqdAXps:
+                            case eqdRappe:
+                            case eqdYang:
+                                cv = Coulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                                cf = DCoulomb_SS(rr, rowI, rowJ, zetaI, zetaJ);
+                                break;
+                            default:
+                                gmx_fatal(FARGS, "Don't know how to handle model %s",
+                                          getEemtypeName(iDistributionModel));
+                        }
+                        if (rr > 0)
+                        {
+                            lo_do_ljc(rr, &vc, &fc, &vd, &fd, &vr, &fr);
+                        }
+                        else
+                        {
+                            vc = fc = vd = fd = vr = fr = 0;
+                        }
+                        fprintf(fp1, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
+                        fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
+                    }
+                    fclose(fp1);
+                    fclose(fp2);
+                }
+            }
+        }
+    }
+}
+
 int alex_gen_table(int argc, char *argv[])
 {
     static const char            *desc[] = {
@@ -1242,18 +1218,32 @@ int alex_gen_table(int argc, char *argv[])
         "needed. If the width of one of the Slater is zero a Nucleus-Slater interaction",
         "will be generated."
     };
-    static const char            *cqdist[] = {
-        NULL, "None", "Yang", "Bultinck", "Rappe",
-        "AXp", "AXs", "AXg", NULL
+
+    t_filenm                      fnm[] = {
+        { efXVG, "-o", "table",  ffWRITE },
+        { efDAT, "-d", "gentop", ffOPTRD }
     };
-    static const char            *opt[]      = { NULL, "cut", "rf", "pme", NULL };
-    static const char            *model[]    = { NULL, "ljc", "dec", "dec-pair", "guillot2001a", "slater", "AB1", NULL };
-    static real                   delta      = 0, efac = 500, rc = 0.9, rtol = 1e-05, xi = 0.15, xir = 0.0615;
-    static real                   w1         = 20, w2 = 20;
-    static int                    nrow1      = 1, nrow2 = 1;
+    
+    const  int                    NFILE      = asize(fnm);
+    
+    static int                    nrow1      = 1;
+    static int                    nrow2      = 1;
     static int                    nrep       = 12;
     static int                    ndisp      = 6;
     static int                    pts_nm     = 500;
+    static double                 delta      = 0;
+    static double                 efac       = 500;
+    static double                 rc         = 0.9;
+    static double                 rtol       = 1e-05;
+    static double                 xi         = 0.15;
+    static double                 xir        = 0.0615;
+    static double                 w1         = 20;
+    static double                 w2         = 20;
+    static char                  *atypes     = nullptr;
+    static const char            *cqdist[]   = {nullptr, "None", "Yang", "Rappe", "AXp", "AXpp", "AXg", "AXpg", "AXs", "AXps", nullptr};
+    static const char            *opt[]      = {nullptr, "cut", "rf", "pme", nullptr};
+    static const char            *model[]    = {nullptr, "ljc", "dec", "dec-pair", "guillot2001a", "slater", "AB1", nullptr};
+    
     t_pargs                       pa[]       = {
         { "-qdist",  FALSE, etENUM, {cqdist},
           "Algorithm used for charge distribution" },
@@ -1286,14 +1276,12 @@ int alex_gen_table(int argc, char *argv[])
         { "-nrep",   FALSE, etINT,  {&nrep},
           "Power for the repulsion potential (with model AB1 or maaren)" },
         { "-ndisp",   FALSE, etINT,  {&ndisp},
-          "Power for the dispersion potential (with model AB1 or maaren)" }
+          "Power for the dispersion potential (with model AB1 or maaren)" },
+        { "-atypes",  FALSE, etSTR, {&atypes},
+          "List of atom types for which you want to generate table." }
     };
-#define NPA asize(pa)
-    t_filenm                      fnm[] = {
-        { efXVG, "-o",  "table",  ffWRITE },
-        { efDAT, "-di", "gentop", ffOPTRD }
-    };
-#define NFILE sizeof(fnm)/sizeof(fnm[0])
+    
+    
     FILE                         *fp;
     const char                   *fn;
     int                           eel = 0, m = 0;
@@ -1301,12 +1289,11 @@ int alex_gen_table(int argc, char *argv[])
     gmx_output_env_t             *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
-
     if (strcmp(opt[0], "cut") == 0)
     {
         eel = eelCUT;
@@ -1444,8 +1431,8 @@ int alex_gen_table(int argc, char *argv[])
         gmx_atomprop_t aps = gmx_atomprop_init();
         Poldata        pd;
         std::string    gentop;
-        const char    *ptr = opt2fn_null("-di", NFILE, fnm);
-        if (NULL != ptr)
+        const char    *ptr = opt2fn_null("-d", NFILE, fnm);
+        if (nullptr != ptr)
         {
             gentop.assign(ptr);
         }
@@ -1454,8 +1441,7 @@ int alex_gen_table(int argc, char *argv[])
             readPoldata(gentop, pd, aps);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-        gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), iDistributionModel, rc, 1.0/pts_nm, oenv);
+        gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), iDistributionModel, rc, 1.0/pts_nm, oenv, atypes);
     }
 
     return 0;

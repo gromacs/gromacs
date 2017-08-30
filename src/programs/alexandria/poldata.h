@@ -546,6 +546,8 @@ class Poldata
         EempropsIterator findEem(ChargeDistributionModel  eqdModel,
                                  const std::string       &name);
 
+        std::vector<Eemprops> &getEemprops() {return eep_;}
+
         void  setEpref(ChargeDistributionModel eqdModel,
                        const std::string      &epref);
 

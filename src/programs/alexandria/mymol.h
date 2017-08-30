@@ -204,6 +204,8 @@ class MyMol
         double                    OptEcalc_      = 0;
         double                    Force2_        = 0;
         double                    OptForce2_     = 0;
+        double                    isoPol_elec_   = 0;
+        double                    isoPol_calc_   = 0;
         matrix                    box_;
         tensor                    Q_elec_        = {{0,0,0},{0,0,0},{0,0,0}};
         tensor                    Q_calc_        = {{0,0,0},{0,0,0},{0,0,0}};
