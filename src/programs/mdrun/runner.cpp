@@ -462,13 +462,13 @@ int Mdrunner::mdrunner()
     t_inputrec    *inputrec = &inputrecInstance;
     snew(mtop, 1);
 
-    if (Flags & MD_APPENDFILES)
+    if (mdrunOptions.continuationOptions.appendFiles)
     {
         fplog = nullptr;
     }
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
-    bool doRerun  = (Flags & MD_RERUN);
+    bool doRerun  = mdrunOptions.rerun;
 
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
@@ -731,9 +731,11 @@ int Mdrunner::mdrunner()
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
     }
 
-    ObservablesHistory observablesHistory = {};
+    ObservablesHistory   observablesHistory = {};
 
-    if (Flags & MD_STARTFROMCPT)
+    ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
+
+    if (continuationOptions.startedFromCheckpoint)
     {
         /* Check if checkpoint file exists before doing continuation.
          * This way we can use identical input options for the first and subsequent runs...
@@ -743,20 +745,20 @@ int Mdrunner::mdrunner()
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                         cr, domdecOptions.numCells,
                         inputrec, state, &bReadEkin, &observablesHistory,
-                        (Flags & MD_APPENDFILES),
-                        (Flags & MD_APPENDFILESSET),
-                        (Flags & MD_REPRODUCIBLE));
+                        continuationOptions.appendFiles,
+                        continuationOptions.appendFilesOptionSet,
+                        mdrunOptions.reproducible);
 
         if (bReadEkin)
         {
-            Flags |= MD_READ_EKIN;
+            continuationOptions.haveReadEkin = true;
         }
     }
 
-    if (SIMMASTER(cr) && (Flags & MD_APPENDFILES))
+    if (SIMMASTER(cr) && continuationOptions.appendFiles)
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags, &fplog);
+                     continuationOptions.appendFiles, &fplog);
         logOwner = buildLogger(fplog, nullptr);
         mdlog    = logOwner.logger();
     }
@@ -777,7 +779,7 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, Flags,
+        cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            mtop, inputrec,
                                            box, as_rvec_array(state->x.data()),
                                            &ddbox, &npme_major, &npme_minor);
@@ -890,7 +892,7 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), mdrunOptions.ntompOptionIsSet,
                                        cr, mdlog);
 
     gmx_device_info_t *shortRangedDeviceInfo = nullptr;
@@ -916,7 +918,7 @@ int Mdrunner::mdrunner()
      */
     nthreads_pme = gmx_omp_nthreads_get(emntPME);
 
-    wcycle = wallcycle_init(fplog, resetstep, cr);
+    wcycle = wallcycle_init(fplog, mdrunOptions.timingOptions.resetStep, cr);
 
     if (PAR(cr))
     {
@@ -937,7 +939,7 @@ int Mdrunner::mdrunner()
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, state, cr, &cpt_period);
+        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, state, cr, &mdrunOptions.checkpointOptions.period);
     }
 
     snew(nrnb, 1);
@@ -1070,7 +1072,7 @@ int Mdrunner::mdrunner()
             {
                 status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                      (Flags & MD_REPRODUCIBLE),
+                                      mdrunOptions.reproducible,
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme);
             }
@@ -1104,14 +1106,15 @@ int Mdrunner::mdrunner()
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
                           mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+                          EI_DYNAMICS(inputrec->eI) && MASTER(cr),
+                          continuationOptions);
         }
 
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, as_rvec_array(state->x.data()), state->box, mtop, oenv,
-                     bVerbose, Flags);
+                     mdrunOptions);
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
@@ -1134,7 +1137,8 @@ int Mdrunner::mdrunner()
 
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
-                                     oenv, bVerbose,
+                                     oenv,
+                                     mdrunOptions,
                                      nstglobalcomm,
                                      vsite, constr,
                                      nstepout, mdModules.outputProvider(),
@@ -1143,9 +1147,6 @@ int Mdrunner::mdrunner()
                                      mdatoms, nrnb, wcycle, fr,
                                      replExParams,
                                      membed,
-                                     cpt_period, max_hours,
-                                     imdport,
-                                     Flags,
                                      walltime_accounting);
 
         if (inputrec->bRot)
@@ -1199,7 +1200,7 @@ int Mdrunner::mdrunner()
     walltime_accounting_destroy(walltime_accounting);
 
     /* Close logfile already here if we were appending to it */
-    if (MASTER(cr) && (Flags & MD_APPENDFILES))
+    if (MASTER(cr) && continuationOptions.appendFiles)
     {
         gmx_log_close(fplog);
     }

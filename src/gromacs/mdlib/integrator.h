@@ -57,6 +57,7 @@ class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_output_env_t;
+struct MdrunOptions;
 struct ObservablesHistory;
 struct ReplicaExchangeParameters;
 struct t_commrec;
@@ -78,7 +79,7 @@ class MDLogger;
  * \param[in] nfile               Number of files
  * \param[in] fnm                 Filename structure array
  * \param[in] oenv                Output information
- * \param[in] bVerbose            Verbose output or not
+ * \param[in] mdrunOptions        Options for mdrun
  * \param[in] nstglobalcomm       How often global communication is done
  * \param[in] vsite               Virtual site information
  * \param[in] constr              Constraint information
@@ -95,15 +96,12 @@ class MDLogger;
  * \param[in] fr                  Force record with cut-off information and more
  * \param[in] replExParams        Parameters for the replica exchange algorithm
  * \param[in] membed              Membrane embedding data structure
- * \param[in] cpt_period          How often to checkpoint the simulation
- * \param[in] max_hours           Maximume length of the simulation (wall time)
- * \param[in] imdport             Interactive MD port (socket)
- * \param[in] Flags               Flags to control mdrun
  * \param[in] walltime_accounting More timing information
  */
 typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                              int nfile, const t_filenm fnm[],
-                             const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                             const gmx_output_env_t *oenv,
+                             const MdrunOptions &mdrunOptions,
                              int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              int stepout,
@@ -117,9 +115,6 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &md
                              t_forcerec *fr,
                              const ReplicaExchangeParameters &replExParams,
                              gmx_membed_t gmx_unused * membed,
-                             real cpt_period, real max_hours,
-                             int imdport,
-                             unsigned long Flags,
                              gmx_walltime_accounting_t walltime_accounting);
 
 }      // namespace gmx
