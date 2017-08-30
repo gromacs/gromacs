@@ -45,6 +45,7 @@
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -513,7 +514,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, 0);
+    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, ContinuationOptions());
     md        = init_mdatoms(nullptr, mtop, ir->efep);
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, md);
     if (ir->efep)
