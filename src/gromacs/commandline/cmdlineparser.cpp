@@ -142,7 +142,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
 
     impl_->assigner_.start();
     int newi = 1;
-    for (int i = 1; i != *argc; ++i)
+    for (int i = 1; i < *argc; ++i)
     {
         const char *const arg        = argv[i];
         const char *const optionName = impl_->toOptionName(arg);

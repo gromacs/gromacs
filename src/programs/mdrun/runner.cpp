@@ -47,12 +47,14 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <csignal>
+#include <cstdlib>
+#include <string>
 
 #include <algorithm>
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/compat/make_unique.h"
@@ -91,7 +93,6 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
-#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -109,7 +110,6 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -252,14 +252,14 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
 #endif /* GMX_THREAD_MPI */
 
 /*! \brief Initialize variables for Verlet scheme simulation */
-static void prepare_verlet_scheme(FILE                           *fplog,
-                                  t_commrec                      *cr,
-                                  t_inputrec                     *ir,
-                                  int                             nstlist_cmdline,
-                                  const gmx_mtop_t               *mtop,
-                                  matrix                          box,
-                                  bool                            makeGpuPairList,
-                                  const gmx::CpuInfo             &cpuinfo)
+static void prepare_verlet_scheme(FILE                                 *fplog,
+                                  t_commrec                            *cr,
+                                  t_inputrec                           *ir,
+                                  int                                   nstlist_cmdline,
+                                  const gmx_mtop_t                     *mtop,
+                                  const matrix                          box,
+                                  bool                                  makeGpuPairList,
+                                  const gmx::CpuInfo                   &cpuinfo)
 {
     /* For NVE simulations, we will retain the initial list buffer */
     if (EI_DYNAMICS(ir->eI) &&
@@ -299,7 +299,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         /* Set or try nstlist values */
-        increaseNstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, makeGpuPairList, cpuinfo);
+        increase_nstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, makeGpuPairList, cpuinfo);
     }
 }
 
@@ -340,6 +340,27 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
                   nsteps_cmdline);
     }
     /* Do nothing if nsteps_cmdline == -2 */
+}
+
+void gmx::Mdrunner::initFromAPI()
+{
+    if ((tpxState_ == nullptr) || (!tpxState_->isInitialized()))
+    {
+        gmx_fatal(FARGS, "Need initialized input record to initialize runner.");
+    }
+    // Until the options processing gets picked apart more (at least the fnm handling)
+    // we're just spoofing argv and wrapping initFromCLI
+    int   argc   = 3;
+    char  arg0[] = "";
+    char  arg1[] = "-s";
+    char  arg2[strlen(tpxState_->filename())];
+    strcpy(arg2, tpxState_->filename());
+    char* argv[3];
+    argv[0] = &arg0[0];
+    argv[1] = &arg1[0];
+    argv[2] = &arg2[0];
+
+    initFromCLI(argc, argv);
 }
 
 void gmx::Mdrunner::initFromCLI(int argc, char *argv[])
@@ -906,7 +927,7 @@ int Mdrunner::mdrunner()
     gmx::MDModules mdModules;
 
     bool           doMembed = opt2bSet("-membed", nfile, fnm);
-    bool           doRerun  = (Flags & MD_RERUN);
+    bool           doRerun  = Flags.test(rerun);
 
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
@@ -920,7 +941,7 @@ int Mdrunner::mdrunner()
     bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
     bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
 
-    if (Flags & MD_APPENDFILES)
+    if (Flags.test(appendFiles))
     {
         // If we are appending, we will get the filehandle another way
         fplog = nullptr;
@@ -930,7 +951,10 @@ int Mdrunner::mdrunner()
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
     gmx::MDLogger    mdlog(logOwner.logger());
 
-    hwinfo = gmx_detect_hardware(mdlog, cr);
+    /* Detect hardware, gather information. This is an operation that is
+     * global for this process (MPI rank). */
+    bool detectGpus = forceUsePhysicalGpu || tryUsePhysicalGpu;
+    hwinfo = gmx_detect_hardware(mdlog, cr, detectGpus);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
@@ -1059,7 +1083,6 @@ int Mdrunner::mdrunner()
          * correctly. */
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
-                                                npme,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);
@@ -1192,7 +1215,7 @@ int Mdrunner::mdrunner()
 
     ObservablesHistory observablesHistory = {};
 
-    if (Flags & MD_STARTFROMCPT)
+    if (Flags.test(startFromCpt))
     {
         /* Check if checkpoint file exists before doing continuation.
          * This way we can use identical input options for the first and subsequent runs...
@@ -1200,11 +1223,11 @@ int Mdrunner::mdrunner()
         gmx_bool bReadEkin;
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                        cr, ddxyz,
+                        cr, ddxyz, &npme,
                         inputrec, state, &bReadEkin, &observablesHistory,
-                        (Flags & MD_APPENDFILES),
-                        (Flags & MD_APPENDFILESSET),
-                        (Flags & MD_REPRODUCIBLE));
+                        Flags.test(appendFiles),
+                        Flags.test(appendFilesSet),
+                        Flags.test(reproducible));
 
         if (bReadEkin)
         {
@@ -1212,10 +1235,10 @@ int Mdrunner::mdrunner()
         }
     }
 
-    if (SIMMASTER(cr) && (Flags & MD_APPENDFILES))
+    if (SIMMASTER(cr) && Flags.test(appendFiles))
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags, &fplog);
+                     Flags.to_ulong(), &fplog);
         logOwner = buildLogger(fplog, nullptr);
         mdlog    = logOwner.logger();
     }
@@ -1236,7 +1259,9 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
+        cr->dd = init_domain_decomposition(fplog, cr,
+                                           Flags.to_ulong(),
+                                           ddxyz, npme,
                                            dd_rank_order,
                                            rdd, rconstr,
                                            dddlb_opt, dlb_scale,
@@ -1353,7 +1378,7 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), Flags & MD_NTOMPSET,
+    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), Flags.test(ntompSet),
                                        cr, mdlog);
 
     gmx_device_info_t *shortRangedDeviceInfo = nullptr;
@@ -1532,7 +1557,7 @@ int Mdrunner::mdrunner()
             {
                 status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                      (Flags & MD_REPRODUCIBLE),
+                                      Flags.test(reproducible),
                                       ewaldcoeff_q, ewaldcoeff_lj,
                                       nthreads_pme);
             }
@@ -1566,14 +1591,14 @@ int Mdrunner::mdrunner()
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
                           mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags.to_ulong());
         }
 
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, as_rvec_array(state->x.data()), state->box, mtop, oenv,
-                     bVerbose, Flags);
+                     bVerbose, Flags.to_ulong());
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
@@ -1590,7 +1615,7 @@ int Mdrunner::mdrunner()
              * because fr->cginfo_mb is set later.
              */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
-                            Flags & MD_DDBONDCHECK, fr->cginfo_mb);
+                            Flags.test(ddBondCheck), fr->cginfo_mb);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
@@ -1606,7 +1631,7 @@ int Mdrunner::mdrunner()
                                      membed,
                                      cpt_period, max_hours,
                                      imdport,
-                                     Flags,
+                                     Flags.to_ulong(),
                                      walltime_accounting);
 
         if (inputrec->bRot)
@@ -1660,7 +1685,7 @@ int Mdrunner::mdrunner()
     walltime_accounting_destroy(walltime_accounting);
 
     /* Close logfile already here if we were appending to it */
-    if (MASTER(cr) && (Flags & MD_APPENDFILES))
+    if (MASTER(cr) && Flags.test(appendFiles))
     {
         gmx_log_close(fplog);
     }
@@ -1680,16 +1705,55 @@ int Mdrunner::mdrunner()
     return rc;
 }
 
-Mdrunner::Mdrunner() = default;
+Mdrunner::Mdrunner()
+{
+    cr = init_commrec();
+    // oenv initialized by parse_commond_args
+
+    // dd_rank_order set according to argument processing logic (e.g. int(1))
+    dd_rank_order = 1;
+
+    // handleRestart sets &bDoAppendFiles, &bStartFromCpt
+
+    // Flags set with lots of processing
+    // Note: We cannot extract e.g. opt2parg_bSet("-append", asize(pa), pa) from this block.
+    Flags.set(rerun, false);
+    Flags.set(ddBondCheck, true);
+    Flags.set(ddBondComm, true);
+    Flags.set(tunePME, true);
+    Flags.set(confOut, true);
+    Flags.set(rerunVSite, false);
+    Flags.set(reproducible, false);
+    Flags.set(appendFiles, false);
+    //Flags = Flags | (opt2parg_bSet("-append", asize(pa), pa) ? MD_APPENDFILESSET : 0);
+    Flags.set(appendFilesSet, false);
+    Flags.set(keepAndNumCpt, false);
+    Flags.set(startFromCpt, false);
+    Flags.set(resetCountersHalfWay, false);
+    //Flags = Flags | (opt2parg_bSet("-ntomp", asize(pa), pa) ? MD_NTOMPSET : 0);
+    Flags.set(ntompSet, false);
+    Flags.set(imdWait, false);
+    Flags.set(imdTerm, false);
+    Flags.set(imdPull, false);
+
+    // log opened to fplog if MASTER(cr) && !bDoAppendFiles
+
+    // dddlb_opt set from processed options (e.g. const char* "auto")
+    dddlb_opt = "auto";
+    // nbpu_opt set from processed options (e.g. const char* "auto")
+    nbpu_opt = "auto";
+};
 
 Mdrunner::~Mdrunner()
 {
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (MASTER(cr) && !bDoAppendFiles)
+    // assert(cr != nullptr); // Todo: can we just initialize the cr in the constructor and keep it initialized?
+    if (cr != nullptr && MASTER(cr) && !(Flags.test(appendFiles)))
     {
         gmx_log_close(fplog);
     }
+    sfree(cr);
 }
 
 void Mdrunner::setTpx(std::shared_ptr<gmx::TpxState> newState)

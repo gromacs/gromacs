@@ -46,12 +46,12 @@
 #include <cassert>
 
 #include <array>
-#include <bitset>
 #include <memory>
 #include <mutex>
+#include "gromacs/commandline/pargs.h"
+#include <bitset>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/main.h"
@@ -160,45 +160,44 @@ class Mdrunner
          * DD cell size will be increased in order to provide a margin
          * in which dynamic load balancing can act, while preserving
          * the minimum cell size. */
-        real                             dlb_scale = 0.8;
+        real                               dlb_scale = 0.8;
         //! String containing a vector of the relative sizes in the x direction of the corresponding DD cells.
-        const char                      *ddcsx = nullptr;
+        const char                        *ddcsx = nullptr;
         //! String containing a vector of the relative sizes in the y direction of the corresponding DD cells.
-        const char                      *ddcsy = nullptr;
+        const char                        *ddcsy = nullptr;
         //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
-        const char                      *ddcsz = nullptr;
-        //! Target short-range interations for "cpu", "gpu", "gpu_cpu", or "auto". Default is "auto".
-        const char                      *nbpu_opt = nullptr;
+        const char                        *ddcsz = nullptr;
+        //! Target short-range interations for "cpu", "gpu", "cpu_gpu", or "auto". Default is "auto".
+        const char                        *nbpu_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
-        int                              nstlist_cmdline = 0;
+        int                                nstlist_cmdline = 0;
         //! Command-line override for the number of MD steps (-2 means that the mdp option will be used).
-        gmx_int64_t                      nsteps_cmdline = -2;
+        gmx_int64_t                        nsteps_cmdline = -2;
         //! Number of steps between output to the console of time remaining.
-        int                              nstepout = 100;
+        int                                nstepout = 100;
         //! Number of steps that elapse before cycle counters are reset.
-        int                              resetstep = -1;
+        int                                resetstep = -1;
         //! Number of simulations in multi-simulation set.
-        int                              nmultisim = 0;
+        int                                nmultisim = 0;
         //! Parameters for replica-exchange simulations.
-        ReplicaExchangeParameters        replExParams;
+        ReplicaExchangeParameters          replExParams;
         //! Print a warning if any force is larger than this (in kJ/mol nm).
-        real                             pforce = -1;
+        real                               pforce = -1;
         //! Period (in wall-clock minutes) between writing checkpoint files.
-        real                             cpt_period = 15.0;
+        real                               cpt_period = 15.0;
         //! Maximum duration of this simulation (in wall-clock hours).
-        real                             max_hours = -1;
+        real                               max_hours = -1;
         //! Socket number used for IMD inter-process communication.
-        int                              imdport = 8888;
+        int                                imdport = 8888;
         //! Bitfield of boolean flags configuring mdrun behavior.
-        unsigned long                    Flags = 0;
+        std::bitset<64>                    Flags {};
         //! Handle to file used for logging.
-        FILE                            *fplog {nullptr};
+        FILE                              *fplog {nullptr};
         //! Handle to communication data structure.
-        t_commrec                       *cr;
-        //! Whether we are appending files or writing new files
-        gmx_bool                         bDoAppendFiles {};
+        t_commrec                         *cr;
 
-        std::shared_ptr<TpxState>        tpxState_ {nullptr};
+        std::shared_ptr<TpxState>          tpxState_ {nullptr};
+//        mutable std::mutex            stateAccess;
 
     public:
         /*! \brief Defaulted constructor.
@@ -228,6 +227,9 @@ class Mdrunner
 
         //! Set up mdrun by calling its C-style main function.
         void initFromCLI(int argc, char *argv[]);
+
+        //! Set up mdrun with parameters provided by API instead of CLI.
+        void initFromAPI();
 
         /*! \brief Driver routine, that calls the different simulation methods. */
         int mdrunner();

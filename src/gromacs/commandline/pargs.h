@@ -213,7 +213,7 @@ const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa.
  */
-gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
+gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa);
 
 
 /** Add option -w to view output files (must be implemented in program). */

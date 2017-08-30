@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,41 +32,38 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-######################################
-# Output compiler and CFLAGS used
-######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_USE_CUDA)
-    GMX_SET_CUDA_NVCC_FLAGS()
-    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
-endif()
+set(GMXAPI_USERDOC_OUTPUT ${CMAKE_BINARY_DIR}/docs/html/doxygen/api-user)
+set(GMXAPI_DEVDOC_OUTPUT ${CMAKE_BINARY_DIR}/docs/html/doxygen/api-dev)
+set(GMXAPI_WEBDOC_OUTPUT ${CMAKE_BINARY_DIR}/docs/html/gmxapi)
 
-configure_file(config.h.cmakein config.h)
-configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
-configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
+file(MAKE_DIRECTORY
+     ${GMXAPI_USERDOC_OUTPUT}
+     ${GMXAPI_DEVDOC_OUTPUT}
+     ${GMXAPI_WEBDOC_OUTPUT})
 
-if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/gmock-1.7.0)
-    endif()
-    include(testutils/TestMacros.cmake)
-    add_subdirectory(testutils)
-endif()
+get_target_property(GMXAPI_DEV gmxapi SOURCE_DIR)
+string (REPLACE ";" " " GMXAPI_PUBLIC "${GMXAPI_PUBLIC_HEADERS}")
 
-add_subdirectory(gromacs)
-add_subdirectory(programs)
+configure_file(Doxyfile.in Doxyfile @ONLY)
+configure_file(Doxyfile-dev.in Doxyfile-dev @ONLY)
 
-if (NOT GMX_FAHCORE)
-    add_subdirectory(contrib)
-endif()
+# todo: the docs builds should probably be moved to separate targets under the appropriate subdirectories.
 
-# Activate targets for new C++ API components and docs.
-option(GMXAPI "Experimental external interfaces" ON)
-if (GMXAPI)
-   add_subdirectory(api)
-endif()
+################################
+# C++ external API documentation
+################################
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+	add_custom_target( gmxapi_cppdocs
+	    COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+	    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	    COMMENT "Generating API user documentation for ${GMXAPI_USERDOC_OUTPUT}"
+	    VERBATIM )
+	add_custom_target( gmxapi_cppdocs_dev
+	    COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-dev
+	    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	    COMMENT "Generating API developer documentation for ${GMXAPI_DEVDOC_OUTPUT}"
+	    VERBATIM )
+else (DOXYGEN_FOUND)
+  message("Doxygen need to be installed to generate the doxygen documentation")
+endif (DOXYGEN_FOUND)
