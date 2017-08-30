@@ -78,6 +78,7 @@ struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
+struct MdrunOptions;
 struct t_commrec;
 struct t_filenm;
 struct t_gmx_IMD;
@@ -135,14 +136,12 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  * \param nfile        Number of files.
  * \param fnm          Struct containing file names etc.
  * \param oenv         Output options.
- * \param imdport      Port to use for IMD connections.
- * \param Flags        Flags passed over from main, used to determine
- *                     whether or not we are appending.
+ * \param mdrunOptions Options for mdrun.
  */
 void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
               FILE *fplog, int defnstimd, rvec x[],
               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
-              int imdport, unsigned long  Flags);
+              const MdrunOptions &mdrunOptions);
 
 
 /*! \brief IMD required in this time step?

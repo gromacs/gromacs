@@ -46,6 +46,7 @@
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct MdrunOptions;
 struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
@@ -66,7 +67,7 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
 gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          int                     nfile,
                          const t_filenm          fnm[],
-                         int                     mdrun_flags,
+                         const MdrunOptions     &mdrunOptions,
                          const t_commrec        *cr,
                          gmx::IMDOutputProvider *outputProvider,
                          const t_inputrec       *ir,

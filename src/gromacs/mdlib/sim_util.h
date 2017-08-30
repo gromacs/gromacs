@@ -49,6 +49,7 @@ struct gmx_constr;
 struct gmx_localtop_t;
 struct gmx_output_env_t;
 struct gmx_update_t;
+struct MdrunOptions;
 struct nonbonded_verlet_t;
 struct t_mdatoms;
 struct t_nrnb;
@@ -143,6 +144,7 @@ void do_constrain_first(FILE *log, gmx_constr *constr,
 void init_md(FILE *fplog,
              t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
              t_inputrec *ir, const gmx_output_env_t *oenv,
+             const MdrunOptions &mdrunOptions,
              double *t, double *t0,
              gmx::ArrayRef<real> lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
@@ -151,7 +153,7 @@ void init_md(FILE *fplog,
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
+             gmx_bool *bSimAnn, t_vcm **vcm,
              gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */
 
