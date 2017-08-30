@@ -483,9 +483,10 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     /* This array should match the order of the enum in oenv.h */
     const char *const xvg_formats[] = { "xmgrace", "xmgr", "none" };
 
-    // Handle the flags argument, which is a bit field
-    // The FF macro returns whether or not the bit is set
-#define FF(arg) ((Flags & arg) == arg)
+    // Lambda function to test the (local) Flags parameter against a bit mask.
+    auto isFlagSet = [Flags](unsigned long bits) {
+            return (Flags & bits) == bits;
+        };
 
     try
     {
@@ -499,28 +500,28 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::FileNameOptionManager      fileOptManager;
 
         fileOptManager.disableInputOptionChecking(
-                FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
+                isFlagSet(PCA_NOT_READ_NODE) || isFlagSet(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
 
-        if (FF(PCA_CAN_SET_DEFFNM))
+        if (isFlagSet(PCA_CAN_SET_DEFFNM))
         {
             fileOptManager.addDefaultFileNameOption(&options, "deffnm");
         }
-        if (FF(PCA_CAN_BEGIN))
+        if (isFlagSet(PCA_CAN_BEGIN))
         {
             options.addOption(
                     gmx::DoubleOption("b")
                         .store(&tbegin).storeIsSet(&bBeginTimeSet).timeValue()
                         .description("First frame (%t) to read from trajectory"));
         }
-        if (FF(PCA_CAN_END))
+        if (isFlagSet(PCA_CAN_END))
         {
             options.addOption(
                     gmx::DoubleOption("e")
                         .store(&tend).storeIsSet(&bEndTimeSet).timeValue()
                         .description("Last frame (%t) to read from trajectory"));
         }
-        if (FF(PCA_CAN_DT))
+        if (isFlagSet(PCA_CAN_DT))
         {
             options.addOption(
                     gmx::DoubleOption("dt")
@@ -528,7 +529,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                         .description("Only use frame when t MOD dt = first time (%t)"));
         }
         gmx::TimeUnit  timeUnit = gmx::TimeUnit_Default;
-        if (FF(PCA_TIME_UNIT))
+        if (isFlagSet(PCA_TIME_UNIT))
         {
             std::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(
                     new gmx::TimeUnitBehavior());
@@ -537,7 +538,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             timeUnitBehavior->addTimeUnitOption(&options, "tu");
             behaviors.addBehavior(timeUnitBehavior);
         }
-        if (FF(PCA_CAN_VIEW))
+        if (isFlagSet(PCA_CAN_VIEW))
         {
             options.addOption(
                     gmx::BooleanOption("w").store(&bView)
@@ -584,7 +585,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
 
         /* Now parse all the command-line options */
-        gmx::CommandLineParser(&options).skipUnknown(FF(PCA_NOEXIT_ON_ARGS))
+        gmx::CommandLineParser(&options).skipUnknown(isFlagSet(PCA_NOEXIT_ON_ARGS))
             .parse(argc, argv);
         behaviors.optionsFinishing();
         options.finish();
@@ -608,10 +609,9 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             setTimeValue(TDELTA, tdelta);
         }
 
-        adapter.copyValues(!FF(PCA_NOT_READ_NODE));
+        adapter.copyValues(!isFlagSet(PCA_NOT_READ_NODE));
 
         return TRUE;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-#undef FF
 }
