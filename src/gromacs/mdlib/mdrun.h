@@ -59,8 +59,6 @@ class t_state;
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_DDBONDCHECK    (1<<10)
-#define MD_DDBONDCOMM     (1<<11)
 #define MD_CONFOUT        (1<<12)
 #define MD_REPRODUCIBLE   (1<<13)
 #define MD_APPENDFILES    (1<<15)

@@ -47,6 +47,7 @@
 #include <array>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -135,29 +136,8 @@ class Mdrunner
         gmx_bool                         bVerbose = FALSE;
         //! Number of steps between global communication.
         int                              nstglobalcomm = -1;
-        //! Division of sub-boxes over processors for use in domain decomposition parallellization.
-        ivec                             ddxyz = { 0, 0, 0 };
-        //! Ordering of the PP and PME ranks.
-        int                              dd_rank_order;
-        //! The number of separate PME ranks requested, -1 = auto.
-        int                              npme = -1;
-        //! The maximum distance for bonded interactions with DD (nm).
-        real                             rdd = 0.0;
-        //! Maximum distance for P-LINCS (nm).
-        real                             rconstr = 0.0;
-        //! String with user choice for dynamic load balancing "on", "off", or "auto". Default is "auto".
-        const char                      *dddlb_opt = nullptr;
-        /*! \brief Fraction in (0,1) by whose reciprocal the initial
-         * DD cell size will be increased in order to provide a margin
-         * in which dynamic load balancing can act, while preserving
-         * the minimum cell size. */
-        real                             dlb_scale = 0.8;
-        //! String containing a vector of the relative sizes in the x direction of the corresponding DD cells.
-        const char                      *ddcsx = nullptr;
-        //! String containing a vector of the relative sizes in the y direction of the corresponding DD cells.
-        const char                      *ddcsy = nullptr;
-        //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
-        const char                      *ddcsz = nullptr;
+        //! Options for the domain decomposition.
+        DomdecOptions                    domdecOptions;
         //! Target short-range interations for "cpu", "gpu", "cpu_gpu", or "auto". Default is "auto".
         const char                      *nbpu_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.

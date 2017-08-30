@@ -570,7 +570,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(&hw_opt, cr, npme);
+    check_and_update_hw_opt_1(&hw_opt, cr, domdecOptions.numPmeRanks);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(mdlog, cr,
@@ -579,7 +579,7 @@ int Mdrunner::mdrunner()
 #if GMX_THREAD_MPI
     if (SIMMASTER(cr))
     {
-        if (npme > 0 && hw_opt.nthreads_tmpi <= 0)
+        if (domdecOptions.numPmeRanks > 0 && hw_opt.nthreads_tmpi <= 0)
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
@@ -597,7 +597,7 @@ int Mdrunner::mdrunner()
          * correctly. */
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
-                                                npme,
+                                                domdecOptions.numPmeRanks,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);
@@ -634,8 +634,10 @@ int Mdrunner::mdrunner()
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
-    if (!PAR(cr) &&
-        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || npme > 0))
+    if (!PAR(cr) && (domdecOptions.numCells[XX] > 1 ||
+                     domdecOptions.numCells[YY] > 1 ||
+                     domdecOptions.numCells[ZZ] > 1 ||
+                     domdecOptions.numPmeRanks > 0))
     {
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
@@ -665,22 +667,23 @@ int Mdrunner::mdrunner()
 
     if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
     {
-        if (npme > 0)
+        if (domdecOptions.numPmeRanks > 0)
         {
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "PME-only ranks are requested, but the system does not use PME for electrostatics or LJ");
         }
 
-        npme = 0;
+        domdecOptions.numPmeRanks = 0;
     }
 
-    if ((tryUsePhysicalGpu || forceUsePhysicalGpu) && npme < 0)
+    if ((tryUsePhysicalGpu || forceUsePhysicalGpu) &&
+        domdecOptions.numPmeRanks < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
          * scaling is bad, but it's difficult to automate the setup.
          */
-        npme = 0;
+        domdecOptions.numPmeRanks = 0;
     }
 
 #ifdef GMX_FAHCORE
@@ -738,7 +741,7 @@ int Mdrunner::mdrunner()
         gmx_bool bReadEkin;
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                        cr, ddxyz,
+                        cr, domdecOptions.numCells,
                         inputrec, state, &bReadEkin, &observablesHistory,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET),
@@ -774,11 +777,7 @@ int Mdrunner::mdrunner()
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
-                                           dd_rank_order,
-                                           rdd, rconstr,
-                                           dddlb_opt, dlb_scale,
-                                           ddcsx, ddcsy, ddcsz,
+        cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, Flags,
                                            mtop, inputrec,
                                            box, as_rvec_array(state->x.data()),
                                            &ddbox, &npme_major, &npme_minor);
@@ -1129,7 +1128,8 @@ int Mdrunner::mdrunner()
              * because fr->cginfo_mb is set later.
              */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
-                            Flags & MD_DDBONDCHECK, fr->cginfo_mb);
+                            domdecOptions.checkBondedInteractions,
+                            fr->cginfo_mb);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */

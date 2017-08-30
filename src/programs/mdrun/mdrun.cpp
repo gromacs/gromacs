@@ -61,6 +61,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -241,8 +242,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     };
 
     /* Command line option parameters, with their default values */
-    gmx_bool          bDDBondCheck  = TRUE;
-    gmx_bool          bDDBondComm   = TRUE;
     gmx_bool          bTunePME      = TRUE;
     gmx_bool          bRerunVSite   = FALSE;
     gmx_bool          bConfout      = TRUE;
@@ -272,7 +271,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "Domain decomposition grid, 0 is optimize" },
         { "-ddorder", FALSE, etENUM, {ddrank_opt_choices},
           "DD rank order" },
-        { "-npme",    FALSE, etINT, {&npme},
+        { "-npme",    FALSE, etINT, {&domdecOptions.numPmeRanks},
           "Number of separate ranks to be used for PME, -1 is guess" },
         { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
           "Total number of threads to start (0 is guess)" },
@@ -290,28 +289,28 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
         { "-gpu_id",  FALSE, etSTR, {&gpuIdTaskAssignment},
           "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
-        { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
+        { "-ddcheck", FALSE, etBOOL, {&domdecOptions.checkBondedInteractions},
           "Check for all bonded interactions with DD" },
-        { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
+        { "-ddbondcomm", FALSE, etBOOL, {&domdecOptions.useBondedCommunication},
           "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
-        { "-rdd",     FALSE, etREAL, {&rdd},
+        { "-rdd",     FALSE, etREAL, {&domdecOptions.minimumCommunicationRange},
           "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
-        { "-rcon",    FALSE, etREAL, {&rconstr},
+        { "-rcon",    FALSE, etREAL, {&domdecOptions.constraintCommunicationRange},
           "Maximum distance for P-LINCS (nm), 0 is estimate" },
         { "-dlb",     FALSE, etENUM, {dddlb_opt_choices},
           "Dynamic load balancing (with DD)" },
-        { "-dds",     FALSE, etREAL, {&dlb_scale},
+        { "-dds",     FALSE, etREAL, {&domdecOptions.dlbScaling},
           "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
           "provide a margin in which dynamic load balancing can act while preserving the minimum cell size." },
-        { "-ddcsx",   FALSE, etSTR, {&ddcsx},
+        { "-ddcsx",   FALSE, etSTR, {&domdecOptions.cellSizeX},
           "HIDDENA string containing a vector of the relative sizes in the x "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
-        { "-ddcsy",   FALSE, etSTR, {&ddcsy},
+        { "-ddcsy",   FALSE, etSTR, {&domdecOptions.cellSizeY},
           "HIDDENA string containing a vector of the relative sizes in the y "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
-        { "-ddcsz",   FALSE, etSTR, {&ddcsz},
+        { "-ddcsz",   FALSE, etSTR, {&domdecOptions.cellSizeZ},
           "HIDDENA string containing a vector of the relative sizes in the z "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
@@ -422,7 +421,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         }
     }
 
-    dd_rank_order = nenum(ddrank_opt_choices);
+    domdecOptions.rankOrder = nenum(ddrank_opt_choices);
 
     hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
 
@@ -476,8 +475,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     handleRestart(cr, bTryToAppendFiles, nfile, fnm, &bDoAppendFiles, &bStartFromCpt);
 
     Flags = opt2bSet("-rerun", nfile, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
-    Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
     Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
     Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
     Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
@@ -505,11 +502,11 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         fplog = nullptr;
     }
 
-    ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
-    ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
-    ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+    domdecOptions.numCells[XX] = (int)(realddxyz[XX] + 0.5);
+    domdecOptions.numCells[YY] = (int)(realddxyz[YY] + 0.5);
+    domdecOptions.numCells[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+    domdecOptions.dlbOption    = dddlb_opt_choices[0];
 
-    dddlb_opt = dddlb_opt_choices[0];
     nbpu_opt  = nbpu_opt_choices[0];
     rc        = mdrunner();
 
