@@ -54,9 +54,8 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <string.h>
-
+#include <cstdio>
+#include <cstring>
 #include <cstdlib>
 
 #include "gromacs/commandline/filenm.h"
