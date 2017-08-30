@@ -56,22 +56,136 @@ struct t_mdatoms;
 struct t_simtemp;
 class t_state;
 
-#define MD_POLARISE       (1<<2)
-#define MD_RERUN          (1<<4)
-#define MD_RERUN_VSITE    (1<<5)
-#define MD_CONFOUT        (1<<12)
-#define MD_REPRODUCIBLE   (1<<13)
-#define MD_APPENDFILES    (1<<15)
-#define MD_APPENDFILESSET (1<<21)
-#define MD_KEEPANDNUMCPT  (1<<16)
-#define MD_READ_EKIN      (1<<17)
-#define MD_STARTFROMCPT   (1<<18)
-#define MD_RESETCOUNTERSHALFWAY (1<<19)
-#define MD_TUNEPME        (1<<20)
-#define MD_NTOMPSET       (1<<21)
-#define MD_IMDWAIT        (1<<23)
-#define MD_IMDTERM        (1<<24)
-#define MD_IMDPULL        (1<<25)
+//! \libinternal \brief Options and settings for continuing from checkpoint
+struct ContinuationOptions
+{
+    //! \brief Constructor
+    ContinuationOptions() :
+        appendFiles(false),
+        appendFilesOptionSet(false),
+        startedFromCheckpoint(false),
+        haveReadEkin(false)
+    {
+    }
+
+    //! True if we are continuing from a checkpoint and should append output files
+    bool appendFiles;
+    //! True if the -append option was explicitly set by the user (either to true of false
+    bool appendFilesOptionSet;
+    //! True if we started from a checkpoint file
+    bool startedFromCheckpoint;
+    //! True if we read the kinetic energy from checkpoint file
+    bool haveReadEkin;
+};
+
+//! \libinternal \brief Options for writing checkpoint files
+struct CheckpointOptions
+{
+    //! \brief Constructor
+    CheckpointOptions() :
+        keepAndNumberCheckpointFiles(FALSE),
+        period(15)
+    {
+    }
+
+    //! True means keep all checkpoint file and add the step number to the name
+    gmx_bool keepAndNumberCheckpointFiles;
+    //! The period in minutes for writing checkpoint files
+    real     period;
+};
+
+//! \libinternal \brief Options for timing (parts of) mdrun
+struct TimingOptions
+{
+    //! \brief Constructor
+    TimingOptions() :
+        resetStep(-1),
+        resetHalfway(FALSE)
+    {
+    }
+
+    //! Reset timers at the start of this MD step, -1 means do not reset
+    int      resetStep;
+    //! If true, reset timers half-way the run
+    gmx_bool resetHalfway;
+};
+
+//! \libinternal \brief Options for IMD
+struct ImdOptions
+{
+    //! Constructor
+    ImdOptions() :
+        port(8888),
+        wait(FALSE),
+        terminatable(FALSE),
+        pull(FALSE)
+    {
+    }
+
+    //! IMD listening port
+    int      port;
+    //! If true, pause the simulation while no IMD client is connected
+    gmx_bool wait;
+    //! If true, allow termination of the simulation from IMD client
+    gmx_bool terminatable;
+    //! If true, allow COM pulling in the simulation from IMD client
+    gmx_bool pull;
+};
+
+//! \libinternal \brief Collection of all options of mdrun that are not processed separately
+struct MdrunOptions
+{
+    //! \brief Constructor
+    MdrunOptions() :
+        rerun(FALSE),
+        rerunConstructVsites(FALSE),
+        globalCommunicationInterval(-1),
+        reproducible(FALSE),
+        writeConfout(TRUE),
+        continuationOptions(),
+        checkpointOptions(),
+        numStepsCommandline(-2),
+        maximumHoursToRun(-1),
+        timingOptions(),
+        tunePme(TRUE),
+        ntompOptionIsSet(FALSE),
+        imdOptions(),
+        verbose(FALSE),
+        verboseStepPrintInterval(100)
+    {
+    }
+
+    //! Re-compute energies, and possibly forces, for frames from an input tracjectory
+    gmx_bool            rerun;
+    //! Re-construct virual sites durin a rerun simulation
+    gmx_bool            rerunConstructVsites;
+    //! Request to do global communication at this interval in steps, -1 is determine from inputrec
+    int                 globalCommunicationInterval;
+    //! Try to make the simulation binary reproducible
+    gmx_bool            reproducible;
+    //! Write confout.gro at the end of the run
+    gmx_bool            writeConfout;
+    //! Options for continuing a simulation from a checkpoint file
+    ContinuationOptions continuationOptions;
+    //! Options for checkpointing th simulation
+    CheckpointOptions   checkpointOptions;
+    //! Number of steps to run, -2 is use inputrec, -1 is infinite
+    gmx_int64_t         numStepsCommandline;
+    //! Maximum duration of this simulation in wall-clock hours, -1 is no limit
+    real                maximumHoursToRun;
+    //! Options for timing the run
+    TimingOptions       timingOptions;
+    //! If true and supported, will tune the PP-PME load balance
+    gmx_bool            tunePme;
+    //! True if the user explicitly set the -ntomp command line option
+    gmx_bool            ntompOptionIsSet;
+    //! Options for IMD
+    ImdOptions          imdOptions;
+    //! Increase the verbosity level in the logging and/or stdout/stderr
+    gmx_bool            verbose;
+    //! If verbose=true, print remaining runtime at this step interval
+    int                 verboseStepPrintInterval;
+};
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 

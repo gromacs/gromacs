@@ -978,11 +978,11 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
  *
  * Call on master only.
  */
-static FILE *open_imd_out(const char             *fn,
-                          t_gmx_IMD_setup        *IMDsetup,
-                          int                     nat_total,
-                          const gmx_output_env_t *oenv,
-                          unsigned long           Flags)
+static FILE *open_imd_out(const char                *fn,
+                          t_gmx_IMD_setup           *IMDsetup,
+                          int                        nat_total,
+                          const gmx_output_env_t    *oenv,
+                          const ContinuationOptions &continuationOptions)
 {
     FILE       *fp;
 
@@ -991,7 +991,7 @@ static FILE *open_imd_out(const char             *fn,
     if (fn && oenv)
     {
         /* If we append to an existing file, all the header information is already there */
-        if (Flags & MD_APPENDFILES)
+        if (continuationOptions.appendFiles)
         {
             fp = gmx_fio_fopen(fn, "a+");
         }
@@ -1294,8 +1294,7 @@ void init_IMD(t_inputrec             *ir,
               int                     nfile,
               const t_filenm          fnm[],
               const gmx_output_env_t *oenv,
-              int                     imdport,
-              unsigned long           Flags)
+              const MdrunOptions     &mdrunOptions)
 {
     int              i;
     int              nat_total;
@@ -1310,12 +1309,14 @@ void init_IMD(t_inputrec             *ir,
         return;
     }
 
+    const ImdOptions &options = mdrunOptions.imdOptions;
+
     /* It seems we have a .tpr file that defines an IMD group and thus allows IMD sessions.
      * Check whether we can actually provide the IMD functionality for this setting: */
     if (MASTER(cr))
     {
         /* Check whether IMD was enabled by one of the command line switches: */
-        if ((Flags & MD_IMDWAIT) || (Flags & MD_IMDTERM) || (Flags & MD_IMDPULL))
+        if (options.wait || options.terminatable || options.pull)
         {
             /* Multiple simulations or replica exchange */
             if (MULTISIM(cr))
@@ -1373,13 +1374,13 @@ void init_IMD(t_inputrec             *ir,
     /* Initialize IMD setup structure. If we read in a pre-IMD .tpr file, imd->nat
      * will be zero. For those cases we transfer _all_ atomic positions */
     ir->imd->setup = imd_create(ir->imd->nat > 0 ? ir->imd->nat : nat_total,
-                                defnstimd, imdport);
+                                defnstimd, options.port);
     IMDsetup       = ir->imd->setup;
 
     /* We might need to open an output file for IMD forces data */
     if (MASTER(cr))
     {
-        IMDsetup->outf = open_imd_out(opt2fn("-if", nfile, fnm), ir->imd->setup, nat_total, oenv, Flags);
+        IMDsetup->outf = open_imd_out(opt2fn("-if", nfile, fnm), ir->imd->setup, nat_total, oenv, mdrunOptions.continuationOptions);
     }
 
     /* Make sure that we operate with a valid atom index array for the IMD atoms */
@@ -1406,21 +1407,21 @@ void init_IMD(t_inputrec             *ir,
         snew(IMDsetup->energysendbuf, recsize);
 
         /* Shall we wait for a connection? */
-        if (Flags & MD_IMDWAIT)
+        if (options.wait)
         {
             IMDsetup->bWConnect = TRUE;
             fprintf(stderr, "%s Pausing simulation while no IMD connection present (-imdwait).\n", IMDstr);
         }
 
         /* Will the IMD clients be able to terminate the simulation? */
-        if (Flags & MD_IMDTERM)
+        if (options.terminatable)
         {
             IMDsetup->bTerminatable = TRUE;
             fprintf(stderr, "%s Allow termination of the simulation from IMD client (-imdterm).\n", IMDstr);
         }
 
         /* Is pulling from IMD client allowed? */
-        if (Flags & MD_IMDPULL)
+        if (options.pull)
         {
             IMDsetup->bForceActivated = TRUE;
             fprintf(stderr, "%s Pulling from IMD remote is enabled (-imdpull).\n", IMDstr);
