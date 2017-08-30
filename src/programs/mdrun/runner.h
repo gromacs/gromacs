@@ -42,6 +42,7 @@
 #ifndef GMX_MDLIB_RUNNER_H
 #define GMX_MDLIB_RUNNER_H
 
+#include <cassert>
 #include <cstdio>
 
 #include <array>
@@ -50,8 +51,11 @@
 #include <bitset>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/main.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -63,6 +67,7 @@ struct t_commrec;
 
 namespace gmx
 {
+class TpxState;
 
 /*! \libinternal \brief Runner object for supporting setup and execution of mdrun.
  *
@@ -87,8 +92,14 @@ class Mdrunner
     private:
         //! Parallelism-related user options.
         gmx_hw_opt_t             hw_opt;
+        /*! \brief Number of filename argument values.
+         *
+         * Provided for compatibility with old C-style code accessing
+         * command-line arguments that are file names. */
+        constexpr static int nfile = 34;
+
         //! Filenames and properties from command-line argument values.
-        std::array<t_filenm, 34> filenames =
+        std::array<t_filenm, nfile> filenames =
         {{{ efTPR, nullptr,     nullptr,     ffREAD },
           { efTRN, "-o",        nullptr,     ffWRITE },
           { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
@@ -127,11 +138,6 @@ class Mdrunner
          * Provided for compatibility with old C-style code accessing
          * command-line arguments that are file names. */
         t_filenm *fnm = filenames.data();
-        /*! \brief Number of filename argument values.
-         *
-         * Provided for compatibility with old C-style code accessing
-         * command-line arguments that are file names. */
-        int nfile = filenames.size();
         //! Output context for writing text files
         gmx_output_env_t                *oenv = nullptr;
         //! TRUE if mdrun should be verbose.
@@ -141,7 +147,7 @@ class Mdrunner
         //! Division of sub-boxes over processors for use in domain decomposition parallellization.
         ivec                             ddxyz = { 0, 0, 0 };
         //! Ordering of the PP and PME ranks.
-        int                              dd_rank_order {0};
+        int                              dd_rank_order {1};
         //! The number of separate PME ranks requested, -1 = auto.
         int                              npme = -1;
         //! The maximum distance for bonded interactions with DD (nm).
@@ -149,7 +155,7 @@ class Mdrunner
         //! Maximum distance for P-LINCS (nm).
         real                             rconstr = 0.0;
         //! String with user choice for dynamic load balancing "on", "off", or "auto". Default is "auto".
-        const char                      *dddlb_opt = nullptr;
+        const char                      *dddlb_opt = "auto";
         /*! \brief Fraction in (0,1) by whose reciprocal the initial
          * DD cell size will be increased in order to provide a margin
          * in which dynamic load balancing can act, while preserving
@@ -162,7 +168,7 @@ class Mdrunner
         //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
         const char                        *ddcsz = nullptr;
         //! Target short-range interations for "cpu", "gpu", "gpu_cpu", or "auto". Default is "auto".
-        const char                        *nbpu_opt = nullptr;
+        const char                        *nbpu_opt = "auto";
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                                nstlist_cmdline = 0;
         //! Command-line override for the number of MD steps (-2 means that the mdp option will be used).
@@ -189,6 +195,9 @@ class Mdrunner
         FILE                              *fplog {nullptr};
         //! Handle to communication data structure.
         t_commrec                         *cr {nullptr};
+        //! Whether we are appending files or writing new files
+
+        std::shared_ptr<TpxState>        tpxState_ {nullptr};
 
     public:
         /*! \brief Defaulted constructor.
@@ -199,17 +208,52 @@ class Mdrunner
          * when they were declared, or default initialized. */
         Mdrunner();
 
-        //! Start running mdrun by calling its C-style main function.
-        int mainFunction(int argc, char *argv[]);
+        /*!
+         * \brief Provide handling for members requiring special attention.
+         *
+         * Note that initFromCLI() is assumed to be called zero or one times, but Mdrunner is
+         * copyable and may be duplicated on the master thread, so more careful management may be
+         * necessary.
+         */
+        ~Mdrunner();
+
+        // Copy requires special attention. Use clone methods.
+        Mdrunner(const Mdrunner &)            = delete;
+        Mdrunner &operator=(const Mdrunner &) = delete;
+
+        // Allow move
+        Mdrunner(Mdrunner &&) noexcept            = default;
+        Mdrunner &operator=(Mdrunner &&) noexcept = default;
+
+        //! Set up mdrun by calling its C-style main function.
+        void initFromCLI(int argc, char *argv[]);
+
         /*! \brief Driver routine, that calls the different simulation methods. */
         int mdrunner();
+
+        /*!
+         * \brief Set or replace the TPX state of the runner.
+         *
+         * To avoid race conditions, do not set a dirty state and expect to fix it later.
+         *
+         * Note: does not yet raise any notifications or permit subscribers. Every
+         * member function should assume state gets changed between calls.
+         *
+         * Warning: not thread safe.
+         *
+         */
+        void setTpx(std::shared_ptr<gmx::TpxState> newState);
+
         //! Called when thread-MPI spawns threads.
         t_commrec *spawnThreads(int numThreadsToLaunch);
-        /*! \brief Re-initializes the object after threads spawn.
+
+        /*! \brief Initializes a new Mdrunner from the master.
          *
-         * \todo Can this be refactored so that the Mdrunner on a spawned thread is
-         * constructed ready to use? */
-        void reinitializeOnSpawnedThread();
+         * Run in a new thread from a const pointer to the master.
+         * \returns New Mdrunner instance suitable for running in additional threads.
+         */
+        std::unique_ptr<Mdrunner> cloneOnSpawnedThread() const;
+
 };
 
 }      // namespace gmx

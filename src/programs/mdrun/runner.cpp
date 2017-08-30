@@ -47,14 +47,15 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <csignal>
+#include <cstdlib>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
@@ -90,6 +91,7 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -100,12 +102,14 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
+#include "gromacs/mdtypes/tpxState.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -135,6 +139,11 @@ matrix              deform_init_box_tpx;
 //! MPI variable for use in pressure scaling
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
+template<typename T>
+static inline bool stringIsEmpty(T string)
+{ return string == nullptr; };
+
+
 #if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
@@ -145,23 +154,48 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 namespace gmx
 {
 
-void Mdrunner::reinitializeOnSpawnedThread()
+std::unique_ptr<Mdrunner> Mdrunner::cloneOnSpawnedThread() const
 {
+    auto newRunner = gmx::compat::make_unique<Mdrunner>();
+
+    newRunner->hw_opt = hw_opt;
     // TODO This duplication is formally necessary if any thread might
     // modify any memory in fnm or the pointers it contains. If the
     // contents are ever provably const, then we can remove this
     // allocation (and memory leak).
-    // TODO This should probably become part of a copy constructor for
-    // Mdrunner.
-    fnm = dup_tfn(nfile, fnm);
+    newRunner->fnm             = dup_tfn(nfile, fnm);
+    newRunner->oenv            = oenv;
+    newRunner->bVerbose        = bVerbose;
+    newRunner->nstglobalcomm   = nstglobalcomm;
+    newRunner->ddxyz[0]        = ddxyz[0];
+    newRunner->ddxyz[1]        = ddxyz[1];
+    newRunner->ddxyz[2]        = ddxyz[2];
+    newRunner->dd_rank_order   = dd_rank_order;
+    newRunner->npme            = npme;
+    newRunner->rdd             = rdd;
+    newRunner->rconstr         = rconstr;
+    newRunner->dddlb_opt       = dddlb_opt;
+    newRunner->dlb_scale       = dlb_scale;
+    newRunner->ddcsx           = ddcsx;
+    newRunner->ddcsy           = ddcsy;
+    newRunner->ddcsz           = ddcsz;
+    newRunner->nbpu_opt        = nbpu_opt;
+    newRunner->nstlist_cmdline = nstlist_cmdline;
+    newRunner->nsteps_cmdline  = nsteps_cmdline;
+    newRunner->nstepout        = nstepout;
+    newRunner->resetstep       = resetstep;
+    newRunner->nmultisim       = nmultisim;
+    newRunner->replExParams    = replExParams;
+    newRunner->pforce          = pforce;
+    newRunner->cpt_period      = cpt_period;
+    newRunner->max_hours       = max_hours;
+    newRunner->imdport         = imdport;
+    newRunner->Flags           = Flags;
+    // Don't copy fplog file pointer.
+    newRunner->cr              = reinitialize_commrec_for_this_thread(cr);
+    // Don't copy tpxState_. It is handled separately.
 
-    cr  = reinitialize_commrec_for_this_thread(cr);
-
-    if (!MASTER(cr))
-    {
-        // Only the master rank writes to the log files
-        fplog = nullptr;
-    }
+    return newRunner;
 }
 
 /*! \brief The callback used for running on spawned threads.
@@ -178,9 +212,8 @@ static void mdrunner_start_fn(void *arg)
         /* copy the arg list to make sure that it's thread-local. This
            doesn't copy pointed-to items, of course, but those are all
            const. */
-        gmx::Mdrunner mdrunner = *masterMdrunner;
-        mdrunner.reinitializeOnSpawnedThread();
-        mdrunner.mdrunner();
+        std::unique_ptr<gmx::Mdrunner> mdrunner = masterMdrunner->cloneOnSpawnedThread();
+        mdrunner->mdrunner();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -201,19 +234,10 @@ t_commrec *Mdrunner::spawnThreads(int numThreadsToLaunch)
         return cr;
     }
 
-    gmx::Mdrunner spawnedMdrunner = *this;
-    // TODO This duplication is formally necessary if any thread might
-    // modify any memory in fnm or the pointers it contains. If the
-    // contents are ever provably const, then we can remove this
-    // allocation (and memory leak).
-    // TODO This should probably become part of a copy constructor for
-    // Mdrunner.
-    spawnedMdrunner.fnm = dup_tfn(this->nfile, fnm);
-
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
     if (tMPI_Init_fn(TRUE, numThreadsToLaunch, TMPI_AFFINITY_NONE,
-                     mdrunner_start_fn, static_cast<void*>(&spawnedMdrunner)) != TMPI_SUCCESS)
+                     mdrunner_start_fn, static_cast<void*>(this)) != TMPI_SUCCESS)
     {
         GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
     }
@@ -314,6 +338,427 @@ static void override_nsteps_cmdline(const gmx::MDLogger &mdlog,
                   nsteps_cmdline);
     }
     /* Do nothing if nsteps_cmdline == -2 */
+}
+
+void gmx::Mdrunner::initFromCLI(int argc, char *argv[])
+{
+    const char   *desc[] = {
+        "[THISMODULE] is the main computational chemistry engine",
+        "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
+        "but it can also perform Stochastic Dynamics, Energy Minimization,",
+        "test particle insertion or (re)calculation of energies.",
+        "Normal mode analysis is another option. In this case [TT]mdrun[tt]",
+        "builds a Hessian matrix from single conformation.",
+        "For usual Normal Modes-like calculations, make sure that",
+        "the structure provided is properly energy-minimized.",
+        "The generated matrix can be diagonalized by [gmx-nmeig].[PAR]",
+        "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
+        "and distributes the topology over ranks if needed.",
+        "[TT]mdrun[tt] produces at least four output files.",
+        "A single log file ([TT]-g[tt]) is written.",
+        "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
+        "optionally forces.",
+        "The structure file ([TT]-c[tt]) contains the coordinates and",
+        "velocities of the last step.",
+        "The energy file ([TT]-e[tt]) contains energies, the temperature,",
+        "pressure, etc, a lot of these things are also printed in the log file.",
+        "Optionally coordinates can be written to a compressed trajectory file",
+        "([TT]-x[tt]).[PAR]",
+        "The option [TT]-dhdl[tt] is only used when free energy calculation is",
+        "turned on.[PAR]",
+        "Running mdrun efficiently in parallel is a complex topic topic,",
+        "many aspects of which are covered in the online User Guide. You",
+        "should look there for practical advice on using many of the options",
+        "available in mdrun.[PAR]",
+        "ED (essential dynamics) sampling and/or additional flooding potentials",
+        "are switched on by using the [TT]-ei[tt] flag followed by an [REF].edi[ref]",
+        "file. The [REF].edi[ref] file can be produced with the [TT]make_edi[tt] tool",
+        "or by using options in the essdyn menu of the WHAT IF program.",
+        "[TT]mdrun[tt] produces a [REF].xvg[ref] output file that",
+        "contains projections of positions, velocities and forces onto selected",
+        "eigenvectors.[PAR]",
+        "When user-defined potential functions have been selected in the",
+        "[REF].mdp[ref] file the [TT]-table[tt] option is used to pass [TT]mdrun[tt]",
+        "a formatted table with potential functions. The file is read from",
+        "either the current directory or from the [TT]GMXLIB[tt] directory.",
+        "A number of pre-formatted tables are presented in the [TT]GMXLIB[tt] dir,",
+        "for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard-Jones potentials with",
+        "normal Coulomb.",
+        "When pair interactions are present, a separate table for pair interaction",
+        "functions is read using the [TT]-tablep[tt] option.[PAR]",
+        "When tabulated bonded functions are present in the topology,",
+        "interaction functions are read using the [TT]-tableb[tt] option.",
+        "For each different tabulated interaction type used, a table file name must",
+        "be given. For the topology to work, a file name given here must match a",
+        "character sequence before the file extension. That sequence is: an underscore,",
+        "then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals,",
+        "and finally the matching table number index used in the topology.[PAR]",
+        "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
+        "coordinates and forces when pulling is selected",
+        "in the [REF].mdp[ref] file.[PAR]",
+        "Finally some experimental algorithms can be tested when the",
+        "appropriate options have been given. Currently under",
+        "investigation are: polarizability.",
+        "[PAR]",
+        "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
+        "a protein into a membrane. This module requires a number of settings",
+        "that are provided in a data file that is the argument of this option.",
+        "For more details in membrane embedding, see the documentation in the",
+        "user guide. The options [TT]-mn[tt] and [TT]-mp[tt] are used to provide",
+        "the index and topology files used for the embedding.",
+        "[PAR]",
+        "The option [TT]-pforce[tt] is useful when you suspect a simulation",
+        "crashes due to too large forces. With this option coordinates and",
+        "forces of atoms with a force larger than a certain value will",
+        "be printed to stderr. It will also terminate the run when non-finite",
+        "forces are present.",
+        "[PAR]",
+        "Checkpoints containing the complete state of the system are written",
+        "at regular intervals (option [TT]-cpt[tt]) to the file [TT]-cpo[tt],",
+        "unless option [TT]-cpt[tt] is set to -1.",
+        "The previous checkpoint is backed up to [TT]state_prev.cpt[tt] to",
+        "make sure that a recent state of the system is always available,",
+        "even when the simulation is terminated while writing a checkpoint.",
+        "With [TT]-cpnum[tt] all checkpoint files are kept and appended",
+        "with the step number.",
+        "A simulation can be continued by reading the full state from file",
+        "with option [TT]-cpi[tt]. This option is intelligent in the way that",
+        "if no checkpoint file is found, GROMACS just assumes a normal run and",
+        "starts from the first step of the [REF].tpr[ref] file. By default the output",
+        "will be appending to the existing output files. The checkpoint file",
+        "contains checksums of all output files, such that you will never",
+        "loose data when some output files are modified, corrupt or removed.",
+        "There are three scenarios with [TT]-cpi[tt]:[PAR]",
+        "[TT]*[tt] no files with matching names are present: new output files are written[PAR]",
+        "[TT]*[tt] all files are present with names and checksums matching those stored",
+        "in the checkpoint file: files are appended[PAR]",
+        "[TT]*[tt] otherwise no files are modified and a fatal error is generated[PAR]",
+        "With [TT]-noappend[tt] new output files are opened and the simulation",
+        "part number is added to all output file names.",
+        "Note that in all cases the checkpoint file itself is not renamed",
+        "and will be overwritten, unless its name does not match",
+        "the [TT]-cpo[tt] option.",
+        "[PAR]",
+        "With checkpointing the output is appended to previously written",
+        "output files, unless [TT]-noappend[tt] is used or none of the previous",
+        "output files are present (except for the checkpoint file).",
+        "The integrity of the files to be appended is verified using checksums",
+        "which are stored in the checkpoint file. This ensures that output can",
+        "not be mixed up or corrupted due to file appending. When only some",
+        "of the previous output files are present, a fatal error is generated",
+        "and no old output files are modified and no new output files are opened.",
+        "The result with appending will be the same as from a single run.",
+        "The contents will be binary identical, unless you use a different number",
+        "of ranks or dynamic load balancing or the FFT library uses optimizations",
+        "through timing.",
+        "[PAR]",
+        "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
+        "file is written at the first neighbor search step where the run time",
+        "exceeds [TT]-maxh[tt]\\*0.99 hours. This option is particularly useful in",
+        "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
+        "similarly named command line option. This results in an infinite run,",
+        "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
+        "or upon receiving a signal."
+        "[PAR]",
+        "When [TT]mdrun[tt] receives a TERM signal, it will stop as soon as",
+        "checkpoint file can be written, i.e. after the next global communication step.",
+        "When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
+        "pressed), it will stop at the next neighbor search step or at the",
+        "second global communication step, whichever happens later.",
+        "In both cases all the usual output will be written to file.",
+        "When running with MPI, a signal to one of the [TT]mdrun[tt] ranks",
+        "is sufficient, this signal should not be sent to mpirun or",
+        "the [TT]mdrun[tt] process that is the parent of the others.",
+        "[PAR]",
+        "Interactive molecular dynamics (IMD) can be activated by using at least one",
+        "of the three IMD switches: The [TT]-imdterm[tt] switch allows one to terminate",
+        "the simulation from the molecular viewer (e.g. VMD). With [TT]-imdwait[tt],",
+        "[TT]mdrun[tt] pauses whenever no IMD client is connected. Pulling from the",
+        "IMD remote can be turned on by [TT]-imdpull[tt].",
+        "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",
+        "file pointed to by [TT]-if[tt] contains atom indices and forces if IMD",
+        "pulling is used."
+        "[PAR]",
+        "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
+    };
+
+    /* Command line option parameters, with their default values */
+    gmx_bool          bDoAppendFiles = Flags.test(appendFiles);
+    gmx_bool          bDDBondCheck   = Flags.test(ddBondCheck);
+    gmx_bool          bDDBondComm    = Flags.test(ddBondComm);
+    gmx_bool          bTunePME       = Flags.test(tunePME);
+    gmx_bool          bRerunVSite    = Flags.test(rerunVSite);
+    gmx_bool          bConfout       = Flags.test(confOut);
+    gmx_bool          bReproducible  = Flags.test(reproducible);
+    gmx_bool          bIMDwait       = Flags.test(imdWait);
+    gmx_bool          bIMDterm       = Flags.test(imdTerm);
+    gmx_bool          bIMDpull       = Flags.test(imdPull);
+
+    /* Command line options */
+    rvec              realddxyz                           = {0, 0, 0};
+    const char       *ddrank_opt_choices[ddrankorderNR+1] =
+    { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
+    const char       *dddlb_opt_choices[] =
+    { nullptr, "auto", "no", "yes", nullptr };
+    const char       *thread_aff_opt_choices[threadaffNR+1] =
+    { nullptr, "auto", "on", "off", nullptr };
+    const char       *nbpu_opt_choices[] =
+    { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
+    gmx_bool          bTryToAppendFiles     = TRUE;
+    gmx_bool          bKeepAndNumCPT        = Flags.test(keepAndNumCpt);
+    gmx_bool          bResetCountersHalfWay = Flags.test(resetCountersHalfWay);
+    const char       *gpuIdTaskAssignment   = "";
+
+    t_pargs           pa[] = {
+
+        { "-dd",      FALSE, etRVEC, {&realddxyz},
+          "Domain decomposition grid, 0 is optimize" },
+        { "-ddorder", FALSE, etENUM, {ddrank_opt_choices},
+          "DD rank order" },
+        { "-npme",    FALSE, etINT, {&npme},
+          "Number of separate ranks to be used for PME, -1 is guess" },
+        { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
+          "Total number of threads to start (0 is guess)" },
+        { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
+          "Number of thread-MPI threads to start (0 is guess)" },
+        { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
+          "Number of OpenMP threads per MPI rank to start (0 is guess)" },
+        { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
+          "Number of OpenMP threads per MPI rank to start (0 is -ntomp)" },
+        { "-pin",     FALSE, etENUM, {thread_aff_opt_choices},
+          "Whether mdrun should try to set thread affinities" },
+        { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
+          "The lowest logical core number to which mdrun should pin the first thread" },
+        { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
+          "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
+        { "-gpu_id",  FALSE, etSTR, {&gpuIdTaskAssignment},
+          "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
+        { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
+          "Check for all bonded interactions with DD" },
+        { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
+          "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
+        { "-rdd",     FALSE, etREAL, {&rdd},
+          "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
+        { "-rcon",    FALSE, etREAL, {&rconstr},
+          "Maximum distance for P-LINCS (nm), 0 is estimate" },
+        { "-dlb",     FALSE, etENUM, {dddlb_opt_choices},
+          "Dynamic load balancing (with DD)" },
+        { "-dds",     FALSE, etREAL, {&dlb_scale},
+          "Fraction in (0,1) by whose reciprocal the initial DD cell size will be increased in order to "
+          "provide a margin in which dynamic load balancing can act while preserving the minimum cell size." },
+        { "-ddcsx",   FALSE, etSTR, {&ddcsx},
+          "HIDDENA string containing a vector of the relative sizes in the x "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
+        { "-ddcsy",   FALSE, etSTR, {&ddcsy},
+          "HIDDENA string containing a vector of the relative sizes in the y "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
+        { "-ddcsz",   FALSE, etSTR, {&ddcsz},
+          "HIDDENA string containing a vector of the relative sizes in the z "
+          "direction of the corresponding DD cells. Only effective with static "
+          "load balancing." },
+        { "-gcom",    FALSE, etINT, {&nstglobalcomm},
+          "Global communication frequency" },
+        { "-nb",      FALSE, etENUM, {&nbpu_opt_choices},
+          "Calculate non-bonded interactions on" },
+        { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
+          "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
+        { "-tunepme", FALSE, etBOOL, {&bTunePME},
+          "Optimize PME load between PP/PME ranks or GPU/CPU" },
+        { "-v",       FALSE, etBOOL, {&bVerbose},
+          "Be loud and noisy" },
+        { "-pforce",  FALSE, etREAL, {&pforce},
+          "Print all forces larger than this (kJ/mol nm)" },
+        { "-reprod",  FALSE, etBOOL, {&bReproducible},
+          "Try to avoid optimizations that affect binary reproducibility" },
+        { "-cpt",     FALSE, etREAL, {&cpt_period},
+          "Checkpoint interval (minutes)" },
+        { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+          "Keep and number checkpoint files" },
+        { "-append",  FALSE, etBOOL, {&bTryToAppendFiles},
+          "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
+        { "-nsteps",  FALSE, etINT64, {&nsteps_cmdline},
+          "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
+        { "-maxh",   FALSE, etREAL, {&max_hours},
+          "Terminate after 0.99 times this time (hours)" },
+        { "-multi",   FALSE, etINT, {&nmultisim},
+          "Do multiple simulations in parallel" },
+        { "-replex",  FALSE, etINT, {&replExParams.exchangeInterval},
+          "Attempt replica exchange periodically with this period (steps)" },
+        { "-nex",  FALSE, etINT, {&replExParams.numExchanges},
+          "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
+        { "-reseed",  FALSE, etINT, {&replExParams.randomSeed},
+          "Seed for replica exchange, -1 is generate a seed" },
+        { "-imdport",    FALSE, etINT, {&imdport},
+          "HIDDENIMD listening port" },
+        { "-imdwait",  FALSE, etBOOL, {&bIMDwait},
+          "HIDDENPause the simulation while no IMD client is connected" },
+        { "-imdterm",  FALSE, etBOOL, {&bIMDterm},
+          "HIDDENAllow termination of the simulation from IMD client" },
+        { "-imdpull",  FALSE, etBOOL, {&bIMDpull},
+          "HIDDENAllow pulling in the simulation from IMD client" },
+        { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
+          "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
+        { "-confout", FALSE, etBOOL, {&bConfout},
+          "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
+        { "-stepout", FALSE, etINT, {&nstepout},
+          "HIDDENFrequency of writing the remaining wall clock time for the run" },
+        { "-resetstep", FALSE, etINT, {&resetstep},
+          "HIDDENReset cycle counters after these many time steps" },
+        { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
+          "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
+    };
+    gmx_bool          bStartFromCpt = Flags.test(startFromCpt);
+    char            **multidir      = nullptr;
+
+    unsigned long     PCA_Flags = PCA_CAN_SET_DEFFNM;
+
+    // With -multi or -multidir, the file names are going to get processed
+    // further (or the working directory changed), so we can't check for their
+    // existence during parsing.  It isn't useful to do any completion based on
+    // file system contents, either.
+    for (auto i = 0; i < argc; ++i)
+    {
+        // Check whether either of the command-line parameters that
+        // will trigger a multi-simulation is set
+        if (strcmp(argv[i], "-multi") == 0 || strcmp(argv[i], "-multidir") == 0)
+        {
+            PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;;
+        }
+    }
+
+    /* Comment this in to do fexist calls only on master
+     * works not with rerun or tables at the moment
+     * also comment out the version of init_forcerec in md.c
+     * with NULL instead of opt2fn
+     */
+    /*
+       if (!MASTER(cr))
+       {
+       PCA_Flags |= PCA_NOT_READ_NODE;
+       }
+     */
+
+    // Initializes oenv; finishes filling in fnm
+    if (!parse_common_args(&argc, argv, PCA_Flags, nfile, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
+    {
+        sfree(cr);
+        GMX_THROW(InvalidInputError("Could not parse command line arguments."));
+    }
+
+    // Handle the option that permits the user to select a GPU task
+    // assignment, which could be in an environment variable (so that
+    // there is a way to customize it, when using MPI in heterogeneous
+    // contexts).
+    {
+        // TODO Argument parsing can't handle std::string. We should
+        // fix that by changing the parsing, once more of the roles of
+        // handling, validating and implementing defaults for user
+        // command-line options have been seperated.
+        hw_opt.gpuIdTaskAssignment = gpuIdTaskAssignment;
+        const char *env = getenv("GMX_GPU_ID");
+        if (env != nullptr)
+        {
+            if (!hw_opt.gpuIdTaskAssignment.empty())
+            {
+                gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
+            }
+            hw_opt.gpuIdTaskAssignment = env;
+        }
+    }
+
+    dd_rank_order = nenum(ddrank_opt_choices);
+
+    hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
+
+    /* now check the -multi and -multidir option */
+    if (opt2bSet("-multidir", nfile, fnm))
+    {
+        if (nmultisim > 0)
+        {
+            gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");
+        }
+        nmultisim = opt2fns(&multidir, "-multidir", nfile, fnm);
+    }
+
+
+    if (replExParams.exchangeInterval != 0 && nmultisim < 2)
+    {
+        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (option -multi)");
+    }
+
+    if (replExParams.numExchanges < 0)
+    {
+        gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
+    }
+
+    if (nmultisim >= 1)
+    {
+#if !GMX_THREAD_MPI
+        init_multisystem(cr, nmultisim, multidir, nfile, fnm);
+#else
+        gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
+                  "Please compile GROMACS with a proper external MPI library.");
+#endif
+    }
+
+    if (!opt2bSet("-cpi", nfile, fnm))
+    {
+        // If we are not starting from a checkpoint we never allow files to be appended
+        // to, since that has caused a ton of strange behaviour and bugs in the past.
+        if (opt2parg_bSet("-append", asize(pa), pa))
+        {
+            // If the user explicitly used the -append option, explain that it is not possible.
+            gmx_fatal(FARGS, "GROMACS can only append to files when restarting from a checkpoint.");
+        }
+        else
+        {
+            // If the user did not say anything explicit, just disable appending.
+            bTryToAppendFiles = FALSE;
+        }
+    }
+
+    handleRestart(cr, bTryToAppendFiles, nfile, fnm, &bDoAppendFiles, &bStartFromCpt);
+
+    // Note: We cannot extract e.g. opt2parg_bSet("-append", asize(pa), pa) from this block.
+    Flags.set(rerun, opt2bSet("-rerun", nfile, fnm));
+    Flags.set(ddBondCheck, bDDBondCheck);
+    Flags.set(ddBondComm, bDDBondComm);
+    Flags.set(tunePME, bTunePME);
+    Flags.set(confOut, bConfout);
+    Flags.set(rerunVSite, bRerunVSite);
+    Flags.set(reproducible, bReproducible);
+    Flags.set(appendFiles, bDoAppendFiles);
+    Flags.set(appendFilesSet, opt2parg_bSet("-append", asize(pa), pa));
+    Flags.set(keepAndNumCpt, bKeepAndNumCPT);
+    Flags.set(startFromCpt, bStartFromCpt);
+    Flags.set(resetCountersHalfWay, bResetCountersHalfWay);
+    Flags.set(ntompSet, opt2parg_bSet("-ntomp", asize(pa), pa));
+    Flags.set(imdWait, bIMDwait);
+    Flags.set(imdTerm, bIMDterm);
+    Flags.set(imdPull, bIMDpull);
+
+    ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
+    ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
+    ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+
+    dddlb_opt = dddlb_opt_choices[0];
+    nbpu_opt  = nbpu_opt_choices[0];
+
+    /* We postpone opening the log file if we are appending, so we can
+       first truncate the old log file and append to the correct position
+       there instead.  */
+    if (MASTER(cr) && !(Flags.test(appendFiles)))
+    {
+        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
+                     Flags.test(appendFiles), &fplog);
+    }
+    else
+    {
+        fplog = nullptr;
+    }
 }
 
 namespace gmx
@@ -437,7 +882,6 @@ int Mdrunner::mdrunner()
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
     t_nrnb                   *nrnb;
-    gmx_mtop_t               *mtop          = nullptr;
     t_mdatoms                *mdatoms       = nullptr;
     t_forcerec               *fr            = nullptr;
     t_fcdata                 *fcd           = nullptr;
@@ -458,17 +902,9 @@ int Mdrunner::mdrunner()
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
     gmx::MDModules mdModules;
-    t_inputrec     inputrecInstance;
-    t_inputrec    *inputrec = &inputrecInstance;
-    snew(mtop, 1);
 
-    if (Flags.test(appendFiles))
-    {
-        fplog = nullptr;
-    }
-
-    bool doMembed = opt2bSet("-membed", nfile, fnm);
-    bool doRerun  = Flags.test(rerun);
+    bool           doMembed = opt2bSet("-membed", nfile, fnm);
+    bool           doRerun  = Flags.test(rerun);
 
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
@@ -482,6 +918,11 @@ int Mdrunner::mdrunner()
     bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
     bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
 
+    if (Flags.test(appendFiles))
+    {
+        // If we are appending, we will get the filehandle another way
+        fplog = nullptr;
+    }
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
     gmx::LoggerOwner logOwner(buildLogger(fplog, cr));
@@ -503,14 +944,33 @@ int Mdrunner::mdrunner()
         please_cite(fplog, "Berendsen95a");
     }
 
-    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state);
-    t_state *                state         = stateInstance.get();
-
+    if (tpxState_ == nullptr)
+    {
+        // Todo: move to Mdrunner constructor
+        tpxState_ = std::make_shared<TpxState>();
+    }
     if (SIMMASTER(cr))
     {
         /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
+        const char* filename = ftp2fn(efTPR, nfile, fnm);
+        if ((filename != nullptr) && !tpxState_->isInitialized())
+        {
+            // Todo: move out of mdrunner() to a setup routine.
+            // e.g.
+            //    tpxState_ = TpxState::fromFile(filename); // in Mdrunner::mainFunction()
+            //    ...
+            //    tpxState_.extractDataLocally(); // here
+            //    // or just rely on communicator to let TpxState decide what to do when getters are called.
+            tpxState_ = TpxState::initializeFromFile(filename);
+        }
+    }
 
+    t_inputrec*             inputrec      = tpxState_->getRawInputrec();
+    gmx_mtop_t*             mtop          = tpxState_->getRawMtop();
+    t_state*                state         = tpxState_->getRawState();
+
+    if (SIMMASTER(cr))
+    {
         exitIfCannotForceGpuRun(forceUsePhysicalGpu,
                                 emulateGpu,
                                 inputrec->cutoff_scheme == ecutsVERLET,
@@ -753,7 +1213,8 @@ int Mdrunner::mdrunner()
     if (SIMMASTER(cr) && Flags.test(appendFiles))
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags.to_ulong(), &fplog);
+                     Flags.test(appendFiles),
+                     &fplog);
         logOwner = buildLogger(fplog, nullptr);
         mdlog    = logOwner.logger();
     }
@@ -893,7 +1354,8 @@ int Mdrunner::mdrunner()
 #endif
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(), Flags.test(ntompSet),
+    check_resource_division_efficiency(hwinfo, hw_opt.nthreads_tot, !gpuTaskAssignment.empty(),
+                                       Flags.test(ntompSet),
                                        cr, mdlog);
 
     gmx_device_info_t *shortRangedDeviceInfo = nullptr;
@@ -1015,7 +1477,6 @@ int Mdrunner::mdrunner()
         /* This is a PME only node */
 
         /* We don't need the state */
-        stateInstance.reset();
         state         = nullptr;
 
         ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
@@ -1107,14 +1568,16 @@ int Mdrunner::mdrunner()
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
                           mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags.to_ulong());
+                          EI_DYNAMICS(inputrec->eI) && MASTER(cr),
+                          Flags.to_ulong());
         }
 
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
             init_rot(fplog, inputrec, nfile, fnm, cr, as_rvec_array(state->x.data()), state->box, mtop, oenv,
-                     bVerbose, Flags.to_ulong());
+                     bVerbose,
+                     Flags.to_ulong());
         }
 
         /* Let init_constraints know whether we have essential dynamics constraints.
@@ -1223,6 +1686,8 @@ int Mdrunner::mdrunner()
 
 Mdrunner::Mdrunner()
 {
+    cr = init_commrec();
+
     // Note: We cannot extract e.g. opt2parg_bSet("-append", asize(pa), pa) to here.
     Flags.set(rerun, false);
     Flags.set(ddBondCheck, true);
@@ -1242,6 +1707,36 @@ Mdrunner::Mdrunner()
     Flags.set(imdWait, false);
     Flags.set(imdTerm, false);
     Flags.set(imdPull, false);
-};
+}
+
+Mdrunner::~Mdrunner()
+{
+    /* Log file has to be closed in mdrunner if we are appending to it
+       (fplog not set here) */
+    if (MASTER(cr) && !Flags.test(appendFiles))
+    {
+        gmx_log_close(fplog);
+    }
+}
+
+void Mdrunner::setTpx(std::shared_ptr<gmx::TpxState> newState)
+{
+    if (newState->isDirty())
+    {
+        GMX_THROW(gmx::InvalidInputError("Attempting to assign from a dirty state."));
+    }
+    // No good way to lock with default constructor and default moves for Mdrunner.
+    // std::lock_guard<std::mutex> lock(stateAccess);
+    // Todo: thread-safety
+    // Locking the gmx::Mdrunner to serialize state updates would be nice, but
+    // it would be sufficient to guarantee that the gmx::Mdrunner is thread-local
+    //assert(tpxState_ != nullptr); // It is probably preferable to be able to assume tpxState_ is valid even if empty.
+    if (tpxState_ != nullptr && tpxState_->isDirty())
+    {
+        // Calling code has a logic error: the old state is in use somewhere.
+        GMX_THROW(gmx::APIError("Attempting to replace a state that may be in use (isDirty() == true)"));
+    }
+    tpxState_ = std::move(newState);
+}
 
 } // namespace gmx
