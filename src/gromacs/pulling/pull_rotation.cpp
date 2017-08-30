@@ -125,7 +125,7 @@ typedef struct gmx_enfrot
     real             *mpi_inbuf;   /* MPI buffer                                     */
     real             *mpi_outbuf;  /* MPI buffer                                     */
     int               mpi_bufsize; /* Allocation size of in & outbuf                 */
-    unsigned long     Flags;       /* mdrun flags                                    */
+    gmx_bool          appendFiles; /* If true, append output files                   */
     gmx_bool          bOut;        /* Used to skip first output when appending to
                                     * avoid duplicate entries in rotation outfiles   */
 } t_gmx_enfrot;
@@ -790,7 +790,7 @@ static FILE *open_slab_out(const char *fn, t_rot *rot)
     t_rotgrp  *rotg;
 
 
-    if (rot->enfrot->Flags & MD_APPENDFILES)
+    if (rot->enfrot->appendFiles)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -865,7 +865,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const gmx_output_env_t *oe
     char           *LegendStr = nullptr;
 
 
-    if (rot->enfrot->Flags & MD_APPENDFILES)
+    if (rot->enfrot->appendFiles)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -1006,7 +1006,7 @@ static FILE *open_angles_out(const char *fn, t_rot *rot)
     char            buf[100];
 
 
-    if (rot->enfrot->Flags & MD_APPENDFILES)
+    if (rot->enfrot->appendFiles)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -1090,7 +1090,7 @@ static FILE *open_torque_out(const char *fn, t_rot *rot)
     t_rotgrp  *rotg;
 
 
-    if (rot->enfrot->Flags & MD_APPENDFILES)
+    if (rot->enfrot->appendFiles)
     {
         fp = gmx_fio_fopen(fn, "a");
     }
@@ -3658,7 +3658,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
                      t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-                     gmx_bool bVerbose, unsigned long Flags)
+                     const MdrunOptions &mdrunOptions)
 {
     t_rot          *rot;
     t_rotgrp       *rotg;
@@ -3669,18 +3669,18 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     rvec           *x_pbc = nullptr; /* Space for the pbc-correct atom positions */
 
 
-    if (MASTER(cr) && bVerbose)
+    if (MASTER(cr) && mdrunOptions.verbose)
     {
         fprintf(stdout, "%s Initializing ...\n", RotStr);
     }
 
     rot = ir->rot;
     snew(rot->enfrot, 1);
-    er        = rot->enfrot;
-    er->Flags = Flags;
+    er              = rot->enfrot;
+    er->appendFiles = mdrunOptions.continuationOptions.appendFiles;
 
     /* When appending, skip first output to avoid duplicate entries in the data files */
-    if (er->Flags & MD_APPENDFILES)
+    if (er->appendFiles)
     {
         er->bOut = FALSE;
     }
@@ -3695,7 +3695,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     }
 
     /* Output every step for reruns */
-    if (er->Flags & MD_RERUN)
+    if (mdrunOptions.rerun)
     {
         if (nullptr != fplog)
         {
@@ -3752,9 +3752,9 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, bVerbose, er->out_slabs, box, ir,
-                           !(er->Flags & MD_APPENDFILES) ); /* Do not output the reference centers
-                                                             * again if we are appending */
+            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, mdrunOptions.verbose, er->out_slabs, box, ir,
+                           !er->appendFiles); /* Do not output the reference centers
+                                               * again if we are appending */
         }
     }
 

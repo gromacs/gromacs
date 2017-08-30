@@ -240,15 +240,6 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
     };
 
-    /* Command line option parameters, with their default values */
-    gmx_bool          bTunePME      = TRUE;
-    gmx_bool          bRerunVSite   = FALSE;
-    gmx_bool          bConfout      = TRUE;
-    gmx_bool          bReproducible = FALSE;
-    gmx_bool          bIMDwait      = FALSE;
-    gmx_bool          bIMDterm      = FALSE;
-    gmx_bool          bIMDpull      = FALSE;
-
     /* Command line options */
     rvec              realddxyz                                               = {0, 0, 0};
     const char       *ddrank_opt_choices[static_cast<int>(DdRankOrder::nr)+1] =
@@ -260,9 +251,9 @@ int Mdrunner::mainFunction(int argc, char *argv[])
     const char       *nbpu_opt_choices[] =
     { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     gmx_bool          bTryToAppendFiles     = TRUE;
-    gmx_bool          bKeepAndNumCPT        = FALSE;
-    gmx_bool          bResetCountersHalfWay = FALSE;
     const char       *gpuIdTaskAssignment   = "";
+
+    ImdOptions       &imdOptions = mdrunOptions.imdOptions;
 
     t_pargs           pa[] = {
 
@@ -313,29 +304,29 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "HIDDENA string containing a vector of the relative sizes in the z "
           "direction of the corresponding DD cells. Only effective with static "
           "load balancing." },
-        { "-gcom",    FALSE, etINT, {&nstglobalcomm},
+        { "-gcom",    FALSE, etINT, {&mdrunOptions.globalCommunicationInterval},
           "Global communication frequency" },
         { "-nb",      FALSE, etENUM, {nbpu_opt_choices},
           "Calculate non-bonded interactions on" },
         { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
-        { "-tunepme", FALSE, etBOOL, {&bTunePME},
+        { "-tunepme", FALSE, etBOOL, {&mdrunOptions.tunePme},
           "Optimize PME load between PP/PME ranks or GPU/CPU (only with the Verlet cut-off scheme)" },
-        { "-v",       FALSE, etBOOL, {&bVerbose},
+        { "-v",       FALSE, etBOOL, {&mdrunOptions.verbose},
           "Be loud and noisy" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
-        { "-reprod",  FALSE, etBOOL, {&bReproducible},
+        { "-reprod",  FALSE, etBOOL, {&mdrunOptions.reproducible},
           "Try to avoid optimizations that affect binary reproducibility" },
-        { "-cpt",     FALSE, etREAL, {&cpt_period},
+        { "-cpt",     FALSE, etREAL, {&mdrunOptions.checkpointOptions.period},
           "Checkpoint interval (minutes)" },
-        { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
+        { "-cpnum",   FALSE, etBOOL, {&mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles},
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bTryToAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etINT64, {&nsteps_cmdline},
+        { "-nsteps",  FALSE, etINT64, {&mdrunOptions.numStepsCommandline},
           "Run this number of steps, overrides .mdp file option (-1 means infinite, -2 means use mdp option, smaller is invalid)" },
-        { "-maxh",   FALSE, etREAL, {&max_hours},
+        { "-maxh",   FALSE, etREAL, {&mdrunOptions.maximumHoursToRun},
           "Terminate after 0.99 times this time (hours)" },
         { "-multi",   FALSE, etINT, {&nmultisim},
           "Do multiple simulations in parallel" },
@@ -345,26 +336,25 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
         { "-reseed",  FALSE, etINT, {&replExParams.randomSeed},
           "Seed for replica exchange, -1 is generate a seed" },
-        { "-imdport",    FALSE, etINT, {&imdport},
+        { "-imdport",    FALSE, etINT, {&imdOptions.port},
           "HIDDENIMD listening port" },
-        { "-imdwait",  FALSE, etBOOL, {&bIMDwait},
+        { "-imdwait",  FALSE, etBOOL, {&imdOptions.wait},
           "HIDDENPause the simulation while no IMD client is connected" },
-        { "-imdterm",  FALSE, etBOOL, {&bIMDterm},
+        { "-imdterm",  FALSE, etBOOL, {&imdOptions.terminatable},
           "HIDDENAllow termination of the simulation from IMD client" },
-        { "-imdpull",  FALSE, etBOOL, {&bIMDpull},
+        { "-imdpull",  FALSE, etBOOL, {&imdOptions.pull},
           "HIDDENAllow pulling in the simulation from IMD client" },
-        { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
+        { "-rerunvsite", FALSE, etBOOL, {&mdrunOptions.rerunConstructVsites},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
-        { "-confout", FALSE, etBOOL, {&bConfout},
+        { "-confout", FALSE, etBOOL, {&mdrunOptions.writeConfout},
           "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
-        { "-stepout", FALSE, etINT, {&nstepout},
+        { "-stepout", FALSE, etINT, {&mdrunOptions.verboseStepPrintInterval},
           "HIDDENFrequency of writing the remaining wall clock time for the run" },
-        { "-resetstep", FALSE, etINT, {&resetstep},
+        { "-resetstep", FALSE, etINT, {&mdrunOptions.timingOptions.resetStep},
           "HIDDENReset cycle counters after these many time steps" },
-        { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
+        { "-resethway", FALSE, etBOOL, {&mdrunOptions.timingOptions.resetHalfway},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    gmx_bool          bDoAppendFiles, bStartFromCpt;
     int               rc;
     char            **multidir = nullptr;
 
@@ -469,30 +459,22 @@ int Mdrunner::mainFunction(int argc, char *argv[])
         }
     }
 
-    handleRestart(cr, bTryToAppendFiles, nfile, fnm, &bDoAppendFiles, &bStartFromCpt);
+    ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
 
-    Flags = opt2bSet("-rerun", nfile, fnm) ? MD_RERUN : 0;
-    Flags = Flags | (bTunePME      ? MD_TUNEPME      : 0);
-    Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
-    Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
-    Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
-    Flags = Flags | (bDoAppendFiles  ? MD_APPENDFILES  : 0);
-    Flags = Flags | (opt2parg_bSet("-append", asize(pa), pa) ? MD_APPENDFILESSET : 0);
-    Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
-    Flags = Flags | (bStartFromCpt ? MD_STARTFROMCPT : 0);
-    Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
-    Flags = Flags | (opt2parg_bSet("-ntomp", asize(pa), pa) ? MD_NTOMPSET : 0);
-    Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
-    Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
-    Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
+    continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
+
+    handleRestart(cr, bTryToAppendFiles, nfile, fnm, &continuationOptions.appendFiles, &continuationOptions.startedFromCheckpoint);
+
+    mdrunOptions.rerun            = opt2bSet("-rerun", nfile, fnm);
+    mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
     /* We postpone opening the log file if we are appending, so we can
        first truncate the old log file and append to the correct position
        there instead.  */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(cr) && !continuationOptions.appendFiles)
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags & MD_APPENDFILES, &fplog);
+                     continuationOptions.appendFiles, &fplog);
     }
     else
     {
@@ -510,7 +492,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
-    if (MASTER(cr) && !bDoAppendFiles)
+    if (MASTER(cr) && !continuationOptions.appendFiles)
     {
         gmx_log_close(fplog);
     }

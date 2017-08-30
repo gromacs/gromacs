@@ -56,6 +56,7 @@
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct MdrunOptions;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -82,13 +83,11 @@ extern "C" {
  * \param box      The simulation box.
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
- * \param bVerbose Whether to print extra status information.
- * \param Flags    Flags passed over from main, used to determine
- *                 whether or not we are doing a rerun.
+ * \param mdrunOptions  Options for mdrun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
                      struct t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-                     gmx_bool bVerbose, unsigned long Flags);
+                     const MdrunOptions &mdrunOptions);
 
 
 /*! \brief Make a selection of the home atoms for all enforced rotation groups.
