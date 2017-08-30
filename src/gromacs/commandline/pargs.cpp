@@ -474,6 +474,10 @@ void OptionsAdapter::copyValues(bool bReadNode)
 
 } // namespace gmx
 
+// Handle the flags argument, which is a bit field
+// The FF macro returns whether or not the bit is set
+#define FF(arg) ((Flags & arg) == arg)
+
 gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                            int ndesc, const char **desc,
@@ -482,10 +486,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 {
     /* This array should match the order of the enum in oenv.h */
     const char *const xvg_formats[] = { "xmgrace", "xmgr", "none" };
-
-    // Handle the flags argument, which is a bit field
-    // The FF macro returns whether or not the bit is set
-#define FF(arg) ((Flags & arg) == arg)
 
     try
     {
