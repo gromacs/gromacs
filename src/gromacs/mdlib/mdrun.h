@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include <bitset>
+
 #include "gromacs/timing/wallcycle.h"
 
 struct df_history_t;
@@ -56,24 +58,45 @@ struct t_mdatoms;
 struct t_simtemp;
 class t_state;
 
-#define MD_POLARISE       (1<<2)
-#define MD_RERUN          (1<<4)
-#define MD_RERUN_VSITE    (1<<5)
-#define MD_DDBONDCHECK    (1<<10)
-#define MD_DDBONDCOMM     (1<<11)
-#define MD_CONFOUT        (1<<12)
-#define MD_REPRODUCIBLE   (1<<13)
-#define MD_APPENDFILES    (1<<15)
-#define MD_APPENDFILESSET (1<<21)
-#define MD_KEEPANDNUMCPT  (1<<16)
-#define MD_READ_EKIN      (1<<17)
-#define MD_STARTFROMCPT   (1<<18)
-#define MD_RESETCOUNTERSHALFWAY (1<<19)
-#define MD_TUNEPME        (1<<20)
-#define MD_NTOMPSET       (1<<21)
-#define MD_IMDWAIT        (1<<23)
-#define MD_IMDTERM        (1<<24)
-#define MD_IMDPULL        (1<<25)
+enum MdFlags : size_t
+{
+    polarise             = 2,
+    rerun                = 4,
+    rerunVSite           = 5,
+    ddBondCheck          = 10,
+    ddBondComm           = 11,
+    confOut              = 12,
+    reproducible         = 13,
+    appendFiles          = 15,
+    appendFilesSet       = 21,
+    keepAndNumCpt        = 16,
+    readEKin             = 17,
+    startFromCpt         = 18,
+    resetCountersHalfWay = 19,
+    tunePME              = 20,
+    ntompSet             = 21,
+    imdWait              = 23,
+    imdTerm              = 24,
+    imdPull              = 25
+};
+constexpr unsigned long long MD_POLARISE             = 1<< int(MdFlags::polarise);
+constexpr unsigned long long MD_RERUN                = 1<< int(MdFlags::rerun);
+constexpr unsigned long long MD_RERUN_VSITE          = 1<< int(MdFlags::rerunVSite);
+constexpr unsigned long long MD_DDBONDCHECK          = 1<< int(MdFlags::ddBondCheck);
+constexpr unsigned long long MD_DDBONDCOMM           = 1<< int(MdFlags::ddBondComm);
+constexpr unsigned long long MD_CONFOUT              = 1<< int(MdFlags::confOut);
+constexpr unsigned long long MD_REPRODUCIBLE         = 1<< int(MdFlags::reproducible);
+constexpr unsigned long long MD_APPENDFILES          = 1<< int(MdFlags::appendFiles);
+constexpr unsigned long long MD_APPENDFILESSET       = 1<< int(MdFlags::appendFilesSet);
+constexpr unsigned long long MD_KEEPANDNUMCPT        = 1<< int(MdFlags::keepAndNumCpt);
+constexpr unsigned long long MD_READ_EKIN            = 1<< int(MdFlags::readEKin);
+constexpr unsigned long long MD_STARTFROMCPT         = 1<< int(MdFlags::startFromCpt);
+constexpr unsigned long long MD_RESETCOUNTERSHALFWAY = 1<< int(MdFlags::resetCountersHalfWay);
+constexpr unsigned long long MD_TUNEPME              = 1<< int(MdFlags::tunePME);
+constexpr unsigned long long MD_NTOMPSET             = 1<< int(MdFlags::ntompSet);
+constexpr unsigned long long MD_IMDWAIT              = 1<< int(MdFlags::imdWait);
+constexpr unsigned long long MD_IMDTERM              = 1<< int(MdFlags::imdTerm);
+constexpr unsigned long long MD_IMDPULL              = 1<< int(MdFlags::imdPull);
 
 /* The options for the domain decomposition MPI task ordering */
 enum {
