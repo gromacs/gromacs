@@ -152,7 +152,7 @@ const char *opt2parg_str(const char *option, int nparg, t_pargs pa[])
     return nullptr;
 }
 
-gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[])
+gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa)
 {
     int i;
 
