@@ -1129,11 +1129,10 @@ static void gen_alexandria_tables(Poldata                 &pd,
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv, &eemprops);
     
     auto nmax = 1+(int)(rcut/spacing);
-    int  k = 0;
     for (auto eei = eemprops.begin(); eei != eemprops.end(); ++eei)
     {
         auto nzetaI =  pd.getNzeta(iDistributionModel, eei->getName());
-        for (auto eej = std::next(eemprops.begin(), ++k); eej != eemprops.end(); ++eej)
+        for (auto eej = eemprops.begin(); eej != eemprops.end(); ++eej)
         {
             auto nzetaJ =  pd.getNzeta( iDistributionModel, eej->getName());
             for (int i = 0; i < nzetaI; i++)
