@@ -480,12 +480,15 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nbugs, const char **bugs,
                            gmx_output_env_t **oenv)
 {
+    // Handle the flags argument `arg`, which is a bit field.
+    // The FF lambda returns whether or not the bit(s) is/are set.
+    // `arg` must be implicitly convertable to the type of `Flags`.
+    auto FF = [Flags](unsigned long arg) {
+            return (Flags & arg) == arg;
+        };
+
     /* This array should match the order of the enum in oenv.h */
     const char *const xvg_formats[] = { "xmgrace", "xmgr", "none" };
-
-    // Handle the flags argument, which is a bit field
-    // The FF macro returns whether or not the bit is set
-#define FF(arg) ((Flags & arg) == arg)
 
     try
     {
