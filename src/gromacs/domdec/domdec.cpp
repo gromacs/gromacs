@@ -6192,13 +6192,14 @@ static int forceDlbOffOrBail(int                cmdlineDlbState,
  * \param [in] cr          Pointer to MPI communication object.
  * \param [in] dlb_opt     Pointer to the '-dlb' command line argument's option.
  * \param [in] bRecordLoad True if the load balancer is recording load information.
- * \param [in] Flags       Simulation flags passed from main.
+ * \param [in] mdrunOptions  Options for mdrun.
  * \param [in] ir          Pointer mdrun to input parameters.
  * \returns                DLB initial/startup state.
  */
 static int determineInitialDlbState(FILE *fplog, t_commrec *cr,
                                     const char *dlb_opt, gmx_bool bRecordLoad,
-                                    unsigned long Flags, const t_inputrec *ir)
+                                    const MdrunOptions &mdrunOptions,
+                                    const t_inputrec *ir)
 {
     int dlbState = edlbsOffCanTurnOn;
 
@@ -6214,7 +6215,7 @@ static int determineInitialDlbState(FILE *fplog, t_commrec *cr,
     }
 
     /* Reruns don't support DLB: bail or override auto mode */
-    if (Flags & MD_RERUN)
+    if (mdrunOptions.rerun)
     {
         std::string reasonStr = "it is not supported in reruns.";
         return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
@@ -6234,7 +6235,7 @@ static int determineInitialDlbState(FILE *fplog, t_commrec *cr,
         return forceDlbOffOrBail(dlbState, reasonStr, cr, fplog);
     }
 
-    if (Flags & MD_REPRODUCIBLE)
+    if (mdrunOptions.reproducible)
     {
         std::string reasonStr = "you started a reproducible run.";
         switch (dlbState)
@@ -6339,7 +6340,7 @@ static gmx_domdec_comm_t *init_dd_comm()
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
                                    const DomdecOptions &options,
-                                   unsigned long Flags,
+                                   const MdrunOptions &mdrunOptions,
                                    const gmx_mtop_t *mtop,
                                    const t_inputrec *ir,
                                    matrix box, const rvec *x,
@@ -6363,7 +6364,7 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->dlbState         = determineInitialDlbState(fplog, cr, options.dlbOption, comm->bRecordLoad, Flags, ir);
+    comm->dlbState         = determineInitialDlbState(fplog, cr, options.dlbOption, comm->bRecordLoad, mdrunOptions, ir);
     dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
     /* To consider turning DLB on after 2*nstlist steps we need to check
      * at partitioning count 3. Thus we need to increase the first count by 2.
@@ -7235,7 +7236,7 @@ DomdecOptions::DomdecOptions() :
 
 gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                                         const DomdecOptions &options,
-                                        unsigned long Flags,
+                                        const MdrunOptions &mdrunOptions,
                                         const gmx_mtop_t *mtop,
                                         const t_inputrec *ir,
                                         matrix box, rvec *x,
@@ -7256,7 +7257,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     set_dd_envvar_options(fplog, dd, cr->nodeid);
 
-    set_dd_limits_and_grid(fplog, cr, dd, options, Flags,
+    set_dd_limits_and_grid(fplog, cr, dd, options, mdrunOptions,
                            mtop, ir,
                            box, x,
                            ddbox,
