@@ -75,6 +75,7 @@
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
+struct MdrunOptions;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
@@ -171,7 +172,7 @@ struct DomdecOptions
 gmx_domdec_t *init_domain_decomposition(FILE                *fplog,
                                         t_commrec           *cr,
                                         const DomdecOptions &options,
-                                        unsigned long        Flags,
+                                        const MdrunOptions  &mdrunOptions,
                                         const gmx_mtop_t    *mtop,
                                         const t_inputrec    *ir,
                                         matrix               box,

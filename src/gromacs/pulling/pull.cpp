@@ -287,13 +287,14 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
 
 static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                            const gmx_output_env_t *oenv,
-                           gmx_bool bCoord, unsigned long Flags)
+                           gmx_bool bCoord,
+                           const ContinuationOptions &continuationOptions)
 {
     FILE  *fp;
     int    nsets, c, m;
     char **setname, buf[50];
 
-    if (Flags & MD_APPENDFILES)
+    if (continuationOptions.appendFiles)
     {
         fp = gmx_fio_fopen(fn, "a+");
     }
@@ -2105,7 +2106,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
           int nfile, const t_filenm fnm[],
           const gmx_mtop_t *mtop, t_commrec *cr,
           const gmx_output_env_t *oenv, real lambda,
-          gmx_bool bOutFile, unsigned long Flags)
+          gmx_bool bOutFile,
+          const ContinuationOptions &continuationOptions)
 {
     struct pull_t *pull;
     pull_comm_t   *comm;
@@ -2522,9 +2524,9 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 pull->out_x   = open_pull_out(px_appended.c_str(), pull, oenv,
-                                              TRUE, Flags);
+                                              TRUE, continuationOptions);
                 pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
-                                            FALSE, Flags);
+                                            FALSE, continuationOptions);
                 return pull;
             }
             else
@@ -2537,12 +2539,12 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         if (pull->params.nstxout != 0)
         {
             pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
-                                        TRUE, Flags);
+                                        TRUE, continuationOptions);
         }
         if (pull->params.nstfout != 0)
         {
             pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
-                                        FALSE, Flags);
+                                        FALSE, continuationOptions);
         }
     }
 

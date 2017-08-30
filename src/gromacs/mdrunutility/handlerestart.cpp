@@ -105,7 +105,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                      int nfile, const t_filenm fnm[],
                      const char *part_suffix,
                      gmx_bool *bAddPart,
-                     gmx_bool *bDoAppendFiles)
+                     bool *bDoAppendFiles)
 {
     t_fileio            *fp;
     int                  nfiles;
@@ -233,8 +233,8 @@ handleRestart(t_commrec *cr,
               gmx_bool   bTryToAppendFiles,
               const int  NFILE,
               t_filenm   fnm[],
-              gmx_bool  *bDoAppendFiles,
-              gmx_bool  *bStartFromCpt)
+              bool      *bDoAppendFiles,
+              bool      *bStartFromCpt)
 {
     gmx_bool        bAddPart;
     int             sim_part, sim_part_fn;

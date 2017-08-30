@@ -2648,6 +2648,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, gmx:
 void init_md(FILE *fplog,
              t_commrec *cr, gmx::IMDOutputProvider *outputProvider,
              t_inputrec *ir, const gmx_output_env_t *oenv,
+             const MdrunOptions &mdrunOptions,
              double *t, double *t0,
              gmx::ArrayRef<real> lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
@@ -2655,7 +2656,7 @@ void init_md(FILE *fplog,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
+             gmx_bool *bSimAnn, t_vcm **vcm,
              gmx_wallcycle_t wcycle)
 {
     int  i;
@@ -2691,7 +2692,7 @@ void init_md(FILE *fplog,
         *vcm = init_vcm(fplog, &mtop->groups, ir);
     }
 
-    if (EI_DYNAMICS(ir->eI) && !(Flags & MD_APPENDFILES))
+    if (EI_DYNAMICS(ir->eI) && !mdrunOptions.continuationOptions.appendFiles)
     {
         if (ir->etc == etcBERENDSEN)
         {
@@ -2710,9 +2711,9 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, outputProvider, ir, mtop, oenv, wcycle);
+        *outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, ir, mtop, oenv, wcycle);
 
-        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? nullptr : mdoutf_get_fp_ene(*outf),
+        *mdebin = init_mdebin(mdrunOptions.continuationOptions.appendFiles ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));
     }
 

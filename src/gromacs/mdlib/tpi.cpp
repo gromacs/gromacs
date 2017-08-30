@@ -129,10 +129,9 @@ namespace gmx
 /*! \brief Do test particle insertion.
     \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           int nstglobalcomm,
+                           const gmx_output_env_t *oenv,
+                           const MdrunOptions &mdrunOptions,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
-                           int stepout,
                            gmx::IMDOutputProvider *outputProvider,
                            t_inputrec *inputrec,
                            gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -142,17 +141,14 @@ namespace gmx
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            const ReplicaExchangeParameters &replExParams,
-                           real cpt_period, real max_hours,
-                           int imdport,
-                           unsigned long Flags,
+                           gmx_membed_t gmx_unused *membed,
                            gmx_walltime_accounting_t walltime_accounting)
  */
 double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               int nfile, const t_filenm fnm[],
-              const gmx_output_env_t *oenv, gmx_bool bVerbose,
-              int gmx_unused nstglobalcomm,
+              const gmx_output_env_t *oenv,
+              const MdrunOptions &mdrunOptions,
               gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
-              int gmx_unused stepout,
               gmx::IMDOutputProvider *outputProvider,
               t_inputrec *inputrec,
               gmx_mtop_t *top_global, t_fcdata *fcd,
@@ -163,9 +159,6 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               t_forcerec *fr,
               const ReplicaExchangeParameters gmx_unused &replExParams,
               gmx_membed_t gmx_unused *membed,
-              real gmx_unused cpt_period, real gmx_unused max_hours,
-              int gmx_unused imdport,
-              unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_localtop_t  *top;
@@ -817,7 +810,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
         if (fp_tpi)
         {
-            if (bVerbose || frame%10 == 0 || frame < 10)
+            if (mdrunOptions.verbose || frame%10 == 0 || frame < 10)
             {
                 fprintf(stderr, "mu %10.3e <mu> %10.3e\n",
                         -log(sum_embU/nsteps)/beta, -log(VembU_all/V_all)/beta);
