@@ -50,6 +50,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -132,36 +133,20 @@ class Mdrunner
         int nfile = filenames.size();
         //! Output context for writing text files
         gmx_output_env_t                *oenv = nullptr;
-        //! TRUE if mdrun should be verbose.
-        gmx_bool                         bVerbose = FALSE;
-        //! Number of steps between global communication.
-        int                              nstglobalcomm = -1;
+        //! Ongoing collection of mdrun options
+        MdrunOptions                     mdrunOptions;
         //! Options for the domain decomposition.
         DomdecOptions                    domdecOptions;
         //! Target short-range interations for "cpu", "gpu", "gpu_cpu", or "auto". Default is "auto".
         const char                      *nbpu_opt = nullptr;
         //! Command-line override for the duration of a neighbor list with the Verlet scheme.
         int                              nstlist_cmdline = 0;
-        //! Command-line override for the number of MD steps (-2 means that the mdp option will be used).
-        gmx_int64_t                      nsteps_cmdline = -2;
-        //! Number of steps between output to the console of time remaining.
-        int                              nstepout = 100;
-        //! Number of steps that elapse before cycle counters are reset.
-        int                              resetstep = -1;
         //! Number of simulations in multi-simulation set.
         int                              nmultisim = 0;
         //! Parameters for replica-exchange simulations.
         ReplicaExchangeParameters        replExParams;
         //! Print a warning if any force is larger than this (in kJ/mol nm).
         real                             pforce = -1;
-        //! Period (in wall-clock minutes) between writing checkpoint files.
-        real                             cpt_period = 15.0;
-        //! Maximum duration of this simulation (in wall-clock hours).
-        real                             max_hours = -1;
-        //! Socket number used for IMD inter-process communication.
-        int                              imdport = 8888;
-        //! Bitfield of boolean flags configuring mdrun behavior.
-        unsigned long                    Flags = 0;
         //! Handle to file used for logging.
         FILE                            *fplog;
         //! Handle to communication data structure.
