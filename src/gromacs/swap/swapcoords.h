@@ -61,6 +61,7 @@ struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
+struct MdrunOptions;
 struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
@@ -74,7 +75,6 @@ struct ObservablesHistory;
  * the output file, sets up swap data checkpoint writing, etc.
  *
  * \param[in] fplog         General output file, normally md.log.
- * \param[in] bVerbose      Should we be quiet or verbose?
  * \param[in] ir            Structure containing MD input parameters, among those
  *                          also the structure needed for position swapping.
  * \param[in] fn            Output file name for swap data.
@@ -84,12 +84,10 @@ struct ObservablesHistory;
  * \param[in] oh            Contains struct with swap data that is read from or written to checkpoint.
  * \param[in] cr            Pointer to MPI communication data.
  * \param[in] oenv          Needed to open the swap output XVGR file.
- * \param[in] Flags         Flags passed over from main, used to determine
- *                          whether we are doing a rerun, appending, etc.
+ * \param[in] mdrunOptions  Options for mdrun.
  */
 void init_swapcoords(
         FILE                   *fplog,
-        gmx_bool                bVerbose,
         t_inputrec             *ir,
         const char             *fn,
         gmx_mtop_t             *mtop,
@@ -98,7 +96,7 @@ void init_swapcoords(
         ObservablesHistory     *oh,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
-        unsigned long           Flags);
+        const MdrunOptions     &mdrunOptions);
 
 
 /*! \brief Finalizes ion / water position swapping.

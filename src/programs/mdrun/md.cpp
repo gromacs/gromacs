@@ -195,7 +195,8 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
 /*! \libinternal
     \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
-                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                           const gmx_output_env_t *oenv,
+                           const MdrunOptions &mdrunOptions,
                            int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
@@ -206,15 +207,14 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
                            t_mdatoms *mdatoms,
                            t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                            t_forcerec *fr,
-                           int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           real cpt_period, real max_hours,
-                           int imdport,
-                           unsigned long Flags,
+                           const ReplicaExchangeParameters &replExParams,
+                           gmx_membed_t *membed,
                            gmx_walltime_accounting_t walltime_accounting)
  */
 double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   int nfile, const t_filenm fnm[],
-                  const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                  const gmx_output_env_t *oenv,
+                  const MdrunOptions &mdrunOptions,
                   int nstglobalcomm,
                   gmx_vsite_t *vsite, gmx_constr_t constr,
                   int stepout, gmx::IMDOutputProvider *outputProvider,
@@ -228,9 +228,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   t_forcerec *fr,
                   const ReplicaExchangeParameters &replExParams,
                   gmx_membed_t *membed,
-                  real cpt_period, real max_hours,
-                  int imdport,
-                  unsigned long Flags,
                   gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t    outf = nullptr;
@@ -238,8 +235,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD,
-                    bFirstStep, startingFromCheckpoint, bInitStep, bLastStep = FALSE,
+    gmx_bool        bNS, bNStList, bSimAnn, bStopCM,
+                    bFirstStep, bInitStep, bLastStep = FALSE,
                     bBornRadii, bUsingEnsembleRestraints;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
@@ -311,8 +308,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     SimulationSignaller nullSignaller(nullptr, nullptr, false, false);
 
     /* Check for special mdrun options */
-    bRerunMD = (Flags & MD_RERUN);
-    if (Flags & MD_RESETCOUNTERSHALFWAY)
+    const gmx_bool bRerunMD   = mdrunOptions.rerun;
+    const real     cpt_period = mdrunOptions.checkpointOptions.period;
+    real           max_hours  = mdrunOptions.maximumHoursToRun;
+
+    if (mdrunOptions.timingOptions.resetHalfway)
     {
         if (ir->nsteps > 0)
         {
@@ -355,22 +355,23 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                         top_global, ir, cr, constr,
                         as_rvec_array(state_global->x.data()),
                         state_global->box, observablesHistory,
-                        oenv, Flags & MD_APPENDFILES);
+                        oenv, mdrunOptions.continuationOptions.appendFiles);
     }
 
     if (ir->eSwapCoords != eswapNO)
     {
         /* Initialize ion swapping code */
-        init_swapcoords(fplog, bVerbose, ir, opt2fn_master("-swap", nfile, fnm, cr),
-                        top_global, as_rvec_array(state_global->x.data()), state_global->box, observablesHistory, cr, oenv, Flags);
+        init_swapcoords(fplog, ir, opt2fn_master("-swap", nfile, fnm, cr),
+                        top_global, as_rvec_array(state_global->x.data()), state_global->box, observablesHistory, cr, oenv, mdrunOptions);
     }
 
     /* Initial values */
-    init_md(fplog, cr, outputProvider, ir, oenv, &t, &t0, state_global->lambda,
+    init_md(fplog, cr, outputProvider, ir, oenv, mdrunOptions,
+            &t, &t0, state_global->lambda,
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags, wcycle);
+            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, wcycle);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -450,7 +451,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     /* Set up interactive MD (IMD) */
     init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, as_rvec_array(state_global->x.data()),
-             nfile, fnm, oenv, imdport, Flags);
+             nfile, fnm, oenv, mdrunOptions);
 
     if (DOMAINDECOMP(cr))
     {
@@ -466,7 +467,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
-    startingFromCheckpoint = Flags & MD_STARTFROMCPT;
+    const ContinuationOptions &continuationOptions    = mdrunOptions.continuationOptions;
+    bool                       startingFromCheckpoint = continuationOptions.startedFromCheckpoint;
 
     if (ir->bExpanded)
     {
@@ -478,7 +480,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (startingFromCheckpoint)
         {
             /* Update mdebin with energy history if appending to output files */
-            if (Flags & MD_APPENDFILES)
+            if (continuationOptions.appendFiles)
             {
                 restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
             }
@@ -515,8 +517,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     /* PME tuning is only supported in the Verlet scheme, with PME for
      * Coulomb. It is not supported with only LJ PME, or for
      * reruns. */
-    bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD &&
-                !(Flags & MD_REPRODUCIBLE) && ir->cutoff_scheme != ecutsGROUP);
+    bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->eeltype) && !bRerunMD &&
+                !mdrunOptions.reproducible && ir->cutoff_scheme != ecutsGROUP);
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
@@ -585,7 +587,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
      */
     bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
 
-    if (Flags & MD_READ_EKIN)
+    if (continuationOptions.haveReadEkin)
     {
         restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
     }
@@ -594,7 +596,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   | (bStopCM ? CGLO_STOPCM : 0)
                   | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                   | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
-                  | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
+                  | (continuationOptions.haveReadEkin ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
@@ -621,7 +623,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
-    if (!(Flags & MD_STARTFROMCPT))
+    if (!continuationOptions.startedFromCheckpoint)
     {
         for (i = 0; (i < ir->opts.ngtc); i++)
         {
@@ -662,7 +664,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             fprintf(stderr, "starting md rerun '%s', reading coordinates from"
                     " input trajectory '%s'\n\n",
                     *(top_global->name), opt2fn("-rerun", nfile, fnm));
-            if (bVerbose)
+            if (mdrunOptions.verbose)
             {
                 fprintf(stderr, "Calculated time to finish depends on nsteps from "
                         "run input file,\nwhich may not correspond to the time "
@@ -826,7 +828,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal, cr,
-                           (bVerbose && MASTER(cr)) ? stderr : nullptr,
+                           (mdrunOptions.verbose && MASTER(cr)) ? stderr : nullptr,
                            fplog, mdlog,
                            ir, fr, state,
                            wcycle,
@@ -913,7 +915,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             copy_mat(rerun_fr.box, state_global->box);
             copy_mat(state_global->box, state->box);
 
-            if (vsite && (Flags & MD_RERUN_VSITE))
+            if (vsite && mdrunOptions.rerunConstructVsites)
             {
                 if (DOMAINDECOMP(cr))
                 {
@@ -972,7 +974,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
          * beyond the last step. But we don't consider that to be an issue.
          */
         do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep || bRerunMD;
-        do_verbose = bVerbose &&
+        do_verbose = mdrunOptions.verbose &&
             (step % stepout == 0 || bFirstStep || bLastStep || bRerunMD);
 
         if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD))
@@ -1046,7 +1048,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
          * but never at the first step or with rerun.
          */
         bCPT = (((signals[eglsCHKPT].set && (bNS || ir->nstlist == 0)) ||
-                 (bLastStep && (Flags & MD_CONFOUT))) &&
+                 (bLastStep && mdrunOptions.writeConfout)) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)
         {
@@ -1100,7 +1102,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog, cr, bVerbose, step,
+            relax_shell_flexcon(fplog, cr, mdrunOptions.verbose, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
                                 state, &f, force_vir, mdatoms,
@@ -1302,7 +1304,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                  top_global, fr,
                                  outf, mdebin, ekind, &f,
                                  &nchkpt,
-                                 bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
+                                 bCPT, bRerunMD, bLastStep,
+                                 mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, as_rvec_array(state->x.data()), ir, t, wcycle);
@@ -1711,7 +1714,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
                                              bRerunMD ? rerun_fr.x   : as_rvec_array(state->x.data()),
                                              bRerunMD ? rerun_fr.box : state->box,
-                                             MASTER(cr) && bVerbose, bRerunMD);
+                                             MASTER(cr) && mdrunOptions.verbose,
+                                             bRerunMD);
 
             if (bNeedRepartition && DOMAINDECOMP(cr))
             {
@@ -1741,7 +1745,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         bFirstStep             = FALSE;
         bInitStep              = FALSE;
-        startingFromCheckpoint = FALSE;
+        startingFromCheckpoint = false;
 
         /* #######  SET VARIABLES FOR NEXT ITERATION IF THEY STILL NEED IT ###### */
         /* With all integrators, except VV, we need to retain the pressure

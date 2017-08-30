@@ -1450,7 +1450,6 @@ static gmx_bool bConvertFromOldTpr(t_swapcoords *sc)
 
 void init_swapcoords(
         FILE                   *fplog,
-        gmx_bool                bVerbose,
         t_inputrec             *ir,
         const char             *fn,
         gmx_mtop_t             *mtop,
@@ -1459,13 +1458,13 @@ void init_swapcoords(
         ObservablesHistory     *oh,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
-        unsigned long           Flags)
+        const MdrunOptions     &mdrunOptions)
 {
     t_swapcoords          *sc;
     t_swap                *s;
     t_swapgrp             *g;
     swapstateIons_t       *gs;
-    gmx_bool               bAppend, bStartFromCpt, bRerun;
+    gmx_bool               bAppend, bStartFromCpt;
     matrix                 boxCopy;
     swaphistory_t         *swapstate = nullptr;
 
@@ -1475,15 +1474,14 @@ void init_swapcoords(
         gmx_fatal(FARGS, "Position swapping is only implemented for domain decomposition!");
     }
 
-    bAppend       = Flags & MD_APPENDFILES;
-    bStartFromCpt = Flags & MD_STARTFROMCPT;
-    bRerun        = Flags & MD_RERUN;
+    bAppend       = mdrunOptions.continuationOptions.appendFiles;
+    bStartFromCpt = mdrunOptions.continuationOptions.startedFromCheckpoint;
 
     sc = ir->swap;
     snew(sc->si_priv, 1);
     s = sc->si_priv;
 
-    if (bRerun)
+    if (mdrunOptions.rerun)
     {
         if (PAR(cr))
         {
@@ -1516,6 +1514,8 @@ void init_swapcoords(
             s->swapdim = -1;
             break;
     }
+
+    const gmx_bool bVerbose = mdrunOptions.verbose;
 
     // For compatibility with old .tpr files
     if (bConvertFromOldTpr(sc) )
@@ -1697,7 +1697,7 @@ void init_swapcoords(
                     sc->cyl1r, sc->cyl1u, sc->cyl1l);
 
             fprintf(s->fpout, "#\n");
-            if (!bRerun)
+            if (!mdrunOptions.rerun)
             {
                 fprintf(s->fpout, "# Coupling constant (number of swap attempt steps to average over): %d  (translates to %f ps).\n",
                         sc->nAverage, sc->nAverage*sc->nstswap*ir->delta_t);
@@ -1758,7 +1758,7 @@ void init_swapcoords(
         else
         {
             fprintf(stderr, "%s Determining initial numbers of ions per compartment.\n", SwS);
-            get_initial_ioncounts(ir, x, box, cr, bRerun);
+            get_initial_ioncounts(ir, x, box, cr, mdrunOptions.rerun);
         }
 
         /* Prepare (further) checkpoint writes ... */
