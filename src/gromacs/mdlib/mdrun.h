@@ -59,8 +59,6 @@ class t_state;
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_DDBONDCHECK    (1<<10)
-#define MD_DDBONDCOMM     (1<<11)
 #define MD_CONFOUT        (1<<12)
 #define MD_REPRODUCIBLE   (1<<13)
 #define MD_APPENDFILES    (1<<15)
@@ -74,11 +72,6 @@ class t_state;
 #define MD_IMDWAIT        (1<<23)
 #define MD_IMDTERM        (1<<24)
 #define MD_IMDPULL        (1<<25)
-
-/* The options for the domain decomposition MPI task ordering */
-enum {
-    ddrankorderSEL, ddrankorderINTERLEAVE, ddrankorderPP_PME, ddrankorderCARTESIAN, ddrankorderNR
-};
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
