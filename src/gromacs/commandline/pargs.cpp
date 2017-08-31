@@ -475,20 +475,20 @@ void OptionsAdapter::copyValues(bool bReadNode)
 } // namespace gmx
 
 /*!
+ * \internal
  * \brief Handle the flags argument, which is a bit field
  *
- * \internal
  */
 class PcaFlags
 {
     private:
-        /// \brief stored bit mask
+        /// \internal \brief stored bit mask
         unsigned long flags_;
     public:
-        /// \brief Initialize from a bit mask
+        /// \internal \brief Initialize from a bit mask
         explicit PcaFlags(unsigned long Flags) : flags_ {Flags}
         {};
-        /*!
+        /*! \internal
          * \brief Test whether bit(s) set.
          * \param bitset bit or mask to test
          * \return true if the given bit(s) is/are set
