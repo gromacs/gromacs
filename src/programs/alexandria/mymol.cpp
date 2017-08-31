@@ -831,13 +831,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const char                *symm_string,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
-                                 gmx_hw_info_t             *hwinfo)
+                                 gmx_hw_info_t             *hwinfo,
+                                 int                        maxiter,
+                                 real                       tolerance)
 {
     std::vector<double> qq;
     immStatus imm       = immOK;
-    real      tolerance = 1e-6;
     bool      converged = false;
-    int       maxiter   = 1000;
     int       iter      = 0;
     
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);

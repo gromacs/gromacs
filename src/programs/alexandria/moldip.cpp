@@ -390,7 +390,9 @@ void MolDip::Read(FILE            *fp,
                   bool             bDihedral,
                   bool             bPolar,
                   bool             bZPE,
-                  const char      *tabfn)
+                  const char      *tabfn,
+                  int              qcycle,
+                  real             qtol)
 {
     int                              nwarn    = 0;
     int                              nmol_cpu = 0;
@@ -482,10 +484,14 @@ void MolDip::Read(FILE            *fp,
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,
-                                             pd_, lot,
+                                             pd_,
+                                             lot,
                                              iChargeDistributionModel_,
-                                             false, bPairs, bDihedral, 
-                                             bPolar, tabfn);                                             
+                                             false,
+                                             bPairs,
+                                             bDihedral, 
+                                             bPolar,
+                                             tabfn);                                             
                 if (bCheckSupport && immOK == imm)
                 {
                     imm = check_data_sufficiency(mymol, &indexCount_);
@@ -493,11 +499,21 @@ void MolDip::Read(FILE            *fp,
                 if (immOK == imm)
                 {
                     gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
-                    imm = mymol.GenerateCharges(pd_, mdlog, atomprop_,
+                    imm = mymol.GenerateCharges(pd_,
+                                                mdlog,
+                                                atomprop_,
                                                 iChargeDistributionModel_,
                                                 iChargeGenerationAlgorithm_,
-                                                watoms, hfac_, lot, true,
-                                                nullptr, cr_, tabfn, hwinfo_);
+                                                watoms,
+                                                hfac_,
+                                                lot,
+                                                true,
+                                                nullptr,
+                                                cr_,
+                                                tabfn,
+                                                hwinfo_,
+                                                qcycle,
+                                                qtol);
                     (void) mymol.espRms();
                 }
                 if (immOK == imm)
@@ -599,19 +615,34 @@ void MolDip::Read(FILE            *fp,
                 fflush(debug);
             }
             mymol.setInputrec(inputrec_);
-            imm = mymol.GenerateTopology(atomprop_, pd_, lot, 
+            imm = mymol.GenerateTopology(atomprop_,
+                                         pd_,
+                                         lot, 
                                          iChargeDistributionModel_,
-                                         false, false, bDihedral, 
-                                         bPolar, tabfn);
+                                         false,
+                                         false,
+                                         bDihedral, 
+                                         bPolar,
+                                         tabfn);
 
             if (immOK == imm)
             {
                 gmx::MDLogger mdlog = getMdLogger(cr_, stdout);
-                imm = mymol.GenerateCharges(pd_, mdlog, atomprop_, 
+                imm = mymol.GenerateCharges(pd_,
+                                            mdlog,
+                                            atomprop_, 
                                             iChargeDistributionModel_,
                                             iChargeGenerationAlgorithm_, 
-                                            watoms, hfac_, lot, true, nullptr, 
-                                            cr_, tabfn, hwinfo_);
+                                            watoms,
+                                            hfac_,
+                                            lot,
+                                            true,
+                                            nullptr, 
+                                            cr_,
+                                            tabfn,
+                                            hwinfo_,
+                                            qcycle,
+                                            qtol);
                 (void) mymol.espRms();
             }
             if (immOK == imm)

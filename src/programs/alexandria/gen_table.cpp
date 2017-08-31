@@ -1129,10 +1129,10 @@ static void gen_alexandria_tables(Poldata                 &pd,
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv, &eemprops);
     
     auto nmax = 1+(int)(rcut/spacing);
-    for (auto eei = eemprops.begin(); eei != eemprops.end(); ++eei)
+    for (auto eei = eemprops.begin(); eei != eemprops.end(); eei++)
     {
         auto nzetaI =  pd.getNzeta(iDistributionModel, eei->getName());
-        for (auto eej = eemprops.begin(); eej != eemprops.end(); ++eej)
+        for (auto eej = eei; eej != eemprops.end(); eej++)
         {
             auto nzetaJ =  pd.getNzeta( iDistributionModel, eej->getName());
             for (int i = 0; i < nzetaI; i++)
@@ -1147,10 +1147,13 @@ static void gen_alexandria_tables(Poldata                 &pd,
                     strncpy(fnbuf, fn, strlen(fn)-4);
                     fnbuf[strlen(fn)-4] = '\0';
                     sprintf(buf1, "%s_%s%s_%s%s.xvg", fnbuf, eei->getName(), ns[i], eej->getName(), ns[j]);
-                    sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, eej->getName(), ns[j], eei->getName(), ns[i]);
+                    if (eei != eej)
+                    {
+                        sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, eej->getName(), ns[j], eei->getName(), ns[i]);
+                        fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
+                    }
                     fp1 = xvgropen(buf1, buf1, "r (nm)", "V (kJ/mol e)", oenv);
-                    fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
-
+                    
                     for (int n = 0; n <= nmax; n++)
                     {
                         rr = n*spacing;
@@ -1186,10 +1189,16 @@ static void gen_alexandria_tables(Poldata                 &pd,
                             vc = fc = vd = fd = vr = fr = 0;
                         }
                         fprintf(fp1, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
-                        fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
+                        if (eei != eej)
+                        {
+                            fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, cv, cf, vd, fd, vr, fr);
+                        }
                     }
                     fclose(fp1);
-                    fclose(fp2);
+                    if (eei != eej)
+                    {
+                        fclose(fp2);
+                    }
                 }
             }
         }

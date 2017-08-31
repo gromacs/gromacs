@@ -236,7 +236,9 @@ class MolDip
                   bool                       bDihedral,
                   bool                       bPolar,
                   bool                       bZPE,
-                  const char                *tabfn);
+                  const char                *tabfn,
+                  int                        qcycle,
+                  real                       qtol);
 
 };
 

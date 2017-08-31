@@ -1168,8 +1168,8 @@ int alex_tune_zeta(int argc, char *argv[])
     static int                  reinit        = 0;
     static int                  mindata       = 3;
     static int                  seed          = -1;
-    static real                 tol           = 1e-3;
-    static real                 stol          = 1e-6;
+    static int                  qcycle        = 1000;
+    static real                 qtol          = 1e-6;
     static real                 watoms        = 0;
     static real                 J0_min        = 5;
     static real                 Chi0_min      = 1;
@@ -1211,8 +1211,6 @@ int alex_tune_zeta(int argc, char *argv[])
     static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     
     t_pargs                     pa[]         = {
-        { "-tol",   FALSE, etREAL, {&tol},
-          "Tolerance for convergence in optimization" },
         { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
         { "-mindata", FALSE, etINT, {&mindata},
@@ -1221,8 +1219,6 @@ int alex_tune_zeta(int argc, char *argv[])
           "How often to print the parameters during the simulation" },
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
-        { "-stol",   FALSE, etREAL, {&stol},
-          "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
         { "-nrun",   FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-qm",     FALSE, etBOOL, {&bQM},
@@ -1235,6 +1231,10 @@ int alex_tune_zeta(int argc, char *argv[])
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
+        { "-qtol",   FALSE, etREAL, {&qtol},
+          "Tolerance for assigning charge generation algorithm." },
+        { "-qcycle", FALSE, etINT, {&qcycle},
+          "Max number of tries for optimizing the charges." },
         { "-fixchi", FALSE, etSTR,  {&fixchi},
           "Electronegativity for this atom type is fixed. Set to FALSE if you want this variable as well, but read the help text above." },
         { "-seed",   FALSE, etINT,  {&seed},
@@ -1360,22 +1360,51 @@ int alex_tune_zeta(int argc, char *argv[])
         bPolar = true;
     }
     
-    opt.Init(cr, bQM, bGaussianBug,
+    opt.Init(cr,
+             bQM,
+             bGaussianBug,
              iChargeDistributionModel,
              iChargeGenerationAlgorithm,
-             rDecrZeta, J0_min, Chi0_min, zeta_min, 
-             J0_max, Chi0_max, zeta_max, fc_bound, 
-             fc_mu, fc_quad, fc_charge,
-             fc_esp, 1, 1, fixchi, bOptHfac, hfac, 
-             bPolar, false, hwinfo, bfullTensor, mindata);
+             rDecrZeta,
+             J0_min,
+             Chi0_min,
+             zeta_min, 
+             J0_max,
+             Chi0_max,
+             zeta_max,
+             fc_bound, 
+             fc_mu,
+             fc_quad,
+             fc_charge,
+             fc_esp,
+             1,
+             1,
+             fixchi,
+             bOptHfac,
+             hfac, 
+             bPolar,
+             false,
+             hwinfo,
+             bfullTensor,
+             mindata);
             
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
-             bZero, opt_elem, const_elem,
-             lot, gms, watoms, true,
-             false, false, bPolar, bZPE,
-             opt2fn_null("-table", NFILE, fnm));
+             bZero,
+             opt_elem,
+             const_elem,
+             lot,
+             gms,
+             watoms,
+             true,
+             false,
+             false,
+             bPolar,
+             bZPE,
+             opt2fn_null("-table", NFILE, fnm),
+             qcycle,
+             qtol);
             
     if (nullptr != fp)
     {
@@ -1390,12 +1419,18 @@ int alex_tune_zeta(int argc, char *argv[])
             opt.InitOpt(factor);
         }    
         
-        opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
-                   maxiter, nrun, step, seed,
-                   oenv, nprint,
+        opt.optRun(MASTER(cr) ? stderr : nullptr,
+                   fp,
+                   maxiter,
+                   nrun,
+                   step,
+                   seed,
+                   oenv,
+                   nprint,
                    opt2fn("-conv", NFILE, fnm),
                    opt2fn("-epot", NFILE, fnm),
-                   temperature, bBound);
+                   temperature,
+                   bBound);
     }
     if (MASTER(cr))
     {

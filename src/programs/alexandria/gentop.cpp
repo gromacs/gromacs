@@ -147,14 +147,13 @@ int alex_gentop(int argc, char *argv[])
     static int                       maxpot         = 100;
     static int                       seed           = 0;
     static int                       nsymm          = 0;
-    static int                       maxiter        = 25000;
-    static int                       maxcycle       = 1;
+    static int                       qcycle         = 1000;
     static int                       nmol           = 1;
     static real                      kb             = 4e5;
     static real                      kt             = 400;
     static real                      kp             = 5;
     static real                      btol           = 0.2;
-    static real                      qtol           = 1e-10;
+    static real                      qtol           = 1e-6;
     static real                      zmin           = 5;
     static real                      zmax           = 100;
     static real                      delta_z        = -1;
@@ -211,6 +210,8 @@ int alex_gentop(int argc, char *argv[])
     t_pargs                          pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
+        { "-cube",   FALSE, etBOOL, {&bCUBE},
+          "Generate cube." },
         { "-ff",     FALSE, etSTR,  {&ff},
           "Force field, interactive by default. Use -h for information." },
         { "-db",     FALSE, etSTR,  {&dbname},
@@ -295,9 +296,7 @@ int alex_gentop(int argc, char *argv[])
           "Charge distribution used" },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
-        { "-maxiter", FALSE, etINT, {&maxiter},
-          "Max number of iterations for charge generation algorithm" },
-        { "-maxcycle", FALSE, etINT, {&maxcycle},
+        { "-qcycle", FALSE, etINT, {&qcycle},
           "Max number of tries for optimizing the charges. The trial with lowest chi2 will be used for generating a topology. Will be turned off if randzeta is No." },
         { "-hfac",    FALSE, etREAL, {&hfac},
           "HIDDENFudge factor for AXx algorithms that modulates J00 for hydrogen atoms by multiplying it by (1 + hfac*qH). This hack is originally due to Rappe & Goddard." },
@@ -331,6 +330,16 @@ int alex_gentop(int argc, char *argv[])
         return 0;
     }
 
+    alexandria::Poldata       pd;
+    gmx::MDModules            mdModules;
+    t_inputrec               *inputrec                   = mdModules.inputrec();
+    t_commrec                *cr                         = init_commrec();   
+    const char               *tabfn                      = opt2fn_null("-table", NFILE, fnm);
+    eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
+    ChargeDistributionModel   iChargeDistributionModel;
+    gmx::MDLogger             mdlog                      = getMdLogger(cr, stdout);
+
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
               forcefield, sizeof(forcefield), ffdir, sizeof(ffdir));
@@ -347,7 +356,6 @@ int alex_gentop(int argc, char *argv[])
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
-
     if ((btol < 0) || (btol > 1))
     {
         gmx_fatal(FARGS, "Bond tolerance should be between 0 and 1 (not %g)", btol);
@@ -356,32 +364,23 @@ int alex_gentop(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
     }
-
-    eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
-    ChargeDistributionModel   iChargeDistributionModel;
-
     if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
     {
-        gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqdist[0]);
+        gmx_fatal(FARGS, "Invalid Charge Distribution model %s.\n", cqdist[0]);
     }
 
     /* Read standard atom properties */
-    aps = gmx_atomprop_init();
-
-    alexandria::Poldata pd;
+    aps = gmx_atomprop_init();   
     try
     {
         alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
                static_cast<int>(pd.getNatypes()));
     }
-
     if (strlen(dbname) > 0)
     {
         if (bVerbose)
@@ -389,7 +388,6 @@ int alex_gentop(int argc, char *argv[])
             printf("Reading molecule database.\n");
         }
         MolPropRead(opt2fn_null("-mpdb", NFILE, fnm), mps);
-
         for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
         {
             if (strcasecmp(dbname, mpi->getMolname().c_str()) == 0)
@@ -405,13 +403,12 @@ int alex_gentop(int argc, char *argv[])
     else
     {
         char **fns = nullptr;
-        int    i, nfn = 0;
-        
+        int    i   = 0;
+        int    nfn = 0;       
         if (strlen(molnm) == 0)
         {
             molnm = (char *)"MOL";
-        }
-        
+        }       
         bLOG = opt2bSet("-g03", NFILE, fnm);
         if (bLOG)
         {
@@ -424,15 +421,22 @@ int alex_gentop(int argc, char *argv[])
             {
                 nfn = ftp2fns(&fns, efSTX, NFILE, fnm);
             }
-        }
-        
+        }        
         if (nfn > 0)
         {
             for (i = 0; i < nfn; i++)
             {
                 alexandria::MolProp  mp;
-                ReadGauss(fns[i], mp, molnm, iupac, conf, basis,
-                          maxpot, nsymm, pd.getForceField().c_str(), jobtype);
+                ReadGauss(fns[i],
+                          mp,
+                          molnm,
+                          iupac,
+                          conf,
+                          basis,
+                          maxpot,
+                          nsymm,
+                          pd.getForceField().c_str(),
+                          jobtype);
                 mps.push_back(mp);
             }
         }
@@ -441,35 +445,28 @@ int alex_gentop(int argc, char *argv[])
             gmx_fatal(FARGS, "No input file has been specified");
         }
     }
-
     for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
     {
         mymol.molProp()->Merge(mpi);
-    }
-    
-    mymol.SetForceField(forcefield);
-
-    gmx::MDModules mdModules;
-    t_inputrec    *inputrec = mdModules.inputrec();
-    t_commrec     *cr       = init_commrec();   
-    const char    *tabfn    = opt2fn_null("-table", NFILE, fnm);
-    
+    }    
+    mymol.SetForceField(forcefield);   
     if (iChargeDistributionModel == eqdAXpp  || 
         iChargeDistributionModel == eqdAXpg  || 
         iChargeDistributionModel == eqdAXps)
     {
         bPolar = true;
     }
-
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
-
-    imm = mymol.GenerateTopology(aps, pd, lot, 
+    imm = mymol.GenerateTopology(aps,
+                                 pd,
+                                 lot, 
                                  iChargeDistributionModel,
-                                 bGenVSites, bPairs, 
-                                 bDihedral, bPolar, tabfn);
-
-    gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
+                                 bGenVSites,
+                                 bPairs, 
+                                 bDihedral,
+                                 bPolar,
+                                 tabfn);
 
     if (immOK == imm)
     {
@@ -479,14 +476,22 @@ int alex_gentop(int argc, char *argv[])
                       "model without a potential table. Please supply a table file.",
                       getEemtypeName(iChargeDistributionModel));
         }
-
-        imm = mymol.GenerateCharges(pd, mdlog, aps,
+        imm = mymol.GenerateCharges(pd,
+                                    mdlog,
+                                    aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
-                                    watoms, hfac, lot, bQsym,
-                                    symm_string, cr, tabfn, nullptr);
+                                    watoms,
+                                    hfac,
+                                    lot,
+                                    bQsym,
+                                    symm_string,
+                                    cr,
+                                    tabfn,
+                                    nullptr,
+                                    qcycle,
+                                    qtol);
     }
-
     if (immOK == imm)
     {
         fprintf(stderr, "Fix me: GenerateCube is broken\n");
@@ -506,18 +511,20 @@ int alex_gentop(int argc, char *argv[])
                                oenv);
         }
     }
-
     if (immOK == imm)
     {
         mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
-
     if (immOK == imm)
     {
-        mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
-                            ftp2fn(efTOP, NFILE, fnm),
-                            iChargeDistributionModel, bVerbose,
-                            pd, aps, cr, efield, lot);
+        mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
+                            iChargeDistributionModel,
+                            bVerbose,
+                            pd,
+                            aps,
+                            cr,
+                            efield,
+                            lot);
 
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
     }
@@ -526,6 +533,5 @@ int alex_gentop(int argc, char *argv[])
         printf("\nWARNING: alexandria ended prematurely due to \"%s\"\n",
                alexandria::immsg(imm));
     }
-
     return 0;
 }

@@ -261,8 +261,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             /* Coulomb interaction. ielec==0 means no interaction */
             if (ielec != GMX_NBKERNEL_ELEC_NONE)
             {
-	             qq            = iq*charge[jnr];
-               jzeta         = zeta[jnr];
+	              qq            = iq*charge[jnr];
+                jzeta         = zeta[jnr];
                 switch (ielec)
                 {
                     case GMX_NBKERNEL_ELEC_NONE:

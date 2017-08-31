@@ -1964,8 +1964,8 @@ int alex_tune_fc(int argc, char *argv[])
     static int            compress      = 0;
     static int            nprint        = 10;
     static int            nmultisim     = 0;
-    static real           tol           = 1e-3;
-    static real           stol          = 1e-6;
+    static int            qcycle        = 1000;
+    static real           qtol          = 1e-6;
     static real           watoms        = 0;   
     static real           J0_min        = 5;
     static real           Chi0_min      = 1;
@@ -2008,8 +2008,6 @@ int alex_tune_fc(int argc, char *argv[])
     static bool           bOpt[eitNR]   = {true, false, false, false, false, false, false, false, false, false};
       
     t_pargs               pa[]         = {
-        { "-tol",     FALSE, etREAL, {&tol},
-          "Tolerance for convergence in optimization" },
         { "-multi",   FALSE, etINT, {&nmultisim},
           "Do optimization in multiple simulation" },
         { "-maxiter", FALSE, etINT, {&maxiter},
@@ -2022,8 +2020,6 @@ int alex_tune_fc(int argc, char *argv[])
           "'Temperature' for the Monte Carlo simulation" },
         { "-reinit",  FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
-        { "-stol",    FALSE, etREAL, {&stol},
-          "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
         { "-nrun",    FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-fullTensor", FALSE, etBOOL, {&bfullTensor},
@@ -2032,6 +2028,10 @@ int alex_tune_fc(int argc, char *argv[])
           "Model used for charge distribution" },
         { "-qgen",    FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
+        { "-qtol",     FALSE, etREAL, {&qtol},
+          "Tolerance for assigning charge generation algorithm" },
+        { "-qcycle", FALSE, etINT, {&qcycle},
+          "Max number of tries for optimizing the charges." },
         { "-bonds",   FALSE, etBOOL, {&bOpt[eitBONDS]},
           "Optimize bond parameters" },
         { "-angles",  FALSE, etBOOL, {&bOpt[eitANGLES]},
@@ -2144,21 +2144,49 @@ int alex_tune_fc(int argc, char *argv[])
         bPolar = true;
     }
     
-    opt.Init(cr, bQM, bGaussianBug, iChargeDistributionModel,
-             iChargeGenerationAlgorithm, rDecrZeta,
-             J0_min, Chi0_min, zeta_min, J0_max, Chi0_max, zeta_max,
-             fc_bound, fc_mu, fc_quad, fc_charge,
-             fc_esp, fc_epot, fc_force, fixchi,
-             bOptHfac, hfac, bPolar, bFitZeta, 
-             hwinfo, bfullTensor, mindata);
+    opt.Init(cr,
+             bQM,
+             bGaussianBug,
+             iChargeDistributionModel,
+             iChargeGenerationAlgorithm,
+             rDecrZeta,
+             J0_min,
+             Chi0_min,
+             zeta_min,
+             J0_max,
+             Chi0_max,
+             zeta_max,
+             fc_bound,
+             fc_mu,
+             fc_quad,
+             fc_charge,
+             fc_esp,
+             fc_epot,
+             fc_force,
+             fixchi,
+             bOptHfac,
+             hfac,
+             bPolar,
+             bFitZeta, 
+             hwinfo,
+             bfullTensor,
+             mindata);
 
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero, opt_elem, const_elem,
-             lot, gms, watoms, false,
-             bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS],
-             bPolar, bZPE, tabfn);
+             lot,
+             gms,
+             watoms,
+             false,
+             bOpt[eitLJ14],
+             bOpt[eitPROPER_DIHEDRALS],
+             bPolar,
+             bZPE,
+             tabfn,
+             qcycle,
+             qtol);
     
     opt.checkSupport(fp, bOpt);
 
@@ -2189,12 +2217,18 @@ int alex_tune_fc(int argc, char *argv[])
         }
     }
 
-    opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
-               maxiter, nrun, step, seed,
-               oenv, nprint,
+    opt.optRun(MASTER(cr) ? stderr : nullptr,
+               fp,
+               maxiter,
+               nrun,
+               step,
+               seed,
+               oenv,
+               nprint,
                opt2fn("-conv", NFILE, fnm),
                opt2fn("-epot", NFILE, fnm),
-               temperature, bBound);
+               temperature,
+               bBound);
                
     if (MASTER(cr))
     {
