@@ -672,12 +672,6 @@ void QgenResp::calcRho()
     }
 }
 
-void QgenResp::warning(const std::string fn, int line)
-{
-    fprintf(stderr, "WARNING: It seems like you have two sets of ESP data in your file\n         %s\n", fn.c_str());
-    fprintf(stderr, "         using the second set, starting at line %d\n", line);
-}
-
 void QgenResp::addEspPoint(double x, double y,
                            double z, double V)
 {
@@ -697,14 +691,29 @@ real QgenResp::myWeight(int iatom) const
     }
 }
 
-void QgenResp::potLsq(gmx_stats_t lsq)
+void QgenResp::plotLsq(const gmx_output_env_t *oenv)
 {
-    for (size_t i = 0; (i < nEsp()); i++)
+    real        x, y;
+    const char *leg = "Alexandria";
+    gmx_stats_t lsq = gmx_stats_init();;    
+    for (size_t i = 0; i < nEsp(); i++)
     {
         gmx_stats_add_point(lsq,
                             gmx2convert(ep_[i].v(), eg2cHartree_e),
-                            gmx2convert(ep_[i].vCalc(), eg2cHartree_e), 0, 0);
+                            gmx2convert(ep_[i].vCalc(), eg2cHartree_e),
+                            0, 0);
+    }   
+    FILE *fp = xvgropen("EspFit.xvg", "Electrostatic Potential (Hartree/e)", "QM", "Calc", oenv);
+    xvgr_legend(fp, 1, &leg, oenv);
+    xvgr_line_props(fp, 0, elNone, ecBlack, oenv);
+    fprintf(fp, "@ s%d symbol %d\n", 0, 1);   
+    fprintf(fp, "@type xy\n");
+    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
+    {
+        fprintf(fp, "%10g  %10g\n", x, y);
     }
+    fprintf(fp, "&\n");
+    gmx_stats_free(lsq);
 }
 
 double QgenResp::calcPenalty()
@@ -748,19 +757,6 @@ double QgenResp::calcPenalty()
     penalty_ = p;
 
     return penalty_;
-}
-
-void QgenResp::statistics(int len, char buf[])
-{
-    if (len >= 100)
-    {
-        sprintf(buf, "RMS: %10e [Hartree/e] RRMS: %10e Entropy: %10e Penalty: %10e",
-                rms_, rrms_, entropy_, penalty_);
-    }
-    else
-    {
-        fprintf(stderr, "buflen too small (%d) in gmx_resp_statistics\n", len);
-    }
 }
 
 void QgenResp::regularizeCharges()
@@ -857,7 +853,7 @@ double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
     r = norm(dx);
     if (r == 0)
     {
-        gmx_fatal(FARGS, "Zero distance between atoms!\n");
+        gmx_fatal(FARGS, "Zero distance between the atom and the grid!\n");
     }
     if (zeta <= 0)
     {
@@ -887,19 +883,22 @@ double QgenResp::calcJ(ChargeDistributionModel iChargeDistributionModel,
 
 void QgenResp::calcPot()
 {
+    int  nskip = 0;
+    if(watoms_)
+    {
+        nskip = nAtom_;
+    }   
     for (auto &ep : ep_)
     {
         ep.setVCalc(0);
-    }
-     
-    int nthreads = gmx_omp_get_max_threads();
-    
+    }     
+    int nthreads = gmx_omp_get_max_threads();    
 #pragma omp parallel
     {
         int thread_id = gmx_omp_get_thread_num();
         int i0        = thread_id*nEsp()/nthreads;
         int i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
-        for (int i = i0; i < i1; i++)
+        for (int i = (i0 + nskip); i < i1; i++)
         {
             double vv = 0;
             for (auto &ra : ra_)
@@ -933,6 +932,7 @@ void QgenResp::optimizeCharges()
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
     int                   factor   = nEsp();
     int                   ncolumn  = fitQ_;
+    int                   nskip    = 0;
     double              **lhs      = alloc_matrix(ncolumn, nrow);
     std::vector<double>   rhs;
 
@@ -940,7 +940,11 @@ void QgenResp::optimizeCharges()
     {
         printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nAtom());
         return;
-    }     
+    }
+    if(watoms_)
+    {
+        nskip = nAtom_;
+    }
     for (size_t j = 0; j < nEsp(); j++)
     {
         rhs.push_back(ep_[j].v());
@@ -953,7 +957,7 @@ void QgenResp::optimizeCharges()
         if (rat->ptype() == eptAtom)
         {
             auto rax = ra_[ii].x();
-            for (size_t j = 0; j < nEsp(); j++)
+            for (size_t j = (0 + nskip); j < nEsp(); j++)
             {
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
@@ -974,7 +978,7 @@ void QgenResp::optimizeCharges()
         else if (rat->ptype() == eptShell)
         {
             auto rax = ra_[ii].x();
-            for (size_t j = 0; j < nEsp(); j++)
+            for (size_t j = (0 + nskip); j < nEsp(); j++)
             {
                 auto espx  = ep_[j].esp();
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)

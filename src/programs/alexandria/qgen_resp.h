@@ -121,8 +121,6 @@ class QgenResp
         
         std::vector<EspPoint> &espPoint() {return ep_;}
 
-        void statistics(int len, char buf[]);
-
         void summary(FILE *gp);
 
         RespAtomTypeIterator beginRAT() { return ratype_.begin(); }
@@ -175,7 +173,7 @@ class QgenResp
 
         real getRms(real *wtot, real *rrms);
 
-        void potLsq(gmx_stats_t lsq);
+        void plotLsq(const gmx_output_env_t *oenv);
         
         double calcJ(ChargeDistributionModel iChargeDistributionModel,
                      rvec                    esp_x, 
@@ -264,9 +262,6 @@ class QgenResp
         std::string               stoichiometry_;
         std::vector<EspPoint>     ep_;
         std::vector<int>          symmetricAtoms_;
-
-        void warning(const std::string fn, int line);
-
 };
 
 } // namespace

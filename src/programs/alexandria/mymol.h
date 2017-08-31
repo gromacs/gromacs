@@ -309,7 +309,8 @@ class MyMol
                                   const char                *tabfn,
                                   gmx_hw_info_t             *hwinfo,
                                   int                        qcycle,
-                                  real                       qtol);
+                                  real                       qtol,
+                                  const gmx_output_env_t    *oenv);
 
         /*! \brief
          * Return the root-mean square deviation of

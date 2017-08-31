@@ -490,7 +490,8 @@ int alex_gentop(int argc, char *argv[])
                                     tabfn,
                                     nullptr,
                                     qcycle,
-                                    qtol);
+                                    qtol,
+                                    oenv);
     }
     if (immOK == imm)
     {

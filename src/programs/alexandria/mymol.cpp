@@ -833,7 +833,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo,
                                  int                        maxiter,
-                                 real                       tolerance)
+                                 real                       tolerance,
+                                 const gmx_output_env_t    *oenv)
 {
     std::vector<double> qq;
     immStatus imm       = immOK;
@@ -945,6 +946,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = Qgresp_.getAtomCharge(i);
             }
+            Qgresp_.plotLsq(oenv);
         }
         break;
         case eqgEEM:

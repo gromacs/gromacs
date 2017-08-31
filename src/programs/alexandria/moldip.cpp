@@ -513,7 +513,8 @@ void MolDip::Read(FILE            *fp,
                                                 tabfn,
                                                 hwinfo_,
                                                 qcycle,
-                                                qtol);
+                                                qtol,
+                                                nullptr);
                     (void) mymol.espRms();
                 }
                 if (immOK == imm)
@@ -642,7 +643,8 @@ void MolDip::Read(FILE            *fp,
                                             tabfn,
                                             hwinfo_,
                                             qcycle,
-                                            qtol);
+                                            qtol,
+                                            nullptr);
                 (void) mymol.espRms();
             }
             if (immOK == imm)
