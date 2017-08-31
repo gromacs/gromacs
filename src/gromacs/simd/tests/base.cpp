@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,6 +34,8 @@
  */
 #include "gmxpre.h"
 
+#include <sstream>
+
 #include "base.h"
 
 #include <cmath>
@@ -52,6 +54,14 @@ namespace test
 
 namespace
 {
+
+template <typename Char, typename CharTraits, typename T>
+std::basic_ostream<Char, CharTraits> &operator<<(
+        std::basic_ostream<Char, CharTraits> &os, const T &x)
+{
+    testing::internal::UniversalTersePrint(x, &os);
+    return os;
+}
 
 /*! \cond */
 /*! \brief Command-line option to adjust the number of points used to test SIMD math functions. */
@@ -112,15 +122,17 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
     }
     else
     {
-        return ::testing::AssertionFailure()
-               << "Failing comparison between " << refExpr << " and " << tstExpr << std::endl
-               << "Requested abs tolerance: " << absTol_ << std::endl
-               << "Requested ulp tolerance: " << ulpTol_ << std::endl
-               << "(And values should not differ in sign unless within abs tolerance.)" << std::endl
-               << "Reference values: " << ::testing::PrintToString(ref) << std::endl
-               << "SIMD values:      " << ::testing::PrintToString(tst) << std::endl
-               << "Abs. difference:  " << ::testing::PrintToString(absDiff) << std::endl
-               << "Ulp difference:   " << ::testing::PrintToString(ulpDiff) << std::endl;
+        std::stringstream msg;
+        msg << std::setprecision(20)
+        << "Failing comparison between " << refExpr << " and " << tstExpr << std::endl
+        << "Requested abs tolerance: " << absTol_ << std::endl
+        << "Requested ulp tolerance: " << ulpTol_ << std::endl
+        << "(And values should not differ in sign unless within abs tolerance.)" << std::endl
+        << "Reference values: " << ref << std::endl
+        << "SIMD values:      " << tst << std::endl
+        << "Abs. difference:  " << ::testing::PrintToString(absDiff) << std::endl
+        << "Ulp difference:   " << ::testing::PrintToString(ulpDiff) << std::endl;
+        return ::testing::AssertionFailure() << msg.str();
     }
 }
 
