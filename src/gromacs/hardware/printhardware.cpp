@@ -146,7 +146,7 @@ void reportGpuUsage(const gmx::MDLogger    &mdlog,
         {
             char host[STRLEN];
             gmx_gethostname(host, STRLEN);
-            output += gmx::formatString("On host %s", host);
+            output += gmx::formatString("On host %s ", host);
         }
         output += gmx::formatString("%zu GPU%s %sselected for this run.\n"
                                     "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
