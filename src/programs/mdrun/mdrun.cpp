@@ -316,7 +316,7 @@ int Mdrunner::mainFunction(int argc, char *argv[])
           "load balancing." },
         { "-gcom",    FALSE, etINT, {&nstglobalcomm},
           "Global communication frequency" },
-        { "-nb",      FALSE, etENUM, {&nbpu_opt_choices},
+        { "-nb",      FALSE, etENUM, {nbpu_opt_choices},
           "Calculate non-bonded interactions on" },
         { "-nstlist", FALSE, etINT, {&nstlist_cmdline},
           "Set nstlist when using a Verlet buffer tolerance (0 is guess)" },
