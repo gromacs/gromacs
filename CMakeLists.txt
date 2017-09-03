@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -328,6 +328,11 @@ gmx_c_flags()
 
 # This variable should be used for additional compiler flags which are not
 # generated in gmxCFlags nor are SIMD or MPI related.
+#
+# TODO These variables should be consolidated into
+# EXTRA_COMPILER_FLAGS so that we we don't perpetrate bugs where
+# things that work in C compilation (e.g. merging from old branches)
+# also work for C++ compilation.
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
 
