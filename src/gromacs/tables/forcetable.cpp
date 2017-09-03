@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -317,7 +317,7 @@ static double spline3_table_scale(double third_deriv_max,
 
     /* Don't try to be more accurate on energy than the precision */
     func_tol  = std::max(func_tol, static_cast<double>(GMX_REAL_EPS));
-    sc_func   = std::cbrt(third_deriv_max/(6*12*sqrt(3)*func_tol))*x_scale;
+    sc_func   = std::cbrt(third_deriv_max/(6*12*std::sqrt(3.0)*func_tol))*x_scale;
 
     return std::max(sc_deriv, sc_func);
 }
