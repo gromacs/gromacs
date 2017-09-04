@@ -84,6 +84,7 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/minimize.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_tuning.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -320,10 +321,10 @@ namespace gmx
 {
 
 //! Halt the run if there are inconsistences between user choices to run with GPUs and/or hardware detection.
-static void exitIfCannotForceGpuRun(bool requirePhysicalGpu,
-                                    bool emulateGpu,
-                                    bool useVerletScheme,
-                                    bool compatibleGpusFound)
+static void exitIfCannotForceGpuRun(bool                requirePhysicalGpu,
+                                    EmulateGpuNonbonded emulateGpuNonbonded,
+                                    bool                useVerletScheme,
+                                    bool                compatibleGpusFound)
 {
     /* Was GPU acceleration either explicitly (-nb gpu) or implicitly
      * (gpu ID passed) requested? */
@@ -338,7 +339,7 @@ static void exitIfCannotForceGpuRun(bool requirePhysicalGpu,
                   gmx::getProgramContext().displayName());
     }
 
-    if (emulateGpu)
+    if (emulateGpuNonbonded)
     {
         gmx_fatal(FARGS, "GPU emulation cannot be requested together with GPU acceleration!");
     }
@@ -473,14 +474,15 @@ int Mdrunner::mdrunner()
     /* Handle GPU-related user options. Later, we check consistency
      * with things like whether support is compiled, or tMPI thread
      * count. */
-    bool emulateGpu            = getenv("GMX_EMULATE_GPU") != nullptr;
-    bool forceUseCpu           = (strncmp(nbpu_opt, "cpu", 3) == 0);
+    EmulateGpuNonbonded emulateGpuNonbonded = (getenv("GMX_EMULATE_GPU") != nullptr ?
+                                               EmulateGpuNonbonded::yes : EmulateGpuNonbonded::no);
+    bool                forceUseCpu           = (strncmp(nbpu_opt, "cpu", 3) == 0);
     if (!hw_opt.gpuIdTaskAssignment.empty() && forceUseCpu)
     {
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
     bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && hw_opt.gpuIdTaskAssignment.empty() && !emulateGpu;
+    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && hw_opt.gpuIdTaskAssignment.empty() && !emulateGpuNonbonded;
     GMX_RELEASE_ASSERT(!(forceUsePhysicalGpu && tryUsePhysicalGpu), "Must either force use of "
                        "GPUs for short-ranged interactions, or try to use them, not both.");
 
@@ -514,7 +516,7 @@ int Mdrunner::mdrunner()
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
 
         exitIfCannotForceGpuRun(forceUsePhysicalGpu,
-                                emulateGpu,
+                                emulateGpuNonbonded,
                                 inputrec->cutoff_scheme == ecutsVERLET,
                                 compatibleGpusFound(hwinfo->gpu_info));
 
@@ -760,7 +762,7 @@ int Mdrunner::mdrunner()
     if (inputrec->cutoff_scheme == ecutsVERLET)
     {
         prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, mtop,
-                              state->box, nonbondedOnGpu || emulateGpu, *hwinfo->cpuInfo);
+                              state->box, nonbondedOnGpu || emulateGpuNonbonded, *hwinfo->cpuInfo);
     }
 
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||

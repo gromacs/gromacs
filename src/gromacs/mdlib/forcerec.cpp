@@ -1707,7 +1707,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
                               const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
-                              bool                 emulateGpu,
+                              EmulateGpuNonbonded  emulateGpu,
                               const t_inputrec    *ir,
                               int                 *kernel_type,
                               int                 *ewald_excl,
@@ -2051,7 +2051,7 @@ static void init_nb_verlet(FILE                *fp,
 
     nbv = new nonbonded_verlet_t();
 
-    nbv->emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
+    nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::yes : EmulateGpuNonbonded::no);
     nbv->bUseGPU    = deviceInfo != nullptr;
 
     GMX_RELEASE_ASSERT(!(nbv->emulateGpu && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
@@ -2086,7 +2086,7 @@ static void init_nb_verlet(FILE                *fp,
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
-                                  FALSE, false, ir,
+                                  FALSE, EmulateGpuNonbonded::no, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
                                   fr->bNonbonded);
