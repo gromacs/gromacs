@@ -417,6 +417,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
     }
 
+    // Local state only becomes valid now.
     std::unique_ptr<t_state> stateInstance;
     t_state *                state;
 
@@ -444,6 +445,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         update_realloc(upd, state->natoms);
     }
+    // TODO Global state should be destroyed now that we have local
+    // state. Nothing should need to use it. (Global topology should
+    // persist.)
 
     /* Set up interactive MD (IMD) */
     init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, as_rvec_array(state_global->x.data()),
