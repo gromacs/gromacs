@@ -480,7 +480,9 @@ int Mdrunner::mdrunner()
         gmx_fatal(FARGS, "GPU IDs were specified, and short-ranged interactions were assigned to the CPU. Make no more than one of these choices.");
     }
     bool forceUsePhysicalGpu = (strncmp(nbpu_opt, "gpu", 3) == 0) || !hw_opt.gpuIdTaskAssignment.empty();
-    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && !emulateGpu && (GMX_GPU != GMX_GPU_NONE);
+    bool tryUsePhysicalGpu   = (strncmp(nbpu_opt, "auto", 4) == 0) && hw_opt.gpuIdTaskAssignment.empty() && !emulateGpu;
+    GMX_RELEASE_ASSERT(!(forceUsePhysicalGpu && tryUsePhysicalGpu), "Must either force use of "
+                       "GPUs for short-ranged interactions, or try to use them, not both.");
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -557,7 +559,6 @@ int Mdrunner::mdrunner()
                 GMX_LOG(mdlog.warning).asParagraph().appendText(
                         "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
-                tryUsePhysicalGpu = false;
             }
 
 #if GMX_TARGET_BGQ
@@ -566,8 +567,10 @@ int Mdrunner::mdrunner()
                           "      BlueGene/Q. You will observe better performance from using the\n"
                           "      Verlet cut-off scheme.\n");
 #endif
+            tryUsePhysicalGpu = false;
         }
     }
+    bool nonbondedOnGpu = (tryUsePhysicalGpu || forceUsePhysicalGpu) && compatibleGpusFound(hwinfo->gpu_info);
 
     /* Check and update the hardware options for internal consistency */
     check_and_update_hw_opt_1(&hw_opt, cr, npme);
@@ -598,6 +601,7 @@ int Mdrunner::mdrunner()
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                 &hw_opt,
                                                 npme,
+                                                nonbondedOnGpu,
                                                 inputrec, mtop,
                                                 mdlog,
                                                 doMembed);
@@ -618,7 +622,7 @@ int Mdrunner::mdrunner()
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
 
-        gmx_bcast_sim(sizeof(tryUsePhysicalGpu), &tryUsePhysicalGpu, cr);
+        gmx_bcast_sim(sizeof(nonbondedOnGpu), &nonbondedOnGpu, cr);
     }
     // TODO: Error handling
     mdModules.assignOptionsToModules(*inputrec->params, nullptr);
@@ -674,7 +678,7 @@ int Mdrunner::mdrunner()
         npme = 0;
     }
 
-    if ((tryUsePhysicalGpu || forceUsePhysicalGpu) && npme < 0)
+    if (nonbondedOnGpu && npme < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
@@ -854,7 +858,7 @@ int Mdrunner::mdrunner()
     // indexed by that rank. Empty if no GPUs are selected for use on
     // this node.
     std::vector<int> gpuTaskAssignment;
-    if (tryUsePhysicalGpu || forceUsePhysicalGpu)
+    if (nonbondedOnGpu)
     {
         /* Currently the DD code assigns duty to ranks that can
          * include PP work that currently can be executed on a single
